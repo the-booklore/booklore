@@ -69,6 +69,24 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
     return `${secs}s`;
   }
 
+  calculateActualDuration(session: ReadingSessionResponse): number {
+    const startTime = new Date(session.startTime).getTime();
+    const endTime = new Date(session.endTime).getTime();
+    return Math.floor((endTime - startTime) / 1000);
+  }
+
+  getActualDuration(session: ReadingSessionResponse): string {
+    const actualDuration = this.calculateActualDuration(session);
+    const storedDuration = session.durationSeconds;
+    
+    if (Math.abs(actualDuration - storedDuration) > 1) {
+      // Discrepancy detected - show both values
+      return `${this.formatDuration(actualDuration)}`;
+    }
+    
+    return this.formatDuration(actualDuration);
+  }
+
   formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString();
   }

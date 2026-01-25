@@ -13,6 +13,7 @@ import {FormsModule} from '@angular/forms';
 import {ToastModule} from 'primeng/toast';
 import {Tooltip} from 'primeng/tooltip';
 import {filter, take, takeUntil} from 'rxjs/operators';
+import {ToggleSwitch} from 'primeng/toggleswitch';
 
 @Component({
   selector: 'app-view-preferences',
@@ -23,7 +24,8 @@ import {filter, take, takeUntil} from 'rxjs/operators';
     Button,
     TableModule,
     ToastModule,
-    Tooltip
+    Tooltip,
+    ToggleSwitch
   ],
   templateUrl: './view-preferences.component.html',
   styleUrl: './view-preferences.component.scss'
@@ -34,8 +36,10 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Title + Series', field: 'titleSeries'},
     {label: 'File Name', field: 'fileName'},
     {label: 'Author', field: 'author'},
+    {label: 'Author (Surname)', field: 'authorSurnameVorname'},
     {label: 'Author + Series', field: 'authorSeries'},
     {label: 'Last Read', field: 'lastReadTime'},
+    {label: 'Personal Rating', field: 'personalRating'},
     {label: 'Added On', field: 'addedOn'},
     {label: 'File Size', field: 'fileSizeKb'},
     {label: 'Locked', field: 'locked'},
@@ -75,6 +79,7 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
   selectedSort: string = 'title';
   selectedSortDir: 'ASC' | 'DESC' = 'ASC';
   selectedView: 'GRID' | 'TABLE' = 'GRID';
+  autoSaveMetadata: boolean = false;
 
   overrides: {
     entityType: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
@@ -109,6 +114,7 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
       this.selectedSort = global?.sortKey ?? 'title';
       this.selectedSortDir = global?.sortDir ?? 'ASC';
       this.selectedView = global?.view ?? 'GRID';
+      this.autoSaveMetadata = userState.user?.userSettings?.autoSaveMetadata ?? false;
 
       this.overrides = (prefs?.overrides ?? []).map(o => ({
         entityType: o.entityType,
@@ -166,8 +172,8 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
       options.map(opt => ({...opt, entityType}));
 
     return [...withEntityType(this.libraryOptions, 'LIBRARY'),
-            ...withEntityType(this.shelfOptions, 'SHELF'),
-            ...withEntityType(this.magicShelfOptions, 'MAGIC_SHELF')]
+      ...withEntityType(this.shelfOptions, 'SHELF'),
+      ...withEntityType(this.magicShelfOptions, 'MAGIC_SHELF')]
       .filter(opt => !used.has(`${opt.entityType}_${opt.value}`));
   }
 
@@ -213,12 +219,14 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
           sortDir: o.sortDir,
           view: o.view,
           coverSize: existing?.coverSize ?? 1.0,
-          seriesCollapsed: existing?.seriesCollapsed ?? false
+          seriesCollapsed: existing?.seriesCollapsed ?? false,
+          overlayBookType: existing?.overlayBookType ?? true
         }
       };
     });
 
     this.userService.updateUserSetting(this.user.id, 'entityViewPreferences', prefs);
+    this.userService.updateUserSetting(this.user.id, 'autoSaveMetadata', this.autoSaveMetadata);
 
     this.messageService.add({
       severity: 'success',

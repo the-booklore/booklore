@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, inject, OnInit, ViewChild} from '@angular/core';
 import {FileSelectEvent, FileUpload, FileUploadHandlerEvent} from 'primeng/fileupload';
 import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
@@ -43,6 +43,8 @@ interface UploadingFile {
   styleUrl: './book-uploader.component.scss'
 })
 export class BookUploaderComponent implements OnInit {
+  @ViewChild(FileUpload) fileUpload!: FileUpload;
+
   files: UploadingFile[] = [];
   isUploading: boolean = false;
   uploadCompleted: boolean = false;
@@ -116,6 +118,18 @@ export class BookUploaderComponent implements OnInit {
   }
 
   onFilesSelect(event: FileSelectEvent): void {
+    if (this.value === 'library' && (!this.selectedLibrary || !this.selectedPath)) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'No Destination Selected',
+        detail: 'Please select a library and subpath before adding files.',
+        life: 5000
+      });
+      // We need to clear the files input explicitely, otherwise the files remain selected in the file upload component
+      this.fileUpload.clear();
+      return;
+    }
+
     const newFiles = event.currentFiles;
     for (const file of newFiles) {
       const exists = this.files.some(f => f.file.name === file.name && f.file.size === file.size);

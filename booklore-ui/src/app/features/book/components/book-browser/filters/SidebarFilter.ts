@@ -105,6 +105,14 @@ export class SideBarFilter implements BookFilter {
                 return bookYear ? filterValues.some(val => val == bookYear || val == bookYear.toString()) : false;
               case 'fileSize':
                 return filterValues.some(range => isFileSizeInRange(book.fileSizeKb, range));
+              case 'library':
+                return mode === 'or'
+                  ? filterValues.some(val => val == book.libraryId)
+                  : filterValues.every(val => val == book.libraryId);
+              case 'shelf':
+                return mode === 'or'
+                  ? filterValues.some(val => book.shelves?.some(s => s.id == val))
+                  : filterValues.every(val => book.shelves?.some(s => s.id == val));
               case 'shelfStatus':
                 const shelved = book.shelves && book.shelves.length > 0 ? 'shelved' : 'unshelved';
                 return filterValues.includes(shelved);

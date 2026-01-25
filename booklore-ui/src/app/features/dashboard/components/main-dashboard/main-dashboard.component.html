@@ -1,6 +1,6 @@
 <div class="dashboard-container">
   @if ((bookState$ | async)?.loaded === false) {
-    <div class="flex items-center justify-center h-full">
+    <div class="loading-state">
       <p-progressSpinner
         class="spinner center-spinner"
         [style]="{'width': '60px', 'height': '60px'}"
@@ -12,7 +12,7 @@
   }
   @if ((bookState$ | async)?.loaded === true) {
     <div class="dashboard">
-      <div class="w-full">
+      <div class="dashboard-inner">
         @if (isLibrariesEmpty$ | async) {
           <div class="dashboard-no-library">
             @if ((userService.userState$ | async)?.user?.permissions; as permissions) {
@@ -23,7 +23,7 @@
                       Welcome to BookLore!<br>
                       Let's create your first library
                     </h1>
-                    <p class="text-gray-300 mb-8 mx-auto leading-relaxed">
+                    <p class="welcome-description">
                       A library is where all your books live. Start building your digital collection today!
                     </p>
                     <p-button

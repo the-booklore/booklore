@@ -36,3 +36,75 @@
 .status-wont-read {
   color: #ec4899;
 }
+
+.cover-header-cell {
+  max-width: 3.5rem;
+  min-width: 3.5rem;
+}
+
+.cell-center {
+  text-align: center;
+}
+
+.cover-thumbnail {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.tooltip-cover-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tooltip-cover-image {
+  width: 40rem;
+  height: auto;
+}
+
+.tooltip-cover-title {
+  font-size: 0.875rem;
+  text-wrap: balance;
+  text-align: center;
+}
+
+.cell-status {
+  text-align: center;
+  min-width: 4rem;
+  max-width: 4rem;
+}
+
+.cell-rating {
+  min-width: 10rem;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rating-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cell-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 6rem;
+  max-width: 12rem;
+}
+
+.cell-link {
+  &:hover {
+    text-decoration: underline;
+    color: #60a5fa;
+  }
+}
+
+::ng-deep .cover-tooltip > .p-tooltip-text {
+  padding: 0.25rem;
+}

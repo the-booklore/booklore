@@ -1,4 +1,4 @@
-.thumbnail {
+ .thumbnail {
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -36,7 +36,7 @@
   max-height: 100%;
   height: auto;
   width: auto;
-  
+
   @media (max-width: 768px) {
     max-height: 14em;
   }
@@ -68,6 +68,112 @@ textarea.changed,
 
 .metapicker, .metaeditor {
   box-sizing: border-box;
+  display: flex;
+  width: 100%;
+}
+
+.metapicker {
+  flex-direction: column;
+}
+
+.form-scroll {
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.field-label {
+  font-size: 0.875rem;
+
+  @media (min-width: 768px) {
+    width: 8rem;
+  }
+}
+
+.field-label--fixed {
+  width: 8rem;
+}
+
+.header-fields-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.header-column {
+  width: 50%;
+}
+
+.btn-margin {
+  margin: 0 0.5rem;
+}
+
+.thumbnail-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnail-column {
+  display: flex;
+  width: 50%;
+}
+
+.no-cover-text {
+  font-size: 0.875rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.metabody {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.editor-thumbnail-wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  @media (min-width: 768px) {
+    width: 20%;
+    height: 100%;
+  }
+}
+
+.editor-thumbnail-inner {
+  width: 100%;
+
+  @media (min-width: 768px) {
+    height: 100%;
+  }
+}
+
+.editor-thumbnail-img {
+  width: 100%;
+  object-fit: contain;
+
+  @media (min-width: 768px) {
+    height: 100%;
+  }
+}
+
+.editor-metacontent {
+  @media (min-width: 768px) {
+    width: 80%;
+  }
+}
+
+.field-input-row {
+  display: flex;
+  width: 100%;
 }
 
 .metapicker label,
@@ -112,6 +218,9 @@ textarea.changed,
 }
 
 .metaheader {
+  position: relative;
+  display: flex;
+  align-items: center;
   border-bottom: 1px dotted var(--border-color);
   padding: 1rem;
   justify-content: space-between;
@@ -196,7 +305,7 @@ textarea.changed,
   display: flex;
   align-items: center;
   margin-bottom: 0.5em;
-  
+
   label {
     margin: auto 0;
   }

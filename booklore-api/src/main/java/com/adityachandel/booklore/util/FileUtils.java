@@ -2,6 +2,7 @@ package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +23,9 @@ public class FileUtils {
     private final String FILE_NOT_FOUND_MESSAGE = "File does not exist: ";
 
     public String getBookFullPath(BookEntity bookEntity) {
-        return Path.of(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath(), bookEntity.getFileName())
+        BookFileEntity bookFile = bookEntity.getPrimaryBookFile();
+
+        return Path.of(bookEntity.getLibraryPath().getPath(), bookFile.getFileSubPath(), bookFile.getFileName())
                 .normalize()
                 .toString()
                 .replace("\\", "/");

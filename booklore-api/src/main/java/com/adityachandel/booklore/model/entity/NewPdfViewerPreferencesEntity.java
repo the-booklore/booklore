@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
-import com.adityachandel.booklore.model.enums.NewPdfPageSpread;
-import com.adityachandel.booklore.model.enums.NewPdfPageViewMode;
+import com.adityachandel.booklore.model.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,4 +32,16 @@ public class NewPdfViewerPreferencesEntity {
     @Column(name = "view_mode")
     @Enumerated(EnumType.STRING)
     private NewPdfPageViewMode pageViewMode;
+
+    @Column(name = "fit_mode")
+    @Enumerated(EnumType.STRING)
+    private NewPdfPageFitMode fitMode;
+
+    @Column(name = "scroll_mode")
+    @Enumerated(EnumType.STRING)
+    private NewPdfPageScrollMode scrollMode;
+
+    @Column(name = "background_color")
+    @Enumerated(EnumType.STRING)
+    private NewPdfBackgroundColor backgroundColor;
 }

@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -68,8 +69,11 @@ class EpubMetadataWriterTest {
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setPath(tempDir.toString());
         bookEntity.setLibraryPath(libraryPath);
-        bookEntity.setFileSubPath("");
-        bookEntity.setFileName("test.epub");
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        bookEntity.setBookFiles(Collections.singletonList(primaryFile));
+        bookEntity.getPrimaryBookFile().setFileSubPath("");
+        bookEntity.getPrimaryBookFile().setFileName("test.epub");
     }
 
     @Nested

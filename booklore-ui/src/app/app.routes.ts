@@ -15,8 +15,6 @@ import {CbxReaderComponent} from './features/readers/cbx-reader/cbx-reader.compo
 import {MainDashboardComponent} from './features/dashboard/components/main-dashboard/main-dashboard.component';
 import {SeriesPageComponent} from './features/book/components/series-page/series-page.component';
 import {MetadataManagerComponent} from './features/metadata/component/metadata-manager/metadata-manager.component';
-import {StatsComponent} from './features/stats/component/stats-component';
-import {EpubReaderComponent} from './features/readers/epub-reader/component/epub-reader.component';
 import {PdfReaderComponent} from './features/readers/pdf-reader/pdf-reader.component';
 import {BookdropFileReviewComponent} from './features/bookdrop/component/bookdrop-file-review/bookdrop-file-review.component';
 import {LoginGuard} from './shared/components/setup/login.guard';
@@ -25,6 +23,8 @@ import {BookdropGuard} from './core/security/guards/bookdrop.guard';
 import {LibraryStatsGuard} from './core/security/guards/library-stats.guard';
 import {UserStatsGuard} from './core/security/guards/user-stats.guard';
 import {EditMetadataGuard} from './core/security/guards/edit-metdata.guard';
+import {EbookReaderComponent} from './features/readers/ebook-reader';
+import {LibraryStatsComponent} from './features/stats/component/library-stats/library-stats.component';
 
 export const routes: Routes = [
   {
@@ -54,7 +54,7 @@ export const routes: Routes = [
       {path: 'book/:bookId', component: BookMetadataCenterComponent, canActivate: [AuthGuard]},
       {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [BookdropGuard]},
       {path: 'metadata-manager', component: MetadataManagerComponent, canActivate: [EditMetadataGuard]},
-      {path: 'library-stats', component: StatsComponent, canActivate: [LibraryStatsGuard]},
+      {path: 'library-stats', component: LibraryStatsComponent, canActivate: [LibraryStatsGuard]},
       {path: 'reading-stats', component: UserStatsComponent, canActivate: [UserStatsGuard]},
     ]
   },
@@ -64,8 +64,8 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
-    path: 'epub-reader/book/:bookId',
-    component: EpubReaderComponent,
+    path: 'ebook-reader/book/:bookId',
+    component: EbookReaderComponent,
     canActivate: [AuthGuard]
   },
   {

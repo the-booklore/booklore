@@ -23,7 +23,7 @@ import {MetadataRefreshType} from "../../../metadata/model/request/metadata-refr
 import {TieredMenu} from "primeng/tieredmenu";
 import {Tooltip} from "primeng/tooltip";
 import {Divider} from "primeng/divider";
-import {animate, state, style, transition, trigger} from "@angular/animations";
+import {animate, style, transition, trigger} from "@angular/animations";
 import {Component, inject, OnDestroy} from '@angular/core';
 
 @Component({
@@ -52,10 +52,14 @@ import {Component, inject, OnDestroy} from '@angular/core';
   ],
   animations: [
     trigger('slideInOut', [
-      state('void', style({transform: 'translateY(100%)'})),
-      state('*', style({transform: 'translateY(0)'})),
-      transition(':enter', [animate('0.1s ease-in')]),
-      transition(':leave', [animate('0.1s ease-out')])
+      transition(':enter', [
+        style({transform: 'translateY(100%)'}),
+        animate('0.1s ease-in', style({transform: 'translateY(0)'}))
+      ]),
+      transition(':leave', [
+        style({transform: 'translateY(0)'}),
+        animate('0.1s ease-out', style({transform: 'translateY(100%)'}))
+      ])
     ])
   ]
 })
@@ -197,6 +201,7 @@ export class SeriesPageComponent implements OnDestroy {
           () => this.bulkEditMetadata(),
           () => this.multiBookEditMetadata(),
           () => this.regenerateCoversForSelected(),
+          () => this.generateCustomCoversForSelected(),
           userState.user
         );
         this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
@@ -365,9 +370,15 @@ export class SeriesPageComponent implements OnDestroy {
 
   confirmDeleteBooks(): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${this.selectedBooks.size} book(s)?`,
+      message: `Are you sure you want to delete ${this.selectedBooks.size} book(s)?\n\nThis will permanently remove the book files from your filesystem.\n\nThis action cannot be undone.`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
+      acceptIcon: 'pi pi-trash',
+      rejectIcon: 'pi pi-times',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-outlined',
       accept: () => {
         const count = this.selectedBooks.size;
         const loader = this.loadingService.show(`Deleting ${count} book(s)...`);
@@ -442,6 +453,38 @@ export class SeriesPageComponent implements OnDestroy {
               severity: 'error',
               summary: 'Failed',
               detail: 'Could not start cover regeneration.',
+              life: 3000
+            });
+          }
+        });
+      }
+    });
+  }
+
+  generateCustomCoversForSelected(): void {
+    if (!this.selectedBooks || this.selectedBooks.size === 0) return;
+    const count = this.selectedBooks.size;
+    this.confirmationService.confirm({
+      message: `Are you sure you want to generate custom covers for ${count} book(s)?`,
+      header: 'Confirm Custom Cover Generation',
+      icon: 'pi pi-palette',
+      acceptLabel: 'Yes',
+      rejectLabel: 'No',
+      accept: () => {
+        this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Custom Cover Generation Started',
+              detail: `Generating custom covers for ${count} book(s).`,
+              life: 3000
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Failed',
+              detail: 'Could not start custom cover generation.',
               life: 3000
             });
           }

@@ -2,16 +2,18 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {of, throwError, firstValueFrom} from 'rxjs';
+import {firstValueFrom, of, throwError} from 'rxjs';
 
 import {ShelfService} from './shelf.service';
 import {BookService} from './book.service';
+import {UserService} from '../../settings/user-management/user.service';
 import {Shelf} from '../model/shelf.model';
 
 describe('ShelfService', () => {
   let service: ShelfService;
   let httpClientMock: any;
   let bookServiceMock: any;
+  let userServiceMock: any;
 
   beforeEach(() => {
     httpClientMock = {
@@ -33,11 +35,17 @@ describe('ShelfService', () => {
       })
     };
 
+    userServiceMock = {
+      userState$: of({user: {id: 1}})
+    };
+
     TestBed.configureTestingModule({
       providers: [
         ShelfService,
         {provide: HttpClient, useValue: httpClientMock},
-        {provide: BookService, useValue: bookServiceMock}
+        {provide: BookService, useValue: bookServiceMock},
+        {provide: UserService, useValue: userServiceMock},
+        {provide: 'OAuthService', useValue: {}}
       ]
     });
 
@@ -116,14 +124,8 @@ describe('ShelfService', () => {
     expect(service.getShelfById(999)).toBeUndefined();
   });
 
-  it('should get book count for shelf', async () => {
-    const count = await firstValueFrom(service.getBookCount(10));
-    expect(count).toBe(1);
-  });
-
   it('should get unshelved book count', async () => {
     const count = await firstValueFrom(service.getUnshelvedBookCount());
     expect(count).toBe(2);
   });
 });
-

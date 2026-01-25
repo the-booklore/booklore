@@ -88,6 +88,28 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
+    public SecurityFilterChain komgaBasicAuthSecurityChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/komga/api/v1/**", "/komga/api/v2/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(basic -> basic
+                        .realmName("Booklore Komga API")
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setHeader("WWW-Authenticate", "Basic realm=\"Booklore Komga API\"");
+                            response.getWriter().write("HTTP Status 401 - " + authException.getMessage());
+                        })
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
     public SecurityFilterChain koreaderSecurityChain(HttpSecurity http, KoreaderAuthFilter koreaderAuthFilter) throws Exception {
         http
                 .securityMatcher("/api/koreader/**")
@@ -146,6 +168,21 @@ public class SecurityConfig {
 
     @Bean
     @Order(6)
+    public SecurityFilterChain epubStreamingSecurityChain(HttpSecurity http, EpubStreamingJwtFilter epubStreamingJwtFilter) throws Exception {
+        http
+                .securityMatcher("/api/v1/epub/*/file/**")
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
+                )
+                .addFilterBefore(epubStreamingJwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(7)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
         List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
         if (appProperties.getSwagger().isEnabled()) {

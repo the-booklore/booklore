@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {ReaderPreferencesService} from './reader-preferences.service';
-import {CbxFitMode, CbxPageSpread, CbxPageViewMode, PdfPageSpread, PdfPageViewMode, User, UserService} from '../user-management/user.service';
+import {CbxFitMode, CbxPageSpread, CbxPageViewMode, PdfFitMode, PdfPageSpread, PdfPageViewMode, User, UserService} from '../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {of, Subject} from 'rxjs';
 
@@ -44,6 +44,20 @@ const mockUser: User = {
     perBookSetting: {pdf: '', epub: '', cbx: ''},
     pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
     epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
+    ebookReaderSetting: {
+      lineHeight: 1,
+      justify: false,
+      hyphenate: false,
+      maxColumnCount: 1,
+      gap: 0,
+      fontSize: 1,
+      theme: '',
+      maxInlineSize: 0,
+      maxBlockSize: 0,
+      fontFamily: '',
+      isDark: false,
+      flow: 'paginated'
+    },
     cbxReaderSetting: {
       pageSpread: CbxPageSpread.EVEN,
       pageViewMode: CbxPageViewMode.SINGLE_PAGE,
@@ -51,7 +65,8 @@ const mockUser: User = {
     },
     newPdfReaderSetting: {
       pageSpread: PdfPageSpread.EVEN,
-      pageViewMode: PdfPageViewMode.SINGLE_PAGE
+      pageViewMode: PdfPageViewMode.SINGLE_PAGE,
+      fitMode: PdfFitMode.ACTUAL_SIZE
     },
     sidebarLibrarySorting: {field: '', order: ''},
     sidebarShelfSorting: {field: '', order: ''},
@@ -61,10 +76,11 @@ const mockUser: User = {
     metadataCenterViewMode: 'route',
     enableSeriesView: true,
     entityViewPreferences: {
-      global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false},
+      global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false, overlayBookType: false},
       overrides: []
     },
-    koReaderEnabled: false
+    koReaderEnabled: false,
+    autoSaveMetadata: false
   }
 };
 

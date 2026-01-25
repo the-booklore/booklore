@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.reader;
 
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.response.CbxPageInfo;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.util.FileUtils;
@@ -49,6 +50,7 @@ public class CbxReaderService {
     private static final int BUFFER_SIZE = 8192;
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("(\\d+)|(\\D+)");
     private static final Set<String> SYSTEM_FILES = Set.of(".ds_store", "thumbs.db", "desktop.ini");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
     private final BookRepository bookRepository;
     private final Map<String, CachedArchiveMetadata> archiveCache = new ConcurrentHashMap<>();
@@ -78,6 +80,35 @@ public class CbxReaderService {
             log.error("Failed to read archive for book {}", bookId, e);
             throw ApiError.FILE_READ_ERROR.createException("Failed to read archive: " + e.getMessage());
         }
+    }
+
+    public List<CbxPageInfo> getPageInfo(Long bookId) {
+        Path cbxPath = getBookPath(bookId);
+        try {
+            List<String> imageEntries = getImageEntriesFromArchiveCached(cbxPath);
+            List<CbxPageInfo> pageInfoList = new ArrayList<>();
+            for (int i = 0; i < imageEntries.size(); i++) {
+                String entryPath = imageEntries.get(i);
+                String displayName = extractDisplayName(entryPath);
+                pageInfoList.add(CbxPageInfo.builder()
+                        .pageNumber(i + 1)
+                        .displayName(displayName)
+                        .build());
+            }
+            return pageInfoList;
+        } catch (IOException e) {
+            log.error("Failed to read archive for book {}", bookId, e);
+            throw ApiError.FILE_READ_ERROR.createException("Failed to read archive: " + e.getMessage());
+        }
+    }
+
+    private String extractDisplayName(String entryPath) {
+        String fileName = baseName(entryPath);
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            return fileName.substring(0, lastDotIndex);
+        }
+        return fileName;
     }
 
     public void streamPageImage(Long bookId, int page, OutputStream outputStream) throws IOException {
@@ -380,7 +411,7 @@ public class CbxReaderService {
             while (m1.find() && m2.find()) {
                 String part1 = m1.group();
                 String part2 = m2.group();
-                if (part1.matches("\\d+") && part2.matches("\\d+")) {
+                if (DIGIT_PATTERN.matcher(part1).matches() && DIGIT_PATTERN.matcher(part2).matches()) {
                     int cmp = Integer.compare(
                             Integer.parseInt(part1),
                             Integer.parseInt(part2)

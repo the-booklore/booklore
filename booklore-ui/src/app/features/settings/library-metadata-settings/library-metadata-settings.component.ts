@@ -32,6 +32,7 @@ export class LibraryMetadataSettingsComponent implements OnInit {
 
   defaultMetadataOptions: MetadataRefreshOptions = this.getDefaultMetadataOptions();
   libraryMetadataOptions: Record<number, MetadataRefreshOptions> = {};
+  activePanel: number | null = null;
 
   ngOnInit() {
     this.appSettingsService.appSettings$.subscribe(appSettings => {
@@ -52,6 +53,10 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         }
       });
     });
+  }
+
+  onPanelChange(event: unknown) {
+    this.activePanel = typeof event === 'number' ? event : null;
   }
 
   onDefaultMetadataOptionsSubmitted(options: MetadataRefreshOptions) {

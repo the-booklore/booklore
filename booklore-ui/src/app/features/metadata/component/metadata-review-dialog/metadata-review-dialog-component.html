@@ -1,6 +1,24 @@
-@if (!loading) {
-  <div class="px-4 pt-4 pb-2 h-full flex flex-col">
-    <div class="flex-grow overflow-auto">
+<div class="metadata-review-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-pencil header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Review Metadata Proposal</h2>
+      <p class="panel-description">Review and accept fetched metadata</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="close()"
+      styleClass="close-button">
+    </p-button>
+  </div>
+
+  @if (!loading) {
+    <div class="dialog-content">
       @if (currentProposal?.metadataJson; as proposed) {
         <app-metadata-picker
           [fetchedMetadata]="proposed"
@@ -11,25 +29,21 @@
       }
     </div>
 
-    <p-divider/>
-
-    <div class="flex justify-between items-center flex-wrap gap-2 pt-4">
-
-      <div class="flex items-center gap-2 pl-1 group"
-           pTooltip="{{ currentIndex + 1 }} of {{ proposals.length }} processed ({{ ((currentIndex + 1) / proposals.length * 100) | number: '1.0-0' }}%)"
-           tooltipPosition="top">
-        <p-progressBar
-          [value]="((currentIndex + 1) / proposals.length) * 100"
-          class="w-40 h-3 transition-all duration-300 ease-in-out group-hover:shadow-md"
-          showValue="false">
-        </p-progressBar>
-        <span class="text-sm text-gray-300 font-medium tabular-nums whitespace-nowrap">
-          Book {{ currentIndex + 1 }} / {{ proposals.length }}
-        </span>
+    <div class="dialog-footer">
+      <div class="footer-info">
+        <div class="progress-group" pTooltip="{{ currentIndex + 1 }} of {{ proposals.length }} processed ({{ ((currentIndex + 1) / proposals.length * 100) | number: '1.0-0' }}%)" tooltipPosition="top">
+          <p-progressBar
+            [value]="((currentIndex + 1) / proposals.length) * 100"
+            class="progress-bar"
+            showValue="false">
+          </p-progressBar>
+          <span class="progress-text">
+            Book {{ currentIndex + 1 }} / {{ proposals.length }}
+          </span>
+        </div>
       </div>
 
-      <div class="flex flex-wrap gap-2 justify-end">
-
+      <div class="footer-actions">
         <p-button
           label="Close"
           icon="pi pi-times-circle"
@@ -77,12 +91,11 @@
           [outlined]="true"
           (click)="onNext()">
         </p-button>
-
       </div>
     </div>
-  </div>
-} @else {
-  <div class="p-4 h-full flex items-center justify-center">
-    <p-progressSpinner class="w-8 h-8" strokeWidth="4"></p-progressSpinner>
-  </div>
-}
+  } @else {
+    <div class="dialog-content loading-state">
+      <p-progressSpinner class="spinner" strokeWidth="4"></p-progressSpinner>
+    </div>
+  }
+</div>

@@ -18,7 +18,8 @@ public class KoboCompatibilityService {
             throw new IllegalArgumentException("Book cannot be null");
         }
         
-        BookFileType bookType = book.getBookType();
+        var primaryFile = book.getPrimaryBookFile();
+        BookFileType bookType = primaryFile.getBookType();
         if (bookType == null) {
             return false;
         }
@@ -44,7 +45,7 @@ public class KoboCompatibilityService {
     }
 
     public boolean meetsCbxConversionSizeLimit(BookEntity book) {
-        if (book == null || book.getBookType() != BookFileType.CBX) {
+        if (book == null || book.getPrimaryBookFile().getBookType() != BookFileType.CBX) {
             return false;
         }
         
@@ -54,7 +55,8 @@ public class KoboCompatibilityService {
                 return false;
             }
             
-            long fileSizeKb = book.getFileSizeKb() != null ? book.getFileSizeKb() : 0;
+            var pf = book.getPrimaryBookFile();
+            long fileSizeKb = pf.getFileSizeKb() != null ? pf.getFileSizeKb() : 0;
             long limitKb = (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
             
             return fileSizeKb <= limitKb;

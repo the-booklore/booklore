@@ -5,10 +5,8 @@ import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.MoodEntity;
-import com.adityachandel.booklore.model.entity.TagEntity;
+import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -23,10 +21,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -83,7 +78,16 @@ class BookMetadataUpdaterTest {
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
         metadataEntity.setTags(existingTags);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Set.of("Tag1"));
@@ -118,7 +122,16 @@ class BookMetadataUpdaterTest {
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
         metadataEntity.setTags(existingTags);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Collections.emptySet());
@@ -149,7 +162,16 @@ class BookMetadataUpdaterTest {
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
         metadataEntity.setTags(existingTags);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Set.of("Tag3"));
@@ -187,7 +209,16 @@ class BookMetadataUpdaterTest {
         existingMoods.add(MoodEntity.builder().name("Mood1").build());
         existingMoods.add(MoodEntity.builder().name("Mood2").build());
         metadataEntity.setMoods(existingMoods);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setMoods(Set.of("Mood1"));
@@ -222,7 +253,16 @@ class BookMetadataUpdaterTest {
         existingMoods.add(MoodEntity.builder().name("Mood1").build());
         existingMoods.add(MoodEntity.builder().name("Mood2").build());
         metadataEntity.setMoods(existingMoods);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setMoods(Collections.emptySet());
@@ -252,7 +292,16 @@ class BookMetadataUpdaterTest {
         existingMoods.add(MoodEntity.builder().name("Mood1").build());
         existingMoods.add(MoodEntity.builder().name("Mood2").build());
         metadataEntity.setMoods(existingMoods);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setMoods(Set.of("Mood3"));
@@ -286,7 +335,16 @@ class BookMetadataUpdaterTest {
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
         metadataEntity.setTitle("Old Title");
         metadataEntity.setTitleLocked(false);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTitle("New Title");
@@ -306,5 +364,181 @@ class BookMetadataUpdaterTest {
 
         assertEquals("New Title", bookEntity.getMetadata().getTitle());
         assertTrue(bookEntity.getMetadata().getTitleLocked());
+    }
+
+    @Test
+    void testUpdateAuthors_WithMergeFalse_ShouldReplaceAuthors() {
+        // Setup existing book with "Old Author"
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        Set<com.adityachandel.booklore.model.entity.AuthorEntity> existingAuthors = new HashSet<>();
+        existingAuthors.add(com.adityachandel.booklore.model.entity.AuthorEntity.builder().name("Old Author").build());
+        metadataEntity.setAuthors(existingAuthors);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        // New metadata with "New Author" only
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setAuthors(Set.of("New Author"));
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        // Update with mergeCategories = false
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .mergeCategories(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        when(authorRepository.findByName("New Author")).thenReturn(Optional.of(com.adityachandel.booklore.model.entity.AuthorEntity.builder().name("New Author").build()));
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        // Verify authors are replaced
+        Set<com.adityachandel.booklore.model.entity.AuthorEntity> authors = bookEntity.getMetadata().getAuthors();
+        assertEquals(1, authors.size());
+        assertTrue(authors.stream().anyMatch(a -> a.getName().equals("New Author")));
+        assertFalse(authors.stream().anyMatch(a -> a.getName().equals("Old Author")));
+    }
+
+    @Test
+    void testUpdateCategories_WithMergeFalse_ShouldReplaceCategories() {
+        // Setup existing book with "Old Category"
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        Set<com.adityachandel.booklore.model.entity.CategoryEntity> existingCategories = new HashSet<>();
+        existingCategories.add(com.adityachandel.booklore.model.entity.CategoryEntity.builder().name("Old Category").build());
+        metadataEntity.setCategories(existingCategories);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        // New metadata with "New Category" only
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setCategories(Set.of("New Category"));
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        // Update with mergeCategories = false
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .mergeCategories(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        when(categoryRepository.findByName("New Category")).thenReturn(Optional.of(com.adityachandel.booklore.model.entity.CategoryEntity.builder().name("New Category").build()));
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        // Verify categories are replaced
+        Set<com.adityachandel.booklore.model.entity.CategoryEntity> categories = bookEntity.getMetadata().getCategories();
+        assertEquals(1, categories.size());
+        assertTrue(categories.stream().anyMatch(c -> c.getName().equals("New Category")));
+        assertFalse(categories.stream().anyMatch(c -> c.getName().equals("Old Category")));
+    }
+
+    @Test
+    void setBookMetadata_withReplaceAllMode_shouldReplaceExistingTitle() {
+        // Bug test: When user triggers metadata refresh, the title should be replaced
+        // even if the book already has a title (like "V for Vendetta 03 (1988) (c2c) (theProletariat-DCP)")
+        
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("V for Vendetta 03 (1988) (c2c) (theProletariat-DCP)"); // Existing file-based title
+        metadataEntity.setTitleLocked(false);
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("V for Vendetta #3"); // Fetched correct title
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("V for Vendetta #3", bookEntity.getMetadata().getTitle(),
+                "Title should be replaced when using REPLACE_ALL mode");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceMissingMode_shouldNotReplaceExistingTitle() {
+        // This test verifies the old behavior that was causing the bug
+        // REPLACE_MISSING mode should NOT replace existing title
+        
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("Existing Title"); // Already has a title
+        metadataEntity.setTitleLocked(false);
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("New Title"); // Fetched title
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("Existing Title", bookEntity.getMetadata().getTitle(),
+                "Title should NOT be replaced when using REPLACE_MISSING mode and title exists");
     }
 }

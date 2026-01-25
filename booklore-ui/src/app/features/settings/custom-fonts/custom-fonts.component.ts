@@ -10,6 +10,7 @@ import {Tooltip} from 'primeng/tooltip';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {FontUploadDialogComponent} from './font-upload-dialog/font-upload-dialog.component';
 import {Skeleton} from 'primeng/skeleton';
+import {DialogSize, DialogStyle} from '../../../shared/services/dialog-launcher.service';
 
 @Component({
   selector: 'app-custom-fonts',
@@ -79,14 +80,10 @@ export class CustomFontsComponent implements OnInit {
 
     this.uploadDialogRef = this.dialogService.open(FontUploadDialogComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       modal: true,
       dismissableMask: false,
       closable: false,
-      width: '700px',
-      breakpoints: {
-        '768px': '95vw'
-      }
     });
 
     if (this.uploadDialogRef) {

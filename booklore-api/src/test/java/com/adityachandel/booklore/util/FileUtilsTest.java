@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import org.junit.jupiter.api.Test;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,8 +24,12 @@ class FileUtilsTest {
 
         BookEntity bookEntity = new BookEntity();
         bookEntity.setLibraryPath(libraryPathEntity);
-        bookEntity.setFileSubPath(subPath);
-        bookEntity.setFileName(fileName);
+
+        BookFileEntity bookFileEntity = new BookFileEntity();
+        bookFileEntity.setBook(bookEntity);
+        bookFileEntity.setFileSubPath(subPath);
+        bookFileEntity.setFileName(fileName);
+        bookEntity.setBookFiles(List.of(bookFileEntity));
 
         return bookEntity;
     }

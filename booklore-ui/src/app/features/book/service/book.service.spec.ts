@@ -235,14 +235,14 @@ describe('BookService', () => {
 
   describe('Reading & Viewer Settings', () => {
     it('should navigate to correct reader and update last read time', () => {
-      service.readBook(1, 'ngx');
-      expect(routerMock.navigate).toHaveBeenCalledWith(['/pdf-reader/book/1']);
+      service.readBook(1);
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/pdf-reader/book/1'], undefined);
       expect(bookPatchServiceMock.updateLastReadTime).toHaveBeenCalledWith(1);
     });
 
     it('should not navigate if book not found', () => {
       bookStateServiceMock.getCurrentBookState.mockReturnValue({books: [], loaded: true, error: null});
-      service.readBook(999, 'ngx');
+      service.readBook(999);
       expect(routerMock.navigate).not.toHaveBeenCalled();
     });
 
@@ -326,12 +326,6 @@ describe('BookService', () => {
     it('should save pdf progress', async () => {
       bookPatchServiceMock.savePdfProgress.mockReturnValue(of(void 0));
       const result = await firstValueFrom(service.savePdfProgress(1, 2, 0.5));
-      expect(result).toBeUndefined();
-    });
-
-    it('should save epub progress', async () => {
-      bookPatchServiceMock.saveEpubProgress.mockReturnValue(of(void 0));
-      const result = await firstValueFrom(service.saveEpubProgress(1, 'cfi', 0.5));
       expect(result).toBeUndefined();
     });
 

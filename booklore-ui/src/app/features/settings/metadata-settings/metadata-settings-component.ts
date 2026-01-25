@@ -11,6 +11,7 @@ import {ToggleSwitch} from 'primeng/toggleswitch';
 import {MetadataMatchWeightsComponent} from '../global-preferences/metadata-match-weights/metadata-match-weights-component';
 import {MetadataPersistenceSettingsComponent} from './metadata-persistence-settings/metadata-persistence-settings-component';
 import {PublicReviewsSettingsComponent} from './public-reviews-settings/public-reviews-settings-component';
+import {MetadataProviderFieldSelectorComponent} from '../../metadata/component/metadata-provider-field-selector/metadata-provider-field-selector.component';
 
 @Component({
   selector: 'app-metadata-settings-component',
@@ -22,7 +23,8 @@ import {PublicReviewsSettingsComponent} from './public-reviews-settings/public-r
     MetadataMatchWeightsComponent,
     ToggleSwitch,
     MetadataPersistenceSettingsComponent,
-    PublicReviewsSettingsComponent
+    PublicReviewsSettingsComponent,
+    MetadataProviderFieldSelectorComponent
   ],
   templateUrl: './metadata-settings-component.html',
   styleUrl: './metadata-settings-component.scss'

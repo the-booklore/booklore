@@ -1,58 +1,78 @@
 <div class="support-dialog-container">
-  <div class="header-section">
-    <span class="badge">
-      Open Source & Community Driven
-    </span>
-    <h2 class="title">
-      Booklore
-    </h2>
-    <p class="description">
-      A modern platform crafted to help you curate, organize, and cherish your personal library with elegance and simplicity.
-    </p>
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-heart header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Support Booklore</h2>
+      <p class="panel-description">Help us grow and improve</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="close()"
+      styleClass="close-button">
+    </p-button>
   </div>
 
-  <div class="actions-section">
-    <a href="https://github.com/booklore-app/booklore" target="_blank" rel="noopener noreferrer">
-      <p-button
-        label="Star on GitHub"
-        icon="pi pi-github"
-        outlined
-        severity="success"
-        styleClass="action-button">
-      </p-button>
-    </a>
-    <a href="https://opencollective.com/booklore" target="_blank" rel="noopener noreferrer">
-      <p-button
-        label="Support via Open Collective"
-        icon="pi pi-heart"
-        severity="info"
-        outlined
-        styleClass="action-button">
-      </p-button>
-    </a>
-  </div>
-
-  <div class="footer-section">
-    <div class="support-info">
-      <p>
-        Starring the project on <span class="highlight github">GitHub</span> increases visibility, helps Booklore reach more book lovers, and motivates ongoing development.
-      </p>
-      <p>
-        Financial contributions through <span class="highlight open-collective">Open Collective</span> directly support hosting infrastructure, feature development, and long-term sustainability.
-      </p>
-      <p class="final-message">
-        Every form of support, stars, feedback, or contributions, helps keep Booklore thriving and accessible for all book enthusiasts.
+  <div class="dialog-content">
+    <div class="header-section">
+      <span class="badge">
+        Open Source & Community Driven
+      </span>
+      <h2 class="title">
+        Booklore
+      </h2>
+      <p class="description">
+        A modern platform crafted to help you curate, organize, and cherish your personal library with elegance and simplicity.
       </p>
     </div>
-    <p class="commitment">
-      Booklore is and will always remain free for everyone.
-    </p>
-  </div>
 
-  <div class="message-section">
-    <p class="message">
-      Your support and engagement fuel Booklore's continuous evolution and inspire meaningful improvements.
-    </p>
-    <p class="author">- Aditya, Creator & Maintainer</p>
+    <div class="actions-section">
+      <a href="https://github.com/booklore-app/booklore" target="_blank" rel="noopener noreferrer">
+        <p-button
+          label="Star on GitHub"
+          icon="pi pi-github"
+          outlined
+          severity="success"
+          styleClass="action-button">
+        </p-button>
+      </a>
+      <a href="https://opencollective.com/booklore" target="_blank" rel="noopener noreferrer">
+        <p-button
+          label="Support via Open Collective"
+          icon="pi pi-heart"
+          severity="info"
+          outlined
+          styleClass="action-button">
+        </p-button>
+      </a>
+    </div>
+
+    <div class="footer-section">
+      <div class="support-info">
+        <p>
+          Starring the project on <span class="highlight github">GitHub</span> increases visibility, helps Booklore reach more book lovers, and motivates ongoing development.
+        </p>
+        <p>
+          Financial contributions through <span class="highlight open-collective">Open Collective</span> directly support hosting infrastructure, feature development, and long-term sustainability.
+        </p>
+        <p class="final-message">
+          Every form of support, stars, feedback, or contributions, helps keep Booklore thriving and accessible for all book enthusiasts.
+        </p>
+      </div>
+      <p class="commitment">
+        Booklore is and will always remain free for everyone.
+      </p>
+    </div>
+
+    <div class="message-section">
+      <p class="message">
+        Your support and engagement fuel Booklore's continuous evolution and inspire meaningful improvements.
+      </p>
+      <p class="author">- Aditya, Creator & Maintainer</p>
+    </div>
   </div>
 </div>

@@ -43,7 +43,7 @@ public class SendEmailV2Service {
 
     public void emailBookQuick(Long bookId) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        BookEntity book = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity book = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         EmailProviderV2Entity defaultEmailProvider = getDefaultEmailProvider();
         EmailRecipientV2Entity defaultEmailRecipient = emailRecipientRepository.findDefaultEmailRecipientByUserId(user.getId()).orElseThrow(ApiError.DEFAULT_EMAIL_RECIPIENT_NOT_FOUND::createException);
         sendEmailInVirtualThread(defaultEmailProvider, defaultEmailRecipient.getEmail(), book);
@@ -56,7 +56,7 @@ public class SendEmailV2Service {
                         emailProviderRepository.findSharedProviderById(request.getProviderId())
                                 .orElseThrow(() -> ApiError.EMAIL_PROVIDER_NOT_FOUND.createException(request.getProviderId()))
                 );
-        BookEntity book = bookRepository.findById(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+        BookEntity book = bookRepository.findByIdWithBookFiles(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
         EmailRecipientV2Entity emailRecipient = emailRecipientRepository.findByIdAndUserId(request.getRecipientId(), user.getId()).orElseThrow(() -> ApiError.EMAIL_RECIPIENT_NOT_FOUND.createException(request.getRecipientId()));
         sendEmailInVirtualThread(emailProvider, emailRecipient.getEmail(), book);
     }

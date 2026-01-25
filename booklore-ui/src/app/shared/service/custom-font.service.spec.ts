@@ -11,6 +11,8 @@ describe('CustomFontService', () => {
   let service: CustomFontService;
   let httpClientMock: any;
   let authServiceMock: any;
+  let fontsSet: any[];
+  let originalDocumentFonts: any;
 
   const mockFont: CustomFont = {
     id: 1,
@@ -41,19 +43,25 @@ describe('CustomFontService', () => {
       this.load = vi.fn().mockResolvedValue(this);
     };
 
-    const fontsSet: any[] = [];
-    (globalThis as any).document = {
-      fonts: {
-        add: vi.fn(font => fontsSet.push(font)),
-        delete: vi.fn(font => {
+    // Store original and create mock fonts set
+    originalDocumentFonts = document.fonts;
+    fontsSet = [];
+
+    // Mock document.fonts
+    Object.defineProperty(document, 'fonts', {
+      value: {
+        add: vi.fn((font: any) => fontsSet.push(font)),
+        delete: vi.fn((font: any) => {
           const idx = fontsSet.indexOf(font);
           if (idx !== -1) fontsSet.splice(idx, 1);
         }),
         [Symbol.iterator]: function* () {
           yield* fontsSet;
         }
-      }
-    };
+      },
+      writable: true,
+      configurable: true
+    });
 
     TestBed.configureTestingModule({
       providers: [
@@ -109,17 +117,17 @@ describe('CustomFontService', () => {
   it('should mark font as loaded after loadFontFace', async () => {
     await service.loadFontFace(mockFont);
     expect(service.isFontLoaded(mockFont.fontName)).toBe(true);
-    const fontsArr = Array.from((globalThis as any).document.fonts);
+    const fontsArr = Array.from(document.fonts);
     expect(fontsArr.some((f: any) => f.family === mockFont.fontName)).toBe(true);
   });
 
   it('should call removeFontFace on delete', () => {
-    const fontObj = {family: mockFont.fontName};
-    (globalThis as any).document.fonts.add(fontObj);
+    const fontObj = new (globalThis as any).FontFace(mockFont.fontName, 'url(test.ttf)');
+    document.fonts.add(fontObj);
     service['fontsSubject'].next([mockFont]);
     httpClientMock.delete.mockReturnValue(of(void 0));
     service.deleteFont(mockFont.id).subscribe(() => {
-      const fontsArr = Array.from((globalThis as any).document.fonts);
+      const fontsArr = Array.from(document.fonts);
       expect(fontsArr.some((f: any) => f.family === mockFont.fontName)).toBe(false);
     });
   });

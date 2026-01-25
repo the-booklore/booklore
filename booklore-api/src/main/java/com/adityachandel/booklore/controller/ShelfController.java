@@ -39,7 +39,7 @@ public class ShelfController {
         @ApiResponse(responseCode = "403", description = "Forbidden")
     })
     @GetMapping("/{shelfId}")
-    @PreAuthorize("@securityUtil.isShelfOwner(#shelfId)")
+    @PreAuthorize("@securityUtil.canReadShelf(#shelfId)")
     public ResponseEntity<Shelf> getShelf(
             @Parameter(description = "ID of the shelf") @PathVariable Long shelfId) {
         return ResponseEntity.ok(shelfService.getShelf(shelfId));
@@ -76,7 +76,7 @@ public class ShelfController {
     @Operation(summary = "Get books on a shelf", description = "Retrieve all books assigned to a specific shelf.")
     @ApiResponse(responseCode = "200", description = "Books returned successfully")
     @GetMapping("/{shelfId}/books")
-    @PreAuthorize("@securityUtil.isShelfOwner(#shelfId)")
+    @PreAuthorize("@securityUtil.canReadShelf(#shelfId)")
     public ResponseEntity<List<Book>> getShelfBooks(
             @Parameter(description = "ID of the shelf") @PathVariable Long shelfId) {
         return ResponseEntity.ok(shelfService.getShelfBooks(shelfId));

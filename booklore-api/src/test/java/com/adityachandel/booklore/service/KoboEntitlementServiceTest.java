@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.kobo.KoboBookMetadata;
 import com.adityachandel.booklore.model.dto.kobo.KoboTag;
 import com.adityachandel.booklore.model.dto.kobo.KoboTagWrapper;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.MagicShelfEntity;
@@ -127,8 +128,12 @@ class KoboEntitlementServiceTest {
     private BookEntity createCbxBookEntity(Long id) {
         BookEntity book = new BookEntity();
         book.setId(id);
-        book.setBookType(BookFileType.CBX);
-        book.setFileSizeKb(1024L);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(BookFileType.CBX);
+        primaryFile.setFileSizeKb(1024L);
+        book.setBookFiles(List.of(primaryFile));
 
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Test CBX Book");

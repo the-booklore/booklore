@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi, afterEach} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {HttpClient, HttpEventType, HttpHeaders, HttpResponse} from '@angular/common/http';
@@ -38,6 +38,12 @@ describe('FileDownloadService', () => {
 
     const injector = TestBed.inject(EnvironmentInjector);
     service = runInInjectionContext(injector, () => TestBed.inject(FileDownloadService));
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runAllTimers();
+    vi.useRealTimers();
   });
 
   it('should trigger download and handle progress and completion', () => {
@@ -56,24 +62,14 @@ describe('FileDownloadService', () => {
     ];
     httpClientMock.get.mockReturnValue(of(...events));
     // Mock DOM for download
-    const appendChild = vi.fn();
-    const removeChild = vi.fn();
-    (globalThis as any).document = {
-      createElement: vi.fn().mockReturnValue({
-        setAttribute: vi.fn(),
-        click: vi.fn(),
-        style: {},
-        href: '',
-        download: ''
-      }),
-      body: {appendChild, removeChild}
-    };
-    (globalThis as any).window = {
-      URL: {
-        createObjectURL: vi.fn().mockReturnValue('blob:url'),
-        revokeObjectURL: vi.fn()
-      }
-    };
+    const link = document.createElement('a');
+    vi.spyOn(link, 'click').mockImplementation(() => {});
+    vi.spyOn(document, 'createElement').mockReturnValue(link);
+    vi.spyOn(document.body, 'appendChild').mockImplementation(() => link);
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => link);
+    vi.spyOn(document.body, 'contains').mockReturnValue(true);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
     service.downloadFile('/api/file', 'file.txt');
     expect(httpClientMock.get).toHaveBeenCalledWith('/api/file', expect.objectContaining({observe: 'events'}));
@@ -134,6 +130,12 @@ describe('FileDownloadService - API Contract Tests', () => {
 
     const injector = TestBed.inject(EnvironmentInjector);
     service = runInInjectionContext(injector, () => TestBed.inject(FileDownloadService));
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runAllTimers();
+    vi.useRealTimers();
   });
 
   describe('API contract', () => {

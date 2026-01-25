@@ -14,6 +14,8 @@ public enum AppSettingKey {
     OIDC_AUTO_PROVISION_DETAILS         ("oidc_auto_provision_details",          true,  false, List.of(PermissionType.ADMIN)),
     KOBO_SETTINGS                       ("kobo_settings",                        true,  false, List.of(PermissionType.ADMIN)),
     OPDS_SERVER_ENABLED                 ("opds_server_enabled",                  false, false, List.of(PermissionType.ADMIN)),
+    KOMGA_API_ENABLED                     ("komga_api_enabled",                  false, false, List.of(PermissionType.ADMIN)),
+    KOMGA_GROUP_UNKNOWN                 ("komga_group_unknown",                  false, false, List.of(PermissionType.ADMIN)),
 
     // ADMIN + MANAGE_METADATA_CONFIG
     QUICK_BOOK_MATCH                    ("quick_book_match",                     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
@@ -25,6 +27,7 @@ public enum AppSettingKey {
     UPLOAD_FILE_PATTERN                 ("upload_file_pattern",                  false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     MOVE_FILE_PATTERN                   ("move_file_pattern",                    false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_DOWNLOAD_ON_BOOKDROP       ("metadata_download_on_bookdrop",        false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
+    METADATA_PROVIDER_SPECIFIC_FIELDS   ("metadata_provider_specific_fields",    true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
 
     // ADMIN + MANAGE_GLOBAL_PREFERENCES
     COVER_CROPPING_SETTINGS             ("cover_cropping_settings",              true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),

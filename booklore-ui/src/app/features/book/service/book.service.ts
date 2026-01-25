@@ -244,7 +244,7 @@ export class BookService {
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader: 'ngx' | 'streaming' = 'ngx'): void {
+  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming'): void {
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -254,23 +254,39 @@ export class BookService {
       return;
     }
 
-    const baseUrl =
-      book.bookType === 'PDF'
-        ? reader === 'ngx'
-          ? 'pdf-reader'
-          : 'cbx-reader'
-        : book.bookType === 'EPUB'
-          ? 'epub-reader'
-          : book.bookType === 'CBX'
-            ? 'cbx-reader'
-            : null;
+    let baseUrl: string | null = null;
+    let queryParams: Record<string, any> | undefined;
+
+    switch (book.bookType) {
+      case 'PDF':
+        baseUrl = reader === 'pdf-streaming' ? 'cbx-reader' : 'pdf-reader';
+        break;
+
+      case 'EPUB':
+        baseUrl = 'ebook-reader';
+        if (reader === 'epub-streaming') {
+          queryParams = { streaming: true };
+        }
+        break;
+
+      case 'FB2':
+      case 'MOBI':
+      case 'AZW3':
+        baseUrl = 'ebook-reader';
+        break;
+
+      case 'CBX':
+        baseUrl = 'cbx-reader';
+        break;
+    }
 
     if (!baseUrl) {
       console.error('Unsupported book type:', book.bookType);
       return;
     }
 
-    this.router.navigate([`/${baseUrl}/book/${book.id}`]);
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], queryParams ? { queryParams } : undefined);
+
     this.updateLastReadTime(book.id);
   }
 
@@ -334,7 +350,25 @@ export class BookService {
   uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('additionalFileType', fileType);
+
+    const isBook = fileType === AdditionalFileType.ALTERNATIVE_FORMAT;
+    formData.append('isBook', String(isBook));
+
+    if (isBook) {
+      const lower = (file?.name || '').toLowerCase();
+      const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.') + 1) : '';
+      const bookType = ext === 'pdf'
+        ? 'PDF'
+        : ext === 'epub'
+          ? 'EPUB'
+          : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
+            ? 'CBX'
+            : null;
+
+      if (bookType) {
+        formData.append('bookType', bookType);
+      }
+    }
     if (description) {
       formData.append('description', description);
     }
@@ -378,8 +412,11 @@ export class BookService {
   }
 
   downloadAdditionalFile(book: Book, fileId: number): void {
-    const additionalFile = book.alternativeFormats!.find((f: AdditionalFile) => f.id === fileId);
-    const downloadUrl = `${this.url}/${additionalFile!.id}/files/${fileId}/download`;
+    const additionalFile = [
+      ...(book.alternativeFormats || []),
+      ...(book.supplementaryFiles || [])
+    ].find((f: AdditionalFile) => f.id === fileId);
+    const downloadUrl = `${this.url}/${book!.id}/files/${fileId}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile!.fileName!);
   }
 
@@ -393,9 +430,9 @@ export class BookService {
     return this.bookPatchService.savePdfProgress(bookId, page, percentage);
   }
 
-  saveEpubProgress(bookId: number, cfi: string, percentage: number): Observable<void> {
-    return this.bookPatchService.saveEpubProgress(bookId, cfi, percentage);
-  }
+  /*saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): Observable<void> {
+    return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
+  }*/
 
   saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
     return this.bookPatchService.saveCbxProgress(bookId, page, percentage);
@@ -542,6 +579,10 @@ export class BookService {
 
   generateCustomCover(bookId: number): Observable<void> {
     return this.http.post<void>(`${this.url}/${bookId}/generate-custom-cover`, {});
+  }
+
+  generateCustomCoversForBooks(bookIds: number[]): Observable<void> {
+    return this.http.post<void>(`${this.url}/bulk-generate-custom-covers`, {bookIds});
   }
 
   regenerateCoversForBooks(bookIds: number[]): Observable<void> {

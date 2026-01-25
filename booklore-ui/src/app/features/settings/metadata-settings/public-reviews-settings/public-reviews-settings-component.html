@@ -1,57 +1,57 @@
-<div class="reviews-settings">
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Download Public Reviews</label>
+<div class="settings-card">
+  <div class="section-header">
+    <h3 class="section-title">
+      <i class="pi pi-star"></i>
+      Public Reviews
+    </h3>
+    <p class="section-description">
+      Configure automatic downloading of user reviews from external platforms. Reviews can be fetched from Amazon, Goodreads, and Hardcover for offline access.
+    </p>
+  </div>
+
+  <div class="section-body">
+    <div class="setting-item">
+      <div class="setting-header">
         <p-toggleswitch
           [(ngModel)]="publicReviewSettings.downloadEnabled"
           (onChange)="onPublicReviewsToggle($event.checked)">
         </p-toggleswitch>
+        <label class="setting-label">Download Public Reviews</label>
       </div>
-      <p class="setting-description">
-        <i class="pi pi-info-circle"></i>
-        Enable downloading user reviews from configured platforms (Amazon, Goodreads, Hardcover). Reviews will be stored with your books for offline access.
-      </p>
     </div>
-  </div>
 
-  @if (publicReviewSettings.downloadEnabled) {
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Auto Download on Book Open</label>
+    @if (publicReviewSettings.downloadEnabled) {
+      <div class="setting-item">
+        <div class="setting-header">
           <p-toggleswitch
             [(ngModel)]="publicReviewSettings.autoDownloadEnabled"
             (onChange)="onAutoDownloadToggle($event.checked)">
           </p-toggleswitch>
+          <label class="setting-label">Auto Download on Book Open</label>
         </div>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Automatically fetch reviews when you open a book's details page. When disabled, reviews will only be downloaded manually or during metadata refresh, reducing background network activity and improving performance.
-        </p>
-      </div>
-    </div>
-
-    <div class="review-sources-section">
-      <div class="sources-header">
-        <h4 class="subsection-title">Review Sources</h4>
-        <p class="subsection-description">Configure which platforms to download reviews from and set limits for each source.</p>
+        <p class="setting-description">Automatically fetch reviews when you open a book's details page. When disabled, reviews will only be downloaded manually or during metadata refresh.</p>
       </div>
 
-      <div class="providers-list">
-        @for (provider of publicReviewSettings.providers; track provider.provider) {
-          <div class="provider-item">
-            <div class="provider-setting">
-              <div class="provider-label-row">
-                <label class="provider-label">{{ provider.provider }}</label>
-                <div class="provider-controls">
-                  <p-toggleswitch
-                    [(ngModel)]="provider.enabled"
-                    (onChange)="onProviderToggle(provider.provider, $event.checked)">
-                  </p-toggleswitch>
+      <div class="setting-item">
+        <div class="setting-header-standalone">
+          <label class="setting-label">Review Sources</label>
+        </div>
+        <p class="setting-description">Configure which platforms to download reviews from and set limits for each source.</p>
+        @if (publicReviewSettings.providers.length > 0) {
+          <div class="setting-options">
+            <div class="providers-grid">
+              @for (provider of publicReviewSettings.providers; track provider.provider) {
+                <div class="provider-item">
+                  <div class="provider-row">
+                    <p-toggleswitch
+                      [(ngModel)]="provider.enabled"
+                      (onChange)="onProviderToggle(provider.provider, $event.checked)">
+                    </p-toggleswitch>
+                    <label class="provider-label">{{ provider.provider }}</label>
+                  </div>
                   @if (provider.enabled) {
                     <div class="max-reviews-control">
-                      <label class="max-reviews-label">Max Reviews:</label>
+                      <label class="max-reviews-label">Max:</label>
                       <input
                         type="number"
                         class="max-reviews-input"
@@ -63,18 +63,16 @@
                     </div>
                   }
                 </div>
-              </div>
+              }
             </div>
           </div>
-        }
-
-        @if (publicReviewSettings.providers.length === 0) {
+        } @else {
           <div class="no-providers-message">
             <i class="pi pi-exclamation-triangle"></i>
             <span>No review sources available. Please ensure metadata providers are configured in the Provider Settings section above.</span>
           </div>
         }
       </div>
-    </div>
-  }
+    }
+  </div>
 </div>

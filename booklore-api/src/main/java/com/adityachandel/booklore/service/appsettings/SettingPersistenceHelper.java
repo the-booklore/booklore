@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.*;
 import com.adityachandel.booklore.model.entity.AppSettingEntity;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.AppSettingsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -195,6 +196,7 @@ public class SettingPersistenceHelper {
                 .refreshCovers(false)
                 .mergeCategories(true)
                 .reviewBeforeApply(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
                 .fieldOptions(fieldOptions)
                 .enabledFields(enabledFields)
                 .build();
@@ -300,5 +302,26 @@ public class SettingPersistenceHelper {
                 .aspectRatioThreshold(2.5)
                 .smartCroppingEnabled(false)
                 .build();
+    }
+
+    public MetadataProviderSpecificFields getDefaultMetadataProviderSpecificFields() {
+        MetadataProviderSpecificFields fields = new MetadataProviderSpecificFields();
+        fields.setAsin(true);
+        fields.setAmazonRating(true);
+        fields.setAmazonReviewCount(true);
+        fields.setGoogleId(true);
+        fields.setGoodreadsId(true);
+        fields.setGoodreadsRating(true);
+        fields.setGoodreadsReviewCount(true);
+        fields.setHardcoverId(true);
+        fields.setHardcoverBookId(true);
+        fields.setHardcoverRating(true);
+        fields.setHardcoverReviewCount(true);
+        fields.setComicvineId(true);
+        fields.setLubimyczytacId(true);
+        fields.setLubimyczytacRating(true);
+        fields.setRanobedbId(true);
+        fields.setRanobedbRating(true);
+        return fields;
     }
 }

@@ -180,10 +180,12 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
   padding: 1rem;
-  background: var(--p-content-background);
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: var(--p-red-400);
+  max-width: 500px;
   margin: 0 1rem;
 
   @media (max-width: 768px) {
@@ -191,21 +193,24 @@
   }
 
   .pi {
-    font-size: 1.5rem;
-    color: var(--p-text-muted-color);
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    color: var(--p-red-300);
   }
 }
 
 .access-denied-content {
   h3 {
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.5rem 0;
     font-size: 1rem;
-    color: var(--p-text-color);
+    font-weight: 600;
+    color: var(--p-red-300);
   }
 
   p {
     margin: 0;
-    color: var(--p-text-muted-color);
     font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--p-red-400);
   }
 }

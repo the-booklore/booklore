@@ -7,6 +7,7 @@ import {Shelf} from '../../../model/shelf.model';
 import {EntityType} from '../book-browser.component';
 import {Book, ReadStatus} from '../../../model/book.model';
 import {Accordion, AccordionContent, AccordionHeader, AccordionPanel} from 'primeng/accordion';
+import {CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport} from '@angular/cdk/scrolling';
 import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
 import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
@@ -40,13 +41,10 @@ export type FilterType =
   | 'tag'
   | 'language'
   | 'bookType'
-  | 'shelfStatus'
   | 'fileSize'
   | 'pageCount'
   | 'amazonRating'
-  | 'goodreadsRating'
-  | 'ranobedbRating'
-  | 'hardcoverRating';
+  | 'goodreadsRating';
 
 export const ratingRanges = [
   {id: '0to1', label: '0 to 1', min: 0, max: 1, sortIndex: 0},
@@ -174,6 +172,9 @@ function getReadStatusName(status?: ReadStatus | null): string {
     AccordionPanel,
     AccordionHeader,
     AccordionContent,
+    CdkVirtualScrollViewport,
+    CdkFixedSizeVirtualScroll,
+    CdkVirtualForOf,
     NgClass,
     Badge,
     AsyncPipe,
@@ -217,13 +218,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     tag: 'Tag',
     language: 'Language',
     bookType: 'Book Type',
-    shelfStatus: 'Shelf Status',
     fileSize: 'File Size',
     pageCount: 'Page Count',
     amazonRating: 'Amazon Rating',
-    goodreadsRating: 'Goodreads Rating',
-    hardcoverRating: 'Hardcover Rating',
-    ranobedbRating: 'Ranobedb Rating',
+    goodreadsRating: 'Goodreads Rating'
   };
 
   private destroy$ = new Subject<void>();
@@ -285,13 +283,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
           ),
           language: this.getFilterStream(getLanguageFilter, 'id', 'name'),
           bookType: this.getFilterStream(getBookTypeFilter, 'id', 'name'),
-          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
           fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
           pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount ?? undefined), 'id', 'name', 'sortIndex'),
           amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating ?? undefined), 'id', 'name', 'sortIndex'),
-          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating ?? undefined), 'id', 'name', 'sortIndex'),
-          hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating ?? undefined), 'id', 'name', 'sortIndex'),
-          ranobedbRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.ranobedbRating ?? undefined), 'id', 'name', 'sortIndex'),
+          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating ?? undefined), 'id', 'name', 'sortIndex')
         };
 
         this.filterTypes = Object.keys(this.filterStreams) as FilterType[];
@@ -448,18 +443,28 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   clearActiveFilter() {
     this.activeFilters = {};
-    this.setExpandedPanels();
+    this.expandedPanels = [0];
     this.filterChangeSubject.next(null);
   }
 
+  onExpandedPanelsChange(value: string | number | string[] | number[] | null | undefined): void {
+    if (Array.isArray(value)) {
+      this.expandedPanels = value.map(v => Number(v));
+    }
+  }
+
+  getVirtualScrollHeight(itemCount: number): number {
+    return Math.min(itemCount * 28, 440);
+  }
+
   setExpandedPanels(): void {
-    const indexes = [];
+    const current = new Set(this.expandedPanels);
     for (let i = 0; i < this.filterTypes.length; i++) {
       if (this.activeFilters[this.filterTypes[i]]?.length) {
-        indexes.push(i);
+        current.add(i);
       }
     }
-    this.expandedPanels = indexes.length > 0 ? indexes : [0];
+    this.expandedPanels = current.size > 0 ? [...current] : [0];
   }
 
   onFiltersChanged(): void {
@@ -472,18 +477,18 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   trackByFilter(_: number, filter: Filter<FilterValue>): unknown {
     const value = filter.value as { id?: unknown } | unknown;
-    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as {id: unknown}).id : filter.value;
+    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as { id: unknown }).id : filter.value;
   }
 
   getFilterValueId(filter: Filter<FilterValue>): unknown {
     const value = filter.value as { id?: unknown } | unknown;
-    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as {id: unknown}).id : filter.value;
+    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as { id: unknown }).id : filter.value;
   }
 
   getFilterValueDisplay(filter: Filter<FilterValue>): string {
     const value = filter.value as { name?: string } | string | unknown;
     if (typeof value === 'object' && value !== null && 'name' in value) {
-      return String((value as {name: string}).name ?? '');
+      return String((value as { name: string }).name ?? '');
     }
     return String(value ?? '');
   }

@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.reader;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.util.FileUtils;
 import com.github.junrar.Archive;
