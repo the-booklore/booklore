@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
@@ -77,7 +78,7 @@ public class LibraryProcessingService {
         int existingBookCount = libraryEntity.getBookEntities().size();
         if (existingBookCount > 0 && libraryFiles.isEmpty()) {
             String paths = libraryEntity.getLibraryPaths().stream()
-                    .map(p -> p.getPath())
+                    .map(LibraryPathEntity::getPath)
                     .collect(Collectors.joining(", "));
             log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}",
                     libraryEntity.getName(), existingBookCount, paths);
@@ -176,45 +177,61 @@ public class LibraryProcessingService {
     private BookEntity findMatchingBook(LibraryFile file) {
         String fileSubPath = file.getFileSubPath();
 
-        // Skip root-level files
+        // Skip root-level files - they should create separate book entities
         if (fileSubPath == null || fileSubPath.isEmpty()) {
             return null;
         }
 
-        String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
         Long libraryPathId = file.getLibraryPathEntity().getId();
-
         List<BookEntity> booksInDirectory = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, fileSubPath);
 
-        BookEntity fuzzyMatch = null;
-        double bestSimilarity = 0;
+        // Filter to non-deleted books only
+        List<BookEntity> activeBooksInDirectory = booksInDirectory.stream()
+                .filter(book -> book.getDeleted() == null || !book.getDeleted())
+                .toList();
 
-        for (BookEntity book : booksInDirectory) {
-            if (book.getDeleted() != null && book.getDeleted()) {
-                continue;
-            }
-            BookFileEntity primaryFile = book.getPrimaryBookFile();
-            String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
-
-            // Try exact match first
-            if (fileGroupingKey.equals(existingGroupingKey)) {
-                return book;
-            }
-
-            // Track best fuzzy match
-            double similarity = BookFileGroupingUtils.calculateSimilarity(fileGroupingKey, existingGroupingKey);
-            if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
-                bestSimilarity = similarity;
-                fuzzyMatch = book;
-            }
+        // If exactly one book in the folder, auto-attach to it
+        // This handles the common case where users organize one book per folder
+        if (activeBooksInDirectory.size() == 1) {
+            BookEntity book = activeBooksInDirectory.get(0);
+            log.debug("Single book in folder '{}', auto-attaching '{}' to '{}'",
+                    fileSubPath, file.getFileName(), book.getPrimaryBookFile().getFileName());
+            return book;
         }
 
-        // Return fuzzy match if found
-        if (fuzzyMatch != null) {
-            log.debug("Fuzzy matched '{}' to '{}' with similarity {}", file.getFileName(),
-                    fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
+        // Multiple books in folder: use fuzzy matching to find the best match
+        if (activeBooksInDirectory.size() > 1) {
+            String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
+            BookEntity fuzzyMatch = null;
+            double bestSimilarity = 0;
+
+            for (BookEntity book : activeBooksInDirectory) {
+                BookFileEntity primaryFile = book.getPrimaryBookFile();
+                String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+
+                // Try exact match first
+                if (fileGroupingKey.equals(existingGroupingKey)) {
+                    return book;
+                }
+
+                // Track best fuzzy match
+                double similarity = BookFileGroupingUtils.calculateSimilarity(fileGroupingKey, existingGroupingKey);
+                if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
+                    bestSimilarity = similarity;
+                    fuzzyMatch = book;
+                }
+            }
+
+            if (fuzzyMatch != null) {
+                log.debug("Fuzzy matched '{}' to '{}' with similarity {} in folder with {} books",
+                        file.getFileName(), fuzzyMatch.getPrimaryBookFile().getFileName(),
+                        bestSimilarity, activeBooksInDirectory.size());
+            }
+            return fuzzyMatch;
         }
-        return fuzzyMatch;
+
+        // No books in folder - will create new book entity
+        return null;
     }
 
     private void autoAttachFile(BookEntity book, LibraryFile file) {
