@@ -16,8 +16,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
-import com.adityachandel.booklore.service.user.UserProgressService;
-import com.adityachandel.booklore.util.BookProgressUtil;
+import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
@@ -56,7 +55,7 @@ public class BookService {
     private final UserBookProgressRepository userBookProgressRepository;
     private final AuthenticationService authenticationService;
     private final BookQueryService bookQueryService;
-    private final UserProgressService userProgressService;
+    private final ReadingProgressService readingProgressService;
     private final BookDownloadService bookDownloadService;
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final BookUpdateService bookUpdateService;
@@ -79,12 +78,12 @@ public class BookService {
 
         Set<Long> bookIds = books.stream().map(Book::getId).collect(Collectors.toSet());
         Map<Long, UserBookProgressEntity> progressMap =
-                userProgressService.fetchUserProgress(user.getId(), bookIds);
+                readingProgressService.fetchUserProgress(user.getId(), bookIds);
         Map<Long, UserBookFileProgressEntity> fileProgressMap =
-                userProgressService.fetchUserFileProgress(user.getId(), bookIds);
+                readingProgressService.fetchUserFileProgress(user.getId(), bookIds);
 
         books.forEach(book -> {
-            BookProgressUtil.enrichBookWithProgress(
+            readingProgressService.enrichBookWithProgress(
                     book,
                     progressMap.get(book.getId()),
                     fileProgressMap.get(book.getId())
@@ -102,14 +101,14 @@ public class BookService {
         Set<Long> entityIds = bookEntities.stream().map(BookEntity::getId).collect(Collectors.toSet());
 
         Map<Long, UserBookProgressEntity> progressMap =
-                userProgressService.fetchUserProgress(user.getId(), entityIds);
+                readingProgressService.fetchUserProgress(user.getId(), entityIds);
         Map<Long, UserBookFileProgressEntity> fileProgressMap =
-                userProgressService.fetchUserFileProgress(user.getId(), entityIds);
+                readingProgressService.fetchUserFileProgress(user.getId(), entityIds);
 
         return bookEntities.stream().map(bookEntity -> {
             Book book = bookMapper.toBook(bookEntity);
             if (!withDescription) book.getMetadata().setDescription(null);
-            BookProgressUtil.enrichBookWithProgress(
+            readingProgressService.enrichBookWithProgress(
                     book,
                     progressMap.get(bookEntity.getId()),
                     fileProgressMap.get(bookEntity.getId())
@@ -126,13 +125,13 @@ public class BookService {
                 .orElse(new UserBookProgressEntity());
 
         // Fetch file-level progress for the book (most recent across all files)
-        UserBookFileProgressEntity fileProgress = userProgressService
+        UserBookFileProgressEntity fileProgress = readingProgressService
                 .fetchUserFileProgress(user.getId(), Set.of(bookId))
                 .get(bookId);
 
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
-        BookProgressUtil.enrichBookWithProgress(book, userProgress, fileProgress);
+        readingProgressService.enrichBookWithProgress(book, userProgress, fileProgress);
 
         if (!withDescription) {
             book.getMetadata().setDescription(null);
@@ -207,7 +206,7 @@ public class BookService {
 
     @Transactional
     public void updateReadProgress(ReadProgressRequest request) {
-        bookUpdateService.updateReadProgress(request);
+        readingProgressService.updateReadProgress(request);
     }
 
     @Transactional

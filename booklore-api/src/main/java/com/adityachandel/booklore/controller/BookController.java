@@ -16,6 +16,7 @@ import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
+import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.service.recommender.BookRecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -46,6 +47,7 @@ public class BookController {
     private final BookUpdateService bookUpdateService;
     private final BookRecommendationService bookRecommendationService;
     private final BookMetadataService bookMetadataService;
+    private final ReadingProgressService readingProgressService;
 
     @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
     @ApiResponse(responseCode = "200", description = "List of books returned successfully")
@@ -185,7 +187,7 @@ public class BookController {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
-        return ResponseEntity.ok(bookUpdateService.resetProgress(bookIds, type));
+        return ResponseEntity.ok(readingProgressService.resetProgress(bookIds, type));
     }
 
     @Operation(summary = "Update personal rating", description = "Update the personal rating for one or more books.")
