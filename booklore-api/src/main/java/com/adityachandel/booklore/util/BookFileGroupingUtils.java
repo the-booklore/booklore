@@ -23,9 +23,9 @@ public class BookFileGroupingUtils {
 
     private static final Pattern UNDERSCORE_PATTERN = Pattern.compile("_");
 
-    // Matches trailing author: " - J.R.R. Tolkien", " - George Orwell"
+    // Matches trailing author: " - J.R.R. Tolkien", " - George Orwell", " - J.K. Rowling"
     private static final Pattern TRAILING_AUTHOR_PATTERN = Pattern.compile(
-            "\\s*[-–—]\\s+[A-Z][a-z]+(?:\\s+[A-Z](?:\\.[A-Z])*\\.?)?(?:\\s+[A-Z][a-z]+)*\\s*$"
+            "\\s*[-–—]\\s+(?:[A-Z](?:\\.[A-Z])*\\.\\s+)?[A-Z][a-z]+(?:\\s+[A-Z](?:\\.[A-Z])*\\.?)?(?:\\s+[A-Z][a-z]+)*\\s*$"
     );
 
     // Matches ", The" or ", A" or ", An" at end
