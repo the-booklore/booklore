@@ -76,7 +76,7 @@ public class LibraryService {
         library.setIcon(request.getIcon());
         library.setIconType(request.getIconType());
         library.setWatch(request.isWatch());
-        library.setDefaultBookFormat(request.getDefaultBookFormat());
+        library.setFormatPriority(request.getFormatPriority());
 
         Set<String> currentPaths = library.getLibraryPaths().stream()
                 .map(LibraryPathEntity::getPath)
@@ -155,7 +155,7 @@ public class LibraryService {
                 .icon(request.getIcon())
                 .iconType(request.getIconType())
                 .watch(request.isWatch())
-                .defaultBookFormat(request.getDefaultBookFormat())
+                .formatPriority(request.getFormatPriority())
                 .users(List.of(user.get()))
                 .build();
 

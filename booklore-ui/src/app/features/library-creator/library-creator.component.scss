@@ -852,3 +852,117 @@
 .full-width {
   width: 100%;
 }
+
+.label-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-secondary-color);
+  margin-left: 0.25rem;
+}
+
+.format-priority-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  .format-priority-list {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--ground-background);
+  }
+
+  .info-tooltip {
+    margin-top: 0.5rem;
+
+    i {
+      font-size: 1.125rem;
+      color: var(--p-blue-500);
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: var(--primary-color);
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+.format-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--ground-background);
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--overlay-background);
+  }
+
+  .format-rank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    color: var(--primary-contrast-color);
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .drag-handle {
+    color: var(--text-secondary-color);
+    font-size: 0.875rem;
+    cursor: grab;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
+
+  .format-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+  }
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+  background: var(--overlay-background);
+  border: 1px solid var(--primary-color);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+  background: var(--overlay-background);
+}
+
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.format-priority-list.cdk-drop-list-dragging .format-item:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.gradient-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: 0.5rem 0;
+}

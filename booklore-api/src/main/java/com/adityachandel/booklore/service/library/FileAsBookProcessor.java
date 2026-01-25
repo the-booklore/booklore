@@ -96,12 +96,16 @@ public class FileAsBookProcessor {
     }
 
     private Optional<LibraryFile> findBestPrimaryFile(List<LibraryFile> group, LibraryEntity libraryEntity) {
-        BookFileType defaultFormat = libraryEntity.getDefaultBookFormat();
+        List<BookFileType> formatPriority = libraryEntity.getFormatPriority();
         return group.stream()
                 .filter(f -> f.getBookFileType() != null)
                 .min(Comparator.comparingInt(f -> {
                     BookFileType bookFileType = f.getBookFileType();
-                    return bookFileType == defaultFormat ? -1 : bookFileType.ordinal();
+                    if (formatPriority != null && !formatPriority.isEmpty()) {
+                        int index = formatPriority.indexOf(bookFileType);
+                        return index >= 0 ? index : Integer.MAX_VALUE;
+                    }
+                    return bookFileType.ordinal();
                 }));
     }
 

@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -99,16 +100,29 @@ public interface BookMapper {
                 .toList();
     }
 
-    /*
-    * TODO: evolve the logic so that the user can select the primary book file format to be used.
-    * For now, we just return the first book file in the list.
-    */
     default BookFileEntity getPrimaryBookFile(List<BookFileEntity> bookFiles) {
         if (bookFiles == null || bookFiles.isEmpty()) return null;
-        return bookFiles.stream()
-                .filter(bf -> bf.isBook())
-                .findFirst()
-                .orElse(null);
+
+        List<BookFileEntity> bookFormats = bookFiles.stream()
+                .filter(BookFileEntity::isBook)
+                .toList();
+
+        if (bookFormats.isEmpty()) return null;
+
+        BookFileEntity firstBook = bookFormats.getFirst();
+        LibraryEntity library = firstBook.getBook() != null ? firstBook.getBook().getLibrary() : null;
+
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                var match = bookFormats.stream()
+                        .filter(bf -> bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
+        }
+        return firstBook;
     }
 
     default BookFile toBookFile(BookFileEntity entity) {

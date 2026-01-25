@@ -7,22 +7,22 @@ import {TableModule} from 'primeng/table';
 import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {BookFileType, Library, LibraryScanMode} from '../book/model/library.model';
+import {BookFileType, Library} from '../book/model/library.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
 import {IconPickerService, IconSelection} from '../../shared/service/icon-picker.service';
-import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
 import {IconDisplayComponent} from '../../shared/components/icon-display/icon-display.component';
 import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
 import {switchMap} from 'rxjs/operators';
 import {map, of} from 'rxjs';
+import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button, IconDisplayComponent],
+  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -34,19 +34,15 @@ export class LibraryCreatorComponent implements OnInit {
   library!: Library | undefined;
   editModeLibraryName: string = '';
   watch: boolean = false;
-  scanMode: LibraryScanMode = 'FILE_AS_BOOK';
-  defaultBookFormat: BookFileType | undefined = undefined;
+  formatPriority: {type: BookFileType, label: string}[] = [];
 
-  readonly scanModeOptions = [
-    {label: 'Each file is a book (Recommended)', value: 'FILE_AS_BOOK'},
-    {label: 'Each folder is a book with extras (Deprecated)', value: 'FOLDER_AS_BOOK'}
-  ];
-
-  readonly bookFormatOptions = [
-    {label: 'None', value: undefined},
-    {label: 'EPUB', value: 'EPUB'},
-    {label: 'PDF', value: 'PDF'},
-    {label: 'CBX/CBZ/CBR', value: 'CBX'}
+  readonly allBookFormats: {type: BookFileType, label: string}[] = [
+    {type: 'EPUB', label: 'EPUB'},
+    {type: 'PDF', label: 'PDF'},
+    {type: 'CBX', label: 'CBX (CBZ/CBR/CB7)'},
+    {type: 'MOBI', label: 'MOBI'},
+    {type: 'AZW3', label: 'AZW3'},
+    {type: 'FB2', label: 'FB2'}
   ];
 
   private dialogLauncherService = inject(DialogLauncherService);
@@ -58,12 +54,14 @@ export class LibraryCreatorComponent implements OnInit {
   private iconPicker = inject(IconPickerService);
 
   ngOnInit(): void {
+    this.initializeFormatPriority();
+
     const data = this.dynamicDialogConfig?.data;
     if (data?.mode === 'edit') {
       this.mode = data.mode;
       this.library = this.libraryService.findLibraryById(data.libraryId);
       if (this.library) {
-        const {name, icon, iconType, paths, watch, scanMode, defaultBookFormat} = this.library;
+        const {name, icon, iconType, paths, watch, formatPriority} = this.library;
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
 
@@ -75,11 +73,25 @@ export class LibraryCreatorComponent implements OnInit {
         }
 
         this.watch = watch;
-        this.scanMode = scanMode || 'FILE_AS_BOOK';
-        this.defaultBookFormat = defaultBookFormat || undefined;
+        if (formatPriority && formatPriority.length > 0) {
+          this.formatPriority = formatPriority.map(type =>
+            this.allBookFormats.find(f => f.type === type)!
+          ).filter(f => f !== undefined);
+          // Add any missing formats at the end
+          const existingTypes = new Set(formatPriority);
+          this.allBookFormats.forEach(f => {
+            if (!existingTypes.has(f.type)) {
+              this.formatPriority.push(f);
+            }
+          });
+        }
         this.folders = paths.map(path => path.path);
       }
     }
+  }
+
+  private initializeFormatPriority(): void {
+    this.formatPriority = [...this.allBookFormats];
   }
 
   closeDialog(): void {
@@ -155,8 +167,7 @@ export class LibraryCreatorComponent implements OnInit {
       iconType: iconType,
       paths: this.folders.map(folder => ({path: folder})),
       watch: this.watch,
-      scanMode: this.scanMode,
-      defaultBookFormat: this.defaultBookFormat
+      formatPriority: this.formatPriority.map(f => f.type)
     };
 
     if (this.mode === 'edit') {
@@ -214,5 +225,9 @@ export class LibraryCreatorComponent implements OnInit {
     }
     const parts = path.split('/').filter(p => p);
     return parts[parts.length - 1] || path;
+  }
+
+  onFormatPriorityDrop(event: CdkDragDrop<{type: BookFileType, label: string}[]>): void {
+    moveItemInArray(this.formatPriority, event.previousIndex, event.currentIndex);
   }
 }

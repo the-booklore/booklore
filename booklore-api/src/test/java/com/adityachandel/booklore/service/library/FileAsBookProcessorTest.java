@@ -118,7 +118,7 @@ class FileAsBookProcessorTest {
     @Test
     void processLibraryFiles_shouldGroupSameBaseNameFilesAndAttachAdditional() {
         LibraryEntity libraryEntity = new LibraryEntity();
-        libraryEntity.setDefaultBookFormat(BookFileType.EPUB);
+        libraryEntity.setFormatPriority(List.of(BookFileType.EPUB));
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
         libraryPathEntity.setId(1L);
         libraryPathEntity.setPath("/library/path");
@@ -221,7 +221,7 @@ class FileAsBookProcessorTest {
     @Test
     void processLibraryFiles_shouldGroupFormatIndicatorVariants() {
         LibraryEntity libraryEntity = new LibraryEntity();
-        libraryEntity.setDefaultBookFormat(BookFileType.EPUB);
+        libraryEntity.setFormatPriority(List.of(BookFileType.EPUB));
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
         libraryPathEntity.setId(1L);
         libraryPathEntity.setPath("/library/path");

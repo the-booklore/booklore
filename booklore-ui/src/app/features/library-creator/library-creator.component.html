@@ -129,56 +129,36 @@
                 <div class="form-section">
                   <div class="form-group">
                     <label class="form-label">
-                      <i class="pi pi-cog label-icon"></i>
-                      3. Import Mode
+                      <i class="pi pi-sort-alt label-icon"></i>
+                      3. Format Priority
+                      <span class="label-hint">(drag to reorder)</span>
                     </label>
-                    <div class="input-with-info">
-                      <p-select
-                        [(ngModel)]="scanMode"
-                        [options]="scanModeOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Choose scan mode"
-                        class="full-width"
-                        [showClear]="false"
-                      />
-                      <div class="info-tooltip large">
+                    <div class="format-priority-container">
+                      <div
+                        class="format-priority-list"
+                        cdkDropList
+                        [cdkDropListData]="formatPriority"
+                        (cdkDropListDropped)="onFormatPriorityDrop($event)"
+                      >
+                        @for (format of formatPriority; track format.type; let i = $index) {
+                          <div class="format-item" cdkDrag>
+                            <div class="format-rank">{{ i + 1 }}</div>
+                            <div class="drag-handle" cdkDragHandle>
+                              <i class="pi pi-bars"></i>
+                            </div>
+                            <span class="format-label">{{ format.label }}</span>
+                          </div>
+                        }
+                      </div>
+                      <div class="info-tooltip">
                         <i
                           class="pi pi-question-circle"
-                          pTooltip="File as Book: Each file becomes a separate book.&#10;Folder as Book: Each folder is treated as one book with multiple formats."
-                          [escape]="false"
+                          pTooltip="When a book has multiple formats, the highest priority available format will be used as the primary file."
                           tooltipPosition="right"
                         ></i>
                       </div>
                     </div>
                   </div>
-
-                  @if (scanMode === 'FOLDER_AS_BOOK') {
-                    <div class="form-group nested-group">
-                      <label class="form-label">
-                        <i class="pi pi-file label-icon"></i>
-                        Preferred Format
-                      </label>
-                      <div class="input-with-info">
-                        <p-select
-                          [(ngModel)]="defaultBookFormat"
-                          [options]="bookFormatOptions"
-                          optionLabel="label"
-                          optionValue="value"
-                          placeholder="Select preferred format"
-                          class="full-width"
-                          appendTo="body"
-                        />
-                        <div class="info-tooltip">
-                          <i
-                            class="pi pi-question-circle"
-                            pTooltip="If a folder has multiple formats, this determines the primary format to use"
-                            tooltipPosition="right"
-                          ></i>
-                        </div>
-                      </div>
-                    </div>
-                  }
                 </div>
 
                 <div class="gradient-divider"></div>

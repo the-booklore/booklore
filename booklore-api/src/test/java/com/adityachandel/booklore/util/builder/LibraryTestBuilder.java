@@ -110,7 +110,7 @@ public class LibraryTestBuilder {
         LibraryEntity library = new LibraryEntity();
         library.setId(libraryId++);
         library.setName(name);
-        library.setDefaultBookFormat(BookFileType.EPUB);
+        library.setFormatPriority(List.of(BookFileType.EPUB));
         library.setLibraryPaths(new ArrayList<>());
 
         libraries.add(library);

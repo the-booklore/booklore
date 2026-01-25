@@ -108,11 +108,15 @@ public class BookEntity {
         if (bookFiles.isEmpty()) {
             throw new IllegalStateException("Book file not found");
         }
-        if (library != null && library.getDefaultBookFormat() != null) {
-            return bookFiles.stream()
-                    .filter(bf -> bf.isBookFormat() && bf.getBookType() == library.getDefaultBookFormat())
-                    .findFirst()
-                    .orElse(bookFiles.getFirst());
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                var match = bookFiles.stream()
+                        .filter(bf -> bf.isBookFormat() && bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
         }
         return bookFiles.getFirst();
     }

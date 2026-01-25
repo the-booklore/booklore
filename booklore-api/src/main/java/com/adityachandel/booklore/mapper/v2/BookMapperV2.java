@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -86,10 +87,27 @@ public interface BookMapperV2 {
 
     default BookFileEntity getPrimaryBookFile(List<BookFileEntity> bookFiles) {
         if (bookFiles == null || bookFiles.isEmpty()) return null;
-        return bookFiles.stream()
+
+        List<BookFileEntity> bookFormats = bookFiles.stream()
                 .filter(BookFileEntity::isBook)
-                .findFirst()
-                .orElse(null);
+                .toList();
+
+        if (bookFormats.isEmpty()) return null;
+
+        BookFileEntity firstBook = bookFormats.getFirst();
+        LibraryEntity library = firstBook.getBook() != null ? firstBook.getBook().getLibrary() : null;
+
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                var match = bookFormats.stream()
+                        .filter(bf -> bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
+        }
+        return firstBook;
     }
 
     default BookFile toBookFile(BookFileEntity entity) {

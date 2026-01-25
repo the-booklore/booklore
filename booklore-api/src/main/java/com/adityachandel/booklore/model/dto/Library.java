@@ -20,6 +20,6 @@ public class Library {
     private String fileNamingPattern;
     private boolean watch;
     private List<LibraryPath> paths;
-    private BookFileType defaultBookFormat;
+    private List<BookFileType> formatPriority;
 }
 

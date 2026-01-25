@@ -29,5 +29,5 @@ public class CreateLibraryRequest {
     private List<LibraryPath> paths;
 
     private boolean watch;
-    private BookFileType defaultBookFormat;
+    private List<BookFileType> formatPriority;
 }
