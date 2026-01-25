@@ -27,7 +27,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -96,19 +98,25 @@ public class LibraryProcessingService {
         entityManager.clear();
 
         List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
-        List<LibraryFile> toAutoAttach = newFiles.stream()
-                .filter(file -> findMatchingBook(file) != null)
-                .toList();
-        List<LibraryFile> toProcess = newFiles.stream()
-                .filter(file -> findMatchingBook(file) == null)
-                .toList();
 
-        for (LibraryFile file : toAutoAttach) {
-            BookEntity matchingBook = findMatchingBook(file);
-            if (matchingBook != null) {
-                autoAttachFile(matchingBook, file);
+        // Cache results to avoid duplicate findMatchingBook() calls
+        Map<LibraryFile, BookEntity> matchingBookMap = new HashMap<>();
+        for (LibraryFile file : newFiles) {
+            BookEntity match = findMatchingBook(file);
+            if (match != null) {
+                matchingBookMap.put(file, match);
             }
         }
+
+        // Auto-attach files with matches
+        for (Map.Entry<LibraryFile, BookEntity> entry : matchingBookMap.entrySet()) {
+            autoAttachFile(entry.getValue(), entry.getKey());
+        }
+
+        // Process files without matches
+        List<LibraryFile> toProcess = newFiles.stream()
+                .filter(file -> !matchingBookMap.containsKey(file))
+                .toList();
 
         fileAsBookProcessor.processLibraryFiles(toProcess, libraryEntity);
 
@@ -163,12 +171,23 @@ public class LibraryProcessingService {
                 .collect(Collectors.toList());
     }
 
+    private static final double FUZZY_MATCH_THRESHOLD = 0.85;
+
     private BookEntity findMatchingBook(LibraryFile file) {
-        String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
         String fileSubPath = file.getFileSubPath();
+
+        // Skip root-level files
+        if (fileSubPath == null || fileSubPath.isEmpty()) {
+            return null;
+        }
+
+        String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
         Long libraryPathId = file.getLibraryPathEntity().getId();
 
         List<BookEntity> booksInDirectory = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, fileSubPath);
+
+        BookEntity fuzzyMatch = null;
+        double bestSimilarity = 0;
 
         for (BookEntity book : booksInDirectory) {
             if (book.getDeleted() != null && book.getDeleted()) {
@@ -176,11 +195,26 @@ public class LibraryProcessingService {
             }
             BookFileEntity primaryFile = book.getPrimaryBookFile();
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+
+            // Try exact match first
             if (fileGroupingKey.equals(existingGroupingKey)) {
                 return book;
             }
+
+            // Track best fuzzy match
+            double similarity = BookFileGroupingUtils.calculateSimilarity(fileGroupingKey, existingGroupingKey);
+            if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                fuzzyMatch = book;
+            }
         }
-        return null;
+
+        // Return fuzzy match if found
+        if (fuzzyMatch != null) {
+            log.debug("Fuzzy matched '{}' to '{}' with similarity {}", file.getFileName(),
+                    fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
+        }
+        return fuzzyMatch;
     }
 
     private void autoAttachFile(BookEntity book, LibraryFile file) {

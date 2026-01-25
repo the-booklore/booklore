@@ -176,4 +176,60 @@ class BookFileGroupingUtilsTest {
         assertThat(groups).hasSize(1);
         assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, pdf);
     }
+
+    @Test
+    void extractGroupingKey_shouldConvertUnderscoresToSpaces() {
+        assertThat(BookFileGroupingUtils.extractGroupingKey("The_Hobbit.pdf")).isEqualTo("the hobbit");
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Lord_of_the_Rings.epub")).isEqualTo("lord of the rings");
+    }
+
+    @Test
+    void extractGroupingKey_shouldStripTrailingAuthor() {
+        assertThat(BookFileGroupingUtils.extractGroupingKey("The Hobbit - J.R.R. Tolkien.pdf")).isEqualTo("the hobbit");
+        assertThat(BookFileGroupingUtils.extractGroupingKey("1984 - George Orwell.epub")).isEqualTo("1984");
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Pride and Prejudice - Jane Austen.pdf")).isEqualTo("pride and prejudice");
+    }
+
+    @Test
+    void extractGroupingKey_shouldRepositionArticles() {
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Hobbit, The.pdf")).isEqualTo("the hobbit");
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Tale of Two Cities, A.epub")).isEqualTo("a tale of two cities");
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Unexpected Journey, An.pdf")).isEqualTo("an unexpected journey");
+    }
+
+    @Test
+    void extractGroupingKey_shouldHandleCombinedNormalizations() {
+        // Underscores + author
+        assertThat(BookFileGroupingUtils.extractGroupingKey("The_Hobbit - J.R.R. Tolkien.pdf")).isEqualTo("the hobbit");
+        // Article + author
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Hobbit, The - J.R.R. Tolkien.pdf")).isEqualTo("the hobbit");
+        // Underscores + article
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Hobbit,_The.pdf")).isEqualTo("the hobbit");
+    }
+
+    @Test
+    void calculateSimilarity_shouldReturnHighScoreForSimilarStrings() {
+        double similarity = BookFileGroupingUtils.calculateSimilarity("the hobbit", "the hobit");
+        assertThat(similarity).isGreaterThan(0.8);
+    }
+
+    @Test
+    void calculateSimilarity_shouldReturnPerfectScoreForIdenticalStrings() {
+        double similarity = BookFileGroupingUtils.calculateSimilarity("the hobbit", "the hobbit");
+        assertThat(similarity).isEqualTo(1.0);
+    }
+
+    @Test
+    void calculateSimilarity_shouldReturnLowScoreForDifferentStrings() {
+        double similarity = BookFileGroupingUtils.calculateSimilarity("the hobbit", "1984");
+        assertThat(similarity).isLessThan(0.5);
+    }
+
+    @Test
+    void calculateSimilarity_shouldHandleNullAndEmptyStrings() {
+        assertThat(BookFileGroupingUtils.calculateSimilarity(null, "test")).isEqualTo(0);
+        assertThat(BookFileGroupingUtils.calculateSimilarity("test", null)).isEqualTo(0);
+        assertThat(BookFileGroupingUtils.calculateSimilarity("", "test")).isEqualTo(0);
+        assertThat(BookFileGroupingUtils.calculateSimilarity("test", "")).isEqualTo(0);
+    }
 }

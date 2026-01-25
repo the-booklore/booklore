@@ -78,10 +78,20 @@ public class BookFileTransactionalHandler {
         notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
     }
 
+    private static final double FUZZY_MATCH_THRESHOLD = 0.85;
+
     private BookEntity findMatchingBook(Long libraryPathId, String fileSubPath, String fileName) {
+        // Skip root-level files
+        if (fileSubPath == null || fileSubPath.isEmpty()) {
+            return null;
+        }
+
         String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(fileName);
 
         List<BookEntity> booksInDirectory = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, fileSubPath);
+
+        BookEntity fuzzyMatch = null;
+        double bestSimilarity = 0;
 
         for (BookEntity book : booksInDirectory) {
             if (book.getDeleted() != null && book.getDeleted()) {
@@ -89,11 +99,26 @@ public class BookFileTransactionalHandler {
             }
             BookFileEntity primaryFile = book.getPrimaryBookFile();
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+
+            // Try exact match first
             if (fileGroupingKey.equals(existingGroupingKey)) {
                 return book;
             }
+
+            // Track best fuzzy match
+            double similarity = BookFileGroupingUtils.calculateSimilarity(fileGroupingKey, existingGroupingKey);
+            if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                fuzzyMatch = book;
+            }
         }
-        return null;
+
+        // Return fuzzy match if found
+        if (fuzzyMatch != null) {
+            log.debug("Fuzzy matched '{}' to '{}' with similarity {}", fileName,
+                    fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
+        }
+        return fuzzyMatch;
     }
 
     private void autoAttachFile(BookEntity book, String fileName, String fileSubPath, Path fullPath) {
