@@ -8,13 +8,21 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import com.adityachandel.booklore.model.entity.BookEntity;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import org.jspecify.annotations.NonNull;
 
 @UtilityClass
 @Slf4j
@@ -103,5 +111,45 @@ public class FileUtils {
             }
         }
         return false;
+    }
+
+    public static Stream<Path> walk(Path start, FileVisitOption... options) throws IOException {
+        return walk(start, Integer.MAX_VALUE, options);
+    }
+
+    // Drop in replacement for Files.walk that should handle io errors by ignoring them. Allows for unaccessible directories like trash inside of a library.
+    public Stream<Path> walk(Path path, int maxDepth, FileVisitOption... options) throws IOException {
+        final List<Path> files = new ArrayList<>();
+
+        Files.walkFileTree(path, Set.of(options), maxDepth, new SimpleFileVisitor<>() {
+            @Override
+            @NonNull
+            public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
+                if (FileUtils.shouldIgnore(file) || !Files.isReadable(file)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                files.add(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            @NonNull
+            public FileVisitResult visitFileFailed(@NonNull Path file, IOException e) {
+                log.error("Failed read path [{}]: {}", file, e.getMessage(), e);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            @NonNull
+            public FileVisitResult preVisitDirectory(@NonNull Path dir, @NonNull BasicFileAttributes attrs) throws IOException {
+                if (FileUtils.shouldIgnore(dir) || !Files.isReadable(dir)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                files.add(dir);
+                return super.preVisitDirectory(dir, attrs);
+            }
+        });
+
+        return files.stream();
     }
 }

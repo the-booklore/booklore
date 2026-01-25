@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.monitoring;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.service.watcher.LibraryFileEventProcessor;
+import com.adityachandel.booklore.util.FileUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -70,16 +71,14 @@ public class MonitoringService {
 
         library.getPaths().forEach(libraryPath -> {
             Path rootPath = Paths.get(libraryPath.getPath());
-            if (Files.isDirectory(rootPath)) {
-                try (Stream<Path> pathStream = Files.walk(rootPath)) {
-                    pathStream.filter(Files::isDirectory).forEach(path -> {
-                        if (registerPath(path, library.getId())) {
-                            registeredCount[0]++;
-                        }
-                    });
-                } catch (IOException e) {
-                    log.error("Failed to register paths for library '{}': {}", library.getName(), e.getMessage(), e);
-                }
+            try (Stream<Path> pathStream = FileUtils.walk(rootPath)) {
+                pathStream.filter(Files::isDirectory).forEach(path -> {
+                    if (registerPath(path, library.getId())) {
+                        registeredCount[0]++;
+                    }
+                });
+            } catch (IOException e) {
+                log.error("Failed to register paths for library '{}': {}", library.getName(), e.getMessage(), e);
             }
         });
 

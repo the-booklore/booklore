@@ -6,9 +6,11 @@ import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -193,5 +195,22 @@ class FileUtilsTest {
         Long size = FileUtils.getFileSizeInKb(file);
         assertNotNull(size, "File size should not be null for existing file");
         assertTrue(size >= 0, "File size should be non-negative");
+    }
+
+    @Test
+    void testWalk_HandlesInaccessibleDirectories() throws IOException {
+        Files.createFile(tempDir.resolve("happy.epub"));
+        Files.createDirectory(tempDir.resolve("some_other_random_named_dir"), PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("---------")));
+        Files.createFile(tempDir.resolve("zzzz_happ.epub"));
+
+        LibraryPathEntity libraryPath = new LibraryPathEntity();
+        libraryPath.setId(10L);
+        libraryPath.setPath(tempDir.toString());
+
+        // expected root directory, and two files, and not the directory that is in-accessible
+        List<String> expectedFiles = List.of("", File.separator + "happy.epub", File.separator + "zzzz_happ.epub");
+        List<String> actualFiles = FileUtils.walk(tempDir).map(path -> path.toString().replace(tempDir.toString(), "")).sorted().toList();
+
+        assertEquals(expectedFiles, actualFiles);
     }
 }
