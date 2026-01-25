@@ -130,14 +130,26 @@ public class LibraryFileEventProcessor {
             String fileName = relPath.getFileName().toString();
             String fileSubPath = Optional.ofNullable(relPath.getParent()).map(Path::toString).orElse("");
 
-            bookFilePersistenceService.findByLibraryPathSubPathAndFileName(libPathEntity.getId(), fileSubPath, fileName)
-                    .ifPresentOrElse(book -> {
-                        book.setDeleted(true);
-                        bookFilePersistenceService.save(book);
-                        notificationService.sendMessageToPermissions(Topic.BOOKS_REMOVE, Set.of(book.getId()),
-                                Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY));
-                        log.info("[MARKED_DELETED] Book '{}' marked as deleted", fileName);
-                    }, () -> log.warn("[NOT_FOUND] Book for deleted path '{}' not found", path));
+            bookFilePersistenceService.findBookFileByLibraryPathSubPathAndFileName(libPathEntity.getId(), fileSubPath, fileName)
+                    .ifPresentOrElse(bookFile -> {
+                        var book = bookFile.getBook();
+                        var remainingFiles = book.getBookFiles().size();
+
+                        if (remainingFiles <= 1) {
+                            // Last file - mark book as deleted
+                            bookFilePersistenceService.markBookAsDeleted(book);
+                            notificationService.sendMessageToPermissions(Topic.BOOKS_REMOVE, Set.of(book.getId()),
+                                    Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY));
+                            log.info("[MARKED_DELETED] Book '{}' marked as deleted (last file removed)", fileName);
+                        } else {
+                            // Multiple files - just delete this file
+                            bookFilePersistenceService.deleteBookFile(bookFile);
+                            notificationService.sendMessageToPermissions(Topic.BOOK_UPDATE, Set.of(book.getId()),
+                                    Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY));
+                            log.info("[FILE_REMOVED] BookFile '{}' removed from book (id={}), {} files remaining",
+                                    fileName, book.getId(), remainingFiles - 1);
+                        }
+                    }, () -> log.warn("[NOT_FOUND] BookFile for deleted path '{}' not found", path));
 
         } catch (Exception e) {
             log.warn("[ERROR] While handling file delete '{}': {}", path, e.getMessage());

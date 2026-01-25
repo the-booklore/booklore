@@ -3,9 +3,11 @@ package com.adityachandel.booklore.service.watcher;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.util.FileUtils;
@@ -30,6 +32,7 @@ public class BookFilePersistenceService {
 
     private final EntityManager entityManager;
     private final BookRepository bookRepository;
+    private final BookFileRepository bookFileRepository;
     private final NotificationService notificationService;
     private final BookMapper bookMapper;
 
@@ -94,6 +97,23 @@ public class BookFilePersistenceService {
     @Transactional(readOnly = true)
     public Optional<BookEntity> findByLibraryPathSubPathAndFileName(long libraryPathId, String fileSubPath, String fileName) {
         return bookRepository.findByLibraryPath_IdAndFileSubPathAndFileName(libraryPathId, fileSubPath, fileName);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BookFileEntity> findBookFileByLibraryPathSubPathAndFileName(long libraryPathId, String fileSubPath, String fileName) {
+        return bookFileRepository.findByLibraryPathIdAndFileSubPathAndFileName(libraryPathId, fileSubPath, fileName);
+    }
+
+    @Transactional
+    public void deleteBookFile(BookFileEntity bookFile) {
+        bookFileRepository.delete(bookFile);
+    }
+
+    @Transactional
+    public void markBookAsDeleted(BookEntity book) {
+        book.setDeleted(true);
+        book.setDeletedAt(Instant.now());
+        bookRepository.save(book);
     }
 
     @Transactional
