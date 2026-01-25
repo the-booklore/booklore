@@ -20,18 +20,13 @@ import {MetadataRefreshType} from '../../../model/request/metadata-refresh-type.
 import {Router} from '@angular/router';
 import {filter, map, switchMap, take, tap} from 'rxjs/operators';
 import {Menu} from 'primeng/menu';
-import {InfiniteScrollDirective} from 'ngx-infinite-scroll';
-import {BookCardLiteComponent} from '../../../../book/components/book-card-lite/book-card-lite-component';
 import {ResetProgressType, ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {DatePicker} from 'primeng/datepicker';
-import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
-import {BookReviewsComponent} from '../../../../book/components/book-reviews/book-reviews.component';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
-import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {
   fileSizeRanges,
@@ -41,15 +36,16 @@ import {
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
-import { BookReadingSessionsComponent } from '../book-reading-sessions/book-reading-sessions.component';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
+import {MetadataTabsComponent, ReadEvent, DownloadEvent, DownloadAdditionalFileEvent} from './metadata-tabs/metadata-tabs.component';
+
 
 @Component({
   selector: 'app-metadata-viewer',
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image, TagComponent, Divider, BookReadingSessionsComponent]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, Divider, MetadataTabsComponent]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges {
   @Input() book$!: Observable<Book | null>;
@@ -422,10 +418,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     );
   }
 
-  get defaultTabValue(): number {
-    return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
-  }
-
   toggleExpand(): void {
     this.isExpanded = !this.isExpanded;
   }
@@ -440,6 +432,19 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   downloadAdditionalFile(book: Book, fileId: number) {
     this.bookService.downloadAdditionalFile(book, fileId);
+  }
+
+  // Event handlers for MetadataTabsComponent
+  onReadBook(event: ReadEvent): void {
+    this.read(event.bookId, event.reader, event.bookType);
+  }
+
+  onDownloadBook(event: DownloadEvent): void {
+    this.download(event.book);
+  }
+
+  onDownloadFile(event: DownloadAdditionalFileEvent): void {
+    this.downloadAdditionalFile(event.book, event.fileId);
   }
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {

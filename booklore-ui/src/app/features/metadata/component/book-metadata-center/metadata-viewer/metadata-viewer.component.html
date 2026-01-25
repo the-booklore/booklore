@@ -629,76 +629,14 @@
       }
     </div>
 
-    <p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
-      <p-tablist>
-        @if (bookInSeries.length > 1) {
-          <p-tab [value]="1">
-            <i class="pi pi-ethereum"></i> More in Series
-          </p-tab>
-        }
-        <p-tab [value]="2">
-          <i class="pi pi-bookmark"></i> Similar Books
-        </p-tab>
-        <p-tab [value]="3">
-          <i class="pi pi-pen-to-square"></i> Notes
-        </p-tab>
-        <p-tab [value]="4">
-          <i class="pi pi-clock"></i> Reading Sessions
-        </p-tab>
-        <p-tab [value]="5">
-          <i class="pi pi-comments"></i> Reviews
-        </p-tab>
-      </p-tablist>
-      <p-tabpanels>
-        <p-tabpanel [value]="1">
-          <ng-template #content>
-            <div class="tab-content">
-              @if (bookInSeries.length > 1) {
-                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                  @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
-                    @if (bookInSeriesItem.id !== book.id) {
-                      <div class="dashboard-scroller-card">
-                        <app-book-card-lite-component [book]="bookInSeriesItem" [showSeriesNumber]="true" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
-                      </div>
-                    }
-                  }
-                </div>
-              }
-            </div>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="2">
-          <ng-template #content>
-            <div class="tab-content">
-              @if (recommendedBooks.length > 0) {
-                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                  @for (book of recommendedBooks; track book.book.id) {
-                    <div class="dashboard-scroller-card">
-                      <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="3">
-          <ng-template #content>
-            <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="4">
-          <ng-template #content>
-            <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="5">
-          <ng-template #content>
-            <app-book-reviews [bookId]="book.id"></app-book-reviews>
-          </ng-template>
-        </p-tabpanel>
-      </p-tabpanels>
-    </p-tabs>
+    <app-metadata-tabs
+      [book]="book"
+      [bookInSeries]="bookInSeries"
+      [recommendedBooks]="recommendedBooks"
+      (readBook)="onReadBook($event)"
+      (downloadBook)="onDownloadBook($event)"
+      (downloadFile)="onDownloadFile($event)">
+    </app-metadata-tabs>
   </div>
 } @else {
   <div class="loading-state">
