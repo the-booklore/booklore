@@ -77,7 +77,8 @@
               <p-button
                 label="Download All ({{ getTotalFileCount(book) }} files)"
                 icon="pi pi-download"
-                severity="success"
+                severity="info"
+                outlined
                 (onClick)="downloadAll(book)"
                 pTooltip="Download all files as a ZIP archive"
                 tooltipPosition="top">

@@ -144,17 +144,22 @@ public class BookDownloadService {
             throw ApiError.FILE_NOT_FOUND.createException(bookId);
         }
 
-        // If only one file, download it directly instead of zipping
+        // If only one file and it's not folder-based, download it directly
         if (allFiles.size() == 1) {
             BookFileEntity singleFile = allFiles.get(0);
             Path filePath = singleFile.getFullFilePath();
-            File file = filePath.toFile();
-            if (!file.exists()) {
+
+            if (!Files.exists(filePath)) {
                 throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
             }
-            setResponseHeaders(response, file);
-            streamFileToResponse(file, response);
-            return;
+
+            // For folder-based audiobooks, let it fall through to ZIP creation
+            if (!singleFile.isFolderBased() || !Files.isDirectory(filePath)) {
+                File file = filePath.toFile();
+                setResponseHeaders(response, file);
+                streamFileToResponse(file, response);
+                return;
+            }
         }
 
         // Sort files by filename for consistent ordering
@@ -177,22 +182,44 @@ public class BookDownloadService {
         try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
             for (BookFileEntity bookFile : allFiles) {
                 Path filePath = bookFile.getFullFilePath();
-                File file = filePath.toFile();
 
-                if (!file.exists()) {
+                if (!Files.exists(filePath)) {
                     log.warn("Skipping missing file during ZIP creation: {}", filePath);
                     continue;
                 }
 
-                ZipEntry zipEntry = new ZipEntry(bookFile.getFileName());
-                zipEntry.setSize(file.length());
-                zos.putNextEntry(zipEntry);
+                // Handle folder-based audiobooks - add all files from the folder
+                if (bookFile.isFolderBased() && Files.isDirectory(filePath)) {
+                    String folderPrefix = bookFile.getFileName() + "/";
+                    List<Path> audioFiles = Files.list(filePath)
+                            .filter(Files::isRegularFile)
+                            .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                            .toList();
 
-                try (InputStream fis = Files.newInputStream(filePath)) {
-                    fis.transferTo(zos);
+                    for (Path audioFile : audioFiles) {
+                        String entryName = folderPrefix + audioFile.getFileName().toString();
+                        ZipEntry zipEntry = new ZipEntry(entryName);
+                        zipEntry.setSize(Files.size(audioFile));
+                        zos.putNextEntry(zipEntry);
+
+                        try (InputStream fis = Files.newInputStream(audioFile)) {
+                            fis.transferTo(zos);
+                        }
+
+                        zos.closeEntry();
+                    }
+                } else {
+                    // Regular file
+                    ZipEntry zipEntry = new ZipEntry(bookFile.getFileName());
+                    zipEntry.setSize(Files.size(filePath));
+                    zos.putNextEntry(zipEntry);
+
+                    try (InputStream fis = Files.newInputStream(filePath)) {
+                        fis.transferTo(zos);
+                    }
+
+                    zos.closeEntry();
                 }
-
-                zos.closeEntry();
             }
             zos.finish();
             response.getOutputStream().flush();

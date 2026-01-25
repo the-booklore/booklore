@@ -80,6 +80,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+
+  &.download-all-section {
+    align-items: flex-end;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-color);
+  }
 }
 
 .files-section-title {
@@ -128,7 +134,7 @@
 .file-type-badge {
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #fff;
   flex-shrink: 0;
@@ -141,7 +147,7 @@
 }
 
 .file-name {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   color: var(--text-color);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -151,7 +157,7 @@
 }
 
 .file-size {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-color-secondary);
   flex-shrink: 0;
 }
@@ -161,4 +167,13 @@
   align-items: center;
   gap: 0.25rem;
   flex-shrink: 0;
+
+  ::ng-deep .p-button-sm {
+    width: 2rem;
+    height: 2rem;
+
+    .p-button-icon {
+      font-size: 1rem;
+    }
+  }
 }
