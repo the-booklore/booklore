@@ -508,6 +508,17 @@
     min-width: auto !important;
     padding: 10px !important;
   }
+
+  ::ng-deep .read-button-responsive .p-button-label,
+  ::ng-deep .read-button-responsive.p-splitbutton .p-button-label {
+    font-size: 0 !important;
+  }
+
+  ::ng-deep .read-button-responsive .p-button-label::after,
+  ::ng-deep .read-button-responsive.p-splitbutton .p-button-label::after {
+    content: "Read";
+    font-size: 0.875rem;
+  }
 }
 
 .navigation-buttons-desktop {
