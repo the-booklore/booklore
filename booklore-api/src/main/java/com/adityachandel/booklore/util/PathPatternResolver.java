@@ -36,11 +36,12 @@ public class PathPatternResolver {
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
-        return resolvePattern(book, book.getPrimaryBookFile(), pattern);
+        BookFileEntity primaryFile = book.getPrimaryBookFile();
+        return resolvePattern(book, primaryFile, pattern, primaryFile != null && primaryFile.isFolderBased());
     }
 
     public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern) {
-        return resolvePattern(book, bookFile, pattern, false);
+        return resolvePattern(book, bookFile, pattern, bookFile != null && bookFile.isFolderBased());
     }
 
     public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern, boolean folderBased) {
