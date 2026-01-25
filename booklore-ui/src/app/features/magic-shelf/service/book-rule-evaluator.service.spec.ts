@@ -1,3 +1,4 @@
+import {beforeEach, describe, expect, it} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {BookRuleEvaluatorService} from './book-rule-evaluator.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
@@ -170,8 +171,7 @@ describe('BookRuleEvaluatorService', () => {
   describe('evaluateGroup', () => {
     it('should evaluate group rules with AND logic', () => {
       const book = createBook({
-        bookType: 'EPUB',
-        metadata: { ...createBook().metadata, language: 'en' }
+        bookType: 'EPUB'
       });
 
       const group: GroupRule = {
