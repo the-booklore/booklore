@@ -166,7 +166,9 @@ public class LibraryProcessingService {
     }
 
     private void autoAttachFile(BookEntity book, LibraryFile file) {
-        String hash = FileFingerprint.generateHash(file.getFullPath());
+        String hash = file.isFolderBased()
+                ? FileFingerprint.generateFolderHash(file.getFullPath())
+                : FileFingerprint.generateHash(file.getFullPath());
         BookFileEntity additionalFile = BookFileEntity.builder()
                 .book(book)
                 .fileName(file.getFileName())
