@@ -12,13 +12,20 @@ import java.time.Instant;
 public class ReadProgressRequest {
     @NotNull
     private Long bookId;
+
+    private BookFileProgress fileProgress;
+
+    @Deprecated
     private EpubProgress epubProgress;
+    @Deprecated
     private PdfProgress pdfProgress;
+    @Deprecated
     private CbxProgress cbxProgress;
+
     private Instant dateFinished;
 
     @AssertTrue(message = "At least one progress field must be provided")
     public boolean isProgressValid() {
-        return epubProgress != null || pdfProgress != null || cbxProgress != null || dateFinished != null;
+        return fileProgress != null || epubProgress != null || pdfProgress != null || cbxProgress != null || dateFinished != null;
     }
 }

@@ -79,6 +79,13 @@ export interface KoboProgress {
   percentage: number;
 }
 
+export interface BookFileProgress {
+  bookFileId: number;
+  positionData?: string;
+  positionHref?: string;
+  progressPercent: number;
+}
+
 export interface BookMetadata {
   bookId: number;
   title?: string;

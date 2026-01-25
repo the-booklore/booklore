@@ -55,6 +55,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   bookType!: BookType;
   bookId!: number;
+  bookFileId?: number;
   altBookType?: string;
   pages: number[] = [];
   currentPage = 0;
@@ -146,6 +147,16 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
           // Use alternative bookType from query param if provided, otherwise use primary
           this.bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
           this.currentBook = book;
+
+          // Determine which file ID to use for progress tracking
+          if (this.altBookType) {
+            // Look for the alternative format file with matching type
+            const altFile = book.alternativeFormats?.find(f => f.bookType === this.altBookType);
+            this.bookFileId = altFile?.id;
+          } else {
+            // Use the primary file
+            this.bookFileId = book.primaryFile?.id;
+          }
 
           this.pageTitle.setBookPageTitle(book);
 
@@ -768,10 +779,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       : 0;
 
     if (this.bookType === CbxReaderComponent.TYPE_CBX) {
-      this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
+      this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
     }
     if (this.bookType === CbxReaderComponent.TYPE_PDF) {
-      this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
+      this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
     }
   }
 

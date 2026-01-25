@@ -221,7 +221,18 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         // Use alternative bookType from query param if provided, otherwise use primary
         const bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
 
-        this.progressService.initialize(this.bookId, bookType);
+        // Determine which file ID to use for progress tracking
+        let bookFileId: number | undefined;
+        if (this.altBookType) {
+          // Look for the alternative format file with matching type
+          const altFile = book.alternativeFormats?.find(f => f.bookType === this.altBookType);
+          bookFileId = altFile?.id;
+        } else {
+          // Use the primary file
+          bookFileId = book.primaryFile?.id;
+        }
+
+        this.progressService.initialize(this.bookId, bookType, bookFileId);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
 
@@ -242,7 +253,10 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           switchMap(() => {
             if (!this.hasLoadedOnce) {
               this.hasLoadedOnce = true;
-              return this.viewManager.goTo(book.epubProgress!.cfi);
+              // Only navigate to saved position if progress exists
+              if (book.epubProgress?.cfi) {
+                return this.viewManager.goTo(book.epubProgress.cfi);
+              }
             }
             return of(undefined);
           })

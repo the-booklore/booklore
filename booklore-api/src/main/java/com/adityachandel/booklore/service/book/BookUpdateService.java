@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.dto.progress.CbxProgress;
 import com.adityachandel.booklore.model.dto.progress.EpubProgress;
 import com.adityachandel.booklore.model.dto.progress.PdfProgress;
+import com.adityachandel.booklore.model.dto.request.BookFileProgress;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
@@ -40,6 +41,7 @@ public class BookUpdateService {
     private static final float COMPLETED_THRESHOLD = 99.5f;
 
     private final BookRepository bookRepository;
+    private final BookFileRepository bookFileRepository;
     private final PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
     private final CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     private final NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository;
@@ -47,6 +49,7 @@ public class BookUpdateService {
     private final BookMapper bookMapper;
     private final UserRepository userRepository;
     private final UserBookProgressRepository userBookProgressRepository;
+    private final UserBookFileProgressRepository userBookFileProgressRepository;
     private final AuthenticationService authenticationService;
     private final BookQueryService bookQueryService;
     private final UserProgressService userProgressService;
@@ -71,17 +74,42 @@ public class BookUpdateService {
     public void updateReadProgress(ReadProgressRequest request) {
         BookEntity book = bookRepository.findByIdWithBookFiles(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
+        BookLoreUserEntity userEntity = findUserOrThrow(user.getId());
+        Instant now = Instant.now();
 
         UserBookProgressEntity progress = userBookProgressRepository
                 .findByUserIdAndBookId(user.getId(), book.getId())
                 .orElseGet(UserBookProgressEntity::new);
 
-        BookLoreUserEntity userEntity = findUserOrThrow(user.getId());
         progress.setUser(userEntity);
         progress.setBook(book);
-        progress.setLastReadTime(Instant.now());
+        progress.setLastReadTime(now);
 
-        Float percentage = updateProgressByBookType(progress, book.getPrimaryBookFile().getBookType(), request);
+        Float percentage;
+
+        // Handle new file-level progress API
+        if (request.getFileProgress() != null) {
+            BookFileProgress fileProgress = request.getFileProgress();
+            percentage = fileProgress.progressPercent();
+
+            // Save to new file-level progress table
+            saveToUserBookFileProgress(userEntity, fileProgress, now);
+
+            // Also update old fields for backward compatibility (dual-write)
+            BookFileEntity bookFile = bookFileRepository.findById(fileProgress.bookFileId())
+                    .orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("Book file not found"));
+            updateProgressFromFileProgress(progress, bookFile.getBookType(), fileProgress);
+        } else {
+            // Fall back to old format-specific fields (backward compatibility)
+            percentage = updateProgressByBookType(progress, book.getPrimaryBookFile().getBookType(), request);
+
+            // Also save to new file-level progress table (dual-write for old API)
+            if (percentage != null) {
+                BookFileEntity primaryFile = book.getPrimaryBookFile();
+                saveToUserBookFileProgressFromLegacy(userEntity, primaryFile, progress, now);
+            }
+        }
+
         if (percentage != null) {
             progress.setReadStatus(calculateReadStatus(percentage));
             setProgressPercent(progress, book.getPrimaryBookFile().getBookType(), percentage);
@@ -91,6 +119,76 @@ public class BookUpdateService {
         }
 
         userBookProgressRepository.save(progress);
+    }
+
+    private void saveToUserBookFileProgress(BookLoreUserEntity user, BookFileProgress fileProgress, Instant now) {
+        UserBookFileProgressEntity entity = userBookFileProgressRepository
+                .findByUserIdAndBookFileId(user.getId(), fileProgress.bookFileId())
+                .orElseGet(UserBookFileProgressEntity::new);
+
+        BookFileEntity bookFile = bookFileRepository.findById(fileProgress.bookFileId())
+                .orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("Book file not found"));
+
+        entity.setUser(user);
+        entity.setBookFile(bookFile);
+        entity.setPositionData(fileProgress.positionData());
+        entity.setPositionHref(fileProgress.positionHref());
+        entity.setProgressPercent(fileProgress.progressPercent());
+        entity.setLastReadTime(now);
+
+        userBookFileProgressRepository.save(entity);
+    }
+
+    private void saveToUserBookFileProgressFromLegacy(BookLoreUserEntity user, BookFileEntity bookFile,
+                                                       UserBookProgressEntity progress, Instant now) {
+        UserBookFileProgressEntity entity = userBookFileProgressRepository
+                .findByUserIdAndBookFileId(user.getId(), bookFile.getId())
+                .orElseGet(UserBookFileProgressEntity::new);
+
+        entity.setUser(user);
+        entity.setBookFile(bookFile);
+        entity.setLastReadTime(now);
+
+        switch (bookFile.getBookType()) {
+            case PDF -> {
+                entity.setPositionData(progress.getPdfProgress() != null ?
+                        String.valueOf(progress.getPdfProgress()) : null);
+                entity.setProgressPercent(progress.getPdfProgressPercent());
+            }
+            case EPUB, FB2, MOBI, AZW3 -> {
+                entity.setPositionData(progress.getEpubProgress());
+                entity.setPositionHref(progress.getEpubProgressHref());
+                entity.setProgressPercent(progress.getEpubProgressPercent());
+            }
+            case CBX -> {
+                entity.setPositionData(progress.getCbxProgress() != null ?
+                        String.valueOf(progress.getCbxProgress()) : null);
+                entity.setProgressPercent(progress.getCbxProgressPercent());
+            }
+        }
+
+        userBookFileProgressRepository.save(entity);
+    }
+
+    private void updateProgressFromFileProgress(UserBookProgressEntity progress, BookFileType bookType,
+                                                 BookFileProgress fileProgress) {
+        switch (bookType) {
+            case PDF -> {
+                progress.setPdfProgress(fileProgress.positionData() != null ?
+                        Integer.parseInt(fileProgress.positionData()) : null);
+                progress.setPdfProgressPercent(fileProgress.progressPercent());
+            }
+            case EPUB, FB2, MOBI, AZW3 -> {
+                progress.setEpubProgress(fileProgress.positionData());
+                progress.setEpubProgressHref(fileProgress.positionHref());
+                progress.setEpubProgressPercent(fileProgress.progressPercent());
+            }
+            case CBX -> {
+                progress.setCbxProgress(fileProgress.positionData() != null ?
+                        Integer.parseInt(fileProgress.positionData()) : null);
+                progress.setCbxProgressPercent(fileProgress.progressPercent());
+            }
+        }
     }
 
     @Transactional
@@ -399,16 +497,23 @@ public class BookUpdateService {
     private List<Book> buildBooksWithProgress(List<BookEntity> bookEntities, Long userId) {
         Set<Long> bookIds = bookEntities.stream().map(BookEntity::getId).collect(Collectors.toSet());
         Map<Long, UserBookProgressEntity> progressMap = userProgressService.fetchUserProgress(userId, bookIds);
+        Map<Long, UserBookFileProgressEntity> fileProgressMap = userProgressService.fetchUserFileProgress(userId, bookIds);
 
         return bookEntities.stream()
-                .map(bookEntity -> buildBook(bookEntity, userId, progressMap))
+                .map(bookEntity -> buildBook(bookEntity, userId, progressMap, fileProgressMap))
                 .collect(Collectors.toList());
     }
 
-    private Book buildBook(BookEntity bookEntity, Long userId, Map<Long, UserBookProgressEntity> progressMap) {
+    private Book buildBook(BookEntity bookEntity, Long userId,
+                           Map<Long, UserBookProgressEntity> progressMap,
+                           Map<Long, UserBookFileProgressEntity> fileProgressMap) {
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), userId));
-        BookProgressUtil.enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
+        BookProgressUtil.enrichBookWithProgress(
+                book,
+                progressMap.get(bookEntity.getId()),
+                fileProgressMap.get(bookEntity.getId())
+        );
         return book;
     }
 

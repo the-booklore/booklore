@@ -440,16 +440,16 @@ export class BookService {
     this.bookPatchService.updateLastReadTime(bookId);
   }
 
-  savePdfProgress(bookId: number, page: number, percentage: number): Observable<void> {
-    return this.bookPatchService.savePdfProgress(bookId, page, percentage);
+  savePdfProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
+    return this.bookPatchService.savePdfProgress(bookId, page, percentage, bookFileId);
   }
 
   /*saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): Observable<void> {
     return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
   }*/
 
-  saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
-    return this.bookPatchService.saveCbxProgress(bookId, page, percentage);
+  saveCbxProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
+    return this.bookPatchService.saveCbxProgress(bookId, page, percentage, bookFileId);
   }
 
   updateDateFinished(bookId: number, dateFinished: string | null): Observable<void> {

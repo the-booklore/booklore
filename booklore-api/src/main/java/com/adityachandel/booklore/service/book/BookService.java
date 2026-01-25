@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.entity.UserBookFileProgressEntity;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
@@ -76,14 +77,18 @@ public class BookService {
                 user.getId()
         );
 
+        Set<Long> bookIds = books.stream().map(Book::getId).collect(Collectors.toSet());
         Map<Long, UserBookProgressEntity> progressMap =
-                userProgressService.fetchUserProgress(
-                        user.getId(),
-                        books.stream().map(Book::getId).collect(Collectors.toSet())
-                );
+                userProgressService.fetchUserProgress(user.getId(), bookIds);
+        Map<Long, UserBookFileProgressEntity> fileProgressMap =
+                userProgressService.fetchUserFileProgress(user.getId(), bookIds);
 
         books.forEach(book -> {
-            BookProgressUtil.enrichBookWithProgress(book, progressMap.get(book.getId()));
+            BookProgressUtil.enrichBookWithProgress(
+                    book,
+                    progressMap.get(book.getId()),
+                    fileProgressMap.get(book.getId())
+            );
             book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         });
 
@@ -94,14 +99,21 @@ public class BookService {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         List<BookEntity> bookEntities = bookQueryService.findAllWithMetadataByIds(bookIds);
+        Set<Long> entityIds = bookEntities.stream().map(BookEntity::getId).collect(Collectors.toSet());
 
-        Map<Long, UserBookProgressEntity> progressMap = userProgressService.fetchUserProgress(
-                user.getId(), bookEntities.stream().map(BookEntity::getId).collect(Collectors.toSet()));
+        Map<Long, UserBookProgressEntity> progressMap =
+                userProgressService.fetchUserProgress(user.getId(), entityIds);
+        Map<Long, UserBookFileProgressEntity> fileProgressMap =
+                userProgressService.fetchUserFileProgress(user.getId(), entityIds);
 
         return bookEntities.stream().map(bookEntity -> {
             Book book = bookMapper.toBook(bookEntity);
             if (!withDescription) book.getMetadata().setDescription(null);
-            BookProgressUtil.enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
+            BookProgressUtil.enrichBookWithProgress(
+                    book,
+                    progressMap.get(bookEntity.getId()),
+                    fileProgressMap.get(bookEntity.getId())
+            );
             return book;
         }).collect(Collectors.toList());
     }
@@ -110,12 +122,17 @@ public class BookService {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
-        UserBookProgressEntity userProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), bookId).orElse(new UserBookProgressEntity());
+        UserBookProgressEntity userProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), bookId)
+                .orElse(new UserBookProgressEntity());
+
+        // Fetch file-level progress for the book (most recent across all files)
+        UserBookFileProgressEntity fileProgress = userProgressService
+                .fetchUserFileProgress(user.getId(), Set.of(bookId))
+                .get(bookId);
 
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
-        book.setLastReadTime(userProgress.getLastReadTime());
-        BookProgressUtil.enrichBookWithProgress(book, userProgress);
+        BookProgressUtil.enrichBookWithProgress(book, userProgress, fileProgress);
 
         if (!withDescription) {
             book.getMetadata().setDescription(null);

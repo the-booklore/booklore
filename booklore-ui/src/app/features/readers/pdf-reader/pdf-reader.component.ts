@@ -31,6 +31,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
 
   bookData!: string | Blob;
   bookId!: number;
+  bookFileId?: number;
   private appSettingsSubscription!: Subscription;
 
   private bookService = inject(BookService);
@@ -59,6 +60,9 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
           const myself = results[3];
 
           this.pageTitle.setBookPageTitle(pdfMeta);
+
+          // Set the book file ID for progress tracking
+          this.bookFileId = pdfMeta.primaryFile?.id;
 
           const globalOrIndividual = myself.userSettings.perBookSetting.pdf;
           if (globalOrIndividual === 'Global') {
@@ -115,7 +119,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
 
   updateProgress(): void {
     const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
-    this.bookService.savePdfProgress(this.bookId, this.page, percentage).subscribe();
+    this.bookService.savePdfProgress(this.bookId, this.page, percentage, this.bookFileId).subscribe();
   }
 
   onPdfPagesLoaded(event: { pagesCount: number }): void {
