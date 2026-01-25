@@ -57,6 +57,17 @@ public class BookFileTransactionalHandler {
         LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
         String fileSubPath = FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), path);
 
+        // Check if this is a moved file by looking for existing book with same content hash
+        String currentHash = FileFingerprint.generateHash(path);
+        Optional<BookEntity> existingByHash = bookRepository.findByCurrentHash(currentHash);
+        if (existingByHash.isPresent()) {
+            // File was moved - update the existing book's path instead of creating a duplicate
+            bookFilePersistenceService.updatePathIfChanged(existingByHash.get(), libraryEntity, path, currentHash);
+            log.info("[CREATE] File '{}' recognized as moved file, updated existing book's path", filePath);
+            notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
+            return;
+        }
+
         BookEntity matchingBook = findMatchingBook(libraryPathEntity.getId(), fileSubPath, fileName);
 
         if (matchingBook != null) {
