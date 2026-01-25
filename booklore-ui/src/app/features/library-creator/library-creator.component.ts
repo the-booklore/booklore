@@ -3,8 +3,6 @@ import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
-import {TableModule} from 'primeng/table';
-import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
 import {BookFileType, Library} from '../book/model/library.model';
@@ -15,14 +13,14 @@ import {Button} from 'primeng/button';
 import {IconDisplayComponent} from '../../shared/components/icon-display/icon-display.component';
 import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
 import {switchMap} from 'rxjs/operators';
-import {map, of} from 'rxjs';
+import {map} from 'rxjs';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule],
+  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -77,7 +75,6 @@ export class LibraryCreatorComponent implements OnInit {
           this.formatPriority = formatPriority.map(type =>
             this.allBookFormats.find(f => f.type === type)!
           ).filter(f => f !== undefined);
-          // Add any missing formats at the end
           const existingTypes = new Set(formatPriority);
           this.allBookFormats.forEach(f => {
             if (!existingTypes.has(f.type)) {
@@ -139,9 +136,9 @@ export class LibraryCreatorComponent implements OnInit {
     return this.folders.length > 0;
   }
 
-  validateLibraryNameAndProceed(activateCallback: Function): void {
+  createOrUpdateLibrary(): void {
     const trimmedLibraryName = this.chosenLibraryName.trim();
-    if (trimmedLibraryName && trimmedLibraryName != this.editModeLibraryName) {
+    if (trimmedLibraryName && trimmedLibraryName !== this.editModeLibraryName) {
       const exists = this.libraryService.doesLibraryExistByName(trimmedLibraryName);
       if (exists) {
         this.messageService.add({
@@ -149,15 +146,10 @@ export class LibraryCreatorComponent implements OnInit {
           summary: 'Library Name Exists',
           detail: 'This library name is already taken.',
         });
-      } else {
-        activateCallback(2);
+        return;
       }
-    } else {
-      activateCallback(2);
     }
-  }
 
-  createOrUpdateLibrary(): void {
     const iconValue = this.selectedIcon?.value || 'heart';
     const iconType = this.selectedIcon?.type || 'PRIME_NG';
 
@@ -217,14 +209,6 @@ export class LibraryCreatorComponent implements OnInit {
         }
       });
     }
-  }
-
-  getFolderName(path: string): string {
-    if (!path || typeof path !== 'string') {
-      return '';
-    }
-    const parts = path.split('/').filter(p => p);
-    return parts[parts.length - 1] || path;
   }
 
   onFormatPriorityDrop(event: CdkDragDrop<{type: BookFileType, label: string}[]>): void {
