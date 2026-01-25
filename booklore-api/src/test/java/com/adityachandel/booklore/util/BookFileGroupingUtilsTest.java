@@ -232,4 +232,322 @@ class BookFileGroupingUtilsTest {
         assertThat(BookFileGroupingUtils.calculateSimilarity("", "test")).isEqualTo(0);
         assertThat(BookFileGroupingUtils.calculateSimilarity("test", "")).isEqualTo(0);
     }
+
+    // ========== Folder-Centric Grouping Tests ==========
+
+    @Test
+    void groupByBaseName_shouldGroupExtendedNamesMatchingFolderName() {
+        // The "American Gods" case - files with extended names should group with folder
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile mobi = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods.mobi")
+                .bookFileType(BookFileType.MOBI)
+                .build();
+
+        LibraryFile m4b = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods The Tenth Anniversary Edition (A Full Cast Production).m4b")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(epub, mobi, m4b));
+
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, mobi, m4b);
+    }
+
+    @Test
+    void groupByBaseName_shouldGroupEditionVariantsWithFolderName() {
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile regular = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("The Hobbit")
+                .fileName("The Hobbit.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile anniversary = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("The Hobbit")
+                .fileName("The Hobbit 50th Anniversary Edition.pdf")
+                .bookFileType(BookFileType.PDF)
+                .build();
+
+        LibraryFile unabridged = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("The Hobbit")
+                .fileName("The Hobbit Unabridged.m4b")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(regular, anniversary, unabridged));
+
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(regular, anniversary, unabridged);
+    }
+
+    @Test
+    void groupByBaseName_shouldKeepSeriesEntriesSeparate() {
+        // Harry Potter series should remain as separate books
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile book1 = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Harry Potter")
+                .fileName("Harry Potter Book 1.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile book2 = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Harry Potter")
+                .fileName("Harry Potter Book 2.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile book3 = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Harry Potter")
+                .fileName("Harry Potter Book 3.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(book1, book2, book3));
+
+        assertThat(groups).hasSize(3);
+    }
+
+    @Test
+    void groupByBaseName_shouldKeepSeriesWithNumbersSeparate() {
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile vol1 = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Lord of the Rings")
+                .fileName("Lord of the Rings Vol 1.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile vol2 = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Lord of the Rings")
+                .fileName("Lord of the Rings Vol 2.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(vol1, vol2));
+
+        assertThat(groups).hasSize(2);
+    }
+
+    @Test
+    void groupByBaseName_shouldGroupSeriesFormatsWithSameNumber() {
+        // Same series entry in different formats should group
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile book1epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Harry Potter")
+                .fileName("Harry Potter Book 1.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile book1pdf = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Harry Potter")
+                .fileName("Harry Potter Book 1.pdf")
+                .bookFileType(BookFileType.PDF)
+                .build();
+
+        LibraryFile book2epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Harry Potter")
+                .fileName("Harry Potter Book 2.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(book1epub, book1pdf, book2epub));
+
+        assertThat(groups).hasSize(2);
+        // Book 1 should have 2 files
+        boolean foundBook1Group = groups.values().stream()
+                .anyMatch(list -> list.size() == 2 && list.containsAll(List.of(book1epub, book1pdf)));
+        assertThat(foundBook1Group).isTrue();
+    }
+
+    @Test
+    void groupByBaseName_shouldSeparateUnrelatedBooksInAuthorFolder() {
+        // Multiple different books by same author should stay separate
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile americanGods = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman")
+                .fileName("American Gods.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile coraline = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman")
+                .fileName("Coraline.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile stardust = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman")
+                .fileName("Stardust.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(americanGods, coraline, stardust));
+
+        assertThat(groups).hasSize(3);
+    }
+
+    @Test
+    void groupByBaseName_shouldUseExactMatchingForRootLevelFiles() {
+        // Files at root level (no subfolder) should use exact key matching
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath(null)
+                .fileName("The Hobbit.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile pdf = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath(null)
+                .fileName("The Hobbit.pdf")
+                .bookFileType(BookFileType.PDF)
+                .build();
+
+        LibraryFile other = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath(null)
+                .fileName("1984.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(epub, pdf, other));
+
+        assertThat(groups).hasSize(2);
+        // Hobbit files should be grouped
+        boolean foundHobbitGroup = groups.values().stream()
+                .anyMatch(list -> list.size() == 2 && list.containsAll(List.of(epub, pdf)));
+        assertThat(foundHobbitGroup).isTrue();
+    }
+
+    @Test
+    void groupByBaseName_shouldGroupFilesWithAuthorVariationsMatchingFolder() {
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile basic = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile withAuthor = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods - Neil Gaiman.mobi")
+                .bookFileType(BookFileType.MOBI)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(basic, withAuthor));
+
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(basic, withAuthor);
+    }
+
+    @Test
+    void groupByBaseName_shouldHandleFolderBasedAudiobook() {
+        // Folder-based audiobook (MP3 folder) with ebook files
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods.epub")
+                .bookFileType(BookFileType.EPUB)
+                .folderBased(false)
+                .build();
+
+        // Folder-based audiobook appears as "American Gods" subfolder
+        LibraryFile mp3Folder = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("American Gods")
+                .fileName("American Gods")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .folderBased(true)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(epub, mp3Folder));
+
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, mp3Folder);
+    }
+
+    @Test
+    void groupByBaseName_shouldHandleNestedFolderPath() {
+        // Files in nested folder like "Neil Gaiman/American Gods"
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman/American Gods")
+                .fileName("American Gods.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile m4b = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman/American Gods")
+                .fileName("American Gods 10th Anniversary.m4b")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(epub, m4b));
+
+        // Should use last folder component "American Gods" as reference
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, m4b);
+    }
 }
