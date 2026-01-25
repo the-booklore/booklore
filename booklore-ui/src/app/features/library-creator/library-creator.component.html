@@ -55,7 +55,7 @@
           } @else {
             <div class="icon-selected">
               <div class="icon-preview">
-                <app-icon-display [icon]="selectedIcon" size="20px" />
+                <app-icon-display [icon]="selectedIcon" size="16px" />
               </div>
               <span class="icon-value">
                 @if (selectedIcon.type === 'PRIME_NG') {
@@ -119,7 +119,6 @@
 
       <div class="options-grid">
         <div class="option-item">
-          <p-toggleswitch [(ngModel)]="watch" />
           <div class="option-label">
             <span>Watch folders</span>
             <i
@@ -128,6 +127,7 @@
               tooltipPosition="right"
             ></i>
           </div>
+          <p-toggleswitch [(ngModel)]="watch" />
         </div>
 
         <div class="option-item format-priority-option">
