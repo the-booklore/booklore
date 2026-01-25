@@ -302,6 +302,12 @@ public class MetadataRefreshService {
             bookMetadataUpdater.setBookMetadata(context);
 
             Book book = bookMapper.toBook(context.getBookEntity());
+            
+            BookLoreUser user = authenticationService.getAuthenticatedUser();
+            if (user != null && book.getShelves() != null) {
+                book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
+            }
+            
             notificationService.sendMessage(Topic.BOOK_METADATA_UPDATE, book);
         }
     }
@@ -640,5 +646,12 @@ public class MetadataRefreshService {
             }
             case BOOKS -> request.getBookIds();
         };
+    }
+
+    private Set<Shelf> filterShelvesByUserId(Set<Shelf> shelves, Long userId) {
+        if (shelves == null) return Collections.emptySet();
+        return shelves.stream()
+                .filter(shelf -> userId.equals(shelf.getUserId()))
+                .collect(Collectors.toSet());
     }
 }
