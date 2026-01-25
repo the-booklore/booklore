@@ -19,6 +19,7 @@ import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationServi
 import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -255,6 +256,10 @@ public class BookService {
         return bookDownloadService.downloadBook(bookId);
     }
 
+    public void downloadAllBookFiles(Long bookId, HttpServletResponse response) {
+        bookDownloadService.downloadAllBookFiles(bookId, response);
+    }
+
     public ResponseEntity<ByteArrayResource> getBookContent(long bookId) throws IOException {
         return getBookContent(bookId, null);
     }
@@ -284,8 +289,8 @@ public class BookService {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
         List<Long> failedFileDeletions = new ArrayList<>();
         for (BookEntity book : books) {
-            List<Path> fullFilePaths = book.getFullFilePaths();
-            for (Path fullFilePath : fullFilePaths) {
+            for (BookFileEntity bookFile : book.getBookFiles()) {
+                Path fullFilePath = bookFile.getFullFilePath();
                 try {
                     if (Files.exists(fullFilePath)) {
                         try {
@@ -293,8 +298,15 @@ public class BookService {
                         } catch (Exception ex) {
                             log.warn("Failed to unregister monitoring for path: {}", fullFilePath.getParent(), ex);
                         }
-                        Files.delete(fullFilePath);
-                        log.info("Deleted book file: {}", fullFilePath);
+
+                        // Handle folder-based audiobooks (delete directory recursively)
+                        if (bookFile.isFolderBased() && Files.isDirectory(fullFilePath)) {
+                            deleteDirectoryRecursively(fullFilePath);
+                            log.info("Deleted folder-based audiobook: {}", fullFilePath);
+                        } else {
+                            Files.delete(fullFilePath);
+                            log.info("Deleted book file: {}", fullFilePath);
+                        }
 
                         Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
                                 .map(LibraryPathEntity::getPath)
@@ -318,6 +330,16 @@ public class BookService {
         return failedFileDeletions.isEmpty()
                 ? ResponseEntity.ok(response)
                 : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
+    }
+
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        if (!Files.exists(path)) return;
+
+        try (var walk = Files.walk(path)) {
+            walk.sorted(java.util.Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+        }
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) {

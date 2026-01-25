@@ -24,6 +24,10 @@ export interface DownloadAdditionalFileEvent {
   fileId: number;
 }
 
+export interface DownloadAllFilesEvent {
+  book: Book;
+}
+
 @Component({
   selector: 'app-metadata-tabs',
   standalone: true,
@@ -52,6 +56,7 @@ export class MetadataTabsComponent {
   @Output() readBook = new EventEmitter<ReadEvent>();
   @Output() downloadBook = new EventEmitter<DownloadEvent>();
   @Output() downloadFile = new EventEmitter<DownloadAdditionalFileEvent>();
+  @Output() downloadAllFiles = new EventEmitter<DownloadAllFilesEvent>();
 
   get defaultTabValue(): number {
     return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
@@ -67,6 +72,22 @@ export class MetadataTabsComponent {
 
   downloadAdditionalFile(book: Book, fileId: number): void {
     this.downloadFile.emit({ book, fileId });
+  }
+
+  downloadAll(book: Book): void {
+    this.downloadAllFiles.emit({ book });
+  }
+
+  hasMultipleFiles(book: Book): boolean {
+    const primaryCount = book.primaryFile ? 1 : 0;
+    const altCount = book.alternativeFormats?.length ?? 0;
+    return (primaryCount + altCount) > 1;
+  }
+
+  getTotalFileCount(book: Book): number {
+    const primaryCount = book.primaryFile ? 1 : 0;
+    const altCount = book.alternativeFormats?.length ?? 0;
+    return primaryCount + altCount;
   }
 
   getFileSizeInMB(fileInfo: FileInfo | null | undefined): string {
@@ -94,6 +115,15 @@ export class MetadataTabsComponent {
       case 'cbr':
       case 'cbx':
         return 'pi pi-image';
+      case 'audiobook':
+      case 'm4b':
+      case 'm4a':
+      case 'mp3':
+      case 'aac':
+      case 'flac':
+      case 'opus':
+      case 'ogg':
+        return 'pi pi-headphones';
       default:
         return 'pi pi-file';
     }

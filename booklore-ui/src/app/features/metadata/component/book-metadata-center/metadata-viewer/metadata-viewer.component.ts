@@ -37,7 +37,7 @@ import {BookNavigationService} from '../../../../book/service/book-navigation.se
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
-import {MetadataTabsComponent, ReadEvent, DownloadEvent, DownloadAdditionalFileEvent} from './metadata-tabs/metadata-tabs.component';
+import {MetadataTabsComponent, ReadEvent, DownloadEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent} from './metadata-tabs/metadata-tabs.component';
 
 
 @Component({
@@ -118,6 +118,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         const items: MenuItem[] = [];
         const primaryType = book.primaryFile?.bookType;
 
+        // Audiobooks don't have reader support yet
+        if (primaryType === 'AUDIOBOOK') {
+          return items;
+        }
+
         // Add streaming reader option for primary file
         if (primaryType === 'PDF') {
           items.push({
@@ -133,7 +138,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           });
         }
 
-        // Get readable alternative formats and group by type
+        // Get readable alternative formats and group by type (exclude AUDIOBOOK)
         const readableAlternatives = book.alternativeFormats?.filter(f =>
           f.bookType && ['PDF', 'EPUB', 'FB2', 'MOBI', 'AZW3', 'CBX'].includes(f.bookType)
         ) ?? [];
@@ -479,6 +484,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   onDownloadFile(event: DownloadAdditionalFileEvent): void {
     this.downloadAdditionalFile(event.book, event.fileId);
+  }
+
+  onDownloadAllFiles(event: DownloadAllFilesEvent): void {
+    this.bookService.downloadAllFiles(event.book);
   }
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
@@ -890,6 +899,15 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       case 'cbr':
       case 'cbx':
         return 'pi pi-image';
+      case 'audiobook':
+      case 'm4b':
+      case 'm4a':
+      case 'mp3':
+      case 'aac':
+      case 'flac':
+      case 'opus':
+      case 'ogg':
+        return 'pi pi-headphones';
       default:
         return 'pi pi-file';
     }

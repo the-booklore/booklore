@@ -19,6 +19,8 @@ public class LibraryFile {
     private String fileSubPath;
     private String fileName;
     private BookFileType bookFileType;
+    @Builder.Default
+    private boolean folderBased = false;
 
     public Path getFullPath() {
         if (fileSubPath == null || fileSubPath.isEmpty()) {

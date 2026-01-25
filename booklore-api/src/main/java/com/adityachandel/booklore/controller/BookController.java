@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -120,6 +121,21 @@ public class BookController {
     @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Resource> downloadBook(@Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
         return bookService.downloadBook(bookId);
+    }
+
+    @Operation(summary = "Download all book files", description = "Download all files for a book as a ZIP archive. For single-file books, downloads the file directly. Requires download permission or admin.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files downloaded successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @GetMapping("/{bookId}/download-all")
+    @PreAuthorize("@securityUtil.canDownload() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void downloadAllBookFiles(
+            @Parameter(description = "ID of the book") @PathVariable("bookId") Long bookId,
+            HttpServletResponse response) {
+        bookService.downloadAllBookFiles(bookId, response);
     }
 
     @Operation(summary = "Get viewer settings", description = "Retrieve viewer settings for a specific book.")

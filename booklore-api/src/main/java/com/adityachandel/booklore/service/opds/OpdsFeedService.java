@@ -684,6 +684,15 @@ public class OpdsFeedService {
                 }
                 yield "application/vnd.comicbook+zip";
             }
+            case AUDIOBOOK -> {
+                String lower = bookFile.getFileName().toLowerCase();
+                if (lower.endsWith(".m4b") || lower.endsWith(".m4a")) yield "audio/mp4";
+                if (lower.endsWith(".mp3")) yield "audio/mpeg";
+                if (lower.endsWith(".flac")) yield "audio/flac";
+                if (lower.endsWith(".ogg") || lower.endsWith(".opus")) yield "audio/ogg";
+                if (lower.endsWith(".aac")) yield "audio/aac";
+                yield "audio/mp4";
+            }
         };
     }
 

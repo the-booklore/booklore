@@ -134,6 +134,7 @@ public interface BookMapper {
                 .filePath(entity.getFullFilePath().toString())
                 .fileSubPath(entity.getFileSubPath())
                 .isBook(entity.isBook())
+                .folderBased(entity.isFolderBased())
                 .bookType(entity.getBookType())
                 .archiveType(entity.getArchiveType())
                 .fileSizeKb(entity.getFileSizeKb())

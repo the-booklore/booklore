@@ -16,6 +16,9 @@ export class FileDownloadService {
   downloadFile(url: string, defaultFilename: string): void {
     const cancelSubject = new Subject<void>();
 
+    // Show preparing state immediately
+    this.downloadProgressService.startDownload(defaultFilename, cancelSubject, true);
+
     this.initiateDownload(url)
       .pipe(
         takeUntil(cancelSubject),
@@ -55,9 +58,7 @@ export class FileDownloadService {
     cancelSubject: Subject<void>
   ): void {
     if (event.total) {
-      if (!this.downloadProgressService.isDownloadInProgress()) {
-        this.downloadProgressService.startDownload(defaultFilename, cancelSubject);
-      }
+      // Download already started with preparing state, just update progress
       this.downloadProgressService.updateProgress(event.loaded, event.total);
     }
   }

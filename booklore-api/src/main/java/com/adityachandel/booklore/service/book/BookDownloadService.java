@@ -25,13 +25,18 @@ import org.springframework.util.FileSystemUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Slf4j
 @AllArgsConstructor
@@ -51,12 +56,19 @@ public class BookDownloadService {
             BookEntity bookEntity = bookRepository.findById(bookId)
                     .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
+            BookFileEntity primaryFile = bookEntity.getPrimaryBookFile();
             Path file = Paths.get(FileUtils.getBookFullPath(bookEntity)).toAbsolutePath().normalize();
-            File bookFile = file.toFile();
 
-            if (!bookFile.exists()) {
+            if (!Files.exists(file)) {
                 throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
             }
+
+            // Handle folder-based audiobooks - create ZIP
+            if (primaryFile.isFolderBased() && Files.isDirectory(file)) {
+                return downloadFolderAsZip(file, primaryFile.getFileName());
+            }
+
+            File bookFile = file.toFile();
 
             // Use FileSystemResource which properly handles file resources and closing
             Resource resource = new FileSystemResource(bookFile);
@@ -91,12 +103,17 @@ public class BookDownloadService {
             }
 
             Path file = bookFileEntity.getFullFilePath().toAbsolutePath().normalize();
-            File bookFile = file.toFile();
 
-            if (!bookFile.exists()) {
+            if (!Files.exists(file)) {
                 throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(fileId);
             }
 
+            // Handle folder-based audiobooks - create ZIP
+            if (bookFileEntity.isFolderBased() && Files.isDirectory(file)) {
+                return downloadFolderAsZip(file, bookFileEntity.getFileName());
+            }
+
+            File bookFile = file.toFile();
             Resource resource = new FileSystemResource(bookFile);
 
             String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
@@ -115,6 +132,75 @@ public class BookDownloadService {
         } catch (Exception e) {
             log.error("Failed to download book file {}: {}", fileId, e.getMessage(), e);
             throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(fileId);
+        }
+    }
+
+    public void downloadAllBookFiles(Long bookId, HttpServletResponse response) {
+        BookEntity bookEntity = bookRepository.findById(bookId)
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        List<BookFileEntity> allFiles = bookEntity.getBookFiles();
+        if (allFiles == null || allFiles.isEmpty()) {
+            throw ApiError.FILE_NOT_FOUND.createException(bookId);
+        }
+
+        // If only one file, download it directly instead of zipping
+        if (allFiles.size() == 1) {
+            BookFileEntity singleFile = allFiles.get(0);
+            Path filePath = singleFile.getFullFilePath();
+            File file = filePath.toFile();
+            if (!file.exists()) {
+                throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+            }
+            setResponseHeaders(response, file);
+            streamFileToResponse(file, response);
+            return;
+        }
+
+        // Sort files by filename for consistent ordering
+        allFiles.sort(Comparator.comparing(BookFileEntity::getFileName));
+
+        // Create ZIP with all files
+        String bookTitle = bookEntity.getMetadata() != null && bookEntity.getMetadata().getTitle() != null
+                ? bookEntity.getMetadata().getTitle()
+                : "book-" + bookId;
+        String safeTitle = bookTitle.replaceAll("[^a-zA-Z0-9\\-_]", "_");
+        String zipFileName = safeTitle + ".zip";
+
+        response.setContentType("application/zip");
+        String encodedFilename = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = NON_ASCII_PATTERN.matcher(zipFileName).replaceAll("_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
+
+        try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
+            for (BookFileEntity bookFile : allFiles) {
+                Path filePath = bookFile.getFullFilePath();
+                File file = filePath.toFile();
+
+                if (!file.exists()) {
+                    log.warn("Skipping missing file during ZIP creation: {}", filePath);
+                    continue;
+                }
+
+                ZipEntry zipEntry = new ZipEntry(bookFile.getFileName());
+                zipEntry.setSize(file.length());
+                zos.putNextEntry(zipEntry);
+
+                try (InputStream fis = Files.newInputStream(filePath)) {
+                    fis.transferTo(zos);
+                }
+
+                zos.closeEntry();
+            }
+            zos.finish();
+            response.getOutputStream().flush();
+
+            log.info("Successfully created and streamed ZIP for book {} with {} files", bookId, allFiles.size());
+        } catch (IOException e) {
+            log.error("Failed to create ZIP for book {}: {}", bookId, e.getMessage(), e);
+            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
         }
     }
 
@@ -197,5 +283,42 @@ public class BookDownloadService {
                 log.warn("Failed to delete temporary directory {}: {}", tempDir, e.getMessage());
             }
         }
+    }
+
+    private ResponseEntity<Resource> downloadFolderAsZip(Path folderPath, String folderName) throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            // Get all files in the folder, sorted by name
+            List<Path> files = Files.list(folderPath)
+                    .filter(Files::isRegularFile)
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .toList();
+
+            for (Path audioFile : files) {
+                ZipEntry entry = new ZipEntry(audioFile.getFileName().toString());
+                zos.putNextEntry(entry);
+                Files.copy(audioFile, zos);
+                zos.closeEntry();
+            }
+        }
+
+        byte[] zipBytes = baos.toByteArray();
+        Resource resource = new org.springframework.core.io.ByteArrayResource(zipBytes);
+
+        String zipFileName = folderName + ".zip";
+        String encodedFilename = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = NON_ASCII_PATTERN.matcher(zipFileName).replaceAll("_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.valueOf("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(zipBytes.length))
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .header(HttpHeaders.EXPIRES, "0")
+                .body(resource);
     }
 }

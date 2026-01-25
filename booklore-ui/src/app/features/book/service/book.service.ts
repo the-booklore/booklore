@@ -258,6 +258,16 @@ export class BookService {
     const bookType: BookType | undefined = explicitBookType ?? book.primaryFile?.bookType;
     const isAlternativeFormat = explicitBookType && explicitBookType !== book.primaryFile?.bookType;
 
+    // Audiobooks don't have reader support yet
+    if (bookType === 'AUDIOBOOK') {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Audiobook',
+        detail: 'Audiobook playback is not yet supported. You can download the file instead.'
+      });
+      return;
+    }
+
     let baseUrl: string | null = null;
     let queryParams: Record<string, any> = {};
 
@@ -321,6 +331,14 @@ export class BookService {
   downloadFile(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, book.primaryFile?.fileName ?? 'book');
+  }
+
+  downloadAllFiles(book: Book): void {
+    const downloadUrl = `${this.url}/${book.id}/download-all`;
+    const fileName = book.metadata?.title
+      ? `${book.metadata.title.replace(/[^a-zA-Z0-9\-_]/g, '_')}.zip`
+      : `book-${book.id}.zip`;
+    this.fileDownloadService.downloadFile(downloadUrl, fileName);
   }
 
   deleteAdditionalFile(bookId: number, fileId: number): Observable<void> {
@@ -434,7 +452,9 @@ export class BookService {
           ? 'EPUB'
           : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
             ? 'CBX'
-            : null;
+            : (ext === 'm4b' || ext === 'm4a' || ext === 'mp3' || ext === 'aac' || ext === 'flac' || ext === 'opus' || ext === 'ogg')
+              ? 'AUDIOBOOK'
+              : null;
 
       if (bookType) {
         formData.append('bookType', bookType);

@@ -562,14 +562,16 @@
               </div>
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
-            @if (readMenuItems$ | async; as readItems) {
-              @if (readItems.length > 0) {
-                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
+            @if (book.primaryFile?.bookType !== 'AUDIOBOOK') {
+              @if (readMenuItems$ | async; as readItems) {
+                @if (readItems.length > 0) {
+                  <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
+                } @else {
+                  <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id)" severity="primary"/>
+                }
               } @else {
                 <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id)" severity="primary"/>
               }
-            } @else {
-              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id)" severity="primary"/>
             }
             <p-divider layout="vertical"></p-divider>
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
@@ -635,7 +637,8 @@
       [recommendedBooks]="recommendedBooks"
       (readBook)="onReadBook($event)"
       (downloadBook)="onDownloadBook($event)"
-      (downloadFile)="onDownloadFile($event)">
+      (downloadFile)="onDownloadFile($event)"
+      (downloadAllFiles)="onDownloadAllFiles($event)">
     </app-metadata-tabs>
   </div>
 } @else {

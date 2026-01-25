@@ -1,12 +1,11 @@
 package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.text.similarity.FuzzyScore;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -15,7 +14,7 @@ import java.util.stream.Collectors;
 public class BookFileGroupingUtils {
 
     private static final Pattern FORMAT_INDICATOR_PATTERN = Pattern.compile(
-            "[\\(\\[]\\s*(?:pdf|epub|mobi|azw3?|fb2|cbz|cbr|cb7)\\s*[\\)\\]]",
+            "[\\(\\[]\\s*(?:pdf|epub|mobi|azw3?|fb2|cbz|cbr|cb7|m4b|m4a|mp3|audiobook|audio)\\s*[\\)\\]]",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -79,11 +78,20 @@ public class BookFileGroupingUtils {
         return safeSubPath + ":" + extractGroupingKey(fileName);
     }
 
+    /**
+     * Groups library files by their base name, allowing different formats of the same book
+     * to be grouped together. Folder-based audiobooks are treated as single files and
+     * grouped with ebooks in the same directory that share the same base name.
+     */
     public Map<String, List<LibraryFile>> groupByBaseName(List<LibraryFile> libraryFiles) {
-        return libraryFiles.stream()
-                .collect(Collectors.groupingBy(file ->
-                        file.getLibraryPathEntity().getId() + ":" +
-                                generateDirectoryGroupKey(file.getFileSubPath(), file.getFileName())
-                ));
+        Map<String, List<LibraryFile>> result = new LinkedHashMap<>();
+
+        for (LibraryFile file : libraryFiles) {
+            String key = file.getLibraryPathEntity().getId() + ":" +
+                    generateDirectoryGroupKey(file.getFileSubPath(), file.getFileName());
+            result.computeIfAbsent(key, k -> new ArrayList<>()).add(file);
+        }
+
+        return result;
     }
 }

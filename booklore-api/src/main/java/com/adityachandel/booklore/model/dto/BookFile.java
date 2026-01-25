@@ -18,6 +18,7 @@ public class BookFile {
     private String filePath;
     private String fileSubPath;
     private boolean isBook;
+    private boolean folderBased;
     private BookFileType bookType;
     private ArchiveUtils.ArchiveType archiveType;
     private Long fileSizeKb;

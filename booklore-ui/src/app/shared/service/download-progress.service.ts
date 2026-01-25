@@ -7,6 +7,7 @@ export interface DownloadProgress {
   progress: number;
   loaded: number;
   total: number;
+  preparing: boolean;
   cancelSubject?: Subject<void>;
 }
 
@@ -19,7 +20,8 @@ export class DownloadProgressService {
     filename: '',
     progress: 0,
     loaded: 0,
-    total: 0
+    total: 0,
+    preparing: false
   });
 
   private lastUpdateTime = 0;
@@ -33,7 +35,7 @@ export class DownloadProgressService {
     return this.downloadProgressSubject.value.visible;
   }
 
-  startDownload(filename: string, cancelSubject: Subject<void>): void {
+  startDownload(filename: string, cancelSubject: Subject<void>, preparing: boolean = false): void {
     this.lastUpdateTime = 0;
     this.pendingUpdate = null;
     if (this.throttleTimer) {
@@ -47,6 +49,7 @@ export class DownloadProgressService {
       progress: 0,
       loaded: 0,
       total: 0,
+      preparing,
       cancelSubject
     });
   }
@@ -62,6 +65,7 @@ export class DownloadProgressService {
       progress,
       loaded,
       total,
+      preparing: false, // No longer preparing once we have progress
       cancelSubject: current.cancelSubject
     };
 
@@ -114,7 +118,8 @@ export class DownloadProgressService {
       filename: '',
       progress: 0,
       loaded: 0,
-      total: 0
+      total: 0,
+      preparing: false
     });
   }
 

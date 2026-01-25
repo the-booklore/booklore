@@ -72,6 +72,18 @@
     <p-tabpanel [value]="6">
       <ng-template #content>
         <div class="files-tab-content">
+          @if (hasMultipleFiles(book)) {
+            <div class="files-section download-all-section">
+              <p-button
+                label="Download All ({{ getTotalFileCount(book) }} files)"
+                icon="pi pi-download"
+                severity="success"
+                (onClick)="downloadAll(book)"
+                pTooltip="Download all files as a ZIP archive"
+                tooltipPosition="top">
+              </p-button>
+            </div>
+          }
           @if (book.primaryFile) {
             <div class="files-section">
               <h4 class="files-section-title">Primary File</h4>

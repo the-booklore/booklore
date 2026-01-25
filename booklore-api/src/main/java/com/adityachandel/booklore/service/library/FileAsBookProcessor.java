@@ -119,14 +119,25 @@ public class FileAsBookProcessor {
             return;
         }
 
-        String hash = FileFingerprint.generateHash(file.getFullPath());
+        // Handle folder-based audiobooks vs regular files
+        String hash;
+        Long fileSizeKb;
+        if (file.isFolderBased()) {
+            hash = FileFingerprint.generateFolderHash(file.getFullPath());
+            fileSizeKb = FileUtils.getFolderSizeInKb(file.getFullPath());
+        } else {
+            hash = FileFingerprint.generateHash(file.getFullPath());
+            fileSizeKb = FileUtils.getFileSizeInKb(file.getFullPath());
+        }
+
         BookFileEntity additionalFile = BookFileEntity.builder()
                 .book(bookEntity)
                 .fileName(file.getFileName())
                 .fileSubPath(file.getFileSubPath())
                 .isBookFormat(true)
+                .folderBased(file.isFolderBased())
                 .bookType(file.getBookFileType())
-                .fileSizeKb(FileUtils.getFileSizeInKb(file.getFullPath()))
+                .fileSizeKb(fileSizeKb)
                 .initialHash(hash)
                 .currentHash(hash)
                 .addedOn(Instant.now())

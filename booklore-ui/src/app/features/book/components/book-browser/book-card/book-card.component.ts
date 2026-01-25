@@ -734,6 +734,15 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       case 'cbr':
       case 'cbx':
         return 'pi pi-image';
+      case 'audiobook':
+      case 'm4b':
+      case 'm4a':
+      case 'mp3':
+      case 'aac':
+      case 'flac':
+      case 'opus':
+      case 'ogg':
+        return 'pi pi-headphones';
       default:
         return 'pi pi-file';
     }

@@ -309,6 +309,7 @@ public class ReadingProgressService {
             case EPUB, FB2, MOBI, AZW3 -> updateEbookProgress(progress, request.getEpubProgress());
             case PDF -> updatePdfProgress(progress, request.getPdfProgress());
             case CBX -> updateCbxProgress(progress, request.getCbxProgress());
+            case AUDIOBOOK -> null; // Audiobook progress tracking not yet implemented
         };
     }
 
