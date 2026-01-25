@@ -141,17 +141,24 @@
         >
           <ng-template pTemplate="header">
             <tr>
+              <th style="width: 50px;"></th>
               <th style="width: 60px;">ID</th>
               <th>Current Path</th>
               <th style="width: 160px;">Target Library</th>
               <th style="width: 160px;">Library Path</th>
               <th style="width: 40px;"></th>
               <th>New Path</th>
-              <th style="width: 50px;"></th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-preview>
             <tr [class.row-moved]="preview.isMoved">
+              <td class="status-cell">
+                @if (preview.isMoved) {
+                  <i class="pi pi-check-circle status-success"></i>
+                } @else {
+                  <i class="pi pi-clock status-pending"></i>
+                }
+              </td>
               <td class="id-cell">{{ preview.bookId }}</td>
               <td>
                 <div class="path-cell">
@@ -199,11 +206,6 @@
                   <span class="path-library">{{ preview.targetLibraryName }}/</span>
                   <span class="path-value">{{ preview.relativeNewPath }}</span>
                 </div>
-              </td>
-              <td class="status-cell">
-                @if (preview.isMoved) {
-                  <i class="pi pi-check-circle status-success"></i>
-                }
               </td>
             </tr>
           </ng-template>
