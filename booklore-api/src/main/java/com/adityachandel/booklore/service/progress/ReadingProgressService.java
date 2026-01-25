@@ -107,13 +107,13 @@ public class ReadingProgressService {
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
         if (progress.getKoboProgressPercent() != null) {
             book.setKoboProgress(KoboProgress.builder()
-                    .percentage(progress.getKoboProgressPercent())
+                    .percentage(roundToOneDecimal(progress.getKoboProgressPercent()))
                     .build());
         }
 
         if (progress.getKoreaderProgressPercent() != null) {
             book.setKoreaderProgress(KoProgress.builder()
-                    .percentage(progress.getKoreaderProgressPercent() * 100)
+                    .percentage(roundToOneDecimal(progress.getKoreaderProgressPercent() * 100))
                     .build());
         }
 
@@ -121,21 +121,21 @@ public class ReadingProgressService {
             book.setEpubProgress(EpubProgress.builder()
                     .cfi(progress.getEpubProgress())
                     .href(progress.getEpubProgressHref())
-                    .percentage(progress.getEpubProgressPercent())
+                    .percentage(roundToOneDecimal(progress.getEpubProgressPercent()))
                     .build());
         }
 
         if (progress.getPdfProgress() != null || progress.getPdfProgressPercent() != null) {
             book.setPdfProgress(PdfProgress.builder()
                     .page(progress.getPdfProgress())
-                    .percentage(progress.getPdfProgressPercent())
+                    .percentage(roundToOneDecimal(progress.getPdfProgressPercent()))
                     .build());
         }
 
         if (progress.getCbxProgress() != null || progress.getCbxProgressPercent() != null) {
             book.setCbxProgress(CbxProgress.builder()
                     .page(progress.getCbxProgress())
-                    .percentage(progress.getCbxProgressPercent())
+                    .percentage(roundToOneDecimal(progress.getCbxProgressPercent()))
                     .build());
         }
     }
@@ -148,15 +148,15 @@ public class ReadingProgressService {
             case EPUB, FB2, MOBI, AZW3 -> book.setEpubProgress(EpubProgress.builder()
                     .cfi(fileProgress.getPositionData())
                     .href(fileProgress.getPositionHref())
-                    .percentage(fileProgress.getProgressPercent())
+                    .percentage(roundToOneDecimal(fileProgress.getProgressPercent()))
                     .build());
             case PDF -> book.setPdfProgress(PdfProgress.builder()
                     .page(parseIntOrNull(fileProgress.getPositionData()))
-                    .percentage(fileProgress.getProgressPercent())
+                    .percentage(roundToOneDecimal(fileProgress.getProgressPercent()))
                     .build());
             case CBX -> book.setCbxProgress(CbxProgress.builder()
                     .page(parseIntOrNull(fileProgress.getPositionData()))
-                    .percentage(fileProgress.getProgressPercent())
+                    .percentage(roundToOneDecimal(fileProgress.getProgressPercent()))
                     .build());
         }
     }
@@ -168,6 +168,10 @@ public class ReadingProgressService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private Float roundToOneDecimal(Float value) {
+        return value != null ? Math.round(value * 10f) / 10f : null;
     }
 
     // ==================== Methods from BookUpdateService ====================
