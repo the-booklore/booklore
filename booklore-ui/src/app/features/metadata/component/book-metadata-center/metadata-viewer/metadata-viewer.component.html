@@ -355,10 +355,10 @@
                     </app-tag>
                   </span>
                 }
-                @for (format of book?.alternativeFormats; track format.id) {
-                  <span (click)="goToFileType(format.filePath)" style="cursor: pointer;" [pTooltip]="format.fileName ?? ''" tooltipPosition="top">
-                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(format.bookType)" customTextColor="#fff">
-                      {{ format.bookType }}
+                @for (formatType of getUniqueAlternativeFormatTypes(book); track formatType) {
+                  <span (click)="goToFileType('.' + formatType)" style="cursor: pointer;" [pTooltip]="formatType" tooltipPosition="top">
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(formatType)" customTextColor="#fff">
+                      {{ formatType }}
                     </app-tag>
                   </span>
                 }

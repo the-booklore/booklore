@@ -886,6 +886,18 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return parts.pop()?.toUpperCase() || null;
   }
 
+  getUniqueAlternativeFormatTypes(book: Book): BookType[] {
+    if (!book.alternativeFormats?.length) return [];
+    const primaryType = book.primaryFile?.bookType;
+    const uniqueTypes = new Set<BookType>();
+    for (const format of book.alternativeFormats) {
+      if (format.bookType && format.bookType !== primaryType) {
+        uniqueTypes.add(format.bookType);
+      }
+    }
+    return [...uniqueTypes];
+  }
+
   getFileIcon(fileType: string | null): string {
     if (!fileType) return 'pi pi-file';
     switch (fileType.toLowerCase()) {
