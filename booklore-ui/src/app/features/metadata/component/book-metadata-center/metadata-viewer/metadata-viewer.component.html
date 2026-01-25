@@ -347,14 +347,14 @@
 
             <div class="metadata-item">
               <span class="metadata-key">File Type:</span>
-              @if (getFileExtension(book?.filePath)) {
-                <span (click)="goToFileType(book?.filePath)" style="cursor: pointer;">
-                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
-                    {{ (getFileExtension(book?.filePath) | uppercase) || '-' }}
+              @if (getFileExtension(book?.primaryFile?.filePath)) {
+                <span (click)="goToFileType(book?.primaryFile?.filePath)" style="cursor: pointer;">
+                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.primaryFile?.filePath))" customTextColor="#fff">
+                    {{ (getFileExtension(book?.primaryFile?.filePath) | uppercase) || '-' }}
                   </app-tag>
                 </span>
               } @else {
-                <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
+                <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.primaryFile?.filePath))" customTextColor="#fff">
                   -
                 </app-tag>
               }
@@ -504,9 +504,9 @@
 
             <div class="metadata-item">
               <span class="metadata-key">File Size:</span>
-              @if (book?.fileSizeKb) {
-                <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.fileSizeKb!)">
-                  {{ getFileSizeInMB(book) }}
+              @if (book?.primaryFile?.fileSizeKb) {
+                <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.primaryFile?.fileSizeKb!)">
+                  {{ getFileSizeInMB(book?.primaryFile) }}
                 </span>
               } @else {
                 <span class="metadata-value">-</span>
@@ -518,7 +518,7 @@
             <span class="metadata-key">File Path:</span>
             <i class="pi eye-icon" [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'" (click)="showFilePath = !showFilePath"></i>
             @if (showFilePath) {
-              <code class="file-path-code">{{ book?.filePath }}</code>
+              <code class="file-path-code">{{ book?.primaryFile?.filePath }}</code>
             }
           </div>
         </div>
@@ -554,17 +554,17 @@
               </div>
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
-            @if (book!.bookType === 'PDF') {
+            @if (book?.primaryFile?.bookType === 'PDF') {
               @if (pdfReadMenuItems$ | async; as readItems) {
                 <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
               }
             }
-            @if (book!.bookType === 'EPUB') {
+            @if (book?.primaryFile?.bookType === 'EPUB') {
               @if (epubReadMenuItems$ | async; as readItems) {
                 <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF' && book!.bookType !== 'EPUB') {
+            @if (book?.primaryFile?.bookType !== 'PDF' && book?.primaryFile?.bookType !== 'EPUB') {
               <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
             }
             <p-divider layout="vertical"></p-divider>

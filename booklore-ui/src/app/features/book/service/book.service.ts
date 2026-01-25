@@ -254,10 +254,11 @@ export class BookService {
       return;
     }
 
+    const bookType = book.primaryFile?.bookType;
     let baseUrl: string | null = null;
     let queryParams: Record<string, any> | undefined;
 
-    switch (book.bookType) {
+    switch (bookType) {
       case 'PDF':
         baseUrl = reader === 'pdf-streaming' ? 'cbx-reader' : 'pdf-reader';
         break;
@@ -281,7 +282,7 @@ export class BookService {
     }
 
     if (!baseUrl) {
-      console.error('Unsupported book type:', book.bookType);
+      console.error('Unsupported book type:', bookType);
       return;
     }
 
@@ -306,7 +307,7 @@ export class BookService {
 
   downloadFile(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download`;
-    this.fileDownloadService.downloadFile(downloadUrl, book.fileName!);
+    this.fileDownloadService.downloadFile(downloadUrl, book.primaryFile?.fileName ?? 'book');
   }
 
   deleteAdditionalFile(bookId: number, fileId: number): Observable<void> {

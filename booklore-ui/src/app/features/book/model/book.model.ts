@@ -17,16 +17,21 @@ export interface FileInfo {
   fileSizeKb?: number;
 }
 
-export interface AdditionalFile extends FileInfo {
+export interface BookFile extends FileInfo {
   id: number;
   bookId: number;
-  additionalFileType: AdditionalFileType;
-  description?: string;
+  bookType?: BookType;
   addedOn?: string;
+}
+
+export interface AdditionalFile extends BookFile {
+  additionalFileType?: AdditionalFileType;
+  description?: string;
 }
 
 export interface Book extends FileInfo {
   id: number;
+  primaryFile?: BookFile;
   bookType: BookType;
   libraryId: number;
   libraryName: string;
