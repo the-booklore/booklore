@@ -50,6 +50,23 @@ class BookFileGroupingUtilsTest {
     }
 
     @Test
+    void extractGroupingKey_shouldNotStripDotsThatAreNotExtensions() {
+        // Folder names with dots (like "1. American Gods") should not be stripped
+        // The dot after "1" is NOT a file extension
+        assertThat(BookFileGroupingUtils.extractGroupingKey("1. American Gods - Neil Gaiman (2011)"))
+                .isEqualTo("1. american gods - neil gaiman (2011)");
+        // Series numbering with dots
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Vol. 1 - Adventures (2020)"))
+                .isEqualTo("vol. 1 - adventures (2020)");
+        // Title with dots
+        assertThat(BookFileGroupingUtils.extractGroupingKey("Dr. Seuss Collection"))
+                .isEqualTo("dr. seuss collection");
+        // Multiple dots that are not extensions
+        assertThat(BookFileGroupingUtils.extractGroupingKey("U.S.A. History"))
+                .isEqualTo("u.s.a. history");
+    }
+
+    @Test
     void extractGroupingKey_shouldHandleMultipleFormatIndicators() {
         assertThat(BookFileGroupingUtils.extractGroupingKey("Book (PDF) (EPUB).pdf")).isEqualTo("book");
     }
@@ -618,5 +635,50 @@ class BookFileGroupingUtilsTest {
 
         assertThat(groups).hasSize(1);
         assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, audiobook1);
+    }
+
+    @Test
+    void groupByBaseName_shouldGroupFolderWithDotInName() {
+        // Folder-based audiobook with dot in name like "1. American Gods - Neil Gaiman (2011)"
+        // should group with ebooks in the same folder
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman/American Gods")
+                .fileName("1. American Gods - Neil Gaiman (2011).epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile mobi = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman/American Gods")
+                .fileName("1. American Gods - Neil Gaiman (2011).mobi")
+                .bookFileType(BookFileType.MOBI)
+                .build();
+
+        LibraryFile m4b = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman/American Gods")
+                .fileName("1. American Gods - Neil Gaiman (2011).m4b")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .build();
+
+        // Folder-based audiobook - note: fileName is folder name without extension
+        LibraryFile mp3Folder = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Neil Gaiman/American Gods")
+                .fileName("1. American Gods - Neil Gaiman (2011)")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .folderBased(true)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(epub, mobi, m4b, mp3Folder));
+
+        // All 4 files should be grouped as one book
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, mobi, m4b, mp3Folder);
     }
 }

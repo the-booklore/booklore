@@ -166,6 +166,14 @@ public class LibraryProcessingService {
     }
 
     private void autoAttachFile(BookEntity book, LibraryFile file) {
+        // Check if file already exists to prevent duplicates during concurrent rescans
+        var existing = bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(
+                file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
+        if (existing.isPresent()) {
+            log.debug("Additional file already exists, skipping: {}", file.getFileName());
+            return;
+        }
+
         String hash = file.isFolderBased()
                 ? FileFingerprint.generateFolderHash(file.getFullPath())
                 : FileFingerprint.generateHash(file.getFullPath());

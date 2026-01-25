@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.FuzzyScore;
 
 import java.util.*;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,13 +56,30 @@ public class BookFileGroupingUtils {
     private static final double FOLDER_MATCH_THRESHOLD = 0.6;
     private static final double FUZZY_CLUSTER_THRESHOLD = 0.7;
 
+    // Known book file extensions - only strip these, not arbitrary dots in folder names
+    private static final Set<String> KNOWN_EXTENSIONS = Set.of(
+            "pdf", "epub", "cbz", "cbr", "cb7", "mobi", "azw3", "azw", "fb2",
+            "m4b", "m4a", "mp3", "aac", "flac", "opus", "ogg"
+    );
+
     public String extractGroupingKey(String fileName) {
         if (fileName == null || fileName.isEmpty()) {
             return "";
         }
 
         int lastDot = fileName.lastIndexOf('.');
-        String baseName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+        String baseName;
+        if (lastDot > 0) {
+            String possibleExtension = fileName.substring(lastDot + 1).toLowerCase();
+            // Only strip if it's a known book file extension
+            if (KNOWN_EXTENSIONS.contains(possibleExtension)) {
+                baseName = fileName.substring(0, lastDot);
+            } else {
+                baseName = fileName;
+            }
+        } else {
+            baseName = fileName;
+        }
 
         // Convert underscores to spaces
         baseName = UNDERSCORE_PATTERN.matcher(baseName).replaceAll(" ");
