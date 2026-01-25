@@ -8,8 +8,10 @@ import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
@@ -238,8 +240,23 @@ public class BookService {
     }
 
     public ResponseEntity<ByteArrayResource> getBookContent(long bookId) throws IOException {
+        return getBookContent(bookId, null);
+    }
+
+    public ResponseEntity<ByteArrayResource> getBookContent(long bookId, String bookType) throws IOException {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        try (FileInputStream inputStream = new FileInputStream(FileUtils.getBookFullPath(bookEntity))) {
+        String filePath;
+        if (bookType != null) {
+            BookFileType requestedType = BookFileType.valueOf(bookType.toUpperCase());
+            BookFileEntity bookFile = bookEntity.getBookFiles().stream()
+                    .filter(bf -> bf.getBookType() == requestedType)
+                    .findFirst()
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("No file of type " + bookType + " found for book"));
+            filePath = bookFile.getFullFilePath().toString();
+        } else {
+            filePath = FileUtils.getBookFullPath(bookEntity);
+        }
+        try (FileInputStream inputStream = new FileInputStream(filePath)) {
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(new ByteArrayResource(inputStream.readAllBytes()));

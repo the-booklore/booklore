@@ -346,18 +346,26 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">File Type:</span>
-              @if (getFileExtension(book?.primaryFile?.filePath)) {
-                <span (click)="goToFileType(book?.primaryFile?.filePath)" style="cursor: pointer;">
-                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.primaryFile?.filePath))" customTextColor="#fff">
-                    {{ (getFileExtension(book?.primaryFile?.filePath) | uppercase) || '-' }}
-                  </app-tag>
-                </span>
-              } @else {
-                <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.primaryFile?.filePath))" customTextColor="#fff">
-                  -
-                </app-tag>
-              }
+              <span class="metadata-key">Formats:</span>
+              <span class="metadata-value-group format-tags">
+                @if (book?.primaryFile?.bookType; as primaryBookType) {
+                  <span (click)="goToFileType(book?.primaryFile?.filePath)" style="cursor: pointer;" [pTooltip]="'Primary: ' + (book?.primaryFile?.fileName ?? '')" tooltipPosition="top">
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(primaryBookType)" customTextColor="#fff">
+                      {{ primaryBookType }}
+                    </app-tag>
+                  </span>
+                }
+                @for (format of book?.alternativeFormats; track format.id) {
+                  <span (click)="goToFileType(format.filePath)" style="cursor: pointer;" [pTooltip]="format.fileName ?? ''" tooltipPosition="top">
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(format.bookType)" customTextColor="#fff">
+                      {{ format.bookType }}
+                    </app-tag>
+                  </span>
+                }
+                @if (!book?.primaryFile?.bookType && !book?.alternativeFormats?.length) {
+                  <app-tag size="3xs" variant="pill" color="gray">-</app-tag>
+                }
+              </span>
             </div>
 
             <div class="metadata-item">
@@ -554,18 +562,14 @@
               </div>
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
-            @if (book?.primaryFile?.bookType === 'PDF') {
-              @if (pdfReadMenuItems$ | async; as readItems) {
+            @if (readMenuItems$ | async; as readItems) {
+              @if (readItems.length > 0) {
                 <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
+              } @else {
+                <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id)" severity="primary"/>
               }
-            }
-            @if (book?.primaryFile?.bookType === 'EPUB') {
-              @if (epubReadMenuItems$ | async; as readItems) {
-                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
-              }
-            }
-            @if (book?.primaryFile?.bookType !== 'PDF' && book?.primaryFile?.bookType !== 'EPUB') {
-              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
+            } @else {
+              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id)" severity="primary"/>
             }
             <p-divider layout="vertical"></p-divider>
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>

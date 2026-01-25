@@ -131,7 +131,7 @@ describe('SideBarFilter', () => {
         fileSizeKb: 500,
         shelves: [{name: 'shelf1', icon: 'icon1'}] as Shelf[],
         metadataMatchScore: 0.8,
-        bookType: 'EPUB',
+        primaryFile: { id: 1, bookId: 1, bookType: 'EPUB' },
         readStatus: ReadStatus.READ
       } as Book,
       {
@@ -158,7 +158,7 @@ describe('SideBarFilter', () => {
         fileSizeKb: 2000,
         shelves: [] as Shelf[],
         metadataMatchScore: 0.5,
-        bookType: 'PDF',
+        primaryFile: { id: 2, bookId: 2, bookType: 'PDF' },
         readStatus: ReadStatus.UNREAD
       } as Book
     ];
@@ -282,7 +282,7 @@ describe('SideBarFilter', () => {
   it('filters by bookType', async () => {
     const result = await firstValueFrom(filterWith({bookType: ['PDF']}, 'and'));
     expect(result?.books?.length).toBe(1);
-    expect(result?.books?.[0]?.bookType).toBe('PDF');
+    expect(result?.books?.[0]?.primaryFile?.bookType).toBe('PDF');
   });
 
   it('returns all books if no filters', async () => {

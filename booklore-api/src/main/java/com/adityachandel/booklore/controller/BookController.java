@@ -102,8 +102,10 @@ public class BookController {
     @ApiResponse(responseCode = "200", description = "Book content returned successfully")
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<ByteArrayResource> getBookContent(@Parameter(description = "ID of the book") @PathVariable long bookId) throws IOException {
-        return bookService.getBookContent(bookId);
+    public ResponseEntity<ByteArrayResource> getBookContent(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType) throws IOException {
+        return bookService.getBookContent(bookId, bookType);
     }
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")

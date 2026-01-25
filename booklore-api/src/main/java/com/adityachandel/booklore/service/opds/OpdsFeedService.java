@@ -3,11 +3,11 @@ package com.adityachandel.booklore.service.opds;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.service.MagicShelfService;
 import com.adityachandel.booklore.util.ArchiveUtils;
-import com.adityachandel.booklore.util.FileUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -543,9 +543,17 @@ public class OpdsFeedService {
     }
 
     private void appendLinks(StringBuilder feed, Book book) {
-        String mimeType = fileMimeType(book);
-        feed.append("    <link href=\"/api/v1/opds/")
-                .append(book.getId()).append("/download\" rel=\"http://opds-spec.org/acquisition\" type=\"").append(mimeType).append("\"/>\n");
+        // Add acquisition link for primary file
+        if (book.getPrimaryFile() != null) {
+            appendAcquisitionLink(feed, book.getId(), book.getPrimaryFile());
+        }
+
+        // Add acquisition links for alternative formats
+        if (book.getAlternativeFormats() != null) {
+            for (BookFile altFormat : book.getAlternativeFormats()) {
+                appendAcquisitionLink(feed, book.getId(), altFormat);
+            }
+        }
 
         if (book.getMetadata() != null && book.getMetadata().getCoverUpdatedOn() != null) {
             String coverUrl = "/api/v1/opds/" + book.getId() + "/cover?" + book.getMetadata().getCoverUpdatedOn();
@@ -554,6 +562,26 @@ public class OpdsFeedService {
             feed.append("    <link rel=\"http://opds-spec.org/image/thumbnail\" href=\"")
                     .append(escapeXml(coverUrl)).append("\" type=\"image/jpeg\"/>\n");
         }
+    }
+
+    private void appendAcquisitionLink(StringBuilder feed, Long bookId, BookFile bookFile) {
+        if (bookFile == null || bookFile.getId() == null) return;
+
+        String mimeType = fileMimeType(bookFile);
+        feed.append("    <link href=\"/api/v1/opds/")
+                .append(bookId)
+                .append("/download?fileId=")
+                .append(bookFile.getId())
+                .append("\" rel=\"http://opds-spec.org/acquisition\" type=\"")
+                .append(mimeType)
+                .append("\"");
+
+        // Add title attribute to help readers distinguish formats
+        if (bookFile.getBookType() != null) {
+            feed.append(" title=\"").append(bookFile.getBookType().name()).append("\"");
+        }
+
+        feed.append("/>\n");
     }
 
     private String determineFeedTitle(Long libraryId, Set<Long> shelfIds, Long magicShelfId, String author, String series) {
@@ -604,22 +632,22 @@ public class OpdsFeedService {
         return DateTimeFormatter.ISO_INSTANT.format(java.time.Instant.now());
     }
 
-    private boolean hasValidFilePath(Book book) {
-        return book.getPrimaryFile() != null
-                && book.getPrimaryFile().getFileName() != null
-                && book.getPrimaryFile().getFilePath() != null;
+    private boolean hasValidFilePath(BookFile bookFile) {
+        return bookFile != null
+                && bookFile.getFileName() != null
+                && bookFile.getFilePath() != null;
     }
 
-    private String fileMimeType(Book book) {
-        if (book == null || book.getPrimaryFile() == null || book.getPrimaryFile().getBookType() == null) {
+    private String fileMimeType(BookFile bookFile) {
+        if (bookFile == null || bookFile.getBookType() == null) {
             return "application/octet-stream";
         }
-        return switch (book.getPrimaryFile().getBookType()) {
+        return switch (bookFile.getBookType()) {
             case PDF -> "application/pdf";
             case EPUB -> "application/epub+zip";
             case FB2 -> {
-                if (hasValidFilePath(book)) {
-                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(book)));
+                if (hasValidFilePath(bookFile)) {
+                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(bookFile.getFilePath()));
                     if (type == ArchiveUtils.ArchiveType.ZIP) {
                         yield "application/zip";
                     }
@@ -629,8 +657,8 @@ public class OpdsFeedService {
             case MOBI -> "application/x-mobipocket-ebook";
             case AZW3 -> "application/vnd.amazon.ebook";
             case CBX -> {
-                if (book.getPrimaryFile().getArchiveType() != null) {
-                    yield switch (book.getPrimaryFile().getArchiveType()) {
+                if (bookFile.getArchiveType() != null) {
+                    yield switch (bookFile.getArchiveType()) {
                         case RAR -> "application/vnd.comicbook-rar";
                         case ZIP -> "application/vnd.comicbook+zip";
                         case SEVEN_ZIP -> "application/x-7z-compressed";
@@ -638,14 +666,14 @@ public class OpdsFeedService {
                     };
                 }
 
-                if (hasValidFilePath(book)) {
-                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(book)));
+                if (hasValidFilePath(bookFile)) {
+                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(bookFile.getFilePath()));
                     yield switch (type) {
                         case RAR -> "application/vnd.comicbook-rar";
                         case ZIP -> "application/vnd.comicbook+zip";
                         case SEVEN_ZIP -> "application/x-7z-compressed";
                         default -> {
-                            String lower = book.getPrimaryFile().getFileName().toLowerCase();
+                            String lower = bookFile.getFileName().toLowerCase();
                             if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
                             if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
                             if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";

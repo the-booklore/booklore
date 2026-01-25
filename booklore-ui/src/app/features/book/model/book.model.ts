@@ -32,7 +32,6 @@ export interface AdditionalFile extends BookFile {
 export interface Book extends FileInfo {
   id: number;
   primaryFile?: BookFile;
-  bookType: BookType;
   libraryId: number;
   libraryName: string;
   metadata?: BookMetadata;

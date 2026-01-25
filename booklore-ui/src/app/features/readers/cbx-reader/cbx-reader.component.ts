@@ -55,6 +55,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   bookType!: BookType;
   bookId!: number;
+  altBookType?: string;
   pages: number[] = [];
   currentPage = 0;
   isLoading = true;
@@ -129,6 +130,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe((params) => {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
+      this.altBookType = this.route.snapshot.queryParamMap.get('bookType') ?? undefined;
 
       this.previousBookInSeries = null;
       this.nextBookInSeries = null;
@@ -141,22 +143,23 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       ]).subscribe({
         next: ([book, bookSettings, myself]) => {
           const userSettings = myself.userSettings;
-          this.bookType = book.bookType;
+          // Use alternative bookType from query param if provided, otherwise use primary
+          this.bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
           this.currentBook = book;
 
           this.pageTitle.setBookPageTitle(book);
 
           const title = book.metadata?.title || book.fileName;
           this.headerService.initialize(this.bookId, title, this.destroy$);
-          this.sidebarService.initialize(this.bookId, book, this.destroy$);
+          this.sidebarService.initialize(this.bookId, book, this.destroy$, this.altBookType);
 
           if (book.metadata?.seriesName) {
             this.loadSeriesNavigationAsync(book);
           }
 
           const pagesObservable = this.bookType === CbxReaderComponent.TYPE_PDF
-            ? this.pdfReaderService.getAvailablePages(this.bookId)
-            : this.cbxReaderService.getAvailablePages(this.bookId);
+            ? this.pdfReaderService.getAvailablePages(this.bookId, this.altBookType)
+            : this.cbxReaderService.getAvailablePages(this.bookId, this.altBookType);
 
           pagesObservable.subscribe({
             next: (pages) => {
@@ -728,8 +731,8 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   private getPageImageUrl(pageIndex: number): string {
     return this.bookType === CbxReaderComponent.TYPE_PDF
-      ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex])
-      : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex]);
+      ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType)
+      : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType);
   }
 
   get infiniteScrollImageUrls(): string[] {

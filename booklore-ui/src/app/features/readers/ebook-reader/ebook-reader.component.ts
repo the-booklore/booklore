@@ -17,7 +17,7 @@ import {ReaderHeaderService} from './layout/header/header.service';
 import {ReaderNoteService} from './features/notes/note.service';
 import {BookService} from '../../book/service/book.service';
 import {ActivatedRoute} from '@angular/router';
-import {Book} from '../../book/model/book.model';
+import {Book, BookType} from '../../book/model/book.model';
 import {ReaderHeaderComponent} from './layout/header/header.component';
 import {ReaderSidebarComponent} from './layout/sidebar/sidebar.component';
 import {ReaderLeftSidebarComponent} from './layout/panel/panel.component';
@@ -83,6 +83,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   public stateService = inject(ReaderStateService);
 
   protected bookId!: number;
+  protected altBookType?: string;
 
   private hasLoadedOnce = false;
   private _fileUrl: string | null = null;
@@ -207,6 +208,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
 
   private loadBookFromAPI(): Observable<void> {
     this.bookId = +this.route.snapshot.paramMap.get('bookId')!;
+    this.altBookType = this.route.snapshot.queryParamMap.get('bookType') ?? undefined;
 
     return this.stateService.initializeState(this.bookId).pipe(
       switchMap(() => forkJoin({
@@ -216,13 +218,16 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       switchMap(({book}) => {
         this.book = book;
 
-        this.progressService.initialize(this.bookId, book.bookType!);
+        // Use alternative bookType from query param if provided, otherwise use primary
+        const bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
+
+        this.progressService.initialize(this.bookId, bookType);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
 
         // Use streaming for EPUB if query param is set, blob loading otherwise (default)
         const useStreaming = this.route.snapshot.queryParamMap.get('streaming') === 'true';
-        const loadBook$ = book.bookType === 'EPUB' && useStreaming
+        const loadBook$ = bookType === 'EPUB' && useStreaming
           ? this.viewManager.loadEpubStreaming(this.bookId)
           : this.loadBookBlob();
 
@@ -247,7 +252,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   }
 
   private loadBookBlob(): Observable<void> {
-    return this.bookService.getFileContent(this.bookId).pipe(
+    return this.bookService.getFileContent(this.bookId, this.altBookType).pipe(
       switchMap(fileBlob => {
         const fileUrl = URL.createObjectURL(fileBlob);
         this._fileUrl = fileUrl;

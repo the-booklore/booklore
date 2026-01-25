@@ -413,6 +413,10 @@
   gap: 0.375rem;
 }
 
+.format-tags {
+  flex-wrap: wrap;
+}
+
 .metadata-link {
   color: var(--primary-text-color);
   cursor: pointer;

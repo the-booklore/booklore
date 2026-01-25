@@ -1,11 +1,11 @@
 import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {Button} from 'primeng/button';
-import {AsyncPipe, DecimalPipe, NgClass, UpperCasePipe} from '@angular/common';
+import {AsyncPipe, DecimalPipe, NgClass} from '@angular/common';
 import {Observable} from 'rxjs';
 import {BookService} from '../../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
-import {Book, BookMetadata, BookRecommendation, FileInfo, ReadStatus} from '../../../../book/model/book.model';
+import {Book, BookMetadata, BookRecommendation, BookType, FileInfo, ReadStatus} from '../../../../book/model/book.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {SplitButton} from 'primeng/splitbutton';
@@ -49,7 +49,7 @@ import {AppSettingsService} from '../../../../../shared/service/app-settings.ser
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image, TagComponent, UpperCasePipe, Divider, BookReadingSessionsComponent]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image, TagComponent, Divider, BookReadingSessionsComponent]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges {
   @Input() book$!: Observable<Book | null>;
@@ -70,8 +70,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private destroyRef = inject(DestroyRef);
   private dialogRef?: DynamicDialogRef;
 
-  pdfReadMenuItems$!: Observable<MenuItem[]>;
-  epubReadMenuItems$!: Observable<MenuItem[]>;
+  readMenuItems$!: Observable<MenuItem[]>;
   refreshMenuItems$!: Observable<MenuItem[]>;
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
@@ -117,24 +116,48 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       ])
     );
 
-    this.pdfReadMenuItems$ = this.book$.pipe(
+    this.readMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
-      map((book): MenuItem[] => [
-        {
-          label: 'Streaming Reader',
-          command: () => this.read(book.id, 'pdf-streaming')
-        }
-      ])
-    );
+      map((book): MenuItem[] => {
+        const items: MenuItem[] = [];
+        const primaryType = book.primaryFile?.bookType;
 
-    this.epubReadMenuItems$ = this.book$.pipe(
-      filter((book): book is Book => book !== null),
-      map((book): MenuItem[] => [
-        {
-          label: 'Streaming Reader (Beta)',
-          command: () => this.read(book.id, 'epub-streaming')
+        // Add streaming reader options for primary file
+        if (primaryType === 'PDF') {
+          items.push({
+            label: 'Streaming Reader',
+            icon: 'pi pi-play',
+            command: () => this.read(book.id, 'pdf-streaming')
+          });
+        } else if (primaryType === 'EPUB') {
+          items.push({
+            label: 'Streaming Reader (Beta)',
+            icon: 'pi pi-play',
+            command: () => this.read(book.id, 'epub-streaming')
+          });
         }
-      ])
+
+        // Add alternative formats section if there are readable alternatives
+        const readableAlternatives = book.alternativeFormats?.filter(f =>
+          f.bookType && ['PDF', 'EPUB', 'FB2', 'MOBI', 'AZW3', 'CBX'].includes(f.bookType)
+        ) ?? [];
+
+        if (readableAlternatives.length > 0) {
+          if (items.length > 0) {
+            items.push({ separator: true });
+          }
+          items.push({
+            label: 'Other Formats',
+            items: readableAlternatives.map(format => ({
+              label: `${format.bookType} - ${format.fileName}`,
+              icon: this.getFileIcon(format.bookType ?? null),
+              command: () => this.read(book.id, undefined, format.bookType)
+            }))
+          });
+        }
+
+        return items;
+      })
     );
 
     this.downloadMenuItems$ = this.book$.pipe(
@@ -383,8 +406,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.isExpanded = !this.isExpanded;
   }
 
-  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming"): void {
-    if (bookId) this.bookService.readBook(bookId, reader);
+  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming", bookType?: BookType): void {
+    if (bookId) this.bookService.readBook(bookId, reader, bookType);
   }
 
   download(book: Book) {

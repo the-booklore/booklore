@@ -3,7 +3,9 @@ package com.adityachandel.booklore.service.book;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.repository.BookFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.kobo.KepubConversionService;
@@ -39,6 +41,7 @@ public class BookDownloadService {
     private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookRepository bookRepository;
+    private final BookFileRepository bookFileRepository;
     private final KepubConversionService kepubConversionService;
     private final CbxConversionService cbxConversionService;
     private final AppSettingService appSettingService;
@@ -74,6 +77,44 @@ public class BookDownloadService {
         } catch (Exception e) {
             log.error("Failed to download book {}: {}", bookId, e.getMessage(), e);
             throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+        }
+    }
+
+    public ResponseEntity<Resource> downloadBookFile(Long bookId, Long fileId) {
+        try {
+            BookFileEntity bookFileEntity = bookFileRepository.findById(fileId)
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException(fileId));
+
+            // Verify the file belongs to the specified book
+            if (!bookFileEntity.getBook().getId().equals(bookId)) {
+                throw ApiError.FILE_NOT_FOUND.createException(fileId);
+            }
+
+            Path file = bookFileEntity.getFullFilePath().toAbsolutePath().normalize();
+            File bookFile = file.toFile();
+
+            if (!bookFile.exists()) {
+                throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(fileId);
+            }
+
+            Resource resource = new FileSystemResource(bookFile);
+
+            String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            String fallbackFilename = NON_ASCII_PATTERN.matcher(file.getFileName().toString()).replaceAll("_");
+            String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                    fallbackFilename, encodedFilename);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentLength(bookFile.length())
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .header(HttpHeaders.EXPIRES, "0")
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("Failed to download book file {}: {}", fileId, e.getMessage(), e);
+            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(fileId);
         }
     }
 

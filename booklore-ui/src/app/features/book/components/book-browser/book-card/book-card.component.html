@@ -13,9 +13,9 @@
       (load)="onImageLoad()"/>
 
     <div class="top-left-overlay-stack">
-      @if (showBookTypePill && book.bookType) {
-        <div class="book-type-pill-overlay" [ngClass]="'book-type-' + book.bookType.toLowerCase()">
-          {{ book.bookType }}
+      @if (showBookTypePill && book.primaryFile?.bookType; as bookType) {
+        <div class="book-type-pill-overlay" [ngClass]="'book-type-' + bookType.toLowerCase()">
+          {{ bookType }}
         </div>
       }
       @if (!book.seriesCount && book.metadata?.seriesNumber != null) {

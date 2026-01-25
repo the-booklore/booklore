@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BookType, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -244,7 +244,7 @@ export class BookService {
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming'): void {
+  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming', explicitBookType?: BookType): void {
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -254,9 +254,12 @@ export class BookService {
       return;
     }
 
-    const bookType = book.primaryFile?.bookType;
+    // Determine the book type - use explicit type if provided, otherwise use primary
+    const bookType: BookType | undefined = explicitBookType ?? book.primaryFile?.bookType;
+    const isAlternativeFormat = explicitBookType && explicitBookType !== book.primaryFile?.bookType;
+
     let baseUrl: string | null = null;
-    let queryParams: Record<string, any> | undefined;
+    let queryParams: Record<string, any> = {};
 
     switch (bookType) {
       case 'PDF':
@@ -266,7 +269,7 @@ export class BookService {
       case 'EPUB':
         baseUrl = 'ebook-reader';
         if (reader === 'epub-streaming') {
-          queryParams = { streaming: true };
+          queryParams['streaming'] = true;
         }
         break;
 
@@ -286,7 +289,13 @@ export class BookService {
       return;
     }
 
-    this.router.navigate([`/${baseUrl}/book/${book.id}`], queryParams ? { queryParams } : undefined);
+    // Add bookType to query params if reading an alternative format
+    if (isAlternativeFormat) {
+      queryParams['bookType'] = bookType;
+    }
+
+    const hasQueryParams = Object.keys(queryParams).length > 0;
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], hasQueryParams ? { queryParams } : undefined);
 
     this.updateLastReadTime(book.id);
   }
@@ -301,8 +310,12 @@ export class BookService {
 
   /*------------------ File Operations ------------------*/
 
-  getFileContent(bookId: number): Observable<Blob> {
-    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json'});
+  getFileContent(bookId: number, bookType?: string): Observable<Blob> {
+    let url = `${this.url}/${bookId}/content`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.http.get<Blob>(url, {responseType: 'blob' as 'json'});
   }
 
   downloadFile(book: Book): void {

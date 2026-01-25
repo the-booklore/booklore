@@ -142,7 +142,7 @@ function getMatchScoreRangeFilters(score?: number | null): { id: string; name: s
 }
 
 function getBookTypeFilter(book: Book): { id: string; name: string }[] {
-  return book.bookType ? [{id: book.bookType, name: book.bookType}] : [];
+  return book.primaryFile?.bookType ? [{id: book.primaryFile.bookType, name: book.primaryFile.bookType}] : [];
 }
 
 export const readStatusLabels: Record<ReadStatus, string> = {
