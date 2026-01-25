@@ -169,13 +169,17 @@ public class LibraryProcessingService {
         String hash = file.isFolderBased()
                 ? FileFingerprint.generateFolderHash(file.getFullPath())
                 : FileFingerprint.generateHash(file.getFullPath());
+        Long fileSizeKb = file.isFolderBased()
+                ? FileUtils.getFolderSizeInKb(file.getFullPath())
+                : FileUtils.getFileSizeInKb(file.getFullPath());
         BookFileEntity additionalFile = BookFileEntity.builder()
                 .book(book)
                 .fileName(file.getFileName())
                 .fileSubPath(file.getFileSubPath())
                 .isBookFormat(true)
                 .bookType(file.getBookFileType())
-                .fileSizeKb(FileUtils.getFileSizeInKb(file.getFullPath()))
+                .folderBased(file.isFolderBased())
+                .fileSizeKb(fileSizeKb)
                 .initialHash(hash)
                 .currentHash(hash)
                 .addedOn(Instant.now())
