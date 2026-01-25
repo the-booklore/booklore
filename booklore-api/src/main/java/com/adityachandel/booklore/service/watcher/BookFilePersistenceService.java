@@ -120,4 +120,9 @@ public class BookFilePersistenceService {
     public void save(BookEntity book) {
         bookRepository.save(book);
     }
+
+    @Transactional(readOnly = true)
+    public long countBookFilesByBookId(Long bookId) {
+        return bookFileRepository.countByBookId(bookId);
+    }
 }

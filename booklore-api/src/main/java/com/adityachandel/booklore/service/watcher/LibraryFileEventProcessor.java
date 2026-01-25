@@ -166,7 +166,7 @@ public class LibraryFileEventProcessor {
             bookFilePersistenceService.findBookFileByLibraryPathSubPathAndFileName(libPathEntity.getId(), fileSubPath, fileName)
                     .ifPresentOrElse(bookFile -> {
                         var book = bookFile.getBook();
-                        var remainingFiles = book.getBookFiles().size();
+                        var remainingFiles = bookFilePersistenceService.countBookFilesByBookId(book.getId());
 
                         if (remainingFiles <= 1) {
                             // Last file - mark book as deleted
