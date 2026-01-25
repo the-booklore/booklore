@@ -273,17 +273,93 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             }
 
             if (userState?.user?.permissions.canDeleteBook || userState?.user?.permissions.admin) {
+              // Delete File Formats submenu - allows deleting individual book format files
+              const deleteFormatItems: MenuItem[] = [];
+              const hasMultipleFormats = (book.alternativeFormats?.length ?? 0) > 0;
+
+              // Add primary file if it exists
+              if (book.primaryFile) {
+                const extension = this.getFileExtension(book.primaryFile.filePath);
+                const isPrimaryOnly = !hasMultipleFormats;
+                const truncatedName = this.truncateFileName(book.primaryFile.fileName, 25);
+                deleteFormatItems.push({
+                  label: `${truncatedName} (${this.getFileSizeInMB(book.primaryFile)}) [Primary]`,
+                  icon: this.getFileIcon(extension),
+                  tooltipOptions: { tooltipLabel: book.primaryFile.fileName, tooltipPosition: 'left' },
+                  command: () => this.deleteBookFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true, isPrimaryOnly)
+                });
+              }
+
+              // Add alternative formats
+              if (book.alternativeFormats && book.alternativeFormats.length > 0) {
+                book.alternativeFormats.forEach(format => {
+                  const extension = this.getFileExtension(format.filePath);
+                  const truncatedName = this.truncateFileName(format.fileName, 25);
+                  deleteFormatItems.push({
+                    label: `${truncatedName} (${this.getFileSizeInMB(format)})`,
+                    icon: this.getFileIcon(extension),
+                    tooltipOptions: { tooltipLabel: format.fileName, tooltipPosition: 'left' },
+                    command: () => this.deleteBookFile(book, format.id, format.fileName || 'file', false, false)
+                  });
+                });
+              }
+
+              if (deleteFormatItems.length > 0) {
+                items.push({
+                  label: 'Delete File Formats',
+                  icon: 'pi pi-file',
+                  items: deleteFormatItems
+                });
+              }
+
+              // Delete Supplementary Files submenu - for non-book files
+              if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+                const deleteSupplementaryItems: MenuItem[] = [];
+                book.supplementaryFiles.forEach(file => {
+                  const extension = this.getFileExtension(file.filePath);
+                  const truncatedName = this.truncateFileName(file.fileName, 25);
+                  deleteSupplementaryItems.push({
+                    label: `${truncatedName} (${this.getFileSizeInMB(file)})`,
+                    icon: this.getFileIcon(extension),
+                    tooltipOptions: { tooltipLabel: file.fileName, tooltipPosition: 'left' },
+                    command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
+                  });
+                });
+
+                items.push({
+                  label: 'Delete Supplementary Files',
+                  icon: 'pi pi-paperclip',
+                  items: deleteSupplementaryItems
+                });
+              }
+
+              // Delete Book & All Files - deletes the entire book entity
+              const allFormats: string[] = [];
+              if (book.primaryFile?.fileName) {
+                allFormats.push(book.primaryFile.fileName);
+              }
+              book.alternativeFormats?.forEach(f => {
+                if (f.fileName) allFormats.push(f.fileName);
+              });
+              book.supplementaryFiles?.forEach(f => {
+                if (f.fileName) allFormats.push(f.fileName);
+              });
+
+              const fileListMessage = allFormats.length > 0
+                ? `\n\nThe following files will be permanently deleted:\n• ${allFormats.join('\n• ')}`
+                : '';
+
               items.push({
-                label: 'Delete Book',
+                label: 'Delete Book & All Files',
                 icon: 'pi pi-trash',
                 command: () => {
                   this.confirmationService.confirm({
-                    message: `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.`,
-                    header: 'Confirm Deletion',
+                    message: `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record AND all associated files from your filesystem.${fileListMessage}\n\nThis action cannot be undone.`,
+                    header: 'Delete Book & All Files',
                     icon: 'pi pi-exclamation-triangle',
                     acceptIcon: 'pi pi-trash',
                     rejectIcon: 'pi pi-times',
-                    acceptLabel: 'Delete',
+                    acceptLabel: 'Delete Everything',
                     rejectLabel: 'Cancel',
                     acceptButtonStyleClass: 'p-button-danger',
                     rejectButtonStyleClass: 'p-button-outlined',
@@ -303,48 +379,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   });
                 },
               });
-
-              // Add delete additional files menu if there are any additional files
-              if ((book.alternativeFormats && book.alternativeFormats.length > 0) ||
-                (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
-                const deleteFileItems: MenuItem[] = [];
-
-                // Add alternative formats
-                if (book.alternativeFormats && book.alternativeFormats.length > 0) {
-                  book.alternativeFormats.forEach(format => {
-                    const extension = this.getFileExtension(format.filePath);
-                    deleteFileItems.push({
-                      label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
-                      icon: this.getFileIcon(extension),
-                      command: () => this.deleteAdditionalFile(book.id, format.id, format.fileName || 'file')
-                    });
-                  });
-                }
-
-                // Add separator if both types exist
-                if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
-                  book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-                  deleteFileItems.push({separator: true});
-                }
-
-                // Add supplementary files
-                if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-                  book.supplementaryFiles.forEach(file => {
-                    const extension = this.getFileExtension(file.filePath);
-                    deleteFileItems.push({
-                      label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
-                      icon: this.getFileIcon(extension),
-                      command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
-                    });
-                  });
-                }
-
-                items.push({
-                  label: 'Delete Additional Files',
-                  icon: 'pi pi-trash',
-                  items: deleteFileItems
-                });
-              }
             }
 
             return items;
@@ -449,8 +483,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the additional file "${fileName}"?`,
-      header: 'Confirm File Deletion',
+      message: `Are you sure you want to delete the supplementary file "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`,
+      header: 'Delete Supplementary File',
       icon: 'pi pi-exclamation-triangle',
       acceptIcon: 'pi pi-trash',
       rejectIcon: 'pi pi-times',
@@ -461,14 +495,63 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             this.messageService.add({
               severity: 'success',
               summary: 'Success',
-              detail: `Additional file "${fileName}" deleted successfully`
+              detail: `Supplementary file "${fileName}" deleted successfully`
             });
           },
           error: (error) => {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
-              detail: `Failed to delete additional file: ${error.message || 'Unknown error'}`
+              detail: `Failed to delete supplementary file: ${error.message || 'Unknown error'}`
+            });
+          }
+        });
+      }
+    });
+  }
+
+  deleteBookFile(book: Book, fileId: number, fileName: string, isPrimary: boolean, isOnlyFormat: boolean) {
+    let message: string;
+    let header: string;
+
+    if (isOnlyFormat) {
+      // This is the only book format file - warn user strongly
+      message = `Are you sure you want to delete "${fileName}"?\n\nThis is the ONLY book format file for this book. After deletion, the book will have no readable content.\n\nConsider using "Delete Book & All Files" instead to completely remove the book.\n\nThis file will be permanently removed from your filesystem.`;
+      header = 'Delete Only Book Format';
+    } else if (isPrimary) {
+      // This is the primary format but there are alternatives
+      message = `Are you sure you want to delete "${fileName}"?\n\nThis is currently the PRIMARY format for this book. After deletion, an alternative format will become the new primary.\n\nThis file will be permanently removed from your filesystem.`;
+      header = 'Delete Primary Format';
+    } else {
+      // This is an alternative format
+      message = `Are you sure you want to delete "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`;
+      header = 'Delete Book Format';
+    }
+
+    this.confirmationService.confirm({
+      message,
+      header,
+      icon: 'pi pi-exclamation-triangle',
+      acceptIcon: 'pi pi-trash',
+      rejectIcon: 'pi pi-times',
+      acceptLabel: 'Delete File',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-outlined',
+      accept: () => {
+        this.bookService.deleteBookFile(book.id, fileId, isPrimary).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: `Book format "${fileName}" deleted successfully`
+            });
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: `Failed to delete book format: ${error.message || 'Unknown error'}`
             });
           }
         });
@@ -729,6 +812,27 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   getFileSizeInMB(fileInfo: FileInfo | null | undefined): string {
     const sizeKb = fileInfo?.fileSizeKb;
     return sizeKb != null ? `${(sizeKb / 1024).toFixed(2)} MB` : '-';
+  }
+
+  truncateFileName(fileName: string | undefined, maxLength: number = 30): string {
+    if (!fileName) return '';
+    if (fileName.length <= maxLength) return fileName;
+
+    const lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      // No extension - just truncate
+      return fileName.substring(0, maxLength - 3) + '...';
+    }
+
+    const extension = fileName.substring(lastDotIndex);
+    const nameWithoutExt = fileName.substring(0, lastDotIndex);
+    const availableLength = maxLength - extension.length - 3; // 3 for "..."
+
+    if (availableLength <= 0) {
+      return '...' + extension;
+    }
+
+    return nameWithoutExt.substring(0, availableLength) + '...' + extension;
   }
 
   getProgressPercent(book: Book): number | null {

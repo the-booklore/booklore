@@ -361,6 +361,63 @@ export class BookService {
     );
   }
 
+  deleteBookFile(bookId: number, fileId: number, isPrimary: boolean): Observable<void> {
+    const deleteUrl = `${this.url}/${bookId}/files/${fileId}`;
+    return this.http.delete<void>(deleteUrl).pipe(
+      tap(() => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(book => {
+          if (book.id === bookId) {
+            if (isPrimary) {
+              // Primary file was deleted - promote first alternative to primary, or set null
+              const remainingAlternatives = book.alternativeFormats?.filter(file => file.id !== fileId) || [];
+              if (remainingAlternatives.length > 0) {
+                const [newPrimary, ...restAlternatives] = remainingAlternatives;
+                return {
+                  ...book,
+                  primaryFile: newPrimary,
+                  alternativeFormats: restAlternatives
+                };
+              } else {
+                return {
+                  ...book,
+                  primaryFile: undefined,
+                  alternativeFormats: []
+                };
+              }
+            } else {
+              // Alternative file was deleted
+              return {
+                ...book,
+                alternativeFormats: book.alternativeFormats?.filter(file => file.id !== fileId)
+              };
+            }
+          }
+          return book;
+        });
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'File Deleted',
+          detail: 'Book file deleted successfully.'
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while deleting the file.'
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
   uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
     const formData = new FormData();
     formData.append('file', file);
