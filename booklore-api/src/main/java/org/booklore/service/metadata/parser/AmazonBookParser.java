@@ -54,6 +54,7 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
     private static final Pattern DP_SEPARATOR_PATTERN = Pattern.compile("/dp/");
     private static final Pattern REVIEWED_IN_ON_PATTERN = Pattern.compile("(?i)(?:Reviewed in|Rezension aus|Beoordeeld in|Recensie uit|Commenté en|Recensito in|Revisado en)\\s+(.+?)\\s+(?:on|vom|op|le|il|el)\\s+(.+)");
     private static final Pattern JAPANESE_REVIEW_DATE_PATTERN = Pattern.compile("(\\d{4}年\\d{1,2}月\\d{1,2}日).+");
+    private static final Pattern RATING_PATTERN = Pattern.compile("(\\d[.,]\\d)");
     private static final String[] TITLE_SELECTORS = {"#productTitle", "#ebooksProductTitle", "h1#title", "span#productTitle"};
     private static final String[] DATE_PATTERNS = {
             "MMMM d, yyyy", "d MMMM yyyy", "d. MMMM yyyy", "MMM d, yyyy",
@@ -233,7 +234,7 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
 
     private String extractAmazonBookId(Element item) {
         String bookLink = null;
-        for (String type : new String[]{"Paperback", "Hardcover"}) {
+        for (String type : new String[]{"Kindle", "Paperback", "Hardcover"}) {
             Element link = item.select("a:containsOwn(" + type + ")").first();
             if (link != null) {
                 bookLink = link.attr("href");
@@ -606,17 +607,14 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
 
     private Double getRating(Document doc) {
         try {
-            Element reviewDiv = doc.selectFirst("div#averageCustomerReviews_feature_div");
-            if (reviewDiv != null) {
-                Element ratingSpan = reviewDiv.selectFirst("span#acrPopover span.a-size-base.a-color-base");
-                if (ratingSpan == null) {
-                    ratingSpan = reviewDiv.selectFirst("span#acrPopover span.a-size-small.a-color-base");
-                }
-                if (ratingSpan != null) {
-                    String text = ratingSpan.text().trim();
-                    if (!text.isEmpty()) {
-                        String normalizedText = text.replace(',', '.');
-                        return Double.parseDouble(normalizedText);
+            Element acrPopover = doc.selectFirst("#acrPopover");
+            if (acrPopover != null) {
+                String title = acrPopover.attr("title").trim();
+                if (!title.isEmpty()) {
+                    Matcher matcher = RATING_PATTERN.matcher(title);
+                    if (matcher.find()) {
+                        String ratingStr = matcher.group(1).replace(',', '.');
+                        return Double.parseDouble(ratingStr);
                     }
                 }
             }
@@ -736,15 +734,11 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
 
     private Integer getReviewCount(Document doc) {
         try {
-            Element reviewDiv = doc.select("div#averageCustomerReviews_feature_div").first();
-            if (reviewDiv != null) {
-                Element reviewCountElement = reviewDiv.getElementById("acrCustomerReviewText");
-                if (reviewCountElement != null) {
-                    String reviewCountRaw = reviewCountElement.text().split(" ")[0];
-                    String reviewCountClean = NON_DIGIT_PATTERN.matcher(reviewCountRaw).replaceAll("");
-                    if (!reviewCountClean.isEmpty()) {
-                        return Integer.parseInt(reviewCountClean);
-                    }
+            Element reviewCountElement = doc.selectFirst("#acrCustomerReviewText");
+            if (reviewCountElement != null) {
+                String reviewCountClean = NON_DIGIT_PATTERN.matcher(reviewCountElement.text()).replaceAll("");
+                if (!reviewCountClean.isEmpty()) {
+                    return Integer.parseInt(reviewCountClean);
                 }
             }
         } catch (Exception e) {
