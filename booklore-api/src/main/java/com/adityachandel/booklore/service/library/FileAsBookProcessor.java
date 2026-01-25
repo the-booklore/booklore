@@ -40,7 +40,15 @@ public class FileAsBookProcessor {
     @Transactional
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(libraryFiles);
+        processLibraryFilesGrouped(groups, libraryEntity);
+    }
 
+    /**
+     * Process pre-grouped library files. Use this when grouping has already been done
+     * (e.g., by BookGroupingService during rescan).
+     */
+    @Transactional
+    public void processLibraryFilesGrouped(Map<String, List<LibraryFile>> groups, LibraryEntity libraryEntity) {
         for (Map.Entry<String, List<LibraryFile>> entry : groups.entrySet()) {
             processGroupWithErrorHandling(entry.getValue(), libraryEntity);
         }

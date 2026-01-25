@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.task.options.RescanLibraryContext;
@@ -21,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,8 +36,6 @@ class LibraryProcessingServiceRegressionTest {
     @Mock
     private BookAdditionalFileRepository bookAdditionalFileRepository;
     @Mock
-    private BookRepository bookRepository;
-    @Mock
     private FileAsBookProcessor fileAsBookProcessor;
     @Mock
     private BookRestorationService bookRestorationService;
@@ -45,6 +43,8 @@ class LibraryProcessingServiceRegressionTest {
     private BookDeletionService bookDeletionService;
     @Mock
     private LibraryFileHelper libraryFileHelper;
+    @Mock
+    private BookGroupingService bookGroupingService;
     @Mock
     private EntityManager entityManager;
 
@@ -56,11 +56,11 @@ class LibraryProcessingServiceRegressionTest {
                 libraryRepository,
                 notificationService,
                 bookAdditionalFileRepository,
-                bookRepository,
                 fileAsBookProcessor,
                 bookRestorationService,
                 bookDeletionService,
                 libraryFileHelper,
+                bookGroupingService,
                 entityManager
         );
     }
@@ -96,6 +96,8 @@ class LibraryProcessingServiceRegressionTest {
                 .build()
         ));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForRescan(anyList(), any(LibraryEntity.class)))
+                .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 

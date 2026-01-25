@@ -44,9 +44,11 @@ public class BookFileGroupingUtils {
     );
 
     // Edition/version patterns that should NOT prevent grouping
+    // Includes format indicators (audiobook, ebook) and edition descriptors
     private static final Pattern EDITION_PATTERN = Pattern.compile(
             "(?:tenth|first|second|third|\\d+(?:st|nd|rd|th)?)\\s*(?:anniversary|edition|ed\\.?)|" +
-                    "(?:unabridged|abridged|complete|full\\s*cast|deluxe|special|collector)",
+                    "(?:unabridged|abridged|complete|full\\s*cast|deluxe|special|collector)|" +
+                    "(?:audiobook|audio\\s*book|ebook|e-book)",
             Pattern.CASE_INSENSITIVE
     );
 

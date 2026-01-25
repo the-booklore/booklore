@@ -550,4 +550,73 @@ class BookFileGroupingUtilsTest {
         assertThat(groups).hasSize(1);
         assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, m4b);
     }
+
+    @Test
+    void groupByBaseName_shouldGroupNestedAudiobookFolderWithEbooks() {
+        // Nested audiobook folder should group with ebooks in same parent folder
+        // Book Folder/
+        // ├── Book.pdf
+        // ├── Book.epub
+        // └── Book Audiobook/  (folder-based audiobook)
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile pdf = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Book Folder")
+                .fileName("Book.pdf")
+                .bookFileType(BookFileType.PDF)
+                .build();
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Book Folder")
+                .fileName("Book.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        // Folder-based audiobook appears as a file with folderBased=true
+        LibraryFile audiobookFolder = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("Book Folder")
+                .fileName("Book Audiobook")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .folderBased(true)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(pdf, epub, audiobookFolder));
+
+        // All should be grouped together
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(pdf, epub, audiobookFolder);
+    }
+
+    @Test
+    void groupByBaseName_shouldGroupAudiobookVariantNames() {
+        // Different audiobook naming conventions should all group
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/library");
+
+        LibraryFile epub = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("The Hobbit")
+                .fileName("The Hobbit.epub")
+                .bookFileType(BookFileType.EPUB)
+                .build();
+
+        LibraryFile audiobook1 = LibraryFile.builder()
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("The Hobbit")
+                .fileName("The Hobbit Audiobook")
+                .bookFileType(BookFileType.AUDIOBOOK)
+                .folderBased(true)
+                .build();
+
+        Map<String, List<LibraryFile>> groups = BookFileGroupingUtils.groupByBaseName(List.of(epub, audiobook1));
+
+        assertThat(groups).hasSize(1);
+        assertThat(groups.values().iterator().next()).containsExactlyInAnyOrder(epub, audiobook1);
+    }
 }

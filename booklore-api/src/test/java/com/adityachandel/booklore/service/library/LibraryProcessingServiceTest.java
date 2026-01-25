@@ -7,7 +7,6 @@ import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.task.options.RescanLibraryContext;
@@ -24,7 +23,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,8 +43,6 @@ class LibraryProcessingServiceTest {
     @Mock
     private BookAdditionalFileRepository bookAdditionalFileRepository;
     @Mock
-    private BookRepository bookRepository;
-    @Mock
     private FileAsBookProcessor fileAsBookProcessor;
     @Mock
     private BookRestorationService bookRestorationService;
@@ -51,6 +50,8 @@ class LibraryProcessingServiceTest {
     private BookDeletionService bookDeletionService;
     @Mock
     private LibraryFileHelper libraryFileHelper;
+    @Mock
+    private BookGroupingService bookGroupingService;
     @Mock
     private EntityManager entityManager;
 
@@ -62,11 +63,11 @@ class LibraryProcessingServiceTest {
                 libraryRepository,
                 notificationService,
                 bookAdditionalFileRepository,
-                bookRepository,
                 fileAsBookProcessor,
                 bookRestorationService,
                 bookDeletionService,
                 libraryFileHelper,
+                bookGroupingService,
                 entityManager
         );
     }
@@ -110,10 +111,21 @@ class LibraryProcessingServiceTest {
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(existingFile, newFile));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
+        // Mock grouping service to pass through the files
+        when(bookGroupingService.groupForInitialScan(anyList(), eq(libraryEntity)))
+                .thenAnswer(invocation -> {
+                    List<LibraryFile> files = invocation.getArgument(0);
+                    Map<String, List<LibraryFile>> result = new LinkedHashMap<>();
+                    for (LibraryFile f : files) {
+                        result.put(f.getFileName(), List.of(f));
+                    }
+                    return result;
+                });
+
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(bookGroupingService).groupForInitialScan(captor.capture(), eq(libraryEntity));
 
         List<LibraryFile> processedFiles = captor.getValue();
 
@@ -152,11 +164,12 @@ class LibraryProcessingServiceTest {
 
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(existingFile));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForInitialScan(anyList(), eq(libraryEntity))).thenReturn(Collections.emptyMap());
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(bookGroupingService).groupForInitialScan(captor.capture(), eq(libraryEntity));
 
         assertThat(captor.getValue()).isEmpty();
     }
@@ -190,11 +203,20 @@ class LibraryProcessingServiceTest {
 
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(newFile1, newFile2));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForInitialScan(anyList(), eq(libraryEntity)))
+                .thenAnswer(invocation -> {
+                    List<LibraryFile> files = invocation.getArgument(0);
+                    Map<String, List<LibraryFile>> result = new LinkedHashMap<>();
+                    for (LibraryFile f : files) {
+                        result.put(f.getFileName(), List.of(f));
+                    }
+                    return result;
+                });
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(bookGroupingService).groupForInitialScan(captor.capture(), eq(libraryEntity));
 
         assertThat(captor.getValue()).hasSize(2);
     }
@@ -222,11 +244,20 @@ class LibraryProcessingServiceTest {
 
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(newFileInSub));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForInitialScan(anyList(), eq(libraryEntity)))
+                .thenAnswer(invocation -> {
+                    List<LibraryFile> files = invocation.getArgument(0);
+                    Map<String, List<LibraryFile>> result = new LinkedHashMap<>();
+                    for (LibraryFile f : files) {
+                        result.put(f.getFileName(), List.of(f));
+                    }
+                    return result;
+                });
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(bookGroupingService).groupForInitialScan(captor.capture(), eq(libraryEntity));
 
         List<LibraryFile> processedFiles = captor.getValue();
         assertThat(processedFiles).hasSize(1);
@@ -265,11 +296,12 @@ class LibraryProcessingServiceTest {
 
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(additionalFileAsLibraryFile));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(List.of(additionalFileEntity));
+        when(bookGroupingService.groupForInitialScan(anyList(), eq(libraryEntity))).thenReturn(Collections.emptyMap());
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(bookGroupingService).groupForInitialScan(captor.capture(), eq(libraryEntity));
 
         assertThat(captor.getValue()).isEmpty();
     }
@@ -330,6 +362,8 @@ class LibraryProcessingServiceTest {
 
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(epubOnDisk));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(List.of(epub, pdf, image));
+        when(bookGroupingService.groupForRescan(anyList(), eq(libraryEntity)))
+                .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));
 
         libraryProcessingService.rescanLibrary(RescanLibraryContext.builder().libraryId(libraryId).build());
 
@@ -439,6 +473,8 @@ class LibraryProcessingServiceTest {
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(fileOnDisk));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForRescan(anyList(), eq(libraryEntity)))
+                .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 
@@ -466,6 +502,8 @@ class LibraryProcessingServiceTest {
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(Collections.emptyList());
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForRescan(anyList(), eq(libraryEntity)))
+                .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 

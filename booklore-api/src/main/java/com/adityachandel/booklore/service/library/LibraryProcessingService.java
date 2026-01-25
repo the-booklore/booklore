@@ -9,12 +9,10 @@ import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.task.options.RescanLibraryContext;
-import com.adityachandel.booklore.util.BookFileGroupingUtils;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -28,7 +26,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,11 +39,11 @@ public class LibraryProcessingService {
     private final LibraryRepository libraryRepository;
     private final NotificationService notificationService;
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
-    private final BookRepository bookRepository;
     private final FileAsBookProcessor fileAsBookProcessor;
     private final BookRestorationService bookRestorationService;
     private final BookDeletionService bookDeletionService;
     private final LibraryFileHelper libraryFileHelper;
+    private final BookGroupingService bookGroupingService;
     @PersistenceContext
     private final EntityManager entityManager;
 
@@ -57,7 +54,11 @@ public class LibraryProcessingService {
         try {
             List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity);
             List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
-            fileAsBookProcessor.processLibraryFiles(newFiles, libraryEntity);
+
+            // Use BookGroupingService for consistent grouping based on organization mode
+            Map<String, List<LibraryFile>> groups = bookGroupingService.groupForInitialScan(newFiles, libraryEntity);
+            fileAsBookProcessor.processLibraryFilesGrouped(groups, libraryEntity);
+
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
         } catch (IOException e) {
             log.error("Failed to process library {}: {}", libraryEntity.getName(), e.getMessage(), e);
@@ -100,26 +101,18 @@ public class LibraryProcessingService {
 
         List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
 
-        // Cache results to avoid duplicate findMatchingBook() calls
-        Map<LibraryFile, BookEntity> matchingBookMap = new HashMap<>();
-        for (LibraryFile file : newFiles) {
-            BookEntity match = findMatchingBook(file);
-            if (match != null) {
-                matchingBookMap.put(file, match);
+        // Use BookGroupingService to determine what to attach vs create new
+        BookGroupingService.GroupingResult groupingResult = bookGroupingService.groupForRescan(newFiles, libraryEntity);
+
+        // Auto-attach files to existing books
+        for (Map.Entry<BookEntity, List<LibraryFile>> entry : groupingResult.filesToAttach().entrySet()) {
+            for (LibraryFile file : entry.getValue()) {
+                autoAttachFile(entry.getKey(), file);
             }
         }
 
-        // Auto-attach files with matches
-        for (Map.Entry<LibraryFile, BookEntity> entry : matchingBookMap.entrySet()) {
-            autoAttachFile(entry.getValue(), entry.getKey());
-        }
-
-        // Process files without matches
-        List<LibraryFile> toProcess = newFiles.stream()
-                .filter(file -> !matchingBookMap.containsKey(file))
-                .toList();
-
-        fileAsBookProcessor.processLibraryFiles(toProcess, libraryEntity);
+        // Process new book groups
+        fileAsBookProcessor.processLibraryFilesGrouped(groupingResult.newBookGroups(), libraryEntity);
 
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished refreshing library: " + libraryEntity.getName()));
     }
@@ -170,68 +163,6 @@ public class LibraryProcessingService {
         return libraryFiles.stream()
                 .filter(file -> !existingKeys.contains(generateUniqueKey(file)))
                 .collect(Collectors.toList());
-    }
-
-    private static final double FUZZY_MATCH_THRESHOLD = 0.85;
-
-    private BookEntity findMatchingBook(LibraryFile file) {
-        String fileSubPath = file.getFileSubPath();
-
-        // Skip root-level files - they should create separate book entities
-        if (fileSubPath == null || fileSubPath.isEmpty()) {
-            return null;
-        }
-
-        Long libraryPathId = file.getLibraryPathEntity().getId();
-        List<BookEntity> booksInDirectory = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, fileSubPath);
-
-        // Filter to non-deleted books only
-        List<BookEntity> activeBooksInDirectory = booksInDirectory.stream()
-                .filter(book -> book.getDeleted() == null || !book.getDeleted())
-                .toList();
-
-        // If exactly one book in the folder, auto-attach to it
-        // This handles the common case where users organize one book per folder
-        if (activeBooksInDirectory.size() == 1) {
-            BookEntity book = activeBooksInDirectory.get(0);
-            log.debug("Single book in folder '{}', auto-attaching '{}' to '{}'",
-                    fileSubPath, file.getFileName(), book.getPrimaryBookFile().getFileName());
-            return book;
-        }
-
-        // Multiple books in folder: use fuzzy matching to find the best match
-        if (activeBooksInDirectory.size() > 1) {
-            String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
-            BookEntity fuzzyMatch = null;
-            double bestSimilarity = 0;
-
-            for (BookEntity book : activeBooksInDirectory) {
-                BookFileEntity primaryFile = book.getPrimaryBookFile();
-                String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
-
-                // Try exact match first
-                if (fileGroupingKey.equals(existingGroupingKey)) {
-                    return book;
-                }
-
-                // Track best fuzzy match
-                double similarity = BookFileGroupingUtils.calculateSimilarity(fileGroupingKey, existingGroupingKey);
-                if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
-                    bestSimilarity = similarity;
-                    fuzzyMatch = book;
-                }
-            }
-
-            if (fuzzyMatch != null) {
-                log.debug("Fuzzy matched '{}' to '{}' with similarity {} in folder with {} books",
-                        file.getFileName(), fuzzyMatch.getPrimaryBookFile().getFileName(),
-                        bestSimilarity, activeBooksInDirectory.size());
-            }
-            return fuzzyMatch;
-        }
-
-        // No books in folder - will create new book entity
-        return null;
     }
 
     private void autoAttachFile(BookEntity book, LibraryFile file) {

@@ -5,6 +5,7 @@ import com.adityachandel.booklore.convertor.SortConverter;
 import com.adityachandel.booklore.model.dto.Sort;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.IconType;
+import com.adityachandel.booklore.model.enums.LibraryOrganizationMode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -54,6 +55,11 @@ public class LibraryEntity {
     @Column(name = "format_priority")
     @Builder.Default
     private List<BookFileType> formatPriority = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "organization_mode")
+    @Builder.Default
+    private LibraryOrganizationMode organizationMode = LibraryOrganizationMode.AUTO_DETECT;
 
     @PrePersist
     public void ensureIconType() {
