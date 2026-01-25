@@ -10,7 +10,6 @@ html {
 }
 
 :root {
-  /* Book type colors - single source of truth */
   --book-type-pdf-color: #dc2626;
   --book-type-epub-color: #16a34a;
   --book-type-cbx-color: #d97706;
@@ -20,15 +19,7 @@ html {
   --book-type-fb2-color: #7c3aed;
   --book-type-mobi-color: #2563eb;
   --book-type-azw3-color: #0891b2;
-  /* Audiobook colors */
-  --book-type-audiobook-color: #f59e0b;
-  --book-type-m4b-color: #f59e0b;
-  --book-type-m4a-color: #fbbf24;
-  --book-type-mp3-color: #fb923c;
-  --book-type-flac-color: #a855f7;
-  --book-type-ogg-color: #6366f1;
-  --book-type-opus-color: #8b5cf6;
-  --book-type-aac-color: #ec4899;
+  --book-type-audiobook-color: #ca8a04;
 }
 
 * {

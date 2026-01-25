@@ -288,6 +288,11 @@
   color: #fff;
 }
 
+.book-type-audiobook {
+  background: var(--book-type-audiobook-color);
+  color: #fff;
+}
+
 .read-status-indicator {
   display: flex;
   align-items: center;

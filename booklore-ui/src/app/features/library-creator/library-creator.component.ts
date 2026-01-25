@@ -5,7 +5,8 @@ import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {BookFileType, Library} from '../book/model/library.model';
+import {Library} from '../book/model/library.model';
+import {BookType} from '../book/model/book.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
 import {IconPickerService, IconSelection} from '../../shared/service/icon-picker.service';
@@ -32,9 +33,9 @@ export class LibraryCreatorComponent implements OnInit {
   library!: Library | undefined;
   editModeLibraryName: string = '';
   watch: boolean = false;
-  formatPriority: {type: BookFileType, label: string}[] = [];
+  formatPriority: {type: BookType, label: string}[] = [];
 
-  readonly allBookFormats: {type: BookFileType, label: string}[] = [
+  readonly allBookFormats: {type: BookType, label: string}[] = [
     {type: 'EPUB', label: 'EPUB'},
     {type: 'PDF', label: 'PDF'},
     {type: 'CBX', label: 'CBX (CBZ/CBR/CB7)'},
@@ -211,7 +212,7 @@ export class LibraryCreatorComponent implements OnInit {
     }
   }
 
-  onFormatPriorityDrop(event: CdkDragDrop<{type: BookFileType, label: string}[]>): void {
+  onFormatPriorityDrop(event: CdkDragDrop<{type: BookType, label: string}[]>): void {
     moveItemInArray(this.formatPriority, event.previousIndex, event.currentIndex);
   }
 }

@@ -1,6 +1,5 @@
 import {SortOption} from './sort.model';
-
-export type BookFileType = 'PDF' | 'EPUB' | 'CBX' | 'FB2' | 'MOBI' | 'AZW3' | 'AUDIOBOOK';
+import {BookType} from './book.model';
 
 export interface Library {
   id?: number;
@@ -11,7 +10,7 @@ export interface Library {
   fileNamingPattern?: string;
   sort?: SortOption;
   paths: LibraryPath[];
-  formatPriority?: BookFileType[];
+  formatPriority?: BookType[];
 }
 
 export interface LibraryPath {
