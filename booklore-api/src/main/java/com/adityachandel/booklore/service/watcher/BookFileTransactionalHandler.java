@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.adityachandel.booklore.model.enums.PermissionType.ADMIN;
@@ -78,6 +80,45 @@ public class BookFileTransactionalHandler {
         notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
     }
 
+    @Transactional
+    public void handleNewFolderAudiobook(long libraryId, Path folderPath) {
+        LibraryEntity libraryEntity = libraryRepository.findById(libraryId)
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
+
+        String folderName = folderPath.getFileName().toString();
+        String libraryPath = bookFilePersistenceService.findMatchingLibraryPath(libraryEntity, folderPath);
+
+        notificationService.sendMessageToPermissions(Topic.LOG,
+                LogNotification.info("Started processing folder audiobook: " + folderPath), Set.of(ADMIN, MANAGE_LIBRARY));
+
+        LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
+        String fileSubPath = FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), folderPath);
+
+        // For folder-based audiobooks, try to match with book in parent folder
+        BookEntity matchingBook = findMatchingBookForFolderAudiobook(libraryPathEntity.getId(), fileSubPath, folderName);
+
+        if (matchingBook != null) {
+            autoAttachFolderAudiobook(matchingBook, folderName, fileSubPath, folderPath);
+            log.info("[CREATE] Auto-attached folder audiobook '{}' to existing book '{}'",
+                    folderName, matchingBook.getPrimaryBookFile().getFileName());
+        } else {
+            LibraryFile libraryFile = LibraryFile.builder()
+                    .libraryEntity(libraryEntity)
+                    .libraryPathEntity(libraryPathEntity)
+                    .fileSubPath(fileSubPath)
+                    .fileName(folderName)
+                    .bookFileType(BookFileType.AUDIOBOOK)
+                    .folderBased(true)
+                    .build();
+
+            libraryProcessingService.processLibraryFiles(List.of(libraryFile), libraryEntity);
+            log.info("[CREATE] Completed processing folder audiobook '{}'", folderPath);
+        }
+
+        notificationService.sendMessageToPermissions(Topic.LOG,
+                LogNotification.info("Finished processing folder audiobook: " + folderPath), Set.of(ADMIN, MANAGE_LIBRARY));
+    }
+
     private static final double FUZZY_MATCH_THRESHOLD = 0.85;
 
     private BookEntity findMatchingBook(Long libraryPathId, String fileSubPath, String fileName) {
@@ -119,6 +160,77 @@ public class BookFileTransactionalHandler {
                     fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
         }
         return fuzzyMatch;
+    }
+
+    /**
+     * Find matching book for a folder-based audiobook.
+     * Looks in the parent folder since audiobook folders are typically nested inside book folders.
+     */
+    private BookEntity findMatchingBookForFolderAudiobook(Long libraryPathId, String fileSubPath, String folderName) {
+        // Get parent folder path for matching
+        String parentPath = Optional.ofNullable(fileSubPath)
+                .filter(p -> !p.isEmpty())
+                .map(p -> {
+                    int lastSep = p.lastIndexOf('/');
+                    if (lastSep == -1) {
+                        lastSep = p.lastIndexOf('\\');
+                    }
+                    return lastSep > 0 ? p.substring(0, lastSep) : "";
+                })
+                .orElse("");
+
+        String folderGroupingKey = BookFileGroupingUtils.extractGroupingKey(folderName);
+
+        // Search in parent folder
+        List<BookEntity> booksInParent = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, parentPath);
+
+        BookEntity fuzzyMatch = null;
+        double bestSimilarity = 0;
+
+        for (BookEntity book : booksInParent) {
+            if (book.getDeleted() != null && book.getDeleted()) {
+                continue;
+            }
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+
+            // Try exact match first
+            if (folderGroupingKey.equals(existingGroupingKey)) {
+                return book;
+            }
+
+            // Track best fuzzy match
+            double similarity = BookFileGroupingUtils.calculateSimilarity(folderGroupingKey, existingGroupingKey);
+            if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+                fuzzyMatch = book;
+            }
+        }
+
+        if (fuzzyMatch != null) {
+            log.debug("Fuzzy matched folder '{}' to '{}' with similarity {}", folderName,
+                    fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
+        }
+        return fuzzyMatch;
+    }
+
+    private void autoAttachFolderAudiobook(BookEntity book, String folderName, String fileSubPath, Path folderPath) {
+        String hash = FileFingerprint.generateFolderHash(folderPath);
+        BookFileEntity additionalFile = BookFileEntity.builder()
+                .book(book)
+                .fileName(folderName)
+                .fileSubPath(fileSubPath)
+                .isBookFormat(true)
+                .folderBased(true)
+                .bookType(BookFileType.AUDIOBOOK)
+                .fileSizeKb(FileUtils.getFolderSizeInKb(folderPath))
+                .initialHash(hash)
+                .currentHash(hash)
+                .addedOn(Instant.now())
+                .build();
+
+        bookAdditionalFileRepository.save(additionalFile);
+        log.info("Auto-attached folder audiobook {} to existing book: {}", folderName, book.getPrimaryBookFile().getFileName());
     }
 
     private void autoAttachFile(BookEntity book, String fileName, String fileSubPath, Path fullPath) {
