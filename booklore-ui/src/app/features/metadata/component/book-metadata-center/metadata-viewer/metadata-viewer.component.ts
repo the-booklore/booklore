@@ -122,7 +122,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         const items: MenuItem[] = [];
         const primaryType = book.primaryFile?.bookType;
 
-        // Add streaming reader options for primary file
+        // Add streaming reader option for primary file
         if (primaryType === 'PDF') {
           items.push({
             label: 'Streaming Reader',
@@ -131,28 +131,52 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           });
         } else if (primaryType === 'EPUB') {
           items.push({
-            label: 'Streaming Reader (Beta)',
+            label: 'Streaming Reader',
             icon: 'pi pi-play',
             command: () => this.read(book.id, 'epub-streaming')
           });
         }
 
-        // Add alternative formats section if there are readable alternatives
+        // Get readable alternative formats and group by type
         const readableAlternatives = book.alternativeFormats?.filter(f =>
           f.bookType && ['PDF', 'EPUB', 'FB2', 'MOBI', 'AZW3', 'CBX'].includes(f.bookType)
         ) ?? [];
 
-        if (readableAlternatives.length > 0) {
+        // Get unique format types from alternatives
+        const uniqueAltTypes = [...new Set(readableAlternatives.map(f => f.bookType))];
+
+        if (uniqueAltTypes.length > 0) {
           if (items.length > 0) {
             items.push({ separator: true });
           }
-          items.push({
-            label: 'Other Formats',
-            items: readableAlternatives.map(format => ({
-              label: `${format.bookType} - ${format.fileName}`,
-              icon: this.getFileIcon(format.bookType ?? null),
-              command: () => this.read(book.id, undefined, format.bookType)
-            }))
+
+          uniqueAltTypes.forEach(formatType => {
+            if (formatType === 'PDF' || formatType === 'EPUB') {
+              // For PDF/EPUB, offer both standard and streaming readers
+              items.push({
+                label: formatType,
+                icon: this.getFileIcon(formatType),
+                items: [
+                  {
+                    label: 'Standard Reader',
+                    icon: 'pi pi-book',
+                    command: () => this.read(book.id, undefined, formatType)
+                  },
+                  {
+                    label: 'Streaming Reader',
+                    icon: 'pi pi-play',
+                    command: () => this.read(book.id, formatType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', formatType)
+                  }
+                ]
+              });
+            } else {
+              // For other formats, just show the type
+              items.push({
+                label: formatType,
+                icon: this.getFileIcon(formatType ?? null),
+                command: () => this.read(book.id, undefined, formatType)
+              });
+            }
           });
         }
 

@@ -228,7 +228,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         // Use streaming for EPUB if query param is set, blob loading otherwise (default)
         const useStreaming = this.route.snapshot.queryParamMap.get('streaming') === 'true';
         const loadBook$ = bookType === 'EPUB' && useStreaming
-          ? this.viewManager.loadEpubStreaming(this.bookId)
+          ? this.viewManager.loadEpubStreaming(this.bookId, this.altBookType)
           : this.loadBookBlob();
 
         return loadBook$.pipe(
