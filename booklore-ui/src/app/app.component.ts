@@ -28,6 +28,7 @@ import {scan, withLatestFrom} from 'rxjs/operators';
 export class AppComponent implements OnInit, OnDestroy {
 
   loading = true;
+  offline = !navigator.onLine;
   private subscriptions: Subscription[] = [];
   private subscriptionsInitialized = false;
 
@@ -43,6 +44,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private libraryLoadingService = inject(LibraryLoadingService);
 
   ngOnInit(): void {
+    window.addEventListener('online', this.onOnline);
+    window.addEventListener('offline', this.onOffline);
+
     this.authInit.initialized$.subscribe(ready => {
       this.loading = !ready;
       if (ready && !this.subscriptionsInitialized) {
@@ -50,6 +54,18 @@ export class AppComponent implements OnInit, OnDestroy {
         this.subscriptionsInitialized = true;
       }
     });
+  }
+
+  private onOnline = () => {
+    this.offline = false;
+  };
+
+  private onOffline = () => {
+    this.offline = true;
+  };
+
+  reload(): void {
+    window.location.reload();
   }
 
   private setupWebSocketSubscriptions(): void {
@@ -125,6 +141,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('online', this.onOnline);
+    window.removeEventListener('offline', this.onOffline);
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.libraryLoadingService.hide();
   }
