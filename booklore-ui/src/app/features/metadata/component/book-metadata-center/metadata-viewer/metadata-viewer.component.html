@@ -562,18 +562,14 @@
               </div>
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
-            @if (book.primaryFile?.bookType !== 'AUDIOBOOK') {
-              @if (readMenuItems$ | async; as readItems) {
-                @if (readItems.length > 0) {
-                  <p-splitbutton [label]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'Continue Reading' : 'Read'" outlined [icon]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'pi pi-play' : 'pi pi-book'" [model]="readItems" (onClick)="read(book.id)" severity="primary" class="read-button-responsive"/>
-                } @else {
-                  <p-button [label]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'Continue Reading' : 'Read'" outlined [icon]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'pi pi-play' : 'pi pi-book'" (onClick)="read(book.id)" severity="primary" class="read-button-responsive"/>
-                }
+            @if (readMenuItems$ | async; as readItems) {
+              @if (readItems.length > 0) {
+                <p-splitbutton [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" [model]="readItems" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
               } @else {
-                <p-button [label]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'Continue Reading' : 'Read'" outlined [icon]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'pi pi-play' : 'pi pi-book'" (onClick)="read(book.id)" severity="primary" class="read-button-responsive"/>
+                <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
               }
             } @else {
-              <p-button [label]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'Continue' : 'Play'" outlined icon="pi pi-play" (onClick)="read(book.id)" severity="primary" class="read-button-responsive"/>
+              <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
             }
             <p-divider layout="vertical"></p-divider>
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>

@@ -462,6 +462,23 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     if (bookId) this.bookService.readBook(bookId, reader, bookType);
   }
 
+  isInProgressStatus(): boolean {
+    return [ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(this.selectedReadStatus);
+  }
+
+  getReadButtonLabel(book: Book): string {
+    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+    if (this.isInProgressStatus()) {
+      return isAudiobook ? 'Continue' : 'Continue Reading';
+    }
+    return isAudiobook ? 'Play' : 'Read';
+  }
+
+  getReadButtonIcon(book: Book): string {
+    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+    return (isAudiobook || this.isInProgressStatus()) ? 'pi pi-play' : 'pi pi-book';
+  }
+
   download(book: Book) {
     this.bookService.downloadFile(book);
   }
