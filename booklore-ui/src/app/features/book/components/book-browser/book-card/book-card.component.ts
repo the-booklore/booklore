@@ -734,6 +734,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   getDisplayFormat(): string | null {
+    const ext = this.book?.primaryFile?.extension;
+    if (ext) {
+      return ext.toUpperCase();
+    }
     return this.getFileExtension(this.book?.primaryFile?.filePath);
   }
 
