@@ -107,14 +107,19 @@ public class FileUploadService {
 
             final Path finalPath;
             final String finalFileName;
+            final BookFileType effectiveBookType;
             if (isBook) {
                 String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
                 String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);
                 finalFileName = Paths.get(resolvedRelativePath).getFileName().toString();
                 finalPath = buildAdditionalFilePath(book, finalFileName);
+                String extension = sanitizedFileName.substring(sanitizedFileName.lastIndexOf('.') + 1);
+                effectiveBookType = BookFileType.fromExtension(extension)
+                        .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported book file extension: " + extension));
             } else {
                 finalFileName = sanitizedFileName;
                 finalPath = buildAdditionalFilePath(book, sanitizedFileName);
+                effectiveBookType = bookType;
             }
             validateFinalPath(finalPath);
 
@@ -127,7 +132,7 @@ public class FileUploadService {
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookFileEntity entity = createAdditionalFileEntity(book, finalFileName, isBook, bookType, file.getSize(), fileHash, description);
+            final BookFileEntity entity = createAdditionalFileEntity(book, finalFileName, isBook, effectiveBookType, file.getSize(), fileHash, description);
             final BookFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
@@ -136,7 +141,7 @@ public class FileUploadService {
             log.error("Failed to upload additional file for book {}: {}", bookId, sanitizedFileName, e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         } finally {
-            if (monitoringUnregistered && libraryId != null) {
+            if (monitoringUnregistered) {
                 try {
                     if (book.getLibrary() != null && book.getLibrary().getLibraryPaths() != null) {
                         for (LibraryPathEntity libPath : book.getLibrary().getLibraryPaths()) {
