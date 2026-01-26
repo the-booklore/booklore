@@ -125,7 +125,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           items.push({
             label: 'Streaming Reader',
             icon: 'pi pi-cloud',
-            command: () => this.read(book.id, 'streaming')
+            command: () => this.read(book.id, 'pdf-streaming')
           });
         }
 
@@ -133,7 +133,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           items.push({
             label: 'Streaming Reader (Beta)',
             icon: 'pi pi-cloud',
-            command: () => this.read(book.id, 'streaming')
+            command: () => this.read(book.id, 'epub-streaming')
           });
         }
 
@@ -169,12 +169,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 {
                   label: 'Default Reader',
                   icon: 'pi pi-book',
-                  command: () => this.read(book.id, 'ngx', 'PDF')
+                  command: () => this.read(book.id, 'pdf-streaming', 'PDF')
                 },
                 {
                   label: 'Streaming Reader',
                   icon: 'pi pi-cloud',
-                  command: () => this.read(book.id, 'streaming', 'PDF')
+                  command: () => this.read(book.id, 'pdf-streaming', 'PDF')
                 }
               ]
             });
@@ -195,7 +195,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 {
                   label: 'Streaming Reader (Beta)',
                   icon: 'pi pi-cloud',
-                  command: () => this.read(book.id, 'streaming', 'EPUB')
+                  command: () => this.read(book.id, 'epub-streaming', 'EPUB')
                 }
               ]
             });

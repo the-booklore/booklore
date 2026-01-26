@@ -567,15 +567,15 @@
             @if (readMenuItems$ | async; as readItems) {
               @if (readItems.length > 0) {
                 @if (book!.alternativeFormats && book!.alternativeFormats.length > 0) {
-                  <p-splitbutton [label]="'Read (' + book!.bookType + ')'" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'ngx' : undefined)" severity="primary"/>
+                  <p-splitbutton [label]="'Read (' + book!.bookType + ')'" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'pdf-streaming' : undefined)" severity="primary"/>
                 } @else {
-                  <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'ngx' : undefined)" severity="primary"/>
+                  <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'pdf-streaming' : undefined)" severity="primary"/>
                 }
               } @else {
-                <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'ngx' : undefined)" severity="primary"/>
+                <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'pdf-streaming' : undefined)" severity="primary"/>
               }
             } @else {
-              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'ngx' : undefined)" severity="primary"/>
+              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book.id, book!.bookType === 'PDF' ? 'pdf-streaming' : undefined)" severity="primary"/>
             }
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {

@@ -17,7 +17,7 @@ import {ReaderHeaderService} from './layout/header/header.service';
 import {ReaderNoteService} from './features/notes/note.service';
 import {BookService} from '../../book/service/book.service';
 import {ActivatedRoute} from '@angular/router';
-import {Book} from '../../book/model/book.model';
+import {Book, BookType} from '../../book/model/book.model';
 import {ReaderHeaderComponent} from './layout/header/header.component';
 import {ReaderSidebarComponent} from './layout/sidebar/sidebar.component';
 import {ReaderLeftSidebarComponent} from './layout/panel/panel.component';
