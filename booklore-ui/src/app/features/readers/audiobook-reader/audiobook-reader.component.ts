@@ -243,6 +243,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.currentTime = this.savedPosition;
       }
 
+      // Setup Media Session for background playback
+      this.setupMediaSession();
+
       // Start reading session
       const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
       this.readingSessionService.startSession(
@@ -257,11 +260,22 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   onTimeUpdate(): void {
     const audio = this.audioElement?.nativeElement;
     if (audio) {
+      const previousChapterIndex = this.getCurrentChapterIndex();
       this.currentTime = audio.currentTime;
 
       // Update reading session
       const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
       this.readingSessionService.updateProgress(this.formatTime(this.currentTime), percentage);
+
+      // Update Media Session position state (throttled to every 5 seconds)
+      if (Math.floor(this.currentTime) % 5 === 0) {
+        this.updateMediaSessionPositionState();
+      }
+
+      // Update metadata if chapter changed (for single-file audiobooks)
+      if (!this.audiobookInfo.folderBased && this.getCurrentChapterIndex() !== previousChapterIndex) {
+        this.updateMediaSessionMetadata();
+      }
 
       // Check sleep timer end of chapter
       this.checkSleepTimerEndOfChapter();
@@ -284,11 +298,13 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.isPlaying = false;
         this.stopProgressSaveInterval();
         this.saveProgress();
+        this.updateMediaSessionPlaybackState();
       }
     } else {
       this.isPlaying = false;
       this.stopProgressSaveInterval();
       this.saveProgress();
+      this.updateMediaSessionPlaybackState();
     }
   }
 
@@ -299,6 +315,74 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       summary: 'Error',
       detail: 'Failed to load audio'
     });
+  }
+
+  // Media Session API for background playback
+  private setupMediaSession(): void {
+    if (!('mediaSession' in navigator)) return;
+
+    this.updateMediaSessionMetadata();
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (!this.isPlaying) this.togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (this.isPlaying) this.togglePlay();
+    });
+    navigator.mediaSession.setActionHandler('seekbackward', () => this.seekRelative(-30));
+    navigator.mediaSession.setActionHandler('seekforward', () => this.seekRelative(30));
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      this.audiobookInfo.folderBased ? this.previousTrack() : this.previousChapter();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      this.audiobookInfo.folderBased ? this.nextTrack() : this.nextChapter();
+    });
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (details.seekTime !== undefined) {
+        const audio = this.audioElement?.nativeElement;
+        if (audio) {
+          audio.currentTime = details.seekTime;
+          this.currentTime = details.seekTime;
+        }
+      }
+    });
+  }
+
+  private updateMediaSessionMetadata(): void {
+    if (!('mediaSession' in navigator)) return;
+
+    const title = this.audiobookInfo.folderBased
+      ? this.currentTrack?.title
+      : this.getCurrentChapter()?.title || this.audiobookInfo.title;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || 'Untitled',
+      artist: this.audiobookInfo.author || 'Unknown Author',
+      album: this.audiobookInfo.title,
+      artwork: this.coverUrl
+        ? [{ src: this.coverUrl, sizes: '512x512', type: 'image/png' }]
+        : []
+    });
+  }
+
+  private updateMediaSessionPlaybackState(): void {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
+    }
+  }
+
+  private updateMediaSessionPositionState(): void {
+    if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: this.duration,
+          playbackRate: this.playbackRate,
+          position: this.currentTime
+        });
+      } catch {
+        // Ignore errors from invalid position state
+      }
+    }
   }
 
   // Playback controls
@@ -315,6 +399,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.startProgressSaveInterval();
     }
     this.isPlaying = !this.isPlaying;
+    this.updateMediaSessionPlaybackState();
   }
 
   seek(event: SliderChangeEvent): void {
@@ -370,6 +455,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     if (audio) {
       audio.playbackRate = rate;
     }
+    this.updateMediaSessionPositionState();
   }
 
   // Track navigation (folder-based)
@@ -379,7 +465,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.currentTime = 0;
       this.savedPosition = 0; // Reset saved position for new track
       if (this.isPlaying) {
-        setTimeout(() => this.audioElement?.nativeElement?.play(), 100);
+        setTimeout(() => {
+          this.audioElement?.nativeElement?.play();
+          this.updateMediaSessionMetadata();
+        }, 100);
       }
     }
   }
@@ -390,7 +479,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.currentTime = 0;
       this.savedPosition = 0; // Reset saved position for new track
       if (this.isPlaying) {
-        setTimeout(() => this.audioElement?.nativeElement?.play(), 100);
+        setTimeout(() => {
+          this.audioElement?.nativeElement?.play();
+          this.updateMediaSessionMetadata();
+        }, 100);
       }
     }
   }
@@ -404,6 +496,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.audioElement?.nativeElement?.play();
       this.isPlaying = true;
       this.startProgressSaveInterval();
+      this.updateMediaSessionMetadata();
+      this.updateMediaSessionPlaybackState();
     }, 100);
   }
 
@@ -414,10 +508,12 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       audio.currentTime = chapter.startTimeMs / 1000;
       this.currentTime = chapter.startTimeMs / 1000;
       this.showTrackList = false;
+      this.updateMediaSessionMetadata();
       if (!this.isPlaying) {
         audio.play();
         this.isPlaying = true;
         this.startProgressSaveInterval();
+        this.updateMediaSessionPlaybackState();
       }
     }
   }
@@ -670,6 +766,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.stopProgressSaveInterval();
     this.saveProgress();
     this.cancelSleepTimer();
+    this.updateMediaSessionPlaybackState();
 
     this.messageService.add({
       severity: 'info',
