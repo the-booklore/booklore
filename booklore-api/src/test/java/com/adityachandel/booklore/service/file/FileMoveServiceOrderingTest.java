@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service.file;
 
+import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.LibraryMapper;
 import com.adityachandel.booklore.model.dto.FileMoveResult;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class FileMoveServiceOrderingTest {
 
+    @Mock private AppProperties appProperties;
     @Mock private BookRepository bookRepository;
     @Mock private BookAdditionalFileRepository bookFileRepository;
     @Mock private LibraryRepository libraryRepository;
@@ -56,11 +58,11 @@ class FileMoveServiceOrderingTest {
     private LibraryPathEntity libraryPath;
 
     static class TestableFileMoveService extends FileMoveService {
-        TestableFileMoveService(BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository,
+        TestableFileMoveService(AppProperties appProperties, BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository,
                                 LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper,
                                 MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper,
                                 BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
-            super(bookRepository, bookFileRepository, libraryRepository, fileMoveHelper,
+            super(appProperties, bookRepository, bookFileRepository, libraryRepository, fileMoveHelper,
                     monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
         }
 
@@ -72,7 +74,8 @@ class FileMoveServiceOrderingTest {
 
     @BeforeEach
     void setUp() {
-        service = spy(new TestableFileMoveService(bookRepository, bookFileRepository, libraryRepository,
+        when(appProperties.getDiskType()).thenReturn("LOCAL");
+        service = spy(new TestableFileMoveService(appProperties, bookRepository, bookFileRepository, libraryRepository,
                 fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
 
         library = new LibraryEntity();
