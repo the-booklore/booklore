@@ -1,46 +1,22 @@
+@use '../../../shared/styles/settings-shared' as settings;
+
 .main-container {
-  width: 100%;
-  padding: 1rem;
-  height: calc(100dvh - 10.5rem);
-  overflow-y: auto;
-  border-width: 1px;
-  border-radius: 0.5rem;
-
-  @media (min-width: 768px) {
-    height: calc(100dvh - 11.65rem);
-  }
+  @include settings.settings-page-container;
 }
 
-.enclosing-container {
-  border-color: var(--p-content-border-color);
-  background: var(--p-content-background);
-}
+@include settings.settings-page-header;
 
 .settings-header {
-  margin-top: 1rem;
-  margin-bottom: 3rem;
+  margin-bottom: 1.75rem;
 }
 
 .settings-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--p-text-color);
-  margin: 0 0 0.75rem 0;
-
-  .pi {
-    color: var(--p-primary-color);
-    font-size: 1.25rem;
-  }
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
 }
 
 .settings-description {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+  @include settings.settings-page-description;
 }
 
 .settings-content {
@@ -56,6 +32,7 @@
 }
 
 .section-header {
+  @include settings.settings-section-header;
   margin-bottom: 1rem;
 
   .section-header-content {
@@ -73,23 +50,12 @@
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--p-text-color);
+  @include settings.settings-section-title;
   margin: 0;
-
-  .pi {
-    color: var(--p-primary-color);
-  }
 }
 
 .settings-card {
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  background: var(--p-content-background);
+  @include settings.settings-card;
   padding: 1.25rem 1.5rem 1.25rem 1.5rem;
   margin-bottom: 2rem;
   transition: all 0.2s ease;
@@ -120,7 +86,7 @@
 
   .setting-label {
     display: block;
-    font-weight: 600;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--p-text-color);
     font-size: 1rem;
     margin-bottom: 0.5rem;
@@ -171,7 +137,7 @@
     align-items: flex-start;
     gap: 0.5rem;
     color: var(--p-text-muted-color);
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     line-height: 1.5;
     margin: 0;
 
@@ -231,7 +197,7 @@
 
     .task-info-label {
       color: var(--p-yellow-700);
-      font-weight: 600;
+      font-weight: settings.$settings-section-title-weight;
 
       .pi {
         color: var(--p-yellow-600);
@@ -241,21 +207,21 @@
 
     .warning-text {
       color: var(--p-yellow-800);
-      font-weight: 500;
+      font-weight: settings.$settings-label-weight;
     }
   }
 }
 
 .task-info-label {
-  font-weight: 500;
+  font-weight: settings.$settings-label-weight;
   color: var(--p-text-color);
   min-width: 80px;
-  font-size: 0.875rem;
+  font-size: settings.$settings-section-description-size;
 }
 
 .task-info-value {
   color: var(--p-text-muted-color);
-  font-size: 0.875rem;
+  font-size: settings.$settings-section-description-size;
   font-family: monospace;
 }
 
@@ -266,17 +232,17 @@
   flex: 1;
 
   .progress-text {
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     color: var(--p-text-muted-color);
     min-width: 40px;
   }
 }
 
 .last-run-badge {
-  font-size: 0.875rem;
+  font-size: settings.$settings-section-description-size;
   padding: 0;
   border-radius: 0;
-  font-weight: 500;
+  font-weight: settings.$settings-label-weight;
   white-space: nowrap;
   line-height: 1.2;
   display: inline-flex;
@@ -289,7 +255,7 @@
   .sep {
     color: var(--p-text-muted-color);
     margin: 0 0.25rem;
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     line-height: 1.2;
     display: inline-flex;
     align-items: center;
@@ -307,7 +273,7 @@
   .status-text {
     font-size: 0.75rem;
     color: var(--p-text-muted-color);
-    font-weight: 600;
+    font-weight: settings.$settings-section-title-weight;
     text-transform: capitalize;
   }
 
@@ -355,7 +321,7 @@
   }
 
   .last-run-text {
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     color: var(--p-text-muted-color);
     font-style: italic;
   }
@@ -374,7 +340,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.9rem;
-        font-weight: 500;
+        font-weight: settings.$settings-label-weight;
         color: var(--p-text-color);
         background: var(--p-highlight-bg);
         border: 1px solid var(--p-highlight-border);
@@ -390,7 +356,7 @@
         .cache-size-value {
           font-size: 1rem;
           color: var(--p-primary-color);
-          font-weight: 600;
+          font-weight: settings.$settings-section-title-weight;
         }
       }
     }
@@ -462,9 +428,9 @@
     }
 
     .cron-label {
-      font-size: 0.875rem;
+      font-size: settings.$settings-section-description-size;
       color: var(--text-color-secondary);
-      font-weight: 500;
+      font-weight: settings.$settings-label-weight;
       flex-shrink: 0;
     }
 
@@ -502,7 +468,7 @@
       }
 
       .cron-input {
-        font-size: 0.8125rem;
+        font-size: settings.$settings-description-size;
         font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
         color: var(--p-text-color);
         background: var(--p-surface-900);
@@ -534,7 +500,7 @@
         line-height: 1.4;
 
         .pi {
-          font-size: 0.875rem;
+          font-size: settings.$settings-section-description-size;
           margin-top: 0.0625rem;
           flex-shrink: 0;
         }
@@ -558,7 +524,7 @@
     gap: 0.5rem;
     margin-bottom: 0.75rem;
     color: var(--p-text-color);
-    font-weight: 600;
+    font-weight: settings.$settings-section-title-weight;
 
     .pi {
       color: var(--p-primary-color);
@@ -583,14 +549,14 @@
     gap: 0.75rem;
 
     .cron-label {
-      font-size: 0.875rem;
+      font-size: settings.$settings-section-description-size;
       color: var(--p-text-muted-color);
       min-width: 80px;
-      font-weight: 500;
+      font-weight: settings.$settings-label-weight;
     }
 
     .cron-value {
-      font-size: 0.875rem;
+      font-size: settings.$settings-section-description-size;
       font-family: 'Courier New', monospace;
       color: var(--p-text-color);
       background: var(--p-surface-700);
@@ -613,7 +579,7 @@
   }
 
   .option-label {
-    font-weight: 500;
+    font-weight: settings.$settings-label-weight;
     color: var(--p-text-color);
     font-size: 0.9rem;
     white-space: nowrap;
@@ -621,7 +587,7 @@
 
   .option-description {
     color: var(--p-text-muted-color);
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     line-height: 1.4;
     margin: 0.25rem 0 0;
   }

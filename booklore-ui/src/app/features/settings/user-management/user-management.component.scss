@@ -1,45 +1,18 @@
+@use '../../../shared/styles/settings-shared' as settings;
+
 .main-container {
-  width: 100%;
-  padding: 1rem;
-  height: calc(100dvh - 10.5rem);
-  overflow-y: auto;
-  border-width: 1px;
-  border-radius: 0.5rem;
-
-  @media (min-width: 768px) {
-    height: calc(100dvh - 11.65rem);
-  }
+  @include settings.settings-page-container;
 }
 
-.enclosing-container {
-  border-color: var(--p-content-border-color);
-  background: var(--p-content-background);
-}
-
-.settings-header {
-  margin-top: 1rem;
-}
+@include settings.settings-page-header;
 
 .settings-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--p-text-color);
-  margin: 0 0 0.75rem 0;
-
-  .pi {
-    color: var(--p-primary-color);
-    font-size: 1.25rem;
-  }
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
 }
 
 .settings-description {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+  @include settings.settings-page-description;
 }
 
 .settings-content {
@@ -62,21 +35,13 @@
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--p-text-color);
-
-  .pi {
-    color: var(--p-primary-color);
-  }
+  @include settings.settings-section-title;
+  margin: 0;
 }
 
 .table-card {
   border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
+  border-radius: settings.$settings-card-border-radius;
   overflow: hidden;
   background: var(--p-content-background);
 }
@@ -91,7 +56,7 @@
     background: var(--p-surface-100);
     border-bottom: 2px solid var(--p-content-border-color);
     padding: 1rem;
-    font-weight: 600;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--p-text-color);
     white-space: nowrap;
   }
@@ -123,7 +88,7 @@
 
 .permission-header {
   text-align: center;
-  font-size: 0.875rem;
+  font-size: settings.$settings-section-description-size;
   padding: 0.75rem 0.5rem !important;
   min-width: 50px;
   width: 50px;
@@ -149,8 +114,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 0.875rem;
+  font-weight: settings.$settings-section-title-weight;
+  font-size: settings.$settings-section-description-size;
   flex-shrink: 0;
 }
 
@@ -161,7 +126,7 @@
 }
 
 .username {
-  font-weight: 600;
+  font-weight: settings.$settings-section-title-weight;
   color: var(--p-text-color);
 }
 
@@ -214,7 +179,7 @@
     border-color: var(--primary-color);
 
     .pi {
-      font-weight: 600;
+      font-weight: settings.$settings-section-title-weight;
     }
   }
 }
@@ -301,8 +266,8 @@
 }
 
 .permission-count {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: settings.$settings-section-description-size;
+  font-weight: settings.$settings-section-title-weight;
   color: var(--p-text-color);
   transition: color 0.2s;
 }
@@ -317,7 +282,7 @@
 .expanded-content {
   padding: 1.5rem;
   background: var(--overlay-background);
-  border-radius: 8px;
+  border-radius: settings.$settings-card-border-radius;
   margin: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -335,8 +300,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: settings.$settings-label-size;
+  font-weight: settings.$settings-section-title-weight;
   color: var(--text-color);
   margin: 0;
   padding-bottom: 0.75rem;
@@ -359,15 +324,15 @@
   gap: 0.5rem;
 
   label {
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-size: settings.$settings-description-size;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--text-color-secondary);
     text-transform: uppercase;
     letter-spacing: 0.025em;
   }
 
   span {
-    font-size: 0.9375rem;
+    font-size: settings.$settings-label-size;
     color: var(--text-color);
   }
 
@@ -387,8 +352,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-size: settings.$settings-description-size;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--text-color);
     margin: 0 0 0.75rem 0;
     text-transform: uppercase;
@@ -396,7 +361,7 @@
 
     .pi {
       color: var(--primary-color);
-      font-size: 0.875rem;
+      font-size: settings.$settings-section-description-size;
     }
   }
 }
@@ -413,7 +378,7 @@
   gap: 0.75rem;
 
   label {
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     color: var(--text-color);
     cursor: pointer;
     user-select: none;
@@ -425,7 +390,7 @@
 }
 
 .library-names {
-  font-size: 0.875rem;
+  font-size: settings.$settings-section-description-size;
   color: var(--text-color);
   display: block;
   overflow: hidden;
@@ -458,8 +423,8 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      font-size: 1.125rem;
-      font-weight: 600;
+      font-size: settings.$settings-section-title-size;
+      font-weight: settings.$settings-section-title-weight;
       color: var(--p-text-color);
       margin: 0;
 
@@ -528,8 +493,8 @@
   gap: 0.5rem;
 
   label {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: settings.$settings-section-description-size;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--p-text-color);
     margin-bottom: 0.25rem;
   }
@@ -542,7 +507,7 @@
   ::ng-deep .p-inputtext,
   ::ng-deep .p-password-input {
     padding: 0.75rem;
-    font-size: 0.9375rem;
+    font-size: settings.$settings-label-size;
     border: 1px solid var(--p-content-border-color);
     border-radius: 6px;
     background: var(--p-content-background);
@@ -575,11 +540,11 @@
   border-left: 3px solid #ef4444;
   border-radius: 6px;
   color: #ef4444;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: settings.$settings-section-description-size;
+  font-weight: settings.$settings-label-weight;
 
   .pi {
-    font-size: 1.125rem;
+    font-size: settings.$settings-section-title-icon-size;
     flex-shrink: 0;
     margin-top: 0.125rem;
   }
@@ -598,8 +563,8 @@
 
   ::ng-deep .p-button {
     padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    font-size: 0.9375rem;
+    font-weight: settings.$settings-section-title-weight;
+    font-size: settings.$settings-label-size;
     border-radius: 6px;
     transition: all 0.2s;
     min-width: 120px;
@@ -637,7 +602,7 @@
     }
 
     .p-button-label {
-      font-weight: 600;
+      font-weight: settings.$settings-section-title-weight;
     }
 
     .p-button-icon {
@@ -664,7 +629,7 @@
         &::before {
           width: 36px;
           height: 36px;
-          font-size: 1.125rem;
+          font-size: settings.$settings-section-title-icon-size;
         }
       }
 
@@ -694,19 +659,19 @@
 
   .form-field {
     label {
-      font-size: 0.8125rem;
+      font-size: settings.$settings-description-size;
     }
 
     ::ng-deep .p-inputtext,
     ::ng-deep .p-password-input {
       padding: 0.625rem;
-      font-size: 0.875rem;
+      font-size: settings.$settings-section-description-size;
     }
   }
 
   .error-message {
     padding: 0.75rem;
-    font-size: 0.8125rem;
+    font-size: settings.$settings-description-size;
     gap: 0.5rem;
 
     .pi {
