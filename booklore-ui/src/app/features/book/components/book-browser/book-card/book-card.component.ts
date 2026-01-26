@@ -726,11 +726,15 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  private getFileExtension(filePath?: string): string | null {
+  getFileExtension(filePath?: string): string | null {
     if (!filePath) return null;
     const parts = filePath.split('.');
     if (parts.length < 2) return null;
     return parts.pop()?.toUpperCase() || null;
+  }
+
+  getDisplayFormat(): string | null {
+    return this.getFileExtension(this.book?.primaryFile?.filePath);
   }
 
   private getFileIcon(fileType: string | null): string {
@@ -751,10 +755,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       case 'm4b':
       case 'm4a':
       case 'mp3':
-      case 'aac':
-      case 'flac':
-      case 'opus':
-      case 'ogg':
         return 'pi pi-headphones';
       default:
         return 'pi pi-file';

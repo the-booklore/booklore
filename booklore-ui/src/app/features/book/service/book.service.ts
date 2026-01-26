@@ -446,7 +446,7 @@ export class BookService {
           ? 'EPUB'
           : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
             ? 'CBX'
-            : (ext === 'm4b' || ext === 'm4a' || ext === 'mp3' || ext === 'aac' || ext === 'flac' || ext === 'opus' || ext === 'ogg')
+            : (ext === 'm4b' || ext === 'm4a' || ext === 'mp3')
               ? 'AUDIOBOOK'
               : null;
 

@@ -41,7 +41,8 @@ export class LibraryCreatorComponent implements OnInit {
     {type: 'CBX', label: 'CBX (CBZ/CBR/CB7)'},
     {type: 'MOBI', label: 'MOBI'},
     {type: 'AZW3', label: 'AZW3'},
-    {type: 'FB2', label: 'FB2'}
+    {type: 'FB2', label: 'FB2'},
+    {type: 'AUDIOBOOK', label: 'Audiobook'}
   ];
 
   private dialogLauncherService = inject(DialogLauncherService);

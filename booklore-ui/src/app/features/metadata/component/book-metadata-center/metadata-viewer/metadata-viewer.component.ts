@@ -191,7 +191,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         if (book.alternativeFormats && book.alternativeFormats.length > 0) {
           book.alternativeFormats.forEach(format => {
             items.push({
-              label: `${format.bookType ?? 'File'} · ${this.getFileSizeInMB(format)}`,
+              label: `${format.bookType ?? 'File'} · ${this.formatFileSize(format)}`,
               icon: this.getFileIcon(format.bookType ?? null),
               command: () => this.downloadAdditionalFile(book, format.id)
             });
@@ -209,7 +209,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           book.supplementaryFiles.forEach(file => {
             const extension = this.getFileExtension(file.filePath);
             items.push({
-              label: `${this.truncateFileName(file.fileName, 20)} · ${this.getFileSizeInMB(file)}`,
+              label: `${this.truncateFileName(file.fileName, 20)} · ${this.formatFileSize(file)}`,
               icon: this.getFileIcon(extension),
               tooltipOptions: { tooltipLabel: file.fileName, tooltipPosition: 'left' },
               command: () => this.downloadAdditionalFile(book, file.id)
@@ -285,7 +285,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 const isPrimaryOnly = !hasMultipleFormats;
                 const truncatedName = this.truncateFileName(book.primaryFile.fileName, 25);
                 deleteFormatItems.push({
-                  label: `${truncatedName} (${this.getFileSizeInMB(book.primaryFile)}) [Primary]`,
+                  label: `${truncatedName} (${this.formatFileSize(book.primaryFile)}) [Primary]`,
                   icon: this.getFileIcon(extension),
                   tooltipOptions: { tooltipLabel: book.primaryFile.fileName, tooltipPosition: 'left' },
                   command: () => this.deleteBookFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true, isPrimaryOnly)
@@ -298,7 +298,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   const extension = this.getFileExtension(format.filePath);
                   const truncatedName = this.truncateFileName(format.fileName, 25);
                   deleteFormatItems.push({
-                    label: `${truncatedName} (${this.getFileSizeInMB(format)})`,
+                    label: `${truncatedName} (${this.formatFileSize(format)})`,
                     icon: this.getFileIcon(extension),
                     tooltipOptions: { tooltipLabel: format.fileName, tooltipPosition: 'left' },
                     command: () => this.deleteBookFile(book, format.id, format.fileName || 'file', false, false)
@@ -321,7 +321,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   const extension = this.getFileExtension(file.filePath);
                   const truncatedName = this.truncateFileName(file.fileName, 25);
                   deleteSupplementaryItems.push({
-                    label: `${truncatedName} (${this.getFileSizeInMB(file)})`,
+                    label: `${truncatedName} (${this.formatFileSize(file)})`,
                     icon: this.getFileIcon(extension),
                     tooltipOptions: { tooltipLabel: file.fileName, tooltipPosition: 'left' },
                     command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
@@ -815,9 +815,21 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return lockedKeys.length > 0 && lockedKeys.every(k => metadata[k] === true);
   }
 
-  getFileSizeInMB(fileInfo: FileInfo | null | undefined): string {
+  formatFileSize(fileInfo: FileInfo | null | undefined): string {
     const sizeKb = fileInfo?.fileSizeKb;
-    return sizeKb != null ? `${(sizeKb / 1024).toFixed(2)} MB` : '-';
+    if (sizeKb == null) return '-';
+
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let size = sizeKb;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    const decimals = size >= 100 ? 0 : size >= 10 ? 1 : 2;
+    return `${size.toFixed(decimals)} ${units[unitIndex]}`;
   }
 
   truncateFileName(fileName: string | undefined, maxLength: number = 30): string {
@@ -898,6 +910,23 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return [...uniqueTypes];
   }
 
+  getDisplayFormat(filePath?: string): string | null {
+    return this.getFileExtension(filePath);
+  }
+
+  getUniqueAlternativeFormats(book: Book): string[] {
+    if (!book.alternativeFormats?.length) return [];
+    const primaryExt = this.getFileExtension(book.primaryFile?.filePath);
+    const uniqueExts = new Set<string>();
+    for (const format of book.alternativeFormats) {
+      const ext = this.getFileExtension(format.filePath);
+      if (ext && ext !== primaryExt) {
+        uniqueExts.add(ext);
+      }
+    }
+    return [...uniqueExts];
+  }
+
   getFileIcon(fileType: string | null): string {
     if (!fileType) return 'pi pi-file';
     switch (fileType.toLowerCase()) {
@@ -915,10 +944,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       case 'm4b':
       case 'm4a':
       case 'mp3':
-      case 'aac':
-      case 'flac':
-      case 'opus':
-      case 'ogg':
         return 'pi pi-headphones';
       default:
         return 'pi pi-file';

@@ -348,21 +348,21 @@
             <div class="metadata-item">
               <span class="metadata-key">Formats:</span>
               <span class="metadata-value-group format-tags">
-                @if (book?.primaryFile?.bookType; as primaryBookType) {
+                @if (getDisplayFormat(book?.primaryFile?.filePath); as displayFormat) {
                   <span (click)="goToFileType(book?.primaryFile?.filePath)" style="cursor: pointer;" [pTooltip]="'Primary: ' + (book?.primaryFile?.fileName ?? '')" tooltipPosition="top">
-                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(primaryBookType)" customTextColor="#fff">
-                      {{ primaryBookType }}
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(displayFormat)" customTextColor="#fff">
+                      {{ displayFormat }}
                     </app-tag>
                   </span>
                 }
-                @for (formatType of getUniqueAlternativeFormatTypes(book); track formatType) {
-                  <span (click)="goToFileType('.' + formatType)" style="cursor: pointer;" [pTooltip]="formatType" tooltipPosition="top">
-                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(formatType)" customTextColor="#fff">
-                      {{ formatType }}
+                @for (formatExt of getUniqueAlternativeFormats(book); track formatExt) {
+                  <span (click)="goToFileType('.' + formatExt)" style="cursor: pointer;" [pTooltip]="formatExt" tooltipPosition="top">
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(formatExt)" customTextColor="#fff">
+                      {{ formatExt }}
                     </app-tag>
                   </span>
                 }
-                @if (!book?.primaryFile?.bookType && !book?.alternativeFormats?.length) {
+                @if (!book?.primaryFile?.filePath && !book?.alternativeFormats?.length) {
                   <app-tag size="3xs" variant="pill" color="gray">-</app-tag>
                 }
               </span>
@@ -514,7 +514,7 @@
               <span class="metadata-key">File Size:</span>
               @if (book?.primaryFile?.fileSizeKb) {
                 <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.primaryFile?.fileSizeKb!)">
-                  {{ getFileSizeInMB(book?.primaryFile) }}
+                  {{ formatFileSize(book?.primaryFile) }}
                 </span>
               } @else {
                 <span class="metadata-value">-</span>
@@ -572,16 +572,18 @@
               } @else {
                 <p-button [label]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'Continue Reading' : 'Read'" outlined [icon]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'pi pi-play' : 'pi pi-book'" (onClick)="read(book.id)" severity="primary" class="read-button-responsive"/>
               }
+            } @else {
+              <p-button [label]="[ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(selectedReadStatus) ? 'Continue' : 'Play'" outlined icon="pi pi-play" (onClick)="read(book.id)" severity="primary" class="read-button-responsive"/>
             }
             <p-divider layout="vertical"></p-divider>
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
-                  <p-splitbutton [label]="(book.primaryFile?.bookType ?? 'File') + ' · ' + getFileSizeInMB(book.primaryFile)" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
+                  <p-splitbutton [label]="(getDisplayFormat(book.primaryFile?.filePath) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
                 }
               } @else {
-                <p-button [label]="(book.primaryFile?.bookType ?? 'File') + ' · ' + getFileSizeInMB(book.primaryFile)" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
+                <p-button [label]="(getDisplayFormat(book.primaryFile?.filePath) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
               }
             }
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
