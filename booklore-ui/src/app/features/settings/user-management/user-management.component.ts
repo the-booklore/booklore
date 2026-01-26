@@ -1,16 +1,10 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {Button, ButtonDirective} from 'primeng/button';
+import {Button} from 'primeng/button';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TableModule} from 'primeng/table';
 import {LowerCasePipe, TitleCasePipe} from '@angular/common';
 import {User, UserService, UserUpdateRequest} from './user.service';
-
-interface UserWithEditing extends User {
-  isEditing?: boolean;
-  selectedLibraryIds?: number[];
-  libraryNames?: string;
-}
 import {MessageService} from 'primeng/api';
 import {Checkbox} from 'primeng/checkbox';
 import {MultiSelect} from 'primeng/multiselect';
@@ -23,6 +17,12 @@ import {filter, take, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogLauncherService} from '../../../shared/services/dialog-launcher.service';
+
+interface UserWithEditing extends User {
+  isEditing?: boolean;
+  selectedLibraryIds?: number[];
+  libraryNames?: string;
+}
 
 @Component({
   selector: 'app-user-management',
@@ -37,8 +37,7 @@ import {DialogLauncherService} from '../../../shared/services/dialog-launcher.se
     InputText,
     LowerCasePipe,
     TitleCasePipe,
-    Tooltip,
-    ButtonDirective
+    Tooltip
   ],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss'],

@@ -192,13 +192,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       map((book): MenuItem[] => {
         const items: MenuItem[] = [];
 
-        // Add alternative formats
+        // Add alternative formats with type and size
         if (book.alternativeFormats && book.alternativeFormats.length > 0) {
           book.alternativeFormats.forEach(format => {
-            const extension = this.getFileExtension(format.filePath);
             items.push({
-              label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
-              icon: this.getFileIcon(extension),
+              label: `${format.bookType ?? 'File'} · ${this.getFileSizeInMB(format)}`,
+              icon: this.getFileIcon(format.bookType ?? null),
               command: () => this.downloadAdditionalFile(book, format.id)
             });
           });
@@ -215,8 +214,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           book.supplementaryFiles.forEach(file => {
             const extension = this.getFileExtension(file.filePath);
             items.push({
-              label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
+              label: `${this.truncateFileName(file.fileName, 20)} · ${this.getFileSizeInMB(file)}`,
               icon: this.getFileIcon(extension),
+              tooltipOptions: { tooltipLabel: file.fileName, tooltipPosition: 'left' },
               command: () => this.downloadAdditionalFile(book, file.id)
             });
           });
