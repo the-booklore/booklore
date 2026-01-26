@@ -119,10 +119,6 @@ export class MetadataTabsComponent {
       case 'm4b':
       case 'm4a':
       case 'mp3':
-      case 'aac':
-      case 'flac':
-      case 'opus':
-      case 'ogg':
         return 'pi pi-headphones';
       default:
         return 'pi pi-file';

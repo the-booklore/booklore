@@ -167,6 +167,7 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(4L);
         BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setId(1L);
         primaryFile.setBook(entity);
         primaryFile.setBookType(BookFileType.EPUB);
         entity.setBookFiles(List.of(primaryFile));
@@ -186,7 +187,7 @@ class BookServiceTest {
         when(ebookViewerPreferenceRepository.findByBookIdAndUserId(4L, testUser.getId())).thenReturn(Optional.of(epubPref));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
-        BookViewerSettings settings = bookService.getBookViewerSetting(4L);
+        BookViewerSettings settings = bookService.getBookViewerSetting(4L, 1L);
 
         assertNotNull(settings.getEbookSettings());
         assertEquals("Arial", settings.getEbookSettings().getFontFamily());
@@ -207,12 +208,13 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(5L);
         BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setId(1L);
         primaryFile.setBook(entity);
         primaryFile.setBookType(null);
         entity.setBookFiles(List.of(primaryFile));
         when(bookRepository.findByIdWithBookFiles(5L)).thenReturn(Optional.of(entity));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
-        assertThrows(APIException.class, () -> bookService.getBookViewerSetting(5L));
+        assertThrows(APIException.class, () -> bookService.getBookViewerSetting(5L, 1L));
     }
 
     @Test

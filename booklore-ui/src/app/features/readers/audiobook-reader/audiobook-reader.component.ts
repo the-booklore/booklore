@@ -18,7 +18,7 @@ import { AudiobookService } from './audiobook.service';
 import { AudiobookInfo, AudiobookChapter, AudiobookTrack, AudiobookProgress } from './audiobook.model';
 import { BookService } from '../../book/service/book.service';
 import { BookMarkService, BookMark, CreateBookMarkRequest } from '../../../shared/service/book-mark.service';
-import { ReadingSessionService } from '../../../shared/service/reading-session.service';
+import { AudiobookSessionService } from '../../../shared/service/audiobook-session.service';
 import { PageTitleService } from '../../../shared/service/page-title.service';
 import { AuthService } from '../../../shared/service/auth.service';
 import { API_CONFIG } from '../../../core/config/api-config';
@@ -51,7 +51,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private location = inject(Location);
   private messageService = inject(MessageService);
-  private readingSessionService = inject(ReadingSessionService);
+  private audiobookSessionService = inject(AudiobookSessionService);
   private pageTitle = inject(PageTitleService);
 
   // Loading state
@@ -139,9 +139,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
     this.saveProgress();
 
-    if (this.readingSessionService.isSessionActive()) {
-      const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
-      this.readingSessionService.endSession(this.formatTime(this.currentTime), percentage);
+    if (this.audiobookSessionService.isSessionActive()) {
+      this.audiobookSessionService.endSession(Math.round(this.currentTime * 1000));
     }
   }
 
@@ -246,14 +245,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       // Setup Media Session for background playback
       this.setupMediaSession();
 
-      // Start reading session
-      const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
-      this.readingSessionService.startSession(
-        this.bookId,
-        'AUDIOBOOK',
-        this.formatTime(this.currentTime),
-        percentage
-      );
+      // Note: Session will be started when user presses play, not on load
     }
   }
 
@@ -263,9 +255,11 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       const previousChapterIndex = this.getCurrentChapterIndex();
       this.currentTime = audio.currentTime;
 
-      // Update reading session
-      const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
-      this.readingSessionService.updateProgress(this.formatTime(this.currentTime), percentage);
+      // Update audiobook session position
+      this.audiobookSessionService.updatePosition(
+        Math.round(this.currentTime * 1000),
+        this.audiobookInfo?.folderBased ? this.currentTrackIndex : undefined
+      );
 
       // Update Media Session position state (throttled to every 5 seconds)
       if (Math.floor(this.currentTime) % 5 === 0) {
@@ -299,12 +293,16 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.stopProgressSaveInterval();
         this.saveProgress();
         this.updateMediaSessionPlaybackState();
+        // Pause session when audiobook ends
+        this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
       }
     } else {
       this.isPlaying = false;
       this.stopProgressSaveInterval();
       this.saveProgress();
       this.updateMediaSessionPlaybackState();
+      // Pause session when audiobook ends
+      this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
     }
   }
 
@@ -393,10 +391,24 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     if (this.isPlaying) {
       audio.pause();
       this.stopProgressSaveInterval();
-      this.saveProgress(); // Save on pause
+      this.saveProgress();
+      // Pause the listening session
+      this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
     } else {
       audio.play();
       this.startProgressSaveInterval();
+      // Start or resume the listening session
+      if (this.audiobookSessionService.isSessionActive()) {
+        this.audiobookSessionService.resumeSession(Math.round(this.currentTime * 1000));
+      } else {
+        this.audiobookSessionService.startSession(
+          this.bookId,
+          Math.round(this.currentTime * 1000),
+          this.playbackRate,
+          this.audiobookInfo?.bookFileId,
+          this.audiobookInfo?.folderBased ? this.currentTrackIndex : undefined
+        );
+      }
     }
     this.isPlaying = !this.isPlaying;
     this.updateMediaSessionPlaybackState();
@@ -456,6 +468,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       audio.playbackRate = rate;
     }
     this.updateMediaSessionPositionState();
+    // Update session with new playback rate
+    this.audiobookSessionService.updatePlaybackRate(rate);
   }
 
   // Track navigation (folder-based)
@@ -498,6 +512,15 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.startProgressSaveInterval();
       this.updateMediaSessionMetadata();
       this.updateMediaSessionPlaybackState();
+      // Start or resume listening session
+      if (this.audiobookSessionService.isSessionActive()) {
+        this.audiobookSessionService.resumeSession(0);
+      } else {
+        this.audiobookSessionService.startSession(
+          this.bookId, 0, this.playbackRate,
+          this.audiobookInfo?.bookFileId, track.index
+        );
+      }
     }, 100);
   }
 
@@ -514,6 +537,15 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.isPlaying = true;
         this.startProgressSaveInterval();
         this.updateMediaSessionPlaybackState();
+        // Start or resume listening session
+        if (this.audiobookSessionService.isSessionActive()) {
+          this.audiobookSessionService.resumeSession(chapter.startTimeMs);
+        } else {
+          this.audiobookSessionService.startSession(
+            this.bookId, chapter.startTimeMs, this.playbackRate,
+            this.audiobookInfo?.bookFileId
+          );
+        }
       }
     }
   }
@@ -668,9 +700,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
   closeReader(): void {
     this.saveProgress();
-    if (this.readingSessionService.isSessionActive()) {
-      const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
-      this.readingSessionService.endSession(this.formatTime(this.currentTime), percentage);
+    if (this.audiobookSessionService.isSessionActive()) {
+      this.audiobookSessionService.endSession(Math.round(this.currentTime * 1000));
     }
     this.location.back();
   }
@@ -767,6 +798,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.saveProgress();
     this.cancelSleepTimer();
     this.updateMediaSessionPlaybackState();
+    // Pause the listening session
+    this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
 
     this.messageService.add({
       severity: 'info',
@@ -896,6 +929,17 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.audioElement?.nativeElement?.play();
         this.isPlaying = true;
         this.startProgressSaveInterval();
+        // Start or resume listening session
+        const positionMs = bookmark.positionMs || 0;
+        if (this.audiobookSessionService.isSessionActive()) {
+          this.audiobookSessionService.resumeSession(positionMs);
+        } else {
+          this.audiobookSessionService.startSession(
+            this.bookId, positionMs, this.playbackRate,
+            this.audiobookInfo?.bookFileId,
+            this.audiobookInfo?.folderBased ? bookmark.trackIndex : undefined
+          );
+        }
       }, 100);
     }
   }
