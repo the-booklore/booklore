@@ -290,24 +290,21 @@
   gap: 0.75rem;
 }
 
-.user-card {
+.user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   background: color-mix(in srgb, var(--ground-background) 50%, var(--p-surface-800) 50%);
   border: 1px solid var(--p-content-border-color);
   border-left: 3px solid var(--p-primary-color);
   border-radius: 6px;
+  padding: 0.875rem 1rem;
   transition: background 0.2s ease;
 
   &:hover {
     background: color-mix(in srgb, var(--ground-background) 40%, var(--p-surface-800) 60%);
   }
-}
-
-.user-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1rem;
 
   @media (max-width: 600px) {
     flex-direction: column;
@@ -316,7 +313,7 @@
   }
 }
 
-.user-main-info {
+.user-info {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -342,7 +339,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  flex: 1;
   min-width: 0;
 }
 

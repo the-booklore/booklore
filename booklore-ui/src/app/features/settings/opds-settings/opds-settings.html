@@ -213,73 +213,71 @@
           } @else {
             <div class="users-list">
               @for (user of users; track user.id) {
-                <div class="user-card">
-                  <div class="user-card-header">
-                    <div class="user-main-info">
-                      <div class="user-avatar">
-                        {{ user.username.charAt(0).toUpperCase() }}
-                      </div>
-                      <div class="user-details">
-                        <span class="username">{{ user.username }}</span>
-                        <span class="user-meta">
-                          <i class="pi pi-sort-alt"></i>
-                          @if (editingUserId === user.id) {
-                            <p-select
-                              [options]="sortOrderOptions"
-                              [(ngModel)]="editingSortOrder"
-                              optionLabel="label"
-                              optionValue="value"
-                              [style]="{width: '160px'}"
-                              size="small"
-                              [appendTo]="'body'">
-                            </p-select>
-                          } @else {
-                            <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
-                          }
-                        </span>
+                <div class="user-item">
+                  <div class="user-info">
+                    <div class="user-avatar">
+                      {{ user.username.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-details">
+                      <span class="username">{{ user.username }}</span>
+                      <div class="user-meta">
+                        <i class="pi pi-sort-alt"></i>
+                        @if (editingUserId === user.id) {
+                          <p-select
+                            [options]="sortOrderOptions"
+                            [(ngModel)]="editingSortOrder"
+                            optionLabel="label"
+                            optionValue="value"
+                            [style]="{width: '160px'}"
+                            size="small"
+                            [appendTo]="'body'">
+                          </p-select>
+                        } @else {
+                          <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
+                        }
                       </div>
                     </div>
-                    <div class="user-actions">
-                      @if (editingUserId === user.id) {
-                        <p-button
-                          icon="pi pi-check"
-                          severity="success"
-                          size="small"
-                          [outlined]="true"
-                          [rounded]="true"
-                          (onClick)="saveSortOrder(user)"
-                          pTooltip="Save">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-times"
-                          severity="secondary"
-                          size="small"
-                          [outlined]="true"
-                          [rounded]="true"
-                          (onClick)="cancelEdit()"
-                          pTooltip="Cancel">
-                        </p-button>
-                      } @else {
-                        <p-button
-                          icon="pi pi-pencil"
-                          severity="info"
-                          size="small"
-                          [outlined]="true"
-                          [rounded]="true"
-                          (onClick)="startEdit(user)"
-                          pTooltip="Edit sort order">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-trash"
-                          severity="danger"
-                          size="small"
-                          [outlined]="true"
-                          [rounded]="true"
-                          (onClick)="confirmDelete(user)"
-                          pTooltip="Delete user">
-                        </p-button>
-                      }
-                    </div>
+                  </div>
+                  <div class="user-actions">
+                    @if (editingUserId === user.id) {
+                      <p-button
+                        icon="pi pi-check"
+                        severity="success"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="saveSortOrder(user)"
+                        pTooltip="Save">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-times"
+                        severity="secondary"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="cancelEdit()"
+                        pTooltip="Cancel">
+                      </p-button>
+                    } @else {
+                      <p-button
+                        icon="pi pi-pencil"
+                        severity="info"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="startEdit(user)"
+                        pTooltip="Edit sort order">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-trash"
+                        severity="danger"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="confirmDelete(user)"
+                        pTooltip="Delete user">
+                      </p-button>
+                    }
                   </div>
                 </div>
               }
