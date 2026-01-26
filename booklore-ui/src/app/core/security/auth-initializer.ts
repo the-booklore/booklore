@@ -14,7 +14,6 @@ const OIDC_ERROR_COUNT_KEY = 'booklore-oidc-error-count';
 const OIDC_CONFIG_HASH_KEY = 'booklore-oidc-config-hash';
 const MAX_OIDC_RETRIES = 3;
 const OIDC_TIMEOUT_MS = 10000;
-const PUBLIC_SETTINGS_TIMEOUT_MS = 2000;
 const SETTINGS_TIMEOUT_MS = 10000;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -33,50 +32,52 @@ export function initializeAuthFactory() {
     const authService = inject(AuthService);
     const authInitService = inject(AuthInitializationService);
 
-    return new Promise<void>((resolve) => {
-      if (!navigator.onLine) {
-        console.warn('[Auth] App is offline, skipping auth initialization');
-        authInitService.markAsInitialized();
-        resolve();
-        return;
-      }
+    if (!navigator.onLine) {
+      console.warn('[Auth] App is offline, skipping auth initialization');
+      authInitService.markAsInitialized();
+      return;
+    }
 
-      // Pre-check internal token validity to prevent initial 401s
-      const internalToken = authService.getInternalAccessToken();
-      if (internalToken) {
-        try {
-          const decoded: any = jwtDecode(internalToken);
-          const now = Date.now() / 1000;
-          // Buffer of 10 seconds
-          if (decoded.exp && (decoded.exp - now) < 10) {
-            console.log('[Auth] Internal token expired or expiring soon, attempting refresh...');
-            try {
-              await firstValueFrom(authService.internalRefreshToken());
-              console.log('[Auth] Internal token refreshed successfully');
-            } catch (e) {
-              console.warn('[Auth] Failed to refresh internal token during init, logging out', e);
-              authService.logout();
-            }
+    // Pre-check internal token validity to prevent initial 401s
+    const internalToken = authService.getInternalAccessToken();
+    if (internalToken) {
+      try {
+        const decoded: any = jwtDecode(internalToken);
+        const now = Date.now() / 1000;
+        // Buffer of 10 seconds
+        if (decoded.exp && (decoded.exp - now) < 10) {
+          console.log('[Auth] Internal token expired or expiring soon, attempting refresh...');
+          try {
+            await firstValueFrom(authService.internalRefreshToken());
+            console.log('[Auth] Internal token refreshed successfully');
+          } catch (e) {
+            console.warn('[Auth] Failed to refresh internal token during init, logging out', e);
+            authService.logout();
           }
-        } catch (e) {
-          console.error('[Auth] Failed to decode internal token, logging out', e);
-          authService.logout();
         }
+      } catch (e) {
+        console.error('[Auth] Failed to decode internal token, logging out', e);
+        authService.logout();
+      }
+    }
+
+    try {
+      const publicSettings = await firstValueFrom(
+        appSettingsService.publicAppSettings$.pipe(
+          filter(x => !!x),
+          take(1),
+          timeout(SETTINGS_TIMEOUT_MS)
+        )
+      );
+
+      // We explicitly check for null/undefined even though filter/take handles it safely above logic
+      if (!publicSettings) {
+         throw new Error('Public settings are null');
       }
 
-      const settingsTimeout = setTimeout(() => {
-        console.warn('[Auth] Public settings fetch timed out, falling back to local auth');
-        sub.unsubscribe();
-        authInitService.markAsInitialized();
-        resolve();
-      }, SETTINGS_TIMEOUT_MS);
-
-      const sub = appSettingsService.publicAppSettings$.subscribe(publicSettings => {
-        if (publicSettings) {
-          clearTimeout(settingsTimeout);
-          const forceLocalOnly = new URLSearchParams(window.location.search).get('localOnly') === 'true';
-          const oidcBypassed = localStorage.getItem(OIDC_BYPASS_KEY) === 'true';
-          const errorCount = parseInt(localStorage.getItem(OIDC_ERROR_COUNT_KEY) || '0', 10);
+      const forceLocalOnly = new URLSearchParams(window.location.search).get('localOnly') === 'true';
+      const oidcBypassed = localStorage.getItem(OIDC_BYPASS_KEY) === 'true';
+      const errorCount = parseInt(localStorage.getItem(OIDC_ERROR_COUNT_KEY) || '0', 10);
 
       // Fast path: Check if we should skip OIDC entirely
       if (forceLocalOnly || oidcBypassed || errorCount >= MAX_OIDC_RETRIES) {
