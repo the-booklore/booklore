@@ -4,15 +4,8 @@
   @include settings.settings-page-container;
 }
 
-.provider-section {
-  padding-bottom: 2rem;
-}
-
-.recipient-section {
-  padding-top: 1rem;
-}
-
 @include settings.settings-page-header;
+@include settings.settings-section-divider;
 
 .settings-title {
   @include settings.settings-page-title;
@@ -27,16 +20,17 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: settings.$settings-card-border-radius;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: var(--p-red-400);
+  background: color-mix(in srgb, var(--ground-background) 85%, var(--p-red-600) 15%);
+  border: 1px solid var(--p-content-border-color);
+  border-left: 3px solid var(--p-red-500);
   max-width: 500px;
 
-  .pi {
-    font-size: 1.25rem;
+  > .pi {
+    font-size: 1.5rem;
     flex-shrink: 0;
+    color: var(--p-red-400);
   }
 
   .access-denied-content {
@@ -51,6 +45,7 @@
       margin: 0;
       font-size: settings.$settings-section-description-size;
       line-height: 1.5;
+      color: var(--p-text-muted-color);
     }
   }
 }

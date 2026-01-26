@@ -28,7 +28,7 @@
     </div>
 
     <div class="section-body">
-      <div class="setting-item">
+      <div class="default-pattern-card">
         <div class="pattern-input-container">
           <div class="pattern-input-row">
             <input
@@ -51,7 +51,10 @@
             <span class="error-text">{{ defaultErrorMessage }}</span>
           }
           <div class="preview-row">
-            <span class="preview-label">Preview:</span>
+            <span class="preview-label">
+              <i class="pi pi-eye"></i>
+              Preview:
+            </span>
             <code class="preview-value">{{ generateDefaultPreview() }}</code>
           </div>
         </div>
@@ -71,45 +74,70 @@
     </div>
 
     <div class="section-body">
-      @for (library of libraries; track library.id) {
-        <div class="setting-item library-item">
-          <div class="setting-header">
-            <i [class]="'pi pi-' + library.icon"></i>
-            <label class="setting-label">{{ library.name }}</label>
-          </div>
-          <div class="pattern-input-container">
-            <div class="pattern-input-row">
-              <input
-                pInputText
-                [(ngModel)]="library.fileNamingPattern"
-                placeholder="Leave empty to use default pattern"
-                (input)="onLibraryPatternChange(library)"
-                class="pattern-input"/>
-              <p-button
-                label="Clear"
-                (onClick)="clearLibraryPattern(library)"
-                severity="secondary"
-                [outlined]="true"
-                [disabled]="!library.fileNamingPattern">
-              </p-button>
+      @if (libraries.length === 0) {
+        <div class="empty-state">
+          <i class="pi pi-folder-open"></i>
+          <p class="empty-title">No libraries found</p>
+          <p class="empty-subtitle">Create a library to configure custom naming patterns</p>
+        </div>
+      } @else {
+        <div class="libraries-list">
+          @for (library of libraries; track library.id) {
+            <div class="library-item" [class.has-pattern]="library.fileNamingPattern">
+              <div class="library-header">
+                <div class="library-info">
+                  <div class="library-icon">
+                    <i [class]="'pi pi-' + library.icon"></i>
+                  </div>
+                  <span class="library-name">{{ library.name }}</span>
+                  @if (library.fileNamingPattern) {
+                    <span class="custom-badge">Custom</span>
+                  } @else {
+                    <span class="default-badge">Using Default</span>
+                  }
+                </div>
+                <p-button
+                  icon="pi pi-times"
+                  severity="secondary"
+                  size="small"
+                  [outlined]="true"
+                  [rounded]="true"
+                  (onClick)="clearLibraryPattern(library)"
+                  [disabled]="!library.fileNamingPattern"
+                  pTooltip="Clear pattern">
+                </p-button>
+              </div>
+              <div class="library-body">
+                <div class="pattern-input-container">
+                  <input
+                    pInputText
+                    [(ngModel)]="library.fileNamingPattern"
+                    placeholder="Leave empty to use default pattern"
+                    (input)="onLibraryPatternChange(library)"
+                    class="pattern-input"/>
+                  <div class="preview-row">
+                    <span class="preview-label">
+                      <i class="pi pi-eye"></i>
+                      Preview:
+                    </span>
+                    <code class="preview-value">{{ generateLibraryPreview(library) }}</code>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="preview-row">
-              <span class="preview-label">Preview:</span>
-              <code class="preview-value">{{ generateLibraryPreview(library) }}</code>
-            </div>
-          </div>
+          }
+        </div>
+
+        <div class="actions-row">
+          <p-button
+            label="Save All"
+            (onClick)="saveLibraryPatterns()"
+            severity="success"
+            icon="pi pi-save"
+            [outlined]="true">
+          </p-button>
         </div>
       }
-
-      <div class="actions-row">
-        <p-button
-          label="Save All"
-          (onClick)="saveLibraryPatterns()"
-          severity="success"
-          icon="pi pi-save"
-          [outlined]="true">
-        </p-button>
-      </div>
     </div>
   </div>
 
@@ -127,7 +155,10 @@
     <div class="section-body">
       <div class="placeholders-grid">
         <div class="placeholder-group">
-          <h4 class="group-title">Available Placeholders</h4>
+          <h4 class="group-title">
+            <i class="pi pi-hashtag"></i>
+            Available Placeholders
+          </h4>
           <div class="placeholder-list">
             <div class="placeholder-item"><code>{{ '{title}' }}</code><span>Book title</span></div>
             <div class="placeholder-item"><code>{{ '{subtitle}' }}</code><span>Book subtitle</span></div>
@@ -143,16 +174,28 @@
         </div>
 
         <div class="placeholder-group">
-          <h4 class="group-title">Optional Blocks</h4>
+          <h4 class="group-title">
+            <i class="pi pi-code"></i>
+            Optional Blocks
+          </h4>
           <p class="group-description">
             Wrap parts in angle brackets <code>{{ '{<...>}' }}</code> to make them conditional.
             If any placeholder in the block has no value, the entire block is omitted.
           </p>
           <div class="example-block">
-            <div class="example-pattern"><code>{{ '{<{seriesIndex} - >{title}' }}</code></div>
+            <div class="example-pattern">
+              <span class="pattern-prefix">Pattern:</span>
+              <code>{{ '{<{seriesIndex} - >{title}' }}</code>
+            </div>
             <div class="example-results">
-              <span><code>01 - Dune</code> (with series index)</span>
-              <span><code>Dune</code> (without series index)</span>
+              <div class="result-item">
+                <span class="result-prefix">With index:</span>
+                <code>01 - Dune</code>
+              </div>
+              <div class="result-item">
+                <span class="result-prefix">Without:</span>
+                <code>Dune</code>
+              </div>
             </div>
           </div>
         </div>
@@ -175,101 +218,104 @@
       <div class="examples-container">
         <div class="example-category">
           <div class="category-header">
-            <h4 class="category-title">With Full Metadata</h4>
+            <h4 class="category-title">
+              <i class="pi pi-check-circle"></i>
+              With Full Metadata
+            </h4>
             <div class="sample-metadata">
-              title: <code>The Name of the Wind</code> |
-              subtitle: <code>Special Edition</code> |
-              authors: <code>Patrick Rothfuss</code> |
-              series: <code>The Kingkiller Chronicle</code> |
-              seriesIndex: <code>01</code> |
-              year: <code>2007</code> |
-              currentFilename: <code>name_of_the_wind_original.epub</code>
+              <div class="metadata-items">
+                <span><strong>title:</strong> <code>The Name of the Wind</code></span>
+                <span><strong>subtitle:</strong> <code>Special Edition</code></span>
+                <span><strong>authors:</strong> <code>Patrick Rothfuss</code></span>
+                <span><strong>series:</strong> <code>The Kingkiller Chronicle</code></span>
+                <span><strong>seriesIndex:</strong> <code>01</code></span>
+                <span><strong>year:</strong> <code>2007</code></span>
+              </div>
             </div>
           </div>
 
           <div class="example-grid">
             <div class="example-row">
-              <span class="pattern-label">Basic pattern:</span>
+              <span class="pattern-label">Basic pattern</span>
               <span class="pattern-col"><code>{{ '{authors} - {title}' }}</code></span>
               <span class="result-col"><code>Patrick Rothfuss - The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">With punctuation:</span>
+              <span class="pattern-label">With punctuation</span>
               <span class="pattern-col"><code>{{ '{title}: {series}' }}</code></span>
               <span class="result-col"><code>The Name of the Wind: The Kingkiller Chronicle.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Series in folder:</span>
+              <span class="pattern-label">Series in folder</span>
               <span class="pattern-col"><code>{{ '{authors}/{series}/{seriesIndex} - {title}' }}</code></span>
               <span class="result-col"><code>Patrick Rothfuss/The Kingkiller Chronicle/01 - The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Folder only:</span>
+              <span class="pattern-label">Folder only</span>
               <span class="pattern-col"><code>{{ '{title}/' }}</code></span>
               <span class="result-col"><code>The Name of the Wind/name_of_the_wind_original.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Absolute path:</span>
+              <span class="pattern-label">Absolute path</span>
               <span class="pattern-col"><code>{{ '/{authors}/{title}' }}</code></span>
               <span class="result-col"><code>/Patrick Rothfuss/The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Keep original name:</span>
-              <span class="pattern-col"><code>{{ '{authors}/{series}/{currentFilename}' }}</code></span>
-              <span class="result-col"><code>Patrick Rothfuss/The Kingkiller Chronicle/name_of_the_wind_original.epub</code></span>
-            </div>
-            <div class="example-row">
-              <span class="pattern-label">Title + Subtitle:</span>
+              <span class="pattern-label">Title + Subtitle</span>
               <span class="pattern-col"><code>{{ '{title}: {subtitle}' }}</code></span>
               <span class="result-col"><code>The Name of the Wind: Special Edition.epub</code></span>
             </div>
           </div>
         </div>
 
-        <p-divider></p-divider>
+        <div class="section-divider"><hr></div>
 
         <div class="example-category">
           <div class="category-header">
-            <h4 class="category-title">With Missing Optional Fields</h4>
+            <h4 class="category-title">
+              <i class="pi pi-question-circle"></i>
+              With Missing Optional Fields
+            </h4>
             <div class="sample-metadata">
-              title: <code>Project Hail Mary</code> |
-              subtitle: <em>(not provided)</em> |
-              authors: <code>Andy Weir</code> |
-              year: <code>2021</code> |
-              series: <em>(not provided)</em> |
-              seriesIndex: <em>(not provided)</em> |
-              currentFilename: <code>project_hail_mary_final.epub</code>
+              <div class="metadata-items">
+                <span><strong>title:</strong> <code>Project Hail Mary</code></span>
+                <span><strong>subtitle:</strong> <em class="not-set">not set</em></span>
+                <span><strong>authors:</strong> <code>Andy Weir</code></span>
+                <span><strong>year:</strong> <code>2021</code></span>
+                <span><strong>series:</strong> <em class="not-set">not set</em></span>
+                <span><strong>seriesIndex:</strong> <em class="not-set">not set</em></span>
+              </div>
             </div>
           </div>
 
           <div class="example-grid">
             <div class="example-row">
-              <span class="pattern-label">Optional blocks:</span>
+              <span class="pattern-label">Optional blocks</span>
               <span class="pattern-col"><code>{{ '{authors}/<{series}/><{seriesIndex}. >{title}< ({year})>' }}</code></span>
               <span class="result-col"><code>Andy Weir/Project Hail Mary (2021).epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">SeriesIndex fallback:</span>
+              <span class="pattern-label">SeriesIndex fallback</span>
               <span class="pattern-col"><code>{{ '<{seriesIndex}. >{title}< - {authors}>' }}</code></span>
               <span class="result-col"><code>Project Hail Mary - Andy Weir.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Brackets fallback:</span>
+              <span class="pattern-label">Brackets fallback</span>
               <span class="pattern-col"><code>{{ '<[{series}] >{title} - {authors}' }}</code></span>
               <span class="result-col"><code>Project Hail Mary - Andy Weir.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Series punctuation:</span>
+              <span class="pattern-label">Series punctuation</span>
               <span class="pattern-col"><code>{{ '<{series}: >{title} by {authors}' }}</code></span>
               <span class="result-col"><code>Project Hail Mary by Andy Weir.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Year prefix:</span>
+              <span class="pattern-label">Year prefix</span>
               <span class="pattern-col"><code>{{ '{authors}/{year}__{currentFilename}' }}</code></span>
               <span class="result-col"><code>Andy Weir/2021__project_hail_mary_final.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Subtitle fallback:</span>
+              <span class="pattern-label">Subtitle fallback</span>
               <span class="pattern-col"><code>{{ '{title}<: {subtitle}>' }}</code></span>
               <span class="result-col"><code>Project Hail Mary.epub</code></span>
             </div>

@@ -18,6 +18,7 @@ import {Library} from '../../book/model/library.model';
 import {LibraryService} from '../../book/service/library.service';
 import {Dialog} from 'primeng/dialog';
 import {Password} from 'primeng/password';
+import {InputText} from 'primeng/inputtext';
 import {filter, take, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
@@ -33,6 +34,7 @@ import {DialogLauncherService} from '../../../shared/services/dialog-launcher.se
     MultiSelect,
     Dialog,
     Password,
+    InputText,
     LowerCasePipe,
     TitleCasePipe,
     Tooltip,
@@ -285,6 +287,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (permissions.canBulkResetKoReaderReadProgress) count++;
     if (permissions.canBulkResetBookReadStatus) count++;
     return count;
+  }
+
+  getPermissionLevel(count: number, total: number): string {
+    if (count === 0) return 'none';
+    const ratio = count / total;
+    if (ratio < 0.4) return 'low';
+    if (ratio < 0.8) return 'medium';
+    return 'high';
   }
 
   toggleRowExpansion(user: User) {
