@@ -15,6 +15,7 @@ local LuaSettings = require("luasettings")
 local SQ3 = require("lua-ljsqlite3/init")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
+local ConfirmBox = require("ui/widget/confirmbox")
 
 local base_logger = require("logger")
 local log_to_file_flag = false
@@ -58,15 +59,37 @@ function BookloreSync:init()
     self.username = self.settings:readSetting("username") or ""
     self.password = self.settings:readSetting("password") or ""
     self.is_enabled = self.settings:readSetting("is_enabled") or false
-    self.min_duration = self.settings:readSetting("min_duration") or 5
+    self.min_duration = self.settings:readSetting("min_duration") or 30
+    self.progress_decimal_places = self.settings:readSetting("progress_decimal_places") or 2
     self.log_to_file = self.settings:readSetting("log_to_file") or false
     log_to_file_flag = self.log_to_file
+    self.historical_sync_ack = self.settings:readSetting("historical_sync_ack") or false
     
     -- Persistent local database for offline support
     self.local_db = LuaSettings:open(DataStorage:getSettingsDir() .. "/booklore_db.lua")
     
-    -- Cache for book hash -> bookId mapping (persisted)
-    self.book_cache = self.local_db:readSetting("book_cache") or {}
+    -- Cache for book hash -> bookId mapping and file path -> hash mapping (persisted)
+    local cached_data = self.local_db:readSetting("book_cache") or {}
+    
+    -- Migrate from old cache structure if needed
+    if cached_data.file_hashes == nil and cached_data.book_ids == nil then
+        -- Old structure: flat mapping of hash -> id, need to migrate
+        logger.info("BookloreSync: Migrating old cache structure to new format")
+        local old_cache = cached_data
+        self.book_cache = {
+            file_hashes = {},  -- file_path -> hash
+            book_ids = old_cache,  -- hash -> book_id
+        }
+    else
+        -- New structure or empty
+        self.book_cache = cached_data
+        if not self.book_cache.file_hashes then
+            self.book_cache.file_hashes = {}
+        end
+        if not self.book_cache.book_ids then
+            self.book_cache.book_ids = {}
+        end
+    end
     
     -- Current reading session tracking
     self.current_session = nil
@@ -105,6 +128,11 @@ function BookloreSync:registerDispatcherActions()
         title = _("Test Booklore Connection"),
         general = true,
     })
+end
+
+function BookloreSync:roundProgress(value)
+    local multiplier = 10 ^ self.progress_decimal_places
+    return math.floor(value * multiplier + 0.5) / multiplier
 end
 
 function BookloreSync:toggleSync()
@@ -224,6 +252,13 @@ function BookloreSync:addToMainMenu(menu_items)
                         end,
                     },
                     {
+                        text = _("Progress Decimal Places"),
+                        keep_menu_open = true,
+                        callback = function()
+                            self:configureProgressDecimalPlaces()
+                        end,
+                    },
+                    {
                         text = _("Sync Pending Sessions"),
                         enabled_func = function()
                             return #self.pending_sessions > 0
@@ -259,12 +294,20 @@ function BookloreSync:addToMainMenu(menu_items)
                     {
                         text = _("View Cache Status"),
                         callback = function()
-                            local cache_count = 0
-                            for _ in pairs(self.book_cache) do
-                                cache_count = cache_count + 1
+                            local hash_count = 0
+                            if self.book_cache.book_ids then
+                                for _ in pairs(self.book_cache.book_ids) do
+                                    hash_count = hash_count + 1
+                                end
+                            end
+                            local path_count = 0
+                            if self.book_cache.file_hashes then
+                                for _ in pairs(self.book_cache.file_hashes) do
+                                    path_count = path_count + 1
+                                end
                             end
                             UIManager:show(InfoMessage:new{
-                                text = T(_("Cached books: %1\nPending sessions: %2"), cache_count, #self.pending_sessions),
+                                text = T(_("Cached hashes: %1\nCached paths: %2\nPending sessions: %3"), hash_count, path_count, #self.pending_sessions),
                                 timeout = 3,
                             })
                         end,
@@ -272,14 +315,25 @@ function BookloreSync:addToMainMenu(menu_items)
                     {
                         text = _("Clear Local Cache"),
                         enabled_func = function()
-                            local count = 0
-                            for _ in pairs(self.book_cache) do
-                                count = count + 1
+                            local hash_count = 0
+                            if self.book_cache.book_ids then
+                                for _ in pairs(self.book_cache.book_ids) do
+                                    hash_count = hash_count + 1
+                                end
                             end
-                            return count > 0
+                            local path_count = 0
+                            if self.book_cache.file_hashes then
+                                for _ in pairs(self.book_cache.file_hashes) do
+                                    path_count = path_count + 1
+                                end
+                            end
+                            return hash_count > 0 or path_count > 0
                         end,
                         callback = function()
-                            self.book_cache = {}
+                            self.book_cache = {
+                                file_hashes = {},
+                                book_ids = {},
+                            }
                             self.local_db:saveSetting("book_cache", self.book_cache)
                             self.local_db:flush()
                             UIManager:show(InfoMessage:new{
@@ -412,7 +466,7 @@ function BookloreSync:configureMinDuration()
     input_dialog = InputDialog:new{
         title = _("Minimum Session Duration (seconds)"),
         input = tostring(self.min_duration),
-        input_hint = "5",
+        input_hint = "30",
         buttons = {
             {
                 {
@@ -448,6 +502,87 @@ function BookloreSync:configureMinDuration()
     }
     UIManager:show(input_dialog)
     input_dialog:onShowKeyboard()
+end
+
+function BookloreSync:configureProgressDecimalPlaces()
+    local input_dialog
+    input_dialog = InputDialog:new{
+        title = _("Progress Decimal Places (0-5)"),
+        input = tostring(self.progress_decimal_places),
+        input_hint = "2",
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    callback = function()
+                        UIManager:close(input_dialog)
+                    end,
+                },
+                {
+                    text = _("Save"),
+                    is_enter_default = true,
+                    callback = function()
+                        local input_value = tonumber(input_dialog:getInputText())
+                        if input_value and input_value >= 0 and input_value <= 5 and input_value == math.floor(input_value) then
+                            self.progress_decimal_places = input_value
+                            self.settings:saveSetting("progress_decimal_places", self.progress_decimal_places)
+                            self.settings:flush()
+                            UIManager:close(input_dialog)
+                            UIManager:show(InfoMessage:new{
+                                text = T(_("Progress decimal places set to %1"), tostring(self.progress_decimal_places)),
+                                timeout = 2,
+                            })
+                        else
+                            UIManager:show(InfoMessage:new{
+                                text = _("Please enter a valid integer between 0 and 5"),
+                                timeout = 2,
+                            })
+                        end
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(input_dialog)
+    input_dialog:onShowKeyboard()
+end
+
+function BookloreSync:isNetworkConnected()
+    -- Quick check to see if network is available
+    logger.info("BookloreSync: Checking network connectivity")
+    
+    local socket = require("socket")
+    local http = require("socket.http")
+    local ltn12 = require("ltn12")
+    
+    if not self.server_url or self.server_url == "" then
+        logger.warn("BookloreSync: No server URL configured")
+        return false
+    end
+    
+    -- Try a quick connection with short timeout
+    http.TIMEOUT = 3
+    
+    local url = self.server_url
+    if url:sub(-1) == "/" then
+        url = url:sub(1, -2)
+    end
+    url = url .. "/api/health"
+    
+    local response_body = {}
+    local res, code = http.request{
+        url = url,
+        method = "GET",
+        sink = ltn12.sink.table(response_body),
+    }
+    
+    if code == 200 or code == 404 then  -- 404 is ok as long as we got a response
+        logger.info("BookloreSync: Network is available (code: " .. tostring(code) .. ")")
+        return true
+    else
+        logger.warn("BookloreSync: Network check failed (code: " .. tostring(code) .. ")")
+        return false
+    end
 end
 
 function BookloreSync:testConnection()
@@ -504,10 +639,10 @@ function BookloreSync:onReaderReady()
     
     logger.info("BookloreSync: Reader ready, starting session tracking")
     
-    -- Try to sync pending sessions when reader becomes ready (device came online)
+    -- Try to sync pending sessions when reader becomes ready (attempt directly, silently)
     if #self.pending_sessions > 0 then
         logger.info("BookloreSync: Attempting to sync pending sessions on reader ready")
-        self:syncPendingSessions()
+        self:syncPendingSessions(true)  -- silent=true
     end
     
     self:startSession()
@@ -528,7 +663,8 @@ function BookloreSync:onSuspend()
     end
     
     logger.info("BookloreSync: Device suspending, ending session")
-    self:endSession()
+    -- On suspend we only want to persist the session locally and stay quiet.
+    self:endSession({ silent = true, force_queue = true })
 end
 
 function BookloreSync:onResume()
@@ -538,10 +674,14 @@ function BookloreSync:onResume()
     
     logger.info("BookloreSync: Device resuming from sleep")
     
-    -- Try to sync pending sessions when device wakes up (might have network now)
+    -- Check network connectivity before attempting to sync
     if #self.pending_sessions > 0 then
-        logger.info("BookloreSync: Attempting to sync pending sessions on resume")
-        self:syncPendingSessions()
+        if self:isNetworkConnected() then
+            logger.info("BookloreSync: Network available, attempting to sync pending sessions on resume")
+            self:syncPendingSessions(true)  -- silent=true
+        else
+            logger.info("BookloreSync: Network unavailable, skipping sync attempt on resume")
+        end
     end
     
     -- If a book is currently open, start a new session
@@ -569,11 +709,27 @@ function BookloreSync:startSession()
     
     logger.info("BookloreSync: Document file path:", file_path)
     
-    -- Calculate MD5 hash of the book file
-    local book_hash = self:calculateBookHash(file_path)
+    -- Check if we have a cached hash for this file path
+    local book_hash = self.book_cache.file_hashes and self.book_cache.file_hashes[file_path]
+    
     if not book_hash then
-        logger.warn("BookloreSync: Failed to calculate book hash")
-        return
+        -- Hash not in cache, calculate it
+        book_hash = self:calculateBookHash(file_path)
+        if not book_hash then
+            logger.warn("BookloreSync: Failed to calculate book hash")
+            return
+        end
+        
+        -- Cache the hash for this file path
+        if not self.book_cache.file_hashes then
+            self.book_cache.file_hashes = {}
+        end
+        self.book_cache.file_hashes[file_path] = book_hash
+        self.local_db:saveSetting("book_cache", self.book_cache)
+        self.local_db:flush()
+        logger.info("BookloreSync: Calculated and cached hash for file")
+    else
+        logger.info("BookloreSync: Using cached hash for file")
     end
     
     logger.info("BookloreSync: Book MD5 hash:", book_hash)
@@ -597,13 +753,13 @@ function BookloreSync:startSession()
             -- PDF or image-based format
             local current_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            start_progress = (current_page / total_pages) * 100
+            start_progress = self:roundProgress((current_page / total_pages) * 100)
             start_location = tostring(current_page)
         elseif self.ui.rolling then
             -- EPUB or reflowable format
             local cur_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            start_progress = (cur_page / total_pages) * 100
+            start_progress = self:roundProgress((cur_page / total_pages) * 100)
             start_location = tostring(cur_page)
         end
     end
@@ -679,9 +835,9 @@ function BookloreSync:getBookIdByHash(book_hash)
     logger.info("BookloreSync: Looking up book ID for hash:", book_hash)
     
     -- Check local cache first
-    if self.book_cache[book_hash] then
-        logger.info("BookloreSync: Found book ID in local cache:", tostring(self.book_cache[book_hash]))
-        return self.book_cache[book_hash]
+    if self.book_cache.book_ids and self.book_cache.book_ids[book_hash] then
+        logger.info("BookloreSync: Found book ID in local cache:", tostring(self.book_cache.book_ids[book_hash]))
+        return self.book_cache.book_ids[book_hash]
     end
     
     local url = self.server_url
@@ -733,7 +889,10 @@ function BookloreSync:getBookIdByHash(book_hash)
         logger.info("BookloreSync: Found book ID:", tostring(book_data.id))
         
         -- Cache the result for offline use
-        self.book_cache[book_hash] = book_data.id
+        if not self.book_cache.book_ids then
+            self.book_cache.book_ids = {}
+        end
+        self.book_cache.book_ids[book_hash] = book_data.id
         self.local_db:saveSetting("book_cache", self.book_cache)
         self.local_db:flush()
         logger.info("BookloreSync: Cached book ID for offline use")
@@ -745,7 +904,11 @@ function BookloreSync:getBookIdByHash(book_hash)
     return nil
 end
 
-function BookloreSync:endSession()
+function BookloreSync:endSession(options)
+    options = options or {}
+    local silent = options.silent or false
+    local force_queue = options.force_queue or false
+
     if not self.current_session then
         logger.info("BookloreSync: No active session to end")
         return
@@ -763,13 +926,13 @@ function BookloreSync:endSession()
             -- PDF or image-based format
             local current_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            end_progress = (current_page / total_pages) * 100
+            end_progress = self:roundProgress((current_page / total_pages) * 100)
             end_location = tostring(current_page)
         elseif self.ui.rolling then
             -- EPUB or reflowable format
             local cur_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            end_progress = (cur_page / total_pages) * 100
+            end_progress = self:roundProgress((cur_page / total_pages) * 100)
             end_location = tostring(cur_page)
         end
     end
@@ -777,14 +940,19 @@ function BookloreSync:endSession()
     local end_time = os.time()
     local duration_seconds = end_time - self.current_session.start_time
     
-    -- Don't record sessions shorter than minimum duration (likely false triggers)
+    -- Don't record sessions shorter than minimum duration (likely false triggers) / 0 pages read
     if duration_seconds < self.min_duration then
         logger.info("BookloreSync: Session too short, not recording (", duration_seconds, "s, minimum is ", self.min_duration, "s)")
         self.current_session = nil
         return
     end
+    if end_progress <= self.current_session.start_progress then
+        logger.info("BookloreSync: No progress made, not recording (start:", self.current_session.start_progress, "%, end:", end_progress, "%)")
+        self.current_session = nil
+        return
+    end
     
-    local progress_delta = end_progress - self.current_session.start_progress
+    local progress_delta = self:roundProgress(end_progress - self.current_session.start_progress)
     
     -- Determine book type from file extension
     local book_type = "EPUB"
@@ -815,22 +983,28 @@ function BookloreSync:endSession()
     
     logger.info("BookloreSync: Session data prepared - duration:", duration_seconds, "s, progress:", progress_delta)
     
-    -- If we don't have a book ID, queue immediately for later resolution
-    if not self.current_session.book_id then
-        logger.info("BookloreSync: No book ID - queuing session for offline sync")
+    -- If we don't have a book ID, or we're intentionally queuing, store for later sync
+    if force_queue or not self.current_session.book_id then
+        if not self.current_session.book_id then
+            logger.info("BookloreSync: No book ID - queuing session for offline sync")
+        else
+            logger.info("BookloreSync: Force-queuing session for later sync")
+        end
         table.insert(self.pending_sessions, session_data)
         self.local_db:saveSetting("pending_sessions", self.pending_sessions)
         self.local_db:flush()
-        UIManager:show(InfoMessage:new{
-            text = T(_("Session saved offline (%1 pending)"), #self.pending_sessions),
-            timeout = 3,
-        })
+        if not silent then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Session saved offline (%1 pending)"), #self.pending_sessions),
+                timeout = 3,
+            })
+        end
         self.current_session = nil
         return
     end
     
     -- Send session to server
-    self:sendSessionToServer(session_data)
+    self:sendSessionToServer(session_data, silent)
     
     -- Clear current session
     self.current_session = nil
@@ -842,7 +1016,8 @@ function BookloreSync:formatTimestamp(unix_time)
     return os.date("!%Y-%m-%dT%H:%M:%SZ", unix_time)
 end
 
-function BookloreSync:sendSessionToServer(session_data)
+function BookloreSync:sendSessionToServer(session_data, silent)
+    silent = silent or false
     logger.info("BookloreSync: Sending session to server")
     
     local url = self.server_url
@@ -885,15 +1060,17 @@ function BookloreSync:sendSessionToServer(session_data)
     
     if code == 202 or code == 200 then
         logger.info("BookloreSync: Session recorded successfully")
-        UIManager:show(InfoMessage:new{
-            text = _("Reading session synced to Booklore"),
-            timeout = 2,
-        })
+        if not silent then
+            UIManager:show(InfoMessage:new{
+                text = _("Reading session synced to Booklore"),
+                timeout = 2,
+            })
+        end
         
         -- If we have pending sessions, try to sync them now
         if #self.pending_sessions > 0 then
             logger.info("BookloreSync: Successful sync detected, attempting to sync pending sessions")
-            self:syncPendingSessions()
+            self:syncPendingSessions(silent)
         end
         
         return true
@@ -913,16 +1090,48 @@ function BookloreSync:sendSessionToServer(session_data)
         
         logger.info("BookloreSync: Session queued for retry (", #self.pending_sessions, " pending)")
         
-        UIManager:show(InfoMessage:new{
-            text = T(_("Session saved offline (%1 pending)"), #self.pending_sessions),
-            timeout = 3,
-        })
+        if not silent then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Session saved offline (%1 pending)"), #self.pending_sessions),
+                timeout = 3,
+            })
+        end
         
         return false
     end
 end
 
 function BookloreSync:syncHistoricalData()
+    local function startSync()
+        self.historical_sync_ack = true
+        self.settings:saveSetting("historical_sync_ack", self.historical_sync_ack)
+        self.settings:flush()
+        self:_runHistoricalDataSync()
+    end
+
+    if not self.historical_sync_ack then
+        UIManager:show(ConfirmBox:new{
+            text = _("This should only be run once. Any run after this will cause sessions to show up multiple times in booklore"),
+            ok_text = _("Sync now"),
+            cancel_text = _("Cancel"),
+            ok_callback = function()
+                startSync()
+            end,
+        })
+        return
+    end
+
+    UIManager:show(ConfirmBox:new{
+        text = _("You already synced historical data. Are you sure you want to sync again and possibly create duplicate entries?"),
+        ok_text = _("Sync again"),
+        cancel_text = _("Cancel"),
+        ok_callback = function()
+            startSync()
+        end,
+    })
+end
+
+function BookloreSync:_runHistoricalDataSync()
     UIManager:show(InfoMessage:new{
         text = _("Scanning KOReader statistics database..."),
         timeout = 2,
@@ -1100,11 +1309,17 @@ function BookloreSync:syncHistoricalData()
         logger.info("BookloreSync: Session", session_num, "/", #sessions, "- Hash:", book_hash, "Pages:", #pages, "Duration:", duration_seconds, "s")
         
         -- Check cache first, then server if needed
-        local book_id = self.book_cache[book_hash]
+        local book_id = nil
+        if self.book_cache.book_ids then
+            book_id = self.book_cache.book_ids[book_hash]
+        end
         if not book_id then
             book_id = self:getBookIdByHash(book_hash)
             if book_id then
-                self.book_cache[book_hash] = book_id
+                if not self.book_cache.book_ids then
+                    self.book_cache.book_ids = {}
+                end
+                self.book_cache.book_ids[book_hash] = book_id
                 self.local_db:saveSetting("book_cache", self.book_cache)
                 self.local_db:flush()
             end
@@ -1118,8 +1333,8 @@ function BookloreSync:syncHistoricalData()
             local start_progress = 0.0
             local end_progress = 0.0
             if total_pages > 0 then
-                start_progress = math.min((start_page / total_pages) * 100, 100.0)
-                end_progress = math.min((end_page / total_pages) * 100, 100.0)
+                start_progress = self:roundProgress(math.min((start_page / total_pages) * 100, 100.0))
+                end_progress = self:roundProgress(math.min((end_page / total_pages) * 100, 100.0))
             else
                 -- Fallback heuristic: use relative page movement
                 if end_page > start_page then
@@ -1136,7 +1351,7 @@ function BookloreSync:syncHistoricalData()
                 durationSeconds = duration_seconds,
                 startProgress = start_progress,
                 endProgress = end_progress,
-                progressDelta = end_progress - start_progress,
+                progressDelta = self:roundProgress(end_progress - start_progress),
                 startLocation = tostring(start_page),
                 endLocation = tostring(end_page),
             }
@@ -1243,22 +1458,27 @@ function BookloreSync:sendHistoricalSession(session_data)
     end
 end
 
-function BookloreSync:syncPendingSessions()
+function BookloreSync:syncPendingSessions(silent)
+    silent = silent or false
     if #self.pending_sessions == 0 then
         logger.info("BookloreSync: No pending sessions to sync")
-        UIManager:show(InfoMessage:new{
-            text = _("No pending sessions to sync"),
-            timeout = 2,
-        })
+        if not silent then
+            UIManager:show(InfoMessage:new{
+                text = _("No pending sessions to sync"),
+                timeout = 2,
+            })
+        end
         return
     end
     
     logger.info("BookloreSync: Syncing", #self.pending_sessions, "pending sessions")
     
-    UIManager:show(InfoMessage:new{
-        text = T(_("Syncing %1 pending sessions..."), #self.pending_sessions),
-        timeout = 2,
-    })
+    if not silent then
+        UIManager:show(InfoMessage:new{
+            text = T(_("Syncing %1 pending sessions..."), #self.pending_sessions),
+            timeout = 2,
+        })
+    end
     
     local http = require("socket.http")
     local ltn12 = require("ltn12")
@@ -1344,23 +1564,25 @@ function BookloreSync:syncPendingSessions()
     
     logger.info("BookloreSync: Sync complete -", synced_count, "synced,", #failed_sessions, "failed")
     
-    if synced_count > 0 then
-        local message
-        if #failed_sessions > 0 then
-            message = T(_("%1 synced, %2 failed"), synced_count, #failed_sessions)
+    if not silent then
+        if synced_count > 0 then
+            local message
+            if #failed_sessions > 0 then
+                message = T(_("%1 synced, %2 failed"), synced_count, #failed_sessions)
+            else
+                message = T(_("All %1 sessions synced successfully!"), synced_count)
+            end
+            
+            UIManager:show(InfoMessage:new{
+                text = message,
+                timeout = 3,
+            })
         else
-            message = T(_("All %1 sessions synced successfully!"), synced_count)
+            UIManager:show(InfoMessage:new{
+                text = _("All sync attempts failed - check connection"),
+                timeout = 3,
+            })
         end
-        
-        UIManager:show(InfoMessage:new{
-            text = message,
-            timeout = 3,
-        })
-    else
-        UIManager:show(InfoMessage:new{
-            text = _("All sync attempts failed - check connection"),
-            timeout = 3,
-        })
     end
 end
 
