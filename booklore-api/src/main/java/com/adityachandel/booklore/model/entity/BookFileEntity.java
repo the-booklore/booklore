@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.model.entity;
-import com.adityachandel.booklore.util.ArchiveUtils;
+
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -101,8 +102,8 @@ public class BookFileEntity {
                     .filter(p -> {
                         String name = p.getFileName().toString().toLowerCase();
                         return name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".m4b")
-                            || name.endsWith(".flac") || name.endsWith(".ogg") || name.endsWith(".opus")
-                            || name.endsWith(".aac");
+                                || name.endsWith(".flac") || name.endsWith(".ogg") || name.endsWith(".opus")
+                                || name.endsWith(".aac");
                     })
                     .sorted()
                     .findFirst()

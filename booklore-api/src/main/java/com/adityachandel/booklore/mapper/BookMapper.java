@@ -138,8 +138,23 @@ public interface BookMapper {
                 .bookType(entity.getBookType())
                 .archiveType(entity.getArchiveType())
                 .fileSizeKb(entity.getFileSizeKb())
+                .extension(extractExtension(entity))
                 .description(entity.getDescription())
                 .addedOn(entity.getAddedOn())
                 .build();
+    }
+
+    default String extractExtension(BookFileEntity entity) {
+        if (entity == null) return null;
+        String fileName;
+        if (entity.isFolderBased()) {
+            var firstFile = entity.getFirstAudioFile();
+            fileName = firstFile != null ? firstFile.getFileName().toString() : null;
+        } else {
+            fileName = entity.getFileName();
+        }
+        if (fileName == null) return null;
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : null;
     }
 }

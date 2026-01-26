@@ -22,6 +22,7 @@ public class BookFile {
     private BookFileType bookType;
     private ArchiveUtils.ArchiveType archiveType;
     private Long fileSizeKb;
+    private String extension;
     private String description;
     private Instant addedOn;
 }
