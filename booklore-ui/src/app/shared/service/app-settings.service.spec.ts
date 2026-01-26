@@ -198,10 +198,15 @@ describe('AppSettingsService', () => {
   });
 
   it('should handle error when fetching public settings', () => {
-      error: (err: any) => {
-        // We can't easily catch the internal subscription error since it's fire-and-forget in constructor
-        // But we can check expectations on console.error if we spied it, or just ensure no crash.
-      }
+    httpClientMock.get.mockReturnValue(throwError(() => new Error('fail')));
+    // Re-trigger load
+    service = runInInjectionContext(TestBed.inject(EnvironmentInjector), () => TestBed.inject(AppSettingsService));
+    
+    service.publicAppSettings$.subscribe(val => {
+      // Should emit default values on error
+      expect(val).toBeTruthy();
+      expect(val?.oidcEnabled).toBe(false);
+      expect(val?.remoteAuthEnabled).toBe(false);
     });
   });
 
@@ -332,7 +337,6 @@ describe('AppSettingsService - API Contract Tests', () => {
           }
         }
       };
-      };
       // Mocking get for constructor call
       httpClientMock.get.mockReturnValue(of(mockResponse));
       // Re-instantiate service to trigger load
@@ -419,6 +423,7 @@ describe('AppSettingsService - API Contract Tests', () => {
           providerName: 'Provider',
           clientId: 'id',
           issuerUri: 'issuer',
+          discoveryUri: 'discovery',
           claimMapping: {
             username: 'username',
             email: 'email',
@@ -540,7 +545,6 @@ describe('AppSettingsService - API Contract Tests', () => {
             name: 'name'
           }
         }
-      };
       };
       httpClientMock.get.mockReturnValue(of(mockSettings));
       // Re-instantiate
