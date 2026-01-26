@@ -26,15 +26,15 @@ export class BookSenderComponent implements OnInit {
   private emailRecipientService = inject(EmailV2RecipientService);
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
-  private dynamicDialogRef = inject(DynamicDialogRef);
+  dynamicDialogRef = inject(DynamicDialogRef);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
 
   bookId: number = this.dynamicDialogConfig.data.bookId;
 
   emailProviders: { label: string, value: EmailProvider }[] = [];
   emailRecipients: { label: string, value: EmailRecipient }[] = [];
-  selectedProvider?: any;
-  selectedRecipient?: any;
+  selectedProvider?: { label: string; value: EmailProvider };
+  selectedRecipient?: { label: string; value: EmailRecipient };
 
   ngOnInit(): void {
     this.emailProviderService.getEmailProviders().subscribe({

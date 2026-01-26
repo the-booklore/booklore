@@ -7,6 +7,7 @@ import {Shelf} from '../../../model/shelf.model';
 import {EntityType} from '../book-browser.component';
 import {Book, ReadStatus} from '../../../model/book.model';
 import {Accordion, AccordionContent, AccordionHeader, AccordionPanel} from 'primeng/accordion';
+import {CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport} from '@angular/cdk/scrolling';
 import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
 import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
@@ -16,7 +17,34 @@ import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rule-evaluator.service';
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
 
-type Filter<T> = { value: T; bookCount: number };
+export interface FilterValue {
+  id?: string | number;
+  name?: string;
+  sortIndex?: number;
+}
+
+export interface Filter<T extends FilterValue = FilterValue> {
+  value: T;
+  bookCount: number;
+}
+
+export type FilterType =
+  | 'author'
+  | 'category'
+  | 'series'
+  | 'publisher'
+  | 'readStatus'
+  | 'personalRating'
+  | 'publishedDate'
+  | 'matchScore'
+  | 'mood'
+  | 'tag'
+  | 'language'
+  | 'bookType'
+  | 'fileSize'
+  | 'pageCount'
+  | 'amazonRating'
+  | 'goodreadsRating';
 
 export const ratingRanges = [
   {id: '0to1', label: '0 to 1', min: 0, max: 1, sortIndex: 0},
@@ -96,7 +124,7 @@ function extractPublishedYearFilter(book: Book): { id: string; name: string }[] 
 }
 
 function getShelfStatusFilter(book: Book): { id: string; name: string }[] {
-  const isShelved = book.shelves?.length! > 0;
+  const isShelved = (book.shelves?.length ?? 0) > 0;
   return [{id: isShelved ? 'shelved' : 'unshelved', name: isShelved ? 'Shelved' : 'Unshelved'}];
 }
 
@@ -144,6 +172,9 @@ function getReadStatusName(status?: ReadStatus | null): string {
     AccordionPanel,
     AccordionHeader,
     AccordionContent,
+    CdkVirtualScrollViewport,
+    CdkFixedSizeVirtualScroll,
+    CdkVirtualForOf,
     NgClass,
     Badge,
     AsyncPipe,
@@ -153,9 +184,9 @@ function getReadStatusName(status?: ReadStatus | null): string {
   ]
 })
 export class BookFilterComponent implements OnInit, OnDestroy {
-  private filterChangeSubject = new Subject<Record<string, any> | null>();
+  private filterChangeSubject = new Subject<Record<string, unknown> | null>();
 
-  @Output() filterSelected = new EventEmitter<Record<string, any> | null>();
+  @Output() filterSelected = new EventEmitter<Record<string, unknown> | null>();
   @Output() filterModeChanged = new EventEmitter<BookFilterMode>();
 
   @Input() entity$!: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -163,10 +194,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   @Input() resetFilter$!: Subject<void>;
   @Input() showFilter: boolean = false;
 
-  activeFilters: Record<string, any> = {};
-  filterStreams: Record<string, Observable<Filter<any>[]>> = {};
+  activeFilters: Record<string, unknown[]> = {};
+  filterStreams: Record<FilterType, Observable<Filter[]>> = {} as Record<FilterType, Observable<Filter[]>>;
   truncatedFilters: Record<string, boolean> = {};
-  filterTypes: string[] = [];
+  filterTypes: FilterType[] = [];
   filterModeOptions = [
     {label: 'AND', value: 'and'},
     {label: 'OR', value: 'or'},
@@ -174,7 +205,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   ];
   private _selectedFilterMode: BookFilterMode = 'and';
   expandedPanels: number[] = [0];
-  readonly filterLabels: Record<string, string> = {
+  readonly filterLabels: Record<FilterType, string> = {
     author: 'Author',
     category: 'Genre',
     series: 'Series',
@@ -183,14 +214,14 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     personalRating: 'Personal Rating',
     publishedDate: 'Published Year',
     matchScore: 'Metadata Match Score',
+    mood: 'Mood',
+    tag: 'Tag',
     language: 'Language',
     bookType: 'Book Type',
-    shelfStatus: 'Shelf Status',
     fileSize: 'File Size',
     pageCount: 'Page Count',
     amazonRating: 'Amazon Rating',
-    goodreadsRating: 'Goodreads Rating',
-    hardcoverRating: 'Hardcover Rating',
+    goodreadsRating: 'Goodreads Rating'
   };
 
   private destroy$ = new Subject<void>();
@@ -252,15 +283,13 @@ export class BookFilterComponent implements OnInit, OnDestroy {
           ),
           language: this.getFilterStream(getLanguageFilter, 'id', 'name'),
           bookType: this.getFilterStream(getBookTypeFilter, 'id', 'name'),
-          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
           fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
-          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount!), 'id', 'name', 'sortIndex'),
-          amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating!), 'id', 'name', 'sortIndex'),
-          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating!), 'id', 'name', 'sortIndex'),
-          hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating!), 'id', 'name', 'sortIndex'),
+          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount ?? undefined), 'id', 'name', 'sortIndex'),
+          amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating ?? undefined), 'id', 'name', 'sortIndex'),
+          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating ?? undefined), 'id', 'name', 'sortIndex')
         };
 
-        this.filterTypes = Object.keys(this.filterStreams);
+        this.filterTypes = Object.keys(this.filterStreams) as FilterType[];
         this.setExpandedPanels();
       });
 
@@ -273,12 +302,12 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getFilterStream<T>(
+  private getFilterStream<T extends FilterValue>(
     extractor: (book: Book) => T[] | undefined,
     idKey: keyof T,
     nameKey: keyof T,
     sortMode: FilterSortingMode | 'sortIndex' = this.filterSortingMode
-  ): Observable<Filter<T[keyof T]>[]> {
+  ): Observable<Filter<T>[]> {
     return combineLatest([
       this.bookService.bookState$,
       this.entity$ ?? of(null),
@@ -286,7 +315,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     ]).pipe(
       map(([state, entity, entityType]) => {
         const filteredBooks = this.filterBooksByEntityType(state.books || [], entity, entityType);
-        const filterMap = new Map<any, Filter<any>>();
+        const filterMap = new Map<unknown, Filter<T>>();
 
         filteredBooks.forEach((book) => {
           (extractor(book) || []).forEach((item) => {
@@ -302,11 +331,17 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
         const sorted = result.sort((a, b) => {
           if (sortMode === 'sortIndex') {
-            return (a.value.sortIndex ?? 999) - (b.value.sortIndex ?? 999);
+            const aValue = a.value as { sortIndex?: number };
+            const bValue = b.value as { sortIndex?: number };
+            return (aValue.sortIndex ?? 999) - (bValue.sortIndex ?? 999);
           } else if (sortMode === 'count' && b.bookCount !== a.bookCount) {
             return b.bookCount - a.bookCount;
           }
-          return a.value[nameKey].toString().localeCompare(b.value[nameKey].toString());
+          const aValue = a.value as Record<string, unknown>;
+          const bValue = b.value as Record<string, unknown>;
+          const aKey = String(aValue[String(nameKey)] ?? '');
+          const bKey = String(bValue[String(nameKey)] ?? '');
+          return aKey.localeCompare(bKey);
         });
 
         const isTruncated = sorted.length > 500;
@@ -317,13 +352,13 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       map(({items, isTruncated}) => {
         setTimeout(() => {
           const filterType = Object.keys(this.filterStreams).find(key =>
-            this.filterStreams[key] === this.getFilterStream(extractor, idKey, nameKey)
+            this.filterStreams[key as FilterType] === this.getFilterStream(extractor, idKey, nameKey)
           );
           if (filterType) {
             this.truncatedFilters[filterType] = isTruncated;
           }
         });
-        return items;
+        return items as Filter<T>[];
       }),
       shareReplay({bufferSize: 1, refCount: true})
     );
@@ -343,18 +378,21 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     }
   }
 
-  private filterBooksByEntityType(books: Book[], entity: any, entityType: EntityType): Book[] {
-    if (entityType === EntityType.LIBRARY && entity && 'id' in entity) {
-      return books.filter((book) => book.libraryId === entity.id);
+  private filterBooksByEntityType(books: Book[], entity: unknown, entityType: EntityType): Book[] {
+    if (entityType === EntityType.LIBRARY && entity !== null && typeof entity === 'object' && 'id' in entity) {
+      const libraryEntity = entity as { id: number };
+      return books.filter((book) => book.libraryId === libraryEntity.id);
     }
 
-    if (entityType === EntityType.SHELF && entity && 'id' in entity) {
-      return books.filter((book) => book.shelves?.some((shelf) => shelf.id === entity.id));
+    if (entityType === EntityType.SHELF && entity !== null && typeof entity === 'object' && 'id' in entity) {
+      const shelfEntity = entity as { id: number };
+      return books.filter((book) => book.shelves?.some((shelf) => shelf.id === shelfEntity.id));
     }
 
-    if (entityType === EntityType.MAGIC_SHELF && entity && 'filterJson' in entity) {
+    if (entityType === EntityType.MAGIC_SHELF && entity !== null && typeof entity === 'object' && 'filterJson' in entity) {
       try {
-        const groupRule = JSON.parse(entity.filterJson) as GroupRule;
+        const magicShelfEntity = entity as { filterJson: string };
+        const groupRule = JSON.parse(magicShelfEntity.filterJson) as GroupRule;
         return books.filter((book) => this.bookRuleEvaluatorService.evaluateGroup(book, groupRule));
       } catch (e) {
         console.warn('Invalid filterJson for MagicShelf:', e);
@@ -365,18 +403,19 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     return books;
   }
 
-  handleFilterClick(filterType: string, value: any): void {
+  handleFilterClick(filterType: string, value: unknown): void {
     if (!this.activeFilters[filterType]) {
       this.activeFilters[filterType] = [];
     }
 
-    const index = this.activeFilters[filterType].indexOf(value);
+    const filterArray = this.activeFilters[filterType];
+    const index = filterArray.indexOf(value);
     if (index > -1) {
       if (this._selectedFilterMode == 'single') {
         this.activeFilters = {};
       } else {
-        this.activeFilters[filterType].splice(index, 1);
-        if (this.activeFilters[filterType].length === 0) {
+        filterArray.splice(index, 1);
+        if (filterArray.length === 0) {
           delete this.activeFilters[filterType];
         }
       }
@@ -389,7 +428,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     this.filterChangeSubject.next(Object.keys(this.activeFilters).length ? {...this.activeFilters} : null);
   }
 
-  setFilters(filters: Record<string, any>) {
+  setFilters(filters: Record<string, unknown>) {
     this.activeFilters = {};
 
     for (const [key, value] of Object.entries(filters)) {
@@ -404,30 +443,54 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   clearActiveFilter() {
     this.activeFilters = {};
-    this.setExpandedPanels();
+    this.expandedPanels = [0];
     this.filterChangeSubject.next(null);
   }
 
+  onExpandedPanelsChange(value: string | number | string[] | number[] | null | undefined): void {
+    if (Array.isArray(value)) {
+      this.expandedPanels = value.map(v => Number(v));
+    }
+  }
+
+  getVirtualScrollHeight(itemCount: number): number {
+    return Math.min(itemCount * 28, 440);
+  }
+
   setExpandedPanels(): void {
-    const indexes = [];
+    const current = new Set(this.expandedPanels);
     for (let i = 0; i < this.filterTypes.length; i++) {
       if (this.activeFilters[this.filterTypes[i]]?.length) {
-        indexes.push(i);
+        current.add(i);
       }
     }
-    this.expandedPanels = indexes.length > 0 ? indexes : [0];
+    this.expandedPanels = current.size > 0 ? [...current] : [0];
   }
 
   onFiltersChanged(): void {
     this.setExpandedPanels();
   }
 
-  trackByFilterType(_: number, type: string): string {
+  trackByFilterType(_: number, type: FilterType): string {
     return type;
   }
 
-  trackByFilter(_: number, filter: Filter<any>): any {
-    return filter.value.id ?? filter.value;
+  trackByFilter(_: number, filter: Filter<FilterValue>): unknown {
+    const value = filter.value as { id?: unknown } | unknown;
+    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as { id: unknown }).id : filter.value;
+  }
+
+  getFilterValueId(filter: Filter<FilterValue>): unknown {
+    const value = filter.value as { id?: unknown } | unknown;
+    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as { id: unknown }).id : filter.value;
+  }
+
+  getFilterValueDisplay(filter: Filter<FilterValue>): string {
+    const value = filter.value as { name?: string } | string | unknown;
+    if (typeof value === 'object' && value !== null && 'name' in value) {
+      return String((value as { name: string }).name ?? '');
+    }
+    return String(value ?? '');
   }
 
   ngOnDestroy(): void {

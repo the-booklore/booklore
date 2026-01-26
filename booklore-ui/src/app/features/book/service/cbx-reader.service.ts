@@ -3,6 +3,11 @@ import {Injectable, inject} from '@angular/core';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {AuthService} from '../../../shared/service/auth.service';
 
+export interface CbxPageInfo {
+  pageNumber: number;
+  displayName: string;
+}
+
 @Injectable({providedIn: 'root'})
 export class CbxReaderService {
 
@@ -22,6 +27,10 @@ export class CbxReaderService {
 
   getAvailablePages(bookId: number) {
     return this.http.get<number[]>(this.appendToken(`${this.pagesUrl}/${bookId}/pages`));
+  }
+
+  getPageInfo(bookId: number) {
+    return this.http.get<CbxPageInfo[]>(this.appendToken(`${this.pagesUrl}/${bookId}/page-info`));
   }
 
   getPageImageUrl(bookId: number, page: number): string {

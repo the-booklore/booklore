@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.InstallationPing;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataProviderSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPublicReviewsSettings;
+import com.adityachandel.booklore.model.dto.settings.UserSettingKey;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
@@ -42,6 +43,7 @@ public class TelemetryService {
     private final EmailRecipientV2Repository emailRecipientV2Repository;
     private final AppSettingService appSettingService;
     private final KoboUserSettingsRepository koboUserSettingsRepository;
+    private final UserSettingRepository userSettingRepository;
     private final KoreaderUserRepository koreaderUserRepository;
     private final OpdsUserV2Repository opdsUserV2Repository;
     private final InstallationService installationService;
@@ -104,7 +106,7 @@ public class TelemetryService {
                 .metadataStatistics(BookloreTelemetry.MetadataStatistics.builder()
                         .enabledMetadataProviders(enabledMetadataProviders)
                         .enabledReviewMetadataProviders(enabledReviewMetadataProviders)
-                        .saveMetadataToFile(settings.getMetadataPersistenceSettings().isSaveToOriginalFile())
+                        .saveMetadataToFile(settings.getMetadataPersistenceSettings().getSaveToOriginalFile().isAnyFormatEnabled())
                         .moveFileViaPattern(settings.getMetadataPersistenceSettings().isMoveFilesToLibraryPattern())
                         .autoBookSearchEnabled(settings.isAutoBookSearch())
                         .similarBookRecommendationsEnabled(settings.isSimilarBookRecommendation())
@@ -121,7 +123,8 @@ public class TelemetryService {
                 .koboStatistics(BookloreTelemetry.KoboStatistics.builder()
                         .convertToKepubEnabled(settings.getKoboSettings().isConvertToKepub())
                         .totalKoboUsers((int) koboUserSettingsRepository.count())
-                        .totalHardcoverSyncEnabled((int) koboUserSettingsRepository.countByHardcoverSyncEnabledTrue())
+                        .totalHardcoverSyncEnabled((int) userSettingRepository.countBySettingKeyAndSettingValue(
+                                UserSettingKey.HARDCOVER_SYNC_ENABLED.getDbKey(), "true"))
                         .totalAutoAddToShelf((int) koboUserSettingsRepository.countByAutoAddToShelfTrue())
                         .build())
                 .bookStatistics(bookStatistics)
@@ -159,6 +162,8 @@ public class TelemetryService {
             enabled.add(MetadataProvider.Hardcover.name());
         if (providers.getComicvine() != null && providers.getComicvine().isEnabled())
             enabled.add(MetadataProvider.Comicvine.name());
+        if (providers.getRanobedb() != null && providers.getRanobedb().isEnabled())
+            enabled.add(MetadataProvider.Ranobedb.name());
         if (providers.getDouban() != null && providers.getDouban().isEnabled())
             enabled.add(MetadataProvider.Douban.name());
         if (providers.getLubimyczytac() != null && providers.getLubimyczytac().isEnabled())

@@ -264,7 +264,7 @@ class TaskHistoryServiceTest {
         List<TaskType> hiddenTypes = Arrays.asList(TaskType.values());
         TaskHistoryEntity dummyTask = TaskHistoryEntity.builder()
                 .id("dummy")
-                .type(TaskType.CLEAR_CBX_CACHE)
+                .type(TaskType.CLEANUP_DELETED_BOOKS)
                 .status(TaskStatus.FAILED)
                 .progressPercentage(0)
                 .createdAt(FIXED_TIME)

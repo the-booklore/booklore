@@ -29,7 +29,7 @@ import {BookReviewsComponent} from '../../../../book/components/book-reviews/boo
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Image} from 'primeng/image';
-import {BookDialogHelperService} from '../../../../book/components/book-browser/BookDialogHelperService';
+import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
@@ -40,7 +40,7 @@ import {
 } from '../../../../book/components/book-browser/book-filter/book-filter.component';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
-import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import { BookReadingSessionsComponent } from '../book-reading-sessions/book-reading-sessions.component';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
@@ -70,7 +70,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private destroyRef = inject(DestroyRef);
   private dialogRef?: DynamicDialogRef;
 
-  readMenuItems$!: Observable<MenuItem[]>;
+  pdfReadMenuItems$!: Observable<MenuItem[]>;
+  epubReadMenuItems$!: Observable<MenuItem[]>;
   refreshMenuItems$!: Observable<MenuItem[]>;
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
@@ -116,12 +117,22 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       ])
     );
 
-    this.readMenuItems$ = this.book$.pipe(
+    this.pdfReadMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => [
         {
           label: 'Streaming Reader',
-          command: () => this.read(book.id, 'streaming')
+          command: () => this.read(book.id, 'pdf-streaming')
+        }
+      ])
+    );
+
+    this.epubReadMenuItems$ = this.book$.pipe(
+      filter((book): book is Book => book !== null),
+      map((book): MenuItem[] => [
+        {
+          label: 'Streaming Reader (Beta)',
+          command: () => this.read(book.id, 'epub-streaming')
         }
       ])
     );
@@ -174,7 +185,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           take(1),
           map(userState => {
             const items: MenuItem[] = [];
-            
+
             // Add allowed submenus based on user permissions
 
             if (userState?.user?.permissions.canUpload || userState?.user?.permissions.admin) {
@@ -224,12 +235,15 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 icon: 'pi pi-trash',
                 command: () => {
                   this.confirmationService.confirm({
-                    message: `Are you sure you want to delete "${book.metadata?.title}"?`,
+                    message: `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.`,
                     header: 'Confirm Deletion',
                     icon: 'pi pi-exclamation-triangle',
                     acceptIcon: 'pi pi-trash',
                     rejectIcon: 'pi pi-times',
+                    acceptLabel: 'Delete',
+                    rejectLabel: 'Cancel',
                     acceptButtonStyleClass: 'p-button-danger',
+                    rejectButtonStyleClass: 'p-button-outlined',
                     accept: () => {
                       this.bookService.deleteBooks(new Set([book.id])).subscribe({
                         next: () => {
@@ -369,7 +383,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.isExpanded = !this.isExpanded;
   }
 
-  read(bookId: number | undefined, reader: "ngx" | "streaming" | undefined): void {
+  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming"): void {
     if (bookId) this.bookService.readBook(bookId, reader);
   }
 
@@ -439,7 +453,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   assignShelf(bookId: number) {
-    this.bookDialogHelperService.openShelfAssignerDialog(<Book>this.bookService.getBookByIdFromState(bookId), null);
+    this.bookDialogHelperService.openShelfAssignerDialog((this.bookService.getBookByIdFromState(bookId) as Book), null);
   }
 
   updateReadStatus(status: ReadStatus): void {
@@ -594,7 +608,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   goToFileType(filePath: string | undefined): void {
     const fileType = this.getFileExtension(filePath);
     if (fileType) {
-      this.handleMetadataClick('bookType', fileType.toUpperCase());
+      let filterValue = fileType.toUpperCase();
+      if (['CBR', 'CBZ', 'CB7', 'CBT'].includes(filterValue)) {
+        filterValue = 'CBX';
+      }
+      this.handleMetadataClick('bookType', filterValue);
     }
   }
 
@@ -721,22 +739,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     }
   }
 
-  getFileTypeColor(fileType: string | null | undefined): TagColor {
-    if (!fileType) return 'gray';
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        return 'pink';
-      case 'epub':
-        return 'indigo';
-      case 'cbz':
-        return 'teal';
-      case 'cbr':
-        return 'purple';
-      case 'cb7':
-        return 'blue';
-      default:
-        return 'gray';
-    }
+  getFileTypeBgColor(fileType: string | null | undefined): string {
+    if (!fileType) return 'var(--p-gray-500)';
+    const type = fileType.toLowerCase();
+    return `var(--book-type-${type}-color, var(--p-gray-500))`;
   }
 
   getStarColorScaled(rating?: number | null, maxScale: number = 5): string {
@@ -809,7 +815,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return p != null ? Math.round(p * 10) / 10 : null;
   }
 
-  getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover' | 'lubimyczytac'): string {
+  getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover' | 'lubimyczytac' | 'ranobedb'): string {
     const meta = book?.metadata;
     if (!meta) return '';
 
@@ -829,6 +835,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       case 'lubimyczytac':
         return meta.lubimyczytacRating != null
           ? `★ ${meta.lubimyczytacRating}`
+          : '';
+      case 'ranobedb':
+        return meta.ranobedbRating != null
+          ? `★ ${meta.ranobedbRating}`
           : '';
       default:
         return '';

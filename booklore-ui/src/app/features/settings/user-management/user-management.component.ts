@@ -4,7 +4,13 @@ import {Button, ButtonDirective} from 'primeng/button';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TableModule} from 'primeng/table';
 import {LowerCasePipe, TitleCasePipe} from '@angular/common';
-import {User, UserService} from './user.service';
+import {User, UserService, UserUpdateRequest} from './user.service';
+
+interface UserWithEditing extends User {
+  isEditing?: boolean;
+  selectedLibraryIds?: number[];
+  libraryNames?: string;
+}
 import {MessageService} from 'primeng/api';
 import {Checkbox} from 'primeng/checkbox';
 import {MultiSelect} from 'primeng/multiselect';
@@ -43,11 +49,11 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private readonly destroy$ = new Subject<void>();
 
-  users: User[] = [];
+  users: UserWithEditing[] = [];
   currentUser: User | null = null;
   editingLibraryIds: number[] = [];
   allLibraries: Library[] = [];
-  expandedRows: { [key: string]: boolean } = {};
+  expandedRows: Record<string, boolean> = {};
 
   isPasswordDialogVisible = false;
   selectedUser: User | null = null;
@@ -91,7 +97,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         this.users = data.map((user) => ({
           ...user,
           isEditing: false,
-          selectedLibraryIds: user.assignedLibraries?.map((lib) => lib.id) || [],
+          selectedLibraryIds: user.assignedLibraries?.map((lib) => lib.id!).filter(id => id !== undefined) as number[] || [],
           libraryNames:
             user.assignedLibraries?.map((lib) => lib.name).join(', ') || '',
         }));
@@ -115,10 +121,10 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleEdit(user: any) {
+  toggleEdit(user: UserWithEditing) {
     user.isEditing = !user.isEditing;
     if (user.isEditing) {
-      this.editingLibraryIds = [...user.selectedLibraryIds];
+      this.editingLibraryIds = [...(user.selectedLibraryIds || [])];
     } else {
       user.libraryNames =
         user.assignedLibraries
@@ -127,15 +133,16 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  saveUser(user: any) {
+  saveUser(user: UserWithEditing) {
     user.selectedLibraryIds = [...this.editingLibraryIds];
+    const updateRequest: UserUpdateRequest = {
+      name: user.name,
+      email: user.email,
+      permissions: user.permissions,
+      assignedLibraries: user.selectedLibraryIds || [],
+    };
     this.userService
-      .updateUser(user.id, {
-        name: user.name,
-        email: user.email,
-        permissions: user.permissions,
-        assignedLibraries: user.selectedLibraryIds,
-      })
+      .updateUser(user.id, updateRequest)
       .subscribe({
         next: () => {
           user.isEditing = false;
@@ -255,6 +262,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (permissions.canManageGlobalPreferences) count++;
     if (permissions.canManageMetadataConfig) count++;
     if (permissions.canManageIcons) count++;
+    if (permissions.canManageFonts) count++;
     return count;
   }
 
@@ -292,7 +300,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     return this.expandedRows[user.id];
   }
 
-  onAdminCheckboxChange(user: any) {
+  onAdminCheckboxChange(user: User) {
     if (user.permissions.admin) {
       user.permissions.canUpload = true;
       user.permissions.canDownload = true;
@@ -312,6 +320,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       user.permissions.canAccessTaskManager = true;
       user.permissions.canManageEmailConfig = true;
       user.permissions.canManageIcons = true;
+      user.permissions.canManageFonts = true;
       user.permissions.canBulkAutoFetchMetadata = true;
       user.permissions.canBulkCustomFetchMetadata = true;
       user.permissions.canBulkEditMetadata = true;
@@ -324,7 +333,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  isPermissionDisabled(user: any): boolean {
+  isPermissionDisabled(user: UserWithEditing): boolean {
     return !user.isEditing || user.permissions.admin;
   }
 }

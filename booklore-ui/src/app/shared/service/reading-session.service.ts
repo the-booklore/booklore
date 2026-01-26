@@ -181,9 +181,9 @@ export class ReadingSessionService {
       endTime: endTime.toISOString(),
       durationSeconds,
       durationFormatted: this.formatDuration(durationSeconds),
-      startProgress: session.startProgress,
-      endProgress: session.endProgress,
-      progressDelta: session.progressDelta,
+      startProgress: session.startProgress != null ? Math.round(session.startProgress * 100) / 100 : undefined,
+      endProgress: session.endProgress != null ? Math.round(session.endProgress * 100) / 100 : undefined,
+      progressDelta: session.progressDelta != null ? Math.round(session.progressDelta * 100) / 100 : undefined,
       startLocation: session.startLocation,
       endLocation: session.endLocation
     };
@@ -270,7 +270,7 @@ export class ReadingSessionService {
     return this.currentSession !== null;
   }
 
-  private log(message: string, data?: any): void {
+  private log(message: string, data?: unknown): void {
     if (data) {
       console.log(`[ReadingSession] ${message}`, data);
     } else {
@@ -278,7 +278,7 @@ export class ReadingSessionService {
     }
   }
 
-  private logError(message: string, error?: any): void {
+  private logError(message: string, error?: unknown): void {
     if (error) {
       console.error(`[ReadingSession] ${message}`, error);
     } else {

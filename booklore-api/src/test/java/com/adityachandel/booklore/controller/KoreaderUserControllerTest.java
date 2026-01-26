@@ -4,14 +4,18 @@ import com.adityachandel.booklore.model.dto.KoreaderUser;
 import com.adityachandel.booklore.service.koreader.KoreaderUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 class KoreaderUserControllerTest {
 
@@ -26,7 +30,7 @@ class KoreaderUserControllerTest {
     @BeforeEach
     void setUp() {
         try (AutoCloseable mocks = MockitoAnnotations.openMocks(this)) {
-            user = new KoreaderUser(1L, "testuser", "pass", "md5", true);
+            user = new KoreaderUser(1L, "testuser", "pass", "md5", true, true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

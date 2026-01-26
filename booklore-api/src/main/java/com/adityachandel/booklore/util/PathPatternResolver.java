@@ -3,6 +3,7 @@ package com.adityachandel.booklore.util;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,11 @@ public class PathPatternResolver {
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
-        String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
+        return resolvePattern(book, book.getPrimaryBookFile(), pattern);
+    }
+
+    public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern) {
+        String currentFilename = bookFile != null && bookFile.getFileName() != null ? bookFile.getFileName().trim() : "";
         return resolvePattern(book.getMetadata(), pattern, currentFilename);
     }
 
@@ -266,9 +271,14 @@ public class PathPatternResolver {
     private String validateFinalPath(String path) {
         String[] components = SLASH_PATTERN.split(path);
         StringBuilder result = new StringBuilder(512);
+        boolean first = true;
 
         for (int i = 0; i < components.length; i++) {
             String component = components[i];
+            if (component == null || component.isEmpty()) {
+                continue;
+            }
+
             boolean isLastComponent = (i == components.length - 1);
 
             if (isLastComponent && component.contains(".")) {
@@ -282,8 +292,9 @@ public class PathPatternResolver {
                 }
             }
 
-            if (i > 0) result.append("/");
+            if (!first) result.append("/");
             result.append(component);
+            first = false;
         }
         return result.toString();
     }

@@ -7,11 +7,11 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.Fb2MetadataExtractor;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,6 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileService fileService,
-                        BookMetadataRepository bookMetadataRepository,
                         MetadataMatchService metadataMatchService,
                         Fb2MetadataExtractor fb2MetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
@@ -51,6 +50,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         setBookMetadata(bookEntity);
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
         return bookEntity;
     }
@@ -62,7 +62,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
             byte[] coverData = fb2MetadataExtractor.extractCover(fb2File);
 
             if (coverData == null || coverData.length == 0) {
-                log.warn("No cover image found in FB2 '{}'", bookEntity.getFileName());
+                log.warn("No cover image found in FB2 '{}'", bookEntity.getPrimaryBookFile().getFileName());
                 return false;
             }
 
@@ -70,7 +70,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
             return saved;
 
         } catch (Exception e) {
-            log.error("Error generating cover for FB2 '{}': {}", bookEntity.getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for FB2 '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage(), e);
             return false;
         }
     }
@@ -113,6 +113,8 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         metadata.setHardcoverReviewCount(fb2Metadata.getHardcoverReviewCount());
         metadata.setGoogleId(truncate(fb2Metadata.getGoogleId(), 100));
         metadata.setComicvineId(truncate(fb2Metadata.getComicvineId(), 100));
+        metadata.setRanobedbId(truncate(fb2Metadata.getRanobedbId(), 100));
+        metadata.setRanobedbRating(fb2Metadata.getRanobedbRating());
 
         bookCreatorService.addAuthorsToBook(fb2Metadata.getAuthors(), bookEntity);
 
@@ -125,13 +127,12 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
     }
 
     private boolean saveCoverImage(byte[] coverData, long bookId) throws Exception {
-        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(coverData));
-        try {
-            return fileService.saveCoverImages(originalImage, bookId);
-        } finally {
-            if (originalImage != null) {
-                originalImage.flush(); // Release resources after processing
-            }
+        BufferedImage originalImage = FileService.readImage(coverData);
+        if (originalImage == null) {
+            log.warn("Failed to decode cover image for FB2");
+            return false;
         }
+
+        return fileService.saveCoverImages(originalImage, bookId);
     }
 }

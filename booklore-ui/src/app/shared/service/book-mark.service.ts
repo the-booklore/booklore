@@ -49,6 +49,7 @@ export class BookMarkService {
   deleteBookmark(bookmarkId: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${bookmarkId}`);
   }
+
   updateBookmark(bookmarkId: number, request: UpdateBookMarkRequest): Observable<BookMark> {
     return this.http.put<BookMark>(`${this.url}/${bookmarkId}`, request);
   }

@@ -9,6 +9,7 @@ import lombok.Data;
 public class EpubProgress {
     @NotNull
     String cfi;
+    String href;
     @NotNull
     Float percentage;
 }

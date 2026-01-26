@@ -229,6 +229,7 @@ public class UserProvisioningService {
         perms.setPermissionAccessTaskManager(true);
         perms.setPermissionManageGlobalPreferences(true);
         perms.setPermissionManageIcons(true);
+        perms.setPermissionManageFonts(true);
         perms.setPermissionBulkAutoFetchMetadata(true);
         perms.setPermissionBulkCustomFetchMetadata(true);
         perms.setPermissionBulkEditMetadata(true);
@@ -278,6 +279,7 @@ public class UserProvisioningService {
         permissions.setPermissionAccessTaskManager(request.isPermissionAccessTaskManager());
         permissions.setPermissionManageGlobalPreferences(request.isPermissionManageGlobalPreferences());
         permissions.setPermissionManageIcons(request.isPermissionManageIcons());
+        permissions.setPermissionManageFonts(request.isPermissionManageFonts());
         permissions.setPermissionBulkAutoFetchMetadata(request.isPermissionBulkAutoFetchMetadata());
         permissions.setPermissionBulkCustomFetchMetadata(request.isPermissionBulkCustomFetchMetadata());
         permissions.setPermissionBulkEditMetadata(request.isPermissionBulkEditMetadata());
@@ -326,7 +328,7 @@ public BookLoreUserEntity provisionOidcUser(String username, String email, Strin
         perms.setPermissionAccessTaskManager(defaultPermissions.contains("permissionAccessTaskManager"));
         perms.setPermissionManageGlobalPreferences(defaultPermissions.contains("permissionManageGlobalPreferences"));
         perms.setPermissionManageIcons(defaultPermissions.contains("permissionManageIcons"));
-    }
+    perms.setPermissionManageFonts(defaultPermissions.contains("permissionManageFonts"));}
     user.setPermissions(perms);
 
     List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
@@ -563,6 +565,7 @@ private void syncUserProfile(BookLoreUserEntity user, String username, String em
             permissions.setPermissionAccessTaskManager(defaultPermissions.contains("permissionAccessTaskManager"));
             permissions.setPermissionManageGlobalPreferences(defaultPermissions.contains("permissionManageGlobalPreferences"));
             permissions.setPermissionManageIcons(defaultPermissions.contains("permissionManageIcons"));
+            permissions.setPermissionManageFonts(defaultPermissions.contains("permissionManageFonts"));
         } else {
             permissions.setPermissionUpload(false);
             permissions.setPermissionDownload(false);
@@ -580,6 +583,7 @@ private void syncUserProfile(BookLoreUserEntity user, String username, String em
             permissions.setPermissionAccessTaskManager(false);
             permissions.setPermissionManageGlobalPreferences(false);
             permissions.setPermissionManageIcons(false);
+            permissions.setPermissionManageFonts(false);
         }
 
         permissions.setPermissionAdmin(isAdmin);

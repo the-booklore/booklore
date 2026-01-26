@@ -1,7 +1,7 @@
 import {inject, Injectable, Injector} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable, of, ReplaySubject} from 'rxjs';
-import {catchError, finalize, shareReplay, tap, timeout} from 'rxjs/operators';
+import {catchError, finalize, map, shareReplay, switchMap, tap, timeout} from 'rxjs/operators';
 import {API_CONFIG} from '../../core/config/api-config';
 import {AppSettings, OidcProviderDetails} from '../model/app-settings.model';
 import {AuthService} from './auth.service';
@@ -91,27 +91,15 @@ export class AppSettingsService {
     this.publicAppSettingsSubject.next(updatedPublicSettings);
   }
 
-  saveSettings(settings: { key: string; newValue: any }[]): Observable<void> {
+  saveSettings(settings: { key: string; newValue: unknown }[]): Observable<void> {
     const payload = settings.map(setting => ({
       name: setting.key,
       value: setting.newValue
     }));
 
     return this.http.put<void>(this.apiUrl, payload).pipe(
-      tap(() => {
-        const current = this.appSettingsSubject.value;
-        if (current) {
-          settings.forEach(s => (current as any)[s.key] = s.newValue);
-          this.appSettingsSubject.next({...current});
-          this.syncPublicSettings(current);
-        } else {
-          this.loading$ = this.fetchAppSettings().pipe(
-            shareReplay(1),
-            finalize(() => (this.loading$ = null))
-          );
-          this.loading$.subscribe();
-        }
-      }),
+      switchMap(() => this.fetchAppSettings()),
+      map(() => void 0),
       catchError(err => {
         console.error('Error saving settings:', err);
         return of();
@@ -130,8 +118,8 @@ export class AppSettingsService {
           this.syncPublicSettings(current);
         }
         if (!enabled) {
+          const authService = this.injector.get(AuthService);
           setTimeout(() => {
-            const authService = this.injector.get(AuthService);
             authService.clearOIDCTokens();
           });
         }

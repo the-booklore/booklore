@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.DisplayName;
@@ -221,7 +222,12 @@ class PathPatternResolverTest {
         metadata.setTitle("Book Title");
         
         BookEntity book = new BookEntity();
-        book.setFileName("book.epub");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName("book.epub");
+        primaryFile.setFileSubPath("");
+        book.setBookFiles(List.of(primaryFile));
         book.setMetadata(metadata);
 
         String result = PathPatternResolver.resolvePattern(book, "{title}.{extension}");
@@ -882,5 +888,21 @@ class PathPatternResolverTest {
         assertTrue(result.startsWith(".config"), "Should still start with .config (or be treated as filename)");
         assertTrue(result.getBytes(StandardCharsets.UTF_8).length <= MAX_FILENAME_BYTES,
                 "Result bytes should be <= " + MAX_FILENAME_BYTES);
+    }
+
+    @Test
+    @DisplayName("Should remove leading slash from resolved pattern if first component is empty")
+    void testResolvePattern_removesLeadingSlash_whenFirstComponentIsEmpty() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .authors(Set.of()) // Empty authors
+                .build();
+
+        // Pattern implies a subdirectory, but authors is missing
+        // This resolves to "/Book Title.pdf" currently
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{title}", "original.pdf");
+
+        // This assertion ensures the path is relative (does not start with /)
+        assertFalse(result.startsWith("/"), "Result should not start with slash: " + result);
     }
 }

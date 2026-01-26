@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.model.dto.response.CbxPageInfo;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,8 +25,14 @@ public class CbxReaderController {
     @Operation(summary = "List pages in a CBX book", description = "Retrieve a list of available page numbers for a CBX book.")
     @ApiResponse(responseCode = "200", description = "Page numbers returned successfully")
     @GetMapping("/{bookId}/pages")
-    public List<Integer> listPages(
-            @Parameter(description = "ID of the book") @PathVariable Long bookId) {
+    public List<Integer> listPages(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
         return cbxReaderService.getAvailablePages(bookId);
+    }
+
+    @Operation(summary = "Get page info for a CBX book", description = "Retrieve page information including display names for a CBX book.")
+    @ApiResponse(responseCode = "200", description = "Page info returned successfully")
+    @GetMapping("/{bookId}/page-info")
+    public List<CbxPageInfo> getPageInfo(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
+        return cbxReaderService.getPageInfo(bookId);
     }
 }

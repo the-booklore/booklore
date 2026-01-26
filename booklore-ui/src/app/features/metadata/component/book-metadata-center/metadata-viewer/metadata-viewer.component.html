@@ -73,7 +73,7 @@
               pTooltip="Go to previous book"
               tooltipPosition="bottom">
             </p-button>
-            <span class="text-sm text-surface-600 dark:text-surface-400">
+            <span class="navigation-position">
               {{ getNavigationPosition() }}
             </span>
             <p-button
@@ -154,7 +154,7 @@
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.ranobedbRating || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
@@ -212,6 +212,20 @@
                 >
                   <img src="https://lubimyczytac.pl/favicon.ico" alt="Lubimyczytac" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
+                </a>
+              }
+
+              @if (book?.metadata?.ranobedbRating) {
+                <a
+                  class="rating-link"
+                  [href]="'https://ranobedb.org/book/' + (book.metadata?.ranobedbId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'ranobedb')"
+                  tooltipPosition="top"
+                >
+                  <img src="https://www.ranobedb.org/favicon.png" alt="Ranobedb" class="rating-favicon"/>
+                  <span class="rating-value">{{ getRatingPercent(book.metadata!.ranobedbRating) }}%</span>
                 </a>
               }
 
@@ -335,12 +349,12 @@
               <span class="metadata-key">File Type:</span>
               @if (getFileExtension(book?.filePath)) {
                 <span (click)="goToFileType(book?.filePath)" style="cursor: pointer;">
-                  <app-tag size="3xs" variant="pill" [color]="getFileTypeColor(getFileExtension(book?.filePath))">
+                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
                     {{ (getFileExtension(book?.filePath) | uppercase) || '-' }}
                   </app-tag>
                 </span>
               } @else {
-                <app-tag size="3xs" variant="pill" [color]="getFileTypeColor(getFileExtension(book?.filePath))">
+                <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
                   -
                 </app-tag>
               }
@@ -523,7 +537,7 @@
                   pTooltip="Go to previous book"
                   tooltipPosition="bottom">
                 </p-button>
-                <span class="text-sm text-surface-600 dark:text-surface-400">
+                <span class="navigation-position">
                   {{ getNavigationPosition() }}
                 </span>
                 <p-button
@@ -541,13 +555,19 @@
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
             @if (book!.bookType === 'PDF') {
-              @if (readMenuItems$ | async; as readItems) {
-                <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
+              @if (pdfReadMenuItems$ | async; as readItems) {
+                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF' && book!.bookType !== 'FB2') {
-              <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
+            @if (book!.bookType === 'EPUB') {
+              @if (epubReadMenuItems$ | async; as readItems) {
+                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
+              }
             }
+            @if (book!.bookType !== 'PDF' && book!.bookType !== 'EPUB') {
+              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
+            }
+            <p-divider layout="vertical"></p-divider>
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
@@ -561,7 +581,7 @@
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
               @if (refreshMenuItems$ | async; as refreshItems) {
                 <p-splitbutton
-                  [label]="isAutoFetching ? 'Fetching...' : 'Auto Fetch'"
+                  [label]="isAutoFetching ? 'Fetching...' : 'Fetch'"
                   [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
                   [outlined]="true"
                   [model]="refreshItems"
@@ -570,13 +590,13 @@
                   [disabled]="isAutoFetching"
                   pTooltip="Automatically fetch metadata using default sources"
                   tooltipPosition="top"
-                  styleClass="mobile-icon-only">
+                  class="mobile-icon-only">
                 </p-splitbutton>
               }
             }
             @if (otherItems$ | async; as otherItems) {
               @if (otherItems.length > 0) {
-                <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
+                <p-button icon="pi pi-ellipsis-v" outlined severity="danger" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
               }
             }
@@ -605,7 +625,7 @@
       }
     </div>
 
-    <p-tabs lazy="true" class="custom-p-tabs" [value]="defaultTabValue" scrollable>
+    <p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
       <p-tablist>
         @if (bookInSeries.length > 1) {
           <p-tab [value]="1">
@@ -627,41 +647,51 @@
       </p-tablist>
       <p-tabpanels>
         <p-tabpanel [value]="1">
-          <div class="tab-content">
-            @if (bookInSeries.length > 1) {
-              <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
-                  @if (bookInSeriesItem.id !== book.id) {
-                    <div class="dashboard-scroller-card">
-                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
-                    </div>
+          <ng-template #content>
+            <div class="tab-content">
+              @if (bookInSeries.length > 1) {
+                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
+                  @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
+                    @if (bookInSeriesItem.id !== book.id) {
+                      <div class="dashboard-scroller-card">
+                        <app-book-card-lite-component [book]="bookInSeriesItem" [showSeriesNumber]="true" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                      </div>
+                    }
                   }
-                }
-              </div>
-            }
-          </div>
+                </div>
+              }
+            </div>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="2">
-          <div class="tab-content">
-            @if (recommendedBooks.length > 0) {
-              <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                @for (book of recommendedBooks; track book.book.id) {
-                  <div class="dashboard-scroller-card">
-                    <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+          <ng-template #content>
+            <div class="tab-content">
+              @if (recommendedBooks.length > 0) {
+                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
+                  @for (book of recommendedBooks; track book.book.id) {
+                    <div class="dashboard-scroller-card">
+                      <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="3">
-          <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
+          <ng-template #content>
+            <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="4">
-          <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+          <ng-template #content>
+            <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="5">
-          <app-book-reviews [bookId]="book.id"></app-book-reviews>
+          <ng-template #content>
+            <app-book-reviews [bookId]="book.id"></app-book-reviews>
+          </ng-template>
         </p-tabpanel>
       </p-tabpanels>
     </p-tabs>

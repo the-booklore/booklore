@@ -1,8 +1,8 @@
-import {Injectable} from '@angular/core';
-import {Book} from '../../book/model/book.model';
-import {GroupRule, Rule, RuleField} from '../component/magic-shelf-component';
+import { Injectable } from '@angular/core';
+import { Book } from '../../book/model/book.model';
+import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class BookRuleEvaluatorService {
 
   evaluateGroup(book: Book, group: GroupRule): boolean {
@@ -19,7 +19,7 @@ export class BookRuleEvaluatorService {
   private evaluateRule(book: Book, rule: Rule): boolean {
     const rawValue = this.extractBookValue(book, rule.field);
 
-    const normalize = (val: any): any => {
+    const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
       if (typeof val === 'string') {
@@ -51,6 +51,8 @@ export class BookRuleEvaluatorService {
           return [String(this.getFileExtension(book.fileName) ?? '').toLowerCase()];
         case 'library':
           return [String(book.libraryId)];
+        case 'shelf':
+          return (book.shelves ?? []).map(s => String(s.id));
         case 'language':
           return [String(book.metadata?.language ?? '').toLowerCase()];
         case 'title':
@@ -61,19 +63,24 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.publisher ?? '').toLowerCase()];
         case 'seriesName':
           return [String(book.metadata?.seriesName ?? '').toLowerCase()];
+        case 'isbn13':
+          return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
+        case 'isbn10':
+          return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
         default:
           return [];
       }
     };
 
+    const isNumericIdField = rule.field === 'library' || rule.field === 'shelf';
     const ruleList = Array.isArray(rule.value)
-      ? rule.value.map(v => String(v).toLowerCase())
-      : (rule.value ? [String(rule.value).toLowerCase()] : []);
+      ? rule.value.map(v => isNumericIdField ? String(v) : String(v).toLowerCase())
+      : (rule.value ? [isNumericIdField ? String(rule.value) : String(rule.value).toLowerCase()] : []);
 
     switch (rule.operator) {
       case 'equals':
         if (Array.isArray(value)) {
-          return value.some(v => ruleList.includes(v));
+          return value.some(v => ruleList.includes(isNumericIdField ? String(v) : String(v).toLowerCase()));
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() === ruleVal.getTime();
@@ -82,7 +89,7 @@ export class BookRuleEvaluatorService {
 
       case 'not_equals':
         if (Array.isArray(value)) {
-          return value.every(v => !ruleList.includes(v));
+          return value.every(v => !ruleList.includes(isNumericIdField ? String(v) : String(v).toLowerCase()));
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() !== ruleVal.getTime();
@@ -188,10 +195,12 @@ export class BookRuleEvaluatorService {
     }
   }
 
-  private extractBookValue(book: Book, field: RuleField): any {
+  private extractBookValue(book: Book, field: RuleField): unknown {
     switch (field) {
       case 'library':
         return book.libraryId;
+      case 'shelf':
+        return (book.shelves ?? []).map(s => s.id);
       case 'readStatus':
         return book.readStatus ?? 'UNSET';
       case 'fileType':
@@ -232,6 +241,10 @@ export class BookRuleEvaluatorService {
         return book.metadata?.pageCount;
       case 'language':
         return book.metadata?.language?.toLowerCase() ?? null;
+      case 'isbn13':
+        return book.metadata?.isbn13?.toLowerCase() ?? null;
+      case 'isbn10':
+        return book.metadata?.isbn10?.toLowerCase() ?? null;
       case 'amazonRating':
         return book.metadata?.amazonRating;
       case 'amazonReviewCount':
@@ -244,8 +257,10 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
+      case 'ranobedbRating':
+        return book.metadata?.ranobedbRating;
       default:
-        return (book as any)[field];
+        return (book as Record<string, unknown>)[field];
     }
   }
 

@@ -1,87 +1,65 @@
-<div class="main-container enclosing-container">
-  <div class="settings-header">
-    <h2 class="settings-title">
+<div class="settings-card">
+  <div class="section-header">
+    <h3 class="section-title">
       <i class="pi pi-cog"></i>
       View Preferences
-    </h2>
-    <p class="settings-description">
+    </h3>
+    <p class="section-description">
       Customize how you view metadata and series information.
     </p>
   </div>
 
-  <div class="settings-content">
-    <div class="preferences-section">
-      <div class="settings-card">
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Metadata Center Display Mode
-                <i class="pi pi-info-circle text-sky-600"
-                   pTooltip="Choose whether to open the Metadata Center in the current page or as a popup dialog window."
-                   tooltipPosition="right"
-                   style="cursor: pointer;">
-                </i>
-              </label>
-              <div class="button-group">
-                <button
-                  type="button"
-                  class="option-button"
-                  [class.selected]="viewMode === 'route'"
-                  (click)="onViewModeChange('route')">
-                  <i class="pi pi-window-maximize"></i>
-                  <span class="option-text">Open in Page</span>
-                </button>
-                <button
-                  type="button"
-                  class="option-button"
-                  [class.selected]="viewMode === 'dialog'"
-                  (click)="onViewModeChange('dialog')">
-                  <i class="pi pi-external-link"></i>
-                  <span class="option-text">Open in Dialog</span>
-                </button>
-              </div>
-            </div>
-            <p class="setting-description">
-              Choose whether to open the Metadata Center in the current page or as a popup dialog window.
-            </p>
-          </div>
+  <div class="section-body">
+    <div class="setting-item">
+      <div class="setting-header-standalone">
+        <label class="setting-label">Metadata Center Display Mode</label>
+      </div>
+      <p class="setting-description">Choose whether to open the Metadata Center in the current page or as a popup dialog window.</p>
+      <div class="setting-options">
+        <div class="button-group">
+          <button
+            type="button"
+            class="option-button"
+            [class.selected]="viewMode === 'route'"
+            (click)="onViewModeChange('route')">
+            <i class="pi pi-window-maximize"></i>
+            <span class="option-text">Open in Page</span>
+          </button>
+          <button
+            type="button"
+            class="option-button"
+            [class.selected]="viewMode === 'dialog'"
+            (click)="onViewModeChange('dialog')">
+            <i class="pi pi-external-link"></i>
+            <span class="option-text">Open in Dialog</span>
+          </button>
         </div>
-        <!-- Series View Mode Setting -->
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Series View Mode
-                <i class="pi pi-info-circle text-sky-600"
-                   pTooltip="Enable or disable the series view mode for displaying series information."
-                   tooltipPosition="right"
-                   style="cursor: pointer;">
-                </i>
-              </label>
-              <div class="button-group">
-                <button
-                  type="button"
-                  class="option-button"
-                  [class.selected]="seriesViewMode === true"
-                  (click)="onSeriesViewModeChange(true)">
-                  <i class="pi pi-check-circle"></i>
-                  <span class="option-text">Enabled</span>
-                </button>
-                <button
-                  type="button"
-                  class="option-button"
-                  [class.selected]="seriesViewMode === false"
-                  (click)="onSeriesViewModeChange(false)">
-                  <i class="pi pi-times-circle"></i>
-                  <span class="option-text">Disabled</span>
-                </button>
-              </div>
-            </div>
-            <p class="setting-description">
-              Enable or disable the series view mode for displaying series information.
-            </p>
-          </div>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-header-standalone">
+        <label class="setting-label">Series View Mode</label>
+      </div>
+      <p class="setting-description">Enable or disable the series view mode for displaying series information.</p>
+      <div class="setting-options">
+        <div class="button-group">
+          <button
+            type="button"
+            class="option-button"
+            [class.selected]="seriesViewMode === true"
+            (click)="onSeriesViewModeChange(true)">
+            <i class="pi pi-check-circle"></i>
+            <span class="option-text">Enabled</span>
+          </button>
+          <button
+            type="button"
+            class="option-button"
+            [class.selected]="seriesViewMode === false"
+            (click)="onSeriesViewModeChange(false)">
+            <i class="pi pi-times-circle"></i>
+            <span class="option-text">Disabled</span>
+          </button>
         </div>
       </div>
     </div>

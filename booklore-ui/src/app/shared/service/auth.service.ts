@@ -119,8 +119,9 @@ export class AuthService {
     this.tokenSubject.next(null);
     this.postLoginInitialized = false;
     this.getRxStompService().deactivate();
-    // Force a full page reload to ensure OIDC configuration is refreshed from the backend
-    window.location.href = '/login';
+this.router.navigate(['/login']).then(() => {
+  window.location.reload();
+});
   }
 
   getRxStompService(): RxStompService {

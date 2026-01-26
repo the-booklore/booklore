@@ -8,6 +8,7 @@ export interface KoreaderUser {
   username: string;
   password: string;
   syncEnabled: boolean;
+  syncWithBookloreReader: boolean;
 }
 
 @Injectable({
@@ -20,7 +21,7 @@ export class KoreaderService {
   private http = inject(HttpClient);
 
   createUser(username: string, password: string): Observable<KoreaderUser> {
-    const payload: any = {username, password};
+    const payload: unknown = {username, password};
     return this.http.put<KoreaderUser>(`${this.url}/me`, payload);
   }
 
@@ -30,6 +31,12 @@ export class KoreaderService {
 
   toggleSync(enabled: boolean): Observable<void> {
     return this.http.patch<void>(`${this.url}/me/sync`, null, {
+      params: {enabled: enabled.toString()}
+    });
+  }
+
+  toggleSyncProgressWithBookloreReader(enabled: boolean): Observable<void> {
+    return this.http.patch<void>(`${this.url}/me/sync-progress-with-booklore`, null, {
       params: {enabled: enabled.toString()}
     });
   }

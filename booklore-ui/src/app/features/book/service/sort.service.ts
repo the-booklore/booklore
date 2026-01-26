@@ -61,6 +61,13 @@ export class SortService {
       return [title, Number.MAX_SAFE_INTEGER];
     },
     author: (book) => book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null,
+    authorSurnameVorname: (book) => book.metadata?.authors?.map(a => {
+      const parts = a.trim().split(/\s+/);
+      if (parts.length < 2) return a.toLowerCase();
+      const surname = parts.pop();
+      const firstname = parts.join(" ");
+      return `${surname}, ${firstname}`.toLowerCase();
+    }).join(", ") || null,
     authorSeries: (book) => {
       const author = book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null;
       const series = book.metadata?.seriesName?.toLowerCase() || null;
@@ -87,6 +94,7 @@ export class SortService {
     goodreadsReviewCount: (book) => book.metadata?.goodreadsReviewCount || null,
     hardcoverRating: (book) => book.metadata?.hardcoverRating || null,
     hardcoverReviewCount: (book) => book.metadata?.hardcoverReviewCount || null,
+    ranobedbRating: (book) => book.metadata?.ranobedbRating || null,
     locked: (book) =>
       Object.keys(book.metadata ?? {})
         .filter((key) => key.endsWith('Locked'))

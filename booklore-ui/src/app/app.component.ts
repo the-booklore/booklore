@@ -9,11 +9,14 @@ import {RouterOutlet} from '@angular/router';
 import {AuthInitializationService} from './core/security/auth-initialization-service';
 import {AppConfigService} from './shared/service/app-config.service';
 import {MetadataBatchProgressNotification} from './shared/model/metadata-batch-progress.model';
-import {MetadataProgressService} from './shared/service/metadata-progress-service';
+import {MetadataProgressService} from './shared/service/metadata-progress.service';
 import {BookdropFileNotification, BookdropFileService} from './features/bookdrop/service/bookdrop-file.service';
 import {Subscription} from 'rxjs';
 import {DownloadProgressDialogComponent} from './shared/components/download-progress-dialog/download-progress-dialog.component';
-import {TaskService, TaskProgressPayload} from './features/settings/task-management/task.service';
+import {TaskProgressPayload, TaskService} from './features/settings/task-management/task.service';
+import {LibraryService} from './features/book/service/library.service';
+import {LibraryLoadingService} from './features/library-creator/library-loading.service';
+import {scan, withLatestFrom} from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -25,8 +28,11 @@ import {TaskService, TaskProgressPayload} from './features/settings/task-managem
 export class AppComponent implements OnInit, OnDestroy {
 
   loading = true;
+  offline = !navigator.onLine;
   private subscriptions: Subscription[] = [];
-  private subscriptionsInitialized = false; // Prevent multiple subscription setups
+  private subscriptionsInitialized = false;
+
+  private appConfigService = inject(AppConfigService); // DO NOT REMOVE: Used to initialize app config on startup
   private authInit = inject(AuthInitializationService);
   private bookService = inject(BookService);
   private rxStompService = inject(RxStompService);
@@ -34,9 +40,13 @@ export class AppComponent implements OnInit, OnDestroy {
   private metadataProgressService = inject(MetadataProgressService);
   private bookdropFileService = inject(BookdropFileService);
   private taskService = inject(TaskService);
-  private appConfigService = inject(AppConfigService); // Keep it here to ensure the service is initialized
+  private libraryService = inject(LibraryService);
+  private libraryLoadingService = inject(LibraryLoadingService);
 
   ngOnInit(): void {
+    window.addEventListener('online', this.onOnline);
+    window.addEventListener('offline', this.onOffline);
+
     this.authInit.initialized$.subscribe(ready => {
       this.loading = !ready;
       if (ready && !this.subscriptionsInitialized) {
@@ -46,11 +56,39 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  private onOnline = () => {
+    this.offline = false;
+  };
+
+  private onOffline = () => {
+    this.offline = true;
+  };
+
+  reload(): void {
+    window.location.reload();
+  }
+
   private setupWebSocketSubscriptions(): void {
     this.subscriptions.push(
-      this.rxStompService.watch('/user/queue/book-add').subscribe(msg =>
-        this.bookService.handleNewlyCreatedBook(JSON.parse(msg.body))
-      )
+      this.rxStompService.watch('/user/queue/book-add').pipe(
+        withLatestFrom(this.libraryService.largeLibraryLoading$),
+        scan((acc, [msg, loadingState]) => {
+          const book = JSON.parse(msg.body);
+          if (loadingState.isLoading) {
+            const newCount = acc.count + 1;
+            this.libraryLoadingService.showBookLoadingProgress(book.metadata?.title || 'Unknown Book', newCount, loadingState.expectedCount);
+            this.bookService.handleNewlyCreatedBook(book);
+            if (newCount >= loadingState.expectedCount) {
+              this.libraryService.setLargeLibraryLoading(false, 0);
+              return {count: 0};
+            }
+            return {count: newCount};
+          } else {
+            this.bookService.handleNewlyCreatedBook(book);
+            return {count: 0};
+          }
+        }, {count: 0})
+      ).subscribe()
     );
     this.subscriptions.push(
       this.rxStompService.watch('/user/queue/book-update').subscribe(msg =>
@@ -103,6 +141,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('online', this.onOnline);
+    window.removeEventListener('offline', this.onOffline);
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.libraryLoadingService.hide();
   }
 }

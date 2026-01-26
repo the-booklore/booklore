@@ -1,4 +1,4 @@
-import {Component, ElementRef, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild} from '@angular/core';
 import {TooltipModule} from "primeng/tooltip";
 import {AdditionalFile, Book, ReadStatus} from '../../../model/book.model';
 import {Button} from 'primeng/button';
@@ -20,16 +20,18 @@ import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
 import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
-import {BookDialogHelperService} from '../BookDialogHelperService';
+import {BookDialogHelperService} from '../book-dialog-helper.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookNavigationService} from '../../../service/book-navigation.service';
+import {BookCardOverlayPreferenceService} from '../book-card-overlay-preference.service';
 
 @Component({
   selector: 'app-book-card',
   templateUrl: './book-card.component.html',
   styleUrls: ['./book-card.component.scss'],
   imports: [Button, MenuModule, CheckboxModule, FormsModule, NgClass, TieredMenu, ProgressBar, TooltipModule],
-  standalone: true
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
@@ -44,11 +46,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() bottomBarHidden: boolean = false;
   @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
+  @Input() overlayPreferenceService?: BookCardOverlayPreferenceService;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
   items: MenuItem[] | undefined;
-  isHovered: boolean = false;
   isImageLoaded: boolean = false;
   isSubMenuLoading = false;
   private additionalFilesLoaded = false;
@@ -63,13 +65,34 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private confirmationService = inject(ConfirmationService);
   private bookDialogHelperService = inject(BookDialogHelperService);
   private bookNavigationService = inject(BookNavigationService);
+  private cdr = inject(ChangeDetectorRef);
+
+  protected _progressPercentage: number | null = null;
+  protected _koProgressPercentage: number | null = null;
+  protected _koboProgressPercentage: number | null = null;
+  protected _displayTitle: string | undefined = undefined;
+  protected _isSeriesViewActive: boolean = false;
+  protected _coverImageUrl: string = '';
+  protected _readStatusIcon: string = '';
+  protected _readStatusClass: string = '';
+  protected _readStatusTooltip: string = '';
+  protected _shouldShowStatusIcon: boolean = false;
+  protected _seriesCountTooltip: string = '';
+  protected _titleTooltip: string = '';
+  protected _hasProgress: boolean = false;
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
   protected readStatusHelper = inject(ReadStatusHelper);
   private user: User | null = null;
+  private menuInitialized = false;
+
+  showBookTypePill = true;
+
+  private overlayPrefSub?: any;
 
   ngOnInit(): void {
+    this.computeAllMemoizedValues();
     this.userService.userState$
       .pipe(
         filter(userState => !!userState?.user && userState.loaded),
@@ -79,50 +102,85 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       .subscribe(userState => {
         this.user = userState.user;
         this.metadataCenterViewMode = userState.user?.userSettings?.metadataCenterViewMode ?? 'route';
-        this.initMenu();
       });
+
+    if (this.overlayPreferenceService) {
+      this.overlayPrefSub = this.overlayPreferenceService.showBookTypePill$.subscribe(val => {
+        this.showBookTypePill = val;
+        this.cdr.markForCheck();
+      });
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['book'] && !changes['book'].firstChange) {
-      this.additionalFilesLoaded = false;
-      this.initMenu();
+    if (changes['book']) {
+      this.computeAllMemoizedValues();
+      if (!changes['book'].firstChange && this.menuInitialized) {
+        this.additionalFilesLoaded = false;
+        this.initMenu();
+      }
+    }
+
+    if (changes['seriesViewEnabled'] || changes['isSeriesCollapsed']) {
+      this._isSeriesViewActive = this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount >= 1;
+      this._displayTitle = (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata?.seriesName : this.book.metadata?.title;
+      this._titleTooltip = 'Title: ' + this._displayTitle;
     }
   }
 
-  get progressPercentage(): number | null {
-    if (this.book.epubProgress?.percentage != null) {
-      return this.book.epubProgress.percentage;
-    }
-    if (this.book.pdfProgress?.percentage != null) {
-      return this.book.pdfProgress.percentage;
-    }
-    if (this.book.cbxProgress?.percentage != null) {
-      return this.book.cbxProgress.percentage;
-    }
-    return null;
+  private computeAllMemoizedValues(): void {
+    this._progressPercentage = this.book.epubProgress?.percentage
+      ?? this.book.pdfProgress?.percentage
+      ?? this.book.cbxProgress?.percentage
+      ?? null;
+
+    this._koProgressPercentage = this.book.koreaderProgress?.percentage ?? null;
+    this._koboProgressPercentage = this.book.koboProgress?.percentage ?? null;
+
+    this._hasProgress = this._progressPercentage !== null || this._koProgressPercentage !== null || this._koboProgressPercentage !== null;
+
+    this._isSeriesViewActive = this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount >= 1;
+    this._displayTitle = (this.isSeriesCollapsed && this.book.metadata?.seriesName)
+      ? this.book.metadata?.seriesName
+      : this.book.metadata?.title;
+    this._coverImageUrl = this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
+
+    this._readStatusIcon = this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
+    this._readStatusClass = this.readStatusHelper.getReadStatusClass(this.book.readStatus);
+    this._readStatusTooltip = this.readStatusHelper.getReadStatusTooltip(this.book.readStatus);
+    this._shouldShowStatusIcon = this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
+
+    this._seriesCountTooltip = 'Series collapsed: ' + this.book.seriesCount + ' books';
+    this._titleTooltip = 'Title: ' + this._displayTitle;
   }
 
-  get koProgressPercentage(): number | null {
-    if (this.book.koreaderProgress?.percentage != null) {
-      return this.book.koreaderProgress.percentage;
-    }
-    return null;
+  get hasProgress(): boolean {
+    return this._hasProgress;
   }
 
-  get koboProgressPercentage(): number | null {
-    if (this.book.koboProgress?.percentage != null) {
-      return this.book.koboProgress.percentage;
-    }
-    return null;
+  get seriesCountTooltip(): string {
+    return this._seriesCountTooltip;
+  }
+
+  get titleTooltip(): string {
+    return this._titleTooltip;
+  }
+
+  get readStatusTooltip(): string {
+    return this._readStatusTooltip;
   }
 
   get displayTitle(): string | undefined {
-    return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata?.seriesName : this.book.metadata?.title;
+    return this._displayTitle;
+  }
+
+  get coverImageUrl(): string {
+    return this._coverImageUrl;
   }
 
   onImageLoad(): void {
     this.isImageLoaded = true;
+    this.cdr.markForCheck();
   }
 
   readBook(book: Book): void {
@@ -138,19 +196,28 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onMenuToggle(event: Event, menu: TieredMenu): void {
+    if (!this.menuInitialized) {
+      this.menuInitialized = true;
+      this.initMenu();
+      this.cdr.markForCheck();
+    }
+
     menu.toggle(event);
 
     if (!this.additionalFilesLoaded && !this.isSubMenuLoading && this.needsAdditionalFilesData()) {
       this.isSubMenuLoading = true;
+      this.cdr.markForCheck();
       this.bookService.getBookByIdFromAPI(this.book.id, true).subscribe({
         next: (book) => {
           this.book = book;
           this.additionalFilesLoaded = true;
           this.isSubMenuLoading = false;
           this.initMenu();
+          this.cdr.markForCheck();
         },
         error: () => {
           this.isSubMenuLoading = false;
+          this.cdr.markForCheck();
         }
       });
     }
@@ -236,12 +303,15 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
           icon: 'pi pi-trash',
           command: () => {
             this.confirmationService.confirm({
-              message: `Are you sure you want to delete "${this.book.metadata?.title}"?`,
+              message: `Are you sure you want to delete "${this.book.metadata?.title}"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.`,
               header: 'Confirm Deletion',
               icon: 'pi pi-exclamation-triangle',
               acceptIcon: 'pi pi-trash',
               rejectIcon: 'pi pi-times',
+              acceptLabel: 'Delete',
+              rejectLabel: 'Cancel',
               acceptButtonStyleClass: 'p-button-danger',
+              rejectButtonStyleClass: 'p-button-outlined',
               accept: () => {
                 this.bookService.deleteBooks(new Set([this.book.id])).subscribe();
               }
@@ -555,12 +625,15 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'pi pi-book',
       command: () => {
         this.confirmationService.confirm({
-          message: `Are you sure you want to delete "${this.book.metadata?.title}"?`,
+          message: `Are you sure you want to delete "${this.book.metadata?.title}"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.`,
           header: 'Confirm Deletion',
           icon: 'pi pi-exclamation-triangle',
           acceptIcon: 'pi pi-trash',
           rejectIcon: 'pi pi-times',
+          acceptLabel: 'Delete',
+          rejectLabel: 'Cancel',
           acceptButtonStyleClass: 'p-button-danger',
+          rejectButtonStyleClass: 'p-button-outlined',
           accept: () => {
             this.bookService.deleteBooks(new Set([this.book.id])).subscribe();
           }
@@ -671,10 +744,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     return sizeKb != null ? `${(sizeKb / 1024).toFixed(2)} MB` : '-';
   }
 
-  canReadBook(): boolean {
-    return this.book?.bookType !== 'FB2';
-  }
-
   private lastMouseEvent: MouseEvent | null = null;
 
   captureMouseEvent(event: MouseEvent): void {
@@ -718,25 +787,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  getReadStatusIcon(): string {
-    return this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
-  }
-
-  getReadStatusClass(): string {
-    return this.readStatusHelper.getReadStatusClass(this.book.readStatus);
-  }
-
-  getReadStatusTooltip(): string {
-    return this.readStatusHelper.getReadStatusTooltip(this.book.readStatus);
-  }
-
-  shouldShowStatusIcon(): boolean {
-    return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
-  }
-
-  isSeriesViewActive(): boolean {
-    return this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount! >= 1;
+    if (this.overlayPrefSub) {
+      this.overlayPrefSub.unsubscribe();
+    }
   }
 }

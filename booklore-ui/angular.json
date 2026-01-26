@@ -42,6 +42,11 @@
                 "glob": "**/*",
                 "input": "node_modules/ngx-extended-pdf-viewer/assets/",
                 "output": "/assets/"
+              },
+              {
+                "glob": "**/*",
+                "input": "libs/foliate-js",
+                "output": "/assets/foliate/"
               }
             ],
             "styles": [
@@ -80,7 +85,8 @@
                   "maximumError": "25kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,
@@ -106,24 +112,9 @@
           "builder": "@angular/build:extract-i18n"
         },
         "test": {
-          "builder": "@angular/build:karma",
+          "builder": "@angular/build:unit-test",
           "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
-            "tsConfig": "tsconfig.spec.json",
-            "inlineStyleLanguage": "scss",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
-            ],
-            "styles": [
-              "src/styles.scss"
-            ],
-            "scripts": []
+            "runnerConfig": "vitest-base.config.ts"
           }
         },
         "lint": {

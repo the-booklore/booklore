@@ -5,7 +5,7 @@ import {map, debounceTime, distinctUntilChanged, switchMap} from 'rxjs/operators
 
 export class HeaderFilter implements BookFilter {
 
-  constructor(private searchTerm$: Observable<any>) {
+  constructor(private searchTerm$: Observable<string>) {
   }
 
   filter(bookState: BookState): Observable<BookState> {
@@ -25,7 +25,7 @@ export class HeaderFilter implements BookFilter {
 
     return this.searchTerm$.pipe(
       distinctUntilChanged(),
-      switchMap(term => {
+      switchMap((term: string) => {
         const normalizedTerm = normalize(term || '').trim();
         if (normalizedTerm.length < 2) {
           return of(bookState);

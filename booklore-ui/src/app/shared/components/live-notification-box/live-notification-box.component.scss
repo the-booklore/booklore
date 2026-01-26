@@ -3,3 +3,33 @@
   border: 1px solid var(--primary-color);
   border-radius: 0.5rem;
 }
+
+.notification-container {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 0.5rem;
+}
+
+.notification-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tag-centered {
+  align-self: center;
+}
+
+.notification-timestamp {
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  align-self: center;
+}
+
+.notification-message {
+  font-weight: 400;
+  color: #e4e4e7;
+  margin: 0;
+}

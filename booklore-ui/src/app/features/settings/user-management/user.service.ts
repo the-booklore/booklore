@@ -18,6 +18,7 @@ export interface EntityViewPreference {
   view: 'GRID' | 'TABLE';
   coverSize: number;
   seriesCollapsed: boolean;
+  overlayBookType: boolean;
 }
 
 export interface EntityViewPreferenceOverride {
@@ -45,23 +46,13 @@ export interface PerBookSetting {
   pdf: string;
   epub: string;
   cbx: string;
+  newPdf?: string;
 }
 
 export type PageSpread = 'off' | 'even' | 'odd';
 export type BookFilterMode = 'and' | 'or' | 'single';
 export type FilterSortingMode = 'alphabetical' | 'count';
 
-export enum CbxBackgroundColor {
-  GRAY = 'GRAY',
-  BLACK = 'BLACK',
-  WHITE = 'WHITE'
-}
-
-export interface PdfReaderSetting {
-  pageSpread: PageSpread;
-  pageZoom: string;
-  showSidebar: boolean;
-}
 
 export enum CbxPageViewMode {
   SINGLE_PAGE = 'SINGLE_PAGE',
@@ -73,14 +64,10 @@ export enum CbxPageSpread {
   ODD = 'ODD',
 }
 
-export enum PdfPageViewMode {
-  SINGLE_PAGE = 'SINGLE_PAGE',
-  TWO_PAGE = 'TWO_PAGE',
-}
-
-export enum PdfPageSpread {
-  EVEN = 'EVEN',
-  ODD = 'ODD',
+export enum CbxBackgroundColor {
+  GRAY = 'GRAY',
+  BLACK = 'BLACK',
+  WHITE = 'WHITE'
 }
 
 export enum CbxFitMode {
@@ -96,6 +83,64 @@ export enum CbxScrollMode {
   INFINITE = 'INFINITE'
 }
 
+export interface PdfReaderSetting {
+  pageSpread: PageSpread;
+  pageZoom: string;
+  showSidebar: boolean;
+}
+
+export enum PdfPageViewMode {
+  SINGLE_PAGE = 'SINGLE_PAGE',
+  TWO_PAGE = 'TWO_PAGE',
+}
+
+export enum PdfPageSpread {
+  EVEN = 'EVEN',
+  ODD = 'ODD',
+}
+
+export enum PdfBackgroundColor {
+  GRAY = 'GRAY',
+  BLACK = 'BLACK',
+  WHITE = 'WHITE'
+}
+
+export enum PdfFitMode {
+  ACTUAL_SIZE = 'ACTUAL_SIZE',
+  FIT_PAGE = 'FIT_PAGE',
+  FIT_WIDTH = 'FIT_WIDTH',
+  FIT_HEIGHT = 'FIT_HEIGHT',
+  AUTO = 'AUTO'
+}
+
+export enum PdfScrollMode {
+  PAGINATED = 'PAGINATED',
+  INFINITE = 'INFINITE'
+}
+
+export interface NewPdfReaderSetting {
+  pageSpread: PdfPageSpread;
+  pageViewMode: PdfPageViewMode;
+  fitMode: PdfFitMode;
+  scrollMode?: PdfScrollMode;
+  backgroundColor?: PdfBackgroundColor;
+}
+
+export interface EbookReaderSetting {
+  lineHeight: number;
+  justify: boolean;
+  hyphenate: boolean;
+  maxColumnCount: number;
+  gap: number;
+  fontSize: number;
+  theme: string
+  maxInlineSize: number;
+  maxBlockSize: number;
+  fontFamily: string;
+  isDark: boolean;
+  flow: 'paginated' | 'scrolled';
+}
+
 export interface EpubReaderSetting {
   theme: string;
   font: string;
@@ -105,6 +150,7 @@ export interface EpubReaderSetting {
   lineHeight: number;
   margin: number;
   letterSpacing: number;
+  customFontId?: number | null;
 }
 
 export interface CbxReaderSetting {
@@ -113,11 +159,6 @@ export interface CbxReaderSetting {
   fitMode: CbxFitMode;
   scrollMode?: CbxScrollMode;
   backgroundColor?: CbxBackgroundColor;
-}
-
-export interface NewPdfReaderSetting {
-  pageSpread: PdfPageSpread;
-  pageViewMode: PdfPageViewMode;
 }
 
 export interface TableColumnPreference {
@@ -130,6 +171,7 @@ export interface UserSettings {
   perBookSetting: PerBookSetting;
   pdfReaderSetting: PdfReaderSetting;
   epubReaderSetting: EpubReaderSetting;
+  ebookReaderSetting: EbookReaderSetting;
   cbxReaderSetting: CbxReaderSetting;
   newPdfReaderSetting: NewPdfReaderSetting;
   sidebarLibrarySorting: SidebarLibrarySorting;
@@ -143,6 +185,7 @@ export interface UserSettings {
   tableColumnPreference?: TableColumnPreference[];
   dashboardConfig?: DashboardConfig;
   koReaderEnabled: boolean;
+  autoSaveMetadata: boolean;
 }
 
 export interface User {
@@ -171,6 +214,7 @@ export interface User {
     canManageEmailConfig: boolean;
     canManageGlobalPreferences: boolean;
     canManageIcons: boolean;
+    canManageFonts: boolean;
     demoUser: boolean;
     canBulkAutoFetchMetadata: boolean;
     canBulkCustomFetchMetadata: boolean;
@@ -190,6 +234,13 @@ export interface UserState {
   user: User | null;
   loaded: boolean;
   error: string | null;
+}
+
+export interface UserUpdateRequest {
+  name?: string;
+  email?: string;
+  permissions?: User['permissions'];
+  assignedLibraries?: number[];
 }
 
 @Injectable({
@@ -278,7 +329,7 @@ export class UserService {
     return this.http.get<User[]>(this.userUrl);
   }
 
-  updateUser(userId: number, updateData: Partial<User>): Observable<User> {
+  updateUser(userId: number, updateData: UserUpdateRequest): Observable<User> {
     return this.http.put<User>(`${this.userUrl}/${userId}`, updateData);
   }
 
@@ -312,7 +363,7 @@ export class UserService {
     );
   }
 
-  updateUserSetting(userId: number, key: string, value: any): void {
+  updateUserSetting(userId: number, key: string, value: unknown): void {
     const payload = {
       key,
       value

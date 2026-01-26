@@ -31,7 +31,7 @@ export interface CompletionTimelineResponse {
   year: number;
   month: number;
   totalBooks: number;
-  statusBreakdown: { [key: string]: number };
+  statusBreakdown: Record<string, number>;
   finishedBooks: number;
   completionRate: number;
 }
@@ -84,12 +84,12 @@ export class UserStatsService {
   }
 
   getFavoriteDays(year?: number, month?: number): Observable<FavoriteDaysResponse[]> {
-    let params: any = {};
+    const params: Record<string, string> = {};
     if (year !== undefined && year !== null) {
-      params.year = year.toString();
+      params['year'] = year.toString();
     }
     if (month !== undefined && month !== null) {
-      params.month = month.toString();
+      params['month'] = month.toString();
     }
 
     return this.http.get<FavoriteDaysResponse[]>(
@@ -99,12 +99,12 @@ export class UserStatsService {
   }
 
   getPeakHours(year?: number, month?: number): Observable<PeakHoursResponse[]> {
-    let params: any = {};
+    const params: Record<string, string> = {};
     if (year !== undefined && year !== null) {
-      params.year = year.toString();
+      params['year'] = year.toString();
     }
     if (month !== undefined && month !== null) {
-      params.month = month.toString();
+      params['month'] = month.toString();
     }
 
     return this.http.get<PeakHoursResponse[]>(

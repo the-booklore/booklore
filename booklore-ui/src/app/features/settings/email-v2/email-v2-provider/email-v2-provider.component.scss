@@ -202,3 +202,22 @@
   vertical-align: text-bottom;
   margin-left: 0.25rem;
 }
+
+.cell-center {
+  text-align: center;
+}
+
+.input-full-width {
+  width: 100%;
+}
+
+.provider-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.25rem;
+}

@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,8 +10,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import com.adityachandel.booklore.model.entity.BookEntity;
 
 @UtilityClass
 @Slf4j
@@ -18,7 +23,16 @@ public class FileUtils {
     private final String FILE_NOT_FOUND_MESSAGE = "File does not exist: ";
 
     public String getBookFullPath(BookEntity bookEntity) {
-        return Path.of(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath(), bookEntity.getFileName())
+        BookFileEntity bookFile = bookEntity.getPrimaryBookFile();
+
+        return Path.of(bookEntity.getLibraryPath().getPath(), bookFile.getFileSubPath(), bookFile.getFileName())
+                .normalize()
+                .toString()
+                .replace("\\", "/");
+    }
+
+    public String getBookFullPath(Book book) {
+        return Path.of(book.getLibraryPath().getPath(), book.getFileSubPath(), book.getFileName())
                 .normalize()
                 .toString()
                 .replace("\\", "/");
@@ -60,12 +74,31 @@ public class FileUtils {
         }
     }
 
+    public String getExtension(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+        int i = fileName.lastIndexOf('.');
+        if (i >= 0 && i < fileName.length() - 1) {
+            return fileName.substring(i + 1);
+        }
+        return "";
+    }
+
+    final private List<String> systemDirs = Arrays.asList(
+      // synology
+      "#recycle",
+      "@eaDir",
+      // calibre
+      ".caltrash"
+    );
+
     public boolean shouldIgnore(Path path) {
         if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
             return true;
         }
         for (Path part : path) {
-            if (".caltrash".equals(part.toString())) {
+            if (systemDirs.contains(part.toString())) {
                 return true;
             }
         }

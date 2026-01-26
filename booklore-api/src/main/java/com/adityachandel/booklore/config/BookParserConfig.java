@@ -12,7 +12,7 @@ public class BookParserConfig {
 
     @Bean
     public Map<MetadataProvider, BookParser> parserMap(GoogleParser googleParser, AmazonBookParser amazonBookParser,
-                                                       GoodReadsParser goodReadsParser, HardcoverParser hardcoverParser, ComicvineBookParser comicvineBookParser, DoubanBookParser doubanBookParser, LubimyCzytacParser lubimyczytacParser) {
+                                                       GoodReadsParser goodReadsParser, HardcoverParser hardcoverParser, ComicvineBookParser comicvineBookParser, DoubanBookParser doubanBookParser, RanobeDbParser ranobedbParser, LubimyCzytacParser lubimyczytacParser) {
         return Map.of(
                 MetadataProvider.Amazon, amazonBookParser,
                 MetadataProvider.GoodReads, goodReadsParser,
@@ -20,7 +20,8 @@ public class BookParserConfig {
                 MetadataProvider.Hardcover, hardcoverParser,
                 MetadataProvider.Comicvine, comicvineBookParser,
                 MetadataProvider.Douban, doubanBookParser,
-                MetadataProvider.Lubimyczytac, lubimyczytacParser
+                MetadataProvider.Lubimyczytac, lubimyczytacParser,
+                MetadataProvider.Ranobedb, ranobedbParser
         );
     }
 }

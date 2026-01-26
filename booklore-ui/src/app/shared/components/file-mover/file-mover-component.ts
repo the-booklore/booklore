@@ -2,7 +2,6 @@ import {Component, inject, OnDestroy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
 import {TableModule} from 'primeng/table';
-import {Divider} from 'primeng/divider';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {filter, take, takeUntil} from 'rxjs/operators';
@@ -10,7 +9,7 @@ import {Subject} from 'rxjs';
 
 import {BookService} from '../../../features/book/service/book.service';
 import {Book} from '../../../features/book/model/book.model';
-import {FileMoveRequest, FileOperationsService} from '../../service/file-operations-service';
+import {FileMoveRequest, FileOperationsService} from '../../service/file-operations.service';
 import {LibraryService} from "../../../features/book/service/library.service";
 import {AppSettingsService} from '../../service/app-settings.service';
 import {Select} from 'primeng/select';
@@ -36,13 +35,13 @@ interface FilePreview {
 @Component({
   selector: 'app-file-mover-component',
   standalone: true,
-  imports: [Button, FormsModule, TableModule, Divider, Select],
+  imports: [Button, FormsModule, TableModule, Select],
   templateUrl: './file-mover-component.html',
   styleUrl: './file-mover-component.scss'
 })
 export class FileMoverComponent implements OnDestroy {
   private config = inject(DynamicDialogConfig);
-  private ref = inject(DynamicDialogRef);
+  ref = inject(DynamicDialogRef);
   private bookService = inject(BookService);
   private libraryService = inject(LibraryService);
   private fileOperationsService = inject(FileOperationsService);
@@ -61,7 +60,7 @@ export class FileMoverComponent implements OnDestroy {
   loading = false;
   patternsCollapsed = true;
 
-  bookIds: Set<number> = new Set();
+  bookIds = new Set<number>();
   books: Book[] = [];
   availableLibraries: { id: number | null; name: string }[] = [];
   filePreviews: FilePreview[] = [];
@@ -103,7 +102,7 @@ export class FileMoverComponent implements OnDestroy {
         const libraryId =
           book.libraryId ??
           book.libraryPath?.id ??
-          (book as any).library?.id ??
+          (book as { library?: { id: number } }).library?.id ??
           null;
         if (!booksByLibrary.has(libraryId)) {
           booksByLibrary.set(libraryId, []);
@@ -157,7 +156,7 @@ export class FileMoverComponent implements OnDestroy {
 
       const relativeOriginalPath = `${fileSubPath}${fileName}`;
 
-      const currentLibraryId = book.libraryId ?? book.libraryPath?.id ?? (book as any).library?.id ?? null;
+      const currentLibraryId = book.libraryId ?? book.libraryPath?.id ?? (book as { library?: { id: number } }).library?.id ?? null;
       const currentLibraryName = this.getLibraryNameById(currentLibraryId);
       const currentLibraryPath = this.getLibraryPathById(currentLibraryId);
 
@@ -392,9 +391,5 @@ export class FileMoverComponent implements OnDestroy {
 
   togglePatternsCollapsed(): void {
     this.patternsCollapsed = !this.patternsCollapsed;
-  }
-
-  trackByBookId(index: number, preview: FilePreview): number {
-    return preview.bookId;
   }
 }

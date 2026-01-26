@@ -56,7 +56,7 @@
                 optionLabel="name"
                 placeholder="Select Library"
                 [(ngModel)]="selectedLibrary"
-                class="w-full">
+                class="full-width">
               </p-select>
             </div>
             <div class="field-group">
@@ -68,7 +68,7 @@
                 placeholder="Select Subpath"
                 [(ngModel)]="selectedPath"
                 [disabled]="!selectedLibrary"
-                class="w-full">
+                class="full-width">
               </p-select>
             </div>
           </div>
@@ -86,13 +86,11 @@
         </div>
         <p-fileupload
           name="file"
-          [maxFileSize]="maxFileSizeBytes"
           [customUpload]="true"
           [multiple]="true"
-          accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2"
+          accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3"
           (onSelect)="onFilesSelect($event)"
-          (uploadHandler)="uploadFiles($event)"
-          [disabled]="value === 'library' ? (!selectedLibrary || !selectedPath) : false">
+          (uploadHandler)="uploadFiles($event)">
           <ng-template #header let-files let-chooseCallback="chooseCallback" let-clearCallback="clearCallback" let-uploadCallback="uploadCallback">
             <div class="upload-actions">
               <div class="action-buttons">
@@ -133,7 +131,7 @@
                   <div class="file-item">
                     <div class="file-info">
                       <p-badge
-                        [value]="uploadFile.status === 'Pending' ? 'Ready' : uploadFile.status"
+                        [value]="getFileStatusLabel(uploadFile)"
                         [severity]="getBadgeSeverity(uploadFile.status)"/>
                       <span class="file-name">{{ uploadFile.file.name }}</span>
                       <span class="file-size">{{ formatSize(uploadFile.file.size) }}</span>
@@ -155,11 +153,28 @@
                           <i class="pi pi-check status-icon success"></i>
                         }
                         @case ('Failed') {
-                          <i
-                            class="pi pi-exclamation-triangle status-icon error"
-                            [pTooltip]="uploadFile.errorMessage || 'Upload failed'"
-                            tooltipPosition="top">
-                          </i>
+                          @if (uploadFile.errorMessage?.includes('exceeds maximum size')) {
+                            @if (hasUploadCompleted()) {
+                              <i
+                                class="pi pi-exclamation-triangle status-icon warning"
+                                [pTooltip]="uploadFile.errorMessage || 'File too large'"
+                                tooltipPosition="top">
+                              </i>
+                            } @else {
+                              <p-button
+                                icon="pi pi-times"
+                                (click)="onRemoveTemplatingFile($event, uploadFile.file, removeFileCallback, i)"
+                                severity="danger"
+                                [text]="true"
+                                [rounded]="true"/>
+                            }
+                          } @else {
+                            <i
+                              class="pi pi-exclamation-triangle status-icon error"
+                              [pTooltip]="uploadFile.errorMessage || 'Upload failed'"
+                              tooltipPosition="top">
+                            </i>
+                          }
                         }
                       }
                     </div>
@@ -172,13 +187,13 @@
           <ng-template #empty>
             <div class="empty-state">
               <div class="empty-icon-wrapper">
-                <i class="pi pi-cloud-upload empty-icon"></i>
+                <i class="pi pi-cloud-upload empty-icon" [class.active]="isUploadZoneActive()"></i>
               </div>
               <h3 class="empty-title">Drag and Drop Files</h3>
               <p class="empty-description">
                 Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>
                 <br/>
-                Maximum file size: 100 MB per file
+                Maximum file size: {{ maxFileSizeDisplay }} per file
               </p>
             </div>
           </ng-template>

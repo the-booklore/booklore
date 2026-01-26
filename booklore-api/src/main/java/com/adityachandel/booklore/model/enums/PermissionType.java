@@ -18,5 +18,6 @@ public enum PermissionType {
     ACCESS_TASK_MANAGER,
     MANAGE_GLOBAL_PREFERENCES,
     MANAGE_ICONS,
+    MANAGE_FONTS,
     DEMO_USER
 }

@@ -3,23 +3,6 @@ package com.adityachandel.booklore.model.enums;
 import lombok.Getter;
 
 public enum TaskType {
-
-    CLEAR_CBX_CACHE(
-            false,
-            false,
-            true,
-            false,
-            "Clear CBX Cache",
-            "Clears temporarily extracted comic book files used by the reader."
-    ),
-    CLEAR_PDF_CACHE(
-            false,
-            false,
-            true,
-            false,
-            "Clear PDF Cache",
-            "Clears temporarily generated images used by the streaming PDF reader."
-    ),
     REFRESH_LIBRARY_METADATA(
             false,
             true,

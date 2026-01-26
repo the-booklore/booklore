@@ -102,8 +102,7 @@ public class BookController {
     @ApiResponse(responseCode = "200", description = "Book content returned successfully")
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<ByteArrayResource> getBookContent(
-            @Parameter(description = "ID of the book") @PathVariable long bookId) throws IOException {
+    public ResponseEntity<ByteArrayResource> getBookContent(@Parameter(description = "ID of the book") @PathVariable long bookId) throws IOException {
         return bookService.getBookContent(bookId);
     }
 
@@ -115,8 +114,7 @@ public class BookController {
     @GetMapping("/{bookId}/download")
     @PreAuthorize("@securityUtil.canDownload() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<Resource> downloadBook(
-            @Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
+    public ResponseEntity<Resource> downloadBook(@Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
         return bookService.downloadBook(bookId);
     }
 
@@ -124,8 +122,7 @@ public class BookController {
     @ApiResponse(responseCode = "200", description = "Viewer settings returned successfully")
     @GetMapping("/{bookId}/viewer-setting")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookViewerSettings> getBookViewerSettings(
-            @Parameter(description = "ID of the book") @PathVariable long bookId) {
+    public ResponseEntity<BookViewerSettings> getBookViewerSettings(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getBookViewerSetting(bookId));
     }
 

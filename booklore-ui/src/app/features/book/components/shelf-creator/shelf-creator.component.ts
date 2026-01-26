@@ -9,6 +9,8 @@ import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
 import {Tooltip} from 'primeng/tooltip';
 import {IconDisplayComponent} from '../../../../shared/components/icon-display/icon-display.component';
+import {UserService} from '../../../settings/user-management/user.service';
+import {CheckboxModule} from 'primeng/checkbox';
 
 @Component({
   selector: 'app-shelf-creator',
@@ -19,7 +21,8 @@ import {IconDisplayComponent} from '../../../../shared/components/icon-display/i
     Button,
     InputText,
     Tooltip,
-    IconDisplayComponent
+    IconDisplayComponent,
+    CheckboxModule
   ],
   styleUrl: './shelf-creator.component.scss',
 })
@@ -28,9 +31,12 @@ export class ShelfCreatorComponent {
   private dynamicDialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
   private iconPickerService = inject(IconPickerService);
+  private userService = inject(UserService);
 
   shelfName: string = '';
   selectedIcon: IconSelection | null = null;
+  isPublic: boolean = false;
+  isAdmin: boolean = this.userService.getCurrentUser()?.permissions.admin ?? false;
 
   openIconPicker(): void {
     this.iconPickerService.open().subscribe(icon => {
@@ -55,7 +61,8 @@ export class ShelfCreatorComponent {
     const newShelf: Partial<Shelf> = {
       name: this.shelfName,
       icon: iconValue,
-      iconType: iconType
+      iconType: iconType,
+      publicShelf: this.isPublic
     };
 
     this.shelfService.createShelf(newShelf as Shelf).subscribe({

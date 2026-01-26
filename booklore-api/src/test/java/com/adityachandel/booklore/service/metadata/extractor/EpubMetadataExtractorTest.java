@@ -386,6 +386,19 @@ class EpubMetadataExtractorTest {
                 () -> assertEquals("1234567890", result.getIsbn10())
             );
         }
+
+        @Test
+        @DisplayName("Should extract formatted ISBN-10 as ISBN-10, not ISBN-13")
+        void extractMetadata_withFormattedIsbn10_returnsIsbn10() throws IOException {
+            // "90-206-1280-8" is 13 characters long, causing it to be mistaken for ISBN-13 if formatting isn't stripped
+            File epubFile = createEpubWithIsbn(null, "90-206-1280-8");
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertNotNull(result);
+            assertEquals("90-206-1280-8", result.getIsbn10());
+            assertNull(result.getIsbn13(), "Should not set ISBN-13 for a formatted ISBN-10");
+        }
     }
 
     @Nested
@@ -440,6 +453,21 @@ class EpubMetadataExtractorTest {
             assertNotNull(cover, "Cover should be extracted");
             assertTrue(cover.length > 0);
             assertEquals(pngImage.length, cover.length);
+        }
+
+        @Test
+        @DisplayName("Should extract cover using meta name='cover' attribute fallback with URL-encoded href")
+        void extractCover_metaCoverAttribute_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            // Create EPUB where cover is only discoverable via <meta name="cover" content="img-id"/>
+            // Use URL-encoded href (cover+.png -> cover%2B.png) to verify proper decoding
+            File epubFile = createEpubWithMetaCoverAttribute(pngImage, "image-id", "images/img001%2B.png");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via meta cover attribute with encoded URL");
+            assertTrue(cover.length > 0);
+            assertArrayEquals(pngImage, cover);
         }
     }
 
@@ -796,6 +824,59 @@ class EpubMetadataExtractorTest {
             assertNotNull(cover, "Cover should be extracted from filename with multiple encoded chars");
             assertTrue(cover.length > 0);
         }
+    }
+
+    private File createEpubWithMetaCoverAttribute(byte[] coverImageData, String id, String encodedHref) throws IOException {
+        // This EPUB uses <meta name="cover" content="id"/> to reference the cover image
+        // The ID and href do NOT contain "cover" and there's no properties="cover-image"
+        // This tests the fallback path: getMetaAttribute("cover") -> getById(coverId)
+        // The href may be URL-encoded (e.g., image%2B.png for image+.png)
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Meta Cover Attribute</dc:title>
+                    <meta name="cover" content="%s"/>
+                </metadata>
+                <manifest>
+                    <item id="%s" href="%s" media-type="image/png"/>
+                </manifest>
+            </package>
+            """, id, id, encodedHref);
+
+        File epubFile = tempDir.resolve("test-meta-cover-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        // Decode the href for the actual file path in the ZIP
+        String decodedHref = java.net.URLDecoder.decode(encodedHref, StandardCharsets.UTF_8);
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/" + decodedHref));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
     }
 
     private File createEpubWithUnicodeCover(byte[] coverImageData, String id, String encodedHref) throws IOException {

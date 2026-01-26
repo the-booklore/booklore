@@ -53,7 +53,7 @@ class KoreaderUserServiceTest {
         entity.setBookLoreUser(ownerEntity);
         entity.setUsername("kvUser");
 
-        dto = new KoreaderUser(10L, "kvUser", null, null, false);
+        dto = new KoreaderUser(10L, "kvUser", null, null, false, true);
         when(koreaderUserMapper.toDto(any(KoreaderUserEntity.class))).thenReturn(dto);
     }
 
@@ -69,7 +69,7 @@ class KoreaderUserServiceTest {
 
         when(koreaderUserMapper.toDto(any(KoreaderUserEntity.class))).thenAnswer(invocation -> {
             KoreaderUserEntity u = invocation.getArgument(0);
-            return new KoreaderUser(u.getId(), u.getUsername(), u.getPassword(), u.getPasswordMD5(), u.isSyncEnabled());
+            return new KoreaderUser(u.getId(), u.getUsername(), u.getPassword(), u.getPasswordMD5(), u.isSyncEnabled(), u.isSyncWithBookloreReader());
         });
 
         KoreaderUser result = service.upsertUser("userA", "passA");

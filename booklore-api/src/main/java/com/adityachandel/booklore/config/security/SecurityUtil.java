@@ -50,6 +50,11 @@ public class SecurityUtil {
         return user != null && user.getPermissions().isCanManageIcons();
     }
 
+    public boolean canManageFonts() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanManageFonts();
+    }
+
     public boolean canSyncKoReader() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanSyncKoReader();
@@ -123,5 +128,15 @@ public class SecurityUtil {
     public boolean canAccessTaskManager() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanAccessTaskManager();
+    }
+
+    public boolean canReadShelf(Long shelfId) {
+        var user = getCurrentUser();
+        if (user != null) {
+            return shelfRepository.findById(shelfId)
+                    .map(shelf -> shelf.isPublic() || shelf.getUser().getId().equals(user.getId()))
+                    .orElse(false);
+        }
+        return false;
     }
 }

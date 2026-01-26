@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -67,11 +68,10 @@ public class DynamicOidcJwtProcessor {
             JWSAlgorithm.HS512
     );
     private static final Pattern ENTRA_PATTERN = Pattern.compile("/[a-zA-Z0-9\\-]+/v2\\.0$");
-
     private final AppSettingService appSettingService;
     private final OidcProperties oidcProperties;
     private final Environment environment;
-    
+
     private volatile boolean healthCheckCompleted = false;
 
     private record OidcConfig(
@@ -82,7 +82,7 @@ public class DynamicOidcJwtProcessor {
     ) {}
 
     private volatile OidcConfig currentConfig;
-    
+
     private final Object configUpdateLock = new Object();
 
     public ConfigurableJWTProcessor<SecurityContext> getProcessor() throws Exception {
@@ -127,22 +127,22 @@ public class DynamicOidcJwtProcessor {
         log.debug("OIDC configuration change detected. Fetching new configuration...");
 
         // 1. Heavy network I/O outside lock
-        ConfigurableJWTProcessor<SecurityContext> newProcessor = 
+        ConfigurableJWTProcessor<SecurityContext> newProcessor =
             buildProcessor(providerDetails, normalizedIssuerUri);
 
         // 2. Quick atomic swap
         synchronized (configUpdateLock) {
             OidcConfig config = currentConfig;
-            
+
             // Double-check: another thread may have updated
             if (!isConfigValid(config, normalizedIssuerUri, clientId)) {
-                Cache<String, Boolean> replayCache = (config != null) 
-                    ? config.replayCache() 
+                Cache<String, Boolean> replayCache = (config != null)
+                    ? config.replayCache()
                     : buildReplayCache();
-                    
+
                 currentConfig = new OidcConfig(
-                    newProcessor, 
-                    normalizedIssuerUri, 
+                    newProcessor,
+                    normalizedIssuerUri,
                     clientId,
                     replayCache
                 );
@@ -150,7 +150,7 @@ public class DynamicOidcJwtProcessor {
             } else {
                  log.debug("OIDC configuration already updated by another thread. Discarding redundant build.");
             }
-            
+
             return currentConfig;
         }
     }
@@ -196,17 +196,17 @@ public class DynamicOidcJwtProcessor {
             if (secondsLeft < 0) {
                 log.warn("Token received is already expired by {} seconds. Check server clock sync.", Math.abs(secondsLeft));
             }
-            
+
             var algorithm = header.getAlgorithm();
             if (isHmacAlgorithm(algorithm)) {
                 log.warn("Token uses HMAC algorithm '{}'. This is incompatible with JWKS public key validation.", algorithm);
                 log.warn("Configure your IdP to use RS256 algorithm.");
-                
+
                 if (!oidcProperties.allowUnsafeAlgorithmFallback()) {
                     throw new BadJWTException("HMAC algorithm '" + algorithm + "' is not allowed. Configure IdP to use RS256.");
                 }
             } else if (log.isDebugEnabled()) {
-                if (isRsaAlgorithm(algorithm) || algorithm.equals(JWSAlgorithm.PS256) || 
+                if (isRsaAlgorithm(algorithm) || algorithm.equals(JWSAlgorithm.PS256) ||
                            algorithm.equals(JWSAlgorithm.PS384) || algorithm.equals(JWSAlgorithm.PS512)) {
                     log.debug("Token uses compatible asymmetric algorithm: {}", algorithm);
                 } else if (isEcAlgorithm(algorithm)) {
@@ -242,7 +242,7 @@ public class DynamicOidcJwtProcessor {
                 String jti = claimsSet.getJWTID();
                 if (jti != null && !jti.isEmpty()) {
                     Cache<String, Boolean> localCache = config.replayCache();
-                    
+
                     Boolean previous = localCache.asMap().putIfAbsent(jti, Boolean.TRUE);
                     if (previous == null) {
                         log.debug("Token JTI '{}' cached to prevent replay", jti);
@@ -289,10 +289,10 @@ public class DynamicOidcJwtProcessor {
             var jwt = com.nimbusds.jwt.SignedJWT.parse(token);
             var header = jwt.getHeader();
             var algorithm = header.getAlgorithm();
-            
+
             log.warn("Token uses algorithm '{}' which is not supported by current JWKS keys. " +
                     "This typically indicates an IdP misconfiguration.", algorithm);
-            
+
             if (isHmacAlgorithm(algorithm)) {
                 log.warn("Token signed with HMAC algorithm '{}' but JWKS contains asymmetric keys. " +
                         "HMAC algorithms require a shared secret and cannot be validated via JWKS. " +
@@ -301,18 +301,18 @@ public class DynamicOidcJwtProcessor {
                 log.warn("Token uses EC algorithm '{}' but JWKS may only contain RSA keys. " +
                         "Verify your OIDC provider's JWKS includes EC keys.", algorithm);
             } else {
-                log.warn("Token uses unexpected algorithm '{}'. Supported algorithms: [RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512]", 
+                log.warn("Token uses unexpected algorithm '{}'. Supported algorithms: [RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512]",
                         algorithm);
             }
-            
+
             log.info("Update IdP configuration at issuer='{}' to sign tokens with RS256 algorithm " +
                     "matching the public keys in JWKS endpoint.", issuerUri);
             log.info("See docs/OIDC-PROVIDER-CONFIG.md for step-by-step configuration guides (Authentik, Authelia, Keycloak).");
-            
+
         } catch (Exception parseEx) {
             log.error("Failed to parse token header for algorithm inspection: {}", parseEx.getMessage());
         }
-        
+
         throw new BadJOSEException("JWT algorithm mismatch: Token algorithm does not match available JWKS keys. " +
                 "This is typically caused by IdP misconfiguration (e.g., signing with HS256 but advertising RSA keys). " +
                 "Please reconfigure your OIDC provider to use RS256 signing. See docs/OIDC-PROVIDER-CONFIG.md for instructions.", originalException);
@@ -333,9 +333,8 @@ public class DynamicOidcJwtProcessor {
         }
 
         String discoveryUri = resolveDiscoveryUri(providerDetails, normalizedIssuerUri);
-        
+
         OidcUtils.validateDiscoveryUri(discoveryUri, isDevelopmentEnvironment());
-        
         log.info("Fetching OIDC discovery document from {}", discoveryUri);
 
         var resourceRetriever = createResourceRetriever();
@@ -346,8 +345,8 @@ public class DynamicOidcJwtProcessor {
             if (discoveredIssuer != null && !discoveredIssuer.isEmpty() && !Objects.equals(discoveredIssuer, normalizedIssuerUri)) {
                 if (oidcProperties.strictIssuerValidation()) {
                     throw new IllegalStateException(
-                        "SECURITY: Issuer mismatch detected. Expected: " + normalizedIssuerUri + 
-                        ", Got: " + discoveredIssuer + 
+                        "SECURITY: Issuer mismatch detected. Expected: " + normalizedIssuerUri +
+                        ", Got: " + discoveredIssuer +
                         ". Set booklore.security.oidc.strict-issuer-validation=false to allow (not recommended in production).");
                 }
                 log.warn("SECURITY WARNING: Issuer mismatch between configuration ({}) and discovery document ({}). " +
@@ -371,18 +370,18 @@ public class DynamicOidcJwtProcessor {
             Set<JWSAlgorithm> configuredAllowed = oidcProperties.jwt().allowedAlgorithms().stream()
                 .map(JWSAlgorithm::parse)
                 .collect(Collectors.toSet());
-            
+
             Set<JWSAlgorithm> originalSupported = new LinkedHashSet<>(supportedAlgorithms);
             supportedAlgorithms.retainAll(configuredAllowed);
-            
+
             if (!originalSupported.equals(supportedAlgorithms)) {
-                log.info("Filtered advertised algorithms from {} to {} based on 'allowed-algorithms' config.", 
+                log.info("Filtered advertised algorithms from {} to {} based on 'allowed-algorithms' config.",
                         originalSupported, supportedAlgorithms);
             }
-            
+
             if (supportedAlgorithms.isEmpty()) {
                 throw new IllegalStateException("No supported JWS algorithms remaining after applying 'booklore.security.oidc.jwt.allowed-algorithms' filter. " +
-                                                "Advertised: " + discoveryConfiguration.supportedAlgorithms() + 
+                                                "Advertised: " + discoveryConfiguration.supportedAlgorithms() +
                                                 ", Allowed: " + oidcProperties.jwt().allowedAlgorithms());
             }
         }
@@ -426,7 +425,7 @@ public class DynamicOidcJwtProcessor {
         log.debug("JWT clock skew tolerance set to {}s for handling clock drift between services", clockSkewSeconds);
 
         log.info("Setting up JWT verifier with expected issuer: '{}'", normalizedIssuerUri);
-        
+
         var expectedClaims = new JWTClaimsSet.Builder()
                 .build();
 
@@ -492,7 +491,7 @@ public class DynamicOidcJwtProcessor {
             log.debug("Using explicitly configured OIDC discovery URI: {}", providerDetails.getDiscoveryUri());
             return providerDetails.getDiscoveryUri();
         }
-        
+
         return OidcUtils.resolveDiscoveryUri(normalizedIssuerUri);
     }
 
@@ -597,7 +596,7 @@ public class DynamicOidcJwtProcessor {
             boolean hasEc = false;
             boolean hasOct = false;
             boolean hasOkp = false;
-            
+
             int totalKeys = jwkSet.getKeys().size();
             log.debug("Inspecting {} keys in JWKS at {}", totalKeys, jwksUri);
 
@@ -606,9 +605,9 @@ public class DynamicOidcJwtProcessor {
                 String kid = jwk.getKeyID();
                 String use = jwk.getKeyUse() != null ? jwk.getKeyUse().getValue() : "unspecified";
                 String alg = jwk.getAlgorithm() != null ? jwk.getAlgorithm().getName() : "unspecified";
-                
+
                 log.debug("  Key: kid={}, kty={}, use={}, alg={}", kid, keyType, use, alg);
-                
+
                 if (KeyType.RSA.equals(keyType)) {
                     hasRsa = true;
                 } else if (KeyType.EC.equals(keyType)) {
@@ -620,7 +619,7 @@ public class DynamicOidcJwtProcessor {
                     hasOkp = true;
                 }
             }
-            
+
             log.info("JWKS Key Types Summary: RSA={}, EC={}, OCT={}, OKP={}", hasRsa, hasEc, hasOct, hasOkp);
 
             final boolean finalHasRsa = hasRsa;
@@ -752,12 +751,12 @@ public class DynamicOidcJwtProcessor {
 
         return normalizeIssuerUri;
     }
-    
+
     private boolean isDevelopmentEnvironment() {
         String[] activeProfiles = environment.getActiveProfiles();
-        return activeProfiles.length > 0 && 
-               (Arrays.asList(activeProfiles).contains("dev") || 
-                Arrays.asList(activeProfiles).contains("development") || 
+        return activeProfiles.length > 0 &&
+               (Arrays.asList(activeProfiles).contains("dev") ||
+                Arrays.asList(activeProfiles).contains("development") ||
                 Arrays.asList(activeProfiles).contains("local"));
     }
 
@@ -768,7 +767,7 @@ public class DynamicOidcJwtProcessor {
             if (!"http".equals(tokenUri.getScheme()) || !"https".equals(configUri.getScheme())) {
                 return false;
             }
-            
+
             return tokenUri.getHost().equals(configUri.getHost())
                     && normalizePath(tokenUri.getPath()).equals(normalizePath(configUri.getPath()));
         } catch (URISyntaxException e) {
@@ -776,7 +775,7 @@ public class DynamicOidcJwtProcessor {
             return false;
         }
     }
-    
+
     private static String normalizePath(String path) {
         if (path == null || path.isEmpty()) {
             return "/";
@@ -905,7 +904,7 @@ public class DynamicOidcJwtProcessor {
                                     .limit(500) // Limit length
                                     .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                                     .toString());
-                    
+
                     log.warn("JWKS fetching failed: {}", fullError); // Log at warn level for visibility
                     throw new IOException(fullError);
                 }
@@ -942,7 +941,7 @@ public class DynamicOidcJwtProcessor {
         if (healthCheckCompleted) {
             return;
         }
-        
+
         try {
             var appSettings = appSettingService.getAppSettings();
             if (appSettings.isOidcEnabled() && appSettings.getOidcProviderDetails() != null) {
@@ -952,7 +951,7 @@ public class DynamicOidcJwtProcessor {
                 log.info("OIDC configuration validated successfully - provider is reachable");
             }
         } catch (Exception e) {
-            log.error("OIDC provider not reachable at startup. First authentication requests may fail until provider is available: {}", 
+            log.error("OIDC provider not reachable at startup. First authentication requests may fail until provider is available: {}",
                      e.getMessage());
         }
     }
@@ -988,7 +987,7 @@ public class DynamicOidcJwtProcessor {
      * - Authentik/Authelia/PocketID: "groups" claim (array of strings)
      * - Keycloak realm roles: "realm_access.roles" (nested object)
      * - Keycloak client roles: "resource_access.CLIENT_ID.roles" (nested object)
-     * 
+     *
      * @param claimsSet The validated JWT claims
      * @param groupsClaimName The claim name/path to extract groups from
      * @return List of group/role names, or empty list if not found
@@ -998,7 +997,7 @@ public class DynamicOidcJwtProcessor {
         if (groupsClaimName == null || groupsClaimName.isEmpty()) {
             return Collections.emptyList();
         }
-        
+
         try {
             if (groupsClaimName.contains(".")) {
                 String[] parts = groupsClaimName.split("\\.");
@@ -1018,19 +1017,19 @@ public class DynamicOidcJwtProcessor {
                         return Collections.emptyList();
                     }
                 }
-                
+
                 return extractGroupsFromValue(current, groupsClaimName);
             }
-            
+
             Object groupsValue = claimsSet.getClaim(groupsClaimName);
             return extractGroupsFromValue(groupsValue, groupsClaimName);
-            
+
         } catch (Exception e) {
             log.warn("Failed to extract groups from claim '{}': {}", groupsClaimName, e.getMessage());
             return Collections.emptyList();
         }
     }
-    
+
     /**
      * Extracts group/role names from a JWT claim value.
      * Handles various formats:

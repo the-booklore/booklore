@@ -73,7 +73,7 @@
 
               <td>
                 @if (recipient.isEditing) {
-                  <input type="email" [(ngModel)]="recipient.email" class="p-inputtext w-full" size="small"/>
+                  <input type="email" [(ngModel)]="recipient.email" class="p-inputtext full-width" size="small"/>
                 }
                 @if (!recipient.isEditing) {
                   <span>{{ recipient.email }}</span>
@@ -82,7 +82,7 @@
 
               <td>
                 @if (recipient.isEditing) {
-                  <input type="text" [(ngModel)]="recipient.name" class="p-inputtext w-full" size="small"/>
+                  <input type="text" [(ngModel)]="recipient.name" class="p-inputtext full-width" size="small"/>
                 }
                 @if (!recipient.isEditing) {
                   <span>{{ recipient.name }}</span>
@@ -102,7 +102,7 @@
                   </p-button>
                 }
                 @if (recipient.isEditing) {
-                  <div class="flex gap-1">
+                  <div class="edit-actions">
                     <p-button
                       icon="pi pi-check"
                       severity="success"

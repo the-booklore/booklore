@@ -24,9 +24,7 @@ interface SvgIconBatchResponse {
   results: IconSaveResult[];
 }
 
-interface IconContentMap {
-  [iconName: string]: string;
-}
+type IconContentMap = Record<string, string>;
 
 @Injectable({
   providedIn: 'root'
@@ -105,7 +103,7 @@ export class IconService {
     });
   }
 
-  deleteSvgIcon(svgName: string): Observable<any> {
+  deleteSvgIcon(svgName: string): Observable<unknown> {
     return this.http.delete(`${this.baseUrl}/${encodeURIComponent(svgName)}`).pipe(
       tap(() => {
         this.iconCache.removeIcon(svgName);

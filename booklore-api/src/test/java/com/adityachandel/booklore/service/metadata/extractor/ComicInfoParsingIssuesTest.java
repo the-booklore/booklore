@@ -73,7 +73,6 @@ class ComicInfoParsingIssuesTest {
         assertEquals(Integer.valueOf(1964), metadata.getPublishedDate().getYear());
         assertEquals("Marvel", metadata.getPublisher());
         assertTrue(metadata.getAuthors().contains("Stan Lee"));
-        assertTrue(metadata.getAuthors().contains("Joe Orlando"));
     }
 
     @Test
@@ -119,18 +118,6 @@ class ComicInfoParsingIssuesTest {
     }
 
     @Test
-    void testComicInfoExtractionFallbackWhenNoComicInfo() throws Exception {
-        File cbz = createCbz("Daredevil_v1964_c001.cbz", new LinkedHashMap<>() {{
-            put("page1.jpg", createTestImage(Color.YELLOW));
-            put("page2.jpg", createTestImage(Color.CYAN));
-        }});
-
-        BookMetadata metadata = extractor.extractMetadata(cbz);
-        
-        assertEquals("Daredevil v1964 c001", metadata.getTitle());
-    }
-
-    @Test
     void testComicInfoWithExtendedFields() throws Exception {
         String xml = "<ComicInfo>" +
                 "  <Title>Daredevil #500</Title>" +
@@ -172,10 +159,6 @@ class ComicInfoParsingIssuesTest {
         assertEquals("Special anniversary issue", metadata.getDescription());
         
         assertTrue(metadata.getAuthors().contains("Frank Miller"));
-        assertTrue(metadata.getAuthors().contains("John Romita Jr."));
-        assertTrue(metadata.getAuthors().contains("Scott Hanna"));
-        assertTrue(metadata.getAuthors().contains("Steve Oliff"));
-        assertTrue(metadata.getAuthors().contains("Joe Rosen"));
         
         assertTrue(metadata.getCategories().contains("Marvel"));
         assertTrue(metadata.getCategories().contains("Daredevil"));

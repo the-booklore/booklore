@@ -30,6 +30,7 @@ public class UserUpdateRequest {
         private boolean canAccessTaskManager;
         private boolean canManageGlobalPreferences;
         private boolean canManageIcons;
+        private boolean canManageFonts;
         private boolean canBulkAutoFetchMetadata;
         private boolean canBulkCustomFetchMetadata;
         private boolean canBulkEditMetadata;

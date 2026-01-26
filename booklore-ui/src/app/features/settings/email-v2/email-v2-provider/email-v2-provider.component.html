@@ -96,7 +96,7 @@
 
           <ng-template pTemplate="body" let-provider>
             <tr>
-              <td class="text-center">
+              <td class="cell-center">
                 <p-radioButton
                   name="defaultProvider"
                   [value]="provider.id"
@@ -107,10 +107,10 @@
 
               <td>
                 @if (provider.isEditing) {
-                  <input type="text" [(ngModel)]="provider.name" class="p-inputtext w-full" size="small"/>
+                  <input type="text" [(ngModel)]="provider.name" class="p-inputtext input-full-width" size="small"/>
                 }
                 @if (!provider.isEditing) {
-                  <div class="flex align-items-center gap-2">
+                  <div class="provider-name-cell">
                     <span>
                       {{ provider.name }}
                       @if (provider.shared) {
@@ -123,7 +123,7 @@
 
               <td>
                 @if (provider.isEditing) {
-                  <input type="text" [(ngModel)]="provider.host" class="p-inputtext w-full" size="small"/>
+                  <input type="text" [(ngModel)]="provider.host" class="p-inputtext input-full-width" size="small"/>
                 }
                 @if (!provider.isEditing) {
                   <span>{{ provider.host }}</span>
@@ -132,7 +132,7 @@
 
               <td>
                 @if (provider.isEditing) {
-                  <input type="number" [(ngModel)]="provider.port" class="p-inputtext w-full" size="small"/>
+                  <input type="number" [(ngModel)]="provider.port" class="p-inputtext input-full-width" size="small"/>
                 }
                 @if (!provider.isEditing) {
                   <span>{{ provider.port }}</span>
@@ -141,7 +141,7 @@
 
               <td>
                 @if (provider.isEditing) {
-                  <input type="text" [(ngModel)]="provider.username" class="p-inputtext w-full" size="small"/>
+                  <input type="text" [(ngModel)]="provider.username" class="p-inputtext input-full-width" size="small"/>
                 }
                 @if (!provider.isEditing) {
                   <span>{{ provider.username }}</span>
@@ -150,7 +150,7 @@
 
               <td>
                 @if (provider.isEditing) {
-                  <input [(ngModel)]="provider.password" class="p-inputtext w-full" size="small"/>
+                  <input [(ngModel)]="provider.password" class="p-inputtext input-full-width" size="small"/>
                 }
                 @if (!provider.isEditing) {
                   <span class="password-hidden">Hidden</span>
@@ -159,14 +159,14 @@
 
               <td>
                 @if (provider.isEditing) {
-                  <input type="text" [(ngModel)]="provider.fromAddress" class="p-inputtext w-full" size="small"/>
+                  <input type="text" [(ngModel)]="provider.fromAddress" class="p-inputtext input-full-width" size="small"/>
                 }
                 @if (!provider.isEditing) {
                   <span>{{ provider.fromAddress }}</span>
                 }
               </td>
 
-              <td class="text-center">
+              <td class="cell-center">
                 <p-checkbox
                   [(ngModel)]="provider.auth"
                   [binary]="true"
@@ -174,7 +174,7 @@
                 </p-checkbox>
               </td>
 
-              <td class="text-center">
+              <td class="cell-center">
                 <p-checkbox
                   [(ngModel)]="provider.startTls"
                   [binary]="true"
@@ -183,7 +183,7 @@
               </td>
 
               @if (isAdmin) {
-                <td class="text-center">
+                <td class="cell-center">
                   <p-checkbox
                     [(ngModel)]="provider.shared"
                     [binary]="true"
@@ -208,7 +208,7 @@
                   </p-button>
                 }
                 @if (provider.isEditing) {
-                  <div class="flex gap-1">
+                  <div class="edit-actions">
                     <p-button
                       icon="pi pi-check"
                       severity="success"

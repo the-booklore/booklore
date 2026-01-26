@@ -6,7 +6,7 @@ import {UserService} from '../../../settings/user-management/user.service';
 import {Router} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {NgClass} from '@angular/common';
-import {BookMetadataHostService} from '../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../shared/service/book-metadata-host.service';
 import {takeUntil} from 'rxjs/operators';
 import {TooltipModule} from 'primeng/tooltip';
 
@@ -23,6 +23,7 @@ import {TooltipModule} from 'primeng/tooltip';
 export class BookCardLiteComponent implements OnInit, OnDestroy {
   @Input() book!: Book;
   @Input() isActive: boolean = false;
+  @Input() showSeriesNumber: boolean = false;
 
   private router = inject(Router);
   protected urlHelper = inject(UrlHelperService);

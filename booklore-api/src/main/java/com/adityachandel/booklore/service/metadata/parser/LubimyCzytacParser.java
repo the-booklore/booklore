@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,6 +37,7 @@ public class LubimyCzytacParser implements BookParser {
     private static final String SEARCH_URL = BASE_URL + "/szukaj/ksiazki";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36";
     private static final int CONNECTION_TIMEOUT_MS = 10000;
+    private static final int MAX_RETRIES = 3;
     private static final int MAX_RESULTS = 10;
     private static final double RATING_SCALE_DIVISOR = 2.0; // Convert 10-point scale to 5-point scale
     private static final Pattern SERIES_NUMBER_PATTERN = Pattern.compile("\\(tom\\s+(\\d+)\\)");
@@ -115,11 +117,6 @@ public class LubimyCzytacParser implements BookParser {
     }
 
     private String buildSearchQuery(FetchMetadataRequest request) {
-        String isbn = request.getIsbn();
-        if (isbn != null && !isbn.isEmpty()) {
-            return isbn;
-        }
-
         String title = request.getTitle();
         if (title != null && !title.isEmpty()) {
             return title.trim();
@@ -141,146 +138,167 @@ public class LubimyCzytacParser implements BookParser {
     }
 
     private List<String> searchBooks(String query, String author) {
-        List<String> bookUrls = new ArrayList<>();
+        String searchUrl = buildSearchUrl(query, author);
+        log.info("Searching LubimyCzytac: {}", searchUrl);
 
-        try {
-            String searchUrl = buildSearchUrl(query, author);
-            log.info("Searching LubimyCzytac: {}", searchUrl);
+        Document doc = fetchWithRetry(searchUrl);
+        if (doc == null) {
+            return Collections.emptyList();
+        }
 
-            Document doc = Jsoup.connect(searchUrl)
-                    .userAgent(USER_AGENT)
-                    .timeout(CONNECTION_TIMEOUT_MS)
-                    .get();
+        return extractBookUrls(doc);
+    }
 
-            Elements results = doc.select(".authorAllBooks__single");
-            log.info("Found {} search results", results.size());
+    private Document fetchWithRetry(String url) {
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return Jsoup.connect(url)
+                        .userAgent(USER_AGENT)
+                        .timeout(CONNECTION_TIMEOUT_MS)
+                        .get();
 
-            for (Element result : results) {
-                Element titleLink = result.selectFirst(".authorAllBooks__singleTextTitle");
-                if (titleLink != null) {
-                    String href = titleLink.attr("href");
-                    if (href != null && !href.isEmpty()) {
-                        String fullUrl = href.startsWith("http") ? href : BASE_URL + href;
-                        bookUrls.add(fullUrl);
+            } catch (IOException e) {
+                if (!isConnectivityError(e)) {
+                    log.error("Error connecting to LubimyCzytac", e);
+                    return null;
+                } else {
+                    log.warn("Attempt {}/{} failed to connect to {}. Retrying...", attempt, MAX_RETRIES, url);
+                    try {
+                        Thread.sleep(1000 * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
                     }
                 }
             }
+        }
 
-        } catch (IOException e) {
-            log.error("Error searching LubimyCzytac", e);
+        log.error("Error connecting to LubimyCzytac. All {} retry attempts failed", MAX_RETRIES);
+        return null;
+    }
+
+    private static List<String> extractBookUrls(Document doc) {
+        List<String> bookUrls = new ArrayList<>();
+        Elements results = doc.select(".authorAllBooks__single");
+        log.info("Found {} search results", results.size());
+
+        for (Element result : results) {
+            Element titleLink = result.selectFirst(".authorAllBooks__singleTextTitle");
+            if (titleLink != null) {
+                String href = titleLink.attr("href");
+                if (href != null && !href.isEmpty()) {
+                    String fullUrl = href.startsWith("http") ? href : BASE_URL + href;
+                    bookUrls.add(fullUrl);
+                }
+            }
         }
 
         return bookUrls;
     }
 
     private BookMetadata parseBookDetails(String url) {
-        try {
-            log.info("Parsing book details from: {}", url);
+        log.info("Parsing book details from: {}", url);
 
-            Document doc = Jsoup.connect(url)
-                    .userAgent(USER_AGENT)
-                    .timeout(CONNECTION_TIMEOUT_MS)
-                    .get();
+        Document doc = fetchWithRetry(url);
 
-            BookMetadata metadata = new BookMetadata();
-            metadata.setProvider(MetadataProvider.Lubimyczytac);
-
-            // Extract LubimyCzytac ID from URL (e.g., /ksiazka/123456/title -> 123456)
-            String id = extractIdFromUrl(url);
-            metadata.setLubimyczytacId(id);
-
-            Element titleElement = doc.selectFirst("h1.book__title");
-            if (titleElement != null) {
-                metadata.setTitle(titleElement.text().trim());
-            }
-
-            Element coverElement = doc.selectFirst(".book-cover img");
-            if (coverElement != null) {
-                String coverUrl = coverElement.attr("src");
-                if (coverUrl != null && !coverUrl.isEmpty()) {
-                    metadata.setThumbnailUrl(coverUrl.startsWith("http") ? coverUrl : BASE_URL + coverUrl);
-                }
-            }
-
-            Element publisherElement = doc.selectFirst("a[href*=/wydawnictwo/]");
-            if (publisherElement != null) {
-                metadata.setPublisher(publisherElement.text().trim());
-            }
-
-            Elements languageElements = doc.select("dt:contains(Język:) + dd");
-            if (!languageElements.isEmpty()) {
-                String language = languageElements.first().text().trim().toLowerCase();
-                metadata.setLanguage(mapLanguage(language));
-            }
-
-            Element descElement = doc.selectFirst(".collapse-content");
-            if (descElement != null) {
-                String description = descElement.text();
-                if (description != null && !description.isBlank()) {
-                    metadata.setDescription(description);
-                }
-            }
-
-            Element isbnMeta = doc.selectFirst("meta[property=books:isbn]");
-            if (isbnMeta != null) {
-                String isbn = isbnMeta.attr("content").trim();
-                if (isbn.length() == 13) {
-                    metadata.setIsbn13(isbn);
-                } else if (isbn.length() == 10) {
-                    metadata.setIsbn10(isbn);
-                }
-            }
-
-            // Convert from 10-point to 5-point scale
-            Element ratingMeta = doc.selectFirst("meta[property=books:rating:value]");
-            if (ratingMeta != null) {
-                try {
-                    String ratingStr = ratingMeta.attr("content").trim();
-                    if (!ratingStr.isEmpty()) {
-                        double rating = Double.parseDouble(ratingStr);
-                        metadata.setLubimyczytacRating(rating / RATING_SCALE_DIVISOR);
-                    }
-                } catch (NumberFormatException e) {
-                    log.warn("Failed to parse rating for book: {}", url, e);
-                }
-            }
-
-            Set<String> tags = new HashSet<>();
-            Elements tagElements = doc.select("a[href*=/ksiazki/t/]");
-            for (Element tagElement : tagElements) {
-                String tag = tagElement.text().trim();
-                if (!tag.isEmpty()) {
-                    tags.add(tag);
-                }
-            }
-            if (!tags.isEmpty()) {
-                metadata.setTags(tags);
-            }
-
-            // Series format: "Cykl: Series Name (tom 3)" or "Cykl: Series Name"
-            Elements seriesElements = doc.select("span.d-none.d-sm-block.mt-1:contains(Cykl:)");
-            if (!seriesElements.isEmpty()) {
-                String seriesText = seriesElements.first().text().trim();
-                parseSeriesInfo(seriesText, metadata);
-            }
-
-            // Extract authors, categories, pages, and publish date from JSON-LD structured data
-            Elements jsonLdElements = doc.select("script[type=application/ld+json]");
-            for (Element jsonLdElement : jsonLdElements) {
-                try {
-                    String jsonLd = jsonLdElement.html();
-                    parseJsonLd(jsonLd, metadata);
-                } catch (Exception e) {
-                    log.warn("Failed to parse JSON-LD", e);
-                }
-            }
-
-            return metadata;
-
-        } catch (IOException e) {
-            log.error("Error parsing book details from: {}", url, e);
+        if (doc == null) {
+            log.error("Error parsing book details from: {}", url);
             return null;
         }
+
+        BookMetadata metadata = new BookMetadata();
+        metadata.setProvider(MetadataProvider.Lubimyczytac);
+
+        // Extract LubimyCzytac ID from URL (e.g., /ksiazka/123456/title -> 123456)
+        String id = extractIdFromUrl(url);
+        metadata.setLubimyczytacId(id);
+
+        Element titleElement = doc.selectFirst("h1.book__title");
+        if (titleElement != null) {
+            metadata.setTitle(titleElement.text().trim());
+        }
+
+        Element coverElement = doc.selectFirst(".book-cover img");
+        if (coverElement != null) {
+            String coverUrl = coverElement.attr("src");
+            if (coverUrl != null && !coverUrl.isEmpty()) {
+                metadata.setThumbnailUrl(coverUrl.startsWith("http") ? coverUrl : BASE_URL + coverUrl);
+            }
+        }
+
+        Element publisherElement = doc.selectFirst("a[href*=/wydawnictwo/]");
+        if (publisherElement != null) {
+            metadata.setPublisher(publisherElement.text().trim());
+        }
+
+        Elements languageElements = doc.select("dt:contains(Język:) + dd");
+        if (!languageElements.isEmpty()) {
+            String language = languageElements.first().text().trim().toLowerCase();
+            metadata.setLanguage(mapLanguage(language));
+        }
+
+        Element descElement = doc.selectFirst(".collapse-content");
+        if (descElement != null) {
+            String description = descElement.text();
+            if (description != null && !description.isBlank()) {
+                metadata.setDescription(description);
+            }
+        }
+
+        Element isbnMeta = doc.selectFirst("meta[property=books:isbn]");
+        if (isbnMeta != null) {
+            String isbn = isbnMeta.attr("content").trim();
+            if (isbn.length() == 13) {
+                metadata.setIsbn13(isbn);
+            } else if (isbn.length() == 10) {
+                metadata.setIsbn10(isbn);
+            }
+        }
+
+        // Convert from 10-point to 5-point scale
+        Element ratingMeta = doc.selectFirst("meta[property=books:rating:value]");
+        if (ratingMeta != null) {
+            try {
+                String ratingStr = ratingMeta.attr("content").trim();
+                if (!ratingStr.isEmpty()) {
+                    double rating = Double.parseDouble(ratingStr);
+                    metadata.setLubimyczytacRating(rating / RATING_SCALE_DIVISOR);
+                }
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse rating for book: {}", url, e);
+            }
+        }
+
+        Set<String> tags = new HashSet<>();
+        Elements tagElements = doc.select("a[href*=/ksiazki/t/]");
+        for (Element tagElement : tagElements) {
+            String tag = tagElement.text().trim();
+            if (!tag.isEmpty()) {
+                tags.add(tag);
+            }
+        }
+        if (!tags.isEmpty()) {
+            metadata.setTags(tags);
+        }
+
+        // Series format: "Cykl: Series Name (tom 3)" or "Cykl: Series Name"
+        Elements seriesElements = doc.select("span.d-none.d-sm-block.mt-1:contains(Cykl:)");
+        if (!seriesElements.isEmpty()) {
+            String seriesText = seriesElements.first().text().trim();
+            parseSeriesInfo(seriesText, metadata);
+        }
+
+        // Extract authors, categories, pages, and publish date from JSON-LD structured data
+        Elements jsonLdElements = doc.select("script[type=application/ld+json]");
+        for (Element jsonLdElement : jsonLdElements) {
+            try {
+                String jsonLd = jsonLdElement.html();
+                parseJsonLd(jsonLd, metadata);
+            } catch (Exception e) {
+                log.warn("Failed to parse JSON-LD", e);
+            }
+        }
+
+        return metadata;
     }
 
     private String extractIdFromUrl(String url) {
@@ -431,5 +449,18 @@ public class LubimyCzytacParser implements BookParser {
         } catch (Exception e) {
             log.warn("Failed to parse JSON-LD structure", e);
         }
+    }
+
+    private boolean isConnectivityError(Exception e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (e instanceof java.net.ConnectException ||
+                    e instanceof java.nio.channels.UnresolvedAddressException ||
+                    e instanceof java.net.SocketTimeoutException) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }

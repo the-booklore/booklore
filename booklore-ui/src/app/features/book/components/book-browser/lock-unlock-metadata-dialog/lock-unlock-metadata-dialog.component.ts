@@ -23,7 +23,7 @@ import {finalize} from 'rxjs';
 export class LockUnlockMetadataDialogComponent implements OnInit {
   private bookService = inject(BookService);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
-  private dialogRef = inject(DynamicDialogRef);
+  dialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
   private loadingService = inject(LoadingService);
   fieldLocks: Record<string, boolean | undefined> = {};
@@ -35,7 +35,8 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     'isbn13Locked', 'isbn10Locked', 'asinLocked', 'pageCountLocked', 'thumbnailLocked', 'languageLocked', 'coverLocked',
     'seriesNameLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked', 'moodsLocked', 'tagsLocked',
     'amazonRatingLocked', 'amazonReviewCountLocked', 'goodreadsRatingLocked', 'goodreadsReviewCountLocked',
-    'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'hardcoverBookIdLocked', 'googleIdLocked', 'comicvineIdLocked'
+    'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'hardcoverBookIdLocked', 'googleIdLocked', 'comicvineIdLocked',
+    'ranobedbIdLocked', 'ranobedbRatingLocked'
   ];
 
   fieldLabels: Record<string, string> = {
@@ -69,6 +70,8 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     hardcoverBookIdLocked: 'Hardcover Book ID',
     googleIdLocked: 'Google ID',
     comicvineIdLocked: 'Comicvine ID',
+    ranobedbIdLocked: 'Ranobedb ID',
+    ranobedbRatingLocked: 'Ranobedb ★',
   };
 
   isSaving = false;

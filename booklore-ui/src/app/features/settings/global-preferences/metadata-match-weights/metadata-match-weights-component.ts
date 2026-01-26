@@ -1,9 +1,8 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MessageService} from 'primeng/api';
-import {MetadataMatchWeightsService} from '../../../../shared/service/metadata-match-weights-service';
+import {MetadataMatchWeightsService} from '../../../../shared/service/metadata-match-weights.service';
 import {Button} from 'primeng/button';
-import {Tooltip} from 'primeng/tooltip';
 import {filter, take} from 'rxjs/operators';
 import {Observable} from 'rxjs';
 import {AppSettingKey, AppSettings} from '../../../../shared/model/app-settings.model';
@@ -16,7 +15,6 @@ import {InputNumber} from 'primeng/inputnumber';
   imports: [
     ReactiveFormsModule,
     Button,
-    Tooltip,
     InputNumber
   ],
   templateUrl: './metadata-match-weights-component.html',
@@ -44,7 +42,8 @@ export class MetadataMatchWeightsComponent implements OnInit {
     goodreadsRating: 'Goodreads Rating',
     goodreadsReviewCount: 'Goodreads Rating #',
     hardcoverRating: 'Hardcover Rating',
-    hardcoverReviewCount: 'Hardcover Rating #'
+    hardcoverReviewCount: 'Hardcover Rating #',
+    ranobedbRating: 'Ranobedb Rating',
   };
 
   form!: FormGroup;
@@ -79,6 +78,7 @@ export class MetadataMatchWeightsComponent implements OnInit {
       goodreadsReviewCount: [0, [Validators.required, Validators.min(0)]],
       hardcoverRating: [0, [Validators.required, Validators.min(0)]],
       hardcoverReviewCount: [0, [Validators.required, Validators.min(0)]],
+      ranobedbRating: [0, [Validators.required, Validators.min(0)]],
       coverImage: [0, [Validators.required, Validators.min(0)]],
     });
     this.appSettings$

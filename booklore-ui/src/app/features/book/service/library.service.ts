@@ -22,6 +22,13 @@ export class LibraryService {
     error: null,
   });
 
+  private largeLibraryLoadingSubject = new BehaviorSubject<{ isLoading: boolean; expectedCount: number }>({
+    isLoading: false,
+    expectedCount: 0
+  });
+
+  largeLibraryLoading$ = this.largeLibraryLoadingSubject.asObservable();
+
   private loading$: Observable<Library[]> | null = null;
 
   constructor() {
@@ -70,6 +77,10 @@ export class LibraryService {
         throw err;
       })
     );
+  }
+
+  scanLibraryPaths(lib: Library): Observable<number> {
+    return this.http.post<number>(`${this.url}/scan`, lib);
   }
 
   createLibrary(lib: Library): Observable<Library> {
@@ -133,7 +144,6 @@ export class LibraryService {
       );
   }
 
-
   doesLibraryExistByName(name: string): boolean {
     return (this.libraryStateSubject.value.libraries || []).some(l => l.name === name);
   }
@@ -146,15 +156,13 @@ export class LibraryService {
     return this.libraryStateSubject.value.libraries || [];
   }
 
-  getLibraryPathById(pathId: number): string | undefined {
-    return this.libraryStateSubject.value.libraries
-      ?.find(lib => lib.paths.some(p => p.id === pathId))
-      ?.paths.find(p => p.id === pathId)?.path;
-  }
-
   getBookCount(libraryId: number): Observable<number> {
     return this.bookService.bookState$.pipe(
       map(state => (state.books || []).filter(b => b.libraryId === libraryId).length)
     );
+  }
+
+  setLargeLibraryLoading(isLoading: boolean, expectedCount: number): void {
+    this.largeLibraryLoadingSubject.next({ isLoading, expectedCount });
   }
 }

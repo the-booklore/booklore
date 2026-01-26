@@ -324,6 +324,8 @@ export class BookdropFileReviewComponent implements OnInit {
         hardcoverReviewCount: original?.hardcoverReviewCount ?? null,
         googleId: original?.googleId ?? null,
         comicvineId: original?.comicvineId ?? null,
+        ranobedbId: original?.ranobedbId ?? null,
+        ranobedbRating: original?.ranobedbRating ?? null,
         seriesName: original?.seriesName ?? null,
         seriesNumber: original?.seriesNumber ?? null,
         seriesTotal: original?.seriesTotal ?? null,
@@ -380,7 +382,16 @@ export class BookdropFileReviewComponent implements OnInit {
       message: 'Are you sure you want to reset all metadata changes made to the selected files?',
       header: 'Confirm Reset',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Reset',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'danger',
+        outlined: true
+      },
       accept: () => this.resetMetadata()
     });
   }
@@ -400,7 +411,16 @@ export class BookdropFileReviewComponent implements OnInit {
       message: `Are you sure you want to finalize the import of ${selectedCount} file${selectedCount !== 1 ? 's' : ''}?`,
       header: 'Confirm Finalize',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Finalize',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'success',
+        outlined: true
+      },
       accept: () => this.finalizeImport(),
     });
   }
@@ -420,7 +440,16 @@ export class BookdropFileReviewComponent implements OnInit {
       message: `Are you sure you want to delete ${selectedCount} selected Bookdrop file${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`,
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'danger',
+        outlined: true
+      },
       accept: () => {
         const payload: { selectAll: boolean; excludedIds?: number[]; selectedIds?: number[] } = {
           selectAll: this.selectAllAcrossPages,
@@ -571,6 +600,8 @@ export class BookdropFileReviewComponent implements OnInit {
       hardcoverBookId: new FormControl(original?.hardcoverBookId ?? ''),
       hardcoverRating: new FormControl(original?.hardcoverRating ?? ''),
       hardcoverReviewCount: new FormControl(original?.hardcoverReviewCount ?? ''),
+      ranobedbId: new FormControl(original?.ranobedbId ?? ''),
+      ranobedbRating: new FormControl(original?.ranobedbRating ?? ''),
       googleId: new FormControl(original?.googleId ?? ''),
       comicvineId: new FormControl(original?.comicvineId ?? ''),
       seriesName: new FormControl(original?.seriesName ?? ''),
@@ -617,10 +648,10 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openBulkEditDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    const totalCount = this.selectAllAcrossPages 
-      ? this.totalRecords - this.excludedFiles.size 
+    const totalCount = this.selectAllAcrossPages
+      ? this.totalRecords - this.excludedFiles.size
       : selectedFiles.length;
-      
+
     if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -647,10 +678,10 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openPatternExtractDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    const totalCount = this.selectAllAcrossPages 
-      ? this.totalRecords - this.excludedFiles.size 
+    const totalCount = this.selectAllAcrossPages
+      ? this.totalRecords - this.excludedFiles.size
       : selectedFiles.length;
-      
+
     if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',

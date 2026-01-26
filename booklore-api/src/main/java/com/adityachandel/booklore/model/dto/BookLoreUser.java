@@ -51,6 +51,7 @@ public class BookLoreUser implements Principal {
         private boolean canAccessTaskManager;
         private boolean canManageGlobalPreferences;
         private boolean canManageIcons;
+        private boolean canManageFonts;
         private boolean isDemoUser;
         private boolean canBulkAutoFetchMetadata;
         private boolean canBulkCustomFetchMetadata;
@@ -69,6 +70,7 @@ public class BookLoreUser implements Principal {
         public PdfReaderSetting pdfReaderSetting;
         public NewPdfReaderSetting newPdfReaderSetting;
         public EpubReaderSetting epubReaderSetting;
+        public EbookReaderSetting ebookReaderSetting;
         public CbxReaderSetting cbxReaderSetting;
         public SidebarSortOption sidebarLibrarySorting;
         public SidebarSortOption sidebarShelfSorting;
@@ -80,6 +82,7 @@ public class BookLoreUser implements Principal {
         public String metadataCenterViewMode;
         public boolean koReaderEnabled;
         public boolean enableSeriesView;
+        public boolean autoSaveMetadata;
         public DashboardConfig dashboardConfig;
 
         @Data
@@ -112,6 +115,7 @@ public class BookLoreUser implements Principal {
             private Float coverSize;
             @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
+            private Boolean overlayBookType;
         }
 
         @Data
@@ -134,6 +138,7 @@ public class BookLoreUser implements Principal {
             private String view;
             @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
+            private Boolean overlayBookType;
         }
 
         @Data
@@ -148,6 +153,25 @@ public class BookLoreUser implements Principal {
             private Float lineHeight;
             private String flow;
             private String spread;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class EbookReaderSetting {
+            private String fontFamily;
+            private Integer fontSize;
+            private Float gap;
+            private Boolean hyphenate;
+            private Boolean isDark;
+            private Boolean justify;
+            private Float lineHeight;
+            private Integer maxBlockSize;
+            private Integer maxColumnCount;
+            private Integer maxInlineSize;
+            private String theme;
+            private String flow;
         }
 
         @Data
@@ -178,6 +202,9 @@ public class BookLoreUser implements Principal {
         public static class NewPdfReaderSetting {
             private NewPdfPageSpread pageSpread;
             private NewPdfPageViewMode pageViewMode;
+            private NewPdfBackgroundColor backgroundColor;
+            private NewPdfPageFitMode fitMode;
+            private NewPdfPageScrollMode scrollMode;
         }
 
         @Data
@@ -188,6 +215,7 @@ public class BookLoreUser implements Principal {
             private GlobalOrIndividual pdf;
             private GlobalOrIndividual epub;
             private GlobalOrIndividual cbx;
+            private GlobalOrIndividual newPdf;
 
             public enum GlobalOrIndividual {
                 Global, Individual

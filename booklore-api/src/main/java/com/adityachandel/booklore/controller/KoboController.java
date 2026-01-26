@@ -6,7 +6,7 @@ import com.adityachandel.booklore.model.dto.kobo.KoboAuthentication;
 import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
 import com.adityachandel.booklore.model.dto.kobo.KoboResources;
 import com.adityachandel.booklore.model.dto.kobo.KoboTestResponse;
-import com.adityachandel.booklore.service.*;
+import com.adityachandel.booklore.service.ShelfService;
 import com.adityachandel.booklore.service.book.BookDownloadService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.kobo.*;
@@ -70,36 +70,58 @@ public class KoboController {
         return koboLibrarySyncService.syncLibrary(user, token);
     }
 
-    @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a book.")
+    @Operation(summary = "Get book thumbnail (versioned)", description = "Retrieve the thumbnail image for a local book with cache-busting version.")
+    @ApiResponse(responseCode = "200", description = "Thumbnail returned successfully")
+    @GetMapping("/v1/books/{imageId}/{version}/thumbnail/{width}/{height}/false/image.jpg")
+    public ResponseEntity<Resource> getVersionedThumbnail(
+            @Parameter(description = "Book ID") @PathVariable String imageId,
+            @Parameter(description = "Cover version (timestamp)") @PathVariable String version,
+            @Parameter(description = "Width of the thumbnail") @PathVariable int width,
+            @Parameter(description = "Height of the thumbnail") @PathVariable int height) {
+        return koboThumbnailService.getThumbnail(imageId);
+    }
+
+    @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a Kobo store book.")
     @ApiResponse(responseCode = "200", description = "Thumbnail returned successfully")
     @GetMapping("/v1/books/{imageId}/thumbnail/{width}/{height}/false/image.jpg")
     public ResponseEntity<Resource> getThumbnail(
             @Parameter(description = "Image ID") @PathVariable String imageId,
             @Parameter(description = "Width of the thumbnail") @PathVariable int width,
             @Parameter(description = "Height of the thumbnail") @PathVariable int height) {
-
-        if (StringUtils.isNumeric(imageId)) {
-            return koboThumbnailService.getThumbnail(Long.valueOf(imageId));
+        if (imageId.startsWith("BL-")) {
+            return koboThumbnailService.getThumbnail(imageId);
         } else {
-            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%d/%d/image.jpg", imageId, width, height);
+            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%d/%d/false/image.jpg", imageId, width, height);
             return koboServerProxy.proxyExternalUrl(cdnUrl);
         }
     }
 
-    @Operation(summary = "Get greyscale book thumbnail", description = "Retrieve a greyscale thumbnail image for a book.")
+    @Operation(summary = "Get greyscale book thumbnail (versioned)", description = "Retrieve a greyscale thumbnail for a local book with cache-busting version.")
     @ApiResponse(responseCode = "200", description = "Greyscale thumbnail returned successfully")
-    @GetMapping("/v1/books/{bookId}/thumbnail/{width}/{height}/{quality}/{isGreyscale}/image.jpg")
-    public ResponseEntity<Resource> getGreyThumbnail(
-            @Parameter(description = "Book ID") @PathVariable String bookId,
+    @GetMapping("/v1/books/{imageId}/{version}/thumbnail/{width}/{height}/{quality}/{isGreyscale}/image.jpg")
+    public ResponseEntity<Resource> getVersionedGreyThumbnail(
+            @Parameter(description = "Book ID") @PathVariable String imageId,
+            @Parameter(description = "Cover version (timestamp)") @PathVariable String version,
             @Parameter(description = "Width of the thumbnail") @PathVariable int width,
             @Parameter(description = "Height of the thumbnail") @PathVariable int height,
             @Parameter(description = "Quality of the thumbnail") @PathVariable int quality,
             @Parameter(description = "Is greyscale") @PathVariable boolean isGreyscale) {
+        return koboThumbnailService.getThumbnail(imageId);
+    }
 
-        if (StringUtils.isNumeric(bookId)) {
-            return koboThumbnailService.getThumbnail(Long.valueOf(bookId));
+    @Operation(summary = "Get greyscale book thumbnail", description = "Retrieve a greyscale thumbnail image for a Kobo store book.")
+    @ApiResponse(responseCode = "200", description = "Greyscale thumbnail returned successfully")
+    @GetMapping("/v1/books/{imageId}/thumbnail/{width}/{height}/{quality}/{isGreyscale}/image.jpg")
+    public ResponseEntity<Resource> getGreyThumbnail(
+            @Parameter(description = "Image ID") @PathVariable String imageId,
+            @Parameter(description = "Width of the thumbnail") @PathVariable int width,
+            @Parameter(description = "Height of the thumbnail") @PathVariable int height,
+            @Parameter(description = "Quality of the thumbnail") @PathVariable int quality,
+            @Parameter(description = "Is greyscale") @PathVariable boolean isGreyscale) {
+        if (imageId.startsWith("BL-")) {
+            return koboThumbnailService.getThumbnail(imageId);
         } else {
-            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%d/%d/%d/%b/image.jpg", bookId, width, height, quality, isGreyscale);
+            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%d/%d/%d/%b/image.jpg", imageId, width, height, quality, isGreyscale);
             return koboServerProxy.proxyExternalUrl(cdnUrl);
         }
     }
@@ -107,16 +129,14 @@ public class KoboController {
     @Operation(summary = "Authenticate Kobo device", description = "Authenticate a Kobo device.")
     @ApiResponse(responseCode = "200", description = "Device authenticated successfully")
     @PostMapping("/v1/auth/device")
-    public ResponseEntity<KoboAuthentication> authenticateDevice(
-            @Parameter(description = "Authentication request body") @RequestBody JsonNode body) {
+    public ResponseEntity<KoboAuthentication> authenticateDevice(@Parameter(description = "Authentication request body") @RequestBody JsonNode body) {
         return koboDeviceAuthService.authenticateDevice(body);
     }
 
     @Operation(summary = "Get book metadata", description = "Retrieve metadata for a book in the Kobo library.")
     @ApiResponse(responseCode = "200", description = "Metadata returned successfully")
     @GetMapping("/v1/library/{bookId}/metadata")
-    public ResponseEntity<?> getBookMetadata(
-            @Parameter(description = "Book ID") @PathVariable String bookId) {
+    public ResponseEntity<?> getBookMetadata(@Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
             return ResponseEntity.ok(List.of(koboEntitlementService.getMetadataForBook(Long.parseLong(bookId), token)));
         } else {
@@ -127,8 +147,7 @@ public class KoboController {
     @Operation(summary = "Get reading state", description = "Retrieve the reading state for a book.")
     @ApiResponse(responseCode = "200", description = "Reading state returned successfully")
     @GetMapping("/v1/library/{bookId}/state")
-    public ResponseEntity<?> getState(
-            @Parameter(description = "Book ID") @PathVariable String bookId) {
+    public ResponseEntity<?> getState(@Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
             return ResponseEntity.ok(koboReadingStateService.getReadingState(bookId));
         } else {
@@ -152,8 +171,7 @@ public class KoboController {
     @Operation(summary = "Get Kobo test analytics", description = "Get test analytics for Kobo.")
     @ApiResponse(responseCode = "200", description = "Test analytics returned successfully")
     @PostMapping("/v1/analytics/gettests")
-    public ResponseEntity<?> getTests(
-            @Parameter(description = "Test analytics request body") @RequestBody Object body) {
+    public ResponseEntity<?> getTests(@Parameter(description = "Test analytics request body") @RequestBody Object body) {
         return ResponseEntity.ok(KoboTestResponse.builder()
                 .result("Success")
                 .testKey(RandomStringUtils.secure().nextAlphanumeric(24))
@@ -163,8 +181,7 @@ public class KoboController {
     @Operation(summary = "Download Kobo book", description = "Download a book from the Kobo library.")
     @ApiResponse(responseCode = "200", description = "Book downloaded successfully")
     @GetMapping("/v1/books/{bookId}/download")
-    public void downloadBook(
-            @Parameter(description = "Book ID") @PathVariable String bookId, HttpServletResponse response) {
+    public void downloadBook(@Parameter(description = "Book ID") @PathVariable String bookId, HttpServletResponse response) {
         if (StringUtils.isNumeric(bookId)) {
             bookDownloadService.downloadKoboBook(Long.parseLong(bookId), response);
         } else {
@@ -175,8 +192,7 @@ public class KoboController {
     @Operation(summary = "Delete book from Kobo library", description = "Delete a book from the user's Kobo library.")
     @ApiResponse(responseCode = "200", description = "Book deleted successfully")
     @DeleteMapping("/v1/library/{bookId}")
-    public ResponseEntity<?> deleteBookFromLibrary(
-            @Parameter(description = "Book ID") @PathVariable String bookId) {
+    public ResponseEntity<?> deleteBookFromLibrary(@Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
             Shelf userKoboShelf = shelfService.getUserKoboShelf();
             if (userKoboShelf != null) {
