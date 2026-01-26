@@ -15,6 +15,7 @@ import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.*;
+import com.adityachandel.booklore.repository.BookFileRepository;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.util.FileService;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final BookFileRepository bookFileRepository;
     private final PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
     private final CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     private final NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository;
@@ -412,11 +414,12 @@ public class BookService {
         }
     }
 
-    private Set<Shelf> filterShelvesByUserId(Set<Shelf> shelves, Long userId) {
+    public Set<Shelf> filterShelvesByUserId(Set<Shelf> shelves, Long userId) {
         if (shelves == null) return Collections.emptySet();
         return shelves.stream()
                 .filter(shelf -> userId.equals(shelf.getUserId()))
                 .collect(Collectors.toSet());
     }
+
 }
 

@@ -706,4 +706,46 @@ export class BookService {
   handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
     this.bookSocketService.handleMultipleBookCoverPatches(patches);
   }
+
+  /*------------------ Book File Attachment ------------------*/
+
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
+      sourceBookIds,
+      deleteSourceBooks
+    }).pipe(
+      tap(updatedBook => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        let updatedBooks = (currentState.books || []).map(book =>
+          book.id === targetBookId ? updatedBook : book
+        );
+
+        // If deleteSourceBooks, remove source books from state
+        if (deleteSourceBooks) {
+          const sourceIdSet = new Set(sourceBookIds);
+          updatedBooks = updatedBooks.filter(book => !sourceIdSet.has(book.id));
+        }
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        const fileCount = sourceBookIds.length;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Files Attached',
+          detail: `${fileCount} book file${fileCount > 1 ? 's have' : ' has'} been attached successfully.`
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Attachment Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while attaching the files.'
+        });
+        return throwError(() => error);
+      })
+    );
+  }
 }

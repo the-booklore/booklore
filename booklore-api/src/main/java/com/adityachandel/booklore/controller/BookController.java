@@ -5,6 +5,7 @@ import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookRecommendation;
 import com.adityachandel.booklore.model.dto.BookViewerSettings;
+import com.adityachandel.booklore.model.dto.request.AttachBookFileRequest;
 import com.adityachandel.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.request.ReadStatusUpdateRequest;
@@ -13,6 +14,7 @@ import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
+import com.adityachandel.booklore.service.book.BookFileAttachmentService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
@@ -47,6 +49,7 @@ public class BookController {
     private final BookService bookService;
     private final BookUpdateService bookUpdateService;
     private final BookRecommendationService bookRecommendationService;
+    private final BookFileAttachmentService bookFileAttachmentService;
     private final BookMetadataService bookMetadataService;
     private final ReadingProgressService readingProgressService;
 
@@ -229,5 +232,20 @@ public class BookController {
         }
         List<PersonalRatingUpdateResponse> updatedBooks = bookUpdateService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Attach book files", description = "Attach book files from single-file source books to a target book as alternative formats.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book files attached successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request - books must be in same library, sources must have exactly one file each"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - requires library management permission"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @PostMapping("/{targetBookId}/attach-file")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Book> attachBookFiles(
+            @Parameter(description = "ID of the target book to attach the files to") @PathVariable Long targetBookId,
+            @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
+        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
     }
 }

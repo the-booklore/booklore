@@ -380,6 +380,17 @@
                             tooltipPosition="top">
                           </p-button>
                         }
+                        @if (userState.user!.permissions.canManageLibrary || userState.user!.permissions.admin) {
+                          <p-button
+                            outlined="true"
+                            icon="pi pi-link"
+                            severity="info"
+                            (click)="attachFilesToBook()"
+                            [disabled]="!canAttachFiles()"
+                            pTooltip="Attach to Another Book"
+                            tooltipPosition="top">
+                          </p-button>
+                        }
                         @if (hasBulkReadActionsItems) {
                           <div class="more-actions-wrapper">
                             <p-button

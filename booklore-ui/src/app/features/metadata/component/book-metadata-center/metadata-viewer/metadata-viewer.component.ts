@@ -274,6 +274,18 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
+            // Show "Attach to Another Book" for single-file books (detached books)
+            const isSingleFileBook = !book.alternativeFormats?.length;
+            if (isSingleFileBook && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin)) {
+              items.push({
+                label: 'Attach to Another Book',
+                icon: 'pi pi-link',
+                command: () => {
+                  this.bookDialogHelperService.openBookFileAttacherDialog(book);
+                },
+              });
+            }
+
             if (userState?.user?.permissions.canDeleteBook || userState?.user?.permissions.admin) {
               // Delete File Formats submenu - allows deleting individual book format files
               const deleteFormatItems: MenuItem[] = [];

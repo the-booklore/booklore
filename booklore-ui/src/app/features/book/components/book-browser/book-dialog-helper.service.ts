@@ -15,6 +15,7 @@ import {BookMetadataCenterComponent} from '../../../metadata/component/book-meta
 import {CoverSearchComponent} from '../../../metadata/component/cover-search/cover-search.component';
 import {Book} from '../../model/book.model';
 import {AdditionalFileUploaderComponent} from '../additional-file-uploader/additional-file-uploader.component';
+import {BookFileAttacherComponent} from '../book-file-attacher/book-file-attacher.component';
 
 @Injectable({providedIn: 'root'})
 export class BookDialogHelperService {
@@ -149,6 +150,26 @@ export class BookDialogHelperService {
       styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       data: {
         book: book,
+      },
+    });
+  }
+
+  openBookFileAttacherDialog(sourceBook: Book): DynamicDialogRef | null {
+    return this.openDialog(BookFileAttacherComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
+      data: {
+        sourceBook: sourceBook,
+      },
+    });
+  }
+
+  openBulkBookFileAttacherDialog(sourceBooks: Book[]): DynamicDialogRef | null {
+    return this.openDialog(BookFileAttacherComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
+      data: {
+        sourceBooks: sourceBooks,
       },
     });
   }
