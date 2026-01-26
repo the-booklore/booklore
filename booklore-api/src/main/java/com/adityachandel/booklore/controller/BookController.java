@@ -138,12 +138,14 @@ public class BookController {
         bookService.downloadAllBookFiles(bookId, response);
     }
 
-    @Operation(summary = "Get viewer settings", description = "Retrieve viewer settings for a specific book.")
+    @Operation(summary = "Get viewer settings", description = "Retrieve viewer settings for a specific book file.")
     @ApiResponse(responseCode = "200", description = "Viewer settings returned successfully")
     @GetMapping("/{bookId}/viewer-setting")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookViewerSettings> getBookViewerSettings(@Parameter(description = "ID of the book") @PathVariable long bookId) {
-        return ResponseEntity.ok(bookService.getBookViewerSetting(bookId));
+    public ResponseEntity<BookViewerSettings> getBookViewerSettings(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "ID of the book file") @RequestParam long bookFileId) {
+        return ResponseEntity.ok(bookService.getBookViewerSetting(bookId, bookFileId));
     }
 
     @Operation(summary = "Update viewer settings", description = "Update viewer settings for a specific book.")

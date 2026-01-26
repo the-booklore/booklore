@@ -1,7 +1,7 @@
 import {Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {forkJoin, Observable, of, Subject, throwError} from 'rxjs';
-import {catchError, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {catchError, map, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {ReaderLoaderService} from './core/loader.service';
 import {ReaderViewManagerService} from './core/view-manager.service';
@@ -210,12 +210,8 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.bookId = +this.route.snapshot.paramMap.get('bookId')!;
     this.altBookType = this.route.snapshot.queryParamMap.get('bookType') ?? undefined;
 
-    return this.stateService.initializeState(this.bookId).pipe(
-      switchMap(() => forkJoin({
-        state: this.stateService.initializeState(this.bookId),
-        book: this.bookService.getBookByIdFromAPI(this.bookId, false)
-      })),
-      switchMap(({book}) => {
+    return this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
+      switchMap((book) => {
         this.book = book;
 
         // Use alternative bookType from query param if provided, otherwise use primary
@@ -232,6 +228,11 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           bookFileId = book.primaryFile?.id;
         }
 
+        return this.stateService.initializeState(this.bookId, bookFileId!).pipe(
+          map(() => ({ book, bookType, bookFileId }))
+        );
+      }),
+      switchMap(({book, bookType, bookFileId}) => {
         this.progressService.initialize(this.bookId, bookType, bookFileId);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);

@@ -142,13 +142,17 @@ public class BookService {
     }
 
 
-    public BookViewerSettings getBookViewerSetting(long bookId) {
+    public BookViewerSettings getBookViewerSetting(long bookId, long bookFileId) {
         BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         BookViewerSettings.BookViewerSettingsBuilder settingsBuilder = BookViewerSettings.builder();
 
-        BookFileType bookType = bookEntity.getPrimaryBookFile().getBookType();
+        BookFileEntity bookFile = bookEntity.getBookFiles().stream()
+                .filter(bf -> bf.getId().equals(bookFileId))
+                .findFirst()
+                .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book file not found: " + bookFileId));
+        BookFileType bookType = bookFile.getBookType();
         if (bookType == BookFileType.EPUB || bookType == BookFileType.FB2
                 || bookType == BookFileType.MOBI
                 || bookType == BookFileType.AZW3) {

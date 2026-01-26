@@ -2,7 +2,7 @@ import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core'
 import {ActivatedRoute, Router} from '@angular/router';
 import {CommonModule} from '@angular/common';
 import {forkJoin, Subject} from 'rxjs';
-import {filter, first, takeUntil, timeout} from 'rxjs/operators';
+import {filter, first, map, switchMap, takeUntil, timeout} from 'rxjs/operators';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
@@ -137,26 +137,28 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       this.nextBookInSeries = null;
       this.currentBook = null;
 
-      forkJoin([
-        this.bookService.getBookByIdFromAPI(this.bookId, false),
-        this.bookService.getBookSetting(this.bookId),
-        this.userService.getMyself()
-      ]).subscribe({
-        next: ([book, bookSettings, myself]) => {
-          const userSettings = myself.userSettings;
+      this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
+        switchMap((book) => {
           // Use alternative bookType from query param if provided, otherwise use primary
           this.bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
           this.currentBook = book;
 
           // Determine which file ID to use for progress tracking
           if (this.altBookType) {
-            // Look for the alternative format file with matching type
             const altFile = book.alternativeFormats?.find(f => f.bookType === this.altBookType);
             this.bookFileId = altFile?.id;
           } else {
-            // Use the primary file
             this.bookFileId = book.primaryFile?.id;
           }
+
+          return forkJoin([
+            this.bookService.getBookSetting(this.bookId, this.bookFileId!),
+            this.userService.getMyself()
+          ]).pipe(map(([bookSettings, myself]) => ({ book, bookSettings, myself })));
+        })
+      ).subscribe({
+        next: ({ book, bookSettings, myself }) => {
+          const userSettings = myself.userSettings;
 
           this.pageTitle.setBookPageTitle(book);
 

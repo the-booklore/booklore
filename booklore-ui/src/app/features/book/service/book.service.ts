@@ -304,8 +304,8 @@ export class BookService {
     this.updateLastReadTime(book.id);
   }
 
-  getBookSetting(bookId: number): Observable<BookSetting> {
-    return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting`);
+  getBookSetting(bookId: number, bookFileId: number): Observable<BookSetting> {
+    return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting?bookFileId=${bookFileId}`);
   }
 
   updateViewerSetting(bookSetting: BookSetting, bookId: number): Observable<void> {
