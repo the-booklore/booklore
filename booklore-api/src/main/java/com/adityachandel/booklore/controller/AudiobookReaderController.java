@@ -58,8 +58,7 @@ public class AudiobookReaderController {
         audiobookReaderService.streamWithRangeSupport(audioPath, request, response);
     }
 
-    @Operation(summary = "Stream specific track",
-            description = "Stream a specific track from a folder-based audiobook.")
+    @Operation(summary = "Stream specific track", description = "Stream a specific track from a folder-based audiobook.")
     @ApiResponse(responseCode = "200", description = "Full track file returned")
     @ApiResponse(responseCode = "206", description = "Partial content returned (range request)")
     @ApiResponse(responseCode = "416", description = "Range not satisfiable")
