@@ -58,8 +58,8 @@ export class MetadataTabsComponent {
   @Output() downloadFile = new EventEmitter<DownloadAdditionalFileEvent>();
   @Output() downloadAllFiles = new EventEmitter<DownloadAllFilesEvent>();
 
-  get defaultTabValue(): number {
-    return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
+  get defaultTabValue(): string {
+    return this.bookInSeries && this.bookInSeries.length > 1 ? 'series' : 'similar';
   }
 
   read(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming', bookType?: BookType): void {

@@ -1,28 +1,28 @@
 <p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
   <p-tablist>
     @if (bookInSeries.length > 1) {
-      <p-tab [value]="1">
+      <p-tab value="series">
         <i class="pi pi-ethereum"></i> More in Series
       </p-tab>
     }
-    <p-tab [value]="2">
+    <p-tab value="similar">
       <i class="pi pi-bookmark"></i> Similar Books
     </p-tab>
-    <p-tab [value]="6">
+    <p-tab value="files">
       <i class="pi pi-folder-open"></i> Files
     </p-tab>
-    <p-tab [value]="3">
+    <p-tab value="notes">
       <i class="pi pi-pen-to-square"></i> Notes
     </p-tab>
-    <p-tab [value]="4">
+    <p-tab value="sessions">
       <i class="pi pi-clock"></i> Reading Sessions
     </p-tab>
-    <p-tab [value]="5">
+    <p-tab value="reviews">
       <i class="pi pi-comments"></i> Reviews
     </p-tab>
   </p-tablist>
   <p-tabpanels>
-    <p-tabpanel [value]="1">
+    <p-tabpanel value="series">
       <ng-template #content>
         <div class="tab-content">
           @if (bookInSeries.length > 1) {
@@ -39,7 +39,7 @@
         </div>
       </ng-template>
     </p-tabpanel>
-    <p-tabpanel [value]="2">
+    <p-tabpanel value="similar">
       <ng-template #content>
         <div class="tab-content">
           @if (recommendedBooks.length > 0) {
@@ -54,22 +54,22 @@
         </div>
       </ng-template>
     </p-tabpanel>
-    <p-tabpanel [value]="3">
+    <p-tabpanel value="notes">
       <ng-template #content>
         <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
       </ng-template>
     </p-tabpanel>
-    <p-tabpanel [value]="4">
+    <p-tabpanel value="sessions">
       <ng-template #content>
         <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
       </ng-template>
     </p-tabpanel>
-    <p-tabpanel [value]="5">
+    <p-tabpanel value="reviews">
       <ng-template #content>
         <app-book-reviews [bookId]="book.id"></app-book-reviews>
       </ng-template>
     </p-tabpanel>
-    <p-tabpanel [value]="6">
+    <p-tabpanel value="files">
       <ng-template #content>
         <div class="files-tab-content">
           @if (hasMultipleFiles(book)) {
@@ -146,6 +146,16 @@
                         tooltipPosition="top"
                         (onClick)="read(book.id)">
                       </p-button>
+                    } @else if (book.primaryFile.bookType === 'AUDIOBOOK') {
+                      <p-button
+                        icon="pi pi-play"
+                        size="small"
+                        text
+                        severity="primary"
+                        pTooltip="Play"
+                        tooltipPosition="top"
+                        (onClick)="read(book.id)">
+                      </p-button>
                     }
                     <p-button
                       icon="pi pi-download"
@@ -201,6 +211,16 @@
                           text
                           severity="primary"
                           pTooltip="Read"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id, undefined, format.bookType)">
+                        </p-button>
+                      } @else if (format.bookType === 'AUDIOBOOK') {
+                        <p-button
+                          icon="pi pi-play"
+                          size="small"
+                          text
+                          severity="primary"
+                          pTooltip="Play"
                           tooltipPosition="top"
                           (onClick)="read(book.id, undefined, format.bookType)">
                         </p-button>
