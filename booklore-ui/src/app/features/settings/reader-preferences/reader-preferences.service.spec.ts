@@ -2,7 +2,16 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {ReaderPreferencesService} from './reader-preferences.service';
-import {CbxFitMode, CbxPageSpread, CbxPageViewMode, PdfFitMode, PdfPageSpread, PdfPageViewMode, User, UserService} from '../user-management/user.service';
+import {
+  CbxFitMode,
+  CbxPageSpread,
+  CbxPageViewMode,
+  PdfFitMode,
+  PdfPageSpread,
+  PdfPageViewMode,
+  User,
+  UserService
+} from '../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {of, Subject} from 'rxjs';
 
@@ -38,7 +47,8 @@ const mockUser: User = {
     canBulkEditMetadata: true,
     canBulkRegenerateCover: true,
     canMoveOrganizeFiles: true,
-    canBulkLockUnlockMetadata: true
+    canBulkLockUnlockMetadata: true,
+    canChangePassword: true
   },
   userSettings: {
     perBookSetting: {pdf: '', epub: '', cbx: ''},
