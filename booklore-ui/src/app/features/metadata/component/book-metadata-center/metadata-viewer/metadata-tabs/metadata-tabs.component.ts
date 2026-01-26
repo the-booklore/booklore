@@ -1,4 +1,5 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {UpperCasePipe} from '@angular/common';
 import {Book, BookRecommendation, BookType, FileInfo} from '../../../../../book/model/book.model';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {InfiniteScrollDirective} from 'ngx-infinite-scroll';
@@ -43,7 +44,8 @@ export interface DownloadAllFilesEvent {
     BookNotesComponent,
     BookReadingSessionsComponent,
     Button,
-    Tooltip
+    Tooltip,
+    UpperCasePipe
   ],
   templateUrl: './metadata-tabs.component.html',
   styleUrl: './metadata-tabs.component.scss'

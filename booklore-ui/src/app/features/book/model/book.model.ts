@@ -22,6 +22,7 @@ export interface BookFile extends FileInfo {
   bookId: number;
   bookType?: BookType;
   folderBased?: boolean;
+  extension?: string;
   addedOn?: string;
 }
 

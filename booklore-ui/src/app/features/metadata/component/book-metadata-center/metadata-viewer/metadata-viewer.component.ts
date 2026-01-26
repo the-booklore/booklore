@@ -5,7 +5,7 @@ import {combineLatest, Observable} from 'rxjs';
 import {BookService} from '../../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
-import {Book, BookMetadata, BookRecommendation, BookType, FileInfo, ReadStatus} from '../../../../book/model/book.model';
+import {Book, BookFile, BookMetadata, BookRecommendation, BookType, FileInfo, ReadStatus} from '../../../../book/model/book.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {SplitButton} from 'primeng/splitbutton';
@@ -927,21 +927,24 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return [...uniqueTypes];
   }
 
-  getDisplayFormat(filePath?: string): string | null {
-    return this.getFileExtension(filePath);
+  getDisplayFormat(bookFile?: BookFile | null): string | null {
+    if (bookFile?.extension) {
+      return bookFile.extension.toUpperCase();
+    }
+    return this.getFileExtension(bookFile?.filePath);
   }
 
   getUniqueAlternativeFormats(book: Book): string[] {
     if (!book.alternativeFormats?.length) return [];
-    const primaryExt = this.getFileExtension(book.primaryFile?.filePath);
-    const uniqueExts = new Set<string>();
+    const primaryFormat = this.getDisplayFormat(book.primaryFile);
+    const uniqueFormats = new Set<string>();
     for (const format of book.alternativeFormats) {
-      const ext = this.getFileExtension(format.filePath);
-      if (ext && ext !== primaryExt) {
-        uniqueExts.add(ext);
+      const formatType = this.getDisplayFormat(format);
+      if (formatType && formatType !== primaryFormat) {
+        uniqueFormats.add(formatType);
       }
     }
-    return [...uniqueExts];
+    return [...uniqueFormats];
   }
 
   getFileIcon(fileType: string | null): string {

@@ -348,7 +348,7 @@
             <div class="metadata-item">
               <span class="metadata-key">Formats:</span>
               <span class="metadata-value-group format-tags">
-                @if (getDisplayFormat(book?.primaryFile?.filePath); as displayFormat) {
+                @if (getDisplayFormat(book?.primaryFile); as displayFormat) {
                   <span (click)="goToFileType(book?.primaryFile?.filePath)" style="cursor: pointer;" [pTooltip]="'Primary: ' + (book?.primaryFile?.fileName ?? '')" tooltipPosition="top">
                     <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(displayFormat)" customTextColor="#fff">
                       {{ displayFormat }}
@@ -576,10 +576,10 @@
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
-                  <p-splitbutton [label]="(getDisplayFormat(book.primaryFile?.filePath) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
+                  <p-splitbutton [label]="(getDisplayFormat(book.primaryFile) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
                 }
               } @else {
-                <p-button [label]="(getDisplayFormat(book.primaryFile?.filePath) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
+                <p-button [label]="(getDisplayFormat(book.primaryFile) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
               }
             }
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {

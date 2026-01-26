@@ -91,8 +91,8 @@
               <div class="files-list">
                 <div class="file-item primary-file">
                   <div class="file-info">
-                    <span class="file-type-badge" [style.background-color]="getFileTypeBgColor(book.primaryFile.bookType)">
-                      {{ book.primaryFile.bookType }}
+                    <span class="file-type-badge" [style.background-color]="getFileTypeBgColor(book.primaryFile.extension)">
+                      {{ book.primaryFile.extension | uppercase }}
                     </span>
                     <span class="file-name" [pTooltip]="book.primaryFile.filePath" tooltipPosition="top">{{ book.primaryFile.fileName }}</span>
                     <span class="file-size">{{ getFileSizeInMB(book.primaryFile) }}</span>
@@ -178,8 +178,8 @@
                 @for (format of book.alternativeFormats; track format.id) {
                   <div class="file-item">
                     <div class="file-info">
-                      <span class="file-type-badge" [style.background-color]="getFileTypeBgColor(format.bookType)">
-                        {{ format.bookType }}
+                      <span class="file-type-badge" [style.background-color]="getFileTypeBgColor(format.extension)">
+                        {{ format.extension | uppercase }}
                       </span>
                       <span class="file-name" [pTooltip]="format.filePath" tooltipPosition="top">{{ format.fileName }}</span>
                       <span class="file-size">{{ getFileSizeInMB(format) }}</span>
