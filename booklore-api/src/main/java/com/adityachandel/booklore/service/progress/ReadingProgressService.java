@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.progress;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.*;
+import com.adityachandel.booklore.model.dto.progress.AudiobookProgress;
 import com.adityachandel.booklore.model.dto.progress.CbxProgress;
 import com.adityachandel.booklore.model.dto.progress.EpubProgress;
 import com.adityachandel.booklore.model.dto.progress.KoboProgress;
@@ -158,6 +159,11 @@ public class ReadingProgressService {
                     .page(parseIntOrNull(fileProgress.getPositionData()))
                     .percentage(roundToOneDecimal(fileProgress.getProgressPercent()))
                     .build());
+            case AUDIOBOOK -> book.setAudiobookProgress(AudiobookProgress.builder()
+                    .positionMs(parseLongOrNull(fileProgress.getPositionData()))
+                    .trackIndex(parseIntOrNull(fileProgress.getPositionHref()))
+                    .percentage(roundToOneDecimal(fileProgress.getProgressPercent()))
+                    .build());
         }
     }
 
@@ -165,6 +171,15 @@ public class ReadingProgressService {
         if (value == null) return null;
         try {
             return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Long parseLongOrNull(String value) {
+        if (value == null) return null;
+        try {
+            return Long.parseLong(value);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -282,6 +297,10 @@ public class ReadingProgressService {
                         String.valueOf(progress.getCbxProgress()) : null);
                 entity.setProgressPercent(progress.getCbxProgressPercent());
             }
+            case AUDIOBOOK -> {
+                // Audiobook progress is handled via new file-level progress system
+                // No legacy book-level progress columns exist for audiobooks
+            }
         }
 
         userBookFileProgressRepository.save(entity);
@@ -305,6 +324,10 @@ public class ReadingProgressService {
                         Integer.parseInt(fileProgress.positionData()) : null);
                 progress.setCbxProgressPercent(fileProgress.progressPercent());
             }
+            case AUDIOBOOK -> {
+                // Audiobook progress is stored only in UserBookFileProgressEntity
+                // No legacy columns in UserBookProgressEntity for audiobooks
+            }
         }
     }
 
@@ -313,7 +336,7 @@ public class ReadingProgressService {
             case EPUB, FB2, MOBI, AZW3 -> updateEbookProgress(progress, request.getEpubProgress());
             case PDF -> updatePdfProgress(progress, request.getPdfProgress());
             case CBX -> updateCbxProgress(progress, request.getCbxProgress());
-            case AUDIOBOOK -> null; // Audiobook progress tracking not yet implemented
+            case AUDIOBOOK -> updateAudiobookProgress(request.getAudiobookProgress());
         };
     }
 
@@ -343,11 +366,24 @@ public class ReadingProgressService {
         return Math.round(percentage * 10f) / 10f;
     }
 
+    private Float updateAudiobookProgress(AudiobookProgress audiobookProgress) {
+        if (audiobookProgress == null) return null;
+
+        // Audiobook progress is stored in file-level progress (UserBookFileProgressEntity)
+        // Legacy book-level progress entity doesn't have audiobook-specific columns
+        float percentage = audiobookProgress.getPercentage();
+        return Math.round(percentage * 10f) / 10f;
+    }
+
     private void setProgressPercent(UserBookProgressEntity progress, BookFileType type, Float percentage) {
         switch (type) {
             case EPUB, FB2, MOBI, AZW3 -> progress.setEpubProgressPercent(percentage);
             case PDF -> progress.setPdfProgressPercent(percentage);
             case CBX -> progress.setCbxProgressPercent(percentage);
+            case AUDIOBOOK -> {
+                // Audiobook progress percentage is stored in UserBookFileProgressEntity
+                // No legacy column exists in UserBookProgressEntity for audiobooks
+            }
         }
     }
 

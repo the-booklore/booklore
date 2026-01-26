@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.dto.request;
 
+import com.adityachandel.booklore.model.dto.progress.AudiobookProgress;
 import com.adityachandel.booklore.model.dto.progress.CbxProgress;
 import com.adityachandel.booklore.model.dto.progress.EpubProgress;
 import com.adityachandel.booklore.model.dto.progress.PdfProgress;
@@ -21,11 +22,13 @@ public class ReadProgressRequest {
     private PdfProgress pdfProgress;
     @Deprecated
     private CbxProgress cbxProgress;
+    @Deprecated
+    private AudiobookProgress audiobookProgress;
 
     private Instant dateFinished;
 
     @AssertTrue(message = "At least one progress field must be provided")
     public boolean isProgressValid() {
-        return fileProgress != null || epubProgress != null || pdfProgress != null || cbxProgress != null || dateFinished != null;
+        return fileProgress != null || epubProgress != null || pdfProgress != null || cbxProgress != null || audiobookProgress != null || dateFinished != null;
     }
 }

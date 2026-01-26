@@ -1,0 +1,278 @@
+@if (isLoading) {
+  <div class="loading-container">
+    <p-progressSpinner strokeWidth="3" />
+    <span class="loading-text">Loading audiobook...</span>
+  </div>
+} @else {
+  <div class="audiobook-reader">
+    <!-- Hidden audio element -->
+    <audio
+      #audioElement
+      [src]="audioSrc"
+      (loadedmetadata)="onAudioLoaded()"
+      (timeupdate)="onTimeUpdate()"
+      (progress)="onProgress()"
+      (ended)="onAudioEnded()"
+      (error)="onAudioError()"
+      preload="metadata"
+    ></audio>
+
+    <!-- Header -->
+    <header class="reader-header">
+      <p-button
+        icon="pi pi-arrow-left"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="closeReader()"
+        pTooltip="Back"
+        tooltipPosition="bottom"
+      />
+      <div class="header-info">
+        <h1 class="book-title">{{ audiobookInfo.title || 'Untitled' }}</h1>
+        <span class="book-author">{{ audiobookInfo.author || 'Unknown Author' }}</span>
+      </div>
+      <p-button
+        icon="pi pi-list"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="toggleTrackList()"
+        pTooltip="Chapters/Tracks"
+        tooltipPosition="bottom"
+      />
+    </header>
+
+    <!-- Main content -->
+    <main class="reader-main">
+      <!-- Cover art -->
+      <div class="cover-container">
+        <div class="cover-wrapper">
+          @if (coverUrl) {
+            <img
+              [src]="coverUrl"
+              (error)="onCoverError()"
+              alt="Cover"
+              class="cover-image"
+            />
+          } @else {
+            <div class="cover-placeholder">
+              <i class="pi pi-headphones"></i>
+            </div>
+          }
+          @if (audioLoading) {
+            <div class="cover-loading">
+              <p-progressSpinner strokeWidth="3" />
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Track/Chapter info -->
+      <div class="track-info">
+        @if (audiobookInfo.folderBased && currentTrack) {
+          <span class="track-title">{{ currentTrack.title }}</span>
+          <span class="track-number">Track {{ currentTrackIndex + 1 }} of {{ audiobookInfo.tracks?.length }}</span>
+        } @else if (getCurrentChapter()) {
+          <span class="track-title">{{ getCurrentChapter()?.title }}</span>
+        }
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-container">
+        <div class="time-display">
+          <span class="current-time">{{ formatTime(currentTime) }}</span>
+          <span class="duration">{{ formatTime(duration) }}</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="buffered-bar" [style.width.%]="getBufferedPercent()"></div>
+          <p-slider
+            [(ngModel)]="currentTime"
+            [min]="0"
+            [max]="duration || 100"
+            [step]="1"
+            (onChange)="seek($event)"
+            styleClass="progress-slider"
+          />
+        </div>
+      </div>
+
+      <!-- Playback controls -->
+      <div class="playback-controls">
+        @if (audiobookInfo.folderBased) {
+          <p-button
+            icon="pi pi-step-backward"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="previousTrack()"
+            [disabled]="currentTrackIndex === 0"
+            pTooltip="Previous Track"
+            tooltipPosition="top"
+            size="large"
+          />
+        }
+
+        <p-button
+          icon="pi pi-replay"
+          [rounded]="true"
+          [text]="true"
+          severity="secondary"
+          (onClick)="seekRelative(-30)"
+          pTooltip="-30s"
+          tooltipPosition="top"
+          size="large"
+        />
+
+        <p-button
+          [icon]="isPlaying ? 'pi pi-pause' : 'pi pi-play'"
+          [rounded]="true"
+          severity="contrast"
+          (onClick)="togglePlay()"
+          [disabled]="audioLoading"
+          styleClass="play-button"
+          size="large"
+        />
+
+        <p-button
+          icon="pi pi-forward"
+          [rounded]="true"
+          [text]="true"
+          severity="secondary"
+          (onClick)="seekRelative(30)"
+          pTooltip="+30s"
+          tooltipPosition="top"
+          size="large"
+        />
+
+        @if (audiobookInfo.folderBased) {
+          <p-button
+            icon="pi pi-step-forward"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="nextTrack()"
+            [disabled]="!audiobookInfo.tracks || currentTrackIndex >= audiobookInfo.tracks.length - 1"
+            pTooltip="Next Track"
+            tooltipPosition="top"
+            size="large"
+          />
+        }
+      </div>
+
+      <!-- Secondary controls -->
+      <div class="secondary-controls">
+        <!-- Volume -->
+        <div class="volume-control">
+          <p-button
+            [icon]="getVolumeIcon()"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="toggleMute()"
+            size="small"
+          />
+          <p-slider
+            [(ngModel)]="volume"
+            [min]="0"
+            [max]="1"
+            [step]="0.01"
+            (onChange)="setVolume($event)"
+            styleClass="volume-slider"
+          />
+        </div>
+
+        <!-- Playback speed -->
+        <div class="speed-control">
+          <p-selectButton
+            [options]="playbackRates"
+            [ngModel]="playbackRate"
+            (ngModelChange)="setPlaybackRate($event)"
+            optionLabel="label"
+            optionValue="value"
+            size="small"
+          />
+        </div>
+      </div>
+
+      <!-- Audio details -->
+      <div class="audio-details">
+        @if (audiobookInfo.narrator) {
+          <span class="detail-item">
+            <i class="pi pi-user"></i>
+            Narrated by {{ audiobookInfo.narrator }}
+          </span>
+        }
+        @if (audiobookInfo.bitrate) {
+          <span class="detail-item">
+            <i class="pi pi-sliders-h"></i>
+            {{ audiobookInfo.bitrate }} kbps
+          </span>
+        }
+        @if (audiobookInfo.durationMs) {
+          <span class="detail-item">
+            <i class="pi pi-clock"></i>
+            {{ formatDuration(audiobookInfo.durationMs) }} total
+          </span>
+        }
+      </div>
+    </main>
+
+    <!-- Track/Chapter list sidebar -->
+    @if (showTrackList) {
+      <aside class="track-list-sidebar">
+        <div class="sidebar-header">
+          <h2>{{ audiobookInfo.folderBased ? 'Tracks' : 'Chapters' }}</h2>
+          <p-button
+            icon="pi pi-times"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="toggleTrackList()"
+          />
+        </div>
+        <div class="sidebar-content">
+          @if (audiobookInfo.folderBased && audiobookInfo.tracks) {
+            <ul class="track-list">
+              @for (track of audiobookInfo.tracks; track track.index) {
+                <li
+                  class="track-item"
+                  [class.active]="track.index === currentTrackIndex"
+                  (click)="selectTrack(track)"
+                >
+                  <span class="track-index">{{ track.index + 1 }}</span>
+                  <div class="track-details">
+                    <span class="track-name">{{ track.title }}</span>
+                    <span class="track-duration">{{ formatDuration(track.durationMs) }}</span>
+                  </div>
+                  @if (track.index === currentTrackIndex && isPlaying) {
+                    <i class="pi pi-volume-up playing-indicator"></i>
+                  }
+                </li>
+              }
+            </ul>
+          } @else if (audiobookInfo.chapters) {
+            <ul class="track-list">
+              @for (chapter of audiobookInfo.chapters; track chapter.index) {
+                <li
+                  class="track-item"
+                  [class.active]="getCurrentChapter()?.index === chapter.index"
+                  (click)="selectChapter(chapter)"
+                >
+                  <span class="track-index">{{ chapter.index + 1 }}</span>
+                  <div class="track-details">
+                    <span class="track-name">{{ chapter.title }}</span>
+                    <span class="track-duration">{{ formatDuration(chapter.durationMs) }}</span>
+                  </div>
+                  @if (getCurrentChapter()?.index === chapter.index && isPlaying) {
+                    <i class="pi pi-volume-up playing-indicator"></i>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </aside>
+    }
+  </div>
+}

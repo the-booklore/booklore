@@ -118,11 +118,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         const items: MenuItem[] = [];
         const primaryType = book.primaryFile?.bookType;
 
-        // Audiobooks don't have reader support yet
-        if (primaryType === 'AUDIOBOOK') {
-          return items;
-        }
-
         // Add streaming reader option for primary file
         if (primaryType === 'PDF') {
           items.push({
@@ -138,9 +133,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           });
         }
 
-        // Get readable alternative formats and group by type (exclude AUDIOBOOK)
+        // Get readable alternative formats and group by type
         const readableAlternatives = book.alternativeFormats?.filter(f =>
-          f.bookType && ['PDF', 'EPUB', 'FB2', 'MOBI', 'AZW3', 'CBX'].includes(f.bookType)
+          f.bookType && ['PDF', 'EPUB', 'FB2', 'MOBI', 'AZW3', 'CBX', 'AUDIOBOOK'].includes(f.bookType)
         ) ?? [];
 
         // Get unique format types from alternatives
@@ -855,6 +850,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     }
     if (book.cbxProgress?.percentage != null) {
       return book.cbxProgress.percentage;
+    }
+    if (book.audiobookProgress?.percentage != null) {
+      return book.audiobookProgress.percentage;
     }
     return null;
   }

@@ -24,6 +24,7 @@ public class Book {
     private PdfProgress pdfProgress;
     private EpubProgress epubProgress;
     private CbxProgress cbxProgress;
+    private AudiobookProgress audiobookProgress;
     private KoProgress koreaderProgress;
     private KoboProgress koboProgress;
     private Integer personalRating;
