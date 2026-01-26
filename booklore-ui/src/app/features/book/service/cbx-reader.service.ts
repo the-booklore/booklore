@@ -1,5 +1,5 @@
 import {HttpClient} from '@angular/common/http';
-import {Injectable, inject} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {AuthService} from '../../../shared/service/auth.service';
 
@@ -17,7 +17,7 @@ export class CbxReaderService {
   private http = inject(HttpClient);
 
   private getToken(): string | null {
-    return this.authService.getInternalAccessToken();
+    return this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
   }
 
   private appendToken(url: string): string {

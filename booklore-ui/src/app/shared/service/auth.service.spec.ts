@@ -154,6 +154,7 @@ describe('AuthService', () => {
 
   it('should initialize websocket connection if token exists', () => {
     vi.spyOn(service, 'getOidcAccessToken').mockReturnValue('token');
+    vi.spyOn(service, 'getInternalAccessToken').mockReturnValue('token');
     service.getRxStompService = vi.fn().mockReturnValue(rxStompServiceMock);
     service['postLoginInitialized'] = false;
     service.initializeWebSocketConnection();

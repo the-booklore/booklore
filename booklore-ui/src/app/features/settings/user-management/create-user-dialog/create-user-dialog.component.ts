@@ -46,6 +46,7 @@ export class CreateUserDialogComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', Validators.required],
       selectedLibraries: [[], Validators.required],
+      permissionChangePassword: [false],
       permissionUpload: [false],
       permissionDownload: [false],
       permissionEditMetadata: [false],

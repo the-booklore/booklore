@@ -8,132 +8,133 @@ import {AppSettingsService, PublicAppSettings} from './app-settings.service';
 import {AppSettings} from '../model/app-settings.model';
 import {AuthService} from './auth.service';
 
+
+const mockAppSettings: AppSettings = {
+  autoBookSearch: true,
+  similarBookRecommendation: false,
+  defaultMetadataRefreshOptions: {} as any,
+  libraryMetadataRefreshOptions: [],
+  uploadPattern: '',
+  opdsServerEnabled: false,
+  komgaApiEnabled: false,
+  komgaGroupUnknown: false,
+  remoteAuthEnabled: false,
+  oidcEnabled: true,
+  oidcProviderDetails: {
+    providerName: 'TestProvider',
+    clientId: 'clientid',
+    issuerUri: 'https://issuer.example.com',
+    discoveryUri: 'https://issuer.example.com/.well-known/openid-configuration',
+    claimMapping: {
+      username: 'username',
+      email: 'email',
+      name: 'name'
+    }
+  },
+  oidcAutoProvisionDetails: {
+    enableAutoProvisioning: false,
+    defaultPermissions: [],
+    defaultLibraryIds: []
+  },
+  maxFileUploadSizeInMb: 0,
+  metadataProviderSettings: {
+    amazon: {enabled: false, cookie: '', domain: ''},
+    google: {enabled: false, language: ''},
+    goodReads: {enabled: false},
+    hardcover: {enabled: false, apiKey: ''},
+    comicvine: {enabled: false, apiKey: ''},
+    douban: {enabled: false},
+    lubimyczytac: {enabled: false},
+    ranobedb: {enabled: false}
+  },
+  metadataMatchWeights: {
+    title: 0,
+    subtitle: 0,
+    description: 0,
+    authors: 0,
+    publisher: 0,
+    publishedDate: 0,
+    seriesName: 0,
+    seriesNumber: 0,
+    seriesTotal: 0,
+    isbn13: 0,
+    isbn10: 0,
+    language: 0,
+    pageCount: 0,
+    categories: 0,
+    amazonRating: 0,
+    amazonReviewCount: 0,
+    goodreadsRating: 0,
+    goodreadsReviewCount: 0,
+    hardcoverRating: 0,
+    hardcoverReviewCount: 0,
+    doubanRating: 0,
+    doubanReviewCount: 0,
+    lubimyczytacRating: 0,
+    ranobedbRating: 0,
+    coverImage: 0
+  },
+  metadataPersistenceSettings: {
+    moveFilesToLibraryPattern: false,
+    saveToOriginalFile: {
+      epub: {enabled: false, maxFileSizeInMb: 0},
+      pdf: {enabled: false, maxFileSizeInMb: 0},
+      cbx: {enabled: false, maxFileSizeInMb: 0}
+    },
+    convertCbrCb7ToCbz: false
+  },
+  metadataPublicReviewsSettings: {
+    downloadEnabled: false,
+    autoDownloadEnabled: false,
+    providers: []
+  },
+  koboSettings: {
+    convertToKepub: false,
+    conversionLimitInMb: 0,
+    conversionImageCompressionPercentage: 0,
+    convertCbxToEpub: false,
+    conversionLimitInMbForCbx: 0,
+    forceEnableHyphenation: false
+  },
+  coverCroppingSettings: {
+    verticalCroppingEnabled: false,
+    horizontalCroppingEnabled: false,
+    aspectRatioThreshold: 0,
+    smartCroppingEnabled: false
+  },
+  metadataDownloadOnBookdrop: false,
+  telemetryEnabled: false,
+  metadataProviderSpecificFields: {
+    asin: false,
+    amazonRating: false,
+    amazonReviewCount: false,
+    googleId: false,
+    goodreadsId: false,
+    goodreadsRating: false,
+    goodreadsReviewCount: false,
+    hardcoverId: false,
+    hardcoverBookId: false,
+    hardcoverRating: false,
+    hardcoverReviewCount: false,
+    comicvineId: false,
+    lubimyczytacId: false,
+    lubimyczytacRating: false,
+    ranobedbId: false,
+    ranobedbRating: false
+  }
+};
+
+const mockPublicSettings: PublicAppSettings = {
+  oidcEnabled: true,
+  remoteAuthEnabled: false,
+  oidcProviderDetails: mockAppSettings.oidcProviderDetails
+};
+
 describe('AppSettingsService', () => {
   let service: AppSettingsService;
   let httpClientMock: any;
   let authServiceMock: any;
   let injectorMock: any;
-
-  const mockAppSettings: AppSettings = {
-    autoBookSearch: true,
-    similarBookRecommendation: false,
-    defaultMetadataRefreshOptions: {} as any,
-    libraryMetadataRefreshOptions: [],
-    uploadPattern: '',
-    opdsServerEnabled: false,
-    komgaApiEnabled: false,
-    komgaGroupUnknown: false,
-    remoteAuthEnabled: false,
-    oidcEnabled: true,
-    oidcProviderDetails: {
-      providerName: 'TestProvider',
-      clientId: 'clientid',
-      issuerUri: 'https://issuer.example.com',
-      discoveryUri: 'https://issuer.example.com/.well-known/openid-configuration',
-      claimMapping: {
-        username: 'username',
-        email: 'email',
-        name: 'name'
-      }
-    },
-    oidcAutoProvisionDetails: {
-      enableAutoProvisioning: false,
-      defaultPermissions: [],
-      defaultLibraryIds: []
-    },
-    maxFileUploadSizeInMb: 0,
-    metadataProviderSettings: {
-      amazon: {enabled: false, cookie: '', domain: ''},
-      google: {enabled: false, language: ''},
-      goodReads: {enabled: false},
-      hardcover: {enabled: false, apiKey: ''},
-      comicvine: {enabled: false, apiKey: ''},
-      douban: {enabled: false},
-      lubimyczytac: {enabled: false},
-      ranobedb: {enabled: false}
-    },
-    metadataMatchWeights: {
-      title: 0,
-      subtitle: 0,
-      description: 0,
-      authors: 0,
-      publisher: 0,
-      publishedDate: 0,
-      seriesName: 0,
-      seriesNumber: 0,
-      seriesTotal: 0,
-      isbn13: 0,
-      isbn10: 0,
-      language: 0,
-      pageCount: 0,
-      categories: 0,
-      amazonRating: 0,
-      amazonReviewCount: 0,
-      goodreadsRating: 0,
-      goodreadsReviewCount: 0,
-      hardcoverRating: 0,
-      hardcoverReviewCount: 0,
-      doubanRating: 0,
-      doubanReviewCount: 0,
-      lubimyczytacRating: 0,
-      ranobedbRating: 0,
-      coverImage: 0
-    },
-    metadataPersistenceSettings: {
-      moveFilesToLibraryPattern: false,
-      saveToOriginalFile: {
-        epub: {enabled: false, maxFileSizeInMb: 0},
-        pdf: {enabled: false, maxFileSizeInMb: 0},
-        cbx: {enabled: false, maxFileSizeInMb: 0}
-      },
-      convertCbrCb7ToCbz: false
-    },
-    metadataPublicReviewsSettings: {
-      downloadEnabled: false,
-      autoDownloadEnabled: false,
-      providers: []
-    },
-    koboSettings: {
-      convertToKepub: false,
-      conversionLimitInMb: 0,
-      conversionImageCompressionPercentage: 0,
-      convertCbxToEpub: false,
-      conversionLimitInMbForCbx: 0,
-      forceEnableHyphenation: false
-    },
-    coverCroppingSettings: {
-      verticalCroppingEnabled: false,
-      horizontalCroppingEnabled: false,
-      aspectRatioThreshold: 0,
-      smartCroppingEnabled: false
-    },
-    metadataDownloadOnBookdrop: false,
-    telemetryEnabled: false,
-    metadataProviderSpecificFields: {
-      asin: false,
-      amazonRating: false,
-      amazonReviewCount: false,
-      googleId: false,
-      goodreadsId: false,
-      goodreadsRating: false,
-      goodreadsReviewCount: false,
-      hardcoverId: false,
-      hardcoverBookId: false,
-      hardcoverRating: false,
-      hardcoverReviewCount: false,
-      comicvineId: false,
-      lubimyczytacId: false,
-      lubimyczytacRating: false,
-      ranobedbId: false,
-      ranobedbRating: false
-    }
-  };
-
-  const mockPublicSettings: PublicAppSettings = {
-    oidcEnabled: true,
-    remoteAuthEnabled: false,
-    oidcProviderDetails: mockAppSettings.oidcProviderDetails
-  };
 
   beforeEach(() => {
     httpClientMock = {
@@ -159,6 +160,12 @@ describe('AppSettingsService', () => {
     });
 
     const injector = TestBed.inject(EnvironmentInjector);
+    httpClientMock.get.mockImplementation((url: string) => {
+      if (url.includes('public-settings')) {
+        return of(mockPublicSettings);
+      }
+      return of(mockAppSettings);
+    });
     service = runInInjectionContext(injector, () => TestBed.inject(AppSettingsService));
   });
 
@@ -198,10 +205,31 @@ describe('AppSettingsService', () => {
   });
 
   it('should handle error when fetching public settings', () => {
+    TestBed.resetTestingModule();
+    httpClientMock = {
+      get: vi.fn(),
+      put: vi.fn()
+    };
+    authServiceMock = {
+      clearOIDCTokens: vi.fn()
+    };
+    injectorMock = {
+      get: vi.fn().mockReturnValue(authServiceMock)
+    };
+
     httpClientMock.get.mockReturnValue(throwError(() => new Error('fail')));
-    // Re-trigger load
-    service = runInInjectionContext(TestBed.inject(EnvironmentInjector), () => TestBed.inject(AppSettingsService));
-    
+
+    TestBed.configureTestingModule({
+      providers: [
+        AppSettingsService,
+        {provide: HttpClient, useValue: httpClientMock},
+        {provide: AuthService, useValue: authServiceMock},
+        {provide: EnvironmentInjector, useValue: injectorMock}
+      ]
+    });
+
+    service = TestBed.inject(AppSettingsService);
+
     service.publicAppSettings$.subscribe(val => {
       // Should emit default values on error
       expect(val).toBeTruthy();
@@ -228,6 +256,10 @@ describe('AppSettingsService', () => {
 
   it('should save settings and update appSettingsSubject', () => {
     httpClientMock.put.mockReturnValue(of(void 0));
+    // Mock get to return updated settings
+    const updatedSettings = {...mockAppSettings, oidcEnabled: false};
+    httpClientMock.get.mockReturnValue(of(updatedSettings));
+
     service['appSettingsSubject'].next({...mockAppSettings});
     service.saveSettings([{key: 'oidcEnabled', newValue: false}]).subscribe(() => {
       expect(service['appSettingsSubject'].value?.oidcEnabled).toBe(false);
@@ -310,6 +342,12 @@ describe('AppSettingsService - API Contract Tests', () => {
 
 
     const injector = TestBed.inject(EnvironmentInjector);
+    httpClientMock.get.mockImplementation((url: string) => {
+      if (url.includes('public-settings')) {
+        return of(mockPublicSettings);
+      }
+      return of(mockAppSettings);
+    });
     service = runInInjectionContext(injector, () => TestBed.inject(AppSettingsService));
   });
 
