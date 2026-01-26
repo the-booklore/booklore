@@ -15,7 +15,9 @@ public class BookMark {
     private Long id;
     private Long userId;
     private Long bookId;
-    private String cfi;
+    private String cfi;           // For EPUB bookmarks
+    private Long positionMs;      // For audiobook bookmarks
+    private Integer trackIndex;   // For folder-based audiobooks
     private String title;
     private String color;
     private String notes;

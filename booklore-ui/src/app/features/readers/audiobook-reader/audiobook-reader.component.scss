@@ -114,6 +114,11 @@ $border-color: rgba(255, 255, 255, 0.1);
     }
   }
 
+  .header-actions {
+    display: flex;
+    gap: 0.25rem;
+  }
+
   ::ng-deep .p-button {
     &.p-button-text {
       color: $text-secondary;
@@ -452,6 +457,87 @@ $border-color: rgba(255, 255, 255, 0.1);
     i {
       font-size: 0.9rem;
       color: $accent-tertiary;
+    }
+  }
+}
+
+// Extra controls (bookmark, sleep timer)
+.extra-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding-top: 0.5rem;
+
+  ::ng-deep .p-button {
+    &.p-button-text {
+      color: $text-secondary;
+      font-size: 0.85rem;
+
+      &:hover {
+        color: $text-primary;
+        background: color-mix(in srgb, var(--accent-color) 15%, transparent);
+      }
+
+      .p-button-icon {
+        font-size: 1rem;
+      }
+    }
+
+    &.sleep-timer-active {
+      color: #fbbf24 !important;
+
+      &:hover {
+        background: rgba(251, 191, 36, 0.15) !important;
+      }
+    }
+  }
+}
+
+// Empty bookmarks
+.empty-bookmarks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: $text-tertiary;
+
+  i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  span {
+    font-size: 0.85rem;
+  }
+}
+
+// Bookmark item
+.bookmark-item {
+  .bookmark-icon {
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  ::ng-deep .p-button {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover {
+    ::ng-deep .p-button {
+      opacity: 1;
     }
   }
 }

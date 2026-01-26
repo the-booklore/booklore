@@ -11,10 +11,13 @@ import { ProgressSpinner } from 'primeng/progressspinner';
 import { Tooltip } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { SelectButton } from 'primeng/selectbutton';
+import { Menu } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 import { AudiobookService } from './audiobook.service';
 import { AudiobookInfo, AudiobookChapter, AudiobookTrack, AudiobookProgress } from './audiobook.model';
 import { BookService } from '../../book/service/book.service';
+import { BookMarkService, BookMark, CreateBookMarkRequest } from '../../../shared/service/book-mark.service';
 import { ReadingSessionService } from '../../../shared/service/reading-session.service';
 import { PageTitleService } from '../../../shared/service/page-title.service';
 import { AuthService } from '../../../shared/service/auth.service';
@@ -30,7 +33,8 @@ import { API_CONFIG } from '../../../core/config/api-config';
     Slider,
     ProgressSpinner,
     Tooltip,
-    SelectButton
+    SelectButton,
+    Menu
   ],
   templateUrl: './audiobook-reader.component.html',
   styleUrls: ['./audiobook-reader.component.scss']
@@ -41,6 +45,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private audiobookService = inject(AudiobookService);
   private bookService = inject(BookService);
+  private bookMarkService = inject(BookMarkService);
   private authService = inject(AuthService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -78,6 +83,27 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
   // UI state
   showTrackList = false;
+  showBookmarkList = false;
+
+  // Sleep timer
+  sleepTimerActive = false;
+  sleepTimerRemaining = 0; // seconds remaining
+  sleepTimerEndOfChapter = false;
+  private sleepTimerInterval?: ReturnType<typeof setInterval>;
+  private originalVolume = 1;
+
+  sleepTimerOptions: MenuItem[] = [
+    { label: '15 minutes', command: () => this.setSleepTimer(15) },
+    { label: '30 minutes', command: () => this.setSleepTimer(30) },
+    { label: '45 minutes', command: () => this.setSleepTimer(45) },
+    { label: '60 minutes', command: () => this.setSleepTimer(60) },
+    { label: 'End of chapter', command: () => this.setSleepTimerEndOfChapter() },
+    { separator: true },
+    { label: 'Cancel timer', command: () => this.cancelSleepTimer(), visible: false }
+  ];
+
+  // Bookmarks
+  bookmarks: BookMark[] = [];
 
   // Playback speed options
   playbackRates = [
@@ -105,6 +131,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
     if (this.progressSaveInterval) {
       clearInterval(this.progressSaveInterval);
+    }
+
+    if (this.sleepTimerInterval) {
+      clearInterval(this.sleepTimerInterval);
     }
 
     this.saveProgress();
@@ -152,6 +182,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         }
 
         this.isLoading = false;
+
+        // Load bookmarks
+        this.loadBookmarks();
       },
       error: () => {
         this.messageService.add({
@@ -229,6 +262,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       // Update reading session
       const percentage = this.duration > 0 ? (this.currentTime / this.duration) * 100 : 0;
       this.readingSessionService.updateProgress(this.formatTime(this.currentTime), percentage);
+
+      // Check sleep timer end of chapter
+      this.checkSleepTimerEndOfChapter();
     }
   }
 
@@ -551,5 +587,239 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
   get currentTrack(): AudiobookTrack | undefined {
     return this.audiobookInfo?.tracks?.[this.currentTrackIndex];
+  }
+
+  // ==================== SLEEP TIMER ====================
+
+  setSleepTimer(minutes: number): void {
+    this.cancelSleepTimer();
+    this.sleepTimerRemaining = minutes * 60;
+    this.sleepTimerActive = true;
+    this.sleepTimerEndOfChapter = false;
+    this.originalVolume = this.volume;
+    this.updateSleepTimerMenuVisibility();
+
+    this.sleepTimerInterval = setInterval(() => {
+      this.sleepTimerRemaining--;
+
+      // Fade out volume in last 30 seconds
+      if (this.sleepTimerRemaining <= 30 && this.sleepTimerRemaining > 0) {
+        const fadeRatio = this.sleepTimerRemaining / 30;
+        const audio = this.audioElement?.nativeElement;
+        if (audio) {
+          audio.volume = this.originalVolume * fadeRatio;
+        }
+      }
+
+      if (this.sleepTimerRemaining <= 0) {
+        this.triggerSleepTimerStop();
+      }
+    }, 1000);
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Sleep Timer',
+      detail: `Playback will stop in ${minutes} minutes`
+    });
+  }
+
+  setSleepTimerEndOfChapter(): void {
+    this.cancelSleepTimer();
+    this.sleepTimerActive = true;
+    this.sleepTimerEndOfChapter = true;
+    this.sleepTimerRemaining = 0;
+    this.originalVolume = this.volume;
+    this.updateSleepTimerMenuVisibility();
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Sleep Timer',
+      detail: 'Playback will stop at end of chapter'
+    });
+  }
+
+  cancelSleepTimer(): void {
+    if (this.sleepTimerInterval) {
+      clearInterval(this.sleepTimerInterval);
+      this.sleepTimerInterval = undefined;
+    }
+
+    // Restore original volume if we were fading
+    if (this.sleepTimerActive && this.originalVolume > 0) {
+      const audio = this.audioElement?.nativeElement;
+      if (audio) {
+        audio.volume = this.originalVolume;
+        this.volume = this.originalVolume;
+      }
+    }
+
+    this.sleepTimerActive = false;
+    this.sleepTimerRemaining = 0;
+    this.sleepTimerEndOfChapter = false;
+    this.updateSleepTimerMenuVisibility();
+  }
+
+  private triggerSleepTimerStop(): void {
+    const audio = this.audioElement?.nativeElement;
+    if (audio) {
+      audio.pause();
+      audio.volume = this.originalVolume;
+      this.volume = this.originalVolume;
+    }
+    this.isPlaying = false;
+    this.stopProgressSaveInterval();
+    this.saveProgress();
+    this.cancelSleepTimer();
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Sleep Timer',
+      detail: 'Playback stopped by sleep timer'
+    });
+  }
+
+  private updateSleepTimerMenuVisibility(): void {
+    // Show/hide cancel option based on timer state
+    const cancelItem = this.sleepTimerOptions.find(item => item.label === 'Cancel timer');
+    if (cancelItem) {
+      cancelItem.visible = this.sleepTimerActive;
+    }
+  }
+
+  formatSleepTimerRemaining(): string {
+    if (this.sleepTimerEndOfChapter) {
+      return 'End of chapter';
+    }
+    const minutes = Math.floor(this.sleepTimerRemaining / 60);
+    const seconds = this.sleepTimerRemaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Check for end of chapter in onTimeUpdate for sleep timer
+  private checkSleepTimerEndOfChapter(): void {
+    if (!this.sleepTimerEndOfChapter || !this.sleepTimerActive) return;
+
+    const currentChapter = this.getCurrentChapter();
+    if (currentChapter) {
+      const currentMs = this.currentTime * 1000;
+      // If we're within 1 second of chapter end, trigger stop
+      if (currentMs >= currentChapter.endTimeMs - 1000) {
+        this.triggerSleepTimerStop();
+      }
+    }
+  }
+
+  // ==================== BOOKMARKS ====================
+
+  loadBookmarks(): void {
+    this.bookMarkService.getBookmarksForBook(this.bookId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(bookmarks => {
+        this.bookmarks = bookmarks;
+      });
+  }
+
+  toggleBookmarkList(): void {
+    this.showBookmarkList = !this.showBookmarkList;
+    if (this.showBookmarkList && this.bookmarks.length === 0) {
+      this.loadBookmarks();
+    }
+  }
+
+  addBookmark(): void {
+    const currentChapter = this.getCurrentChapter();
+    const currentTrack = this.currentTrack;
+
+    let title: string;
+    if (this.audiobookInfo.folderBased && currentTrack) {
+      title = `${currentTrack.title} - ${this.formatTime(this.currentTime)}`;
+    } else if (currentChapter) {
+      title = `${currentChapter.title} - ${this.formatTime(this.currentTime)}`;
+    } else {
+      title = `Bookmark at ${this.formatTime(this.currentTime)}`;
+    }
+
+    const request: CreateBookMarkRequest = {
+      bookId: this.bookId,
+      title: title,
+      positionMs: Math.round(this.currentTime * 1000),
+      trackIndex: this.audiobookInfo.folderBased ? this.currentTrackIndex : undefined
+    };
+
+    this.bookMarkService.createBookmark(request)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (bookmark) => {
+          this.bookmarks = [...this.bookmarks, bookmark];
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Bookmark Added',
+            detail: title
+          });
+        },
+        error: (err) => {
+          const isDuplicate = err?.status === 409;
+          this.messageService.add({
+            severity: isDuplicate ? 'warn' : 'error',
+            summary: isDuplicate ? 'Bookmark Exists' : 'Error',
+            detail: isDuplicate ? 'A bookmark already exists at this position' : 'Failed to add bookmark'
+          });
+        }
+      });
+  }
+
+  goToBookmark(bookmark: BookMark): void {
+    // Handle track switching for folder-based audiobooks
+    if (this.audiobookInfo.folderBased && bookmark.trackIndex !== undefined && bookmark.trackIndex !== null) {
+      if (bookmark.trackIndex !== this.currentTrackIndex) {
+        this.loadTrack(bookmark.trackIndex);
+        // Wait for track to load, then seek
+        this.savedPosition = (bookmark.positionMs || 0) / 1000;
+      } else {
+        // Same track, just seek
+        const audio = this.audioElement?.nativeElement;
+        if (audio && bookmark.positionMs) {
+          audio.currentTime = bookmark.positionMs / 1000;
+          this.currentTime = bookmark.positionMs / 1000;
+        }
+      }
+    } else {
+      // Single-file audiobook
+      const audio = this.audioElement?.nativeElement;
+      if (audio && bookmark.positionMs) {
+        audio.currentTime = bookmark.positionMs / 1000;
+        this.currentTime = bookmark.positionMs / 1000;
+      }
+    }
+
+    this.showBookmarkList = false;
+
+    if (!this.isPlaying) {
+      setTimeout(() => {
+        this.audioElement?.nativeElement?.play();
+        this.isPlaying = true;
+        this.startProgressSaveInterval();
+      }, 100);
+    }
+  }
+
+  deleteBookmark(event: MouseEvent, bookmarkId: number): void {
+    event.stopPropagation();
+    this.bookMarkService.deleteBookmark(bookmarkId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.bookmarks = this.bookmarks.filter(b => b.id !== bookmarkId);
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Bookmark Deleted'
+        });
+      });
+  }
+
+  formatBookmarkPosition(bookmark: BookMark): string {
+    if (bookmark.positionMs) {
+      return this.formatTime(bookmark.positionMs / 1000);
+    }
+    return '';
   }
 }

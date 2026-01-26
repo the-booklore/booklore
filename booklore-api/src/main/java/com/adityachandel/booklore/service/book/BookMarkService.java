@@ -52,10 +52,18 @@ public class BookMarkService {
     @Transactional
     public BookMark createBookmark(CreateBookMarkRequest request) {
         Long userId = getCurrentUserId();
-        validateNoDuplicateBookmark(request.getCfi(), request.getBookId(), userId);
+
+        // Validate no duplicate based on bookmark type
+        if (request.isAudiobookBookmark()) {
+            validateNoDuplicateAudiobookBookmark(request.getPositionMs(), request.getTrackIndex(), request.getBookId(), userId);
+        } else if (request.getCfi() != null) {
+            validateNoDuplicateBookmark(request.getCfi(), request.getBookId(), userId);
+        }
 
         BookMarkEntity bookmark = BookMarkEntity.builder()
                 .cfi(request.getCfi())
+                .positionMs(request.getPositionMs())
+                .trackIndex(request.getTrackIndex())
                 .title(request.getTitle())
                 .book(findBook(request.getBookId()))
                 .user(findUser(userId))
@@ -123,6 +131,16 @@ public class BookMarkService {
 
         if (exists) {
             throw new APIException("Bookmark already exists at this location", HttpStatus.CONFLICT);
+        }
+    }
+
+    /**
+     * Validate no duplicate audiobook bookmark exists within 5 seconds of the position.
+     */
+    private void validateNoDuplicateAudiobookBookmark(Long positionMs, Integer trackIndex, Long bookId, Long userId) {
+        boolean exists = bookMarkRepository.existsByPositionMsNearAndBookIdAndUserId(positionMs, trackIndex, bookId, userId);
+        if (exists) {
+            throw new APIException("A bookmark already exists near this position", HttpStatus.CONFLICT);
         }
     }
 
