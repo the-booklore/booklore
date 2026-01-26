@@ -397,8 +397,12 @@ public class MetadataRefreshService {
 
     private FetchMetadataRequest buildFetchMetadataRequestFromBook(Book book) {
         BookMetadata metadata = book.getMetadata();
+        String isbn = metadata.getIsbn13();
+        if (isbn == null || isbn.isBlank()) {
+            isbn = metadata.getIsbn10();
+        }
         return FetchMetadataRequest.builder()
-                .isbn(metadata.getIsbn10())
+                .isbn(isbn)
                 .asin(metadata.getAsin())
                 .author(metadata.getAuthors() != null ? String.join(", ", metadata.getAuthors()) : null)
                 .title(metadata.getTitle())

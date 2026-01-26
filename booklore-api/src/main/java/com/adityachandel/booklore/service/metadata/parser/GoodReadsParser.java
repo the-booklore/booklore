@@ -495,9 +495,13 @@ public class GoodReadsParser implements BookParser {
     }
 
     private String getSearchTerm(Book book, FetchMetadataRequest request) {
-        return (request.getTitle() != null && !request.getTitle().isEmpty())
-                ? request.getTitle()
-                : (book.getFileName() != null && !book.getFileName().isEmpty()
+        if (request.getTitle() != null && !request.getTitle().isEmpty()) {
+            if (request.getAuthor() != null && !request.getAuthor().isEmpty()) {
+                return request.getTitle() + " " + request.getAuthor();
+            }
+            return request.getTitle();
+        }
+        return (book.getFileName() != null && !book.getFileName().isEmpty()
                 ? BookUtils.cleanFileName(book.getFileName())
                 : null);
     }
