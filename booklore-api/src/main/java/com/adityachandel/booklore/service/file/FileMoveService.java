@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service.file;
 
+import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.LibraryMapper;
 import com.adityachandel.booklore.model.dto.FileMoveResult;
@@ -31,6 +32,7 @@ public class FileMoveService {
 
     private static final long EVENT_DRAIN_TIMEOUT_MS = 300;
 
+    private final AppProperties appProperties;
     private final BookRepository bookRepository;
     private final BookAdditionalFileRepository bookFileRepository;
     private final LibraryRepository libraryRepository;
@@ -45,10 +47,12 @@ public class FileMoveService {
     @Transactional
     public void bulkMoveFiles(FileMoveRequest request) {
         List<FileMoveRequest.Move> moves = request.getMoves();
-        
+
+        validateLocalStorage();
+
         Set<Long> allAffectedLibraryIds = collectAllAffectedLibraryIds(moves);
         Set<Path> libraryPaths = monitoringRegistrationService.getPathsForLibraries(allAffectedLibraryIds);
-        
+
         log.info("Unregistering {} libraries before bulk file move", allAffectedLibraryIds.size());
         monitoringRegistrationService.unregisterLibraries(allAffectedLibraryIds);
         monitoringRegistrationService.waitForEventsDrainedByPaths(libraryPaths, EVENT_DRAIN_TIMEOUT_MS);
@@ -211,6 +215,8 @@ public class FileMoveService {
     public FileMoveResult moveSingleFile(BookEntity bookEntity) {
         record PlannedMove(Path source, Path temp, Path target) {}
 
+        validateLocalStorage();
+
         Long libraryId = bookEntity.getLibraryPath().getLibrary().getId();
         Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
         boolean isLibraryMonitoredWhenCalled = false;
@@ -357,6 +363,17 @@ public class FileMoveService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Sleep interrupted", e);
+        }
+    }
+
+    private void validateLocalStorage() {
+        String diskType = appProperties.getDiskType();
+        if (!"LOCAL".equalsIgnoreCase(diskType)) {
+            throw new IllegalStateException(
+                    "File move operations are only supported on local storage. " +
+                    "Current disk type is configured as: " + diskType + ". " +
+                    "If you are using local storage, set DISK_TYPE=LOCAL in your environment."
+            );
         }
     }
 }

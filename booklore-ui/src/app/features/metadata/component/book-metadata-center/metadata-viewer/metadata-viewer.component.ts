@@ -1,7 +1,7 @@
 import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {Button} from 'primeng/button';
 import {AsyncPipe, DecimalPipe, NgClass} from '@angular/common';
-import {Observable} from 'rxjs';
+import {combineLatest, Observable} from 'rxjs';
 import {BookService} from '../../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
@@ -229,9 +229,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.otherItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
       switchMap(book =>
-        this.userService.userState$.pipe(
-          take(1),
-          map(userState => {
+        combineLatest([
+          this.userService.userState$.pipe(take(1)),
+          this.appSettingsService.appSettings$.pipe(take(1))
+        ]).pipe(
+          map(([userState, appSettings]) => {
             const items: MenuItem[] = [];
 
             // Add allowed submenus based on user permissions
@@ -246,7 +248,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            if (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) {
+            if ((userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) && appSettings?.diskType === 'LOCAL') {
               items.push({
                 label: 'Organize Files',
                 icon: 'pi pi-arrows-h',

@@ -162,7 +162,7 @@
                   tooltipPosition="top">
                 </p-button>
               }
-              @if (userState.user!.permissions.canMoveOrganizeFiles) {
+              @if (userState.user!.permissions.canMoveOrganizeFiles && (appSettingsService.appSettings$ | async)?.diskType === 'LOCAL') {
                 <p-button
                   outlined="true"
                   icon="pi pi-arrows-h"

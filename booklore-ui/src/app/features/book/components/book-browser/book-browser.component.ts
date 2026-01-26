@@ -53,6 +53,7 @@ import {BookBrowserQueryParamsService, VIEW_MODES} from './book-browser-query-pa
 import {BookBrowserEntityService} from './book-browser-entity.service';
 import {BookFilterOrchestrationService} from './book-filter-orchestration.service';
 import {BookBrowserScrollService} from './book-browser-scroll.service';
+import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -97,6 +98,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   protected taskHelperService = inject(TaskHelperService);
   protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
   protected bookSelectionService = inject(BookSelectionService);
+  protected appSettingsService = inject(AppSettingsService);
 
   private activatedRoute = inject(ActivatedRoute);
   private router = inject(Router);

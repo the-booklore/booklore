@@ -153,6 +153,8 @@ public class AppSettingService {
         boolean finalEnabled = settingEnabled && (forceDisable == null || !forceDisable);
         builder.oidcEnabled(finalEnabled);
 
+        builder.diskType(appProperties.getDiskType());
+
         return builder.build();
     }
 
