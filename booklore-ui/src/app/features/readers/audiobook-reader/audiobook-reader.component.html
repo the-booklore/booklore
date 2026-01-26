@@ -75,6 +75,9 @@
           <span class="track-number">Track {{ currentTrackIndex + 1 }} of {{ audiobookInfo.tracks?.length }}</span>
         } @else if (getCurrentChapter()) {
           <span class="track-title">{{ getCurrentChapter()?.title }}</span>
+          @if (hasMultipleChapters()) {
+            <span class="track-number">Chapter {{ getCurrentChapterIndex() + 1 }} of {{ audiobookInfo.chapters?.length }}</span>
+          }
         }
       </div>
 
@@ -108,6 +111,18 @@
             (onClick)="previousTrack()"
             [disabled]="currentTrackIndex === 0"
             pTooltip="Previous Track"
+            tooltipPosition="top"
+            size="large"
+          />
+        } @else if (hasMultipleChapters()) {
+          <p-button
+            icon="pi pi-step-backward"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="previousChapter()"
+            [disabled]="!canGoPreviousChapter()"
+            pTooltip="Previous Chapter"
             tooltipPosition="top"
             size="large"
           />
@@ -154,6 +169,18 @@
             (onClick)="nextTrack()"
             [disabled]="!audiobookInfo.tracks || currentTrackIndex >= audiobookInfo.tracks.length - 1"
             pTooltip="Next Track"
+            tooltipPosition="top"
+            size="large"
+          />
+        } @else if (hasMultipleChapters()) {
+          <p-button
+            icon="pi pi-step-forward"
+            [rounded]="true"
+            [text]="true"
+            severity="secondary"
+            (onClick)="nextChapter()"
+            [disabled]="!canGoNextChapter()"
+            pTooltip="Next Chapter"
             tooltipPosition="top"
             size="large"
           />

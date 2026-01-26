@@ -121,29 +121,52 @@ public class AudiobookReaderController {
         response.setContentType(contentType);
         response.setHeader("Cache-Control", "public, max-age=3600");
 
-        if (rangeHeader == null) {
-            // No Range header - return full file
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentLengthLong(fileSize);
-            streamBytes(filePath, 0, fileSize - 1, response.getOutputStream());
-        } else {
-            // Parse Range header
-            RangeInfo range = parseRange(rangeHeader, fileSize);
-            if (range == null) {
-                // Invalid range
-                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-                response.setHeader("Content-Range", "bytes */" + fileSize);
-                return;
+        try {
+            if (rangeHeader == null) {
+                // No Range header - return full file
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentLengthLong(fileSize);
+                streamBytes(filePath, 0, fileSize - 1, response.getOutputStream());
+            } else {
+                // Parse Range header
+                RangeInfo range = parseRange(rangeHeader, fileSize);
+                if (range == null) {
+                    // Invalid range
+                    response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                    response.setHeader("Content-Range", "bytes */" + fileSize);
+                    return;
+                }
+
+                // Return partial content
+                long contentLength = range.end - range.start + 1;
+                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                response.setContentLengthLong(contentLength);
+                response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + fileSize);
+
+                streamBytes(filePath, range.start, range.end, response.getOutputStream());
             }
-
-            // Return partial content
-            long contentLength = range.end - range.start + 1;
-            response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-            response.setContentLengthLong(contentLength);
-            response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + fileSize);
-
-            streamBytes(filePath, range.start, range.end, response.getOutputStream());
+        } catch (IOException e) {
+            // Client disconnected (e.g., during seeking) - this is normal, just log at debug level
+            if (isClientDisconnect(e)) {
+                log.debug("Client disconnected during audio streaming: {}", e.getMessage());
+            } else {
+                throw e;
+            }
         }
+    }
+
+    /**
+     * Check if the exception is due to client disconnect (common during seeking).
+     */
+    private boolean isClientDisconnect(IOException e) {
+        String message = e.getMessage();
+        if (message == null) {
+            return false;
+        }
+        return message.contains("Connection reset") ||
+               message.contains("Broken pipe") ||
+               message.contains("connection was aborted") ||
+               message.contains("An established connection was aborted");
     }
 
     /**

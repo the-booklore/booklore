@@ -394,6 +394,47 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     );
   }
 
+  getCurrentChapterIndex(): number {
+    const chapter = this.getCurrentChapter();
+    return chapter?.index ?? 0;
+  }
+
+  hasMultipleChapters(): boolean {
+    return (this.audiobookInfo?.chapters?.length ?? 0) > 1;
+  }
+
+  canGoPreviousChapter(): boolean {
+    return this.getCurrentChapterIndex() > 0;
+  }
+
+  canGoNextChapter(): boolean {
+    const chapters = this.audiobookInfo?.chapters;
+    if (!chapters) return false;
+    return this.getCurrentChapterIndex() < chapters.length - 1;
+  }
+
+  previousChapter(): void {
+    const chapters = this.audiobookInfo?.chapters;
+    if (!chapters) return;
+
+    const currentIndex = this.getCurrentChapterIndex();
+    if (currentIndex > 0) {
+      const prevChapter = chapters[currentIndex - 1];
+      this.selectChapter(prevChapter);
+    }
+  }
+
+  nextChapter(): void {
+    const chapters = this.audiobookInfo?.chapters;
+    if (!chapters) return;
+
+    const currentIndex = this.getCurrentChapterIndex();
+    if (currentIndex < chapters.length - 1) {
+      const nextChapter = chapters[currentIndex + 1];
+      this.selectChapter(nextChapter);
+    }
+  }
+
   // Progress management - save every 5 seconds while playing
   private startProgressSaveInterval(): void {
     if (this.progressSaveInterval) return; // Already running

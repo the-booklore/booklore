@@ -16,10 +16,14 @@ import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.images.Artwork;
-import org.jaudiotagger.tag.mp4.Mp4Tag;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -255,8 +259,8 @@ public class AudiobookReaderService {
                     .narrator(getTagValue(tag, FieldKey.COMPOSER));
         }
 
-        // Extract chapters for M4B/M4A
-        List<AudiobookChapter> chapters = extractChapters(audioFile, durationMs);
+        // Extract chapters for M4B/M4A using FFprobe
+        List<AudiobookChapter> chapters = extractChapters(audioPath, durationMs);
         builder.chapters(chapters);
 
         return builder.build();
@@ -346,33 +350,135 @@ public class AudiobookReaderService {
                 .build();
     }
 
-    private List<AudiobookChapter> extractChapters(AudioFile audioFile, long totalDurationMs) {
+    private List<AudiobookChapter> extractChapters(Path audioPath, long totalDurationMs) {
         List<AudiobookChapter> chapters = new ArrayList<>();
 
+        // Try to extract chapters using FFprobe
         try {
-            Tag tag = audioFile.getTag();
-            if (tag instanceof Mp4Tag mp4Tag) {
-                // Note: JAudioTagger doesn't provide direct access to M4B chapter atoms
-                // Chapter extraction from M4B files would require parsing the MP4 atom structure directly
-                // For now, we fall back to a single chapter spanning the entire duration
-                log.debug("M4B file detected, chapter extraction not yet supported via JAudioTagger");
+            chapters = extractChaptersWithFFprobe(audioPath);
+            if (!chapters.isEmpty()) {
+                log.debug("Extracted {} chapters from {} using FFprobe", chapters.size(), audioPath.getFileName());
+                return chapters;
             }
         } catch (Exception e) {
-            log.debug("Could not extract embedded chapters: {}", e.getMessage());
+            log.debug("FFprobe chapter extraction failed for {}: {}", audioPath.getFileName(), e.getMessage());
         }
 
-        // If no chapters found, create a single chapter spanning the entire duration
-        if (chapters.isEmpty()) {
+        // Fallback: create a single chapter spanning the entire duration
+        chapters.add(AudiobookChapter.builder()
+                .index(0)
+                .title("Full Audiobook")
+                .startTimeMs(0L)
+                .endTimeMs(totalDurationMs)
+                .durationMs(totalDurationMs)
+                .build());
+
+        return chapters;
+    }
+
+    private List<AudiobookChapter> extractChaptersWithFFprobe(Path audioPath) throws Exception {
+        List<AudiobookChapter> chapters = new ArrayList<>();
+
+        // Run ffprobe to get chapter info as JSON
+        ProcessBuilder pb = new ProcessBuilder(
+                "ffprobe",
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_chapters",
+                audioPath.toAbsolutePath().toString()
+        );
+        pb.redirectErrorStream(true);
+
+        Process process = pb.start();
+        StringBuilder output = new StringBuilder();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            log.debug("FFprobe exited with code {} for {}", exitCode, audioPath.getFileName());
+            return chapters;
+        }
+
+        // Parse JSON output
+        String jsonOutput = output.toString().trim();
+        if (jsonOutput.isEmpty() || jsonOutput.equals("{}")) {
+            return chapters;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(jsonOutput);
+        JsonNode chaptersNode = root.get("chapters");
+
+        if (chaptersNode == null || !chaptersNode.isArray() || chaptersNode.isEmpty()) {
+            return chapters;
+        }
+
+        for (int i = 0; i < chaptersNode.size(); i++) {
+            JsonNode chapterNode = chaptersNode.get(i);
+
+            // Get start and end times (in seconds, need to convert to ms)
+            double startTime = 0;
+            double endTime = 0;
+
+            if (chapterNode.has("start_time")) {
+                startTime = chapterNode.get("start_time").asDouble();
+            } else if (chapterNode.has("start")) {
+                // start is in timebase units, need to calculate
+                long start = chapterNode.get("start").asLong();
+                String timeBase = chapterNode.has("time_base") ? chapterNode.get("time_base").asText() : "1/1000";
+                startTime = convertTimebaseToSeconds(start, timeBase);
+            }
+
+            if (chapterNode.has("end_time")) {
+                endTime = chapterNode.get("end_time").asDouble();
+            } else if (chapterNode.has("end")) {
+                long end = chapterNode.get("end").asLong();
+                String timeBase = chapterNode.has("time_base") ? chapterNode.get("time_base").asText() : "1/1000";
+                endTime = convertTimebaseToSeconds(end, timeBase);
+            }
+
+            long startTimeMs = Math.round(startTime * 1000);
+            long endTimeMs = Math.round(endTime * 1000);
+            long durationMs = endTimeMs - startTimeMs;
+
+            // Get chapter title from tags
+            String title = "Chapter " + (i + 1);
+            JsonNode tagsNode = chapterNode.get("tags");
+            if (tagsNode != null && tagsNode.has("title")) {
+                title = tagsNode.get("title").asText();
+            }
+
             chapters.add(AudiobookChapter.builder()
-                    .index(0)
-                    .title("Full Audiobook")
-                    .startTimeMs(0L)
-                    .endTimeMs(totalDurationMs)
-                    .durationMs(totalDurationMs)
+                    .index(i)
+                    .title(title)
+                    .startTimeMs(startTimeMs)
+                    .endTimeMs(endTimeMs)
+                    .durationMs(durationMs)
                     .build());
         }
 
         return chapters;
+    }
+
+    private double convertTimebaseToSeconds(long value, String timeBase) {
+        // timeBase is typically "1/1000" or "1/44100" etc.
+        String[] parts = timeBase.split("/");
+        if (parts.length == 2) {
+            try {
+                double numerator = Double.parseDouble(parts[0]);
+                double denominator = Double.parseDouble(parts[1]);
+                return value * (numerator / denominator);
+            } catch (NumberFormatException e) {
+                return value / 1000.0; // Fallback to milliseconds
+            }
+        }
+        return value / 1000.0;
     }
 
     private List<Path> listAudioFiles(Path folderPath) {
