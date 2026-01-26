@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -52,9 +54,11 @@ public class BookMediaController {
     public void getPdfPage(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,
             @Parameter(description = "Page number to retrieve") @PathVariable int pageNumber,
+            @Parameter(description = "Target format to read (optional, uses preferred format if not specified)")
+            @RequestParam(required = false) BookFileType targetFormat,
             HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
-        pdfReaderService.streamPageImage(bookId, pageNumber, response.getOutputStream());
+        pdfReaderService.streamPageImage(bookId, pageNumber, response.getOutputStream(), targetFormat);
     }
 
     @Operation(summary = "Get CBX page as image", description = "Retrieve a specific page from a CBX book as an image.")

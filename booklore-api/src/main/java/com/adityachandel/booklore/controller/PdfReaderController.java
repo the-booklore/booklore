@@ -36,7 +36,10 @@ public class PdfReaderController {
     @Operation(summary = "Get book info for a PDF book", description = "Retrieve book information including page count and hierarchical outline/table of contents.")
     @ApiResponse(responseCode = "200", description = "Book info returned successfully")
     @GetMapping("/{bookId}/info")
-    public PdfBookInfo getBookInfo(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return pdfReaderService.getBookInfo(bookId);
+    public PdfBookInfo getBookInfo(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Target format to read (optional, uses preferred format if not specified)")
+            @RequestParam(required = false) BookFileType targetFormat) {
+        return pdfReaderService.getBookInfo(bookId, targetFormat);
     }
 }

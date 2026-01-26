@@ -96,26 +96,26 @@ public abstract class BookMapper {
     }
 
     @Named("mapPrimaryFileName")
-    default String mapPrimaryFileName(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+    String mapPrimaryFileName(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFileFromList(bookFiles);
         return primary == null ? null : primary.getFileName();
     }
 
     @Named("mapPrimaryFilePath")
-    default String mapPrimaryFilePath(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+    String mapPrimaryFilePath(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFileFromList(bookFiles);
         return primary == null ? null : primary.getFullFilePath().toString();
     }
 
     @Named("mapPrimaryFileSubPath")
-    default String mapPrimaryFileSubPath(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+    String mapPrimaryFileSubPath(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFileFromList(bookFiles);
         return primary == null ? null : primary.getFileSubPath();
     }
 
     @Named("mapPrimaryFileSizeKb")
-    default Long mapPrimaryFileSizeKb(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+    Long mapPrimaryFileSizeKb(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFileFromList(bookFiles);
         return primary == null ? null : primary.getFileSizeKb();
     }
 

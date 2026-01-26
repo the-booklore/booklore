@@ -3,6 +3,7 @@ package com.adityachandel.booklore.controller;
 import com.adityachandel.booklore.config.JacksonConfig;
 import com.adityachandel.booklore.mapper.komga.KomgaMapper;
 import com.adityachandel.booklore.model.dto.komga.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.komga.KomgaService;
 import com.adityachandel.booklore.service.opds.OpdsUserV2Service;
@@ -162,8 +163,10 @@ public class KomgaController {
     @Operation(summary = "Download book file")
     @GetMapping("/v1/books/{bookId}/file")
     public ResponseEntity<Resource> downloadBook(
-            @Parameter(description = "Book ID") @PathVariable Long bookId) {
-        return bookService.downloadBook(bookId);
+            @Parameter(description = "Book ID") @PathVariable Long bookId,
+            @Parameter(description = "Target format to download (optional, uses preferred format if not specified)")
+            @RequestParam(required = false) BookFileType targetFormat) {
+        return bookService.downloadBook(bookId, targetFormat);
     }
 
     @Operation(summary = "Get book thumbnail")

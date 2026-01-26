@@ -391,8 +391,8 @@ public class KomgaService {
             cbxReaderService.getAvailablePages(bookId);
             cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
         } else {
-            pdfReaderService.getAvailablePages(bookId);
-            pdfReaderService.streamPageImage(bookId, pageNumber, outputStream);
+            pdfReaderService.getAvailablePages(bookId, book.getPrimaryBookFile().getBookType());
+            pdfReaderService.streamPageImage(bookId, pageNumber, outputStream, book.getPrimaryBookFile().getBookType());
         }
         
         byte[] imageData = outputStream.toByteArray();
