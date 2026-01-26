@@ -2,8 +2,8 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
@@ -22,7 +22,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -115,13 +116,19 @@ public class LibraryProcessingService {
 
         return libraryEntity.getBookEntities().stream()
                 .filter(book -> (book.getDeleted() == null || !book.getDeleted()))
-                .filter(book -> !currentFullPaths.contains(book.getFullFilePath()))
+                .filter(book -> {
+                    if (book.getBookFiles() == null || book.getBookFiles().isEmpty()) {
+                        return true;
+                    }
+                    return !currentFullPaths.contains(book.getFullFilePath());
+                })
                 .map(BookEntity::getId)
                 .collect(Collectors.toList());
     }
 
     protected List<LibraryFile> detectNewBookPaths(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<String> existingKeys = libraryEntity.getBookEntities().stream()
+                .filter(book -> book.getBookFiles() != null && !book.getBookFiles().isEmpty())
                 .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 

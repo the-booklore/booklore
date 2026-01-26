@@ -47,3 +47,19 @@ p {
     transform: rotate(360deg);
   }
 }
+
+.retry-btn {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  background-color: #818cf8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #6366f1;
+  }
+}

@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, switchMap, takeUntil} from 'rxjs/operators';
-import {ChartConfiguration, ChartData, TooltipItem} from 'chart.js';
+import {Chart, ChartConfiguration, ChartData} from 'chart.js';
 import {LibraryFilterService} from '../../service/library-filter.service';
 import {BookService} from '../../../../../book/service/book.service';
 import {BookState} from '../../../../../book/model/state/book-state.model';
@@ -90,6 +90,7 @@ export class AuthorUniverseChartComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    document.getElementById('author-chart-tooltip')?.remove();
   }
 
   private initChartOptions(): void {
@@ -170,45 +171,8 @@ export class AuthorUniverseChartComponent implements OnInit, OnDestroy {
           }
         },
         tooltip: {
-          enabled: true,
-          backgroundColor: 'rgba(0, 0, 0, 0.95)',
-          titleColor: '#ffffff',
-          bodyColor: '#ffffff',
-          borderColor: '#8b5cf6',
-          borderWidth: 2,
-          cornerRadius: 8,
-          padding: 16,
-          titleFont: {size: 14, weight: 'bold'},
-          bodyFont: {size: 12},
-          callbacks: {
-            title: (context: TooltipItem<'bubble'>[]) => {
-              const raw = context[0].raw as BubbleDataPoint;
-              return raw.authorStats.name;
-            },
-            label: (context: TooltipItem<'bubble'>) => {
-              const raw = context.raw as BubbleDataPoint;
-              const stats = raw.authorStats;
-              const lines: string[] = [];
-
-              lines.push(`Books: ${stats.bookCount}`);
-              lines.push(`Total Pages: ${stats.totalPages.toLocaleString()}`);
-
-              if (stats.avgRating > 0) {
-                lines.push(`Avg Rating: ${stats.avgRating.toFixed(2)} ★`);
-              } else {
-                lines.push(`Avg Rating: No ratings`);
-              }
-
-              lines.push(`Read: ${stats.readCount}/${stats.bookCount} (${Math.round(stats.completionRate)}%)`);
-
-              if (stats.categories.length > 0) {
-                const topCategories = stats.categories.slice(0, 3).join(', ');
-                lines.push(`Genres: ${topCategories}`);
-              }
-
-              return lines;
-            }
-          }
+          enabled: false,
+          external: (context) => this.handleExternalTooltip(context)
         },
         datalabels: {
           display: false
@@ -550,6 +514,69 @@ export class AuthorUniverseChartComponent implements OnInit, OnDestroy {
     }
 
     return insights;
+  }
+
+  private handleExternalTooltip(context: { chart: Chart; tooltip: any }): void {
+    const {chart, tooltip} = context;
+    let tooltipEl = document.getElementById('author-chart-tooltip');
+
+    if (!tooltipEl) {
+      tooltipEl = document.createElement('div');
+      tooltipEl.id = 'author-chart-tooltip';
+      Object.assign(tooltipEl.style, {
+        position: 'fixed',
+        zIndex: '9999',
+        background: 'rgba(0, 0, 0, 0.95)',
+        border: '2px solid #8b5cf6',
+        borderRadius: '8px',
+        padding: '12px 16px',
+        pointerEvents: 'none',
+        opacity: '0',
+        transition: 'opacity 0.15s ease',
+        transform: 'translate(-50%, calc(-100% - 12px))',
+        maxWidth: '280px',
+        whiteSpace: 'nowrap',
+        fontFamily: "'Inter', sans-serif"
+      });
+      document.body.appendChild(tooltipEl);
+    }
+
+    if (tooltip.opacity === 0) {
+      tooltipEl.style.opacity = '0';
+      return;
+    }
+
+    // Only use the first (nearest) data point
+    const dataPoint = tooltip.dataPoints?.[0];
+    if (!dataPoint) {
+      tooltipEl.style.opacity = '0';
+      return;
+    }
+
+    const raw = dataPoint.raw as BubbleDataPoint;
+    const stats = raw.authorStats;
+
+    const ratingText = stats.avgRating > 0
+      ? `${stats.avgRating.toFixed(2)} ★`
+      : 'No ratings';
+
+    const categoriesHtml = stats.categories.length > 0
+      ? `<div style="color:rgba(255,255,255,0.9);font-size:12px;line-height:1.6">Genres: ${stats.categories.slice(0, 3).join(', ')}</div>`
+      : '';
+
+    tooltipEl.innerHTML = `
+      <div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:6px">${stats.name}</div>
+      <div style="color:rgba(255,255,255,0.9);font-size:12px;line-height:1.6">Books: ${stats.bookCount}</div>
+      <div style="color:rgba(255,255,255,0.9);font-size:12px;line-height:1.6">Total Pages: ${stats.totalPages.toLocaleString()}</div>
+      <div style="color:rgba(255,255,255,0.9);font-size:12px;line-height:1.6">Avg Rating: ${ratingText}</div>
+      <div style="color:rgba(255,255,255,0.9);font-size:12px;line-height:1.6">Read: ${stats.readCount}/${stats.bookCount} (${Math.round(stats.completionRate)}%)</div>
+      ${categoriesHtml}
+    `;
+
+    const canvasRect = chart.canvas.getBoundingClientRect();
+    tooltipEl.style.opacity = '1';
+    tooltipEl.style.left = (canvasRect.left + tooltip.caretX) + 'px';
+    tooltipEl.style.top = (canvasRect.top + tooltip.caretY) + 'px';
   }
 
   private hexToRgba(hex: string, alpha: number): string {
