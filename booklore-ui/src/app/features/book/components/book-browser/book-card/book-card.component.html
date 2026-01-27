@@ -2,11 +2,12 @@
      [class.selected]="isSelected"
      (click)="onCardClick($event)">
 
-  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive, 'loaded': isImageLoaded }">
+  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive, 'loaded': isImageLoaded, 'audiobook-cover': _isAudiobook }">
     <img
       [src]="coverImageUrl"
       class="book-cover"
       [class.loaded]="isImageLoaded"
+      [class.square-cover]="_isAudiobook"
       [alt]="'Cover of ' + displayTitle"
       loading="lazy"
       decoding="async"

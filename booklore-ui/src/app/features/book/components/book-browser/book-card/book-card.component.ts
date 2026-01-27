@@ -82,6 +82,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected _seriesCountTooltip: string = '';
   protected _titleTooltip: string = '';
   protected _hasProgress: boolean = false;
+  protected _isAudiobook: boolean = false;
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
@@ -165,6 +166,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this._seriesCountTooltip = 'Series collapsed: ' + this.book.seriesCount + ' books';
     this._titleTooltip = 'Title: ' + this._displayTitle;
+    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK';
   }
 
   get hasProgress(): boolean {
