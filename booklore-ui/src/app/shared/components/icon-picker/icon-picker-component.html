@@ -1,55 +1,96 @@
-<div class="icon-picker-container">
-  <div class="panel-header">
-    <div class="header-icon-wrapper">
-      <i class="pi pi-palette header-icon"></i>
-    </div>
-    <div class="header-text">
-      <h2 class="panel-title">Choose an Icon</h2>
-      <p class="panel-description">Select or upload custom icons</p>
+<div class="icon-picker">
+  <header class="dialog-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="pi pi-palette"></i>
+      </div>
+      <div class="header-text">
+        <h1>Choose an Icon</h1>
+        <p>Select from library or add custom SVGs</p>
+      </div>
     </div>
     <p-button
       icon="pi pi-times"
-      [rounded]="true"
       [text]="true"
+      [rounded]="true"
       severity="secondary"
-      (click)="ref.close()"
-      styleClass="close-button">
-    </p-button>
-  </div>
+      (onClick)="ref.close()"
+    />
+  </header>
 
-  <div class="dialog-content">
+  <div class="dialog-body">
     <p-tabs [(value)]="activeTabIndex">
       <p-tablist>
-        <p-tab value="0">Prime Icons</p-tab>
-        <p-tab value="1">SVG Icons</p-tab>
+        <p-tab value="0">
+          <i class="pi pi-prime"></i>
+          <span>Prime Icons</span>
+        </p-tab>
+        <p-tab value="1">
+          <i class="pi pi-images"></i>
+          <span>SVG Library</span>
+        </p-tab>
         @if (canManageIcons) {
-          <p-tab value="2">Add SVG Icon(s)</p-tab>
+          <p-tab value="2">
+            <i class="pi pi-plus-circle"></i>
+            <span>Add Custom</span>
+          </p-tab>
         }
       </p-tablist>
-      <p-tabpanels>
-        <p-tabpanel value="0">
-          <input type="text" placeholder="Search Prime icons..." [(ngModel)]="searchText" class="icon-search"/>
 
-          <div class="icon-grid">
-            @for (icon of filteredIcons(); track icon) {
-              <div
-                class="icon-item"
-                (click)="selectIcon(icon)"
-                [class.selected]="icon === selectedIcon"
-                [title]="icon">
-                <i [class]="icon"></i>
-              </div>
-            }
+      <p-tabpanels>
+        <!-- Prime Icons Tab -->
+        <p-tabpanel value="0">
+          <div class="tab-content">
+            <div class="search-container">
+              <i class="pi pi-search search-icon"></i>
+              <input
+                type="text"
+                pInputText
+                placeholder="Search Prime icons..."
+                [(ngModel)]="searchText"
+                class="search-input"
+              />
+            </div>
+
+            <div class="icon-grid">
+              @for (icon of filteredIcons(); track icon) {
+                <div
+                  class="icon-item"
+                  (click)="selectIcon(icon)"
+                  [class.selected]="icon === selectedIcon"
+                  [title]="icon"
+                >
+                  <i [class]="icon"></i>
+                </div>
+              }
+            </div>
           </div>
         </p-tabpanel>
+
+        <!-- SVG Library Tab -->
         <p-tabpanel value="1">
-          <div class="svg-browse-container">
+          <div class="tab-content">
             @if (isLoadingSvgIcons) {
-              <div class="loading-message">Loading icons...</div>
+              <div class="loading-state">
+                <i class="pi pi-spin pi-spinner"></i>
+                <span>Loading icons...</span>
+              </div>
             } @else if (svgIconsError) {
-              <div class="error-message">{{ svgIconsError }}</div>
+              <div class="error-state">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ svgIconsError }}</span>
+              </div>
             } @else {
-              <input type="text" placeholder="Search SVG icons..." [(ngModel)]="svgSearchText" class="icon-search"/>
+              <div class="search-container">
+                <i class="pi pi-search search-icon"></i>
+                <input
+                  type="text"
+                  pInputText
+                  placeholder="Search SVG icons..."
+                  [(ngModel)]="svgSearchText"
+                  class="search-input"
+                />
+              </div>
 
               <div class="icon-grid">
                 @for (iconName of filteredSvgIcons(); track iconName) {
@@ -62,122 +103,142 @@
                     (dragstart)="onSvgIconDragStart(iconName)"
                     (dragend)="onSvgIconDragEnd()"
                   >
-                    <div
-                      class="svg-icon-inline"
-                      [innerHTML]="getSvgContent(iconName)"
-                    ></div>
+                    <div class="svg-icon-inline" [innerHTML]="getSvgContent(iconName)"></div>
                   </div>
                 }
               </div>
 
-
               @if (canManageIcons) {
-                <div style="display: flex; align-items: center; position: fixed; right: 32px; bottom: 32px; z-index: 101;">
+                <div class="trash-zone-container">
                   <div
-                    class="svg-trash-area"
-                    [class.trash-hover]="isTrashHover"
+                    class="trash-zone"
+                    [class.active]="isTrashHover"
                     (dragover)="onTrashDragOver($event)"
                     (dragleave)="onTrashDragLeave($event)"
-                    (drop)="onTrashDrop($event)">
+                    (drop)="onTrashDrop($event)"
+                  >
                     <i class="pi pi-trash"></i>
-                    <span>Drag here to delete icon</span>
+                    <span>Drop here to delete</span>
                   </div>
                 </div>
               }
             }
           </div>
         </p-tabpanel>
+
+        <!-- Add Custom SVG Tab -->
         @if (canManageIcons) {
           <p-tabpanel value="2">
-            <div class="svg-paste-container">
-              <div class="svg-input-section">
-                <input
-                  type="text"
-                  [(ngModel)]="svgName"
-                  placeholder="Enter icon name for saving"
-                  class="svg-name-input"
-                />
-
-                <textarea
-                  [(ngModel)]="svgContent"
-                  (ngModelChange)="onSvgContentChange()"
-                  placeholder="Paste your SVG code here..."
-                  class="svg-textarea"
-                  rows="8"></textarea>
-
-                @if (svgContent && svgPreview) {
-                  <div class="svg-preview-section">
-                    <h4 class="preview-title">Preview</h4>
-                    <div class="svg-preview" [innerHTML]="svgPreview"></div>
-                  </div>
-                }
-
-                @if (errorMessage) {
-                  <div class="error-message">{{ errorMessage }}</div>
-                }
-
-                <div class="button-container">
-                  <p-button
-                    (onClick)="addSvgEntry()"
-                    [disabled]="!svgContent || !svgName"
-                    label="Add to Queue"
-                    severity="primary"
-                    outlined
-                    icon="pi pi-plus">
-                  </p-button>
+            <div class="tab-content">
+              <section class="form-section">
+                <div class="section-header">
+                  <i class="pi pi-code"></i>
+                  <span>SVG Input</span>
                 </div>
-              </div>
+
+                <div class="form-fields">
+                  <div class="form-field">
+                    <label>Icon Name</label>
+                    <input
+                      type="text"
+                      pInputText
+                      [(ngModel)]="svgName"
+                      placeholder="e.g., my-custom-icon"
+                      class="input-full"
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label>SVG Code</label>
+                    <textarea
+                      pInputTextarea
+                      [(ngModel)]="svgContent"
+                      (ngModelChange)="onSvgContentChange()"
+                      placeholder="<svg>...</svg>"
+                      [rows]="6"
+                      class="code-textarea"
+                    ></textarea>
+                  </div>
+
+                  @if (svgContent && svgPreview) {
+                    <div class="preview-card">
+                      <div class="preview-label">Preview</div>
+                      <div class="preview-content" [innerHTML]="svgPreview"></div>
+                    </div>
+                  }
+
+                  @if (errorMessage) {
+                    <div class="error-message">
+                      <i class="pi pi-exclamation-circle"></i>
+                      <span>{{ errorMessage }}</span>
+                    </div>
+                  }
+                </div>
+
+                <div class="form-actions">
+                  <p-button
+                    label="Add to Queue"
+                    icon="pi pi-plus"
+                    [outlined]="true"
+                    [disabled]="!svgContent || !svgName"
+                    (onClick)="addSvgEntry()"
+                  />
+                </div>
+              </section>
 
               @if (svgEntries.length > 0) {
-                <div class="svg-entries-section">
-                  <div class="entries-header">
-                    <h4 class="entries-title">
-                      Queued Icons ({{ svgEntries.length }})
-                    </h4>
-                    <p-button
-                      (onClick)="clearAllEntries()"
-                      label="Clear All"
-                      severity="danger"
-                      [text]="true"
-                      icon="pi pi-times">
-                    </p-button>
+                <section class="form-section queue-section">
+                  <div class="section-header">
+                    <i class="pi pi-list"></i>
+                    <span>Queue</span>
+                    <span class="section-badge">{{ svgEntries.length }}</span>
+                    <div class="section-actions">
+                      <p-button
+                        label="Clear All"
+                        icon="pi pi-times"
+                        severity="danger"
+                        [text]="true"
+                        size="small"
+                        (onClick)="clearAllEntries()"
+                      />
+                    </div>
                   </div>
 
-                  <div class="entries-grid">
+                  <div class="queue-grid">
                     @for (entry of svgEntries; track entry.name; let i = $index) {
-                      <div class="entry-card" [class.has-error]="entry.error">
-                        <div class="entry-header">
-                          <span class="entry-name">{{ entry.name }}</span>
-                          <button
-                            class="entry-remove"
-                            (click)="removeSvgEntry(i)"
-                            title="Remove">
+                      <div class="queue-item" [class.has-error]="entry.error">
+                        <div class="queue-item-header">
+                          <span class="queue-item-name">{{ entry.name }}</span>
+                          <button class="queue-item-remove" (click)="removeSvgEntry(i)" type="button">
                             <i class="pi pi-times"></i>
                           </button>
                         </div>
-                        <div class="entry-preview" [innerHTML]="entry.preview"></div>
+                        <div class="queue-item-preview" [innerHTML]="entry.preview"></div>
                         @if (entry.error) {
-                          <div class="entry-error">{{ entry.error }}</div>
+                          <div class="queue-item-error">{{ entry.error }}</div>
                         }
                       </div>
                     }
                   </div>
 
                   @if (batchErrorMessage) {
-                    <div class="error-message">{{ batchErrorMessage }}</div>
+                    <div class="error-message">
+                      <i class="pi pi-exclamation-circle"></i>
+                      <span>{{ batchErrorMessage }}</span>
+                    </div>
                   }
 
-                  <div class="batch-actions">
+                  <div class="form-actions">
                     <p-button
-                      (onClick)="saveAllSvgs()"
+                      label="Save All Icons"
+                      icon="pi pi-save"
+                      severity="success"
                       [loading]="isSavingBatch"
                       [disabled]="svgEntries.length === 0"
-                      label="Save All Icons"
-                      severity="success"
-                      icon="pi pi-save">
-                    </p-button>
+                      (onClick)="saveAllSvgs()"
+                    />
                   </div>
-                </div>
+                </section>
               }
             </div>
           </p-tabpanel>
