@@ -77,7 +77,7 @@ public class GoogleParser implements BookParser {
 
         String title = fetchMetadataRequest.getTitle();
         String author = fetchMetadataRequest.getAuthor();
-        String fileName = book.getFileName();
+        String fileName = book.getPrimaryFile() != null ? book.getPrimaryFile().getFileName() : null;
 
         List<BookMetadata> results = Collections.emptyList();
 
@@ -509,6 +509,8 @@ public class GoogleParser implements BookParser {
             return null;
         }
 
+        return searchTerm;
+    }
 
     private String truncateToMaxWords(String input) {
         String[] words = WHITESPACE_PATTERN.split(input);
@@ -641,3 +643,6 @@ public class GoogleParser implements BookParser {
         return count;
     }
 }
+
+
+
