@@ -177,3 +177,40 @@
     }
   }
 }
+
+// Empty state for physical books
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-color-secondary);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  color: var(--book-type-physical-color);
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-state-message {
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+  max-width: 400px;
+}
+
+.empty-state-hint {
+  font-size: 0.8rem;
+  font-style: italic;
+  margin: 0;
+  opacity: 0.8;
+}

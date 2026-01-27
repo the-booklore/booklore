@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookRecommendation;
 import com.adityachandel.booklore.model.dto.BookViewerSettings;
 import com.adityachandel.booklore.model.dto.request.AttachBookFileRequest;
+import com.adityachandel.booklore.model.dto.request.CreatePhysicalBookRequest;
 import com.adityachandel.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.request.ReadStatusUpdateRequest;
@@ -17,6 +18,7 @@ import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.service.book.BookFileAttachmentService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
+import com.adityachandel.booklore.service.book.PhysicalBookService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
 import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.service.recommender.BookRecommendationService;
@@ -52,6 +54,7 @@ public class BookController {
     private final BookFileAttachmentService bookFileAttachmentService;
     private final BookMetadataService bookMetadataService;
     private final ReadingProgressService readingProgressService;
+    private final PhysicalBookService physicalBookService;
 
     @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
     @ApiResponse(responseCode = "200", description = "List of books returned successfully")
@@ -73,6 +76,20 @@ public class BookController {
             @Parameter(description = "ID of the book to retrieve") @PathVariable long bookId,
             @Parameter(description = "Include book description in the response") @RequestParam(required = false, defaultValue = "false") boolean withDescription) {
         return ResponseEntity.ok(bookService.getBook(bookId, withDescription));
+    }
+
+    @Operation(summary = "Create a physical book", description = "Create a physical book without digital files. Requires library management permission or admin.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Physical book created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Library not found")
+    })
+    @PostMapping("/physical")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Book> createPhysicalBook(
+            @Parameter(description = "Physical book creation request") @RequestBody @Valid CreatePhysicalBookRequest request) {
+        return ResponseEntity.status(201).body(physicalBookService.createPhysicalBook(request));
     }
 
     @Operation(summary = "Delete books", description = "Delete one or more books by their IDs. Requires admin or delete permission.")

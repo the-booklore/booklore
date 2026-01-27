@@ -323,6 +323,11 @@
   color: #fff;
 }
 
+.book-type-physical {
+  background: var(--book-type-physical-color);
+  color: #fff;
+}
+
 .read-status-indicator {
   display: flex;
   align-items: center;

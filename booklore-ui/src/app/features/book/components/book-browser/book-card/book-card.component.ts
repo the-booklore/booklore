@@ -734,11 +734,18 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   getDisplayFormat(): string | null {
+    if (!this.book?.primaryFile) {
+      return 'PHYSICAL';
+    }
     const ext = this.book?.primaryFile?.extension;
     if (ext) {
       return ext.toUpperCase();
     }
     return this.getFileExtension(this.book?.primaryFile?.filePath);
+  }
+
+  hasDigitalFile(): boolean {
+    return !!this.book?.primaryFile;
   }
 
   private getFileIcon(fileType: string | null): string {

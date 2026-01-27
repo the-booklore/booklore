@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BookType, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BookType, BulkMetadataUpdateRequest, CreatePhysicalBookRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -238,6 +238,32 @@ export class BookService {
         const currentState = this.bookStateService.getCurrentBookState();
         this.bookStateService.updateBookState({...currentState, error: error.message});
         throw error;
+      })
+    );
+  }
+
+  createPhysicalBook(request: CreatePhysicalBookRequest): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/physical`, request).pipe(
+      tap(newBook => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = [...(currentState.books || []), newBook];
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Physical Book Created',
+          detail: `"${newBook.metadata?.title || 'Book'}" has been added to your library.`
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Creation Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while creating the physical book.'
+        });
+        return throwError(() => error);
       })
     );
   }

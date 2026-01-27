@@ -44,10 +44,11 @@ public class BookUpdateService {
     public void updateBookViewerSetting(long bookId, BookViewerSettings bookViewerSettings) {
         BookEntity book = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        if (book.getPrimaryBookFile().getBookType() == null) {
+        var primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null || primaryFile.getBookType() == null) {
             throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
         }
-        switch (book.getPrimaryBookFile().getBookType()) {
+        switch (primaryFile.getBookType()) {
             case PDF -> updatePdfViewerSettings(bookId, user.getId(), bookViewerSettings);
             case EPUB, FB2, MOBI, AZW3 -> updateEbookViewerSettings(bookId, user.getId(), bookViewerSettings);
             case CBX -> updateCbxViewerSettings(bookId, user.getId(), bookViewerSettings);

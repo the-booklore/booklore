@@ -87,7 +87,7 @@ public class BookMetadataUpdater {
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         MetadataPersistenceSettings.SaveToOriginalFile writeToFile = settings.getSaveToOriginalFile();
         var primaryFile = bookEntity.getPrimaryBookFile();
-        BookFileType bookType = primaryFile.getBookType();
+        BookFileType bookType = primaryFile != null ? primaryFile.getBookType() : null;
 
         boolean hasValueChangesForFileWrite = MetadataChangeDetector.hasValueChangesForFileWrite(newMetadata, metadata, clearFlags);
 
@@ -109,7 +109,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate) {
+        if (primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;
@@ -130,14 +130,16 @@ public class BookMetadataUpdater {
         }
 
         boolean moveFilesToLibraryPattern = settings.isMoveFilesToLibraryPattern();
-        if (moveFilesToLibraryPattern) {
+        if (moveFilesToLibraryPattern && primaryFile != null) {
             try {
                 BookEntity book = metadata.getBook();
                 FileMoveResult result = fileMoveService.moveSingleFile(book);
                 if (result.isMoved()) {
                     var bookPrimaryFile = book.getPrimaryBookFile();
-                    bookPrimaryFile.setFileName(result.getNewFileName());
-                    bookPrimaryFile.setFileSubPath(result.getNewFileSubPath());
+                    if (bookPrimaryFile != null) {
+                        bookPrimaryFile.setFileName(result.getNewFileName());
+                        bookPrimaryFile.setFileSubPath(result.getNewFileSubPath());
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Failed to move files for book ID {} after metadata update: {}", bookId, e.getMessage());

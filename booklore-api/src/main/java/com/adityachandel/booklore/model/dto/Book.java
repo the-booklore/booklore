@@ -34,4 +34,5 @@ public class Book {
     private LibraryPath libraryPath;
     private List<BookFile> alternativeFormats;
     private List<BookFile> supplementaryFiles;
+    private Boolean isPhysical;
 }

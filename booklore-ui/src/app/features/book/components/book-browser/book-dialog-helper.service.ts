@@ -16,6 +16,7 @@ import {CoverSearchComponent} from '../../../metadata/component/cover-search/cov
 import {Book} from '../../model/book.model';
 import {AdditionalFileUploaderComponent} from '../additional-file-uploader/additional-file-uploader.component';
 import {BookFileAttacherComponent} from '../book-file-attacher/book-file-attacher.component';
+import {AddPhysicalBookDialogComponent} from '../add-physical-book-dialog/add-physical-book-dialog.component';
 
 @Injectable({providedIn: 'root'})
 export class BookDialogHelperService {
@@ -170,6 +171,16 @@ export class BookDialogHelperService {
       styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       data: {
         sourceBooks: sourceBooks,
+      },
+    });
+  }
+
+  openAddPhysicalBookDialog(libraryId?: number): DynamicDialogRef | null {
+    return this.openDialog(AddPhysicalBookDialogComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
+      data: {
+        libraryId: libraryId,
       },
     });
   }

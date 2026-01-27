@@ -157,4 +157,8 @@ export class MetadataTabsComponent {
     const type = fileType.toLowerCase();
     return `var(--book-type-${type}-color, var(--p-gray-500))`;
   }
+
+  isPhysicalBook(): boolean {
+    return !this.book?.primaryFile && (!this.book?.alternativeFormats || this.book.alternativeFormats.length === 0);
+  }
 }

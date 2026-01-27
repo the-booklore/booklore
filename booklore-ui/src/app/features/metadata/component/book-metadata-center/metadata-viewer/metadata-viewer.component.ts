@@ -245,7 +245,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            if ((userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) && appSettings?.diskType === 'LOCAL') {
+            const hasFiles = this.hasAnyFiles(book);
+
+            if (hasFiles && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) && appSettings?.diskType === 'LOCAL') {
               items.push({
                 label: 'Organize Files',
                 icon: 'pi pi-arrows-h',
@@ -255,7 +257,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            if (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin) {
+            if (hasFiles && (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin)) {
               items.push({
                 label: 'Send Book',
                 icon: 'pi pi-send',
@@ -276,8 +278,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            // Show "Attach to Another Book" for single-file books (detached books)
-            const isSingleFileBook = !book.alternativeFormats?.length;
+            // Show "Attach to Another Book" for single-file books (detached books) - not for physical books
+            const isSingleFileBook = hasFiles && !book.alternativeFormats?.length;
             if (isSingleFileBook && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin)) {
               items.push({
                 label: 'Attach to Another Book',
@@ -361,21 +363,28 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 if (f.fileName) allFormats.push(f.fileName);
               });
 
+              const isPhysical = !hasFiles;
               const fileListMessage = allFormats.length > 0
                 ? `\n\nThe following files will be permanently deleted:\n• ${allFormats.join('\n• ')}`
                 : '';
 
+              const deleteLabel = isPhysical ? 'Delete Book' : 'Delete Book & All Files';
+              const deleteMessage = isPhysical
+                ? `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record from your library.\n\nThis action cannot be undone.`
+                : `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record AND all associated files from your filesystem.${fileListMessage}\n\nThis action cannot be undone.`;
+              const deleteAcceptLabel = isPhysical ? 'Delete' : 'Delete Everything';
+
               items.push({
-                label: 'Delete Book & All Files',
+                label: deleteLabel,
                 icon: 'pi pi-trash',
                 command: () => {
                   this.confirmationService.confirm({
-                    message: `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record AND all associated files from your filesystem.${fileListMessage}\n\nThis action cannot be undone.`,
-                    header: 'Delete Book & All Files',
+                    message: deleteMessage,
+                    header: deleteLabel,
                     icon: 'pi pi-exclamation-triangle',
                     acceptIcon: 'pi pi-trash',
                     rejectIcon: 'pi pi-times',
-                    acceptLabel: 'Delete Everything',
+                    acceptLabel: deleteAcceptLabel,
                     rejectLabel: 'Cancel',
                     acceptButtonStyleClass: 'p-button-danger',
                     rejectButtonStyleClass: 'p-button-outlined',
@@ -1209,5 +1218,17 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   getNavigationPosition(): string {
     const position = this.bookNavigationService.getCurrentPosition();
     return position ? `${position.current} of ${position.total}` : '';
+  }
+
+  hasDigitalFile(book: Book): boolean {
+    return !!book?.primaryFile;
+  }
+
+  hasAnyFiles(book: Book): boolean {
+    return !!book?.primaryFile || (book?.alternativeFormats?.length ?? 0) > 0;
+  }
+
+  isPhysicalBook(book: Book): boolean {
+    return !this.hasAnyFiles(book);
   }
 }

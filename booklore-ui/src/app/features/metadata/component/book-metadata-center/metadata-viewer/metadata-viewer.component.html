@@ -363,7 +363,7 @@
                   </span>
                 }
                 @if (!book?.primaryFile?.filePath && !book?.alternativeFormats?.length) {
-                  <app-tag size="3xs" variant="pill" color="gray">-</app-tag>
+                  <app-tag size="3xs" variant="pill" [customBgColor]="'var(--book-type-physical-color)'" customTextColor="#fff">PHYSICAL</app-tag>
                 }
               </span>
             </div>
@@ -510,25 +510,29 @@
               }
             </div>
 
-            <div class="metadata-item">
-              <span class="metadata-key">File Size:</span>
-              @if (book?.primaryFile?.fileSizeKb) {
-                <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.primaryFile?.fileSizeKb!)">
-                  {{ formatFileSize(book?.primaryFile) }}
-                </span>
-              } @else {
-                <span class="metadata-value">-</span>
-              }
-            </div>
-          </div>
-
-          <div class="file-path-section">
-            <span class="metadata-key">File Path:</span>
-            <i class="pi eye-icon" [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'" (click)="showFilePath = !showFilePath"></i>
-            @if (showFilePath) {
-              <code class="file-path-code">{{ book?.primaryFile?.filePath }}</code>
+            @if (hasDigitalFile(book)) {
+              <div class="metadata-item">
+                <span class="metadata-key">File Size:</span>
+                @if (book?.primaryFile?.fileSizeKb) {
+                  <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.primaryFile?.fileSizeKb!)">
+                    {{ formatFileSize(book?.primaryFile) }}
+                  </span>
+                } @else {
+                  <span class="metadata-value">-</span>
+                }
+              </div>
             }
           </div>
+
+          @if (hasDigitalFile(book)) {
+            <div class="file-path-section">
+              <span class="metadata-key">File Path:</span>
+              <i class="pi eye-icon" [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'" (click)="showFilePath = !showFilePath"></i>
+              @if (showFilePath) {
+                <code class="file-path-code">{{ book?.primaryFile?.filePath }}</code>
+              }
+            </div>
+          }
         </div>
 
         @if (userService.userState$ | async; as userState) {
@@ -562,17 +566,19 @@
               </div>
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
-            @if (readMenuItems$ | async; as readItems) {
-              @if (readItems.length > 0) {
-                <p-splitbutton [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" [model]="readItems" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
+            @if (hasDigitalFile(book)) {
+              @if (readMenuItems$ | async; as readItems) {
+                @if (readItems.length > 0) {
+                  <p-splitbutton [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" [model]="readItems" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
+                } @else {
+                  <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
+                }
               } @else {
                 <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
               }
-            } @else {
-              <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
+              <p-divider layout="vertical"></p-divider>
             }
-            <p-divider layout="vertical"></p-divider>
-            @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
+            @if ((userState.user!.permissions.canDownload || userState.user!.permissions.admin) && hasAnyFiles(book)) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
                   <p-splitbutton [label]="(getDisplayFormat(book.primaryFile) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>

@@ -24,6 +24,9 @@ public class FileUtils {
 
     public String getBookFullPath(BookEntity bookEntity) {
         BookFileEntity bookFile = bookEntity.getPrimaryBookFile();
+        if (bookFile == null || bookEntity.getLibraryPath() == null) {
+            return null;
+        }
 
         return Path.of(bookEntity.getLibraryPath().getPath(), bookFile.getFileSubPath(), bookFile.getFileName())
                 .normalize()

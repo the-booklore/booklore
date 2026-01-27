@@ -219,17 +219,23 @@ public class ReadingProgressService {
                     .orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("Book file not found"));
             updateProgressFromFileProgress(progress, bookFile.getBookType(), fileProgress);
         } else {
-            percentage = updateProgressByBookType(progress, book.getPrimaryBookFile().getBookType(), request);
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            if (primaryFile == null) {
+                throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
+            }
+            percentage = updateProgressByBookType(progress, primaryFile.getBookType(), request);
 
             if (percentage != null) {
-                BookFileEntity primaryFile = book.getPrimaryBookFile();
                 saveToUserBookFileProgressFromLegacy(userEntity, primaryFile, progress, now);
             }
         }
 
         if (percentage != null) {
             progress.setReadStatus(calculateReadStatus(percentage));
-            setProgressPercent(progress, book.getPrimaryBookFile().getBookType(), percentage);
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            if (primaryFile != null) {
+                setProgressPercent(progress, primaryFile.getBookType(), percentage);
+            }
         }
         if (request.getDateFinished() != null) {
             progress.setDateFinished(request.getDateFinished());

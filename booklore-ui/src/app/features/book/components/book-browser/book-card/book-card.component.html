@@ -36,7 +36,7 @@
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
     }
 
-    @if (!_isSeriesViewActive) {
+    @if (!_isSeriesViewActive && hasDigitalFile()) {
       <p-button [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
     }
 

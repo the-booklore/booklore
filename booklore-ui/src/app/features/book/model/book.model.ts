@@ -55,6 +55,7 @@ export interface Book extends FileInfo {
   libraryPath?: { id: number };
   alternativeFormats?: AdditionalFile[];
   supplementaryFiles?: AdditionalFile[];
+  isPhysical?: boolean;
 
   [key: string]: unknown;
 }
@@ -311,4 +312,17 @@ export enum ReadStatus {
   WONT_READ = 'WONT_READ',
   ABANDONED = 'ABANDONED',
   UNSET = 'UNSET'
+}
+
+export interface CreatePhysicalBookRequest {
+  libraryId: number;
+  isbn?: string;
+  title?: string;
+  authors?: string[];
+  description?: string;
+  publisher?: string;
+  publishedDate?: string;
+  language?: string;
+  pageCount?: number;
+  categories?: string[];
 }

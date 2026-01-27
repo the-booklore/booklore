@@ -57,6 +57,9 @@ public class BookDownloadService {
                     .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
             BookFileEntity primaryFile = bookEntity.getPrimaryBookFile();
+            if (primaryFile == null) {
+                throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+            }
             Path file = Paths.get(FileUtils.getBookFullPath(bookEntity)).toAbsolutePath().normalize();
 
             if (!Files.exists(file)) {
@@ -233,8 +236,11 @@ public class BookDownloadService {
 
     public void downloadKoboBook(Long bookId, HttpServletResponse response) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        
+
         var primaryFile = bookEntity.getPrimaryBookFile();
+        if (primaryFile == null) {
+            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+        }
         boolean isEpub = primaryFile.getBookType() == BookFileType.EPUB;
         boolean isCbx = primaryFile.getBookType() == BookFileType.CBX;
 
