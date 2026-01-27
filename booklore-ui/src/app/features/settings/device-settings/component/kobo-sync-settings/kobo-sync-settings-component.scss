@@ -150,33 +150,9 @@
 }
 
 .access-denied-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border-radius: settings.$settings-card-border-radius;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: var(--p-red-400);
-  max-width: 500px;
+  @include settings.settings-access-denied-card;
+}
 
-  .pi {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .access-denied-content {
-    h3 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1rem;
-      font-weight: settings.$settings-section-title-weight;
-      color: var(--p-red-300);
-    }
-
-    p {
-      margin: 0;
-      font-size: settings.$settings-section-description-size;
-      line-height: 1.5;
-    }
-  }
+.access-denied-content {
+  @include settings.settings-access-denied-content;
 }
