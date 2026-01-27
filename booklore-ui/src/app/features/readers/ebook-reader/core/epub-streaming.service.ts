@@ -43,7 +43,10 @@ export class EpubStreamingService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
 
-  getBookInfo(bookId: number): Observable<EpubBookInfo> {
+  getBookInfo(bookId: number, bookType?: string): Observable<EpubBookInfo> {
+    if (bookType) {
+      return this.http.get<EpubBookInfo>(`${this.baseUrl}/${bookId}/info`, { params: { bookType } });
+    }
     return this.http.get<EpubBookInfo>(`${this.baseUrl}/${bookId}/info`);
   }
 

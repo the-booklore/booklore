@@ -21,6 +21,7 @@ import {BookDialogHelperService} from "../book-browser/book-dialog-helper.servic
 import {TaskHelperService} from "../../../settings/task-management/task-helper.service";
 import {MetadataRefreshType} from "../../../metadata/model/request/metadata-refresh-type.enum";
 import {TieredMenu} from "primeng/tieredmenu";
+import {AppSettingsService} from "../../../../shared/service/app-settings.service";
 import {Tooltip} from "primeng/tooltip";
 import {Divider} from "primeng/divider";
 import {animate, style, transition, trigger} from "@angular/animations";
@@ -80,6 +81,7 @@ export class SeriesPageComponent implements OnDestroy {
   protected taskHelperService = inject(TaskHelperService);
   private messageService = inject(MessageService);
   protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
+  protected appSettingsService = inject(AppSettingsService);
 
   tab: string = "view";
   isExpanded = false;

@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.bookdrop;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
@@ -64,7 +65,7 @@ public class BookdropMetadataService {
 
         List<MetadataProvider> providers = metadataRefreshService.prepareProviders(refreshOptions);
         Book book = Book.builder()
-                .fileName(entity.getFileName())
+                .primaryFile(BookFile.builder().fileName(entity.getFileName()).build())
                 .metadata(initial)
                 .build();
 
