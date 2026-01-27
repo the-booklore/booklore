@@ -79,30 +79,21 @@
         <i class="pi pi-user label-icon"></i>
         Authors
       </label>
-      <div class="chip-input-container">
-        <div class="chips-row">
-          @for (author of authors; track author) {
-            <p-chip [label]="author" [removable]="true" (onRemove)="removeAuthor(author)"/>
-          }
-        </div>
-        <div class="input-with-button">
-          <input
-            id="authors"
-            type="text"
-            pInputText
-            [(ngModel)]="authorInput"
-            class="input-full"
-            placeholder="Type author name and press Enter"
-            (keydown)="onAuthorKeyDown($event)"/>
-          <p-button
-            icon="pi pi-plus"
-            severity="secondary"
-            [outlined]="true"
-            size="small"
-            (onClick)="addAuthor()"
-            [disabled]="!authorInput.trim()"
-            pTooltip="Add author"/>
-        </div>
+      <div class="autocomplete-wrapper">
+        <p-autoComplete
+          appendTo="body"
+          [(ngModel)]="authors"
+          [multiple]="true"
+          [fluid]="true"
+          [dropdown]="false"
+          [suggestions]="filteredAuthors"
+          [forceSelection]="false"
+          [showClear]="false"
+          placeholder="Type author name and press Enter"
+          (completeMethod)="filterAuthors($event)"
+          (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
+          (onSelect)="onAutoCompleteSelect('authors', $event)">
+        </p-autoComplete>
       </div>
     </div>
 
@@ -179,7 +170,8 @@
           [(ngModel)]="pageCount"
           [useGrouping]="false"
           placeholder="Number of pages"
-          styleClass="input-full"/>
+          class="input-full">
+        </p-inputnumber>
       </div>
     </div>
 
@@ -190,30 +182,21 @@
         <i class="pi pi-tags label-icon"></i>
         Categories/Genres
       </label>
-      <div class="chip-input-container">
-        <div class="chips-row">
-          @for (category of categories; track category) {
-            <p-chip [label]="category" [removable]="true" (onRemove)="removeCategory(category)"/>
-          }
-        </div>
-        <div class="input-with-button">
-          <input
-            id="categories"
-            type="text"
-            pInputText
-            [(ngModel)]="categoryInput"
-            class="input-full"
-            placeholder="Type category and press Enter"
-            (keydown)="onCategoryKeyDown($event)"/>
-          <p-button
-            icon="pi pi-plus"
-            severity="secondary"
-            [outlined]="true"
-            size="small"
-            (onClick)="addCategory()"
-            [disabled]="!categoryInput.trim()"
-            pTooltip="Add category"/>
-        </div>
+      <div class="autocomplete-wrapper">
+        <p-autoComplete
+          appendTo="body"
+          [(ngModel)]="categories"
+          [multiple]="true"
+          [fluid]="true"
+          [dropdown]="false"
+          [suggestions]="filteredCategories"
+          [forceSelection]="false"
+          [showClear]="true"
+          placeholder="Type category and press Enter"
+          (completeMethod)="filterCategories($event)"
+          (onKeyUp)="onAutoCompleteKeyUp('categories', $event)"
+          (onSelect)="onAutoCompleteSelect('categories', $event)">
+        </p-autoComplete>
       </div>
     </div>
   </div>
