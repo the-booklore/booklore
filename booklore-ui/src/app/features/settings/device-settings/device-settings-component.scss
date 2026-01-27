@@ -1,21 +1,11 @@
+@use '../../../shared/styles/settings-shared' as settings;
+
 .device-settings-container {
-  width: 100%;
-  height: calc(100dvh - 10.5rem);
-  overflow-y: auto;
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 0.5rem;
-
-  @media (min-width: 768px) {
-    height: calc(100dvh - 11.65rem);
-  }
+  @include settings.settings-page-container;
 }
 
-.koreader-section {
-  padding-bottom: 1.5rem;
-}
-
-.hardcover-section,
-.kobo-section {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }

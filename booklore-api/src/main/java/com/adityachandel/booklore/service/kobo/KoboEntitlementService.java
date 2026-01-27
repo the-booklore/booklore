@@ -86,7 +86,7 @@ public class KoboEntitlementService {
                     .collect(Collectors.toList());
         }
         return books.stream()
-                .filter(bookEntity -> bookEntity.getPrimaryBookFile().getBookType() == BookFileType.EPUB)
+                .filter(bookEntity -> bookEntity.getPrimaryBookFile() != null && bookEntity.getPrimaryBookFile().getBookType() == BookFileType.EPUB)
                 .map(book -> ChangedProductMetadata.builder()
                         .changedProductMetadata(BookEntitlementContainer.builder()
                                 .bookEntitlement(buildBookEntitlement(book, false))
@@ -233,6 +233,9 @@ public class KoboEntitlementService {
         KoboSettings koboSettings = appSettingService.getAppSettings().getKoboSettings();
 
         var primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null) {
+            return null;
+        }
         boolean isEpubFile = primaryFile.getBookType() == BookFileType.EPUB;
         boolean isCbxFile = primaryFile.getBookType() == BookFileType.CBX;
 

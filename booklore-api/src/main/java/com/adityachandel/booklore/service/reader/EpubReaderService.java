@@ -6,6 +6,8 @@ import com.adityachandel.booklore.model.dto.response.EpubManifestItem;
 import com.adityachandel.booklore.model.dto.response.EpubSpineItem;
 import com.adityachandel.booklore.model.dto.response.EpubTocItem;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +73,11 @@ public class EpubReaderService {
     }
 
     public EpubBookInfo getBookInfo(Long bookId) {
-        Path epubPath = getBookPath(bookId);
+        return getBookInfo(bookId, null);
+    }
+
+    public EpubBookInfo getBookInfo(Long bookId, String bookType) {
+        Path epubPath = getBookPath(bookId, bookType);
         try {
             CachedEpubMetadata metadata = getCachedMetadata(epubPath);
             return metadata.bookInfo;
@@ -82,7 +88,11 @@ public class EpubReaderService {
     }
 
     public void streamFile(Long bookId, String filePath, OutputStream outputStream) throws IOException {
-        Path epubPath = getBookPath(bookId);
+        streamFile(bookId, null, filePath, outputStream);
+    }
+
+    public void streamFile(Long bookId, String bookType, String filePath, OutputStream outputStream) throws IOException {
+        Path epubPath = getBookPath(bookId, bookType);
         CachedEpubMetadata metadata = getCachedMetadata(epubPath);
 
         String cleanPath = filePath.startsWith("/") ? filePath.substring(1) : filePath;
@@ -101,7 +111,11 @@ public class EpubReaderService {
     }
 
     public String getContentType(Long bookId, String filePath) {
-        Path epubPath = getBookPath(bookId);
+        return getContentType(bookId, null, filePath);
+    }
+
+    public String getContentType(Long bookId, String bookType, String filePath) {
+        Path epubPath = getBookPath(bookId, bookType);
         try {
             CachedEpubMetadata metadata = getCachedMetadata(epubPath);
             String normalizedPath = normalizePath(filePath, metadata.bookInfo.getRootPath());
@@ -117,7 +131,11 @@ public class EpubReaderService {
     }
 
     public long getFileSize(Long bookId, String filePath) {
-        Path epubPath = getBookPath(bookId);
+        return getFileSize(bookId, null, filePath);
+    }
+
+    public long getFileSize(Long bookId, String bookType, String filePath) {
+        Path epubPath = getBookPath(bookId, bookType);
         try {
             CachedEpubMetadata metadata = getCachedMetadata(epubPath);
             String normalizedPath = normalizePath(filePath, metadata.bookInfo.getRootPath());
@@ -132,9 +150,17 @@ public class EpubReaderService {
         }
     }
 
-    private Path getBookPath(Long bookId) {
+    private Path getBookPath(Long bookId, String bookType) {
         BookEntity bookEntity = bookRepository.findById(bookId)
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        if (bookType != null) {
+            BookFileType requestedType = BookFileType.valueOf(bookType.toUpperCase());
+            BookFileEntity bookFile = bookEntity.getBookFiles().stream()
+                    .filter(bf -> bf.getBookType() == requestedType)
+                    .findFirst()
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("No file of type " + bookType + " found for book"));
+            return bookFile.getFullFilePath();
+        }
         String bookFullPath = FileUtils.getBookFullPath(bookEntity);
         return Path.of(bookFullPath);
     }

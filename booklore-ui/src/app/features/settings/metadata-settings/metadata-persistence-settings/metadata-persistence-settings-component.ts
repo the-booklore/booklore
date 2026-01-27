@@ -7,13 +7,15 @@ import {SettingsHelperService} from '../../../../shared/service/settings-helper.
 import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 import {Tooltip} from 'primeng/tooltip';
+import {AsyncPipe} from '@angular/common';
 
 @Component({
   selector: 'app-metadata-persistence-settings-component',
   imports: [
     ToggleSwitch,
     FormsModule,
-    Tooltip
+    Tooltip,
+    AsyncPipe
   ],
   templateUrl: './metadata-persistence-settings-component.html',
   styleUrl: './metadata-persistence-settings-component.scss'

@@ -116,7 +116,7 @@ public class DoubanBookParser implements BookParser {
     }
 
     private List<BookMetadata> getDoubanSearchResults(Book book, FetchMetadataRequest request) {
-        log.debug("Douban: Querying metadata for ISBN: {}, Title: {}, Author: {}, FileName: {}", request.getIsbn(), request.getTitle(), request.getAuthor(), book.getFileName());
+        log.debug("Douban: Querying metadata for ISBN: {}, Title: {}, Author: {}, FileName: {}", request.getIsbn(), request.getTitle(), request.getAuthor(), book.getPrimaryFile() != null ? book.getPrimaryFile().getFileName() : null);
         String queryUrl = buildQueryUrl(request, book);
         if (queryUrl == null) {
             log.error("Query URL is null, cannot proceed.");
@@ -309,8 +309,8 @@ public class DoubanBookParser implements BookParser {
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedTitle);
-        } else {
-            String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getFileName()));
+        } else if (book.getPrimaryFile() != null && book.getPrimaryFile().getFileName() != null) {
+            String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getPrimaryFile().getFileName()));
             if (!filename.isEmpty()) {
                 String cleanedFilename = Arrays.stream(filename.split(" "))
                         .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
