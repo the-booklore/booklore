@@ -89,6 +89,9 @@ public class LibraryProcessingService {
         }
         bookRestorationService.restoreDeletedBooks(libraryFiles);
         entityManager.clear();
+        // Re-fetch library entity to get fresh state after entity manager was cleared
+        libraryEntity = libraryRepository.findById(context.getLibraryId())
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
         processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
 
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished refreshing library: " + libraryEntity.getName()));
