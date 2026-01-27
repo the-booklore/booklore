@@ -14,7 +14,8 @@ public enum BookFileType {
     CBX(Set.of("cbz", "cbr", "cb7")),
     FB2(Set.of("fb2")),
     MOBI(Set.of("mobi")),
-    AZW3(Set.of("azw3", "azw"));
+    AZW3(Set.of("azw3", "azw")),
+    AUDIOBOOK(Set.of("m4b", "m4a", "mp3", "aac", "flac", "opus", "ogg"));
 
     private final Set<String> extensions;
 

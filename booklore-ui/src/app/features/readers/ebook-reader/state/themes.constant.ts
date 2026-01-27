@@ -75,4 +75,9 @@ export const themes: Theme[] = [
     light: {fg: '#4a148c', bg: '#f3e5f5', link: '#7b1fa2'},
     dark: {fg: '#c7b6dd', bg: '#3a3150', link: '#b39ddb'},
   },
+  {
+    name: 'amoled', label: 'AMOLED',
+    light: {fg: '#000000', bg: '#ffffff', link: '#0066cc'},
+    dark: {fg: '#ffffff', bg: '#000000', link: '#77bbee'},
+  },
 ];

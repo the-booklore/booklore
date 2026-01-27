@@ -22,11 +22,13 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class DynamicOidcJwtProcessor {
+    private static final Pattern TRAILING_SLASH_PATTERN = Pattern.compile("/$");
     private final AppSettingService appSettingService;
 
     private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
@@ -48,7 +50,7 @@ public class DynamicOidcJwtProcessor {
             throw new IllegalStateException("OIDC issuer URI is not configured in app settings.");
         }
 
-        String discoveryUri = providerDetails.getIssuerUri().replaceAll("/$", "") + "/.well-known/openid-configuration";
+        String discoveryUri = TRAILING_SLASH_PATTERN.matcher(providerDetails.getIssuerUri()).replaceAll("") + "/.well-known/openid-configuration";
         log.info("Fetching OIDC discovery document from {}", discoveryUri);
 
         URI jwksUri = fetchJwksUri(discoveryUri);

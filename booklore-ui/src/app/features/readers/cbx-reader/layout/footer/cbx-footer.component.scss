@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // Variables
 $footer-bg: #1a1a1a;
 $text-primary: rgba(255, 255, 255, 0.95);
@@ -95,7 +97,7 @@ $transition-fast: 150ms ease;
     }
 
     &:hover:not(:disabled) {
-      background: darken($active-color, 10%);
+      background: color.adjust($active-color, $lightness: -10%);
     }
 
     &:disabled {
@@ -289,7 +291,7 @@ $transition-fast: 150ms ease;
     transition: all 0.2s ease;
 
     &:hover:not(:disabled) {
-      background: darken($active-color, 10%);
+      background: color.adjust($active-color, $lightness: -10%);
     }
 
     &:disabled {

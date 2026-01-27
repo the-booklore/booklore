@@ -70,6 +70,9 @@ dependencies {
     
     implementation 'io.documentnode:epub4j-core:4.2.2'
 
+    // --- Audio Metadata (Audiobook Support) ---
+    implementation 'net.jthink:jaudiotagger:3.0.1'
+
     // --- UNRAR Support ---
     implementation 'com.github.junrar:junrar:7.5.7'
 

@@ -17,29 +17,29 @@
     </p-button>
   </div>
 
-  <div class="dialog-content relative">
+  <div class="dialog-content">
     @if (loading) {
-      <div class="absolute inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div class="loading-overlay">
         <p-progressSpinner></p-progressSpinner>
       </div>
     }
 
-    <div class="p-4 border border-gray-700 rounded-md mb-4 bg-gray-900 text-gray-200">
-      <div class="flex justify-between items-center mb-2">
-        <p class="text-base font-semibold">
+    <div class="info-box">
+      <div class="info-header">
+        <p class="info-title">
           Editing {{ books.length }} Book{{ books.length !== 1 ? 's' : '' }}
         </p>
         <button
           type="button"
           (click)="showBookList = !showBookList"
-          class="text-sm text-sky-400 hover:underline">
+          class="toggle-list-btn">
           {{ showBookList ? 'Hide' : 'Show' }} Titles
         </button>
       </div>
 
       @if (showBookList) {
-        <div class="max-h-48 overflow-y-auto border-t border-gray-700 pt-2 pl-1 text-sm text-gray-300">
-          <ul class="list-disc pl-5 space-y-1">
+        <div class="book-list-panel">
+          <ul class="book-list">
             @for (book of books; track book) {
               <li>{{ book.metadata?.title || 'Untitled Book' }}</li>
             }
@@ -48,31 +48,31 @@
       }
     </div>
 
-    <div class="px-4 text-sm text-yellow-500 mb-2">
-      <i class="pi pi-exclamation-triangle mr-1"></i>
+    <div class="warning-text">
+      <i class="pi pi-exclamation-triangle warning-icon"></i>
       Checking <strong>Clear</strong> will remove that field's metadata from <strong>all selected books</strong>.
     </div>
 
-    <form [formGroup]="metadataForm" (ngSubmit)="onSubmit()" (keydown)="onFormKeydown($event)" class="flex flex-col gap-4 w-full p-4">
+    <form [formGroup]="metadataForm" (ngSubmit)="onSubmit()" (keydown)="onFormKeydown($event)" class="bulk-form">
 
-      <div class="flex justify-between gap-7">
+      <div class="form-row">
         <!-- Authors -->
-        <div class="flex flex-col gap-2 w-full md:basis-[80%]">
-          <label for="authors" class="flex items-center justify-between gap-2">
-            <span class="flex items-center gap-2">
+        <div class="field-group field-group--wide">
+          <label for="authors" class="field-label-row">
+            <span class="field-label-text">
               Author(s)
-              <i class="pi pi-info-circle text-sky-600"
+              <i class="pi pi-info-circle info-icon"
                 pTooltip="Enter multiple authors. Press Enter after typing each name."
                 tooltipPosition="right"
                 style="cursor: pointer"></i>
             </span>
-            <div class="flex items-center gap-1">
+            <div class="clear-checkbox">
               <p-checkbox [(ngModel)]="clearFields.authors" [ngModelOptions]="{standalone: true}" (onChange)="onFieldClearToggle('authors')" binary="true" inputId="clearAuthors"/>
-              <label for="clearAuthors" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+              <label for="clearAuthors" class="clear-label">Clear</label>
             </div>
           </label>
           <p-autoComplete
-            class="w-full"
+            class="full-width"
             id="authors"
             formControlName="authors"
             [disabled]="clearFields.authors"
@@ -87,33 +87,33 @@
         </div>
 
         <!-- Language -->
-        <div class="flex flex-col gap-2 md:basis-[20%]">
-          <label for="language" class="flex items-center justify-between gap-2">
+        <div class="field-group field-group--narrow">
+          <label for="language" class="field-label-row">
             <span>Language</span>
-            <div class="flex items-center gap-1">
+            <div class="clear-checkbox">
               <p-checkbox [(ngModel)]="clearFields.language" [ngModelOptions]="{standalone: true}"
                           (onChange)="onFieldClearToggle('language')" binary="true" inputId="clearLanguage"/>
-              <label for="clearLanguage" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+              <label for="clearLanguage" class="clear-label">Clear</label>
             </div>
           </label>
-          <input pInputText id="language" formControlName="language" [disabled]="clearFields.language" class="w-full"/>
+          <input pInputText id="language" formControlName="language" [disabled]="clearFields.language" class="full-width"/>
         </div>
       </div>
 
-      <div class="flex justify-between gap-7">
+      <div class="form-row">
         <!-- Publisher -->
-        <div class="flex flex-col gap-2 w-full md:basis-[80%]">
-          <label for="publisher" class="flex items-center justify-between gap-2">
+        <div class="field-group field-group--wide">
+          <label for="publisher" class="field-label-row">
             <span>Publisher</span>
-            <div class="flex items-center gap-1">
+            <div class="clear-checkbox">
               <p-checkbox [(ngModel)]="clearFields.publisher" [ngModelOptions]="{standalone: true}"
                           (onChange)="onFieldClearToggle('publisher')" binary="true" inputId="clearPublisher"/>
-              <label for="clearPublisher" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+              <label for="clearPublisher" class="clear-label">Clear</label>
             </div>
           </label>
           <p-autoComplete
-            class="w-full"
-            inputStyleClass="w-full"
+            class="full-width"
+            inputStyleClass="full-width"
             formControlName="publisher"
             inputId="publisher"
             [disabled]="clearFields.publisher"
@@ -127,17 +127,17 @@
         </div>
 
         <!-- Published Date -->
-        <div class="flex flex-col gap-2 md:basis-[20%]">
-          <label for="publishedDate" class="flex items-center justify-between gap-2">
+        <div class="field-group field-group--narrow">
+          <label for="publishedDate" class="field-label-row">
             <span>Published Date</span>
-            <div class="flex items-center gap-1">
+            <div class="clear-checkbox">
               <p-checkbox [(ngModel)]="clearFields.publishedDate" [ngModelOptions]="{standalone: true}"
                           (onChange)="onFieldClearToggle('publishedDate')" binary="true" inputId="clearPublishedDate"/>
-              <label for="clearPublishedDate" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+              <label for="clearPublishedDate" class="clear-label">Clear</label>
             </div>
           </label>
           <p-datepicker
-            class="w-full md:min-w-[9rem]"
+            class="full-width datepicker-min-width"
             formControlName="publishedDate"
             inputId="publishedDate"
             dataType="string"
@@ -152,20 +152,20 @@
         </div>
       </div>
 
-      <div class="flex justify-between gap-7">
+      <div class="form-row">
         <!-- Series Name -->
-        <div class="flex flex-col gap-2 w-full md:basis-[80%]">
-          <label for="seriesName" class="flex items-center justify-between gap-2">
+        <div class="field-group field-group--wide">
+          <label for="seriesName" class="field-label-row">
             <span>Series Name</span>
-            <div class="flex items-center gap-1">
+            <div class="clear-checkbox">
               <p-checkbox [(ngModel)]="clearFields.seriesName" [ngModelOptions]="{standalone: true}"
                           (onChange)="onFieldClearToggle('seriesName')" binary="true" inputId="clearSeriesName"/>
-              <label for="clearSeriesName" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+              <label for="clearSeriesName" class="clear-label">Clear</label>
             </div>
           </label>
           <p-autoComplete
-            class="w-full"
-            inputStyleClass="w-full"
+            class="full-width"
+            inputStyleClass="full-width"
             formControlName="seriesName"
             inputId="seriesName"
             [disabled]="clearFields.seriesName"
@@ -179,44 +179,44 @@
         </div>
 
         <!-- Series Total -->
-        <div class="flex flex-col gap-2 md:basis-[20%]">
-          <label for="seriesTotal" class="flex items-center justify-between gap-2">
-            <span class="flex items-center gap-2">
+        <div class="field-group field-group--narrow">
+          <label for="seriesTotal" class="field-label-row">
+            <span class="field-label-text">
               Total Books
-              <i class="pi pi-info-circle text-sky-600"
+              <i class="pi pi-info-circle info-icon"
                 pTooltip="Total number of books in the series."
                 tooltipPosition="right"
                 style="cursor: pointer"></i>
             </span>
-            <div class="flex items-center gap-1">
+            <div class="clear-checkbox">
               <p-checkbox [(ngModel)]="clearFields.seriesTotal" [ngModelOptions]="{standalone: true}"
                           (onChange)="onFieldClearToggle('seriesTotal')" binary="true" inputId="clearSeriesTotal"/>
-              <label for="clearSeriesTotal" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+              <label for="clearSeriesTotal" class="clear-label">Clear</label>
             </div>
           </label>
           <input pInputText id="seriesTotal" type="number" min="1" formControlName="seriesTotal"
-                 [disabled]="clearFields.seriesTotal" class="w-full"/>
+                 [disabled]="clearFields.seriesTotal" class="full-width"/>
         </div>
       </div>
 
       <!-- Genres -->
-      <div class="flex flex-col gap-2">
-        <label for="genres" class="flex items-center justify-between gap-2">
-          <span class="flex items-center gap-2">
+      <div class="field-group">
+        <label for="genres" class="field-label-row">
+          <span class="field-label-text">
             Genre(s)
-            <i class="pi pi-info-circle text-sky-600"
+            <i class="pi pi-info-circle info-icon"
                pTooltip="Enter multiple genres. Press Enter after typing each genre."
                tooltipPosition="right"
                style="cursor: pointer"></i>
           </span>
-          <div class="flex items-center gap-1">
+          <div class="clear-checkbox">
             <p-checkbox [(ngModel)]="clearFields.genres" [ngModelOptions]="{standalone: true}"
                         (onChange)="onFieldClearToggle('genres')" binary="true" inputId="clearGenres"/>
-            <label for="clearGenres" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+            <label for="clearGenres" class="clear-label">Clear</label>
           </div>
         </label>
         <p-autoComplete
-          class="w-full"
+          class="full-width"
           id="genres"
           formControlName="genres"
           [disabled]="clearFields.genres"
@@ -229,7 +229,7 @@
           (onSelect)="onAutoCompleteSelect('genres', $event)">
         </p-autoComplete>
 
-        <div class="flex items-center gap-2 mt-2">
+        <div class="merge-option">
           <p-checkbox
             inputId="mergeCategories"
             name="mergeCategories"
@@ -237,30 +237,30 @@
             [ngModelOptions]="{ standalone: true }"
             binary="true"
           />
-          <label for="mergeCategories" class="text-sm text-gray-300 cursor-pointer">
+          <label for="mergeCategories" class="clear-label">
             Keep existing genres and add new ones (uncheck to remove all existing genres)
           </label>
         </div>
       </div>
 
       <!-- Moods -->
-      <div class="flex flex-col gap-2">
-        <label for="moods" class="flex items-center justify-between gap-2">
-          <span class="flex items-center gap-2">
+      <div class="field-group">
+        <label for="moods" class="field-label-row">
+          <span class="field-label-text">
             Mood(s)
-            <i class="pi pi-info-circle text-sky-600"
+            <i class="pi pi-info-circle info-icon"
                pTooltip="Enter multiple moods. Press Enter after typing each mood."
                tooltipPosition="right"
                style="cursor: pointer"></i>
           </span>
-          <div class="flex items-center gap-1">
+          <div class="clear-checkbox">
             <p-checkbox [(ngModel)]="clearFields.moods" [ngModelOptions]="{standalone: true}"
                         (onChange)="onFieldClearToggle('moods')" binary="true" inputId="clearMoods"/>
-            <label for="clearMoods" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+            <label for="clearMoods" class="clear-label">Clear</label>
           </div>
         </label>
         <p-autoComplete
-          class="w-full"
+          class="full-width"
           id="moods"
           formControlName="moods"
           [disabled]="clearFields.moods"
@@ -273,7 +273,7 @@
           (onSelect)="onAutoCompleteSelect('moods', $event)">
         </p-autoComplete>
 
-        <div class="flex items-center gap-2 mt-2">
+        <div class="merge-option">
           <p-checkbox
             inputId="mergeMoods"
             name="mergeMoods"
@@ -281,30 +281,30 @@
             [ngModelOptions]="{ standalone: true }"
             binary="true"
           />
-          <label for="mergeMoods" class="text-sm text-gray-300 cursor-pointer">
+          <label for="mergeMoods" class="clear-label">
             Keep existing moods and add new ones (uncheck to remove all existing moods)
           </label>
         </div>
       </div>
 
       <!-- Tags -->
-      <div class="flex flex-col gap-2">
-        <label for="tags" class="flex items-center justify-between gap-2">
-          <span class="flex items-center gap-2">
+      <div class="field-group">
+        <label for="tags" class="field-label-row">
+          <span class="field-label-text">
             Tag(s)
-            <i class="pi pi-info-circle text-sky-600"
+            <i class="pi pi-info-circle info-icon"
                pTooltip="Enter multiple tags. Press Enter after typing each tag."
                tooltipPosition="right"
                style="cursor: pointer"></i>
           </span>
-          <div class="flex items-center gap-1">
+          <div class="clear-checkbox">
             <p-checkbox [(ngModel)]="clearFields.tags" [ngModelOptions]="{standalone: true}"
                         (onChange)="onFieldClearToggle('tags')" binary="true" inputId="clearTags"/>
-            <label for="clearTags" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+            <label for="clearTags" class="clear-label">Clear</label>
           </div>
         </label>
         <p-autoComplete
-          class="w-full"
+          class="full-width"
           id="tags"
           formControlName="tags"
           [disabled]="clearFields.tags"
@@ -317,7 +317,7 @@
           (onSelect)="onAutoCompleteSelect('tags', $event)">
         </p-autoComplete>
 
-        <div class="flex items-center gap-2 mt-2">
+        <div class="merge-option">
           <p-checkbox
             inputId="mergeTags"
             name="mergeTags"
@@ -325,24 +325,24 @@
             [ngModelOptions]="{ standalone: true }"
             binary="true"
           />
-          <label for="mergeTags" class="text-sm text-gray-300 cursor-pointer">
+          <label for="mergeTags" class="clear-label">
             Keep existing tags and add new ones (uncheck to remove all existing tags)
           </label>
         </div>
       </div>
 
       <!-- Cover Image Upload Section -->
-      <div class="flex flex-col gap-2 border border-gray-700 rounded-md p-4 bg-gray-900">
-        <label class="flex items-center gap-2 text-base font-semibold">
+      <div class="cover-section">
+        <label class="cover-label">
           <i class="pi pi-image"></i>
           Cover Image
         </label>
-        <p class="text-sm text-gray-400">
+        <p class="cover-description">
           Upload an image to set as the cover for all selected books.
         </p>
-        <div class="flex items-center gap-4 mt-2">
+        <div class="cover-actions">
           @if (selectedCoverFile) {
-            <div class="flex items-center gap-2 text-sm text-gray-300">
+            <div class="cover-file-info">
               <i class="pi pi-file-image"></i>
               <span>{{ selectedCoverFile.name }}</span>
               <p-button
@@ -361,7 +361,7 @@
               #coverFileInput
               accept="image/jpeg,image/png,image/webp"
               (change)="onCoverFileSelect($event)"
-              class="hidden">
+              class="file-input-hidden">
             <p-button
               icon="pi pi-upload"
               label="Select Image"
@@ -374,7 +374,7 @@
         </div>
       </div>
 
-      <div class="flex justify-end mt-4">
+      <div class="form-submit">
         <p-button type="submit" label="Apply to Selected" [disabled]="loading"/>
       </div>
     </form>

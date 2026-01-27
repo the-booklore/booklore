@@ -35,7 +35,7 @@ export const ALL_METADATA_FIELDS: MetadataFieldConfig[] = [
   {label: 'Goodreads ID', controlName: 'goodreadsId', lockedKey: 'goodreadsIdLocked', fetchedKey: 'goodreadsId', type: 'string', providerKey: 'goodreadsId'},
   {label: 'Goodreads ★', controlName: 'goodreadsReviewCount', lockedKey: 'goodreadsReviewCountLocked', fetchedKey: 'goodreadsReviewCount', type: 'number', providerKey: 'goodreadsReviewCount'},
   {label: 'Goodreads #', controlName: 'goodreadsRating', lockedKey: 'goodreadsRatingLocked', fetchedKey: 'goodreadsRating', type: 'number', providerKey: 'goodreadsRating'},
-  {label: 'HC Book ID', controlName: 'hardcoverBookId', lockedKey: 'hardcoverBookIdLocked', fetchedKey: 'hardcoverBookId', type: 'number', providerKey: 'hardcoverId'},
+  {label: 'HC Book ID', controlName: 'hardcoverBookId', lockedKey: 'hardcoverBookIdLocked', fetchedKey: 'hardcoverBookId', type: 'number', providerKey: 'hardcoverBookId'},
   {label: 'Hardcover ID', controlName: 'hardcoverId', lockedKey: 'hardcoverIdLocked', fetchedKey: 'hardcoverId', type: 'string', providerKey: 'hardcoverId'},
   {label: 'Hardcover #', controlName: 'hardcoverReviewCount', lockedKey: 'hardcoverReviewCountLocked', fetchedKey: 'hardcoverReviewCount', type: 'number', providerKey: 'hardcoverReviewCount'},
   {label: 'Hardcover ★', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating', type: 'number', providerKey: 'hardcoverRating'},

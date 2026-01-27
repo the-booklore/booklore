@@ -22,6 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.regex.Pattern;
 
 /**
  * JWT filter for EPUB streaming endpoints that supports both:
@@ -32,6 +33,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class EpubStreamingJwtFilter extends OncePerRequestFilter {
 
+    private static final Pattern EPUB_STREAMING_ENDPOINT_PATTERN = Pattern.compile("/api/v1/epub/\\d+/file/.*");
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
     private final BookLoreUserTransformer bookLoreUserTransformer;
@@ -42,7 +44,7 @@ public class EpubStreamingJwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         // Only filter requests to EPUB file streaming endpoint
-        return !path.matches("/api/v1/epub/\\d+/file/.*");
+        return !EPUB_STREAMING_ENDPOINT_PATTERN.matcher(path).matches();
     }
 
     @Override

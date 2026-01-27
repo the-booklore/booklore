@@ -1,5 +1,6 @@
 .tabpanels-responsive {
   height: calc(100dvh - 9.7rem);
+  overflow: auto;
 }
 
 @media (max-width: 768px) {
@@ -8,12 +9,205 @@
   }
 }
 
-.grid {
+.series-wrapper {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--p-content-border-color);
+}
+
+.series-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-grow: 1;
+}
+
+.series-details {
+  > * + * {
+    margin-top: 1rem;
+  }
+}
+
+.series-info-section {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 1rem;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    text-align: left;
+  }
+}
+
+.series-title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+
+  @media (min-width: 768px) {
+    align-items: flex-start;
+  }
+}
+
+.series-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+
+  @media (min-width: 768px) {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+.series-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.25;
+
+  @media (min-width: 768px) {
+    font-size: 1.875rem;
+  }
+}
+
+.series-authors {
+  font-size: 1.125rem;
+}
+
+.author-link {
+  cursor: pointer;
+  color: #60a5fa;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.categories-scroll {
+  overflow-x: auto;
+  max-width: 80rem;
+  padding-top: 0.5rem;
+
+  @media (min-width: 768px) {
+    padding-top: 0;
+  }
+}
+
+.categories-list {
+  display: flex;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: 1150px;
+}
+
+.category-link {
+  flex-shrink: 0;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.metadata-section-padding {
+  padding: 0 0.25rem;
+
+  @media (min-width: 768px) {
+    padding: 0;
+  }
+}
+
+.metadata-grid {
+  display: grid;
+  padding: 0.75rem;
+  row-gap: 0.625rem;
+  font-size: 0.875rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  color: #d1d5db;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding-top: 1rem;
+    min-width: 60rem;
+    max-width: 100rem;
+  }
+}
+
+.metadata-label {
+  font-weight: 700;
+}
+
+.publisher-link {
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.5rem 0.125rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+}
+
+.description-box {
+  padding: 1rem 1rem 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+
+  @media (min-width: 768px) {
+    margin-bottom: 1.5rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+}
+
+.description-container {
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.line-clamp-5 {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-none {
+  -webkit-line-clamp: unset;
+}
+
+.readonly-editor {
+  padding: 0 0.5rem;
+}
+
+.series-items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(1px, 1fr));
   gap: 1.3rem;
   align-items: start;
   width: 100%;
+  overflow-y: auto;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  gap: 1rem;
 }
 
 .book-browser-footer {
@@ -28,10 +222,45 @@
   border-radius: 10px 10px 0 0;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-width: 1px 1px 0px 1px;
+  background-color: var(--card-background);
+  background-color: color-mix(in srgb, var(--card-background), transparent 90%);
+}
 
-  > .flex {
-    width: 100%;
+.footer-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  width: 25%;
+}
+
+.footer-center {
+  display: flex;
+  justify-content: center;
+  width: 50%;
+}
+
+.footer-right {
+  width: 25%;
+}
+
+.footer-action-group {
+  display: flex;
+  gap: 0.5rem;
+
+  @media (min-width: 768px) {
+    gap: 1.5rem;
   }
+}
+
+.more-actions-wrapper {
+  display: flex;
+  justify-content: center;
 }
 
 .selected-count-badge {
@@ -39,10 +268,24 @@
   align-items: center;
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
+  color: #e4e4e7;
 
   i {
     font-size: 1rem;
   }
+}
+
+.badge-icon {
+  margin-right: 0.5rem;
+}
+
+.badge-count {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.badge-label {
+  margin-left: 0.25rem;
 }
 
 @media (max-width: 768px) {

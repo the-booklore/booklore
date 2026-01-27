@@ -1,7 +1,42 @@
 .task-border {
+  margin-top: 1rem;
   background: var(--card-background);
   border: 1px solid var(--primary-color);
   border-radius: 0.5rem;
+}
+
+.task-card {
+  padding: 1rem;
+}
+
+.task-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.task-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.task-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+:host ::ng-deep .task-tag {
+  font-size: 0.75rem;
 }
 
 .task-header {
@@ -12,14 +47,21 @@
 
 .task-message {
   font-size: 1rem;
-  color: var(--text-color);
+  color: #e5e7eb;
   margin-bottom: 0.5rem;
 }
 
 .task-progress-info {
   font-size: 0.875rem;
-  color: var(--text-secondary-color);
+  color: #d1d5db;
   margin-bottom: 0.5rem;
+}
+
+.action-buttons {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .review-button {

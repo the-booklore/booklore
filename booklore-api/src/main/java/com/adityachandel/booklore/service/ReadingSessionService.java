@@ -67,6 +67,7 @@ public class ReadingSessionService {
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .durationSeconds(request.getDurationSeconds())
+                .durationFormatted(request.getDurationFormatted())
                 .startProgress(request.getStartProgress())
                 .endProgress(request.getEndProgress())
                 .progressDelta(request.getProgressDelta())

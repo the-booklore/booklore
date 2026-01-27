@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // Variables
 $panel-bg: #1a1a1a;
 $text-primary: rgba(255, 255, 255, 0.95);
@@ -134,7 +136,7 @@ $transition-normal: 200ms ease;
     background: rgba(255, 255, 255, 0.2);
 
     &.active {
-      background: lighten($active-color, 5%);
+      background: color.adjust($active-color, $lightness: 5%);
     }
   }
 }

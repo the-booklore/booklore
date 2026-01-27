@@ -3,15 +3,6 @@ package com.adityachandel.booklore.task;
 import lombok.Getter;
 
 public enum TaskType {
-
-    CLEAR_PDF_CACHE(
-            false,
-            false,
-            true,
-            false,
-            "Clear PDF Cache",
-            "Clears temporarily generated images used by the streaming PDF reader."
-    ),
     REFRESH_LIBRARY_METADATA(
             false,
             true,
