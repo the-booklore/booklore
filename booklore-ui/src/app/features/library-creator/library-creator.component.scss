@@ -477,9 +477,17 @@
   }
 
   .drag-indicator {
-    font-size: 0.625rem;
+    font-size: 0.875rem;
     color: var(--text-secondary-color);
-    opacity: 0.5;
+    opacity: 0.7;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    cursor: grab;
+
+    &:hover {
+      opacity: 1;
+      color: var(--primary-color);
+    }
   }
 }
 
