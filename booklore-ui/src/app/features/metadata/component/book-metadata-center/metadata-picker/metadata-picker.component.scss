@@ -24,58 +24,6 @@
   }
 }
 
-// Header
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: var(--overlay-background);
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-
-  .header-content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .header-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    background: var(--primary-color);
-    border-radius: 8px;
-
-    i {
-      font-size: 1.125rem;
-      color: var(--primary-contrast-color);
-    }
-  }
-
-  .header-text {
-    h1 {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--text-color);
-    }
-
-    p {
-      margin: 0.125rem 0 0;
-      font-size: 0.8rem;
-      color: var(--text-secondary-color);
-    }
-  }
-
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-}
 
 // Body
 .dialog-body {
@@ -104,35 +52,62 @@
   }
 }
 
-// Column Headers
+// Column Headers - mirrors field-row structure for alignment (desktop only)
 .column-headers {
-  justify-content: center;
+  display: none;
   align-items: center;
-  gap: 3rem;
-  padding: 0.75rem 0;
+  padding: 0.875rem 1rem;
   margin-bottom: 0.5rem;
+  background: var(--overlay-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+
+  // Spacer to match field-label width
+  &::before {
+    content: '';
+    min-width: 120px;
+    flex-shrink: 0;
+  }
 
   .column-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    font-weight: 600;
+    gap: 0.625rem;
+    font-size: 1rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--text-secondary-color);
+    letter-spacing: 0.05em;
+    flex: 1;
 
     i {
-      font-size: 0.875rem;
+      font-size: 1.125rem;
     }
 
-    &.current i {
+    &.current {
       color: var(--primary-color);
+      justify-content: flex-end;
+      padding-right: 1rem;
     }
 
-    &.fetched i {
+    &.fetched {
       color: var(--p-blue-400);
+      justify-content: flex-start;
+      padding-left: 1rem;
     }
+  }
+
+  .column-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+    margin-right:  0.75rem;
   }
 }
 
@@ -142,52 +117,28 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.875rem;
-    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--text-secondary-color);
 
     i {
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       color: var(--primary-color);
     }
   }
-}
 
-// Cover Image Row
-.cover-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  padding: 1.25rem;
-  background: var(--ground-background);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-
-  @media (max-width: 767px) {
-    gap: 0.75rem;
-    padding: 1rem;
+  .section-content {
+    background: var(--overlay-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
   }
 }
 
-.cover-side {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-
-  .cover-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--text-secondary-color);
-  }
-}
-
+// Cover Image
 .cover-wrapper {
   position: relative;
 }
@@ -200,8 +151,8 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
   @media (min-width: 768px) {
-    width: 140px;
-    height: 210px;
+    width: 120px;
+    height: 180px;
   }
 
   ::ng-deep img {
@@ -240,31 +191,79 @@
   }
 }
 
-.cover-transfer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.cover-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary-color);
 }
+
 
 // Field Rows
 .field-row {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 0.75rem;
-  background: var(--ground-background);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  margin-bottom: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
 
   &:last-child {
-    margin-bottom: 0;
+    border-bottom: none;
   }
 
   @media (min-width: 768px) {
     flex-direction: row;
     align-items: center;
-    padding: 0.625rem 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+// Cover field row specific styles
+.cover-field-row {
+  padding: 1.25rem 1rem;
+
+  .field-label {
+    text-align: center;
+    margin-bottom: 0.5rem;
+
+    @media (min-width: 768px) {
+      text-align: left;
+      margin-bottom: 0;
+    }
+  }
+
+  .field-content {
+    align-items: center;
+    gap: 1rem;
+
+    @media (min-width: 768px) {
+      gap: 1.5rem;
+    }
+  }
+
+  // On mobile, center covers and show labels
+  .field-side {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+    }
+  }
+
+  // Position covers towards the arrow on desktop only
+  @media (min-width: 768px) {
+    padding: 1.5rem 1rem;
+
+    .field-side.current {
+      justify-content: flex-end;
+    }
+
+    .field-side.fetched {
+      justify-content: flex-start;
+    }
   }
 }
 
@@ -392,7 +391,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: var(--overlay-background);
+  background: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
@@ -492,23 +491,6 @@
 
 // Mobile optimizations
 @media (max-width: 767px) {
-  .dialog-header {
-    padding: 0.875rem 1rem;
-
-    .header-icon {
-      width: 32px;
-      height: 32px;
-
-      i {
-        font-size: 1rem;
-      }
-    }
-
-    .header-text h1 {
-      font-size: 1rem;
-    }
-  }
-
   .dialog-body {
     padding: 1rem;
     gap: 1.25rem;
