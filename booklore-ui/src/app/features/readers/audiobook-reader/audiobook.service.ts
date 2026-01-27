@@ -26,7 +26,7 @@ export class AudiobookService {
 
   getStreamUrl(bookId: number, trackIndex?: number): string {
     const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
-    let url = `${this.baseUrl}/${bookId}/stream?token=${encodeURIComponent(token || '')}`;
+    let url = `${this.baseUrl}/${bookId}/stream?ngsw-bypass=true&token=${encodeURIComponent(token || '')}`;
     if (trackIndex !== undefined && trackIndex !== null) {
       url += `&trackIndex=${trackIndex}`;
     }
@@ -35,12 +35,12 @@ export class AudiobookService {
 
   getTrackStreamUrl(bookId: number, trackIndex: number): string {
     const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
-    return `${this.baseUrl}/${bookId}/track/${trackIndex}/stream?token=${encodeURIComponent(token || '')}`;
+    return `${this.baseUrl}/${bookId}/track/${trackIndex}/stream?ngsw-bypass=true&token=${encodeURIComponent(token || '')}`;
   }
 
   getEmbeddedCoverUrl(bookId: number): string {
     const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
-    return `${this.baseUrl}/${bookId}/cover?token=${encodeURIComponent(token || '')}`;
+    return `${this.baseUrl}/${bookId}/cover?ngsw-bypass=true&token=${encodeURIComponent(token || '')}`;
   }
 
   saveProgress(bookId: number, progress: AudiobookProgress, bookFileId?: number): Observable<void> {
