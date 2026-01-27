@@ -324,7 +324,19 @@ public class FileService {
             File originalFile = new File(folder, COVER_FILENAME);
             boolean originalSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, originalFile);
 
-            thumb = resizeImage(rgbImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+            // Determine thumbnail dimensions based on source aspect ratio
+            int thumbWidth, thumbHeight;
+            double aspectRatio = (double) rgbImage.getWidth() / rgbImage.getHeight();
+            if (aspectRatio >= 0.85 && aspectRatio <= 1.15) {
+                // Square-ish image (e.g., audiobook covers) - keep square
+                thumbWidth = THUMBNAIL_WIDTH;
+                thumbHeight = THUMBNAIL_WIDTH;
+            } else {
+                // Portrait/landscape - use standard dimensions
+                thumbWidth = THUMBNAIL_WIDTH;
+                thumbHeight = THUMBNAIL_HEIGHT;
+            }
+            thumb = resizeImage(rgbImage, thumbWidth, thumbHeight);
             File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
             boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
 

@@ -146,7 +146,6 @@ public class TelemetryService {
                 .bookCount(bookRepository.countByLibraryId(lib.getId()))
                 .watchEnabled(lib.isWatch())
                 .iconType(lib.getIconType() != null ? lib.getIconType().name() : null)
-                .scanMode(lib.getScanMode() != null ? lib.getScanMode().name() : null)
                 .build();
     }
 

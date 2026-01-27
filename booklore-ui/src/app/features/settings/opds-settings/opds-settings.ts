@@ -13,7 +13,6 @@ import {OpdsService, OpdsSortOrder, OpdsUserV2, OpdsUserV2CreateRequest} from '.
 import {catchError, filter, take, takeUntil, tap} from 'rxjs/operators';
 import {UserService} from '../user-management/user.service';
 import {of, Subject} from 'rxjs';
-import {Password} from 'primeng/password';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
 import {AppSettingKey} from '../../../shared/model/app-settings.model';
@@ -30,11 +29,10 @@ import {Select} from 'primeng/select';
     FormsModule,
     ConfirmDialog,
     TableModule,
-    Password,
     ToggleSwitch,
     ExternalDocLinkComponent,
     Select
-],
+  ],
   providers: [ConfirmationService],
   templateUrl: './opds-settings.html',
   styleUrl: './opds-settings.scss'
@@ -67,15 +65,15 @@ export class OpdsSettings implements OnInit, OnDestroy {
   dummyPassword: string = "***********************";
 
   sortOrderOptions = [
-    { label: 'Recently Added', value: 'RECENT' as OpdsSortOrder },
-    { label: 'Title (A-Z)', value: 'TITLE_ASC' as OpdsSortOrder },
-    { label: 'Title (Z-A)', value: 'TITLE_DESC' as OpdsSortOrder },
-    { label: 'Author (A-Z)', value: 'AUTHOR_ASC' as OpdsSortOrder },
-    { label: 'Author (Z-A)', value: 'AUTHOR_DESC' as OpdsSortOrder },
-    { label: 'Series (A-Z)', value: 'SERIES_ASC' as OpdsSortOrder },
-    { label: 'Series (Z-A)', value: 'SERIES_DESC' as OpdsSortOrder },
-    { label: 'Rating (Low to High)', value: 'RATING_ASC' as OpdsSortOrder },
-    { label: 'Rating (High to Low)', value: 'RATING_DESC' as OpdsSortOrder }
+    {label: 'Recently Added', value: 'RECENT' as OpdsSortOrder},
+    {label: 'Title (A-Z)', value: 'TITLE_ASC' as OpdsSortOrder},
+    {label: 'Title (Z-A)', value: 'TITLE_DESC' as OpdsSortOrder},
+    {label: 'Author (A-Z)', value: 'AUTHOR_ASC' as OpdsSortOrder},
+    {label: 'Author (Z-A)', value: 'AUTHOR_DESC' as OpdsSortOrder},
+    {label: 'Series (A-Z)', value: 'SERIES_ASC' as OpdsSortOrder},
+    {label: 'Series (Z-A)', value: 'SERIES_DESC' as OpdsSortOrder},
+    {label: 'Rating (Low to High)', value: 'RATING_ASC' as OpdsSortOrder},
+    {label: 'Rating (High to Low)', value: 'RATING_DESC' as OpdsSortOrder}
   ];
 
   ngOnInit(): void {

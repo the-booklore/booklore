@@ -24,8 +24,8 @@
       class="p-datatable-sm">
       <ng-template #header>
         <tr>
-          <th>Start Time</th>
-          <th>End Time</th>
+          <th>Session</th>
+          <th>Type</th>
           <th>Duration</th>
           <th>Progress</th>
           <th>Progress Delta</th>
@@ -34,8 +34,18 @@
       </ng-template>
       <ng-template #body let-session>
         <tr>
-          <td>{{ formatDate(session.startTime) }}</td>
-          <td>{{ formatDate(session.endTime) }}</td>
+          <td>
+            <div class="session-time">
+              <span class="session-date">{{ formatSessionDate(session.startTime) }}</span>
+              <span class="session-range">{{ formatTime(session.startTime) }} → {{ formatTime(session.endTime) }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="book-type-badge" [ngClass]="'book-type-' + session.bookType.toLowerCase()">
+              <i [class]="getBookTypeIcon(session.bookType)"></i>
+              <span>{{ formatBookType(session.bookType) }}</span>
+            </span>
+          </td>
           <td>{{ getActualDuration(session) }}</td>
           <td>
             @if (session.startProgress !== null && session.startProgress !== undefined && session.endProgress !== null && session.endProgress !== undefined) {
@@ -46,14 +56,17 @@
           </td>
           <td>
             @if (session.progressDelta !== null && session.progressDelta !== undefined) {
-              <p-tag [value]="(session.progressDelta > 0 ? '+' : '') + session.progressDelta + '%'" [severity]="getProgressColor(session.progressDelta)"></p-tag>
+              <span class="progress-delta-badge" [ngClass]="getProgressDeltaClass(session.progressDelta)">
+                <i [class]="getProgressDeltaIcon(session.progressDelta)"></i>
+                <span>{{ (session.progressDelta > 0 ? '+' : '') + session.progressDelta }}%</span>
+              </span>
             } @else {
-              <span class="text-color-secondary">N/A</span>
+              <span class="text-color-secondary">-</span>
             }
           </td>
           <td>
-            @if (session.startLocation && session.endLocation && isPageNumber(session.startLocation)) {
-              <span class="location-text">Page {{ session.startLocation }} → Page {{ session.endLocation }}</span>
+            @if (session.startLocation && session.endLocation) {
+              <span class="location-text">{{ formatLocation(session) }}</span>
             } @else {
               <span class="text-color-secondary">-</span>
             }

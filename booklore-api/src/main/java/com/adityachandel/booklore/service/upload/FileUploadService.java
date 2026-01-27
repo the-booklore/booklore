@@ -93,6 +93,7 @@ public class FileUploadService {
         final String originalFileName = getValidatedFileName(file);
         final Long libraryId = book.getLibrary() != null ? book.getLibrary().getId() : null;
         final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
+        final boolean wasPhysicalBook = Boolean.TRUE.equals(book.getIsPhysical());
 
         Path tempPath = null;
         boolean monitoringUnregistered = false;
@@ -107,14 +108,39 @@ public class FileUploadService {
 
             final Path finalPath;
             final String finalFileName;
-            if (isBook) {
+            final String fileSubPath;
+            final BookFileType effectiveBookType;
+
+            // Handle physical books that are getting their first file
+            if (wasPhysicalBook) {
+                // Physical book - determine library path and subpath
+                LibraryPathEntity libraryPath = determineLibraryPathForPhysicalBook(book);
+                book.setLibraryPath(libraryPath);
+
                 String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
                 String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);
                 finalFileName = Paths.get(resolvedRelativePath).getFileName().toString();
+                fileSubPath = Paths.get(resolvedRelativePath).getParent() != null
+                        ? Paths.get(resolvedRelativePath).getParent().toString()
+                        : "";
+                finalPath = Paths.get(libraryPath.getPath(), resolvedRelativePath);
+                String extension = sanitizedFileName.substring(sanitizedFileName.lastIndexOf('.') + 1);
+                effectiveBookType = BookFileType.fromExtension(extension)
+                        .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported book file extension: " + extension));
+            } else if (isBook) {
+                String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
+                String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);
+                finalFileName = Paths.get(resolvedRelativePath).getFileName().toString();
+                fileSubPath = book.getPrimaryBookFile().getFileSubPath();
                 finalPath = buildAdditionalFilePath(book, finalFileName);
+                String extension = sanitizedFileName.substring(sanitizedFileName.lastIndexOf('.') + 1);
+                effectiveBookType = BookFileType.fromExtension(extension)
+                        .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported book file extension: " + extension));
             } else {
                 finalFileName = sanitizedFileName;
+                fileSubPath = book.getPrimaryBookFile().getFileSubPath();
                 finalPath = buildAdditionalFilePath(book, sanitizedFileName);
+                effectiveBookType = bookType;
             }
             validateFinalPath(finalPath);
 
@@ -127,8 +153,15 @@ public class FileUploadService {
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookFileEntity entity = createAdditionalFileEntity(book, finalFileName, isBook, bookType, file.getSize(), fileHash, description);
+            final BookFileEntity entity = createAdditionalFileEntityWithSubPath(book, finalFileName, fileSubPath, isBook, effectiveBookType, file.getSize(), fileHash, description);
             final BookFileEntity savedEntity = additionalFileRepository.save(entity);
+
+            // Promote physical book to digital if this is a book file
+            if (wasPhysicalBook && isBook) {
+                book.setIsPhysical(false);
+                bookRepository.save(book);
+                log.info("Physical book {} promoted to digital book after file upload", bookId);
+            }
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
@@ -136,7 +169,7 @@ public class FileUploadService {
             log.error("Failed to upload additional file for book {}: {}", bookId, sanitizedFileName, e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         } finally {
-            if (monitoringUnregistered && libraryId != null) {
+            if (monitoringUnregistered) {
                 try {
                     if (book.getLibrary() != null && book.getLibrary().getLibraryPaths() != null) {
                         for (LibraryPathEntity libPath : book.getLibrary().getLibraryPaths()) {
@@ -151,6 +184,29 @@ public class FileUploadService {
             }
             cleanupTempFile(tempPath);
         }
+    }
+
+    private LibraryPathEntity determineLibraryPathForPhysicalBook(BookEntity book) {
+        if (book.getLibrary() == null || book.getLibrary().getLibraryPaths() == null || book.getLibrary().getLibraryPaths().isEmpty()) {
+            throw new IllegalStateException("Cannot upload file to physical book: library has no paths configured");
+        }
+        // Use the first library path for physical books
+        return book.getLibrary().getLibraryPaths().iterator().next();
+    }
+
+    private BookFileEntity createAdditionalFileEntityWithSubPath(BookEntity book, String fileName, String fileSubPath, boolean isBook, BookFileType bookType, long fileSize, String fileHash, String description) {
+        return BookFileEntity.builder()
+                .book(book)
+                .fileName(fileName)
+                .fileSubPath(fileSubPath)
+                .isBookFormat(isBook)
+                .bookType(bookType)
+                .fileSizeKb(fileSize / BYTES_TO_KB_DIVISOR)
+                .initialHash(fileHash)
+                .currentHash(fileHash)
+                .description(description)
+                .addedOn(Instant.now())
+                .build();
     }
 
     public Book uploadFileBookDrop(MultipartFile file) throws IOException {
