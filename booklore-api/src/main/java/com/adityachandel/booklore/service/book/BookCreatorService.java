@@ -32,18 +32,24 @@ public class BookCreatorService {
 
         if (existingBookOpt.isPresent()) {
             log.warn("Book already exists for file: {}", libraryFile.getFileName());
-            String newHash = FileFingerprint.generateHash(libraryFile.getFullPath());
-            long fileSizeKb = FileUtils.getFileSizeInKb(libraryFile.getFullPath());
+            long fileSizeKb = calculateFileSize(libraryFile);
+            String newHash = libraryFile.isFolderBased()
+                    ? FileFingerprint.generateFolderHash(libraryFile.getFullPath())
+                    : FileFingerprint.generateHash(libraryFile.getFullPath());
             BookEntity existingBook = existingBookOpt.get();
             BookFileEntity primaryFile = existingBook.getPrimaryBookFile();
             primaryFile.setCurrentHash(newHash);
             primaryFile.setInitialHash(newHash);
             primaryFile.setFileSizeKb(fileSizeKb);
+            primaryFile.setFolderBased(libraryFile.isFolderBased());
             existingBook.setDeleted(false);
             return existingBook;
         }
 
-        long fileSizeKb = FileUtils.getFileSizeInKb(libraryFile.getFullPath());
+        long fileSizeKb = calculateFileSize(libraryFile);
+        String hash = libraryFile.isFolderBased()
+                ? FileFingerprint.generateFolderHash(libraryFile.getFullPath())
+                : FileFingerprint.generateHash(libraryFile.getFullPath());
 
         BookEntity bookEntity = BookEntity.builder()
                 .library(libraryFile.getLibraryEntity())
@@ -57,8 +63,11 @@ public class BookCreatorService {
                 .fileName(libraryFile.getFileName())
                 .fileSubPath(libraryFile.getFileSubPath())
                 .isBookFormat(true)
+                .folderBased(libraryFile.isFolderBased())
                 .bookType(bookFileType)
                 .fileSizeKb(fileSizeKb)
+                .initialHash(hash)
+                .currentHash(hash)
                 .addedOn(Instant.now())
                 .build();
         bookEntity.getBookFiles().add(bookFileEntity);
@@ -69,6 +78,16 @@ public class BookCreatorService {
         bookEntity.setMetadata(metadata);
 
         return bookRepository.saveAndFlush(bookEntity);
+    }
+
+    private long calculateFileSize(LibraryFile libraryFile) {
+        if (libraryFile.isFolderBased()) {
+            Long size = FileUtils.getFolderSizeInKb(libraryFile.getFullPath());
+            return size != null ? size : 0L;
+        } else {
+            Long size = FileUtils.getFileSizeInKb(libraryFile.getFullPath());
+            return size != null ? size : 0L;
+        }
     }
 
     public void addCategoriesToBook(Set<String> categories, BookEntity bookEntity) {

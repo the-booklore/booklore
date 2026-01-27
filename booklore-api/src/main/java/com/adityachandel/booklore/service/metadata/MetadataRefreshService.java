@@ -115,7 +115,7 @@ public class MetadataRefreshService {
                             .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
                     try {
                         if (book.getMetadata().areAllFieldsLocked()) {
-                            log.info("Skipping locked book: {}", book.getPrimaryBookFile().getFileName());
+                            log.info("Skipping locked book: {}", getBookIdentifier(book));
                             sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, "Skipped locked book: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, isReviewMode);
                             return null;
                         }
@@ -165,11 +165,11 @@ public class MetadataRefreshService {
                         sendBatchProgressNotification(jobId, finalCompletedCount + 1, totalBooks, "Processed: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, bookReviewMode);
                     } catch (Exception e) {
                         if (Thread.currentThread().isInterrupted()) {
-                            log.info("Processing interrupted for book: {}", book.getPrimaryBookFile().getFileName());
+                            log.info("Processing interrupted for book: {}", getBookIdentifier(book));
                             status.setRollbackOnly();
                             return null;
                         }
-                        log.error("Metadata update failed for book: {}", book.getPrimaryBookFile().getFileName(), e);
+                        log.error("Metadata update failed for book: {}", getBookIdentifier(book), e);
                         sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, String.format("Failed to process: %s - %s", book.getMetadata().getTitle(), e.getMessage()), MetadataFetchTaskStatus.ERROR, isReviewMode);
                     }
                     bookRepository.saveAndFlush(book);
@@ -244,6 +244,16 @@ public class MetadataRefreshService {
         metadataFetchJobRepository.save(task);
         String message = String.format("Processing '%s'", book.getMetadata().getTitle());
         sendBatchProgressNotification(taskId, completedCount, total, message, MetadataFetchTaskStatus.IN_PROGRESS, isReviewMode);
+    }
+
+    private String getBookIdentifier(BookEntity book) {
+        if (book.getPrimaryBookFile() != null && book.getPrimaryBookFile().getFileName() != null) {
+            return book.getPrimaryBookFile().getFileName();
+        }
+        if (book.getMetadata() != null && book.getMetadata().getTitle() != null) {
+            return book.getMetadata().getTitle();
+        }
+        return "Book ID: " + book.getId();
     }
 
     private void sendBatchProgressNotification(String taskId, int current, int total, String message, MetadataFetchTaskStatus status, boolean isReview) {

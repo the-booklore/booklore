@@ -1,18 +1,18 @@
-<div class="main-container enclosing-container">
-  <div class="settings-header">
-    <div class="section-title-group">
-      <div>
-        <h2 class="settings-title">
+<div class="settings-card">
+  <div class="section-header">
+    <div class="section-header-row">
+      <div class="section-header-text">
+        <h3 class="section-title">
           <i class="pi pi-users"></i>
           Recipient Emails
-        </h2>
-        <p class="settings-description">
-          Manage the list of recipients who will receive books via email. The 'Default' recipient will be used for 'Quick Book Send,' located in the Book Card menu.
+        </h3>
+        <p class="section-description">
+          Manage recipient email addresses for sending books. The default recipient is used for 'Quick Book Send' in the Book Card menu.
         </p>
       </div>
       <p-button
         icon="pi pi-plus"
-        label="Create Recipient"
+        label="Add Recipient"
         severity="success"
         size="small"
         [outlined]="true"
@@ -21,75 +21,65 @@
     </div>
   </div>
 
-  <div class="settings-content">
-    <div class="preferences-section">
-      <div class="table-card">
-        <p-table [value]="recipientEmails" [scrollable]="true" scrollHeight="flex">
-          <ng-template pTemplate="header">
-            <tr>
-              <th style="width: 10%;">
-                <div class="header-content">
-                  <i class="pi pi-star"></i>
-                  <span>Default</span>
-                </div>
-              </th>
-              <th style="width: 45%;">
-                <div class="header-content">
-                  <i class="pi pi-envelope"></i>
-                  <span>Email Address</span>
-                </div>
-              </th>
-              <th style="width: 30%;">
-                <div class="header-content">
-                  <i class="pi pi-user"></i>
-                  <span>Name</span>
-                </div>
-              </th>
-              <th style="width: 8%;" class="actions-header">
-                <div class="header-content">
-                  <i class="pi pi-pencil"></i>
-                  <span>Edit</span>
-                </div>
-              </th>
-              <th style="width: 7%;" class="actions-header">
-                <div class="header-content">
-                  <i class="pi pi-trash"></i>
-                  <span>Delete</span>
-                </div>
-              </th>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="body" let-recipient>
-            <tr>
-              <td class="text-center">
+  <div class="section-body">
+    @if (recipientEmails.length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-users"></i>
+        <p class="empty-title">No recipients configured</p>
+        <p class="empty-subtitle">Add your first email recipient to start sending books</p>
+      </div>
+    } @else {
+      <div class="recipients-list">
+        @for (recipient of recipientEmails; track recipient.id) {
+          <div class="recipient-item" [class.is-default]="recipient.id === defaultRecipientId">
+            <div class="recipient-content">
+              <div class="recipient-select">
                 <p-radioButton
                   name="defaultRecipient"
                   [value]="recipient.id"
                   [(ngModel)]="defaultRecipientId"
                   (onClick)="setDefaultRecipient(recipient)">
                 </p-radioButton>
-              </td>
+              </div>
 
-              <td>
+              <div class="recipient-info">
                 @if (recipient.isEditing) {
-                  <input type="email" [(ngModel)]="recipient.email" class="p-inputtext full-width" size="small"/>
+                  <div class="edit-form">
+                    <div class="form-field">
+                      <label class="field-label">
+                        <i class="pi pi-envelope"></i>
+                        Email
+                      </label>
+                      <input type="email" pInputText [(ngModel)]="recipient.email" placeholder="recipient@example.com"/>
+                    </div>
+                    <div class="form-field">
+                      <label class="field-label">
+                        <i class="pi pi-user"></i>
+                        Name
+                      </label>
+                      <input type="text" pInputText [(ngModel)]="recipient.name" placeholder="Recipient name"/>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="recipient-details">
+                    <div class="recipient-email">
+                      <i class="pi pi-envelope"></i>
+                      <span>{{ recipient.email }}</span>
+                      @if (recipient.id === defaultRecipientId) {
+                        <span class="default-badge">Default</span>
+                      }
+                    </div>
+                    @if (recipient.name) {
+                      <div class="recipient-name">
+                        <i class="pi pi-user"></i>
+                        <span>{{ recipient.name }}</span>
+                      </div>
+                    }
+                  </div>
                 }
-                @if (!recipient.isEditing) {
-                  <span>{{ recipient.email }}</span>
-                }
-              </td>
+              </div>
 
-              <td>
-                @if (recipient.isEditing) {
-                  <input type="text" [(ngModel)]="recipient.name" class="p-inputtext full-width" size="small"/>
-                }
-                @if (!recipient.isEditing) {
-                  <span>{{ recipient.name }}</span>
-                }
-              </td>
-
-              <td class="actions-cell">
+              <div class="recipient-actions">
                 @if (!recipient.isEditing) {
                   <p-button
                     icon="pi pi-pencil"
@@ -100,58 +90,40 @@
                     (onClick)="toggleEditRecipient(recipient)"
                     pTooltip="Edit recipient">
                   </p-button>
+                  <p-button
+                    icon="pi pi-trash"
+                    severity="danger"
+                    size="small"
+                    [outlined]="true"
+                    [rounded]="true"
+                    (onClick)="deleteRecipient(recipient)"
+                    pTooltip="Delete recipient">
+                  </p-button>
+                } @else {
+                  <p-button
+                    icon="pi pi-check"
+                    severity="success"
+                    size="small"
+                    [outlined]="true"
+                    [rounded]="true"
+                    (onClick)="saveRecipient(recipient)"
+                    pTooltip="Save changes">
+                  </p-button>
+                  <p-button
+                    icon="pi pi-times"
+                    severity="secondary"
+                    size="small"
+                    [outlined]="true"
+                    [rounded]="true"
+                    (onClick)="toggleEditRecipient(recipient)"
+                    pTooltip="Cancel">
+                  </p-button>
                 }
-                @if (recipient.isEditing) {
-                  <div class="edit-actions">
-                    <p-button
-                      icon="pi pi-check"
-                      severity="success"
-                      size="small"
-                      [outlined]="true"
-                      [rounded]="true"
-                      (onClick)="saveRecipient(recipient)"
-                      pTooltip="Save changes">
-                    </p-button>
-                    <p-button
-                      icon="pi pi-times"
-                      severity="danger"
-                      size="small"
-                      [outlined]="true"
-                      [rounded]="true"
-                      (onClick)="toggleEditRecipient(recipient)"
-                      pTooltip="Cancel">
-                    </p-button>
-                  </div>
-                }
-              </td>
-
-              <td class="actions-cell">
-                <p-button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  size="small"
-                  [outlined]="true"
-                  [rounded]="true"
-                  (onClick)="deleteRecipient(recipient)"
-                  pTooltip="Delete recipient">
-                </p-button>
-              </td>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="5">
-                <div class="empty-message">
-                  <i class="pi pi-users"></i>
-                  <p class="empty-title">No recipients found</p>
-                  <p class="empty-subtitle">Add your first email recipient to start sending books</p>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+              </div>
+            </div>
+          </div>
+        }
       </div>
-    </div>
+    }
   </div>
 </div>

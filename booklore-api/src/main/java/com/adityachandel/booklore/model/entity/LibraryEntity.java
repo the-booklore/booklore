@@ -1,13 +1,15 @@
 package com.adityachandel.booklore.model.entity;
 
+import com.adityachandel.booklore.convertor.FormatPriorityConverter;
 import com.adityachandel.booklore.convertor.SortConverter;
 import com.adityachandel.booklore.model.dto.Sort;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.IconType;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
+import com.adityachandel.booklore.model.enums.LibraryOrganizationMode;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -49,14 +51,15 @@ public class LibraryEntity {
     @Column(name = "file_naming_pattern")
     private String fileNamingPattern;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "scan_mode", nullable = false)
+    @Convert(converter = FormatPriorityConverter.class)
+    @Column(name = "format_priority")
     @Builder.Default
-    private LibraryScanMode scanMode = LibraryScanMode.FILE_AS_BOOK;
+    private List<BookFileType> formatPriority = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "default_book_format")
-    private BookFileType defaultBookFormat;
+    @Column(name = "organization_mode")
+    @Builder.Default
+    private LibraryOrganizationMode organizationMode = LibraryOrganizationMode.AUTO_DETECT;
 
     @PrePersist
     public void ensureIconType() {

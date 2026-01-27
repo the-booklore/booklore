@@ -346,18 +346,26 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">File Type:</span>
-              @if (getFileExtension(book?.filePath)) {
-                <span (click)="goToFileType(book?.filePath)" style="cursor: pointer;">
-                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
-                    {{ (getFileExtension(book?.filePath) | uppercase) || '-' }}
-                  </app-tag>
-                </span>
-              } @else {
-                <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
-                  -
-                </app-tag>
-              }
+              <span class="metadata-key">Formats:</span>
+              <span class="metadata-value-group format-tags">
+                @if (getDisplayFormat(book?.primaryFile); as displayFormat) {
+                  <span (click)="goToFileType(book?.primaryFile?.filePath)" style="cursor: pointer;" [pTooltip]="'Primary: ' + (book?.primaryFile?.fileName ?? '')" tooltipPosition="top">
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(displayFormat)" customTextColor="#fff">
+                      {{ displayFormat }}
+                    </app-tag>
+                  </span>
+                }
+                @for (formatExt of getUniqueAlternativeFormats(book); track formatExt) {
+                  <span (click)="goToFileType('.' + formatExt)" style="cursor: pointer;" [pTooltip]="formatExt" tooltipPosition="top">
+                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(formatExt)" customTextColor="#fff">
+                      {{ formatExt }}
+                    </app-tag>
+                  </span>
+                }
+                @if (!book?.primaryFile?.filePath && !book?.alternativeFormats?.length) {
+                  <app-tag size="3xs" variant="pill" [customBgColor]="'var(--book-type-physical-color)'" customTextColor="#fff">PHYSICAL</app-tag>
+                }
+              </span>
             </div>
 
             <div class="metadata-item">
@@ -502,25 +510,29 @@
               }
             </div>
 
-            <div class="metadata-item">
-              <span class="metadata-key">File Size:</span>
-              @if (book?.fileSizeKb) {
-                <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.fileSizeKb!)">
-                  {{ getFileSizeInMB(book) }}
-                </span>
-              } @else {
-                <span class="metadata-value">-</span>
-              }
-            </div>
-          </div>
-
-          <div class="file-path-section">
-            <span class="metadata-key">File Path:</span>
-            <i class="pi eye-icon" [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'" (click)="showFilePath = !showFilePath"></i>
-            @if (showFilePath) {
-              <code class="file-path-code">{{ book?.filePath }}</code>
+            @if (hasDigitalFile(book)) {
+              <div class="metadata-item">
+                <span class="metadata-key">File Size:</span>
+                @if (book?.primaryFile?.fileSizeKb) {
+                  <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.primaryFile?.fileSizeKb!)">
+                    {{ formatFileSize(book?.primaryFile) }}
+                  </span>
+                } @else {
+                  <span class="metadata-value">-</span>
+                }
+              </div>
             }
           </div>
+
+          @if (hasDigitalFile(book)) {
+            <div class="file-path-section">
+              <span class="metadata-key">File Path:</span>
+              <i class="pi eye-icon" [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'" (click)="showFilePath = !showFilePath"></i>
+              @if (showFilePath) {
+                <code class="file-path-code">{{ book?.primaryFile?.filePath }}</code>
+              }
+            </div>
+          }
         </div>
 
         @if (userService.userState$ | async; as userState) {
@@ -554,34 +566,31 @@
               </div>
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
-            @if (book!.bookType === 'PDF') {
-              @if (pdfReadMenuItems$ | async; as readItems) {
-                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
-              }
-            }
-            @if (book!.bookType === 'EPUB') {
-              @if (epubReadMenuItems$ | async; as readItems) {
-                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
-              }
-            }
-            @if (book!.bookType !== 'PDF' && book!.bookType !== 'EPUB') {
-              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
-            }
-            <p-divider layout="vertical"></p-divider>
-            <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
-            @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
-              @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
-                @if (downloadMenuItems$ | async; as downloadItems) {
-                  <p-splitbutton label="Download" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
+            @if (hasDigitalFile(book)) {
+              @if (readMenuItems$ | async; as readItems) {
+                @if (readItems.length > 0) {
+                  <p-splitbutton [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" [model]="readItems" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
+                } @else {
+                  <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
                 }
               } @else {
-                <p-button label="Download" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
+                <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
+              }
+              <p-divider layout="vertical"></p-divider>
+            }
+            @if ((userState.user!.permissions.canDownload || userState.user!.permissions.admin) && hasAnyFiles(book)) {
+              @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
+                @if (downloadMenuItems$ | async; as downloadItems) {
+                  <p-splitbutton [label]="(getDisplayFormat(book.primaryFile) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
+                }
+              } @else {
+                <p-button [label]="(getDisplayFormat(book.primaryFile) ?? 'File') + ' · ' + formatFileSize(book.primaryFile)" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
               }
             }
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
               @if (refreshMenuItems$ | async; as refreshItems) {
                 <p-splitbutton
-                  [label]="isAutoFetching ? 'Fetching...' : 'Fetch'"
+                  [label]="isAutoFetching ? 'Fetching...' : 'Fetch Metadata'"
                   [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
                   [outlined]="true"
                   [model]="refreshItems"
@@ -596,7 +605,7 @@
             }
             @if (otherItems$ | async; as otherItems) {
               @if (otherItems.length > 0) {
-                <p-button icon="pi pi-ellipsis-v" outlined severity="danger" (click)="entitymenu.toggle($event)"></p-button>
+                <p-button icon="pi pi-ellipsis-v" outlined severity="info" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
               }
             }
@@ -625,76 +634,17 @@
       }
     </div>
 
-    <p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
-      <p-tablist>
-        @if (bookInSeries.length > 1) {
-          <p-tab [value]="1">
-            <i class="pi pi-ethereum"></i> More in Series
-          </p-tab>
-        }
-        <p-tab [value]="2">
-          <i class="pi pi-bookmark"></i> Similar Books
-        </p-tab>
-        <p-tab [value]="3">
-          <i class="pi pi-pen-to-square"></i> Notes
-        </p-tab>
-        <p-tab [value]="4">
-          <i class="pi pi-clock"></i> Reading Sessions
-        </p-tab>
-        <p-tab [value]="5">
-          <i class="pi pi-comments"></i> Reviews
-        </p-tab>
-      </p-tablist>
-      <p-tabpanels>
-        <p-tabpanel [value]="1">
-          <ng-template #content>
-            <div class="tab-content">
-              @if (bookInSeries.length > 1) {
-                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                  @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
-                    @if (bookInSeriesItem.id !== book.id) {
-                      <div class="dashboard-scroller-card">
-                        <app-book-card-lite-component [book]="bookInSeriesItem" [showSeriesNumber]="true" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
-                      </div>
-                    }
-                  }
-                </div>
-              }
-            </div>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="2">
-          <ng-template #content>
-            <div class="tab-content">
-              @if (recommendedBooks.length > 0) {
-                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                  @for (book of recommendedBooks; track book.book.id) {
-                    <div class="dashboard-scroller-card">
-                      <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="3">
-          <ng-template #content>
-            <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="4">
-          <ng-template #content>
-            <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
-          </ng-template>
-        </p-tabpanel>
-        <p-tabpanel [value]="5">
-          <ng-template #content>
-            <app-book-reviews [bookId]="book.id"></app-book-reviews>
-          </ng-template>
-        </p-tabpanel>
-      </p-tabpanels>
-    </p-tabs>
+    <app-metadata-tabs
+      [book]="book"
+      [bookInSeries]="bookInSeries"
+      [recommendedBooks]="recommendedBooks"
+      (readBook)="onReadBook($event)"
+      (downloadBook)="onDownloadBook($event)"
+      (downloadFile)="onDownloadFile($event)"
+      (downloadAllFiles)="onDownloadAllFiles($event)"
+      (deleteBookFile)="onDeleteBookFile($event)"
+      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)">
+    </app-metadata-tabs>
   </div>
 } @else {
   <div class="loading-state">

@@ -1,0 +1,310 @@
+<p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
+  <p-tablist>
+    @if (bookInSeries.length > 1) {
+      <p-tab value="series">
+        <i class="pi pi-ethereum"></i> More in Series
+      </p-tab>
+    }
+    <p-tab value="similar">
+      <i class="pi pi-bookmark"></i> Similar Books
+    </p-tab>
+    <p-tab value="files">
+      <i class="pi pi-folder-open"></i> Files
+    </p-tab>
+    <p-tab value="notes">
+      <i class="pi pi-pen-to-square"></i> Notes
+    </p-tab>
+    <p-tab value="sessions">
+      <i class="pi pi-clock"></i> Reading Sessions
+    </p-tab>
+    <p-tab value="reviews">
+      <i class="pi pi-comments"></i> Reviews
+    </p-tab>
+  </p-tablist>
+  <p-tabpanels>
+    <p-tabpanel value="series">
+      <ng-template #content>
+        <div class="tab-content">
+          @if (bookInSeries.length > 1) {
+            <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
+              @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
+                @if (bookInSeriesItem.id !== book.id) {
+                  <div class="dashboard-scroller-card">
+                    <app-book-card-lite-component [book]="bookInSeriesItem" [showSeriesNumber]="true" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="similar">
+      <ng-template #content>
+        <div class="tab-content">
+          @if (recommendedBooks.length > 0) {
+            <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
+              @for (recBook of recommendedBooks; track recBook.book.id) {
+                <div class="dashboard-scroller-card">
+                  <app-book-card-lite-component [book]="recBook.book"></app-book-card-lite-component>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="notes">
+      <ng-template #content>
+        <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="sessions">
+      <ng-template #content>
+        <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="reviews">
+      <ng-template #content>
+        <app-book-reviews [bookId]="book.id"></app-book-reviews>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="files">
+      <ng-template #content>
+        <div class="files-tab-content">
+          @if (isPhysicalBook()) {
+            <div class="empty-state">
+              <i class="pi pi-book empty-state-icon"></i>
+              <h4 class="empty-state-title">Physical Book</h4>
+              <p class="empty-state-message">This is a physical book. No digital files are associated with this book.</p>
+              <p class="empty-state-hint">You can upload a digital version using the "Upload File" option in the menu.</p>
+            </div>
+          } @else {
+            @if (hasMultipleFiles(book)) {
+              <div class="files-section download-all-section">
+                <p-button
+                  label="Download All ({{ getTotalFileCount(book) }} files)"
+                  icon="pi pi-download"
+                  severity="info"
+                  outlined
+                  (onClick)="downloadAll(book)"
+                  pTooltip="Download all files as a ZIP archive"
+                  tooltipPosition="top">
+                </p-button>
+              </div>
+            }
+            @if (book.primaryFile) {
+              <div class="files-section">
+                <h4 class="files-section-title">Primary File</h4>
+                <div class="files-list">
+                  <div class="file-item primary-file">
+                    <div class="file-info">
+                      <span class="file-type-badge" [style.background-color]="getFileTypeBgColor(book.primaryFile.extension)">
+                        {{ book.primaryFile.extension | uppercase }}
+                      </span>
+                      <span class="file-name" [pTooltip]="book.primaryFile.filePath" tooltipPosition="top">{{ book.primaryFile.fileName }}</span>
+                      <span class="file-size">{{ getFileSizeInMB(book.primaryFile) }}</span>
+                    </div>
+                    <div class="file-actions">
+                      @if (book.primaryFile.bookType === 'PDF') {
+                        <p-button
+                          icon="pi pi-book"
+                          size="small"
+                          text
+                          severity="primary"
+                          pTooltip="Read"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id)">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-play"
+                          size="small"
+                          text
+                          severity="info"
+                          pTooltip="Streaming Reader"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id, 'pdf-streaming')">
+                        </p-button>
+                      } @else if (book.primaryFile.bookType === 'EPUB') {
+                        <p-button
+                          icon="pi pi-book"
+                          size="small"
+                          text
+                          severity="primary"
+                          pTooltip="Read"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id)">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-play"
+                          size="small"
+                          text
+                          severity="info"
+                          pTooltip="Streaming Reader"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id, 'epub-streaming')">
+                        </p-button>
+                      } @else if (book.primaryFile.bookType && ['FB2', 'MOBI', 'AZW3', 'CBX'].includes(book.primaryFile.bookType)) {
+                        <p-button
+                          icon="pi pi-book"
+                          size="small"
+                          text
+                          severity="primary"
+                          pTooltip="Read"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id)">
+                        </p-button>
+                      } @else if (book.primaryFile.bookType === 'AUDIOBOOK') {
+                        <p-button
+                          icon="pi pi-play"
+                          size="small"
+                          text
+                          severity="primary"
+                          pTooltip="Play"
+                          tooltipPosition="top"
+                          (onClick)="read(book.id)">
+                        </p-button>
+                      }
+                      <p-button
+                        icon="pi pi-download"
+                        size="small"
+                        text
+                        severity="success"
+                        pTooltip="Download"
+                        tooltipPosition="top"
+                        (onClick)="download(book)">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-trash"
+                        size="small"
+                        text
+                        severity="danger"
+                        pTooltip="Delete"
+                        tooltipPosition="top"
+                        (onClick)="deleteFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true)">
+                      </p-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+            @if (book.alternativeFormats && book.alternativeFormats.length > 0) {
+              <div class="files-section">
+                <h4 class="files-section-title">Alternative Formats</h4>
+                <div class="files-list">
+                  @for (format of book.alternativeFormats; track format.id) {
+                    <div class="file-item">
+                      <div class="file-info">
+                        <span class="file-type-badge" [style.background-color]="getFileTypeBgColor(format.extension)">
+                          {{ format.extension | uppercase }}
+                        </span>
+                        <span class="file-name" [pTooltip]="format.filePath" tooltipPosition="top">{{ format.fileName }}</span>
+                        <span class="file-size">{{ getFileSizeInMB(format) }}</span>
+                      </div>
+                      <div class="file-actions">
+                        @if (format.bookType === 'PDF' || format.bookType === 'EPUB') {
+                          <p-button
+                            icon="pi pi-book"
+                            size="small"
+                            text
+                            severity="primary"
+                            pTooltip="Read"
+                            tooltipPosition="top"
+                            (onClick)="read(book.id, undefined, format.bookType)">
+                          </p-button>
+                          <p-button
+                            icon="pi pi-play"
+                            size="small"
+                            text
+                            severity="info"
+                            pTooltip="Streaming Reader"
+                            tooltipPosition="top"
+                            (onClick)="read(book.id, format.bookType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', format.bookType)">
+                          </p-button>
+                        } @else if (format.bookType && ['FB2', 'MOBI', 'AZW3', 'CBX'].includes(format.bookType)) {
+                          <p-button
+                            icon="pi pi-book"
+                            size="small"
+                            text
+                            severity="primary"
+                            pTooltip="Read"
+                            tooltipPosition="top"
+                            (onClick)="read(book.id, undefined, format.bookType)">
+                          </p-button>
+                        } @else if (format.bookType === 'AUDIOBOOK') {
+                          <p-button
+                            icon="pi pi-play"
+                            size="small"
+                            text
+                            severity="primary"
+                            pTooltip="Play"
+                            tooltipPosition="top"
+                            (onClick)="read(book.id, undefined, format.bookType)">
+                          </p-button>
+                        }
+                        <p-button
+                          icon="pi pi-download"
+                          size="small"
+                          text
+                          severity="success"
+                          pTooltip="Download"
+                          tooltipPosition="top"
+                          (onClick)="downloadAdditionalFile(book, format.id)">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-trash"
+                          size="small"
+                          text
+                          severity="danger"
+                          pTooltip="Delete"
+                          tooltipPosition="top"
+                          (onClick)="deleteFile(book, format.id, format.fileName || 'file', false)">
+                        </p-button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            @if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+              <div class="files-section">
+                <h4 class="files-section-title">Supplementary Files</h4>
+                <div class="files-list">
+                  @for (file of book.supplementaryFiles; track file.id) {
+                    <div class="file-item">
+                      <div class="file-info">
+                        <i [class]="getFileIcon(getFileExtension(file.filePath))" class="file-icon"></i>
+                        <span class="file-name" [pTooltip]="file.filePath" tooltipPosition="top">{{ file.fileName }}</span>
+                        <span class="file-size">{{ getFileSizeInMB(file) }}</span>
+                      </div>
+                      <div class="file-actions">
+                        <p-button
+                          icon="pi pi-download"
+                          size="small"
+                          text
+                          severity="success"
+                          pTooltip="Download"
+                          tooltipPosition="top"
+                          (onClick)="downloadAdditionalFile(book, file.id)">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-trash"
+                          size="small"
+                          text
+                          severity="danger"
+                          pTooltip="Delete"
+                          tooltipPosition="top"
+                          (onClick)="deleteSupplementary(book.id, file.id, file.fileName || 'file')">
+                        </p-button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </ng-template>
+    </p-tabpanel>
+  </p-tabpanels>
+</p-tabs>

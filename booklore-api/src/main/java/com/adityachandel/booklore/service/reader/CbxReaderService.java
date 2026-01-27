@@ -3,6 +3,8 @@ package com.adityachandel.booklore.service.reader;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.response.CbxPageInfo;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.util.FileUtils;
 import com.github.junrar.Archive;
@@ -70,7 +72,11 @@ public class CbxReaderService {
     }
 
     public List<Integer> getAvailablePages(Long bookId) {
-        Path cbxPath = getBookPath(bookId);
+        return getAvailablePages(bookId, null);
+    }
+
+    public List<Integer> getAvailablePages(Long bookId, String bookType) {
+        Path cbxPath = getBookPath(bookId, bookType);
         try {
             List<String> imageEntries = getImageEntriesFromArchiveCached(cbxPath);
             return IntStream.rangeClosed(1, imageEntries.size())
@@ -83,7 +89,11 @@ public class CbxReaderService {
     }
 
     public List<CbxPageInfo> getPageInfo(Long bookId) {
-        Path cbxPath = getBookPath(bookId);
+        return getPageInfo(bookId, null);
+    }
+
+    public List<CbxPageInfo> getPageInfo(Long bookId, String bookType) {
+        Path cbxPath = getBookPath(bookId, bookType);
         try {
             List<String> imageEntries = getImageEntriesFromArchiveCached(cbxPath);
             List<CbxPageInfo> pageInfoList = new ArrayList<>();
@@ -112,15 +122,27 @@ public class CbxReaderService {
     }
 
     public void streamPageImage(Long bookId, int page, OutputStream outputStream) throws IOException {
-        Path cbxPath = getBookPath(bookId);
+        streamPageImage(bookId, null, page, outputStream);
+    }
+
+    public void streamPageImage(Long bookId, String bookType, int page, OutputStream outputStream) throws IOException {
+        Path cbxPath = getBookPath(bookId, bookType);
         CachedArchiveMetadata metadata = getCachedMetadata(cbxPath);
         validatePageRequest(bookId, page, metadata.imageEntries);
         String entryName = metadata.imageEntries.get(page - 1);
         streamEntryFromArchive(cbxPath, entryName, outputStream, metadata.successfulEncoding);
     }
 
-    private Path getBookPath(Long bookId) {
+    private Path getBookPath(Long bookId, String bookType) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        if (bookType != null) {
+            BookFileType requestedType = BookFileType.valueOf(bookType.toUpperCase());
+            BookFileEntity bookFile = bookEntity.getBookFiles().stream()
+                    .filter(bf -> bf.getBookType() == requestedType)
+                    .findFirst()
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("No file of type " + bookType + " found for book"));
+            return bookFile.getFullFilePath();
+        }
         String bookFullPath = FileUtils.getBookFullPath(bookEntity);
         return Path.of(bookFullPath);
     }
