@@ -254,9 +254,11 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           switchMap(() => {
             if (!this.hasLoadedOnce) {
               this.hasLoadedOnce = true;
-              // Only navigate to saved position if progress exists
+              // Navigate to saved position if progress exists, otherwise go to first page
               if (book.epubProgress?.cfi) {
                 return this.viewManager.goTo(book.epubProgress.cfi);
+              } else {
+                return this.viewManager.goTo(0);
               }
             }
             return of(undefined);
