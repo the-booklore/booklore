@@ -28,16 +28,12 @@ import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
-import {
-  fileSizeRanges,
-  matchScoreRanges,
-  pageCountRanges
-} from '../../../../book/components/book-browser/book-filter/book-filter.component';
+import {fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.component';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
-import {MetadataTabsComponent, ReadEvent, DownloadEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent} from './metadata-tabs/metadata-tabs.component';
+import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
 
 
 @Component({
@@ -143,7 +139,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
         if (uniqueAltTypes.length > 0) {
           if (items.length > 0) {
-            items.push({ separator: true });
+            items.push({separator: true});
           }
 
           uniqueAltTypes.forEach(formatType => {
@@ -211,7 +207,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             items.push({
               label: `${this.truncateFileName(file.fileName, 20)} · ${this.formatFileSize(file)}`,
               icon: this.getFileIcon(extension),
-              tooltipOptions: { tooltipLabel: file.fileName, tooltipPosition: 'left' },
+              tooltipOptions: {tooltipLabel: file.fileName, tooltipPosition: 'left'},
               command: () => this.downloadAdditionalFile(book, file.id)
             });
           });
@@ -230,6 +226,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         ]).pipe(
           map(([userState, appSettings]) => {
             const items: MenuItem[] = [];
+
+            items.push({
+              label: 'Shelf',
+              icon: 'pi pi-folder',
+              command: () => this.assignShelf(book.id)
+            });
 
             // Add allowed submenus based on user permissions
 
@@ -299,7 +301,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 deleteFormatItems.push({
                   label: `${truncatedName} (${this.formatFileSize(book.primaryFile)}) [Primary]`,
                   icon: this.getFileIcon(extension),
-                  tooltipOptions: { tooltipLabel: book.primaryFile.fileName, tooltipPosition: 'left' },
+                  tooltipOptions: {tooltipLabel: book.primaryFile.fileName, tooltipPosition: 'left'},
                   command: () => this.deleteBookFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true, isPrimaryOnly)
                 });
               }
@@ -312,7 +314,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   deleteFormatItems.push({
                     label: `${truncatedName} (${this.formatFileSize(format)})`,
                     icon: this.getFileIcon(extension),
-                    tooltipOptions: { tooltipLabel: format.fileName, tooltipPosition: 'left' },
+                    tooltipOptions: {tooltipLabel: format.fileName, tooltipPosition: 'left'},
                     command: () => this.deleteBookFile(book, format.id, format.fileName || 'file', false, false)
                   });
                 });
@@ -335,7 +337,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   deleteSupplementaryItems.push({
                     label: `${truncatedName} (${this.formatFileSize(file)})`,
                     icon: this.getFileIcon(extension),
-                    tooltipOptions: { tooltipLabel: file.fileName, tooltipPosition: 'left' },
+                    tooltipOptions: {tooltipLabel: file.fileName, tooltipPosition: 'left'},
                     command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
                   });
                 });
@@ -516,6 +518,14 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.bookService.downloadAllFiles(event.book);
   }
 
+  onDeleteBookFile(event: DeleteBookFileEvent): void {
+    this.deleteBookFile(event.book, event.fileId, event.fileName, event.isPrimary, event.isOnlyFormat);
+  }
+
+  onDeleteSupplementaryFile(event: DeleteSupplementaryFileEvent): void {
+    this.deleteAdditionalFile(event.bookId, event.fileId, event.fileName);
+  }
+
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
     this.confirmationService.confirm({
       message: `Are you sure you want to delete the supplementary file "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`,
@@ -523,6 +533,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       icon: 'pi pi-exclamation-triangle',
       acceptIcon: 'pi pi-trash',
       rejectIcon: 'pi pi-times',
+      rejectButtonStyleClass: 'p-button-secondary',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.bookService.deleteAdditionalFile(bookId, fileId).subscribe({
@@ -571,8 +582,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       rejectIcon: 'pi pi-times',
       acceptLabel: 'Delete File',
       rejectLabel: 'Cancel',
+      rejectButtonStyleClass: 'p-button-secondary',
       acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-outlined',
       accept: () => {
         this.bookService.deleteBookFile(book.id, fileId, isPrimary).subscribe({
           next: () => {

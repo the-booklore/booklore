@@ -166,6 +166,15 @@
                       tooltipPosition="top"
                       (onClick)="download(book)">
                     </p-button>
+                    <p-button
+                      icon="pi pi-trash"
+                      size="small"
+                      text
+                      severity="danger"
+                      pTooltip="Delete"
+                      tooltipPosition="top"
+                      (onClick)="deleteFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true)">
+                    </p-button>
                   </div>
                 </div>
               </div>
@@ -234,6 +243,15 @@
                         tooltipPosition="top"
                         (onClick)="downloadAdditionalFile(book, format.id)">
                       </p-button>
+                      <p-button
+                        icon="pi pi-trash"
+                        size="small"
+                        text
+                        severity="danger"
+                        pTooltip="Delete"
+                        tooltipPosition="top"
+                        (onClick)="deleteFile(book, format.id, format.fileName || 'file', false)">
+                      </p-button>
                     </div>
                   </div>
                 }
@@ -260,6 +278,15 @@
                         pTooltip="Download"
                         tooltipPosition="top"
                         (onClick)="downloadAdditionalFile(book, file.id)">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-trash"
+                        size="small"
+                        text
+                        severity="danger"
+                        pTooltip="Delete"
+                        tooltipPosition="top"
+                        (onClick)="deleteSupplementary(book.id, file.id, file.fileName || 'file')">
                       </p-button>
                     </div>
                   </div>

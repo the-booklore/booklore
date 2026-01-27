@@ -572,7 +572,6 @@
               <p-button [label]="getReadButtonLabel(book)" [icon]="getReadButtonIcon(book)" (onClick)="read(book.id)" outlined severity="primary" class="read-button-responsive"/>
             }
             <p-divider layout="vertical"></p-divider>
-            <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
@@ -600,7 +599,7 @@
             }
             @if (otherItems$ | async; as otherItems) {
               @if (otherItems.length > 0) {
-                <p-button icon="pi pi-ellipsis-v" outlined severity="danger" (click)="entitymenu.toggle($event)"></p-button>
+                <p-button icon="pi pi-ellipsis-v" outlined severity="info" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
               }
             }
@@ -636,7 +635,9 @@
       (readBook)="onReadBook($event)"
       (downloadBook)="onDownloadBook($event)"
       (downloadFile)="onDownloadFile($event)"
-      (downloadAllFiles)="onDownloadAllFiles($event)">
+      (downloadAllFiles)="onDownloadAllFiles($event)"
+      (deleteBookFile)="onDeleteBookFile($event)"
+      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)">
     </app-metadata-tabs>
   </div>
 } @else {

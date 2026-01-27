@@ -29,6 +29,20 @@ export interface DownloadAllFilesEvent {
   book: Book;
 }
 
+export interface DeleteBookFileEvent {
+  book: Book;
+  fileId: number;
+  fileName: string;
+  isPrimary: boolean;
+  isOnlyFormat: boolean;
+}
+
+export interface DeleteSupplementaryFileEvent {
+  bookId: number;
+  fileId: number;
+  fileName: string;
+}
+
 @Component({
   selector: 'app-metadata-tabs',
   standalone: true,
@@ -59,6 +73,8 @@ export class MetadataTabsComponent {
   @Output() downloadBook = new EventEmitter<DownloadEvent>();
   @Output() downloadFile = new EventEmitter<DownloadAdditionalFileEvent>();
   @Output() downloadAllFiles = new EventEmitter<DownloadAllFilesEvent>();
+  @Output() deleteBookFile = new EventEmitter<DeleteBookFileEvent>();
+  @Output() deleteSupplementaryFile = new EventEmitter<DeleteSupplementaryFileEvent>();
 
   get defaultTabValue(): string {
     return this.bookInSeries && this.bookInSeries.length > 1 ? 'series' : 'similar';
@@ -78,6 +94,15 @@ export class MetadataTabsComponent {
 
   downloadAll(book: Book): void {
     this.downloadAllFiles.emit({ book });
+  }
+
+  deleteFile(book: Book, fileId: number, fileName: string, isPrimary: boolean): void {
+    const isOnlyFormat = !book.alternativeFormats?.length;
+    this.deleteBookFile.emit({ book, fileId, fileName, isPrimary, isOnlyFormat });
+  }
+
+  deleteSupplementary(bookId: number, fileId: number, fileName: string): void {
+    this.deleteSupplementaryFile.emit({ bookId, fileId, fileName });
   }
 
   hasMultipleFiles(book: Book): boolean {
