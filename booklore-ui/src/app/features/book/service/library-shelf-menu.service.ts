@@ -37,6 +37,16 @@ export class LibraryShelfMenuService {
         label: 'Options',
         items: [
           {
+            label: 'Add Physical Book',
+            icon: 'pi pi-book',
+            command: () => {
+              this.bookDialogHelperService.openAddPhysicalBookDialog(entity?.id as number);
+            }
+          },
+          {
+            separator: true
+          },
+          {
             label: 'Edit Library',
             icon: 'pi pi-pen-to-square',
             command: () => {
@@ -90,16 +100,6 @@ export class LibraryShelfMenuService {
                 refreshType: MetadataRefreshType.LIBRARY,
                 libraryId: entity?.id ?? undefined
               }).subscribe();
-            }
-          },
-          {
-            separator: true
-          },
-          {
-            label: 'Add Physical Book',
-            icon: 'pi pi-book',
-            command: () => {
-              this.bookDialogHelperService.openAddPhysicalBookDialog(entity?.id as number);
             }
           },
           {
