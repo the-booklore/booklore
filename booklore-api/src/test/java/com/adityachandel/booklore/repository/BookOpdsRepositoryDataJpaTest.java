@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -39,7 +38,6 @@ class BookOpdsRepositoryDataJpaTest {
         LibraryEntity library = LibraryEntity.builder()
                 .name("Test Library")
                 .icon("book")
-                .scanMode(LibraryScanMode.FILE_AS_BOOK)
                 .watch(false)
                 .build();
         library = entityManager.persistAndFlush(library);

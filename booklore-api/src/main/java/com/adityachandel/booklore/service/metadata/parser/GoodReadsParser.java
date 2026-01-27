@@ -501,8 +501,8 @@ public class GoodReadsParser implements BookParser {
             }
             return request.getTitle();
         }
-        return (book.getFileName() != null && !book.getFileName().isEmpty()
-                ? BookUtils.cleanFileName(book.getFileName())
+        return (book.getPrimaryFile() != null && book.getPrimaryFile().getFileName() != null && !book.getPrimaryFile().getFileName().isEmpty()
+                ? BookUtils.cleanFileName(book.getPrimaryFile().getFileName())
                 : null);
     }
 

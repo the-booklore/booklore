@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { Book } from '../../book/model/book.model';
-import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
+import {Injectable} from '@angular/core';
+import {Book} from '../../book/model/book.model';
+import {GroupRule, Rule, RuleField} from '../component/magic-shelf-component';
 
 @Injectable({ providedIn: 'root' })
 export class BookRuleEvaluatorService {
@@ -35,6 +35,20 @@ export class BookRuleEvaluatorService {
     const ruleStart = normalize(rule.valueStart);
     const ruleEnd = normalize(rule.valueEnd);
 
+    const mapFileTypeValue = (uiValue: string): string => {
+      const lowerValue = uiValue.toLowerCase();
+      switch (lowerValue) {
+        case 'cbr':
+        case 'cbz':
+        case 'cb7':
+          return 'cbx';
+        case 'azw':
+          return 'azw3';
+        default:
+          return lowerValue;
+      }
+    };
+
     const getArrayField = (field: RuleField): string[] => {
       switch (field) {
         case 'authors':
@@ -48,7 +62,7 @@ export class BookRuleEvaluatorService {
         case 'readStatus':
           return [String(book.readStatus ?? 'UNSET').toLowerCase()];
         case 'fileType':
-          return [String(this.getFileExtension(book.fileName) ?? '').toLowerCase()];
+          return [String(book['bookType'] ?? '').toLowerCase()];
         case 'library':
           return [String(book.libraryId)];
         case 'shelf':
@@ -73,9 +87,21 @@ export class BookRuleEvaluatorService {
     };
 
     const isNumericIdField = rule.field === 'library' || rule.field === 'shelf';
+    const isFileTypeField = rule.field === 'fileType';
+
     const ruleList = Array.isArray(rule.value)
-      ? rule.value.map(v => isNumericIdField ? String(v) : String(v).toLowerCase())
-      : (rule.value ? [isNumericIdField ? String(rule.value) : String(rule.value).toLowerCase()] : []);
+      ? rule.value.map(v => {
+          if (isNumericIdField) return String(v);
+          const lowerValue = String(v).toLowerCase();
+          return isFileTypeField ? mapFileTypeValue(lowerValue) : lowerValue;
+        })
+      : (rule.value ? [
+          isNumericIdField
+            ? String(rule.value)
+            : isFileTypeField
+              ? mapFileTypeValue(String(rule.value).toLowerCase())
+              : String(rule.value).toLowerCase()
+        ] : []);
 
     switch (rule.operator) {
       case 'equals':
@@ -85,6 +111,10 @@ export class BookRuleEvaluatorService {
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() === ruleVal.getTime();
         }
+        if (isFileTypeField && typeof ruleVal === 'string') {
+          const mappedRuleVal = mapFileTypeValue(ruleVal.toLowerCase());
+          return value === mappedRuleVal;
+        }
         return value === ruleVal;
 
       case 'not_equals':
@@ -93,6 +123,10 @@ export class BookRuleEvaluatorService {
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() !== ruleVal.getTime();
+        }
+        if (isFileTypeField && typeof ruleVal === 'string') {
+          const mappedRuleVal = mapFileTypeValue(ruleVal.toLowerCase());
+          return value !== mappedRuleVal;
         }
         return value !== ruleVal;
 
@@ -204,7 +238,7 @@ export class BookRuleEvaluatorService {
       case 'readStatus':
         return book.readStatus ?? 'UNSET';
       case 'fileType':
-        return this.getFileExtension(book.fileName)?.toLowerCase() ?? null;
+        return (book['bookType'] as string)?.toLowerCase() ?? null;
       case 'fileSize':
         return book.fileSizeKb;
       case 'metadataScore':
@@ -262,12 +296,5 @@ export class BookRuleEvaluatorService {
       default:
         return (book as Record<string, unknown>)[field];
     }
-  }
-
-  private getFileExtension(filePath?: string): string | null {
-    if (!filePath) return null;
-    const parts = filePath.split('.');
-    if (parts.length < 2) return null;
-    return parts.pop() ?? null;
   }
 }

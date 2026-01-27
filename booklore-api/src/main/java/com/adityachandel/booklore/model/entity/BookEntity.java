@@ -45,8 +45,12 @@ public class BookEntity {
     private LibraryEntity library;
 
     @ManyToOne
-    @JoinColumn(name = "library_path_id", nullable = false)
+    @JoinColumn(name = "library_path_id")
     private LibraryPathEntity libraryPath;
+
+    @Column(name = "is_physical")
+    @Builder.Default
+    private Boolean isPhysical = Boolean.FALSE;
 
     @Column(name = "added_on")
     private Instant addedOn;
@@ -83,9 +87,8 @@ public class BookEntity {
 
     public Path getFullFilePath() {
         BookFileEntity primaryBookFile = getPrimaryBookFile();
-        if (libraryPath == null || libraryPath.getPath() == null || primaryBookFile.getFileSubPath() == null || primaryBookFile.getFileName() == null) {
-            throw new IllegalStateException(
-                    "Cannot construct file path: missing library path, file subpath, or file name");
+        if (primaryBookFile == null || libraryPath == null || libraryPath.getPath() == null || primaryBookFile.getFileSubPath() == null || primaryBookFile.getFileName() == null) {
+            return null;
         }
 
         return Paths.get(libraryPath.getPath(), primaryBookFile.getFileSubPath(), primaryBookFile.getFileName());
@@ -93,22 +96,34 @@ public class BookEntity {
 
     public List<Path> getFullFilePaths() {
         if (libraryPath == null || libraryPath.getPath() == null || bookFiles == null || bookFiles.isEmpty()) {
-            throw new IllegalStateException(
-                    "Cannot construct file path: missing library path, file subpath, or file name");
+            return List.of();
         }
         return bookFiles.stream()
                 .map(bookFile -> Paths.get(libraryPath.getPath(), bookFile.getFileSubPath(), bookFile.getFileName()))
                 .collect(Collectors.toList());
     }
 
-    // TODO: Add support for specifying the preferred format
     public BookFileEntity getPrimaryBookFile() {
         if (bookFiles == null) {
             bookFiles = new ArrayList<>();
         }
         if (bookFiles.isEmpty()) {
-            throw new IllegalStateException("Book file not found");
+            return null;
+        }
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                var match = bookFiles.stream()
+                        .filter(bf -> bf.isBookFormat() && bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
         }
         return bookFiles.getFirst();
+    }
+
+    public boolean hasFiles() {
+        return bookFiles != null && !bookFiles.isEmpty();
     }
 }

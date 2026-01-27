@@ -1,56 +1,39 @@
+@use '../../../shared/styles/settings-shared' as settings;
+
 .metadata-settings-container {
-  width: 100%;
-  height: calc(100dvh - 10.5rem);
-  overflow-y: auto;
-
-  @media (min-width: 768px) {
-    height: calc(100dvh - 11.65rem);
-  }
+  @include settings.settings-page-container;
 }
 
-.section-divider {
-  padding-top: 2.5rem;
+@include settings.settings-page-header;
+
+.settings-title {
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
 }
+
+.settings-description {
+  @include settings.settings-page-description;
+}
+
+@include settings.settings-section-divider;
 
 .settings-card {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  background: var(--card-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-    gap: 1rem;
-  }
+  @include settings.settings-card;
 }
 
 .section-header {
-  margin-bottom: 0.25rem;
+  @include settings.settings-section-header;
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-color);
-  margin: 0 0 0.5rem 0;
-
-  .pi {
-    color: var(--primary-color);
-    font-size: 1.125rem;
-  }
+  @include settings.settings-section-title;
 }
 
 .section-description {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: settings.$settings-section-description-size;
   line-height: 1.5;
   color: var(--p-text-muted-color);
   margin: 0;
@@ -70,40 +53,17 @@
 }
 
 .section-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding-left: 1rem;
-
-  @media (max-width: 768px) {
-    padding-left: 0.5rem;
-  }
+  @include settings.settings-section-body;
 }
 
 .setting-item {
-  padding: 0.875rem 1rem;
-  border-radius: 6px;
-  border-left: 3px solid var(--primary-color);
-  background: color-mix(in srgb, var(--ground-background) 50%, var(--p-surface-800) 50%);
-  transition: border-color 0.2s ease, background 0.2s ease;
-
-  &:hover {
-    background: color-mix(in srgb, var(--ground-background) 40%, var(--p-surface-800) 60%);
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.75rem;
-  }
+  @include settings.settings-item;
 }
 
 .setting-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  @include settings.settings-item-header;
 }
 
 .setting-label {
-  font-weight: 500;
-  color: var(--text-color);
-  font-size: 0.9375rem;
+  @include settings.settings-label;
 }

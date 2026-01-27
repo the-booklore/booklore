@@ -48,7 +48,7 @@ class BookMapperTest {
         assertThat(dto.getLibraryName()).isEqualTo("Test Library");
         assertThat(dto.getLibraryPath()).isNotNull();
         assertThat(dto.getLibraryPath().getId()).isEqualTo(1L);
-        assertThat(dto.getBookType()).isEqualTo(BookFileType.EPUB);
+        assertThat(dto.getPrimaryFile().getBookType()).isEqualTo(BookFileType.EPUB);
         assertThat(dto.getAlternativeFormats()).isEmpty();
         assertThat(dto.getSupplementaryFiles()).isEmpty();
 

@@ -10,10 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.IOException;
@@ -32,8 +30,10 @@ public class EpubReaderController {
             description = "Retrieve parsed metadata, spine, manifest, and TOC for an EPUB book.")
     @ApiResponse(responseCode = "200", description = "Book info returned successfully")
     @GetMapping("/{bookId}/info")
-    public ResponseEntity<EpubBookInfo> getBookInfo(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return ResponseEntity.ok(epubReaderService.getBookInfo(bookId));
+    public ResponseEntity<EpubBookInfo> getBookInfo(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB)") @RequestParam(required = false) String bookType) {
+        return ResponseEntity.ok(epubReaderService.getBookInfo(bookId, bookType));
     }
 
     @Operation(summary = "Get file from EPUB", description = "Retrieve a specific file from within the EPUB archive (HTML, CSS, images, fonts, etc.).")
@@ -41,6 +41,7 @@ public class EpubReaderController {
     @GetMapping("/{bookId}/file/**")
     public void getFile(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB)") @RequestParam(required = false) String bookType,
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
 
@@ -49,10 +50,10 @@ public class EpubReaderController {
         String filePath = fullPath.substring(prefix.length());
         filePath = URLDecoder.decode(filePath, StandardCharsets.UTF_8);
 
-        String contentType = epubReaderService.getContentType(bookId, filePath);
+        String contentType = epubReaderService.getContentType(bookId, bookType, filePath);
         response.setContentType(contentType);
 
-        long fileSize = epubReaderService.getFileSize(bookId, filePath);
+        long fileSize = epubReaderService.getFileSize(bookId, bookType, filePath);
         if (fileSize > 0) {
             response.setContentLengthLong(fileSize);
         }
@@ -66,6 +67,6 @@ public class EpubReaderController {
 
         response.setHeader("Cache-Control", "public, max-age=3600");
 
-        epubReaderService.streamFile(bookId, filePath, response.getOutputStream());
+        epubReaderService.streamFile(bookId, bookType, filePath, response.getOutputStream());
     }
 }

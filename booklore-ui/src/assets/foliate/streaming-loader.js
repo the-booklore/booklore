@@ -6,9 +6,10 @@
  * @param {string} baseUrl - API base URL (e.g., '/api/v1/epub')
  * @param {Object} bookInfo - Pre-fetched EPUB metadata from /info endpoint
  * @param {string} [authToken] - Optional authentication token
+ * @param {string} [bookType] - Optional book type for alternative format (e.g., 'EPUB')
  * @returns {Object} Loader interface compatible with Foliate's EPUB class
  */
-export const makeStreamingLoader = (bookId, baseUrl, bookInfo, authToken = null) => {
+export const makeStreamingLoader = (bookId, baseUrl, bookInfo, authToken = null, bookType = null) => {
   // Build a map of file paths to their manifest info for quick lookup
   const manifestMap = new Map(
     bookInfo.manifest.map(item => [item.href, item])
@@ -19,7 +20,11 @@ export const makeStreamingLoader = (bookId, baseUrl, bookInfo, authToken = null)
     if (!name) return null
     // URL encode the path but preserve slashes
     const encodedPath = name.split('/').map(encodeURIComponent).join('/')
-    return `${baseUrl}/${bookId}/file/${encodedPath}`
+    let url = `${baseUrl}/${bookId}/file/${encodedPath}`
+    if (bookType) {
+      url += `?bookType=${encodeURIComponent(bookType)}`
+    }
+    return url
   }
 
   // Build fetch options with auth header
@@ -37,8 +42,15 @@ export const makeStreamingLoader = (bookId, baseUrl, bookInfo, authToken = null)
     if (!name) return null
     const encodedPath = name.split('/').map(encodeURIComponent).join('/')
     let url = `${baseUrl}/${bookId}/file/${encodedPath}`
+    const params = []
+    if (bookType) {
+      params.push(`bookType=${encodeURIComponent(bookType)}`)
+    }
     if (authToken) {
-      url += `?token=${encodeURIComponent(authToken)}`
+      params.push(`token=${encodeURIComponent(authToken)}`)
+    }
+    if (params.length > 0) {
+      url += '?' + params.join('&')
     }
     return url
   }

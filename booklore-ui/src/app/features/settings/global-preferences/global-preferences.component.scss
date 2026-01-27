@@ -1,46 +1,18 @@
+@use '../../../shared/styles/settings-shared' as settings;
+
 .main-container {
-  width: 100%;
-  padding: 1rem;
-  height: calc(100dvh - 10.5rem);
-  overflow-y: auto;
-  border-width: 1px;
-  border-radius: 0.5rem;
-
-  @media (min-width: 768px) {
-    height: calc(100dvh - 11.65rem);
-  }
+  @include settings.settings-page-container;
 }
 
-.enclosing-container {
-  border-color: var(--p-content-border-color);
-  background: var(--p-content-background);
-}
-
-.settings-header {
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-}
+@include settings.settings-page-header;
 
 .settings-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--p-text-color);
-  margin: 0 0 0.75rem 0;
-
-  .pi {
-    color: var(--p-primary-color);
-    font-size: 1.25rem;
-  }
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
 }
 
 .settings-description {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+  @include settings.settings-page-description;
 }
 
 .settings-content {
@@ -56,31 +28,17 @@
 }
 
 .section-header {
+  @include settings.settings-section-header;
   margin-bottom: 1rem;
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--p-text-color);
+  @include settings.settings-section-title;
   margin: 0;
-
-  .pi {
-    color: var(--p-primary-color);
-  }
 }
 
 .settings-card {
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  background: var(--p-content-background);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  @include settings.settings-card;
 }
 
 .setting-item {
@@ -105,7 +63,7 @@
 
   .setting-label {
     display: block;
-    font-weight: 600;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--p-text-color);
     font-size: 1rem;
     margin-bottom: 0.5rem;
@@ -142,7 +100,7 @@
     align-items: flex-start;
     gap: 0.5rem;
     color: var(--p-text-muted-color);
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     line-height: 1.5;
     margin: 0;
 
@@ -193,7 +151,7 @@
     position: absolute;
     right: 0.75rem;
     color: var(--p-text-muted-color);
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
     pointer-events: none;
   }
 }
@@ -208,7 +166,7 @@
 
   .pi {
     color: var(--p-orange-500);
-    font-size: 0.875rem;
+    font-size: settings.$settings-section-description-size;
   }
 
   @media (max-width: 768px) {

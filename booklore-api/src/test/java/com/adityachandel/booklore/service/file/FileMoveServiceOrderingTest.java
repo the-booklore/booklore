@@ -1,12 +1,15 @@
 package com.adityachandel.booklore.service.file;
 
+import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.LibraryMapper;
 import com.adityachandel.booklore.model.dto.FileMoveResult;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
@@ -14,191 +17,295 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FileMoveServiceOrderingTest {
 
-    @Mock
-    private BookRepository bookRepository;
-    @Mock
-    private BookAdditionalFileRepository bookFileRepository;
-    @Mock
-    private LibraryRepository libraryRepository;
-    @Mock
-    private FileMoveHelper fileMoveHelper;
-    @Mock
-    private MonitoringRegistrationService monitoringRegistrationService;
-    @Mock
-    private LibraryMapper libraryMapper;
-    @Mock
-    private BookMapper bookMapper;
-    @Mock
-    private NotificationService notificationService;
-    @Mock
-    private EntityManager entityManager;
+    @Mock private AppProperties appProperties;
+    @Mock private BookRepository bookRepository;
+    @Mock private BookAdditionalFileRepository bookFileRepository;
+    @Mock private LibraryRepository libraryRepository;
+    @Mock private FileMoveHelper fileMoveHelper;
+    @Mock private MonitoringRegistrationService monitoringRegistrationService;
+    @Mock private LibraryMapper libraryMapper;
+    @Mock private BookMapper bookMapper;
+    @Mock private NotificationService notificationService;
+    @Mock private EntityManager entityManager;
 
-    private TestableFileMoveService fileMoveService;
+    private FileMoveService service;
+    private LibraryEntity library;
+    private LibraryPathEntity libraryPath;
 
-    private BookEntity bookEntity;
-    private Path expectedFilePath;
-
-    // Subclass to mock sleep
     static class TestableFileMoveService extends FileMoveService {
-        public TestableFileMoveService(BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository, LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper, MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper, BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
-            super(bookRepository, bookFileRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
+        TestableFileMoveService(AppProperties appProperties, BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository,
+                                LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper,
+                                MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper,
+                                BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
+            super(appProperties, bookRepository, bookFileRepository, libraryRepository, fileMoveHelper,
+                    monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
         }
 
         @Override
         protected void sleep(long millis) {
-            // No-op for test, but can be verified by spy
+            // No-op
         }
     }
 
     @BeforeEach
-    void setUp() throws Exception {
-        fileMoveService = spy(new TestableFileMoveService(
-                bookRepository, bookFileRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
+    void setUp() {
+        when(appProperties.getDiskType()).thenReturn("LOCAL");
+        service = spy(new TestableFileMoveService(appProperties, bookRepository, bookFileRepository, libraryRepository,
+                fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
 
-        LibraryEntity library = new LibraryEntity();
-        library.setId(42L);
+        library = new LibraryEntity();
+        library.setId(1L);
 
-        LibraryPathEntity libraryPath = new LibraryPathEntity();
-        libraryPath.setId(77L);
-        libraryPath.setPath("/library/root");
+        libraryPath = new LibraryPathEntity();
+        libraryPath.setId(10L);
+        libraryPath.setPath("/library");
         libraryPath.setLibrary(library);
+        library.setLibraryPaths(List.of(libraryPath));
+    }
 
-        bookEntity = new BookEntity();
-        bookEntity.setId(999L);
-        bookEntity.setLibrary(library);
-        bookEntity.setLibraryPath(libraryPath);
-        var primaryFile = new com.adityachandel.booklore.model.entity.BookFileEntity();
-        primaryFile.setBook(bookEntity);
-        primaryFile.setFileSubPath("SciFi");
-        primaryFile.setFileName("Original.epub");
-        bookEntity.setBookFiles(java.util.List.of(primaryFile));
+    private BookEntity createBook() {
+        BookEntity book = new BookEntity();
+        book.setId(100L);
+        book.setLibrary(library);
+        book.setLibraryPath(libraryPath);
 
-        expectedFilePath = Paths.get(libraryPath.getPath(), primaryFile.getFileSubPath(), "Renamed.epub");
+        BookFileEntity file = new BookFileEntity();
+        file.setId(1L);
+        file.setBook(book);
+        file.setFileName("Book.epub");
+        file.setFileSubPath("path");
+        file.setBookFormat(true);
+        file.setBookType(BookFileType.EPUB);
 
-        when(fileMoveHelper.getFileNamingPattern(library)).thenReturn("{title}");
-        when(fileMoveHelper.generateNewFilePath(bookEntity, libraryPath, "{title}")).thenReturn(expectedFilePath);
-        when(fileMoveHelper.extractSubPath(expectedFilePath, libraryPath)).thenReturn(primaryFile.getFileSubPath());
-        doNothing().when(fileMoveHelper).moveFile(any(Path.class), any(Path.class));
-        doNothing().when(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(Path.class), anySet());
+        book.setBookFiles(new ArrayList<>(List.of(file)));
+        return book;
+    }
+
+    private void mockStandardBehavior(BookEntity book, Path targetPath) throws IOException {
+        when(fileMoveHelper.getFileNamingPattern(any())).thenReturn("{title}");
+        when(fileMoveHelper.generateNewFilePath(eq(book), any(LibraryPathEntity.class), anyString())).thenReturn(targetPath);
+        when(fileMoveHelper.generateNewFilePath(eq(book), any(BookFileEntity.class), any(LibraryPathEntity.class), anyString()))
+                .thenReturn(targetPath);
+        when(fileMoveHelper.extractSubPath(any(), any())).thenReturn("new/path");
+        when(fileMoveHelper.validateSourceExists(any(), anyBoolean())).thenReturn(true);
+        when(fileMoveHelper.moveFileWithBackup(any())).thenAnswer(inv -> ((Path) inv.getArgument(0)).resolveSibling("temp"));
+        doNothing().when(fileMoveHelper).commitMove(any(), any());
+        doNothing().when(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(), anySet());
     }
 
     @Test
-    void moveSingleFile_guaranteesCorrectOrderOfOperations_WhenMonitored() throws Exception {
-        // Arrange
-        when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(true);
-        when(monitoringRegistrationService.getPathsForLibraries(Set.of(42L))).thenReturn(Set.of(Paths.get("/library/root")));
-        
-        Library libraryDto = Library.builder().watch(true).build();
-        when(libraryMapper.toLibrary(any(LibraryEntity.class))).thenReturn(libraryDto);
+    @DisplayName("moveSingleFile: commits files before updating database")
+    void commitsBeforeDatabaseUpdate() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
 
-        // Act
-        FileMoveResult result = fileMoveService.moveSingleFile(bookEntity);
+        mockStandardBehavior(book, target);
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
 
-        // Assert
-        assertTrue(result.isMoved());
+        FileMoveResult result = service.moveSingleFile(book);
 
-        InOrder inOrder = inOrder(monitoringRegistrationService, fileMoveHelper, fileMoveService);
+        assertThat(result.isMoved()).isTrue();
 
-        // 1. Unregister library
-        inOrder.verify(fileMoveHelper).unregisterLibrary(42L);
+        InOrder inOrder = inOrder(fileMoveHelper, bookFileRepository);
+        inOrder.verify(fileMoveHelper).moveFileWithBackup(any());
+        inOrder.verify(fileMoveHelper).commitMove(any(), any());
+        inOrder.verify(bookFileRepository).updateFileNameAndSubPath(anyLong(), anyString(), anyString());
+    }
 
-        // 2. Wait for initial events to drain (before move)
+    @Test
+    @DisplayName("moveSingleFile: validates sources before staging")
+    void validatesBeforeStaging() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+        service.moveSingleFile(book);
+
+        InOrder inOrder = inOrder(fileMoveHelper);
+        inOrder.verify(fileMoveHelper).validateSourceExists(any(), anyBoolean());
+        inOrder.verify(fileMoveHelper).moveFileWithBackup(any());
+    }
+
+    @Test
+    @DisplayName("moveSingleFile: when monitored - unregisters before move, registers after")
+    void monitoredOrderUnregisterMoveRegister() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        when(monitoringRegistrationService.isLibraryMonitored(1L)).thenReturn(true);
+        when(monitoringRegistrationService.getPathsForLibraries(Set.of(1L))).thenReturn(Set.of(Paths.get("/library")));
+        Library dto = Library.builder().build();
+        when(libraryMapper.toLibrary(any(LibraryEntity.class))).thenReturn(dto);
+
+        FileMoveResult result = service.moveSingleFile(book);
+
+        assertThat(result.isMoved()).isTrue();
+
+        InOrder inOrder = inOrder(fileMoveHelper, monitoringRegistrationService, service);
+        inOrder.verify(fileMoveHelper).unregisterLibrary(1L);
         inOrder.verify(monitoringRegistrationService).waitForEventsDrainedByPaths(anySet(), anyLong());
-
-        // 3. Perform the move
-        inOrder.verify(fileMoveHelper).moveFile(any(Path.class), any(Path.class));
-
-        // 4. Perform cleanup
-        inOrder.verify(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(Path.class), anySet());
-
-        // 5. CRITICAL: Sleep/Wait for events generated by move/cleanup to drain *before* re-registering
-        inOrder.verify(fileMoveService).sleep(anyLong());
-
-        // 6. Register library *last*
-        inOrder.verify(monitoringRegistrationService).registerLibrary(libraryDto);
-    }
-    
-    @Test
-    void moveSingleFile_guaranteesCorrectOrderOfOperations_WhenStatusNotMonitoredButHasPaths() throws Exception {
-        // Arrange: status says FALSE, but getPaths returns paths. Should still unregister.
-        when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(false);
-        when(monitoringRegistrationService.getPathsForLibraries(Set.of(42L))).thenReturn(Set.of(Paths.get("/library/root")));
-        
-        Library libraryDto = Library.builder().watch(true).build();
-        when(libraryMapper.toLibrary(any(LibraryEntity.class))).thenReturn(libraryDto);
-
-        // Act
-        FileMoveResult result = fileMoveService.moveSingleFile(bookEntity);
-
-        // Assert
-        assertTrue(result.isMoved());
-
-        InOrder inOrder = inOrder(monitoringRegistrationService, fileMoveHelper, fileMoveService);
-
-        // 1. Unregister library
-        inOrder.verify(fileMoveHelper).unregisterLibrary(42L);
-
-        // 2. Wait for initial events to drain
-        inOrder.verify(monitoringRegistrationService).waitForEventsDrainedByPaths(anySet(), anyLong());
-
-        // 3. Move
-        inOrder.verify(fileMoveHelper).moveFile(any(Path.class), any(Path.class));
-        
-        // 4. Sleep
-        inOrder.verify(fileMoveService).sleep(anyLong());
-
-        // 5. Register
-        inOrder.verify(monitoringRegistrationService).registerLibrary(libraryDto);
+        inOrder.verify(fileMoveHelper).moveFileWithBackup(any());
+        inOrder.verify(fileMoveHelper).commitMove(any(), any());
+        inOrder.verify(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(), anySet());
+        inOrder.verify(service).sleep(anyLong());
+        inOrder.verify(monitoringRegistrationService).registerLibrary(dto);
     }
 
     @Test
-    void moveSingleFile_skipsMonitoringOps_WhenNotMonitoredAndNoPaths() throws Exception {
-        // Arrange
-        when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(false);
-        when(monitoringRegistrationService.getPathsForLibraries(Set.of(42L))).thenReturn(Collections.emptySet());
+    @DisplayName("moveSingleFile: when not monitored - no monitoring calls")
+    void notMonitoredSkipsMonitoringCalls() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
 
-        // Act
-        FileMoveResult result = fileMoveService.moveSingleFile(bookEntity);
+        mockStandardBehavior(book, target);
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
 
-        // Assert
-        assertTrue(result.isMoved());
+        FileMoveResult result = service.moveSingleFile(book);
 
-        // Verify NO unregister/register happens
+        assertThat(result.isMoved()).isTrue();
         verify(fileMoveHelper, never()).unregisterLibrary(anyLong());
-        verify(monitoringRegistrationService, never()).waitForEventsDrainedByPaths(anySet(), anyLong());
-        
-        // Move happens
-        verify(fileMoveHelper).moveFile(any(Path.class), any(Path.class));
-        
-        // NO sleep
-        verify(fileMoveService, never()).sleep(anyLong());
-        
-        // NO register
         verify(monitoringRegistrationService, never()).registerLibrary(any());
+        verify(service, never()).sleep(anyLong());
+    }
+
+    @Test
+    @DisplayName("moveSingleFile: cleans up directories after database update")
+    void cleansUpAfterDatabaseUpdate() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+        service.moveSingleFile(book);
+
+        InOrder inOrder = inOrder(bookFileRepository, fileMoveHelper);
+        inOrder.verify(bookFileRepository).updateFileNameAndSubPath(anyLong(), anyString(), anyString());
+        inOrder.verify(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(), anySet());
+    }
+
+    @Test
+    @DisplayName("moveSingleFile: all files staged before any commits")
+    void allFilesStagedBeforeCommits() throws IOException {
+        BookEntity book = new BookEntity();
+        book.setId(100L);
+        book.setLibrary(library);
+        book.setLibraryPath(libraryPath);
+
+        BookFileEntity file1 = new BookFileEntity();
+        file1.setId(1L);
+        file1.setBook(book);
+        file1.setFileName("Book.epub");
+        file1.setFileSubPath("path");
+        file1.setBookFormat(true);
+
+        BookFileEntity file2 = new BookFileEntity();
+        file2.setId(2L);
+        file2.setBook(book);
+        file2.setFileName("Book.pdf");
+        file2.setFileSubPath("path");
+        file2.setBookFormat(true);
+        file2.setBookType(BookFileType.PDF);
+
+        book.setBookFiles(new ArrayList<>(List.of(file1, file2)));
+
+        Path target = Paths.get("/library/new/path/NewName.epub");
+        mockStandardBehavior(book, target);
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+        service.moveSingleFile(book);
+
+        InOrder inOrder = inOrder(fileMoveHelper);
+        // Both files staged first
+        inOrder.verify(fileMoveHelper, times(2)).moveFileWithBackup(any());
+        // Then both committed
+        inOrder.verify(fileMoveHelper, times(2)).commitMove(any(), any());
+    }
+
+    @Test
+    @DisplayName("moveSingleFile: rollback happens on commit failure")
+    void rollbackOnCommitFailure() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        doThrow(new IOException("fail")).when(fileMoveHelper).commitMove(any(), any());
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+        service.moveSingleFile(book);
+
+        InOrder inOrder = inOrder(fileMoveHelper);
+        inOrder.verify(fileMoveHelper).moveFileWithBackup(any());
+        inOrder.verify(fileMoveHelper).commitMove(any(), any());
+        inOrder.verify(fileMoveHelper).rollbackMove(any(), any());
+    }
+
+    @Test
+    @DisplayName("moveSingleFile: database not updated when commit fails")
+    void noDatabaseUpdateOnCommitFailure() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        doThrow(new IOException("fail")).when(fileMoveHelper).commitMove(any(), any());
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+        service.moveSingleFile(book);
+
+        verify(bookFileRepository, never()).updateFileNameAndSubPath(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("moveSingleFile: library re-registered even on failure")
+    void libraryReRegisteredOnFailure() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        doThrow(new IOException("fail")).when(fileMoveHelper).commitMove(any(), any());
+        when(monitoringRegistrationService.isLibraryMonitored(1L)).thenReturn(true);
+        when(monitoringRegistrationService.getPathsForLibraries(Set.of(1L))).thenReturn(Set.of(Paths.get("/library")));
+        Library dto = Library.builder().build();
+        when(libraryMapper.toLibrary(any(LibraryEntity.class))).thenReturn(dto);
+
+        service.moveSingleFile(book);
+
+        verify(fileMoveHelper).unregisterLibrary(1L);
+        verify(monitoringRegistrationService).registerLibrary(dto);
     }
 }

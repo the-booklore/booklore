@@ -7,7 +7,7 @@ import com.adityachandel.booklore.service.book.BookDownloadService;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
-import com.adityachandel.booklore.service.user.UserProgressService;
+import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +37,7 @@ class BookServiceDeleteTests {
     @BeforeEach
     void setUp() {
         BookRepository bookRepository = Mockito.mock(BookRepository.class);
+        BookFileRepository bookFileRepository = Mockito.mock(BookFileRepository.class);
         PdfViewerPreferencesRepository pdfViewerPreferencesRepository = Mockito.mock(PdfViewerPreferencesRepository.class);
         EbookViewerPreferenceRepository ebookViewerPreferenceRepository = Mockito.mock(EbookViewerPreferenceRepository.class);
         CbxViewerPreferencesRepository cbxViewerPreferencesRepository = Mockito.mock(CbxViewerPreferencesRepository.class);
@@ -46,13 +47,14 @@ class BookServiceDeleteTests {
         UserBookProgressRepository userBookProgressRepository = Mockito.mock(UserBookProgressRepository.class);
         AuthenticationService authenticationService = Mockito.mock(AuthenticationService.class);
         BookQueryService bookQueryService = Mockito.mock(BookQueryService.class);
-        UserProgressService userProgressService = Mockito.mock(UserProgressService.class);
+        ReadingProgressService readingProgressService = Mockito.mock(ReadingProgressService.class);
         BookDownloadService bookDownloadService = Mockito.mock(BookDownloadService.class);
         MonitoringRegistrationService monitoringRegistrationService = Mockito.mock(MonitoringRegistrationService.class);
         BookUpdateService bookUpdateService = Mockito.mock(BookUpdateService.class);
 
         bookService = new BookService(
                 bookRepository,
+                bookFileRepository,
                 pdfViewerPreferencesRepository,
                 cbxViewerPreferencesRepository,
                 newPdfViewerPreferencesRepository,
@@ -61,7 +63,7 @@ class BookServiceDeleteTests {
                 userBookProgressRepository,
                 authenticationService,
                 bookQueryService,
-                userProgressService,
+                readingProgressService,
                 bookDownloadService,
                 monitoringRegistrationService,
                 bookUpdateService,

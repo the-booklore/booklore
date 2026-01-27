@@ -103,7 +103,7 @@ public class GoogleParser implements BookParser {
                 results = getMetadataListByTerm(term);
             }
         }
-        
+
         return results;
     }
 
@@ -496,6 +496,18 @@ public class GoogleParser implements BookParser {
                 ));
     }
 
+    private String getSearchTerm(Book book, FetchMetadataRequest request) {
+        String searchTerm = Optional.ofNullable(request.getTitle())
+                .filter(title -> !title.isEmpty())
+                .orElseGet(() -> Optional.ofNullable(book.getPrimaryFile())
+                        .map(pf -> pf.getFileName())
+                        .filter(fileName -> !fileName.isEmpty())
+                        .map(BookUtils::cleanFileName)
+                        .orElse(null));
+
+        if (searchTerm == null) {
+            return null;
+        }
 
 
     private String truncateToMaxWords(String input) {
