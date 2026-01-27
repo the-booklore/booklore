@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
@@ -21,6 +21,8 @@ describe('AppSettingsService', () => {
     libraryMetadataRefreshOptions: [],
     uploadPattern: '',
     opdsServerEnabled: false,
+    komgaApiEnabled: false,
+    komgaGroupUnknown: false,
     remoteAuthEnabled: false,
     oidcEnabled: true,
     oidcProviderDetails: {
@@ -391,6 +393,8 @@ describe('AppSettingsService - API Contract Tests', () => {
         libraryMetadataRefreshOptions: [],
         uploadPattern: '',
         opdsServerEnabled: false,
+        komgaApiEnabled: false,
+        komgaGroupUnknown: false,
         remoteAuthEnabled: false,
         oidcEnabled: true,
         oidcProviderDetails: {

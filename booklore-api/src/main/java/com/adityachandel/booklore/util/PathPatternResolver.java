@@ -271,9 +271,14 @@ public class PathPatternResolver {
     private String validateFinalPath(String path) {
         String[] components = SLASH_PATTERN.split(path);
         StringBuilder result = new StringBuilder(512);
+        boolean first = true;
 
         for (int i = 0; i < components.length; i++) {
             String component = components[i];
+            if (component == null || component.isEmpty()) {
+                continue;
+            }
+
             boolean isLastComponent = (i == components.length - 1);
 
             if (isLastComponent && component.contains(".")) {
@@ -287,8 +292,9 @@ public class PathPatternResolver {
                 }
             }
 
-            if (i > 0) result.append("/");
+            if (!first) result.append("/");
             result.append(component);
+            first = false;
         }
         return result.toString();
     }

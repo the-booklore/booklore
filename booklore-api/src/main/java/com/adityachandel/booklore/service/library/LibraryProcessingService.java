@@ -2,8 +2,8 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
@@ -20,8 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -60,7 +62,21 @@ public class LibraryProcessingService {
         LibraryEntity libraryEntity = libraryRepository.findById(context.getLibraryId()).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started refreshing library: " + libraryEntity.getName()));
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
+        
+        validateLibraryPathsAccessible(libraryEntity);
+        
         List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
+        
+        int existingBookCount = libraryEntity.getBookEntities().size();
+        if (existingBookCount > 0 && libraryFiles.isEmpty()) {
+            String paths = libraryEntity.getLibraryPaths().stream()
+                    .map(p -> p.getPath())
+                    .collect(Collectors.joining(", "));
+            log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}", 
+                    libraryEntity.getName(), existingBookCount, paths);
+            throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(paths);
+        }
+        
         List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity, processor);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
@@ -83,6 +99,16 @@ public class LibraryProcessingService {
         processor.processLibraryFiles(libraryFiles, libraryEntity);
     }
 
+    private void validateLibraryPathsAccessible(LibraryEntity libraryEntity) {
+        for (var pathEntity : libraryEntity.getLibraryPaths()) {
+            Path path = Path.of(pathEntity.getPath());
+            if (!Files.exists(path) || !Files.isDirectory(path) || !Files.isReadable(path)) {
+                log.error("Library path not accessible: {}", path);
+                throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(path.toString());
+            }
+        }
+    }
+
     protected static List<Long> detectDeletedBookIds(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<Path> currentFullPaths = libraryFiles.stream()
                 .map(LibraryFile::getFullPath)
@@ -90,13 +116,19 @@ public class LibraryProcessingService {
 
         return libraryEntity.getBookEntities().stream()
                 .filter(book -> (book.getDeleted() == null || !book.getDeleted()))
-                .filter(book -> !currentFullPaths.contains(book.getFullFilePath()))
+                .filter(book -> {
+                    if (book.getBookFiles() == null || book.getBookFiles().isEmpty()) {
+                        return true;
+                    }
+                    return !currentFullPaths.contains(book.getFullFilePath());
+                })
                 .map(BookEntity::getId)
                 .collect(Collectors.toList());
     }
 
     protected List<LibraryFile> detectNewBookPaths(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<String> existingKeys = libraryEntity.getBookEntities().stream()
+                .filter(book -> book.getBookFiles() != null && !book.getBookFiles().isEmpty())
                 .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 

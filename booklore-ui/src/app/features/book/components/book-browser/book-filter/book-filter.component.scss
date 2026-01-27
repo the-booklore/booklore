@@ -51,16 +51,13 @@
 }
 
 .filter-list {
-  max-height: 27.5rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding-right: 0.25rem;
 }
 
 .filter-row {
   cursor: pointer;
   transition: colors 200ms ease-in-out;
-  padding-bottom: 0.25rem;
+  height: 26px;
   display: flex;
   flex-direction: row;
   align-items: center;

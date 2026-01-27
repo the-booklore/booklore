@@ -56,7 +56,7 @@
                 optionLabel="name"
                 placeholder="Select Library"
                 [(ngModel)]="selectedLibrary"
-                class="w-full">
+                class="full-width">
               </p-select>
             </div>
             <div class="field-group">
@@ -68,7 +68,7 @@
                 placeholder="Select Subpath"
                 [(ngModel)]="selectedPath"
                 [disabled]="!selectedLibrary"
-                class="w-full">
+                class="full-width">
               </p-select>
             </div>
           </div>
@@ -90,8 +90,7 @@
           [multiple]="true"
           accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3"
           (onSelect)="onFilesSelect($event)"
-          (uploadHandler)="uploadFiles($event)"
-          [disabled]="value === 'library' ? (!selectedLibrary || !selectedPath) : false">
+          (uploadHandler)="uploadFiles($event)">
           <ng-template #header let-files let-chooseCallback="chooseCallback" let-clearCallback="clearCallback" let-uploadCallback="uploadCallback">
             <div class="upload-actions">
               <div class="action-buttons">

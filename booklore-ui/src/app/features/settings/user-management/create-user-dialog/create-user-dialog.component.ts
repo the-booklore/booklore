@@ -9,6 +9,7 @@ import {LibraryService} from '../../../book/service/library.service';
 import {UserService} from '../user.service';
 import {MessageService} from 'primeng/api';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import {passwordMatchValidator} from '../../../../shared/validators/password-match.validator';
 
 
 @Component({
@@ -43,6 +44,7 @@ export class CreateUserDialogComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       username: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required],
       selectedLibraries: [[], Validators.required],
       permissionUpload: [false],
       permissionDownload: [false],
@@ -72,7 +74,7 @@ export class CreateUserDialogComponent implements OnInit {
       permissionBulkResetBookloreReadProgress: [false],
       permissionBulkResetKoReaderReadProgress: [false],
       permissionBulkResetBookReadStatus: [false],
-    });
+    }, {validators: [passwordMatchValidator('password', 'confirmPassword')]});
 
     this.userForm.get('permissionAdmin')?.valueChanges.subscribe((isAdmin: boolean) => {
       const controls = this.userForm.controls;
@@ -93,10 +95,13 @@ export class CreateUserDialogComponent implements OnInit {
       });
       return;
     }
+    // Detele confirmPassword from form, it's not necessary to keep once validation has passed
+    const {confirmPassword, ...formValue} = this.userForm.value;
+    void confirmPassword;
 
     const userData = {
-      ...this.userForm.value,
-      selectedLibraries: this.userForm.value.selectedLibraries.map((lib: Library) => lib.id)
+      ...formValue,
+      selectedLibraries: formValue.selectedLibraries.map((lib: Library) => lib.id)
     };
 
     this.userService.createUser(userData).subscribe({

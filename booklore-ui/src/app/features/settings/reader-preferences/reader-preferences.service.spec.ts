@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {ReaderPreferencesService} from './reader-preferences.service';
-import {CbxFitMode, CbxPageSpread, CbxPageViewMode, PdfPageSpread, PdfPageViewMode, User, UserService} from '../user-management/user.service';
+import {CbxFitMode, CbxPageSpread, CbxPageViewMode, PdfFitMode, PdfPageSpread, PdfPageViewMode, User, UserService} from '../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {of, Subject} from 'rxjs';
 
@@ -65,7 +65,8 @@ const mockUser: User = {
     },
     newPdfReaderSetting: {
       pageSpread: PdfPageSpread.EVEN,
-      pageViewMode: PdfPageViewMode.SINGLE_PAGE
+      pageViewMode: PdfPageViewMode.SINGLE_PAGE,
+      fitMode: PdfFitMode.ACTUAL_SIZE
     },
     sidebarLibrarySorting: {field: '', order: ''},
     sidebarShelfSorting: {field: '', order: ''},

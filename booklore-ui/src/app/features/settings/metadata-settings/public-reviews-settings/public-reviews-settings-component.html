@@ -11,82 +11,67 @@
 
   <div class="section-body">
     <div class="setting-item">
-      <label class="setting-label">Download Public Reviews</label>
-      <div class="setting-item setting-item-indented">
-        <div class="setting-label-row">
-          <label class="setting-label">Enabled:</label>
-          <p-toggleswitch
-            [(ngModel)]="publicReviewSettings.downloadEnabled"
-            (onChange)="onPublicReviewsToggle($event.checked)">
-          </p-toggleswitch>
-        </div>
+      <div class="setting-header">
+        <p-toggleswitch
+          [(ngModel)]="publicReviewSettings.downloadEnabled"
+          (onChange)="onPublicReviewsToggle($event.checked)">
+        </p-toggleswitch>
+        <label class="setting-label">Download Public Reviews</label>
       </div>
     </div>
 
     @if (publicReviewSettings.downloadEnabled) {
       <div class="setting-item">
-        <label class="setting-label">Auto Download on Book Open</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          <span>
-            Automatically fetch reviews when you open a book's details page. When disabled, reviews will only be downloaded manually or during metadata refresh, reducing background network activity and improving performance.
-          </span>
-        </p>
-        <div class="setting-item setting-item-indented">
-          <div class="setting-label-row">
-            <label class="setting-label">Enabled:</label>
-            <p-toggleswitch
-              [(ngModel)]="publicReviewSettings.autoDownloadEnabled"
-              (onChange)="onAutoDownloadToggle($event.checked)">
-            </p-toggleswitch>
-          </div>
+        <div class="setting-header">
+          <p-toggleswitch
+            [(ngModel)]="publicReviewSettings.autoDownloadEnabled"
+            (onChange)="onAutoDownloadToggle($event.checked)">
+          </p-toggleswitch>
+          <label class="setting-label">Auto Download on Book Open</label>
         </div>
+        <p class="setting-description">Automatically fetch reviews when you open a book's details page. When disabled, reviews will only be downloaded manually or during metadata refresh.</p>
       </div>
 
       <div class="setting-item">
-        <label class="setting-label">Review Sources</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          <span>
-            Configure which platforms to download reviews from and set limits for each source.
-          </span>
-        </p>
-        <div class="setting-item setting-item-indented">
-          <div class="providers-list">
-            @for (provider of publicReviewSettings.providers; track provider.provider) {
-              <div class="provider-item">
-                <div class="provider-label-row">
-                  <label class="provider-label">{{ provider.provider }}</label>
-                  <div class="provider-controls">
+        <div class="setting-header-standalone">
+          <label class="setting-label">Review Sources</label>
+        </div>
+        <p class="setting-description">Configure which platforms to download reviews from and set limits for each source.</p>
+        @if (publicReviewSettings.providers.length > 0) {
+          <div class="setting-options">
+            <div class="providers-grid">
+              @for (provider of publicReviewSettings.providers; track provider.provider) {
+                <div class="provider-item">
+                  <div class="provider-row">
                     <p-toggleswitch
                       [(ngModel)]="provider.enabled"
                       (onChange)="onProviderToggle(provider.provider, $event.checked)">
                     </p-toggleswitch>
-                    @if (provider.enabled) {
-                      <div class="max-reviews-control">
-                        <label class="max-reviews-label">Max Reviews:</label>
-                        <input
-                          type="number"
-                          class="max-reviews-input"
-                          min="1"
-                          max="10"
-                          [(ngModel)]="provider.maxReviews"
-                          (blur)="onMaxReviewsChange(provider.provider, provider.maxReviews)"
-                          title="Number of reviews to download (1-10)">
-                      </div>
-                    }
+                    <label class="provider-label">{{ provider.provider }}</label>
                   </div>
+                  @if (provider.enabled) {
+                    <div class="max-reviews-control">
+                      <label class="max-reviews-label">Max:</label>
+                      <input
+                        type="number"
+                        class="max-reviews-input"
+                        min="1"
+                        max="10"
+                        [(ngModel)]="provider.maxReviews"
+                        (blur)="onMaxReviewsChange(provider.provider, provider.maxReviews)"
+                        title="Number of reviews to download (1-10)">
+                    </div>
+                  }
                 </div>
-              </div>
-            }
-            @if (publicReviewSettings.providers.length === 0) {
-              <div class="no-providers-message">
-                <i class="pi pi-exclamation-triangle"></i>
-                <span>No review sources available. Please ensure metadata providers are configured in the Provider Settings section above.</span>
-              </div>
-            }
+              }
+            </div>
           </div>
-        </div>
+        } @else {
+          <div class="no-providers-message">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>No review sources available. Please ensure metadata providers are configured in the Provider Settings section above.</span>
+          </div>
+        }
       </div>
     }
   </div>

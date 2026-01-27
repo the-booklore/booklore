@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
-import { defer, from, Observable, of } from 'rxjs';
-import { AnnotationStyle } from '../../../../../shared/service/annotation.service';
+import {Injectable} from '@angular/core';
+import {defer, from, Observable, of} from 'rxjs';
+import {AnnotationStyle} from '../../../../../shared/service/annotation.service';
 
-export type { AnnotationStyle };
+export type {AnnotationStyle};
 
 export interface Annotation {
   value: string;
@@ -15,22 +15,31 @@ export interface Annotation {
 })
 export class ReaderAnnotationService {
   private annotationStyles = new Map<string, { color: string; style: AnnotationStyle }>();
+  private allAnnotations: Annotation[] = [];
 
-  addAnnotation(view: any, annotation: Annotation): Observable<{index: number; label: string} | undefined> {
+  addAnnotation(view: any, annotation: Annotation): Observable<{ index: number; label: string } | undefined> {
     if (!view) return of(undefined);
 
     const style = annotation.style || 'highlight';
-    const color = annotation.color || '#FFFF00';
+    const color = annotation.color || '#FACC15';
 
     this.annotationStyles.set(annotation.value, {color, style});
 
-    return defer(() => from(view.addAnnotation({value: annotation.value}) as Promise<{index: number; label: string} | undefined>));
+    const existingIndex = this.allAnnotations.findIndex(a => a.value === annotation.value);
+    if (existingIndex >= 0) {
+      this.allAnnotations[existingIndex] = annotation;
+    } else {
+      this.allAnnotations.push(annotation);
+    }
+
+    return defer(() => from(view.addAnnotation({value: annotation.value}) as Promise<{ index: number; label: string } | undefined>));
   }
 
   deleteAnnotation(view: any, cfi: string): Observable<void> {
     if (!view) return of(undefined);
 
     this.annotationStyles.delete(cfi);
+    this.allAnnotations = this.allAnnotations.filter(a => a.value !== cfi);
 
     return defer(() => from(view.deleteAnnotation({value: cfi}) as Promise<void>));
   }
@@ -44,8 +53,16 @@ export class ReaderAnnotationService {
   addAnnotations(view: any, annotations: Annotation[]): void {
     annotations.forEach(annotation => {
       const style = annotation.style || 'highlight';
-      const color = annotation.color || '#FFFF00';
+      const color = annotation.color || '#FACC15';
       this.annotationStyles.set(annotation.value, {color, style});
+
+      const existingIndex = this.allAnnotations.findIndex(a => a.value === annotation.value);
+      if (existingIndex >= 0) {
+        this.allAnnotations[existingIndex] = annotation;
+      } else {
+        this.allAnnotations.push(annotation);
+      }
+
       view?.addAnnotation({value: annotation.value});
     });
   }
@@ -132,7 +149,12 @@ export class ReaderAnnotationService {
     }
   }
 
-  clearAnnotations(): void {
+  getAllAnnotations(): Annotation[] {
+    return [...this.allAnnotations];
+  }
+
+  resetAnnotations(): void {
     this.annotationStyles.clear();
+    this.allAnnotations = [];
   }
 }

@@ -5,6 +5,7 @@ import {SetupService} from './setup.service';
 import {InputText} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
 import {Message} from 'primeng/message';
+import {passwordMatchValidator} from '../../validators/password-match.validator';
 
 @Component({
   selector: 'app-setup',
@@ -34,7 +35,8 @@ export class SetupComponent {
       username: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-    });
+      confirmPassword: ['', [Validators.required]],
+    }, {validators: [passwordMatchValidator('password', 'confirmPassword')]});
   }
 
   onSubmit(): void {
@@ -42,8 +44,10 @@ export class SetupComponent {
 
     this.loading = true;
     this.error = null;
-
-    this.setupService.createAdmin(this.setupForm.value).subscribe({
+    // Remove confirm password from the payload, as it does not need to be sent to backend
+    const { confirmPassword, ...payload } = this.setupForm.value;
+    void confirmPassword;
+    this.setupService.createAdmin(payload).subscribe({
       next: () => {
         this.success = true;
         setTimeout(() => this.router.navigate(['/login']), 1500);

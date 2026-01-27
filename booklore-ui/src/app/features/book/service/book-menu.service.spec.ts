@@ -93,6 +93,7 @@ describe('BookMenuService', () => {
       const bulkEdit = vi.fn();
       const multiEdit = vi.fn();
       const regenerate = vi.fn();
+      const generateCustomCovers = vi.fn();
 
       const items = service.getMetadataMenuItems(
         autoFetch,
@@ -100,10 +101,11 @@ describe('BookMenuService', () => {
         bulkEdit,
         multiEdit,
         regenerate,
+        generateCustomCovers,
         mockUser
       );
 
-      expect(items).toHaveLength(5);
+      expect(items).toHaveLength(6);
       expect(items[0].label).toBe('Auto Fetch Metadata');
       expect(items[0].icon).toBe('pi pi-bolt');
       expect(items[1].label).toBe('Custom Fetch Metadata');
@@ -114,10 +116,13 @@ describe('BookMenuService', () => {
       expect(items[3].icon).toBe('pi pi-clone');
       expect(items[4].label).toBe('Regenerate Covers');
       expect(items[4].icon).toBe('pi pi-image');
+      expect(items[5].label).toBe('Generate Custom Covers');
+      expect(items[5].icon).toBe('pi pi-palette');
     });
 
     it('should return empty array when user has no permissions', () => {
       const items = service.getMetadataMenuItems(
+        vi.fn(),
         vi.fn(),
         vi.fn(),
         vi.fn(),
@@ -136,6 +141,7 @@ describe('BookMenuService', () => {
         vi.fn(),
         vi.fn(),
         vi.fn(),
+        vi.fn(),
         null
       );
 
@@ -148,6 +154,7 @@ describe('BookMenuService', () => {
       const bulkEdit = vi.fn();
       const multiEdit = vi.fn();
       const regenerate = vi.fn();
+      const generateCustomCovers = vi.fn();
 
       const items = service.getMetadataMenuItems(
         autoFetch,
@@ -155,6 +162,7 @@ describe('BookMenuService', () => {
         bulkEdit,
         multiEdit,
         regenerate,
+        generateCustomCovers,
         mockUser
       );
 
@@ -172,6 +180,9 @@ describe('BookMenuService', () => {
 
       items[4].command!({} as any);
       expect(regenerate).toHaveBeenCalledOnce();
+
+      items[5].command!({} as any);
+      expect(generateCustomCovers).toHaveBeenCalledOnce();
     });
 
     it('should return only items for granted permissions', () => {
@@ -187,6 +198,7 @@ describe('BookMenuService', () => {
       } as User;
 
       const items = service.getMetadataMenuItems(
+        vi.fn(),
         vi.fn(),
         vi.fn(),
         vi.fn(),

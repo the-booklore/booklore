@@ -234,6 +234,18 @@ export class ReaderSidebarService {
       });
   }
 
+  toggleBookmark(): void {
+    const currentCfi = this.progressService.currentCfi;
+    if (!currentCfi) return;
+
+    const existingBookmark = this._bookmarks.value.find(b => b.cfi === currentCfi);
+    if (existingBookmark) {
+      this.deleteBookmark(existingBookmark.id!);
+    } else {
+      this.createBookmark();
+    }
+  }
+
   deleteBookmark(bookmarkId: number): void {
     this.bookMarkHttpService.deleteBookmark(bookmarkId)
       .pipe(takeUntil(this.destroy$))

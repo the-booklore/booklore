@@ -98,9 +98,10 @@
 
 .file-upload-section {
   ::ng-deep .p-fileupload {
-    border: 1px solid var(--border-color);
+    border: 2px dashed var(--border-color);
     border-radius: 8px;
     background: var(--ground-background);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
 
     .p-fileupload-buttonbar {
       display: flex;
@@ -115,6 +116,25 @@
       padding: 1rem;
       background: transparent;
       border: none;
+      transition: background-color 0.3s ease;
+
+      &.p-fileupload-highlight {
+        background: color-mix(in srgb, var(--primary-color) 5%, transparent);
+
+        .empty-icon-wrapper {
+          border-color: var(--primary-color);
+
+          .empty-icon {
+            color: var(--primary-color);
+            opacity: 1;
+            transform: scale(1.1);
+          }
+        }
+      }
+    }
+
+    &:has(.p-fileupload-highlight) {
+      border-color: var(--primary-color);
     }
   }
 
@@ -299,12 +319,13 @@
       border-radius: 50%;
       margin-bottom: 1rem;
       border: 3px dashed var(--border-color);
+      transition: border-color 0.3s ease;
 
       .empty-icon {
         font-size: 2.5rem;
         color: var(--text-secondary-color);
         opacity: 0.6;
-        transition: color 0.3s ease;
+        transition: color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
 
         &.active {
           color: #22c55e;
@@ -357,6 +378,10 @@
   }
 }
 
-:host ::ng-deep .p-fileupload-content p-progressbar {
+::host ::ng-deep .p-fileupload-content p-progressbar {
   display: none !important;
+}
+
+.full-width {
+  width: 100%;
 }

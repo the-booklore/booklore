@@ -382,7 +382,16 @@ export class BookdropFileReviewComponent implements OnInit {
       message: 'Are you sure you want to reset all metadata changes made to the selected files?',
       header: 'Confirm Reset',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Reset',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'danger',
+        outlined: true
+      },
       accept: () => this.resetMetadata()
     });
   }
@@ -402,7 +411,16 @@ export class BookdropFileReviewComponent implements OnInit {
       message: `Are you sure you want to finalize the import of ${selectedCount} file${selectedCount !== 1 ? 's' : ''}?`,
       header: 'Confirm Finalize',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Finalize',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'success',
+        outlined: true
+      },
       accept: () => this.finalizeImport(),
     });
   }
@@ -422,7 +440,16 @@ export class BookdropFileReviewComponent implements OnInit {
       message: `Are you sure you want to delete ${selectedCount} selected Bookdrop file${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`,
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'danger',
+        outlined: true
+      },
       accept: () => {
         const payload: { selectAll: boolean; excludedIds?: number[]; selectedIds?: number[] } = {
           selectAll: this.selectAllAcrossPages,
