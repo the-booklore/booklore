@@ -800,9 +800,9 @@ public class ComicvineBookParser implements BookParser {
     private String getSearchTerm(Book book, FetchMetadataRequest request) {
         if (request.getTitle() != null && !request.getTitle().isEmpty()) {
             return request.getTitle();
-        } else if (book.getFileName() != null && !book.getFileName().isEmpty()) {
+        } else if (book.getPrimaryFile() != null && book.getPrimaryFile().getFileName() != null && !book.getPrimaryFile().getFileName().isEmpty()) {
             // Use filename but preserve parentheses for year extraction
-            String name = book.getFileName();
+            String name = book.getPrimaryFile().getFileName();
             // Remove extension only
             int dotIndex = name.lastIndexOf('.');
             if (dotIndex > 0) {

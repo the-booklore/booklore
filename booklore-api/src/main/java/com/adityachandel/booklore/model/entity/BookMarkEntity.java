@@ -34,8 +34,16 @@ public class BookMarkEntity {
     @Column(name = "book_id", insertable = false, updatable = false)
     private Long bookId;
 
-    @Column(name = "cfi", nullable = false, length = 1000)
+    // For EPUB bookmarks
+    @Column(name = "cfi", length = 1000)
     private String cfi;
+
+    // For audiobook bookmarks
+    @Column(name = "position_ms")
+    private Long positionMs;
+
+    @Column(name = "track_index")
+    private Integer trackIndex;
 
     @Column(name = "title")
     private String title;

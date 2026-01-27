@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.model.entity;
-import com.adityachandel.booklore.util.ArchiveUtils;
+
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,10 @@ public class BookFileEntity {
 
     @Column(name = "is_book", nullable = false)
     private boolean isBookFormat;
+
+    @Column(name = "is_folder_based", nullable = false)
+    @Builder.Default
+    private boolean folderBased = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "book_type", nullable = false)
@@ -71,5 +76,40 @@ public class BookFileEntity {
         }
 
         return Paths.get(book.getLibraryPath().getPath(), fileSubPath, fileName);
+    }
+
+    /**
+     * For folder-based audiobooks, returns the folder path.
+     * For regular files, returns the file path.
+     */
+    public Path getAudiobookPath() {
+        Path fullPath = getFullFilePath();
+        return folderBased ? fullPath : fullPath;
+    }
+
+    /**
+     * For folder-based audiobooks, returns the first audio file in the folder (for metadata extraction).
+     * For regular files, returns the file itself.
+     */
+    public Path getFirstAudioFile() {
+        if (!folderBased) {
+            return getFullFilePath();
+        }
+        Path folderPath = getFullFilePath();
+        try {
+            return java.nio.file.Files.list(folderPath)
+                    .filter(java.nio.file.Files::isRegularFile)
+                    .filter(p -> {
+                        String name = p.getFileName().toString().toLowerCase();
+                        return name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".m4b")
+                                || name.endsWith(".flac") || name.endsWith(".ogg") || name.endsWith(".opus")
+                                || name.endsWith(".aac");
+                    })
+                    .sorted()
+                    .findFirst()
+                    .orElse(folderPath);
+        } catch (java.io.IOException e) {
+            return folderPath;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.service.book.BookDownloadService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.opds.OpdsFeedService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "OPDS", description = "Endpoints for OPDS catalog feeds, book downloads, covers, and search description")
@@ -31,14 +33,20 @@ public class OpdsController {
 
     private final OpdsFeedService opdsFeedService;
     private final BookService bookService;
+    private final BookDownloadService bookDownloadService;
 
-    @Operation(summary = "Download book file", description = "Download the book file by its ID.")
+    @Operation(summary = "Download book file", description = "Download the book file by its ID. Optionally specify a fileId to download a specific format.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Book file downloaded successfully"),
         @ApiResponse(responseCode = "404", description = "Book not found")
     })
     @GetMapping("/{bookId}/download")
-    public ResponseEntity<Resource> downloadBook(@Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
+    public ResponseEntity<Resource> downloadBook(
+            @Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId,
+            @Parameter(description = "Optional ID of a specific file format to download") @RequestParam(required = false) Long fileId) {
+        if (fileId != null) {
+            return bookDownloadService.downloadBookFile(bookId, fileId);
+        }
         return bookService.downloadBook(bookId);
     }
 

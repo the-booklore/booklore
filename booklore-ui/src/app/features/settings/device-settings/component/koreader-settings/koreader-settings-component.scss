@@ -1,101 +1,52 @@
+@use '../../../../../shared/styles/settings-shared' as settings;
+
 .main-container {
   width: 100%;
-  padding: 1rem;
   overflow-y: auto;
 }
 
-.enclosing-container {
-  border-color: var(--p-content-border-color);
-  background: var(--p-content-background);
-}
-
-.settings-header {
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-}
+@include settings.settings-page-header;
 
 .settings-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--p-text-color);
-  margin: 0 0 0.75rem 0;
-
-  .pi {
-    color: var(--p-primary-color);
-    font-size: 1.25rem;
-  }
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
 }
 
 .settings-description {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+  @include settings.settings-page-description;
 }
 
 .settings-content {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-
-  @media (max-width: 768px) {
-    padding-left: 0;
-  }
+  margin-top: 1.5rem;
 }
 
 .preferences-section {
-
-  @media (max-width: 768px) {
-    padding: 0;
+  @media (min-width: 768px) {
+    padding: 0 1rem;
   }
 }
 
 .section-header {
+  @include settings.settings-section-header;
+  margin-top: 1.25rem;
   margin-bottom: 1rem;
-  margin-left: 1rem;
-  margin-right: 1rem;
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--p-text-color);
+  @include settings.settings-section-title;
   margin: 0 0 0.5rem 0;
-
-  .pi {
-    color: var(--p-primary-color);
-  }
 }
 
 .section-description {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin: 0;
+  @include settings.settings-section-description;
 }
 
 .settings-card {
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  background: var(--p-content-background);
-  padding: 1rem 1.5rem 1.5rem 1.5rem;
-  margin-left: 1rem;
-  margin-right: 1rem;
-  display: flex;
-  flex-direction: column;
+  @include settings.settings-card;
   gap: 2rem;
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-    margin-left: 0;
-    margin-right: 0;
-  }
 }
 
 .setting-item {
@@ -122,9 +73,9 @@
 
   .setting-label {
     display: block;
-    font-weight: 600;
+    font-weight: settings.$settings-section-title-weight;
     color: var(--p-text-color);
-    font-size: 1rem;
+    font-size: settings.$settings-label-size;
     margin-bottom: 0.5rem;
   }
 
@@ -155,7 +106,7 @@
 
   .setting-description {
     color: var(--p-text-muted-color);
-    font-size: 0.875rem;
+    font-size: settings.$settings-description-size;
     line-height: 1.5;
     margin: 0;
   }
@@ -209,33 +160,9 @@
 }
 
 .access-denied-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  border-radius: 8px;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: var(--p-red-400);
-  max-width: 500px;
+  @include settings.settings-access-denied-card;
+}
 
-  .pi {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .access-denied-content {
-    h3 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--p-red-300);
-    }
-
-    p {
-      margin: 0;
-      font-size: 0.875rem;
-      line-height: 1.5;
-    }
-  }
+.access-denied-content {
+  @include settings.settings-access-denied-content;
 }

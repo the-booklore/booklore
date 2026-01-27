@@ -24,6 +24,7 @@ import {BookDialogHelperService} from '../book-dialog-helper.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookNavigationService} from '../../../service/book-navigation.service';
 import {BookCardOverlayPreferenceService} from '../book-card-overlay-preference.service';
+import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 @Component({
   selector: 'app-book-card',
@@ -66,6 +67,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private bookDialogHelperService = inject(BookDialogHelperService);
   private bookNavigationService = inject(BookNavigationService);
   private cdr = inject(ChangeDetectorRef);
+  private appSettingsService = inject(AppSettingsService);
 
   protected _progressPercentage: number | null = null;
   protected _koProgressPercentage: number | null = null;
@@ -80,11 +82,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected _seriesCountTooltip: string = '';
   protected _titleTooltip: string = '';
   protected _hasProgress: boolean = false;
+  protected _isAudiobook: boolean = false;
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
   protected readStatusHelper = inject(ReadStatusHelper);
   private user: User | null = null;
+  private diskType: string = 'LOCAL';
   private menuInitialized = false;
 
   showBookTypePill = true;
@@ -102,6 +106,16 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       .subscribe(userState => {
         this.user = userState.user;
         this.metadataCenterViewMode = userState.user?.userSettings?.metadataCenterViewMode ?? 'route';
+      });
+
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => !!settings),
+        take(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(settings => {
+        this.diskType = settings?.diskType ?? 'LOCAL';
       });
 
     if (this.overlayPreferenceService) {
@@ -152,6 +166,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this._seriesCountTooltip = 'Series collapsed: ' + this.book.seriesCount + ' books';
     this._titleTooltip = 'Title: ' + this._displayTitle;
+    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK';
   }
 
   get hasProgress(): boolean {
@@ -446,7 +461,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     const items: MenuItem[] = [];
     const moreActions: MenuItem[] = [];
 
-    if (this.user?.permissions.canMoveOrganizeFiles) {
+    if (this.user?.permissions.canMoveOrganizeFiles && this.diskType === 'LOCAL') {
       moreActions.push({
         label: 'Organize File',
         icon: 'pi pi-arrows-h',
@@ -713,11 +728,26 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  private getFileExtension(filePath?: string): string | null {
+  getFileExtension(filePath?: string): string | null {
     if (!filePath) return null;
     const parts = filePath.split('.');
     if (parts.length < 2) return null;
     return parts.pop()?.toUpperCase() || null;
+  }
+
+  getDisplayFormat(): string | null {
+    if (!this.book?.primaryFile) {
+      return 'PHYSICAL';
+    }
+    const ext = this.book?.primaryFile?.extension;
+    if (ext) {
+      return ext.toUpperCase();
+    }
+    return this.getFileExtension(this.book?.primaryFile?.filePath);
+  }
+
+  hasDigitalFile(): boolean {
+    return !!this.book?.primaryFile;
   }
 
   private getFileIcon(fileType: string | null): string {
@@ -734,6 +764,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       case 'cbr':
       case 'cbx':
         return 'pi pi-image';
+      case 'audiobook':
+      case 'm4b':
+      case 'm4a':
+      case 'mp3':
+        return 'pi pi-headphones';
       default:
         return 'pi pi-file';
     }

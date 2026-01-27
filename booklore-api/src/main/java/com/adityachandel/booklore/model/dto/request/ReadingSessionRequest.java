@@ -26,18 +26,15 @@ public class ReadingSessionRequest {
     @NotNull
     private Integer durationSeconds;
 
-    @NotNull
+    private String durationFormatted;
+
     private Float startProgress;
 
-    @NotNull
     private Float endProgress;
 
-    @NotNull
     private Float progressDelta;
 
-    @NotNull
     private String startLocation;
 
-    @NotNull
     private String endLocation;
 }
