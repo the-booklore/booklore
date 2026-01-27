@@ -139,8 +139,9 @@ public class LibraryProcessingService {
         return libraryEntity.getBookEntities().stream()
                 .filter(book -> (book.getDeleted() == null || !book.getDeleted()))
                 .filter(book -> {
-                    if (book.getBookFiles() == null || book.getBookFiles().isEmpty()) {
-                        return true;
+                    // Don't mark fileless books as deleted - they're intentionally without files
+                    if (!book.hasFiles()) {
+                        return false;
                     }
                     return !currentFullPaths.contains(book.getFullFilePath());
                 })
@@ -174,6 +175,16 @@ public class LibraryProcessingService {
             return;
         }
 
+        // Set libraryPath if not set (fileless books like physical books don't have one)
+        if (book.getLibraryPath() == null) {
+            book.setLibraryPath(file.getLibraryPathEntity());
+        } else if (!book.getLibraryPath().getId().equals(file.getLibraryPathEntity().getId())) {
+            // Book already has a different libraryPath - cannot attach files from different paths
+            log.warn("Cannot attach file '{}' to book id={}: file is in libraryPath {} but book is in libraryPath {}",
+                    file.getFileName(), book.getId(), file.getLibraryPathEntity().getId(), book.getLibraryPath().getId());
+            return;
+        }
+
         String hash = file.isFolderBased()
                 ? FileFingerprint.generateFolderHash(file.getFullPath())
                 : FileFingerprint.generateHash(file.getFullPath());
@@ -195,14 +206,20 @@ public class LibraryProcessingService {
 
         try {
             bookAdditionalFileRepository.save(additionalFile);
-            log.info("Auto-attached new format {} to existing book: {}", file.getFileName(), book.getPrimaryBookFile().getFileName());
+            String primaryFileName = book.hasFiles() ? book.getPrimaryBookFile().getFileName() : "book#" + book.getId();
+            log.info("Auto-attached new format {} to existing book: {}", file.getFileName(), primaryFileName);
         } catch (Exception e) {
             log.error("Error auto-attaching file {}: {}", file.getFileName(), e.getMessage());
         }
     }
 
     private String generateUniqueKey(BookEntity book) {
-        return generateKey(book.getLibraryPath().getId(), book.getPrimaryBookFile().getFileSubPath(), book.getPrimaryBookFile().getFileName());
+        BookFileEntity primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null) {
+            // Fileless book - use a unique key that won't match any file
+            return "fileless:" + book.getId();
+        }
+        return generateKey(book.getLibraryPath().getId(), primaryFile.getFileSubPath(), primaryFile.getFileName());
     }
 
     private String generateUniqueKey(BookFileEntity file) {

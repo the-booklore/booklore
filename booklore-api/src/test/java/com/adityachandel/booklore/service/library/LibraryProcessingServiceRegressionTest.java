@@ -66,7 +66,7 @@ class LibraryProcessingServiceRegressionTest {
     }
 
     @Test
-    void rescanLibrary_shouldThrowException_whenBookHasNoFiles(@TempDir Path tempDir) throws IOException {
+    void rescanLibrary_shouldNotDeleteFilelessBooks(@TempDir Path tempDir) throws IOException {
         long libraryId = 1L;
         Path accessiblePath = tempDir.resolve("accessible");
         Files.createDirectory(accessiblePath);
@@ -80,12 +80,13 @@ class LibraryProcessingServiceRegressionTest {
         pathEntity.setPath(accessiblePath.toString());
         libraryEntity.setLibraryPaths(List.of(pathEntity));
 
-        BookEntity bookWithNoFiles = new BookEntity();
-        bookWithNoFiles.setId(1L);
-        bookWithNoFiles.setLibraryPath(pathEntity);
-        bookWithNoFiles.setBookFiles(Collections.emptyList());
+        // Create a fileless book (e.g., physical book)
+        BookEntity filelessBook = new BookEntity();
+        filelessBook.setId(1L);
+        filelessBook.setLibraryPath(pathEntity);
+        filelessBook.setBookFiles(Collections.emptyList());
 
-        libraryEntity.setBookEntities(List.of(bookWithNoFiles));
+        libraryEntity.setBookEntities(List.of(filelessBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
         when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(
@@ -103,9 +104,7 @@ class LibraryProcessingServiceRegressionTest {
 
         libraryProcessingService.rescanLibrary(context);
 
-        verify(bookDeletionService).processDeletedLibraryFiles(
-                argThat(list -> list.contains(1L)),
-                any()
-        );
+        // Fileless books should NOT be marked as deleted - they are intentionally without files
+        verify(bookDeletionService, never()).processDeletedLibraryFiles(any(), any());
     }
 }

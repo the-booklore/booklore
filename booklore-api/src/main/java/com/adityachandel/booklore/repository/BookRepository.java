@@ -146,6 +146,16 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     long countByLibraryId(@Param("libraryId") Long libraryId);
 
+    @Query("""
+            SELECT b FROM BookEntity b
+            LEFT JOIN b.bookFiles bf
+            WHERE b.library.id = :libraryId
+            AND (b.deleted IS NULL OR b.deleted = false)
+            GROUP BY b
+            HAVING COUNT(bf) = 0
+            """)
+    List<BookEntity> findFilelessBooksByLibraryId(@Param("libraryId") Long libraryId);
+
     @Query("SELECT b.id as id, m.coverUpdatedOn as coverUpdatedOn FROM BookEntity b LEFT JOIN b.metadata m WHERE b.id IN :bookIds")
     List<BookCoverUpdateProjection> findCoverUpdateInfoByIds(@Param("bookIds") Collection<Long> bookIds);
 

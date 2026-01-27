@@ -23,6 +23,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BookGroupingService {
 
+    private static final double FILELESS_MATCH_THRESHOLD = 0.85;
+
     private final BookRepository bookRepository;
 
     /**
@@ -109,6 +111,12 @@ public class BookGroupingService {
      * Strategy depends on organization mode.
      */
     private BookEntity findMatchingBook(LibraryFile file, LibraryOrganizationMode mode) {
+        // First check for fileless books by metadata matching
+        BookEntity filelessMatch = findMatchingFilelessBook(file, file.getLibraryEntity());
+        if (filelessMatch != null) {
+            return filelessMatch;
+        }
+
         String fileSubPath = file.getFileSubPath();
 
         // Root-level files: don't auto-attach
@@ -135,31 +143,81 @@ public class BookGroupingService {
     }
 
     /**
+     * Finds a fileless book that matches the given file by metadata title.
+     * Only matches books that either have no libraryPath or have the same libraryPath as the file.
+     */
+    private BookEntity findMatchingFilelessBook(LibraryFile file, LibraryEntity library) {
+        List<BookEntity> filelessBooks = bookRepository.findFilelessBooksByLibraryId(library.getId());
+        if (filelessBooks.isEmpty()) {
+            return null;
+        }
+
+        String fileBaseName = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
+        Long fileLibraryPathId = file.getLibraryPathEntity().getId();
+
+        for (BookEntity book : filelessBooks) {
+            // Skip books that already have a different libraryPath
+            if (book.getLibraryPath() != null && !book.getLibraryPath().getId().equals(fileLibraryPathId)) {
+                continue;
+            }
+
+            if (book.getMetadata() != null && book.getMetadata().getTitle() != null) {
+                String bookTitle = BookFileGroupingUtils.extractGroupingKey(book.getMetadata().getTitle());
+                double similarity = BookFileGroupingUtils.calculateSimilarity(fileBaseName, bookTitle);
+                if (similarity >= FILELESS_MATCH_THRESHOLD) {
+                    log.debug("Matched file '{}' to fileless book '{}' (title: {})",
+                            file.getFileName(), book.getId(), book.getMetadata().getTitle());
+                    return book;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * BOOK_PER_FOLDER: If exactly one book in folder, attach to it.
      * If multiple books exist (edge case), use filename matching.
      */
     private BookEntity findMatchBookPerFolder(LibraryFile file, List<BookEntity> booksInDirectory) {
-        if (booksInDirectory.size() == 1) {
-            BookEntity book = booksInDirectory.get(0);
+        // Filter to books with files for filename-based matching
+        List<BookEntity> booksWithFiles = booksInDirectory.stream()
+                .filter(BookEntity::hasFiles)
+                .toList();
+
+        if (booksWithFiles.size() == 1) {
+            BookEntity book = booksWithFiles.get(0);
             log.debug("BOOK_PER_FOLDER: Attaching '{}' to single book in folder: '{}'",
                     file.getFileName(), book.getPrimaryBookFile().getFileName());
             return book;
         }
 
+        if (booksWithFiles.isEmpty()) {
+            return null;
+        }
+
         // Multiple books in folder - shouldn't happen with BOOK_PER_FOLDER mode
         // Fall back to exact filename matching
         log.warn("BOOK_PER_FOLDER: Multiple books ({}) in folder '{}', using filename match",
-                booksInDirectory.size(), file.getFileSubPath());
-        return findExactMatch(file, booksInDirectory);
+                booksWithFiles.size(), file.getFileSubPath());
+        return findExactMatch(file, booksWithFiles);
     }
 
     /**
      * AUTO_DETECT: Use fuzzy matching to find best match.
      */
     private BookEntity findMatchAutoDetect(LibraryFile file, List<BookEntity> booksInDirectory) {
-        // If exactly one book in folder, attach to it
-        if (booksInDirectory.size() == 1) {
-            BookEntity book = booksInDirectory.get(0);
+        // Filter to books with files for filename-based matching
+        List<BookEntity> booksWithFiles = booksInDirectory.stream()
+                .filter(BookEntity::hasFiles)
+                .toList();
+
+        if (booksWithFiles.isEmpty()) {
+            return null;
+        }
+
+        // If exactly one book with files in folder, attach to it
+        if (booksWithFiles.size() == 1) {
+            BookEntity book = booksWithFiles.get(0);
             log.debug("AUTO_DETECT: Single book in folder '{}', attaching '{}' to '{}'",
                     file.getFileSubPath(), file.getFileName(), book.getPrimaryBookFile().getFileName());
             return book;
@@ -170,7 +228,7 @@ public class BookGroupingService {
         BookEntity bestMatch = null;
         double bestSimilarity = 0;
 
-        for (BookEntity book : booksInDirectory) {
+        for (BookEntity book : booksWithFiles) {
             BookFileEntity primaryFile = book.getPrimaryBookFile();
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
 
@@ -196,12 +254,17 @@ public class BookGroupingService {
 
     /**
      * Finds a book with exact filename match.
+     * Assumes books list contains only books with files.
      */
     private BookEntity findExactMatch(LibraryFile file, List<BookEntity> books) {
         String fileKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
 
         for (BookEntity book : books) {
-            String bookKey = BookFileGroupingUtils.extractGroupingKey(book.getPrimaryBookFile().getFileName());
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            if (primaryFile == null) {
+                continue;
+            }
+            String bookKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
             if (fileKey.equals(bookKey)) {
                 return book;
             }

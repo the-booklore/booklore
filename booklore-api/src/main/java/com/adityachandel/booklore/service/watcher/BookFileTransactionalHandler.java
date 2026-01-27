@@ -37,6 +37,8 @@ import static com.adityachandel.booklore.model.enums.PermissionType.MANAGE_LIBRA
 @RequiredArgsConstructor
 public class BookFileTransactionalHandler {
 
+    private static final double FILELESS_MATCH_THRESHOLD = 0.85;
+
     private final BookFilePersistenceService bookFilePersistenceService;
     private final LibraryProcessingService libraryProcessingService;
     private final NotificationService notificationService;
@@ -64,6 +66,20 @@ public class BookFileTransactionalHandler {
             // File was moved - update the existing book's path instead of creating a duplicate
             bookFilePersistenceService.updatePathIfChanged(existingByHash.get(), libraryEntity, path, currentHash);
             log.info("[CREATE] File '{}' recognized as moved file, updated existing book's path", filePath);
+            notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
+            return;
+        }
+
+        // Check for fileless books that match by metadata
+        BookEntity filelessMatch = findMatchingFilelessBook(libraryEntity, fileName, libraryPathEntity);
+        if (filelessMatch != null) {
+            // Set libraryPath if not set (fileless books like physical books don't have one)
+            if (filelessMatch.getLibraryPath() == null) {
+                filelessMatch.setLibraryPath(libraryPathEntity);
+                bookRepository.save(filelessMatch);
+            }
+            autoAttachFile(filelessMatch, fileName, fileSubPath, path);
+            log.info("[CREATE] Attached file '{}' to fileless book id={}", filePath, filelessMatch.getId());
             notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
             return;
         }
@@ -110,8 +126,8 @@ public class BookFileTransactionalHandler {
 
         if (matchingBook != null) {
             autoAttachFolderAudiobook(matchingBook, folderName, fileSubPath, folderPath);
-            log.info("[CREATE] Auto-attached folder audiobook '{}' to existing book '{}'",
-                    folderName, matchingBook.getPrimaryBookFile().getFileName());
+            String primaryFileName = matchingBook.hasFiles() ? matchingBook.getPrimaryBookFile().getFileName() : "book#" + matchingBook.getId();
+            log.info("[CREATE] Auto-attached folder audiobook '{}' to existing book '{}'", folderName, primaryFileName);
         } else {
             LibraryFile libraryFile = LibraryFile.builder()
                     .libraryEntity(libraryEntity)
@@ -132,6 +148,31 @@ public class BookFileTransactionalHandler {
 
     private static final double FUZZY_MATCH_THRESHOLD = 0.85;
 
+    /**
+     * Finds a fileless book that matches the given file by metadata title.
+     * Only matches books that either have no libraryPath or have the same libraryPath as the file.
+     */
+    private BookEntity findMatchingFilelessBook(LibraryEntity library, String fileName, LibraryPathEntity fileLibraryPath) {
+        List<BookEntity> filelessBooks = bookRepository.findFilelessBooksByLibraryId(library.getId());
+        String fileBaseName = BookFileGroupingUtils.extractGroupingKey(fileName);
+
+        for (BookEntity book : filelessBooks) {
+            // Skip books that already have a different libraryPath
+            if (book.getLibraryPath() != null && !book.getLibraryPath().getId().equals(fileLibraryPath.getId())) {
+                continue;
+            }
+
+            if (book.getMetadata() != null && book.getMetadata().getTitle() != null) {
+                String bookTitle = BookFileGroupingUtils.extractGroupingKey(book.getMetadata().getTitle());
+                double similarity = BookFileGroupingUtils.calculateSimilarity(fileBaseName, bookTitle);
+                if (similarity >= FILELESS_MATCH_THRESHOLD) {
+                    return book;
+                }
+            }
+        }
+        return null;
+    }
+
     private BookEntity findMatchingBook(Long libraryPathId, String fileSubPath, String fileName) {
         // Skip root-level files
         if (fileSubPath == null || fileSubPath.isEmpty()) {
@@ -150,6 +191,9 @@ public class BookFileTransactionalHandler {
                 continue;
             }
             BookFileEntity primaryFile = book.getPrimaryBookFile();
+            if (primaryFile == null) {
+                continue; // Skip fileless books
+            }
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
 
             // Try exact match first
@@ -167,8 +211,8 @@ public class BookFileTransactionalHandler {
 
         // Return fuzzy match if found
         if (fuzzyMatch != null) {
-            log.debug("Fuzzy matched '{}' to '{}' with similarity {}", fileName,
-                    fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
+            String primaryFileName = fuzzyMatch.hasFiles() ? fuzzyMatch.getPrimaryBookFile().getFileName() : "book#" + fuzzyMatch.getId();
+            log.debug("Fuzzy matched '{}' to '{}' with similarity {}", fileName, primaryFileName, bestSimilarity);
         }
         return fuzzyMatch;
     }
@@ -203,6 +247,9 @@ public class BookFileTransactionalHandler {
                 continue;
             }
             BookFileEntity primaryFile = book.getPrimaryBookFile();
+            if (primaryFile == null) {
+                continue; // Skip fileless books
+            }
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
 
             // Try exact match first
@@ -219,8 +266,8 @@ public class BookFileTransactionalHandler {
         }
 
         if (fuzzyMatch != null) {
-            log.debug("Fuzzy matched folder '{}' to '{}' with similarity {}", folderName,
-                    fuzzyMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
+            String primaryFileName = fuzzyMatch.hasFiles() ? fuzzyMatch.getPrimaryBookFile().getFileName() : "book#" + fuzzyMatch.getId();
+            log.debug("Fuzzy matched folder '{}' to '{}' with similarity {}", folderName, primaryFileName, bestSimilarity);
         }
         return fuzzyMatch;
     }
@@ -241,7 +288,8 @@ public class BookFileTransactionalHandler {
                 .build();
 
         bookAdditionalFileRepository.save(additionalFile);
-        log.info("Auto-attached folder audiobook {} to existing book: {}", folderName, book.getPrimaryBookFile().getFileName());
+        String primaryFileName = book.hasFiles() ? book.getPrimaryBookFile().getFileName() : "book#" + book.getId();
+        log.info("Auto-attached folder audiobook {} to existing book: {}", folderName, primaryFileName);
     }
 
     private void autoAttachFile(BookEntity book, String fileName, String fileSubPath, Path fullPath) {
@@ -261,6 +309,7 @@ public class BookFileTransactionalHandler {
                 .build();
 
         bookAdditionalFileRepository.save(additionalFile);
-        log.info("Auto-attached new format {} to existing book: {}", fileName, book.getPrimaryBookFile().getFileName());
+        String primaryFileName = book.hasFiles() ? book.getPrimaryBookFile().getFileName() : "book#" + book.getId();
+        log.info("Auto-attached new format {} to existing book: {}", fileName, primaryFileName);
     }
 }

@@ -76,6 +76,9 @@ public interface BookMapper {
 
     @Named("mapPrimaryFile")
     default BookFile mapPrimaryFile(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null || bookFiles.isEmpty()) {
+            return null;
+        }
         BookFileEntity primary = getPrimaryBookFile(bookFiles);
         return toBookFile(primary);
     }
