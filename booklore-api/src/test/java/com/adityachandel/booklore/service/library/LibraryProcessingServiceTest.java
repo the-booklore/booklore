@@ -22,12 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -537,14 +532,12 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
         libraryEntity.setLibraryPaths(new ArrayList<>(List.of(pathEntity)));
         libraryEntity.setBookEntities(new ArrayList<>(List.of(existingBook)));
 
         LibraryEntity freshLibraryEntity = new LibraryEntity();
         freshLibraryEntity.setId(libraryId);
         freshLibraryEntity.setName("Test Library");
-        freshLibraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
         freshLibraryEntity.setLibraryPaths(new ArrayList<>(List.of(pathEntity)));
         freshLibraryEntity.setBookEntities(new ArrayList<>(List.of(existingBook)));
 
@@ -558,9 +551,10 @@ class LibraryProcessingServiceTest {
         when(libraryRepository.findById(libraryId))
                 .thenReturn(Optional.of(libraryEntity))
                 .thenReturn(Optional.of(freshLibraryEntity)); // Second call returns fresh entity
-        when(fileProcessorRegistry.getProcessor(any(LibraryEntity.class))).thenReturn(libraryFileProcessor);
-        when(libraryFileHelper.getLibraryFiles(any(LibraryEntity.class), any())).thenReturn(List.of(fileOnDisk));
+        when(libraryFileHelper.getLibraryFiles(any(LibraryEntity.class))).thenReturn(List.of(fileOnDisk));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForRescan(anyList(), any(LibraryEntity.class)))
+                .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 
@@ -568,8 +562,6 @@ class LibraryProcessingServiceTest {
 
         verify(libraryRepository, times(2)).findById(libraryId);
 
-        ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(libraryFileProcessor).processLibraryFiles(captor.capture(), any());
-        assertThat(captor.getValue()).isEmpty();
+        verify(bookGroupingService).groupForRescan(eq(Collections.emptyList()), any(LibraryEntity.class));
     }
 }
