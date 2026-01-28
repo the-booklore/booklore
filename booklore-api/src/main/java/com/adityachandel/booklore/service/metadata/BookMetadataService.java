@@ -125,8 +125,9 @@ public class BookMetadataService {
     public BookMetadata getComicInfoMetadata(long bookId) {
         log.info("Extracting ComicInfo metadata for book ID: {}", bookId);
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        if (bookEntity.getPrimaryBookFile().getBookType() != BookFileType.CBX) {
-            log.info("Unsupported operation for file type: {}", bookEntity.getPrimaryBookFile().getBookType().name());
+        var primaryFile = bookEntity.getPrimaryBookFile();
+        if (primaryFile == null || primaryFile.getBookType() != BookFileType.CBX) {
+            log.info("Unsupported operation for book ID {} - no file or not CBX type", bookId);
             return null;
         }
         return cbxMetadataExtractor.extractMetadata(new File(FileUtils.getBookFullPath(bookEntity)));

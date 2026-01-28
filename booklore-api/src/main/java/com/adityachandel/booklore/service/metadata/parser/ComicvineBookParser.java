@@ -84,6 +84,16 @@ public class ComicvineBookParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
+        // 1. Try ISBN Search
+        String isbn = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
+        if (isbn != null && !isbn.isEmpty()) {
+            log.info("Comicvine: Searching by ISBN: {}", isbn);
+            // ComicVine "search" endpoint with "query" parameter performs a general search.
+            List<BookMetadata> results = searchGeneral(isbn);
+            if (!results.isEmpty()) return results;
+            log.info("Comicvine: ISBN search returned no results, falling back to Title/Term.");
+        }
+
         String searchTerm = getSearchTerm(book, fetchMetadataRequest);
         if (searchTerm == null) {
             log.warn("No valid search term provided for metadata fetch.");
@@ -800,9 +810,9 @@ public class ComicvineBookParser implements BookParser {
     private String getSearchTerm(Book book, FetchMetadataRequest request) {
         if (request.getTitle() != null && !request.getTitle().isEmpty()) {
             return request.getTitle();
-        } else if (book.getFileName() != null && !book.getFileName().isEmpty()) {
+        } else if (book.getPrimaryFile() != null && book.getPrimaryFile().getFileName() != null && !book.getPrimaryFile().getFileName().isEmpty()) {
             // Use filename but preserve parentheses for year extraction
-            String name = book.getFileName();
+            String name = book.getPrimaryFile().getFileName();
             // Remove extension only
             int dotIndex = name.lastIndexOf('.');
             if (dotIndex > 0) {

@@ -24,6 +24,9 @@ public class FileUtils {
 
     public String getBookFullPath(BookEntity bookEntity) {
         BookFileEntity bookFile = bookEntity.getPrimaryBookFile();
+        if (bookFile == null || bookEntity.getLibraryPath() == null) {
+            return null;
+        }
 
         return Path.of(bookEntity.getLibraryPath().getPath(), bookFile.getFileSubPath(), bookFile.getFileName())
                 .normalize()
@@ -32,10 +35,7 @@ public class FileUtils {
     }
 
     public String getBookFullPath(Book book) {
-        return Path.of(book.getLibraryPath().getPath(), book.getFileSubPath(), book.getFileName())
-                .normalize()
-                .toString()
-                .replace("\\", "/");
+        return book.getPrimaryFile().getFilePath();
     }
 
     public String getRelativeSubPath(String basePath, Path fullFilePath) {
@@ -61,6 +61,81 @@ public class FileUtils {
         } catch (IOException e) {
             log.error("Failed to get file size for path [{}]: {}", filePath, e.getMessage(), e);
             return null;
+        }
+    }
+
+    /**
+     * Calculate total size of all files in a folder (for folder-based audiobooks).
+     */
+    public Long getFolderSizeInKb(Path folderPath) {
+        try {
+            if (!Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
+                log.warn("Folder does not exist or is not a directory: {}", folderPath.toAbsolutePath());
+                return null;
+            }
+            long totalBytes = Files.walk(folderPath)
+                    .filter(Files::isRegularFile)
+                    .mapToLong(p -> {
+                        try {
+                            return Files.size(p);
+                        } catch (IOException e) {
+                            return 0L;
+                        }
+                    })
+                    .sum();
+            return totalBytes / 1024;
+        } catch (IOException e) {
+            log.error("Failed to get folder size for path [{}]: {}", folderPath, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Get the first audio file in a folder (sorted alphabetically).
+     */
+    public Optional<Path> getFirstAudioFileInFolder(Path folderPath) {
+        try {
+            if (!Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
+                return Optional.empty();
+            }
+            return Files.list(folderPath)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> isAudioFile(p.getFileName().toString()))
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .findFirst();
+        } catch (IOException e) {
+            log.error("Failed to list folder [{}]: {}", folderPath, e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Check if a filename is an audio file.
+     */
+    public boolean isAudioFile(String fileName) {
+        if (fileName == null) return false;
+        String lower = fileName.toLowerCase();
+        return lower.endsWith(".mp3") || lower.endsWith(".m4a") || lower.endsWith(".m4b")
+                || lower.endsWith(".flac") || lower.endsWith(".ogg") || lower.endsWith(".opus")
+                || lower.endsWith(".aac");
+    }
+
+    /**
+     * List all audio files in a folder, sorted alphabetically.
+     */
+    public List<Path> listAudioFilesInFolder(Path folderPath) {
+        try {
+            if (!Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
+                return List.of();
+            }
+            return Files.list(folderPath)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> isAudioFile(p.getFileName().toString()))
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .toList();
+        } catch (IOException e) {
+            log.error("Failed to list audio files in folder [{}]: {}", folderPath, e.getMessage(), e);
+            return List.of();
         }
     }
 

@@ -18,6 +18,14 @@ public class AppProperties {
     private Boolean forceDisableOidc = false;
     private Telemetry telemetry = new Telemetry();
 
+    /**
+     * Type of disk storage where library files are stored.
+     * Defaults to LOCAL. Set to NETWORK if using NFS, SMB/CIFS, or other network-mounted storage.
+     * Some features like file move/reorganization are disabled on network storage due to
+     * unreliable atomic operations that can cause data corruption or loss.
+     */
+    private String diskType = "LOCAL";
+
     @Getter
     @Setter
     public static class RemoteAuth {

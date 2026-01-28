@@ -51,7 +51,7 @@ export interface PerBookSetting {
 
 export type PageSpread = 'off' | 'even' | 'odd';
 export type BookFilterMode = 'and' | 'or' | 'single';
-export type FilterSortingMode = 'alphabetical' | 'count';
+export type FilterSortingMode = 'count';
 
 
 export enum CbxPageViewMode {

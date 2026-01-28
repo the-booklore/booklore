@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.opds;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
@@ -190,27 +191,36 @@ class OpdsFeedServiceMimeTypeTest {
 
     @Test
     void testMimeTypeFromCachedArchiveType() {
-        Book book = createBook(BookFileType.CBX, "whatever.cbz");
-        book.setArchiveType(ArchiveUtils.ArchiveType.RAR); // Simulate mismatched but cached type
-        
+        Book book = createBookWithArchiveType(BookFileType.CBX, "whatever.cbz", ArchiveUtils.ArchiveType.RAR);
+
         mockBooksPage(book);
 
         String xml = opdsFeedService.generateCatalogFeed(request);
-        
+
         // Should use cached type (RAR) even if filename is .cbz and no file exists (mocked logic)
         // Note: The logic in OpdsFeedService prioritizes cached type.
-        // However, my test creates a real file in other tests, but here I can skip file creation 
+        // However, my test creates a real file in other tests, but here I can skip file creation
         // because the cached type check happens first.
-        
+
         assertThat(xml).contains("type=\"application/vnd.comicbook-rar\"");
     }
 
     private Book createBook(BookFileType type, String fileName) {
+        return createBookWithArchiveType(type, fileName, null);
+    }
+
+    private Book createBookWithArchiveType(BookFileType type, String fileName, ArchiveUtils.ArchiveType archiveType) {
+        String filePath = tempDir.resolve(fileName).toString();
         return Book.builder()
                 .id(1L)
-                .bookType(type)
-                .fileName(fileName)
-                .fileSubPath("")
+                .primaryFile(BookFile.builder()
+                        .id(1L)
+                        .bookType(type)
+                        .fileName(fileName)
+                        .filePath(filePath)
+                        .fileSubPath("")
+                        .archiveType(archiveType)
+                        .build())
                 .libraryPath(LibraryPath.builder().path(tempDir.toString()).build())
                 .addedOn(Instant.now())
                 .metadata(BookMetadata.builder().title("Test Book").build())

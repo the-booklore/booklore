@@ -7,6 +7,7 @@ import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -15,14 +16,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Slf4j
 @AllArgsConstructor
@@ -57,13 +62,30 @@ public class AdditionalFileService {
         try {
             monitoringRegistrationService.unregisterSpecificPath(file.getFullFilePath().getParent());
 
-            Files.deleteIfExists(file.getFullFilePath());
-            log.info("Deleted additional file: {}", file.getFullFilePath());
+            Path filePath = file.getFullFilePath();
+            if (file.isFolderBased() && Files.isDirectory(filePath)) {
+                // For folder-based audiobooks, delete the entire directory
+                deleteDirectoryRecursively(filePath);
+                log.info("Deleted folder-based audiobook: {}", filePath);
+            } else {
+                Files.deleteIfExists(filePath);
+                log.info("Deleted additional file: {}", filePath);
+            }
 
             additionalFileRepository.delete(file);
         } catch (IOException e) {
             log.warn("Failed to delete physical file: {}", file.getFullFilePath(), e);
             additionalFileRepository.delete(file);
+        }
+    }
+
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        if (!Files.exists(path)) return;
+
+        try (var walk = Files.walk(path)) {
+            walk.sorted(java.util.Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
         }
     }
 
@@ -80,6 +102,11 @@ public class AdditionalFileService {
             return ResponseEntity.notFound().build();
         }
 
+        // Handle folder-based audiobooks - create a ZIP file
+        if (file.isFolderBased() && Files.isDirectory(filePath)) {
+            return downloadFolderAsZip(file, filePath);
+        }
+
         Resource resource = new UrlResource(filePath.toUri());
 
         String encodedFilename = URLEncoder.encode(file.getFileName(), StandardCharsets.UTF_8).replace("+", "%20");
@@ -89,6 +116,40 @@ public class AdditionalFileService {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .body(resource);
+    }
+
+    private ResponseEntity<Resource> downloadFolderAsZip(BookFileEntity file, Path folderPath) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            // Get all files in the folder, sorted by name
+            List<Path> files = Files.list(folderPath)
+                    .filter(Files::isRegularFile)
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .toList();
+
+            for (Path audioFile : files) {
+                ZipEntry entry = new ZipEntry(audioFile.getFileName().toString());
+                zos.putNextEntry(entry);
+                Files.copy(audioFile, zos);
+                zos.closeEntry();
+            }
+        }
+
+        byte[] zipBytes = baos.toByteArray();
+        Resource resource = new ByteArrayResource(zipBytes);
+
+        String zipFileName = file.getFileName() + ".zip";
+        String encodedFilename = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = NON_ASCII.matcher(zipFileName).replaceAll("_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.valueOf("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(zipBytes.length))
                 .body(resource);
     }
 }

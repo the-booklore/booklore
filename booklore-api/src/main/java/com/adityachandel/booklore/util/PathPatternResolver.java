@@ -36,36 +36,50 @@ public class PathPatternResolver {
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
-        return resolvePattern(book, book.getPrimaryBookFile(), pattern);
+        BookFileEntity primaryFile = book.getPrimaryBookFile();
+        return resolvePattern(book, primaryFile, pattern, primaryFile != null && primaryFile.isFolderBased());
     }
 
     public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern) {
+        return resolvePattern(book, bookFile, pattern, bookFile != null && bookFile.isFolderBased());
+    }
+
+    public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern, boolean folderBased) {
         String currentFilename = bookFile != null && bookFile.getFileName() != null ? bookFile.getFileName().trim() : "";
-        return resolvePattern(book.getMetadata(), pattern, currentFilename);
+        return resolvePattern(book.getMetadata(), pattern, currentFilename, folderBased);
     }
 
     public String resolvePattern(BookMetadata metadata, String pattern, String filename) {
         MetadataProvider metadataProvider = MetadataProvider.from(metadata);
-        return resolvePattern(metadataProvider, pattern, filename);
+        return resolvePattern(metadataProvider, pattern, filename, false);
     }
 
     public String resolvePattern(BookMetadataEntity metadata, String pattern, String filename) {
-        MetadataProvider metadataProvider = MetadataProvider.from(metadata);
-        return resolvePattern(metadataProvider, pattern, filename);
+        return resolvePattern(metadata, pattern, filename, false);
     }
 
-    private String resolvePattern(MetadataProvider metadata, String pattern, String filename) {
+    public String resolvePattern(BookMetadataEntity metadata, String pattern, String filename, boolean folderBased) {
+        MetadataProvider metadataProvider = MetadataProvider.from(metadata);
+        return resolvePattern(metadataProvider, pattern, filename, folderBased);
+    }
+
+    private String resolvePattern(MetadataProvider metadata, String pattern, String filename, boolean folderBased) {
         if (pattern == null || pattern.isBlank()) {
             return filename;
         }
 
         String filenameBase = "Untitled";
         if (filename != null && !filename.isBlank()) {
-            int lastDot = filename.lastIndexOf('.');
-            if (lastDot > 0) {
-                filenameBase = filename.substring(0, lastDot);
-            } else {
+            if (folderBased) {
+                // For folder-based items, don't strip extension from folder name
                 filenameBase = filename;
+            } else {
+                int lastDot = filename.lastIndexOf('.');
+                if (lastDot > 0) {
+                    filenameBase = filename.substring(0, lastDot);
+                } else {
+                    filenameBase = filename;
+                }
             }
         }
 
@@ -118,14 +132,17 @@ public class PathPatternResolver {
         values.put("isbn", isbn);
         values.put("currentFilename", filename);
 
-        return resolvePatternWithValues(pattern, values, filename);
+        return resolvePatternWithValues(pattern, values, filename, folderBased);
     }
 
-    private String resolvePatternWithValues(String pattern, Map<String, String> values, String currentFilename) {
+    private String resolvePatternWithValues(String pattern, Map<String, String> values, String currentFilename, boolean folderBased) {
         String extension = "";
-        int lastDot = currentFilename.lastIndexOf('.');
-        if (lastDot >= 0 && lastDot < currentFilename.length() - 1) {
-            extension = sanitize(currentFilename.substring(lastDot + 1));  // e.g. "epub"
+        if (!folderBased) {
+            // Only extract extension for regular files, not for folder-based items
+            int lastDot = currentFilename.lastIndexOf('.');
+            if (lastDot >= 0 && lastDot < currentFilename.length() - 1) {
+                extension = sanitize(currentFilename.substring(lastDot + 1));  // e.g. "epub"
+            }
         }
 
         values.put("extension", extension);
@@ -190,12 +207,13 @@ public class PathPatternResolver {
 
         boolean patternIncludesExtension = pattern.contains("{extension}");
         boolean patternIncludesFullFilename = pattern.contains("{currentFilename}");
-        
-        if (!usedFallbackFilename && !patternIncludesExtension && !patternIncludesFullFilename && !extension.isBlank()) {
+
+        // Don't auto-append extension for folder-based items
+        if (!folderBased && !usedFallbackFilename && !patternIncludesExtension && !patternIncludesFullFilename && !extension.isBlank()) {
             result += "." + extension;
         }
 
-        return validateFinalPath(result);
+        return validateFinalPath(result, folderBased);
     }
 
     private String sanitize(String input) {
@@ -268,7 +286,7 @@ public class PathPatternResolver {
     }
 
 
-    private String validateFinalPath(String path) {
+    private String validateFinalPath(String path, boolean folderBased) {
         String[] components = SLASH_PATTERN.split(path);
         StringBuilder result = new StringBuilder(512);
         boolean first = true;
@@ -281,14 +299,18 @@ public class PathPatternResolver {
 
             boolean isLastComponent = (i == components.length - 1);
 
-            if (isLastComponent && component.contains(".")) {
+            // For folder-based items, don't treat dots as extension separators
+            if (isLastComponent && component.contains(".") && !folderBased) {
                 component = truncateFilenameWithExtension(component);
             } else {
                 if (component.getBytes(StandardCharsets.UTF_8).length > MAX_FILESYSTEM_COMPONENT_BYTES) {
                     component = truncatePathComponent(component, MAX_FILESYSTEM_COMPONENT_BYTES);
                 }
-                while (component != null && !component.isEmpty() && component.endsWith(".")) {
-                    component = component.substring(0, component.length() - 1);
+                // Don't strip trailing dots from folder names for folder-based items
+                if (!folderBased) {
+                    while (component != null && !component.isEmpty() && component.endsWith(".")) {
+                        component = component.substring(0, component.length() - 1);
+                    }
                 }
             }
 

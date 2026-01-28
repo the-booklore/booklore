@@ -39,6 +39,7 @@ public class BookRestorationService {
 
         List<BookEntity> toRestore = libraryEntity.getBookEntities().stream()
                 .filter(book -> Boolean.TRUE.equals(book.getDeleted()))
+                .filter(book -> book.getBookFiles() != null && !book.getBookFiles().isEmpty())
                 .filter(book -> currentPaths.contains(book.getFullFilePath()))
                 .collect(Collectors.toList());
 

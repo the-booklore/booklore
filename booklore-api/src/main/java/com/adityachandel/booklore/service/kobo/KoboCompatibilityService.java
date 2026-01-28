@@ -17,8 +17,11 @@ public class KoboCompatibilityService {
         if (book == null) {
             throw new IllegalArgumentException("Book cannot be null");
         }
-        
+
         var primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null) {
+            return false;
+        }
         BookFileType bookType = primaryFile.getBookType();
         if (bookType == null) {
             return false;
@@ -45,7 +48,7 @@ public class KoboCompatibilityService {
     }
 
     public boolean meetsCbxConversionSizeLimit(BookEntity book) {
-        if (book == null || book.getPrimaryBookFile().getBookType() != BookFileType.CBX) {
+        if (book == null || book.getPrimaryBookFile() == null || book.getPrimaryBookFile().getBookType() != BookFileType.CBX) {
             return false;
         }
         
