@@ -21,6 +21,7 @@ import java.nio.file.Path;
 public class FileStreamingService {
 
     private static final int BUFFER_SIZE = 8192;
+    private static final long MAX_CHUNK_SIZE = 2 * 1024 * 1024;
 
     /**
      * Stream a file with HTTP Range support for seeking/scrubbing.
@@ -134,9 +135,9 @@ public class FileStreamingService {
                 start = Math.max(0, fileSize - suffix);
                 end = fileSize - 1;
             } else if (parts[1].isEmpty()) {
-                // Open-ended range: "500-" means from byte 500 to end
+                // Open-ended range: "500-" - limit to MAX_CHUNK_SIZE
                 start = Long.parseLong(parts[0]);
-                end = fileSize - 1;
+                end = Math.min(start + MAX_CHUNK_SIZE - 1, fileSize - 1);
             } else {
                 // Full range: "500-999"
                 start = Long.parseLong(parts[0]);

@@ -118,6 +118,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   // Progress save interval
   private progressSaveInterval?: ReturnType<typeof setInterval>;
 
+  private seekDebounceTimeout?: ReturnType<typeof setTimeout>;
+  private isSeeking = false;
+
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.bookId = +params.get('bookId')!;
@@ -135,6 +138,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
     if (this.sleepTimerInterval) {
       clearInterval(this.sleepTimerInterval);
+    }
+
+    if (this.seekDebounceTimeout) {
+      clearTimeout(this.seekDebounceTimeout);
     }
 
     this.saveProgress();
@@ -278,7 +285,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     const audio = this.audioElement?.nativeElement;
     if (audio) {
       const previousChapterIndex = this.getCurrentChapterIndex();
-      this.currentTime = audio.currentTime;
+      if (!this.isSeeking) {
+        this.currentTime = audio.currentTime;
+      }
 
       // Update audiobook session position
       this.audiobookSessionService.updatePosition(
@@ -440,10 +449,21 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   seek(event: SliderChangeEvent): void {
-    const audio = this.audioElement?.nativeElement;
-    if (audio && this.duration > 0 && event.value !== undefined) {
-      audio.currentTime = event.value as number;
-      this.currentTime = event.value as number;
+    if (this.duration > 0 && event.value !== undefined) {
+      const seekTime = event.value as number;
+      this.isSeeking = true;
+      this.currentTime = seekTime;
+
+      if (this.seekDebounceTimeout) {
+        clearTimeout(this.seekDebounceTimeout);
+      }
+      this.seekDebounceTimeout = setTimeout(() => {
+        const audio = this.audioElement?.nativeElement;
+        if (audio) {
+          audio.currentTime = seekTime;
+        }
+        this.isSeeking = false;
+      }, 150);
     }
   }
 
