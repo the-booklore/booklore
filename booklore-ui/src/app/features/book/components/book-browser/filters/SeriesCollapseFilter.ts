@@ -100,8 +100,11 @@ export class SeriesCollapseFilter implements BookFilter, OnDestroy {
         const collapsedBooks: Book[] = [];
 
         for (const book of books) {
-          const seriesName = book.metadata?.seriesName?.trim();
+          let seriesName = book.metadata?.seriesName?.trim();
           if (seriesName) {
+            const seriesVolume = book.metadata?.seriesVolume;
+            if (seriesVolume) seriesName = `${seriesName} (${seriesVolume})`;
+
             if (!seriesMap.has(seriesName)) {
               seriesMap.set(seriesName, []);
             }

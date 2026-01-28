@@ -43,44 +43,7 @@ class CbxMetadataExtractorTest {
     }
 
     @Test
-    void extractMetadata_fromCbz_withComicInfo_populatesFields_withoutVolume() throws Exception {
-        String xml = "<ComicInfo>" +
-                "  <Title>My Comic</Title>" +
-                "  <Summary>A short summary</Summary>" +
-                "  <Publisher>Indie</Publisher>" +
-                "  <Series>Series X</Series>" +
-                "  <Number>2.5</Number>" +
-                "  <Count>12</Count>" +
-                "  <Year>2020</Year><Month>7</Month><Day>14</Day>" +
-                "  <PageCount>42</PageCount>" +
-                "  <LanguageISO>en</LanguageISO>" +
-                "  <Writer>Alice</Writer>" +
-                "  <Penciller>Bob</Penciller>" +
-                "  <Tags>action;adventure</Tags>" +
-                "</ComicInfo>";
-
-        File cbz = createCbz("with_meta.cbz", new LinkedHashMap<>() {{
-            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
-            put("page1.jpg", new byte[]{1,2,3});
-        }});
-
-        BookMetadata md = extractor.extractMetadata(cbz);
-        assertEquals("My Comic", md.getTitle());
-        assertEquals("A short summary", md.getDescription());
-        assertEquals("Indie", md.getPublisher());
-        assertEquals("Series X", md.getSeriesName());
-        assertEquals(2.5f, md.getSeriesNumber());
-        assertEquals(Integer.valueOf(12), md.getSeriesTotal());
-        assertEquals(LocalDate.of(2020,7,14), md.getPublishedDate());
-        assertEquals(Integer.valueOf(42), md.getPageCount());
-        assertEquals("en", md.getLanguage());
-        assertTrue(md.getAuthors().contains("Alice"));
-        assertTrue(md.getCategories().contains("action"));
-        assertTrue(md.getCategories().contains("adventure"));
-    }
-
-    @Test
-    void extractMetadata_fromCbz_withComicInfo_populatesFields_withVolume() throws Exception {
+    void extractMetadata_fromCbz_withComicInfo_populatesFields() throws Exception {
         String xml = "<ComicInfo>" +
                 "  <Title>My Comic</Title>" +
                 "  <Summary>A short summary</Summary>" +
@@ -107,6 +70,7 @@ class CbxMetadataExtractorTest {
         assertEquals("A short summary", md.getDescription());
         assertEquals("Indie", md.getPublisher());
         assertEquals("Series X", md.getSeriesName());
+        assertEquals(1, md.getSeriesVolume());
         assertEquals(2.5f, md.getSeriesNumber());
         assertEquals(Integer.valueOf(12), md.getSeriesTotal());
         assertEquals(LocalDate.of(2020,7,14), md.getPublishedDate());

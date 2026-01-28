@@ -96,8 +96,11 @@
 
           <div class="title-group">
             @if (book?.metadata?.seriesName) {
-              <p class="series-link" (click)="goToSeries(book?.metadata?.seriesName!)">
+              <p class="series-link" (click)="goToSeries(book?.metadata?.seriesName!, book?.metadata?.seriesVolume)">
                 {{ book?.metadata?.seriesName }}
+                @if (book?.metadata?.seriesVolume) {
+                  ({{ book?.metadata?.seriesVolume }})
+                }
                 @if (book?.metadata?.seriesNumber) {
                   #{{ book?.metadata?.seriesNumber }}
                 }

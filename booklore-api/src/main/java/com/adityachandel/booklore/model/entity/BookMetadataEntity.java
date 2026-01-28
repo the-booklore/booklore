@@ -1,16 +1,35 @@
 package com.adityachandel.booklore.model.entity;
 
-import com.adityachandel.booklore.util.BookUtils;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
+import com.adityachandel.booklore.util.BookUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -42,6 +61,9 @@ public class BookMetadataEntity {
 
     @Column(name = "series_name")
     private String seriesName;
+
+    @Column(name = "series_volume")
+    private Integer seriesVolume;
 
     @Column(name = "series_number")
     private Float seriesNumber;
@@ -190,6 +212,10 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean seriesNameLocked = Boolean.FALSE;
 
+    @Column(name = "series_volume_locked")
+    @Builder.Default
+    private Boolean seriesVolumeLocked = Boolean.FALSE;
+
     @Column(name = "series_number_locked")
     @Builder.Default
     private Boolean seriesNumberLocked = Boolean.FALSE;
@@ -315,6 +341,12 @@ public class BookMetadataEntity {
     @Builder.Default
     private Set<BookReviewEntity> reviews = new HashSet<>();
 
+    public String retrieveFormattedSeriesName() {
+        return this.seriesVolume != null
+                ? String.format("%s (%d)", this.seriesName, this.seriesVolume)
+                : this.seriesName; 
+    }
+
     public void applyLockToAllFields(boolean lock) {
         this.titleLocked = lock;
         this.subtitleLocked = lock;
@@ -328,6 +360,7 @@ public class BookMetadataEntity {
         this.languageLocked = lock;
         this.coverLocked = lock;
         this.seriesNameLocked = lock;
+        this.seriesVolumeLocked = lock;
         this.seriesNumberLocked = lock;
         this.seriesTotalLocked = lock;
         this.authorsLocked = lock;
@@ -365,6 +398,7 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.languageLocked)
                 && Boolean.TRUE.equals(this.coverLocked)
                 && Boolean.TRUE.equals(this.seriesNameLocked)
+                && Boolean.TRUE.equals(this.seriesVolumeLocked)
                 && Boolean.TRUE.equals(this.seriesNumberLocked)
                 && Boolean.TRUE.equals(this.seriesTotalLocked)
                 && Boolean.TRUE.equals(this.authorsLocked)

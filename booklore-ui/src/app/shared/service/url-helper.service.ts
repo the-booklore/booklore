@@ -98,4 +98,10 @@ export class UrlHelperService {
       }
     });
   }
+
+  filterBooksBySeries(series: string, volume?: number | null) {
+    const params = ['/series', encodeURIComponent(series)];
+    if (volume) params.push(encodeURIComponent(volume));
+    return this.router.createUrlTree(params);
+  }
 }

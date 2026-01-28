@@ -154,6 +154,7 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getPublishedDateLocked(), clear.isPublishedDate(), m.getPublishedDate(), e::setPublishedDate, e::getPublishedDate, replaceMode);
         handleFieldUpdate(e.getDescriptionLocked(), clear.isDescription(), m.getDescription(), v -> e.setDescription(nullIfBlank(v)), e::getDescription, replaceMode);
         handleFieldUpdate(e.getSeriesNameLocked(), clear.isSeriesName(), m.getSeriesName(), e::setSeriesName, e::getSeriesName, replaceMode);
+        handleFieldUpdate(e.getSeriesVolumeLocked(), clear.isSeriesVolume(), m.getSeriesVolume(), e::setSeriesVolume, e::getSeriesVolume, replaceMode);
         handleFieldUpdate(e.getSeriesNumberLocked(), clear.isSeriesNumber(), m.getSeriesNumber(), e::setSeriesNumber, e::getSeriesNumber, replaceMode);
         handleFieldUpdate(e.getSeriesTotalLocked(), clear.isSeriesTotal(), m.getSeriesTotal(), e::setSeriesTotal, e::getSeriesTotal, replaceMode);
         handleFieldUpdate(e.getIsbn13Locked(), clear.isIsbn13(), m.getIsbn13(), v -> e.setIsbn13(nullIfBlank(v)), e::getIsbn13, replaceMode);
@@ -371,6 +372,7 @@ public class BookMetadataUpdater {
                 Pair.of(m.getPublishedDateLocked(), e::setPublishedDateLocked),
                 Pair.of(m.getDescriptionLocked(), e::setDescriptionLocked),
                 Pair.of(m.getSeriesNameLocked(), e::setSeriesNameLocked),
+                Pair.of(m.getSeriesVolumeLocked(), e::setSeriesVolumeLocked),
                 Pair.of(m.getSeriesNumberLocked(), e::setSeriesNumberLocked),
                 Pair.of(m.getSeriesTotalLocked(), e::setSeriesTotalLocked),
                 Pair.of(m.getIsbn13Locked(), e::setIsbn13Locked),

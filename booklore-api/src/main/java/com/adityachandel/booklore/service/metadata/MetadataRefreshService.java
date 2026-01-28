@@ -341,6 +341,7 @@ public class MetadataRefreshService {
             addProviderToSet(fieldOptions.getPublisher(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getPublishedDate(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getSeriesName(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getSeriesVolume(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getSeriesNumber(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getSeriesTotal(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getIsbn13(), uniqueProviders, appSettings);
@@ -482,6 +483,12 @@ public class MetadataRefreshService {
             metadata.setSeriesName(resolveFieldAsString(metadataMap, fieldOptions.getSeriesName(), BookMetadata::getSeriesName));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setSeriesName(existingMetadata.getSeriesName());
+        }
+        
+        if (enabledFields.isSeriesVolume()) {
+            metadata.setSeriesVolume(resolveField(metadataMap, fieldOptions.getSeriesVolume(), BookMetadata::getSeriesVolume));
+        } else if (isReplaceAll && existingMetadata != null) {
+            metadata.setSeriesVolume(existingMetadata.getSeriesVolume());
         }
         
         if (enabledFields.isSeriesNumber()) {

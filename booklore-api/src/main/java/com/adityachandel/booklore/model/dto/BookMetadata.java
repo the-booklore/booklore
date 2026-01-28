@@ -23,6 +23,7 @@ public class BookMetadata {
     private LocalDate publishedDate;
     private String description;
     private String seriesName;
+    private Integer seriesVolume;
     private Float seriesNumber;
     private Integer seriesTotal;
     private String isbn13;
@@ -64,6 +65,7 @@ public class BookMetadata {
     private Boolean publishedDateLocked;
     private Boolean descriptionLocked;
     private Boolean seriesNameLocked;
+    private Boolean seriesVolumeLocked;
     private Boolean seriesNumberLocked;
     private Boolean seriesTotalLocked;
     private Boolean isbn13Locked;

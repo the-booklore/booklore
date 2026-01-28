@@ -294,6 +294,19 @@
             </div>
 
             <div class="field-group small-field">
+              <label for="seriesVolume">Series Volume</label>
+              <div class="field-with-lock">
+                <input pInputText id="seriesVolume" formControlName="seriesVolume"/>
+                @if (!book.metadata!['seriesVolumeLocked']) {
+                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('seriesVolume')" severity="success"></p-button>
+                }
+                @if (book.metadata!['seriesVolumeLocked']) {
+                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('seriesVolume')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
+
+            <div class="field-group small-field">
               <label for="seriesNumber">Series #</label>
               <div class="field-with-lock">
                 <input pInputText id="seriesNumber" formControlName="seriesNumber"/>

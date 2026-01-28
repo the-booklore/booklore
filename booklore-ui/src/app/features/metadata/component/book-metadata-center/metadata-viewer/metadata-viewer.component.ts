@@ -766,9 +766,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.handleMetadataClick('tag', tag);
   }
 
-  goToSeries(seriesName: string): void {
-    const encodedSeriesName = encodeURIComponent(seriesName);
-    this.router.navigate(['/series', encodedSeriesName]);
+  goToSeries(seriesName: string, volume?: number | null): void {
+    const params = ['/series', encodeURIComponent(seriesName)];
+    if (volume) params.push(encodeURIComponent(volume));
+    this.router.navigate(params);
   }
 
   goToPublisher(publisher: string): void {

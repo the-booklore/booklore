@@ -43,6 +43,7 @@ public class MetadataRefreshOptions {
         private FieldProvider publisher;
         private FieldProvider publishedDate;
         private FieldProvider seriesName;
+        private FieldProvider seriesVolume;
         private FieldProvider seriesNumber;
         private FieldProvider seriesTotal;
         private FieldProvider isbn13;
@@ -103,6 +104,8 @@ public class MetadataRefreshOptions {
         private boolean publishedDate = true;
         @Builder.Default
         private boolean seriesName = true;
+        @Builder.Default
+        private boolean seriesVolume = true;
         @Builder.Default
         private boolean seriesNumber = true;
         @Builder.Default

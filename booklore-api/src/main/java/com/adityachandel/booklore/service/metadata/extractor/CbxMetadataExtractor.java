@@ -173,6 +173,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         builder.publisher(getTextContent(document, "Publisher"));
 
         builder.seriesName(getTextContent(document, "Series"));
+        builder.seriesVolume(parseInteger(getTextContent(document, "Volume")));
         builder.seriesNumber(parseFloat(getTextContent(document, "Number")));
         builder.seriesTotal(parseInteger(getTextContent(document, "Count")));
         builder.publishedDate(

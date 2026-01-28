@@ -33,7 +33,7 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
   lockableFields: string[] = [
     'titleLocked', 'subtitleLocked', 'publisherLocked', 'publishedDateLocked', 'descriptionLocked',
     'isbn13Locked', 'isbn10Locked', 'asinLocked', 'pageCountLocked', 'thumbnailLocked', 'languageLocked', 'coverLocked',
-    'seriesNameLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked', 'moodsLocked', 'tagsLocked',
+    'seriesNameLocked', 'seriesVolumeLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked', 'moodsLocked', 'tagsLocked',
     'amazonRatingLocked', 'amazonReviewCountLocked', 'goodreadsRatingLocked', 'goodreadsReviewCountLocked',
     'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'hardcoverBookIdLocked', 'googleIdLocked', 'comicvineIdLocked',
     'ranobedbIdLocked', 'ranobedbRatingLocked'
@@ -53,6 +53,7 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     languageLocked: 'Language',
     coverLocked: 'Cover',
     seriesNameLocked: 'Series',
+    seriesVolumeLocked: 'Series Volume',
     seriesNumberLocked: 'Series #',
     seriesTotalLocked: 'Series Total #',
     authorsLocked: 'Authors',

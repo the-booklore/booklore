@@ -86,6 +86,10 @@ export class SideBarFilter implements BookFilter {
                 return mode === 'or'
                   ? filterValues.some(val => book.metadata?.seriesName === val)
                   : filterValues.every(val => book.metadata?.seriesName === val);
+              case 'seriesVolume':
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.seriesVolume === val)
+                  : filterValues.every(val => book.metadata?.seriesVolume === val);
               case 'readStatus':
                 return doesBookMatchReadStatus(book, filterValues);
               case 'amazonRating':

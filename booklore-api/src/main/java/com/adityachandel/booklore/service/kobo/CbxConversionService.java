@@ -565,6 +565,9 @@ public class CbxConversionService {
             if (metadata.getSeriesName() != null && !metadata.getSeriesName().trim().isEmpty()) {
                 model.put("seriesName", metadata.getSeriesName());
             }
+            if (metadata.getSeriesVolume() != null) {
+                model.put("seriesVolume", metadata.getSeriesVolume());
+            }
             if (metadata.getSeriesNumber() != null) {
                 model.put("seriesNumber", metadata.getSeriesNumber());
             }

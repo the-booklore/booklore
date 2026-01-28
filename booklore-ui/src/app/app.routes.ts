@@ -50,7 +50,7 @@ export const routes: Routes = [
       {path: 'library/:libraryId/books', component: BookBrowserComponent, canActivate: [AuthGuard]},
       {path: 'shelf/:shelfId/books', component: BookBrowserComponent, canActivate: [AuthGuard]},
       {path: 'unshelved-books', component: BookBrowserComponent, canActivate: [AuthGuard]},
-      {path: 'series/:seriesName', component: SeriesPageComponent, canActivate: [AuthGuard]},
+      {path: 'series/:seriesName/:seriesVolume', component: SeriesPageComponent, canActivate: [AuthGuard]},
       {path: 'magic-shelf/:magicShelfId/books', component: BookBrowserComponent, canActivate: [AuthGuard]},
       {path: 'book/:bookId', component: BookMetadataCenterComponent, canActivate: [AuthGuard]},
       {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [BookdropGuard]},

@@ -212,7 +212,7 @@ public class KoboEntitlementService {
         if (metadata.getSeriesName() != null && !metadata.getSeriesName().isBlank()) {
             series = KoboBookMetadata.Series.builder()
                     .id("series_" + metadata.getSeriesName().hashCode())
-                    .name(metadata.getSeriesName())
+                    .name(metadata.retrieveFormattedSeriesName())
                     .number(metadata.getSeriesNumber() != null 
                         ? BigDecimal.valueOf(metadata.getSeriesNumber()).stripTrailingZeros().toPlainString() 
                         : "1")

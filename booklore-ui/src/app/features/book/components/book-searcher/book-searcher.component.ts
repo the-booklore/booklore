@@ -65,9 +65,14 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
     return year && year.length === 4 ? year : null;
   }
 
-  getSeriesInfo(seriesName: string | undefined, seriesNumber: number | null | undefined): string | null {
+  getSeriesInfo(seriesName: string | undefined, seriesVolume: number | null | undefined, seriesNumber: number | null | undefined): string | null {
     if (!seriesName) return null;
-    if (seriesNumber) {
+    if (seriesVolume) {
+      if (seriesNumber) {
+        return `${seriesName} (${seriesVolume}) #${seriesNumber}`;
+      }
+      return `${seriesName} (${seriesVolume})`;
+    } else if (seriesNumber) {
       return `${seriesName} #${seriesNumber}`;
     }
     return seriesName;

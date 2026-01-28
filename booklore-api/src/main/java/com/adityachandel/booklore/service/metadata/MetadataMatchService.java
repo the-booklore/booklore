@@ -50,6 +50,7 @@ public class MetadataMatchService {
         if (isPresent(metadata.getPublisher(), metadata.getPublisherLocked())) score += weights.getPublisher();
         if (metadata.getPublishedDate() != null || Boolean.TRUE.equals(metadata.getPublishedDateLocked())) score += weights.getPublishedDate();
         if (isPresent(metadata.getSeriesName(), metadata.getSeriesNameLocked())) score += weights.getSeriesName();
+        if ((metadata.getSeriesVolume() != null && metadata.getSeriesVolume() > 0) || Boolean.TRUE.equals(metadata.getSeriesVolumeLocked())) score += weights.getSeriesVolume();
         if ((metadata.getSeriesNumber() != null && metadata.getSeriesNumber() > 0) || Boolean.TRUE.equals(metadata.getSeriesNumberLocked())) score += weights.getSeriesNumber();
         if ((metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) || Boolean.TRUE.equals(metadata.getSeriesTotalLocked())) score += weights.getSeriesTotal();
         if (isPresent(metadata.getIsbn13(), metadata.getIsbn13Locked())) score += weights.getIsbn13();

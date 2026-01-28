@@ -220,6 +220,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             metadata.setPublisher(truncate(extracted.getPublisher(), 1000));
             metadata.setPublishedDate(extracted.getPublishedDate());
             metadata.setSeriesName(truncate(extracted.getSeriesName(), 1000));
+            metadata.setSeriesVolume(extracted.getSeriesVolume());
             metadata.setSeriesNumber(extracted.getSeriesNumber());
             metadata.setSeriesTotal(extracted.getSeriesTotal());
             metadata.setPageCount(extracted.getPageCount());

@@ -18,6 +18,7 @@ public class MetadataMatchWeights {
     private int publisher;
     private int publishedDate;
     private int seriesName;
+    private int seriesVolume;
     private int seriesNumber;
     private int seriesTotal;
     private int isbn13;
@@ -38,7 +39,7 @@ public class MetadataMatchWeights {
 
     public int totalWeight() {
         return title + subtitle + description + authors + publisher + publishedDate +
-                seriesName + seriesNumber + seriesTotal + isbn13 + isbn10 + language +
+                seriesName + seriesVolume + seriesNumber + seriesTotal + isbn13 + isbn10 + language +
                 pageCount + categories + amazonRating + amazonReviewCount +
                 goodreadsRating + goodreadsReviewCount + hardcoverRating +
                 hardcoverReviewCount + ranobedbRating + coverImage;

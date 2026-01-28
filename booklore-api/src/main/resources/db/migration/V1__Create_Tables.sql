@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS book_metadata
     cover                 VARCHAR(255),
     cover_updated_on      TIMESTAMP NULL,
     series_name           VARCHAR(255),
+    series_volume         INT,
     series_number         INT,
     series_total          INT,
     all_fields_locked     BOOLEAN DEFAULT FALSE,
@@ -84,6 +85,7 @@ CREATE TABLE IF NOT EXISTS book_metadata
     rating_locked         BOOLEAN DEFAULT FALSE,
     review_count_locked   BOOLEAN DEFAULT FALSE,
     series_name_locked    BOOLEAN DEFAULT FALSE,
+    series_volume_locked  BOOLEAN DEFAULT FALSE,
     series_number_locked  BOOLEAN DEFAULT FALSE,
     series_total_locked   BOOLEAN DEFAULT FALSE,
     CONSTRAINT fk_book_metadata FOREIGN KEY (book_id) REFERENCES book (id) ON DELETE CASCADE

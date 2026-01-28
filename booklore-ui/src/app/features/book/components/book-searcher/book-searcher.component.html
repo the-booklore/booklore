@@ -51,10 +51,10 @@
                     <span class="metadata-badge year-badge">{{ getPublishedYear(book.metadata?.publishedDate) }}</span>
                   }
                 </div>
-                @if (getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesNumber)) {
+                @if (getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesVolume, book.metadata?.seriesNumber)) {
                   <div class="search-book-series metadata-badge series-badge">
                     <i class="pi pi-book"></i>
-                    <span>{{ getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesNumber) }}</span>
+                    <span>{{ getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesVolume, book.metadata?.seriesNumber) }}</span>
                   </div>
                 }
               </div>

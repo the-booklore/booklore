@@ -570,11 +570,15 @@ public class ComicvineBookParser implements BookParser {
         // Get publisher from volume context if available
         String publisher = null;
         Integer seriesTotal = null;
+        Integer seriesVolume = null;
         if (volumeContext != null) {
             if (volumeContext.getPublisher() != null) {
                 publisher = volumeContext.getPublisher().getName();
             }
             seriesTotal = volumeContext.getCountOfIssues();
+            if (volumeContext.getStartYear() != null) {
+                seriesVolume = Integer.parseInt(volumeContext.getStartYear());
+            }
         }
 
         Set<String> authors = extractAuthors(comic.getPersonCredits());
@@ -597,6 +601,7 @@ public class ComicvineBookParser implements BookParser {
                 .thumbnailUrl(comic.getImage() != null ? comic.getImage().getMediumUrl() : null)
                 .description(description)
                 .seriesName(comic.getVolume() != null ? comic.getVolume().getName() : null)
+                .seriesVolume(seriesVolume)
                 .seriesNumber(safeParseFloat(comic.getIssueNumber()))
                 .seriesTotal(seriesTotal)
                 .publisher(publisher)

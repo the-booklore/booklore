@@ -51,6 +51,7 @@ export type RuleField =
   | 'publisher'
   | 'publishedDate'
   | 'seriesName'
+  | 'seriesVolume'
   | 'seriesNumber'
   | 'seriesTotal'
   | 'pageCount'
@@ -137,6 +138,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   isbn13: {label: 'ISBN-13'},
   isbn10: {label: 'ISBN-10'},
   seriesName: {label: 'Series Name'},
+  seriesVolume: {label: 'Series Volume', type: 'number'},
   seriesNumber: {label: 'Series Number', type: 'number'},
   seriesTotal: {label: 'Books in Series', type: 'number'},
   fileSize: {label: 'File Size (Kb)', type: 'number'},

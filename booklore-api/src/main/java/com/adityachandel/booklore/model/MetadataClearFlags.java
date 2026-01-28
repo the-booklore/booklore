@@ -11,6 +11,7 @@ public class MetadataClearFlags {
     private boolean publishedDate;
     private boolean description;
     private boolean seriesName;
+    private boolean seriesVolume;
     private boolean seriesNumber;
     private boolean seriesTotal;
     private boolean isbn13;

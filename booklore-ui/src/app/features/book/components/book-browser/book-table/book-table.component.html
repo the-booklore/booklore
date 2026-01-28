@@ -101,7 +101,7 @@
             <td
               [title]="getCellValue(metadata, book, col.field)"
               class="cell-text">
-              @if(['title', 'authors', 'publisher', 'seriesName', 'categories', 'language'].includes(col.field)) {
+              @if(['title', 'authors', 'publisher', 'seriesName', 'seriesVolume', 'categories', 'language'].includes(col.field)) {
                 @for (item of getCellClickableValue(metadata, book, col.field); track $index; let isLast = $last) {
                   <a [routerLink]="item.url" class="cell-link">
                     {{ item.anchor }}</a>@if (!isLast) {<span>, </span>}

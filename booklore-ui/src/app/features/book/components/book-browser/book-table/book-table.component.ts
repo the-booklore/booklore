@@ -58,6 +58,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'authors', header: 'Authors'},
     {field: 'publisher', header: 'Publisher'},
     {field: 'seriesName', header: 'Series'},
+    {field: 'seriesVolume', header: 'Series Volume'},
     {field: 'seriesNumber', header: 'Series #'},
     {field: 'categories', header: 'Genres'},
     {field: 'publishedDate', header: 'Published'},
@@ -231,10 +232,19 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       case 'seriesName':
         return [
           {
-            url: this.urlHelper.filterBooksBy('series', metadata.seriesName ?? ''),
+            url: this.urlHelper.filterBooksBySeries(metadata.seriesName ?? '', metadata.seriesVolume),
             anchor: metadata.seriesName
           }
         ]
+
+      case 'seriesVolume':
+        return [
+          {
+            url: this.urlHelper.filterBooksBySeries(metadata.seriesName ?? '', metadata.seriesVolume),
+            anchor: metadata.seriesVolume
+          }
+        ]
+
       case 'isbn':
         return [
           {
@@ -268,6 +278,9 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
       case 'seriesName':
         return metadata.seriesName ?? '';
+
+      case 'seriesVolume':
+        return metadata.seriesVolume ?? '';
 
       case 'seriesNumber':
         return metadata.seriesNumber ?? '';

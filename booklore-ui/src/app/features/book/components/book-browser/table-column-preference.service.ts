@@ -19,6 +19,7 @@ export class TableColumnPreferenceService {
     {field: 'authors', header: 'Authors'},
     {field: 'publisher', header: 'Publisher'},
     {field: 'seriesName', header: 'Series'},
+    {field: 'seriesVolume', header: 'Series Volume'},
     {field: 'seriesNumber', header: 'Series #'},
     {field: 'categories', header: 'Genres'},
     {field: 'publishedDate', header: 'Published'},

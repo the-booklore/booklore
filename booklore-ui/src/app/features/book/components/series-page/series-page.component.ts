@@ -101,6 +101,11 @@ export class SeriesPageComponent implements OnDestroy {
     map((name) => decodeURIComponent(name))
   );
 
+  seriesVolumeParam$: Observable<number | null> = this.route.paramMap.pipe(
+    map((params) => params.get("seriesVolume")),
+    map((volume) => volume ? parseInt(volume) : null)
+  );
+
   booksInSeries$: Observable<Book[]> = this.bookService.bookState$.pipe(
     filter((state) => state.loaded && !!state.books),
     map((state) => state.books || [])
@@ -108,11 +113,14 @@ export class SeriesPageComponent implements OnDestroy {
 
   filteredBooks$: Observable<Book[]> = combineLatest([
     this.seriesParam$.pipe(map((n) => n.trim().toLowerCase())),
+    this.seriesVolumeParam$,
     this.booksInSeries$,
   ]).pipe(
-    map(([seriesName, books]) => {
+    map(([seriesName, seriesVolume, books]) => {
       const inSeries = books.filter(
-        (b) => b.metadata?.seriesName?.toLowerCase() === seriesName
+        (b) =>
+          b.metadata?.seriesName?.toLowerCase() === seriesName &&
+          (!seriesVolume || (b.metadata?.seriesVolume === seriesVolume))
       );
       return inSeries.sort((a, b) => {
         const aNum = a.metadata?.seriesNumber ?? Number.MAX_SAFE_INTEGER;

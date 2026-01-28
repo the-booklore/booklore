@@ -58,6 +58,7 @@ public class BookdropMetadataHelper {
         if (source.getTitle() != null) target.setTitle(source.getTitle());
         if (source.getSubtitle() != null) target.setSubtitle(source.getSubtitle());
         if (source.getAuthors() != null && !source.getAuthors().isEmpty()) target.setAuthors(source.getAuthors());
+        if (source.getSeriesVolume() != null) target.setSeriesVolume(source.getSeriesVolume());
         if (source.getSeriesNumber() != null) target.setSeriesNumber(source.getSeriesNumber());
         if (source.getPublishedDate() != null) target.setPublishedDate(source.getPublishedDate());
         if (source.getPublisher() != null) target.setPublisher(source.getPublisher());

@@ -105,6 +105,7 @@ export interface BookMetadata {
   publishedDate?: string;
   description?: string;
   seriesName?: string;
+  seriesVolume?: number | null;
   seriesNumber?: number | null;
   seriesTotal?: number | null;
   isbn13?: string;
@@ -144,6 +145,7 @@ export interface BookMetadata {
   publishedDateLocked?: boolean;
   descriptionLocked?: boolean;
   seriesNameLocked?: boolean;
+  seriesVolumeLocked?: boolean;
   seriesNumberLocked?: boolean;
   seriesTotalLocked?: boolean;
   isbn13Locked?: boolean;
@@ -184,6 +186,7 @@ export interface MetadataClearFlags {
   publishedDate?: boolean;
   description?: boolean;
   seriesName?: boolean;
+  seriesVolume?: boolean;
   seriesNumber?: boolean;
   seriesTotal?: boolean;
   isbn13?: boolean;
