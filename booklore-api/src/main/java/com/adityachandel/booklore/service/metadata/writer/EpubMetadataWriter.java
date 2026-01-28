@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.metadata.BookLoreMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
@@ -40,10 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -91,11 +89,21 @@ public class EpubMetadataWriter implements MetadataWriter {
             boolean[] hasChanges = {false};
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
 
+            Element packageElement = opfDoc.getDocumentElement();
+            if (!packageElement.hasAttribute("xmlns:" + BookLoreMetadata.NS_PREFIX)) {
+                packageElement.setAttribute("xmlns:" + BookLoreMetadata.NS_PREFIX, BookLoreMetadata.NS_URI);
+                hasChanges[0] = true;
+            }
+
             helper.copyTitle(clear != null && clear.isTitle(), val -> replaceAndTrackChange(opfDoc, metadataElement, "title", DC_NS, val, hasChanges));
             helper.copyDescription(clear != null && clear.isDescription(), val -> replaceAndTrackChange(opfDoc, metadataElement, "description", DC_NS, val, hasChanges));
             helper.copyPublisher(clear != null && clear.isPublisher(), val -> replaceAndTrackChange(opfDoc, metadataElement, "publisher", DC_NS, val, hasChanges));
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), val -> replaceAndTrackChange(opfDoc, metadataElement, "date", DC_NS, val != null ? val.toString() : null, hasChanges));
             helper.copyLanguage(clear != null && clear.isLanguage(), val -> replaceAndTrackChange(opfDoc, metadataElement, "language", DC_NS, val, hasChanges));
+            helper.copyPageCount(clear != null && clear.isPageCount(), val -> {
+                String formatted = val != null ? val.toString() : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":page_count", formatted, hasChanges);
+            });
 
             helper.copyAuthors(clear != null && clear.isAuthors(), names -> {
                 removeCreatorsByRole(metadataElement, "");
@@ -122,14 +130,73 @@ public class EpubMetadataWriter implements MetadataWriter {
                 hasChanges[0] = true;
             });
 
+            helper.copyMoods(clear != null && clear.isMoods(), moods -> {
+                if (moods != null) {
+                    for (String mood : moods.stream().map(String::trim).distinct().toList()) {
+                        metadataElement.appendChild(createSubjectElement(opfDoc, mood));
+                    }
+                    hasChanges[0] = true;
+                }
+            });
+
+            helper.copyTags(clear != null && clear.isTags(), tags -> {
+                if (tags != null) {
+                    for (String tag : tags.stream().map(String::trim).distinct().toList()) {
+                        metadataElement.appendChild(createSubjectElement(opfDoc, tag));
+                    }
+                    hasChanges[0] = true;
+                }
+            });
+
+            helper.copySubtitle(clear != null && clear.isSubtitle(), val -> replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":subtitle", val, hasChanges));
+
             helper.copySeriesName(clear != null && clear.isSeriesName(), val -> replaceMetaElement(metadataElement, opfDoc, "calibre:series", val, hasChanges));
 
             helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
-                String formatted = val != null ? String.format("%.1f", val) : null;
+                String formatted = val != null ? String.format(Locale.US, "%.1f", val) : null;
                 replaceMetaElement(metadataElement, opfDoc, "calibre:series_index", formatted, hasChanges);
             });
 
-            List<String> schemes = List.of("AMAZON", "GOOGLE", "GOODREADS", "HARDCOVER", "ISBN");
+            helper.copySeriesTotal(clear != null && clear.isSeriesTotal(), val -> {
+                String formatted = val != null ? val.toString() : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":series_total", formatted, hasChanges);
+            });
+
+            helper.copyRating(false, val -> {
+                String formatted = val != null ? String.format(Locale.US, "%.2f", val) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":rating", formatted, hasChanges);
+            });
+            helper.copyAmazonRating(clear != null && clear.isAmazonRating(), val -> {
+                String formatted = val != null ? String.format(Locale.US, "%.2f", val) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":amazon_rating", formatted, hasChanges);
+            });
+            helper.copyGoodreadsRating(clear != null && clear.isGoodreadsRating(), val -> {
+                String formatted = val != null ? String.format(Locale.US, "%.2f", val) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":goodreads_rating", formatted, hasChanges);
+            });
+            helper.copyHardcoverRating(clear != null && clear.isHardcoverRating(), val -> {
+                String formatted = val != null ? String.format(Locale.US, "%.2f", val) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":hardcover_rating", formatted, hasChanges);
+            });
+            helper.copyLubimyczytacRating(clear != null && clear.isLubimyczytacRating(), val -> {
+                String formatted = val != null ? String.format(Locale.US, "%.2f", val) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":lubimyczytac_rating", formatted, hasChanges);
+            });
+            helper.copyRanobedbRating(clear != null && clear.isRanobedbRating(), val -> {
+                String formatted = val != null ? String.format(Locale.US, "%.2f", val) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":ranobedb_rating", formatted, hasChanges);
+            });
+
+            helper.copyMoods(clear != null && clear.isMoods(), moods -> {
+                String joined = moods != null && !moods.isEmpty() ? String.join(", ", moods) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":moods", joined, hasChanges);
+            });
+            helper.copyTags(clear != null && clear.isTags(), tags -> {
+                String joined = tags != null && !tags.isEmpty() ? String.join(", ", tags) : null;
+                replaceMetaElement(metadataElement, opfDoc, BookLoreMetadata.NS_PREFIX + ":tags", joined, hasChanges);
+            });
+
+            List<String> schemes = List.of("AMAZON", "GOOGLE", "GOODREADS", "HARDCOVER", "ISBN", "ISBN10", "COMICVINE", "LUBIMYCZYTAC", "RANOBEDB", "HARDCOVER_BOOK_ID");
 
             for (String scheme : schemes) {
 
@@ -139,7 +206,10 @@ public class EpubMetadataWriter implements MetadataWriter {
                     case "COMICVINE" -> clear.isComicvineId();
                     case "GOODREADS" -> clear.isGoodreadsId();
                     case "HARDCOVER" -> clear.isHardcoverId();
-                    case "ISBN" -> clear.isIsbn10();
+                    case "ISBN" -> clear.isIsbn13();
+                    case "ISBN10" -> clear.isIsbn10();
+                    case "LUBIMYCZYTAC" -> clear.isLubimyczytacId();
+                    case "RANOBEDB" -> clear.isRanobedbId();
                     default -> false;
                 };
 
@@ -150,6 +220,10 @@ public class EpubMetadataWriter implements MetadataWriter {
                     case "COMICVINE" -> helper.copyComicvineId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
                     case "HARDCOVER" -> helper.copyHardcoverId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
                     case "ISBN" -> helper.copyIsbn13(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "ISBN10" -> helper.copyIsbn10(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "LUBIMYCZYTAC" -> helper.copyLubimyczytacId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "RANOBEDB" -> helper.copyRanobedbId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "HARDCOVER_BOOK_ID" -> helper.copyHardcoverBookId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue != null ? idValue.toString() : null, hasChanges));
                 }
             }
 
@@ -234,8 +308,17 @@ public class EpubMetadataWriter implements MetadataWriter {
 
         boolean changed = !Objects.equals(currentValue, newValue);
 
+        // Remove from primary namespace
         for (int i = nodes.getLength() - 1; i >= 0; i--) {
             parent.removeChild(nodes.item(i));
+        }
+
+        // Remove from alternative DC namespace (no slash) if applicable
+        if ("http://purl.org/dc/elements/1.1/".equals(namespaceURI)) {
+            NodeList altNodes = parent.getElementsByTagNameNS("http://purl.org/dc/elements/1.1", tagName);
+            for (int i = altNodes.getLength() - 1; i >= 0; i--) {
+                parent.removeChild(altNodes.item(i));
+            }
         }
 
         if (newValue != null) {

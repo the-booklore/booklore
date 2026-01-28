@@ -22,7 +22,10 @@ import javax.imageio.ImageIO;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.*;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -109,6 +112,8 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                     }
                 }
 
+                metadataBuilder.pageCount(pdf.getNumberOfPages());
+
                 if (StringUtils.isNotBlank(info.getKeywords())) {
                     Set<String> categories = Arrays.stream(info.getKeywords().split(","))
                             .map(String::trim)
@@ -145,9 +150,11 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
                             extractDublinCoreMetadata(xpath, doc, metadataBuilder);
                             extractCalibreMetadata(xpath, doc, metadataBuilder);
+                            extractBookloreMetadata(xpath, doc, metadataBuilder);
 
                             Map<String, String> identifiers = extractIdentifiers(xpath, doc);
                             if (!identifiers.isEmpty()) {
+                                // Extract generic ISBN first
                                 String isbn = identifiers.get("isbn");
                                 if (StringUtils.isNotBlank(isbn)) {
                                     isbn = ISBN_CLEANUP_PATTERN.matcher(isbn).replaceAll("");
@@ -156,9 +163,19 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                     } else if (isbn.length() == 13) {
                                         metadataBuilder.isbn13(isbn);
                                     } else {
-                                        metadataBuilder.isbn13(isbn);
-                                        log.warn("ISBN length not 10 or 13: {}", isbn);
+                                        metadataBuilder.isbn13(isbn); // Fallback
                                     }
+                                }
+
+                                // Extract specific ISBN schemes (overwrites generic if present)
+                                String isbn13 = identifiers.get("isbn13");
+                                if (StringUtils.isNotBlank(isbn13)) {
+                                    metadataBuilder.isbn13(ISBN_CLEANUP_PATTERN.matcher(isbn13).replaceAll(""));
+                                }
+
+                                String isbn10 = identifiers.get("isbn10");
+                                if (StringUtils.isNotBlank(isbn10)) {
+                                    metadataBuilder.isbn10(ISBN_CLEANUP_PATTERN.matcher(isbn10).replaceAll(""));
                                 }
 
                                 String google = identifiers.get("google");
@@ -189,6 +206,20 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                 String hardcover = identifiers.get("hardcover");
                                 if (StringUtils.isNotBlank(hardcover)) {
                                     metadataBuilder.hardcoverId(hardcover);
+                                }
+
+                                String hardcoverBookId = identifiers.get("hardcover_book_id");
+                                if (StringUtils.isNotBlank(hardcoverBookId)) {
+                                    try {
+                                        metadataBuilder.hardcoverBookId(Integer.parseInt(hardcoverBookId));
+                                    } catch (NumberFormatException e) {
+                                        log.warn("Invalid hardcover_book_id: {}", hardcoverBookId);
+                                    }
+                                }
+
+                                String lubimyczytac = identifiers.get("lubimyczytac");
+                                if (StringUtils.isNotBlank(lubimyczytac)) {
+                                    metadataBuilder.lubimyczytacId(lubimyczytac);
                                 }
                             }
                         }
@@ -233,7 +264,24 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
         Set<String> subjects = xpathEvaluateMultiple(xpath, doc, "//dc:subject/rdf:Bag/rdf:li/text()");
         if (!subjects.isEmpty()) {
-            builder.categories(subjects);
+            Set<String> knownNonCategories = new HashSet<>();
+            
+            try {
+                String moods = xpath.evaluate("//booklore:Moods/text()", doc);
+                if (StringUtils.isNotBlank(moods)) {
+                    Arrays.stream(moods.split(";")).map(String::trim).forEach(knownNonCategories::add);
+                }
+                String tags = xpath.evaluate("//booklore:Tags/text()", doc);
+                if (StringUtils.isNotBlank(tags)) {
+                    Arrays.stream(tags.split(";")).map(String::trim).forEach(knownNonCategories::add);
+                }
+            } catch (Exception ignored) {}
+            
+            subjects.removeAll(knownNonCategories);
+            
+            if (!subjects.isEmpty()) {
+                builder.categories(subjects);
+            }
         }
     }
 
@@ -262,6 +310,93 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
         } catch (Exception e) {
             log.warn("Failed to extract calibre metadata: {}", e.getMessage(), e);
+        }
+    }
+
+    private void extractBookloreMetadata(XPath xpath, Document doc, BookMetadata.BookMetadataBuilder builder) {
+        try {
+            String subtitle = xpath.evaluate("//booklore:Subtitle/text()", doc);
+            if (StringUtils.isNotBlank(subtitle)) {
+                builder.subtitle(subtitle.trim());
+            }
+
+            String moods = xpath.evaluate("//booklore:Moods/text()", doc);
+            if (StringUtils.isNotBlank(moods)) {
+                Set<String> moodSet = Arrays.stream(moods.split(";"))
+                        .map(String::trim)
+                        .filter(StringUtils::isNotBlank)
+                        .collect(Collectors.toSet());
+                if (!moodSet.isEmpty()) {
+                    builder.moods(moodSet);
+                }
+            }
+
+            String tags = xpath.evaluate("//booklore:Tags/text()", doc);
+            if (StringUtils.isNotBlank(tags)) {
+                Set<String> tagSet = Arrays.stream(tags.split(";"))
+                        .map(String::trim)
+                        .filter(StringUtils::isNotBlank)
+                        .collect(Collectors.toSet());
+                if (!tagSet.isEmpty()) {
+                    builder.tags(tagSet);
+                }
+            }
+
+            String seriesTotal = xpath.evaluate("//booklore:SeriesTotal/text()", doc);
+            if (StringUtils.isNotBlank(seriesTotal)) {
+                try {
+                    builder.seriesTotal(Integer.parseInt(seriesTotal.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid series total: {}", seriesTotal);
+                }
+            }
+
+            String amazonRating = xpath.evaluate("//booklore:AmazonRating/text()", doc);
+            if (StringUtils.isNotBlank(amazonRating)) {
+                try {
+                    builder.amazonRating(Double.parseDouble(amazonRating.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid Amazon rating: {}", amazonRating);
+                }
+            }
+
+            String goodreadsRating = xpath.evaluate("//booklore:GoodreadsRating/text()", doc);
+            if (StringUtils.isNotBlank(goodreadsRating)) {
+                try {
+                    builder.goodreadsRating(Double.parseDouble(goodreadsRating.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid Goodreads rating: {}", goodreadsRating);
+                }
+            }
+
+            String hardcoverRating = xpath.evaluate("//booklore:HardcoverRating/text()", doc);
+            if (StringUtils.isNotBlank(hardcoverRating)) {
+                try {
+                    builder.hardcoverRating(Double.parseDouble(hardcoverRating.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid Hardcover rating: {}", hardcoverRating);
+                }
+            }
+
+            String lubimyczytacRating = xpath.evaluate("//booklore:LubimyczytacRating/text()", doc);
+            if (StringUtils.isNotBlank(lubimyczytacRating)) {
+                try {
+                    builder.lubimyczytacRating(Double.parseDouble(lubimyczytacRating.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid Lubimyczytac rating: {}", lubimyczytacRating);
+                }
+            }
+
+            String ranobedbRating = xpath.evaluate("//booklore:RanobedbRating/text()", doc);
+            if (StringUtils.isNotBlank(ranobedbRating)) {
+                try {
+                    builder.ranobedbRating(Double.parseDouble(ranobedbRating.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid RanobeDB rating: {}", ranobedbRating);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract booklore metadata: {}", e.getMessage(), e);
         }
     }
 
@@ -329,6 +464,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
             prefixMap.put("xmpidq", "http://ns.adobe.com/xmp/Identifier/qual/1.0/");
             prefixMap.put("calibre", "http://calibre-ebook.com/xmp-namespace");
             prefixMap.put("calibreSI", "http://calibre-ebook.com/xmp-namespace/seriesIndex");
+            prefixMap.put("booklore", "http://booklore.org/metadata/1.0/");
         }
 
         @Override

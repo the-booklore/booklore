@@ -3,6 +3,8 @@ package com.adityachandel.booklore.service.metadata.writer;
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.model.entity.MoodEntity;
+import com.adityachandel.booklore.model.entity.TagEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.ArchiveUtils;
@@ -36,6 +38,7 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -205,10 +208,94 @@ public class CbxMetadataWriter implements MetadataWriter {
             removeXmlElement(rootElement, "Letterer");
             removeXmlElement(rootElement, "CoverArtist");
         });
+        
+        // Genre - categories
         helper.copyCategories(clearFlags != null && clearFlags.isCategories(), set -> {
             updateXmlElement(xmlDoc, rootElement, "Genre", joinStrings(set));
-            removeXmlElement(rootElement, "Tags");
         });
+        
+        // Tags - standard ComicInfo.xml element (comma-separated)
+        helper.copyTags(clearFlags != null && clearFlags.isTags(), set -> {
+            updateXmlElement(xmlDoc, rootElement, "Tags", joinStrings(set));
+        });
+        
+        // CommunityRating - normalized to 0-5 scale (ComicInfo.xml standard)
+        helper.copyRating(false, rating -> {
+            if (rating != null) {
+                // Assume BookLore uses 0-10 scale, normalize to 0-5
+                double normalized = Math.min(5.0, Math.max(0.0, rating / 2.0));
+                updateXmlElement(xmlDoc, rootElement, "CommunityRating", String.format(Locale.US, "%.1f", normalized));
+            } else {
+                removeXmlElement(rootElement, "CommunityRating");
+            }
+        });
+        
+        // Web field - aggregate external identifiers as URLs
+        StringBuilder webBuilder = new StringBuilder();
+        helper.copyGoodreadsId(clearFlags != null && clearFlags.isGoodreadsId(), id -> {
+            if (id != null && !id.isBlank()) {
+                if (webBuilder.length() > 0) webBuilder.append(", ");
+                webBuilder.append("https://www.goodreads.com/book/show/").append(id);
+            }
+        });
+        helper.copyHardcoverId(clearFlags != null && clearFlags.isHardcoverId(), id -> {
+            if (id != null && !id.isBlank()) {
+                if (webBuilder.length() > 0) webBuilder.append(", ");
+                webBuilder.append("https://hardcover.app/books/").append(id);
+            }
+        });
+        helper.copyComicvineId(clearFlags != null && clearFlags.isComicvineId(), id -> {
+            if (id != null && !id.isBlank()) {
+                if (webBuilder.length() > 0) webBuilder.append(", ");
+                webBuilder.append("https://comicvine.gamespot.com/issue/").append(id);
+            }
+        });
+        helper.copyAsin(clearFlags != null && clearFlags.isAsin(), id -> {
+            if (id != null && !id.isBlank()) {
+                if (webBuilder.length() > 0) webBuilder.append(", ");
+                webBuilder.append("https://www.amazon.com/dp/").append(id);
+            }
+        });
+        updateXmlElement(xmlDoc, rootElement, "Web", webBuilder.length() > 0 ? webBuilder.toString() : null);
+        
+        // Notes - append moods and other custom data as structured text
+        StringBuilder notesBuilder = new StringBuilder();
+        String existingNotes = getXmlElementText(rootElement, "Notes");
+        
+        // Preserve existing notes that don't start with [BookLore]
+        if (existingNotes != null && !existingNotes.isBlank()) {
+            String cleanedNotes = existingNotes.replaceAll("\\[BookLore[^\\]]*\\][^\\n]*\\n?", "").trim();
+            if (!cleanedNotes.isEmpty()) {
+                notesBuilder.append(cleanedNotes);
+            }
+        }
+        
+        appendBookLoreTag(notesBuilder, "Moods", joinStrings(metadata.getMoods().stream().map(MoodEntity::getName).collect(Collectors.toSet())));
+        appendBookLoreTag(notesBuilder, "Tags", joinStrings(metadata.getTags().stream().map(TagEntity::getName).collect(Collectors.toSet())));
+        appendBookLoreTag(notesBuilder, "Subtitle", metadata.getSubtitle());
+        appendBookLoreTag(notesBuilder, "ISBN13", metadata.getIsbn13());
+        appendBookLoreTag(notesBuilder, "ISBN10", metadata.getIsbn10());
+        
+        appendBookLoreTag(notesBuilder, "AmazonRating", metadata.getAmazonRating());
+        appendBookLoreTag(notesBuilder, "GoodreadsRating", metadata.getGoodreadsRating());
+        appendBookLoreTag(notesBuilder, "HardcoverRating", metadata.getHardcoverRating());
+        appendBookLoreTag(notesBuilder, "LubimyczytacRating", metadata.getLubimyczytacRating());
+        appendBookLoreTag(notesBuilder, "RanobedbRating", metadata.getRanobedbRating());
+
+        appendBookLoreTag(notesBuilder, "HardcoverBookId", metadata.getHardcoverBookId());
+        appendBookLoreTag(notesBuilder, "LubimyczytacId", metadata.getLubimyczytacId());
+        appendBookLoreTag(notesBuilder, "RanobedbId", metadata.getRanobedbId());
+        appendBookLoreTag(notesBuilder, "GoogleId", metadata.getGoogleId());
+        
+        updateXmlElement(xmlDoc, rootElement, "Notes", notesBuilder.length() > 0 ? notesBuilder.toString() : null);
+    }
+
+    private String getXmlElementText(Element rootElement, String tagName) {
+        NodeList nodes = rootElement.getElementsByTagName(tagName);
+        if (nodes.getLength() > 0) {
+            return nodes.item(0).getTextContent();
+        }
+        return null;
     }
 
     private byte[] convertDocumentToBytes(Document xmlDoc) throws Exception {
@@ -583,6 +670,22 @@ public class CbxMetadataWriter implements MetadataWriter {
                     });
         } catch (IOException e) {
             log.warn("Failed to clean up temporary directory: {}", directory, e);
+        }
+    }
+    private void appendBookLoreTag(StringBuilder sb, String tag, String value) {
+        if (value != null && !value.isBlank()) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append("[BookLore:").append(tag).append("] ").append(value);
+        }
+    }
+
+    private void appendBookLoreTag(StringBuilder sb, String tag, Number value) {
+        if (value != null) {
+            if (sb.length() > 0) sb.append("\n");
+            String formatted = (value instanceof Double || value instanceof Float) 
+                    ? String.format(Locale.US, "%.2f", value.doubleValue())
+                    : value.toString();
+            sb.append("[BookLore:").append(tag).append("] ").append(formatted);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.metadata.extractor;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.service.metadata.BookLoreMetadata;
 import io.documentnode.epub4j.domain.Book;
 import io.documentnode.epub4j.domain.MediaType;
 import io.documentnode.epub4j.domain.MediaTypes;
@@ -30,6 +31,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -172,11 +174,11 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                    creatorRoleById.put(refines.substring(1), content.toLowerCase());
                                 }
 
-                                if (!seriesFound && ("booklore:series".equals(prop) || "calibre:series".equals(name) || "belongs-to-collection".equals(prop))) {
+                                if (!seriesFound && ((BookLoreMetadata.NS_PREFIX + ":series").equals(prop) || "calibre:series".equals(name) || "belongs-to-collection".equals(prop))) {
                                     builderMeta.seriesName(content);
                                     seriesFound = true;
                                 }
-                                if (!seriesIndexFound && ("booklore:series_index".equals(prop) || "calibre:series_index".equals(name) || "group-position".equals(prop))) {
+                                if (!seriesIndexFound && ((BookLoreMetadata.NS_PREFIX + ":series_index").equals(prop) || "calibre:series_index".equals(name) || "group-position".equals(prop))) {
                                     try {
                                         builderMeta.seriesNumber(Float.parseFloat(content));
                                         seriesIndexFound = true;
@@ -184,7 +186,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 }
 
-                                if ("calibre:pages".equals(name) || "pagecount".equals(name) || "schema:pagecount".equals(prop) || "media:pagecount".equals(prop) || "booklore:page_count".equals(prop)) {
+                                if ("calibre:pages".equals(name) || "pagecount".equals(name) || "schema:pagecount".equals(prop) || "media:pagecount".equals(prop) || (BookLoreMetadata.NS_PREFIX + ":page_count").equals(prop)) {
                                     safeParseInt(content, builderMeta::pageCount);
                                 } else if ("calibre:user_metadata:#pagecount".equals(name)) {
                                     try {
@@ -203,14 +205,41 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 }
 
-                                switch (prop) {
-                                    case "booklore:asin" -> builderMeta.asin(content);
-                                    case "booklore:goodreads_id" -> builderMeta.goodreadsId(content);
-                                    case "booklore:comicvine_id" -> builderMeta.comicvineId(content);
-                                    case "booklore:ranobedb_id" -> builderMeta.ranobedbId(content);
-                                    case "booklore:hardcover_id" -> builderMeta.hardcoverId(content);
-                                    case "booklore:google_books_id" -> builderMeta.googleId(content);
-                                    case "booklore:page_count" -> safeParseInt(content, builderMeta::pageCount);
+                                
+
+                                String key = StringUtils.isNotBlank(prop) ? prop : name;
+
+                                if (key.equals(BookLoreMetadata.NS_PREFIX + ":asin")) builderMeta.asin(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":goodreads_id")) builderMeta.goodreadsId(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":comicvine_id")) builderMeta.comicvineId(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":ranobedb_id")) builderMeta.ranobedbId(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":hardcover_id")) builderMeta.hardcoverId(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":google_books_id")) builderMeta.googleId(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":lubimyczytac_id")) builderMeta.lubimyczytacId(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":page_count")) safeParseInt(content, builderMeta::pageCount);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":subtitle")) builderMeta.subtitle(content);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":series_total")) safeParseInt(content, builderMeta::seriesTotal);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":rating")) { /* Generic rating not supported */ }
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":amazon_rating")) safeParseDouble(content, builderMeta::amazonRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":goodreads_rating")) safeParseDouble(content, builderMeta::goodreadsRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":hardcover_rating")) safeParseDouble(content, builderMeta::hardcoverRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":lubimyczytac_rating")) safeParseDouble(content, builderMeta::lubimyczytacRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":ranobedb_rating")) safeParseDouble(content, builderMeta::ranobedbRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":moods")) {
+                                    if (StringUtils.isNotBlank(content)) {
+                                        builderMeta.moods(Arrays.stream(content.split(","))
+                                                .map(String::trim)
+                                                .filter(StringUtils::isNotBlank)
+                                                .collect(Collectors.toSet()));
+                                    }
+                                }
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":tags")) {
+                                    if (StringUtils.isNotBlank(content)) {
+                                        builderMeta.tags(Arrays.stream(content.split(","))
+                                                .map(String::trim)
+                                                .filter(StringUtils::isNotBlank)
+                                                .collect(Collectors.toSet()));
+                                    }
                                 }
                             }
                             case "creator" -> {
@@ -236,7 +265,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                                 if (!scheme.isEmpty()) {
                                     switch (scheme) {
-                                        case "ISBN" -> {
+                                        case "ISBN", "ISBN10", "ISBN13" -> {
                                             String cleanValue = ISBN_SEPARATOR_PATTERN.matcher(value).replaceAll("");
                                             if (cleanValue.length() == 13) builderMeta.isbn13(value);
                                             else if (cleanValue.length() == 10) builderMeta.isbn10(value);
@@ -247,6 +276,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                         case "GOOGLE" -> builderMeta.googleId(value);
                                         case "AMAZON" -> builderMeta.asin(value);
                                         case "HARDCOVER" -> builderMeta.hardcoverId(value);
+                                        case "HARDCOVER_BOOK_ID" -> safeParseInt(value, builderMeta::hardcoverBookId);
+                                        case "LUBIMYCZYTAC" -> builderMeta.lubimyczytacId(value);
                                     }
                                 } else {
                                     if (text.toLowerCase().startsWith("isbn:")) {
@@ -295,6 +326,14 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                     }
 
                     builderMeta.authors(creatorsByRole.get("aut"));
+
+                    // Remove tags and moods from categories to ensure strict separation
+                    BookMetadata intermediate = builderMeta.build();
+                    Set<String> knownNonCategories = new HashSet<>();
+                    if (intermediate.getMoods() != null) knownNonCategories.addAll(intermediate.getMoods());
+                    if (intermediate.getTags() != null) knownNonCategories.addAll(intermediate.getTags());
+                    categories.removeAll(knownNonCategories);
+                    
                     builderMeta.categories(categories);
 
                     BookMetadata extractedMetadata = builderMeta.build();

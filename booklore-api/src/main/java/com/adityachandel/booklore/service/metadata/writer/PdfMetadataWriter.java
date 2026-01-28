@@ -1,16 +1,16 @@
 package com.adityachandel.booklore.service.metadata.writer;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
+import com.adityachandel.booklore.service.metadata.BookLoreMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
-import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -37,10 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -74,8 +71,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             log.warn("Could not create PDF temp backup for {}: {}", file.getName(), e.getMessage());
         }
 
-        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
-             PDDocument pdf = Loader.loadPDF(randomAccessRead, IOUtils.createMemoryOnlyStreamCache())) {
+        try (PDDocument pdf = Loader.loadPDF(file, IOUtils.createMemoryOnlyStreamCache())) {
             pdf.setAllSecurityToBeRemoved(true);
             applyMetadataToDocument(pdf, metadataEntity, clear);
             tempFile = File.createTempFile("pdfmeta-", ".pdf");
@@ -134,10 +130,24 @@ public class PdfMetadataWriter implements MetadataWriter {
         PDDocumentInformation info = pdf.getDocumentInformation();
         MetadataCopyHelper helper = new MetadataCopyHelper(entity);
 
+        // Build combined keywords from categories, moods, and tags for PDF legacy compatibility
+        StringBuilder keywordsBuilder = new StringBuilder();
+        helper.copyCategories(clear != null && clear.isCategories(), cats -> {
+            if (cats != null && !cats.isEmpty()) {
+                keywordsBuilder.append(String.join("; ", cats));
+            }
+        });
+
         helper.copyTitle(clear != null && clear.isTitle(), title -> info.setTitle(title != null ? title : ""));
         helper.copyPublisher(clear != null && clear.isPublisher(), pub -> info.setProducer(pub != null ? pub : ""));
         helper.copyAuthors(clear != null && clear.isAuthors(), authors -> info.setAuthor(authors != null ? String.join(", ", authors) : ""));
-        helper.copyCategories(clear != null && clear.isCategories(), cats -> info.setKeywords(cats != null ? String.join(", ", cats) : ""));
+        helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
+                    .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            info.setCreationDate(cal);
+        });
+        info.setKeywords(keywordsBuilder.toString());
 
         try {
             XMPMetadata xmp = XMPMetadata.createXMPMetadata();
@@ -156,7 +166,11 @@ public class PdfMetadataWriter implements MetadataWriter {
 
             helper.copyAuthors(clear != null && clear.isAuthors(), authors -> (authors != null ? authors : List.of("")).forEach(dc::addCreator));
 
+            // Add categories, moods, and tags all as dc:subject for semantic correctness
             helper.copyCategories(clear != null && clear.isCategories(), cats -> (cats != null ? cats : List.of("")).forEach(dc::addSubject));
+            
+            // Note: BookLore custom fields (subtitle, ratings, moods, tags as separate field) 
+            // are added via raw XML manipulation in addCustomIdentifiersToXmp to avoid XMPBox namespace issues
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new XmpSerializer().serialize(xmp, baos, true);
@@ -188,6 +202,7 @@ public class PdfMetadataWriter implements MetadataWriter {
         }
     }
 
+
     private byte[] addCustomIdentifiersToXmp(byte[] xmpBytes, BookMetadataEntity metadata, MetadataCopyHelper helper, MetadataClearFlags clear) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
@@ -211,7 +226,10 @@ public class PdfMetadataWriter implements MetadataWriter {
         helper.copyHardcoverId(clear != null && clear.isHardcoverId(), id -> appendIdentifier(doc, rdfBag, "hardcover", id != null ? id : ""));
         helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> appendIdentifier(doc, rdfBag, "ranobedb", id != null ? id : ""));
         helper.copyAsin(clear != null && clear.isAsin(), id -> appendIdentifier(doc, rdfBag, "amazon", id != null ? id : ""));
-        helper.copyIsbn13(clear != null && clear.isIsbn13(), id -> appendIdentifier(doc, rdfBag, "isbn", id != null ? id : ""));
+        helper.copyIsbn13(clear != null && clear.isIsbn13(), id -> appendIdentifier(doc, rdfBag, "isbn13", id != null ? id : ""));
+        helper.copyIsbn10(clear != null && clear.isIsbn10(), id -> appendIdentifier(doc, rdfBag, "isbn10", id != null ? id : ""));
+        helper.copyLubimyczytacId(clear != null && clear.isLubimyczytacId(), id -> appendIdentifier(doc, rdfBag, "lubimyczytac", id != null ? id : ""));
+        helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), id -> appendIdentifier(doc, rdfBag, "hardcover_book_id", id != null ? id.toString() : ""));
 
         if (rdfBag.hasChildNodes()) {
             xmpIdentifier.appendChild(rdfBag);
@@ -243,7 +261,7 @@ public class PdfMetadataWriter implements MetadataWriter {
 
             helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), index -> {
                 Element indexElem = doc.createElementNS("http://calibre-ebook.com/xmp-namespace-series-index", "calibreSI:series_index");
-                indexElem.setTextContent(index != null ? String.format("%.2f", index) : "0.00");
+                indexElem.setTextContent(index != null ? String.format(Locale.US, "%.2f", index) : "0.00");
                 seriesElem.appendChild(indexElem);
             });
 
@@ -251,6 +269,54 @@ public class PdfMetadataWriter implements MetadataWriter {
         });
 
         rdfRoot.appendChild(calibreDescription);
+
+        // BookLore custom fields namespace
+        Element bookloreDescription = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Description");
+        bookloreDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:" + BookLoreMetadata.NS_PREFIX, BookLoreMetadata.NS_URI);
+        bookloreDescription.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:about", "");
+
+        helper.copySubtitle(clear != null && clear.isSubtitle(), subtitle -> {
+            if (subtitle != null && !subtitle.isBlank()) {
+                Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":Subtitle");
+                elem.setTextContent(subtitle);
+                bookloreDescription.appendChild(elem);
+            }
+        });
+
+        helper.copyMoods(clear != null && clear.isMoods(), moods -> {
+            if (moods != null && !moods.isEmpty()) {
+                Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":Moods");
+                elem.setTextContent(String.join("; ", moods));
+                bookloreDescription.appendChild(elem);
+            }
+        });
+
+        helper.copyTags(clear != null && clear.isTags(), tags -> {
+            if (tags != null && !tags.isEmpty()) {
+                Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":Tags");
+                elem.setTextContent(String.join("; ", tags));
+                bookloreDescription.appendChild(elem);
+            }
+        });
+
+        helper.copyRating(false, rating -> appendRatingElement(doc, bookloreDescription, "Rating", rating));
+        helper.copyAmazonRating(clear != null && clear.isAmazonRating(), rating -> appendRatingElement(doc, bookloreDescription, "AmazonRating", rating));
+        helper.copyGoodreadsRating(clear != null && clear.isGoodreadsRating(), rating -> appendRatingElement(doc, bookloreDescription, "GoodreadsRating", rating));
+        helper.copyHardcoverRating(clear != null && clear.isHardcoverRating(), rating -> appendRatingElement(doc, bookloreDescription, "HardcoverRating", rating));
+        helper.copyLubimyczytacRating(clear != null && clear.isLubimyczytacRating(), rating -> appendRatingElement(doc, bookloreDescription, "LubimyczytacRating", rating));
+        helper.copyRanobedbRating(clear != null && clear.isRanobedbRating(), rating -> appendRatingElement(doc, bookloreDescription, "RanobedbRating", rating));
+
+        helper.copySeriesTotal(clear != null && clear.isSeriesTotal(), total -> {
+            if (total != null) {
+                Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":SeriesTotal");
+                elem.setTextContent(total.toString());
+                bookloreDescription.appendChild(elem);
+            }
+        });
+
+        if (bookloreDescription.hasChildNodes()) {
+            rdfRoot.appendChild(bookloreDescription);
+        }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Transformer tf = TransformerFactory.newInstance().newTransformer();
@@ -299,6 +365,13 @@ public class PdfMetadataWriter implements MetadataWriter {
         } catch (Exception e) {
             log.warn("XMP diff failed: {}", e.getMessage());
             return true;
+        }
+    }
+    private void appendRatingElement(Document doc, Element parent, String localName, Double value) {
+        if (value != null) {
+            Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":" + localName);
+            elem.setTextContent(String.format(Locale.US, "%.2f", value));
+            parent.appendChild(elem);
         }
     }
 }

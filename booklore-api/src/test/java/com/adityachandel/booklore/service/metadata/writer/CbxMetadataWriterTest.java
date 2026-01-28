@@ -3,9 +3,7 @@ package com.adityachandel.booklore.service.metadata.writer;
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.AuthorEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.CategoryEntity;
+import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.AfterEach;
@@ -161,6 +159,62 @@ class CbxMetadataWriterTest {
             // Ensure original image entries are preserved
             assertNotNull(zip.getEntry("images/001.jpg"));
             assertNotNull(zip.getEntry("images/002.jpg"));
+        }
+    }
+
+    @Test
+    void saveMetadataToFile_cbz_writesTagsRatingAndWebField() throws Exception {
+        File cbz = createCbz(tempDir.resolve("tags_rating.cbz"), new String[]{"page1.jpg"});
+
+        BookMetadataEntity meta = new BookMetadataEntity();
+        meta.setTitle("Rating Test");
+        meta.setRating(8.4);
+        meta.setGoodreadsId("12345");
+        meta.setAsin("B00TEST123");
+        
+        Set<TagEntity> tags = new HashSet<>();
+        TagEntity tag1 = new TagEntity();
+        tag1.setId(1L);
+        tag1.setName("Fantasy");
+        TagEntity tag2 = new TagEntity();
+        tag2.setId(2L);
+        tag2.setName("Epic");
+        tags.add(tag1);
+        tags.add(tag2);
+        meta.setTags(tags);
+
+        Set<MoodEntity> moods = new HashSet<>();
+        MoodEntity mood = new MoodEntity();
+        mood.setId(1L);
+        mood.setName("Dark");
+        moods.add(mood);
+        meta.setMoods(moods);
+
+        writer.saveMetadataToFile(cbz, meta, null, new MetadataClearFlags());
+
+        try (ZipFile zip = new ZipFile(cbz)) {
+            ZipEntry ci = zip.getEntry("ComicInfo.xml");
+            assertNotNull(ci);
+            Document doc = parseXml(zip.getInputStream(ci));
+
+            String tagsVal = text(doc, "Tags");
+            assertNotNull(tagsVal);
+            assertTrue(tagsVal.contains("Fantasy"));
+            assertTrue(tagsVal.contains("Epic"));
+
+            String rating = text(doc, "CommunityRating");
+            assertNotNull(rating);
+            assertEquals("4.2", rating);
+
+            String web = text(doc, "Web");
+            assertNotNull(web);
+            assertTrue(web.contains("goodreads.com"));
+            assertTrue(web.contains("amazon.com"));
+
+            String notes = text(doc, "Notes");
+            assertNotNull(notes);
+            assertTrue(notes.contains("[BookLore:Moods]"));
+            assertTrue(notes.contains("Dark"));
         }
     }
 
