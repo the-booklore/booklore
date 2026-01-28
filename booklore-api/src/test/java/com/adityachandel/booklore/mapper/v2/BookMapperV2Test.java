@@ -58,12 +58,13 @@ class BookMapperV2Test {
         assertThat(dto.getLibraryName()).isEqualTo("Test Library");
         assertThat(dto.getLibraryPath()).isNotNull();
         assertThat(dto.getLibraryPath().getId()).isEqualTo(1L);
-        assertThat(dto.getBookType()).isEqualTo(BookFileType.EPUB);
 
-        assertThat(dto.getFileName()).isEqualTo("test-book.epub");
-        assertThat(dto.getFileSubPath()).isEqualTo("fiction/science-fiction");
-        assertThat(dto.getFileSizeKb()).isEqualTo(1024L);
-        assertThat(dto.getFilePath()).isNotNull();
+        assertThat(dto.getPrimaryFile()).isNotNull();
+        assertThat(dto.getPrimaryFile().getBookType()).isEqualTo(BookFileType.EPUB);
+        assertThat(dto.getPrimaryFile().getFileName()).isEqualTo("test-book.epub");
+        assertThat(dto.getPrimaryFile().getFileSubPath()).isEqualTo("fiction/science-fiction");
+        assertThat(dto.getPrimaryFile().getFileSizeKb()).isEqualTo(1024L);
+        assertThat(dto.getPrimaryFile().getFilePath()).isNotNull();
         assertThat(dto.getAlternativeFormats()).isEmpty();
 
         assertThat(dto.getSupplementaryFiles()).hasSize(1);

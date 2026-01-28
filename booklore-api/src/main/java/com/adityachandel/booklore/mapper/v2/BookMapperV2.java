@@ -23,10 +23,6 @@ public interface BookMapperV2 {
     @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "bookFiles", target = "primaryFile", qualifiedByName = "mapPrimaryFile")
-    @Mapping(source = "bookFiles", target = "fileName", qualifiedByName = "mapPrimaryFileName")
-    @Mapping(source = "bookFiles", target = "filePath", qualifiedByName = "mapPrimaryFilePath")
-    @Mapping(source = "bookFiles", target = "fileSubPath", qualifiedByName = "mapPrimaryFileSubPath")
-    @Mapping(source = "bookFiles", target = "fileSizeKb", qualifiedByName = "mapPrimaryFileSizeKb")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     @Mapping(target = "metadata", qualifiedByName = "mapMetadata")
@@ -67,30 +63,6 @@ public interface BookMapperV2 {
     default BookFile mapPrimaryFile(List<BookFileEntity> bookFiles) {
         BookFileEntity primary = getPrimaryBookFile(bookFiles);
         return toBookFile(primary);
-    }
-
-    @Named("mapPrimaryFileName")
-    default String mapPrimaryFileName(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFileName();
-    }
-
-    @Named("mapPrimaryFilePath")
-    default String mapPrimaryFilePath(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFullFilePath().toString();
-    }
-
-    @Named("mapPrimaryFileSubPath")
-    default String mapPrimaryFileSubPath(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFileSubPath();
-    }
-
-    @Named("mapPrimaryFileSizeKb")
-    default Long mapPrimaryFileSizeKb(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFileSizeKb();
     }
 
     @Named("mapAlternativeFormats")
@@ -168,22 +140,6 @@ public interface BookMapperV2 {
         if (fileName == null) return null;
         int lastDot = fileName.lastIndexOf('.');
         return lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : null;
-    }
-
-    default BookFile toBookFile(BookFileEntity entity) {
-        if (entity == null) return null;
-        return BookFile.builder()
-                .id(entity.getId())
-                .bookId(entity.getBook().getId())
-                .fileName(entity.getFileName())
-                .filePath(entity.getFullFilePath().toString())
-                .fileSubPath(entity.getFileSubPath())
-                .isBook(entity.isBook())
-                .bookType(entity.getBookType())
-                .fileSizeKb(entity.getFileSizeKb())
-                .description(entity.getDescription())
-                .addedOn(entity.getAddedOn())
-                .build();
     }
 
     @Named("mapLibraryPathIdOnly")
