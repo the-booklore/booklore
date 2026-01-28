@@ -25,7 +25,7 @@ public class BookEventBroadcaster {
                 .forEach(u -> {
                     String username = u.getUsername();
                     messagingTemplate.convertAndSendToUser(username, Topic.BOOK_ADD.getPath(), book);
-                    messagingTemplate.convertAndSendToUser(username, Topic.LOG.getPath(), LogNotification.info("Book added: " + book.getFileName()));
+                    messagingTemplate.convertAndSendToUser(username, Topic.LOG.getPath(), LogNotification.info("Book added: " + (book.getPrimaryFile() != null ? book.getPrimaryFile().getFileName() : "unknown")));
                 });
     }
 }

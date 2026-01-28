@@ -4,18 +4,13 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.dto.*;
-import com.adityachandel.booklore.model.dto.progress.EpubProgress;
-import com.adityachandel.booklore.model.dto.progress.PdfProgress;
-import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ReadStatus;
-import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.repository.*;
-import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
-import com.adityachandel.booklore.service.user.UserProgressService;
+import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -50,9 +45,7 @@ class BookUpdateServiceTest {
     @Mock
     private BookQueryService bookQueryService;
     @Mock
-    private UserProgressService userProgressService;
-    @Mock
-    private KoboReadingStateService koboReadingStateService;
+    private ReadingProgressService readingProgressService;
     @Mock
     private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
 
@@ -73,8 +66,7 @@ class BookUpdateServiceTest {
                 userBookProgressRepository,
                 authenticationService,
                 bookQueryService,
-                userProgressService,
-                koboReadingStateService,
+                readingProgressService,
                 ebookViewerPreferenceRepository
         );
     }
@@ -176,70 +168,6 @@ class BookUpdateServiceTest {
     }
 
     @Test
-    void updateReadProgress_epub_shouldUpdateProgress() {
-        long bookId = 1L;
-        BookEntity book = new BookEntity();
-        book.setId(bookId);
-        BookFileEntity primaryFile = new BookFileEntity();
-        primaryFile.setBook(book);
-        primaryFile.setBookType(BookFileType.EPUB);
-        book.setBookFiles(List.of(primaryFile));
-        BookLoreUser user = mock(BookLoreUser.class);
-        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
-        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
-        when(user.getId()).thenReturn(2L);
-
-        UserBookProgressEntity progress = new UserBookProgressEntity();
-        when(userBookProgressRepository.findByUserIdAndBookId(2L, bookId)).thenReturn(Optional.of(progress));
-        BookLoreUserEntity userEntity = new BookLoreUserEntity();
-        when(userRepository.findById(2L)).thenReturn(Optional.of(userEntity));
-
-        ReadProgressRequest req = new ReadProgressRequest();
-        req.setBookId(bookId);
-        EpubProgress epubProgress = EpubProgress.builder().cfi("cfi").percentage(100f).build();
-        req.setEpubProgress(epubProgress);
-
-        bookUpdateService.updateReadProgress(req);
-
-        verify(userBookProgressRepository).save(progress);
-        assertEquals("cfi", progress.getEpubProgress());
-        assertEquals(ReadStatus.READ, progress.getReadStatus());
-        assertEquals(100f, progress.getEpubProgressPercent());
-    }
-
-    @Test
-    void updateReadProgress_pdf_shouldUpdateProgress() {
-        long bookId = 1L;
-        BookEntity book = new BookEntity();
-        book.setId(bookId);
-        BookFileEntity primaryFile = new BookFileEntity();
-        primaryFile.setBook(book);
-        primaryFile.setBookType(BookFileType.PDF);
-        book.setBookFiles(List.of(primaryFile));
-        BookLoreUser user = mock(BookLoreUser.class);
-        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
-        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
-        when(user.getId()).thenReturn(2L);
-
-        UserBookProgressEntity progress = new UserBookProgressEntity();
-        when(userBookProgressRepository.findByUserIdAndBookId(2L, bookId)).thenReturn(Optional.of(progress));
-        BookLoreUserEntity userEntity = new BookLoreUserEntity();
-        when(userRepository.findById(2L)).thenReturn(Optional.of(userEntity));
-
-        ReadProgressRequest req = new ReadProgressRequest();
-        req.setBookId(bookId);
-        PdfProgress pdfProgress = PdfProgress.builder().page(5).percentage(50f).build();
-        req.setPdfProgress(pdfProgress);
-
-        bookUpdateService.updateReadProgress(req);
-
-        verify(userBookProgressRepository).save(progress);
-        assertEquals(5, progress.getPdfProgress());
-        assertEquals(ReadStatus.READING, progress.getReadStatus());
-        assertEquals(50f, progress.getPdfProgressPercent());
-    }
-
-    @Test
     void updateReadStatus_shouldUpdateExistingAndCreateNew() {
         BookLoreUser user = mock(BookLoreUser.class);
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
@@ -278,60 +206,6 @@ class BookUpdateServiceTest {
         when(bookRepository.countByIdIn(bookIds)).thenReturn(3L);
 
         assertThrows(APIException.class, () -> bookUpdateService.updateReadStatus(bookIds, "READ"));
-    }
-
-    @Test
-    void resetProgress_shouldCallBulkReset() {
-        BookLoreUser user = mock(BookLoreUser.class);
-        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
-        when(user.getId()).thenReturn(1L);
-
-        BookLoreUser.UserPermissions permissions = mock(BookLoreUser.UserPermissions.class);
-        when(user.getPermissions()).thenReturn(permissions);
-        when(permissions.isCanBulkResetBookloreReadProgress()).thenReturn(true);
-
-        List<Long> bookIds = Arrays.asList(1L, 2L);
-        when(bookRepository.countByIdIn(bookIds)).thenReturn(2L);
-        Set<Long> existing = new HashSet<>(bookIds);
-        when(userBookProgressRepository.findExistingProgressBookIds(1L, new HashSet<>(bookIds))).thenReturn(existing);
-
-        List<BookStatusUpdateResponse> result = bookUpdateService.resetProgress(bookIds, ResetProgressType.BOOKLORE);
-        verify(userBookProgressRepository).bulkResetBookloreProgress(eq(1L), eq(new ArrayList<>(bookIds)), any());
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void resetProgress_shouldThrowIfNoBulkPermission() {
-        BookLoreUser user = mock(BookLoreUser.class);
-        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
-        when(user.getId()).thenReturn(1L);
-
-        BookLoreUser.UserPermissions permissions = mock(BookLoreUser.UserPermissions.class);
-        when(user.getPermissions()).thenReturn(permissions);
-        when(permissions.isCanBulkResetBookloreReadProgress()).thenReturn(false);
-
-        List<Long> bookIds = Arrays.asList(1L, 2L);
-        when(bookRepository.countByIdIn(bookIds)).thenReturn(2L);
-
-        assertThrows(APIException.class, () -> bookUpdateService.resetProgress(bookIds, ResetProgressType.BOOKLORE));
-    }
-
-    @Test
-    void resetProgress_shouldAllowSingleBookWithoutPermission() {
-        BookLoreUser user = mock(BookLoreUser.class);
-        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
-        when(user.getId()).thenReturn(1L);
-
-        BookLoreUser.UserPermissions permissions = mock(BookLoreUser.UserPermissions.class);
-        when(user.getPermissions()).thenReturn(permissions);
-        when(permissions.isCanBulkResetBookloreReadProgress()).thenReturn(false);
-
-        List<Long> bookIds = Collections.singletonList(1L);
-        when(bookRepository.countByIdIn(bookIds)).thenReturn(1L);
-        Set<Long> existing = new HashSet<>(bookIds);
-        when(userBookProgressRepository.findExistingProgressBookIds(1L, new HashSet<>(bookIds))).thenReturn(existing);
-
-        assertDoesNotThrow(() -> bookUpdateService.resetProgress(bookIds, ResetProgressType.BOOKLORE));
     }
 
     @Test
@@ -442,7 +316,8 @@ class BookUpdateServiceTest {
         Book mockBook = mock(Book.class);
         when(bookMapper.toBook(any())).thenReturn(mockBook);
 
-        when(userProgressService.fetchUserProgress(eq(1L), anySet())).thenReturn(Collections.emptyMap());
+        when(readingProgressService.fetchUserProgress(eq(1L), anySet())).thenReturn(Collections.emptyMap());
+        when(readingProgressService.fetchUserFileProgress(eq(1L), anySet())).thenReturn(Collections.emptyMap());
 
         List<Book> result = bookUpdateService.assignShelvesToBooks(bookIds, assignIds, unassignIds);
         verify(bookRepository).saveAll(anyList());

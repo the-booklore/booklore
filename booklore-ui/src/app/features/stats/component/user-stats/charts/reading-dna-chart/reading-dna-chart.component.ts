@@ -276,7 +276,7 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     books.forEach(book => {
       book.metadata?.categories?.forEach(cat => genres.add(cat.toLowerCase()));
       if (book.metadata?.language) languages.add(book.metadata.language);
-      formats.add(book.bookType);
+      if (book.primaryFile?.bookType) formats.add(book.primaryFile.bookType);
     });
 
     const genreScore = Math.min(60, genres.size * 4);

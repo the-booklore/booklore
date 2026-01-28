@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BookType, BulkMetadataUpdateRequest, CreatePhysicalBookRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -242,9 +242,35 @@ export class BookService {
     );
   }
 
+  createPhysicalBook(request: CreatePhysicalBookRequest): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/physical`, request).pipe(
+      tap(newBook => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = [...(currentState.books || []), newBook];
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Physical Book Created',
+          detail: `"${newBook.metadata?.title || 'Book'}" has been added to your library.`
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Creation Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while creating the physical book.'
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming'): void {
+  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming', explicitBookType?: BookType): void {
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -254,10 +280,14 @@ export class BookService {
       return;
     }
 
-    let baseUrl: string | null = null;
-    let queryParams: Record<string, any> | undefined;
+    // Determine the book type - use explicit type if provided, otherwise use primary
+    const bookType: BookType | undefined = explicitBookType ?? book.primaryFile?.bookType;
+    const isAlternativeFormat = explicitBookType && explicitBookType !== book.primaryFile?.bookType;
 
-    switch (book.bookType) {
+    let baseUrl: string | null = null;
+    let queryParams: Record<string, any> = {};
+
+    switch (bookType) {
       case 'PDF':
         baseUrl = reader === 'pdf-streaming' ? 'cbx-reader' : 'pdf-reader';
         break;
@@ -265,7 +295,7 @@ export class BookService {
       case 'EPUB':
         baseUrl = 'ebook-reader';
         if (reader === 'epub-streaming') {
-          queryParams = { streaming: true };
+          queryParams['streaming'] = true;
         }
         break;
 
@@ -278,20 +308,30 @@ export class BookService {
       case 'CBX':
         baseUrl = 'cbx-reader';
         break;
+
+      case 'AUDIOBOOK':
+        baseUrl = 'audiobook-reader';
+        break;
     }
 
     if (!baseUrl) {
-      console.error('Unsupported book type:', book.bookType);
+      console.error('Unsupported book type:', bookType);
       return;
     }
 
-    this.router.navigate([`/${baseUrl}/book/${book.id}`], queryParams ? { queryParams } : undefined);
+    // Add bookType to query params if reading an alternative format
+    if (isAlternativeFormat) {
+      queryParams['bookType'] = bookType;
+    }
+
+    const hasQueryParams = Object.keys(queryParams).length > 0;
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], hasQueryParams ? { queryParams } : undefined);
 
     this.updateLastReadTime(book.id);
   }
 
-  getBookSetting(bookId: number): Observable<BookSetting> {
-    return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting`);
+  getBookSetting(bookId: number, bookFileId: number): Observable<BookSetting> {
+    return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting?bookFileId=${bookFileId}`);
   }
 
   updateViewerSetting(bookSetting: BookSetting, bookId: number): Observable<void> {
@@ -300,13 +340,25 @@ export class BookService {
 
   /*------------------ File Operations ------------------*/
 
-  getFileContent(bookId: number): Observable<Blob> {
-    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json'});
+  getFileContent(bookId: number, bookType?: string): Observable<Blob> {
+    let url = `${this.url}/${bookId}/content`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.http.get<Blob>(url, {responseType: 'blob' as 'json'});
   }
 
   downloadFile(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download`;
-    this.fileDownloadService.downloadFile(downloadUrl, book.fileName!);
+    this.fileDownloadService.downloadFile(downloadUrl, book.primaryFile?.fileName ?? 'book');
+  }
+
+  downloadAllFiles(book: Book): void {
+    const downloadUrl = `${this.url}/${book.id}/download-all`;
+    const fileName = book.metadata?.title
+      ? `${book.metadata.title.replace(/[^a-zA-Z0-9\-_]/g, '_')}.zip`
+      : `book-${book.id}.zip`;
+    this.fileDownloadService.downloadFile(downloadUrl, fileName);
   }
 
   deleteAdditionalFile(bookId: number, fileId: number): Observable<void> {
@@ -347,6 +399,63 @@ export class BookService {
     );
   }
 
+  deleteBookFile(bookId: number, fileId: number, isPrimary: boolean): Observable<void> {
+    const deleteUrl = `${this.url}/${bookId}/files/${fileId}`;
+    return this.http.delete<void>(deleteUrl).pipe(
+      tap(() => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(book => {
+          if (book.id === bookId) {
+            if (isPrimary) {
+              // Primary file was deleted - promote first alternative to primary, or set null
+              const remainingAlternatives = book.alternativeFormats?.filter(file => file.id !== fileId) || [];
+              if (remainingAlternatives.length > 0) {
+                const [newPrimary, ...restAlternatives] = remainingAlternatives;
+                return {
+                  ...book,
+                  primaryFile: newPrimary,
+                  alternativeFormats: restAlternatives
+                };
+              } else {
+                return {
+                  ...book,
+                  primaryFile: undefined,
+                  alternativeFormats: []
+                };
+              }
+            } else {
+              // Alternative file was deleted
+              return {
+                ...book,
+                alternativeFormats: book.alternativeFormats?.filter(file => file.id !== fileId)
+              };
+            }
+          }
+          return book;
+        });
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'File Deleted',
+          detail: 'Book file deleted successfully.'
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while deleting the file.'
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
   uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
     const formData = new FormData();
     formData.append('file', file);
@@ -363,7 +472,9 @@ export class BookService {
           ? 'EPUB'
           : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
             ? 'CBX'
-            : null;
+            : (ext === 'm4b' || ext === 'm4a' || ext === 'mp3')
+              ? 'AUDIOBOOK'
+              : null;
 
       if (bookType) {
         formData.append('bookType', bookType);
@@ -426,16 +537,16 @@ export class BookService {
     this.bookPatchService.updateLastReadTime(bookId);
   }
 
-  savePdfProgress(bookId: number, page: number, percentage: number): Observable<void> {
-    return this.bookPatchService.savePdfProgress(bookId, page, percentage);
+  savePdfProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
+    return this.bookPatchService.savePdfProgress(bookId, page, percentage, bookFileId);
   }
 
   /*saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): Observable<void> {
     return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
   }*/
 
-  saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
-    return this.bookPatchService.saveCbxProgress(bookId, page, percentage);
+  saveCbxProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
+    return this.bookPatchService.saveCbxProgress(bookId, page, percentage, bookFileId);
   }
 
   updateDateFinished(bookId: number, dateFinished: string | null): Observable<void> {
@@ -620,5 +731,47 @@ export class BookService {
 
   handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
     this.bookSocketService.handleMultipleBookCoverPatches(patches);
+  }
+
+  /*------------------ Book File Attachment ------------------*/
+
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
+      sourceBookIds,
+      deleteSourceBooks
+    }).pipe(
+      tap(updatedBook => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        let updatedBooks = (currentState.books || []).map(book =>
+          book.id === targetBookId ? updatedBook : book
+        );
+
+        // If deleteSourceBooks, remove source books from state
+        if (deleteSourceBooks) {
+          const sourceIdSet = new Set(sourceBookIds);
+          updatedBooks = updatedBooks.filter(book => !sourceIdSet.has(book.id));
+        }
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        const fileCount = sourceBookIds.length;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Files Attached',
+          detail: `${fileCount} book file${fileCount > 1 ? 's have' : ' has'} been attached successfully.`
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Attachment Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while attaching the files.'
+        });
+        return throwError(() => error);
+      })
+    );
   }
 }

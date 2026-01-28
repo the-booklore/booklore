@@ -24,7 +24,6 @@
 .book-cover {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   border-radius: 8px 8px 0 0;
   opacity: 0;
   transition: opacity 0.2s ease-in;
@@ -32,6 +31,14 @@
 
 .book-cover.loaded {
   opacity: 1;
+}
+
+.book-cover.square-cover {
+  object-fit: contain;
+}
+
+.cover-container.audiobook-cover {
+  background-color: var(--surface-ground);
 }
 
 .cover-container::after {
@@ -285,6 +292,46 @@
 
 .book-type-fb2 {
   background: var(--book-type-fb2-color);
+  color: #fff;
+}
+
+.book-type-audiobook {
+  background: var(--book-type-audiobook-color);
+  color: #fff;
+}
+
+.book-type-m4b {
+  background: var(--book-type-m4b-color);
+  color: #fff;
+}
+
+.book-type-mp3 {
+  background: var(--book-type-mp3-color);
+  color: #fff;
+}
+
+.book-type-m4a {
+  background: var(--book-type-m4a-color);
+  color: #fff;
+}
+
+.book-type-cbz {
+  background: var(--book-type-cbz-color);
+  color: #fff;
+}
+
+.book-type-cbr {
+  background: var(--book-type-cbr-color);
+  color: #fff;
+}
+
+.book-type-cb7 {
+  background: var(--book-type-cb7-color);
+  color: #fff;
+}
+
+.book-type-physical {
+  background: var(--book-type-physical-color);
   color: #fff;
 }
 

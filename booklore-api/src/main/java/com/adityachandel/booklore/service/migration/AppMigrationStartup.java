@@ -20,6 +20,7 @@ public class AppMigrationStartup {
     private final PopulateSearchTextMigration populateSearchTextMigration;
     private final MoveIconsToDataFolderMigration moveIconsToDataFolderMigration;
     private final GenerateCoverHashMigration generateCoverHashMigration;
+    private final MigrateProgressToFileProgressMigration migrateProgressToFileProgressMigration;
 
     @EventListener(ApplicationReadyEvent.class)
     public void runMigrationsOnce() {
@@ -32,5 +33,6 @@ public class AppMigrationStartup {
         appMigrationService.executeMigration(populateSearchTextMigration);
         appMigrationService.executeMigration(moveIconsToDataFolderMigration);
         appMigrationService.executeMigration(generateCoverHashMigration);
+        appMigrationService.executeMigration(migrateProgressToFileProgressMigration);
     }
 }

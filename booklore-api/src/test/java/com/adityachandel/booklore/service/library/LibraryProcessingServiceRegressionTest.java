@@ -3,7 +3,6 @@ package com.adityachandel.booklore.service.library;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -21,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +36,7 @@ class LibraryProcessingServiceRegressionTest {
     @Mock
     private BookAdditionalFileRepository bookAdditionalFileRepository;
     @Mock
-    private LibraryFileProcessorRegistry fileProcessorRegistry;
+    private FileAsBookProcessor fileAsBookProcessor;
     @Mock
     private BookRestorationService bookRestorationService;
     @Mock
@@ -44,9 +44,9 @@ class LibraryProcessingServiceRegressionTest {
     @Mock
     private LibraryFileHelper libraryFileHelper;
     @Mock
-    private EntityManager entityManager;
+    private BookGroupingService bookGroupingService;
     @Mock
-    private LibraryFileProcessor libraryFileProcessor;
+    private EntityManager entityManager;
 
     private LibraryProcessingService libraryProcessingService;
 
@@ -56,16 +56,17 @@ class LibraryProcessingServiceRegressionTest {
                 libraryRepository,
                 notificationService,
                 bookAdditionalFileRepository,
-                fileProcessorRegistry,
+                fileAsBookProcessor,
                 bookRestorationService,
                 bookDeletionService,
                 libraryFileHelper,
+                bookGroupingService,
                 entityManager
         );
     }
 
     @Test
-    void rescanLibrary_shouldThrowException_whenBookHasNoFiles(@TempDir Path tempDir) throws IOException {
+    void rescanLibrary_shouldNotDeleteFilelessBooks(@TempDir Path tempDir) throws IOException {
         long libraryId = 1L;
         Path accessiblePath = tempDir.resolve("accessible");
         Files.createDirectory(accessiblePath);
@@ -73,40 +74,37 @@ class LibraryProcessingServiceRegressionTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
         pathEntity.setPath(accessiblePath.toString());
         libraryEntity.setLibraryPaths(List.of(pathEntity));
 
-        BookEntity bookWithNoFiles = new BookEntity();
-        bookWithNoFiles.setId(1L);
-        bookWithNoFiles.setLibraryPath(pathEntity);
-        bookWithNoFiles.setBookFiles(Collections.emptyList()); // Empty files list
-        
-        libraryEntity.setBookEntities(List.of(bookWithNoFiles));
+        // Create a fileless book (e.g., physical book)
+        BookEntity filelessBook = new BookEntity();
+        filelessBook.setId(1L);
+        filelessBook.setLibraryPath(pathEntity);
+        filelessBook.setBookFiles(Collections.emptyList());
+
+        libraryEntity.setBookEntities(List.of(filelessBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
-        // We need at least one file so it doesn't think the library is offline
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(
             com.adityachandel.booklore.model.dto.settings.LibraryFile.builder()
                 .libraryPathEntity(pathEntity)
                 .fileName("other.epub")
                 .fileSubPath("")
                 .build()
         ));
+        when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+        when(bookGroupingService.groupForRescan(anyList(), any(LibraryEntity.class)))
+                .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 
-        // Should not throw exception anymore
         libraryProcessingService.rescanLibrary(context);
 
-        // Verify that the book with no files (ID 1) was detected as deleted
-        verify(bookDeletionService).processDeletedLibraryFiles(
-                argThat(list -> list.contains(1L)), 
-                any()
-        );
+        // Fileless books should NOT be marked as deleted - they are intentionally without files
+        verify(bookDeletionService, never()).processDeletedLibraryFiles(any(), any());
     }
 }

@@ -168,7 +168,7 @@ export class BookFormatsChartComponent implements OnInit, OnDestroy {
     const formatCounts = new Map<string, number>();
 
     books.forEach(book => {
-      const format = book.bookType || 'Unknown';
+      const format = book.primaryFile?.bookType || 'Unknown';
       formatCounts.set(format, (formatCounts.get(format) || 0) + 1);
     });
 

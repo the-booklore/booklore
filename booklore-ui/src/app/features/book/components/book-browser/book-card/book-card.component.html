@@ -2,20 +2,21 @@
      [class.selected]="isSelected"
      (click)="onCardClick($event)">
 
-  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive, 'loaded': isImageLoaded }">
+  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive, 'loaded': isImageLoaded, 'audiobook-cover': _isAudiobook }">
     <img
       [src]="coverImageUrl"
       class="book-cover"
       [class.loaded]="isImageLoaded"
+      [class.square-cover]="_isAudiobook"
       [alt]="'Cover of ' + displayTitle"
       loading="lazy"
       decoding="async"
       (load)="onImageLoad()"/>
 
     <div class="top-left-overlay-stack">
-      @if (showBookTypePill && book.bookType) {
-        <div class="book-type-pill-overlay" [ngClass]="'book-type-' + book.bookType.toLowerCase()">
-          {{ book.bookType }}
+      @if (showBookTypePill && getDisplayFormat(); as displayFormat) {
+        <div class="book-type-pill-overlay" [ngClass]="'book-type-' + displayFormat.toLowerCase()">
+          {{ displayFormat }}
         </div>
       }
       @if (!book.seriesCount && book.metadata?.seriesNumber != null) {
@@ -33,10 +34,11 @@
     @if (_isSeriesViewActive) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
     } @else {
-      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
+      <a [routerLink]="urlHelper.getBookUrl(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn">
+      </p-button></a>      
     }
 
-    @if (!_isSeriesViewActive) {
+    @if (!_isSeriesViewActive && hasDigitalFile()) {
       <p-button [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
     }
 

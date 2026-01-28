@@ -4,7 +4,9 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
-import com.adityachandel.booklore.service.metadata.parser.hardcover.*;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLResponse;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,7 +17,8 @@ import org.mockito.MockitoAnnotations;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.*;
 
 /**
@@ -85,6 +88,33 @@ class HardcoverParserTest {
 
             verify(hardcoverBookSearchService).searchBooks("Some Book Unknown Author");
             verify(hardcoverBookSearchService).searchBooks("Some Book");
+        }
+
+        @Test
+        @DisplayName("Should fall back to title-only search when combined search returns results but they are filtered out")
+        void fetchMetadata_combinedSearchFilteredOut_fallsBackToTitleOnly() {
+            Book book = Book.builder().title("Portrait of a Thief").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Portrait of a Thief")
+                    .author("Grace D. Li")
+                    .build();
+
+            // Simulate combined search returning a result that DOES NOT match the author (e.g. some other book matched the string)
+            GraphQLResponse.Hit badHit = createHitWithAuthor("Portrait of something", "Random Person");
+            when(hardcoverBookSearchService.searchBooks("Portrait of a Thief Grace D. Li"))
+                    .thenReturn(List.of(badHit)); // Returns a hit, but fuzzy score will fail or simple check will fail
+
+            // Fallback search should match
+            GraphQLResponse.Hit goodHit = createHitWithAuthor("Portrait of a Thief", "Grace D. Li");
+            when(hardcoverBookSearchService.searchBooks("Portrait of a Thief"))
+                    .thenReturn(List.of(goodHit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            verify(hardcoverBookSearchService).searchBooks("Portrait of a Thief Grace D. Li");
+            verify(hardcoverBookSearchService).searchBooks("Portrait of a Thief");
+            assertThat(results).hasSize(1);
+            assertThat(results.get(0).getTitle()).isEqualTo("Portrait of a Thief");
         }
 
         @Test

@@ -46,7 +46,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             
             Map<MetadataProvider, BookMetadata> metadataMap = Map.of(MetadataProvider.Google, googleMetadata);
 
-            BookMetadata result = metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap);
+            BookMetadata result = metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap);
 
             assertThat(result.getTitle())
                     .as("Title should be fetched when EnabledFields is null (defaults should enable title)")
@@ -74,7 +74,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             
             Map<MetadataProvider, BookMetadata> metadataMap = Map.of(MetadataProvider.Amazon, amazonMetadata);
 
-            BookMetadata result = metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap);
+            BookMetadata result = metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap);
 
             assertThat(result.getTitle())
                     .as("Title should be fetched when EnabledFields is default-constructed (all fields should be enabled by default)")
@@ -162,7 +162,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             
             Map<MetadataProvider, BookMetadata> metadataMap = Map.of(MetadataProvider.Google, googleMetadata);
 
-            BookMetadata result = metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap);
+            BookMetadata result = metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap);
 
             assertThat(result.getTitle()).isEqualTo("Explicitly Enabled Title");
         }
@@ -191,7 +191,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             
             Map<MetadataProvider, BookMetadata> metadataMap = Map.of(MetadataProvider.Google, googleMetadata);
 
-            BookMetadata result = metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap);
+            BookMetadata result = metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap);
 
             assertThat(result.getTitle())
                     .as("Title should be null when explicitly disabled")
@@ -227,7 +227,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             
             Map<MetadataProvider, BookMetadata> metadataMap = Map.of(MetadataProvider.Google, googleMetadata);
 
-            BookMetadata result = metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap);
+            BookMetadata result = metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap);
 
             assertThat(result.getTitle())
                     .as("Title should be fetched with default enabled fields")
@@ -264,7 +264,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             
             Map<MetadataProvider, BookMetadata> metadataMap = Map.of(MetadataProvider.Comicvine, comicvineMetadata);
 
-            BookMetadata result = metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap);
+            BookMetadata result = metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap);
 
             assertThat(result.getTitle())
                     .as("Fetched metadata should include the title from Comicvine")

@@ -37,7 +37,7 @@ class MetadataRefreshServiceTest {
         Map<MetadataProvider, BookMetadata> metadataMap = Collections.emptyMap();
 
         BookMetadata result = assertDoesNotThrow(() ->
-                metadataRefreshService.buildFetchMetadata(bookId, refreshOptions, metadataMap)
+                metadataRefreshService.buildFetchMetadata(null, bookId, refreshOptions, metadataMap)
         );
 
         assertThat(result).isNotNull();

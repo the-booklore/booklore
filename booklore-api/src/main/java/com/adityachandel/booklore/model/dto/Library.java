@@ -2,7 +2,7 @@ package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.IconType;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
+import com.adityachandel.booklore.model.enums.LibraryOrganizationMode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +21,7 @@ public class Library {
     private String fileNamingPattern;
     private boolean watch;
     private List<LibraryPath> paths;
-    private LibraryScanMode scanMode;
-    private BookFileType defaultBookFormat;
+    private List<BookFileType> formatPriority;
+    private LibraryOrganizationMode organizationMode;
 }
 

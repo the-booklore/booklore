@@ -7,10 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,14 +22,18 @@ public class CbxReaderController {
     @Operation(summary = "List pages in a CBX book", description = "Retrieve a list of available page numbers for a CBX book.")
     @ApiResponse(responseCode = "200", description = "Page numbers returned successfully")
     @GetMapping("/{bookId}/pages")
-    public List<Integer> listPages(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return cbxReaderService.getAvailablePages(bookId);
+    public List<Integer> listPages(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., PDF, CBX)") @RequestParam(required = false) String bookType) {
+        return cbxReaderService.getAvailablePages(bookId, bookType);
     }
 
     @Operation(summary = "Get page info for a CBX book", description = "Retrieve page information including display names for a CBX book.")
     @ApiResponse(responseCode = "200", description = "Page info returned successfully")
     @GetMapping("/{bookId}/page-info")
-    public List<CbxPageInfo> getPageInfo(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return cbxReaderService.getPageInfo(bookId);
+    public List<CbxPageInfo> getPageInfo(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., PDF, CBX)") @RequestParam(required = false) String bookType) {
+        return cbxReaderService.getPageInfo(bookId, bookType);
     }
 }

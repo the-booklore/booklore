@@ -276,8 +276,8 @@ public class AmazonBookParser implements BookParser {
         String title = fetchMetadataRequest.getTitle();
         if (title != null && !title.isEmpty()) {
             searchTerm.append(cleanSearchTerm(title));
-        } else {
-            String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getFileName()));
+        } else if (book.getPrimaryFile() != null && book.getPrimaryFile().getFileName() != null) {
+            String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getPrimaryFile().getFileName()));
             if (!filename.isEmpty()) {
                 searchTerm.append(cleanSearchTerm(filename));
             }
