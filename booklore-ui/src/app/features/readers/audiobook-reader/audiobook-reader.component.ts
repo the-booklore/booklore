@@ -174,13 +174,30 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           // Folder-based audiobook
           const trackIndex = book.audiobookProgress?.trackIndex ?? 0;
           this.currentTrackIndex = trackIndex;
-          this.loadTrack(trackIndex);
+          this.loadTrack(trackIndex, false); // false = don't show loading on initial load
+          // Set duration from track info
+          const track = info.tracks[trackIndex];
+          if (track?.durationMs) {
+            this.duration = track.durationMs / 1000;
+          }
         } else {
           // Single-file audiobook
           this.audioSrc = this.audiobookService.getStreamUrl(this.bookId);
+          // Set duration from API
+          if (info.durationMs) {
+            this.duration = info.durationMs / 1000;
+          }
         }
 
+        // With preload="none", player is ready immediately (no loading spinner)
+        // Audio will load when user presses play
         this.isLoading = false;
+        this.audioLoading = false;
+
+        // Set saved position to show in UI
+        if (this.savedPosition > 0) {
+          this.currentTime = this.savedPosition;
+        }
 
         // Load bookmarks
         this.loadBookmarks();
@@ -196,15 +213,21 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadTrack(index: number): void {
+  private loadTrack(index: number, showLoading = true): void {
     if (!this.audiobookInfo.tracks || index < 0 || index >= this.audiobookInfo.tracks.length) {
       return;
     }
     this.currentTrackIndex = index;
     this.audioSrc = this.audiobookService.getTrackStreamUrl(this.bookId, index);
-    this.audioLoading = true;
+    // Only show loading for track changes while playing, not initial load
+    this.audioLoading = showLoading;
     // Reset buffered since it's a new track
     this.buffered = 0;
+    // Set duration from track info
+    const track = this.audiobookInfo.tracks[index];
+    if (track?.durationMs) {
+      this.duration = track.durationMs / 1000;
+    }
   }
 
   private resetState(): void {
@@ -232,20 +255,22 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.audioLoading = false;
     const audio = this.audioElement?.nativeElement;
     if (audio) {
-      this.duration = audio.duration;
+      // Update duration from actual audio (more accurate than API)
+      if (audio.duration && isFinite(audio.duration)) {
+        this.duration = audio.duration;
+      }
       audio.volume = this.volume;
       audio.playbackRate = this.playbackRate;
 
-      // Apply saved position now that we know the duration
+      // Apply saved position now that audio is loaded
       if (this.savedPosition > 0 && this.savedPosition < this.duration) {
         audio.currentTime = this.savedPosition;
         this.currentTime = this.savedPosition;
+        this.savedPosition = 0; // Clear after applying
       }
 
       // Setup Media Session for background playback
       this.setupMediaSession();
-
-      // Note: Session will be started when user presses play, not on load
     }
   }
 
