@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Data
 @Builder
@@ -13,7 +14,8 @@ public class KomgaCollectionDto {
     private String id;
     private String name;
     private Boolean ordered;
-    private Integer seriesCount;
+    private Boolean filtered;
+    private List<String> seriesIds;
     private String createdDate;
     private String lastModifiedDate;
 }

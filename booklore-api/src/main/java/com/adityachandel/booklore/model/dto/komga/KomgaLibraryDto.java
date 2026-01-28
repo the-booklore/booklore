@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Data
 @Builder
@@ -70,4 +71,10 @@ public class KomgaLibraryDto {
     private Boolean hashKoreader = false;
     @Builder.Default
     private Boolean analyzeDimensions = true;
+
+    // used by the Komelia client
+    private String oneshotsDirectory;
+
+    @Builder.Default
+    private List<String> scanDirectoryExclusions = List.of();
 }

@@ -1,7 +1,9 @@
 package com.adityachandel.booklore.service.komga;
 
+import com.adityachandel.booklore.context.KomgaCleanContext;
 import com.adityachandel.booklore.mapper.komga.KomgaMapper;
 import com.adityachandel.booklore.model.dto.MagicShelf;
+import com.adityachandel.booklore.model.dto.Shelf;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
@@ -10,6 +12,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.MagicShelfService;
+import com.adityachandel.booklore.service.ShelfService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
 import com.adityachandel.booklore.service.reader.PdfReaderService;
@@ -38,6 +41,7 @@ public class KomgaService {
     private final LibraryRepository libraryRepository;
     private final KomgaMapper komgaMapper;
     private final MagicShelfService magicShelfService;
+    private final ShelfService shelfService;
     private final CbxReaderService cbxReaderService;
     private final PdfReaderService pdfReaderService;
     private final AppSettingService appSettingService;
@@ -52,6 +56,78 @@ public class KomgaService {
         LibraryEntity library = libraryRepository.findById(libraryId)
                 .orElseThrow(() -> new RuntimeException("Library not found"));
         return komgaMapper.toKomgaLibraryDto(library);
+    }
+
+    public KomgaPageableDto<Object> getReadlists(List<Long> libraryIds, String search, int page, int size, boolean unpaged) {
+        log.debug("Getting all readlists (not implemented) for libraryIds: {}, page: {}, size: {}", libraryIds, page, size);
+        
+        return KomgaPageableDto.<Object>builder()
+                .content(List.of())
+                .number(0)
+                .size(0)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
+                .numberOfElements(0)
+                .totalElements(0)
+                .totalPages(0)
+                .first(true)
+                .last(true)
+                .empty(true)
+                .build();
+    }
+
+    public KomgaPageableDto<Object> getOnDeckBooks(List<Long> libraryIds, int page, int size, boolean unpaged) {
+        log.debug("Getting on deck books (not implemented) for libraryIds: {}, page: {}, size: {}", libraryIds, page, size);
+        
+        return KomgaPageableDto.<Object>builder()
+                .content(List.of())
+                .number(0)
+                .size(0)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
+                .numberOfElements(0)
+                .totalElements(0)
+                .totalPages(0)
+                .first(true)
+                .last(true)
+                .empty(true)
+                .build();
+    }
+    
+    public KomgaPageableDto<KomgaSeriesDto> getNewSeries(List<Long> libraryIds, int page, int size, boolean unpaged) {
+        log.debug("Getting new series (not implemented) for libraryIds: {}, page: {}, size: {}", libraryIds, page, size);
+        
+        return KomgaPageableDto.<KomgaSeriesDto>builder()
+                .content(List.of())
+                .number(0)
+                .size(0)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
+                .numberOfElements(0)
+                .totalElements(0)
+                .totalPages(0)
+                .first(true)
+                .last(true)
+                .empty(true)
+                .build();
+    }
+    
+    public KomgaPageableDto<KomgaSeriesDto> getUpdatedSeries(List<Long> libraryIds, int page, int size, boolean unpaged) {
+        log.debug("Getting updated series (not implemented) for libraryIds: {}, page: {}, size: {}", libraryIds, page, size);
+        
+        return KomgaPageableDto.<KomgaSeriesDto>builder()
+                .content(List.of())
+                .number(0)
+                .size(0)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
+                .numberOfElements(0)
+                .totalElements(0)
+                .totalPages(0)
+                .first(true)
+                .last(true)
+                .empty(true)
+                .build();
     }
 
     public KomgaPageableDto<KomgaSeriesDto> getAllSeries(Long libraryId, int page, int size, boolean unpaged) {
@@ -144,6 +220,8 @@ public class KomgaService {
                 .content(content)
                 .number(actualPage)
                 .size(actualSize)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
                 .numberOfElements(content.size())
                 .totalElements(totalElements)
                 .totalPages(totalPages)
@@ -244,6 +322,8 @@ public class KomgaService {
                 .content(content)
                 .number(actualPage)
                 .size(actualSize)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
                 .numberOfElements(content.size())
                 .totalElements(totalElements)
                 .totalPages(totalPages)
@@ -276,6 +356,8 @@ public class KomgaService {
                 .content(content)
                 .number(page)
                 .size(size)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
                 .numberOfElements(content.size())
                 .totalElements(totalElements)
                 .totalPages(totalPages)
@@ -323,19 +405,23 @@ public class KomgaService {
         return seriesMap;
     }
     
-    public KomgaPageableDto<KomgaCollectionDto> getCollections(int page, int size, boolean unpaged) {
-        log.debug("Getting collections, page: {}, size: {}, unpaged: {}", page, size, unpaged);
+    public KomgaPageableDto<KomgaCollectionDto> getCollections(Long userId, int page, int size, boolean unpaged) {
+        log.debug("Getting collections for user {}, page: {}, size: {}, unpaged: {}", userId, page, size, unpaged);
         
-        List<MagicShelf> magicShelves = magicShelfService.getUserShelves();
+        List<MagicShelf> magicShelves = magicShelfService.getUserShelvesForOpds(userId);
         log.debug("Found {} magic shelves", magicShelves.size());
-        
+        List<Shelf> shelves = shelfService.getShelvesForUser(userId);
+
         // Convert to collection DTOs - for now, series count is 0 since we don't have 
         // the series filter implementation
         List<KomgaCollectionDto> allCollections = magicShelves.stream()
-                .map(shelf -> komgaMapper.toKomgaCollectionDto(shelf, 0))
+                .map(shelf -> komgaMapper.toKomgaCollectionDto(shelf))
                 .sorted(Comparator.comparing(KomgaCollectionDto::getName))
                 .collect(Collectors.toList());
-        
+        allCollections.addAll(shelves.stream()
+                .map(shelf -> komgaMapper.toKomgaCollectionDto(shelf))
+                .sorted(Comparator.comparing(KomgaCollectionDto::getName))
+                .collect(Collectors.toList()));
         log.debug("Mapped to {} collection DTOs", allCollections.size());
         
         // Handle unpaged mode
@@ -365,6 +451,8 @@ public class KomgaService {
                 .content(content)
                 .number(actualPage)
                 .size(actualSize)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
                 .numberOfElements(content.size())
                 .totalElements(totalElements)
                 .totalPages(totalPages)
@@ -388,11 +476,11 @@ public class KomgaService {
 
         // Make sure pages are cached
         if (isPDF) {
-            cbxReaderService.getAvailablePages(bookId);
-            cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
-        } else {
             pdfReaderService.getAvailablePages(bookId);
             pdfReaderService.streamPageImage(bookId, pageNumber, outputStream);
+        } else {
+            cbxReaderService.getAvailablePages(bookId);
+            cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
         }
         
         byte[] imageData = outputStream.toByteArray();
@@ -416,5 +504,156 @@ public class KomgaService {
             ImageIO.write(image, "png", outputStream);
             return outputStream.toByteArray();
         }
+    }
+    
+    public List<String> getGenres(List<Long> libraryIds, Long collectionId) {
+        log.debug("Getting genres with libraryIds: {}, collectionId: {}", libraryIds, collectionId);
+        
+        List<BookEntity> books = getBooksForFilter(libraryIds, collectionId);
+        
+        return books.stream()
+                .map(BookEntity::getMetadata)
+                .filter(Objects::nonNull)
+                .flatMap(metadata -> {
+                    if (metadata.getCategories() != null) {
+                        return metadata.getCategories().stream().map(category -> category.getName());
+                    }
+                    return java.util.stream.Stream.empty();
+                })
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+    
+    public List<String> getTags(List<Long> libraryIds, Long collectionId) {
+        log.debug("Getting tags with libraryIds: {}, collectionId: {}", libraryIds, collectionId);
+        
+        List<BookEntity> books = getBooksForFilter(libraryIds, collectionId);
+        
+        return books.stream()
+                .map(BookEntity::getMetadata)
+                .filter(Objects::nonNull)
+                .flatMap(metadata -> {
+                    if (metadata.getTags() != null) {
+                        return metadata.getTags().stream().map(tag -> tag.getName());
+                    }
+                    return java.util.stream.Stream.empty();
+                })
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+    
+    public List<String> getPublishers(List<Long> libraryIds, Long collectionId) {
+        log.debug("Getting publishers with libraryIds: {}, collectionId: {}", libraryIds, collectionId);
+        
+        List<BookEntity> books = getBooksForFilter(libraryIds, collectionId);
+        
+        return books.stream()
+                .map(BookEntity::getMetadata)
+                .filter(Objects::nonNull)
+                .map(BookMetadataEntity::getPublisher)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+    
+    public KomgaPageableDto<KomgaAuthorDto> getAuthors(String search, String role, List<Long> libraryIds, 
+                                                        Long collectionId, String seriesId, Long readlistId,
+                                                        int page, int size, boolean unpaged) {
+        log.debug("Getting authors with search: {}, role: {}, libraryIds: {}, collectionId: {}, seriesId: {}, readlistId: {}", 
+                  search, role, libraryIds, collectionId, seriesId, readlistId);
+        
+        List<BookEntity> books = getBooksForFilter(libraryIds, collectionId);
+        
+        // Filter by series if provided
+        if (seriesId != null && !seriesId.isEmpty()) {
+            String[] parts = seriesId.split("-", 2);
+            if (parts.length >= 2) {
+                String seriesSlug = parts[1];
+                books = books.stream()
+                        .filter(book -> {
+                            String bookSeriesName = komgaMapper.getBookSeriesName(book);
+                            String bookSeriesSlug = NON_ALPHANUMERIC_PATTERN.matcher(bookSeriesName.toLowerCase()).replaceAll("-");
+                            return bookSeriesSlug.equals(seriesSlug);
+                        })
+                        .collect(Collectors.toList());
+            }
+        }
+        
+        // Collect all authors with their book counts
+        Map<String, Integer> authorBookCounts = new HashMap<>();
+        for (BookEntity book : books) {
+            BookMetadataEntity metadata = book.getMetadata();
+            if (metadata != null && metadata.getAuthors() != null) {
+                for (var author : metadata.getAuthors()) {
+                    String authorName = author.getName();
+                    authorBookCounts.put(authorName, authorBookCounts.getOrDefault(authorName, 0) + 1);
+                }
+            }
+        }
+        
+        // Filter by search if provided
+        List<KomgaAuthorDto> allAuthors = authorBookCounts.entrySet().stream()
+                .filter(entry -> search == null || search.isEmpty() || 
+                               entry.getKey().toLowerCase().contains(search.toLowerCase()))
+                .map(entry -> KomgaAuthorDto.builder()
+                        .name(entry.getKey())
+                        .role(role != null ? role : "writer")
+                        .build())
+                .sorted(Comparator.comparing(KomgaAuthorDto::getName))
+                .collect(Collectors.toList());
+        
+        // Handle pagination
+        int totalElements = allAuthors.size();
+        List<KomgaAuthorDto> content;
+        int actualPage;
+        int actualSize;
+        int totalPages;
+        
+        if (unpaged) {
+            content = allAuthors;
+            actualPage = 0;
+            actualSize = totalElements;
+            totalPages = totalElements > 0 ? 1 : 0;
+        } else {
+            totalPages = (int) Math.ceil((double) totalElements / size);
+            int fromIndex = Math.min(page * size, totalElements);
+            int toIndex = Math.min(fromIndex + size, totalElements);
+            
+            content = allAuthors.subList(fromIndex, toIndex);
+            actualPage = page;
+            actualSize = size;
+        }
+        
+        return KomgaPageableDto.<KomgaAuthorDto>builder()
+                .content(content)
+                .number(actualPage)
+                .size(actualSize)
+                .pageable(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Pageable())
+                .sort(KomgaCleanContext.isCleanMode() ? null : new KomgaPageableDto.Sort())
+                .numberOfElements(content.size())
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .first(actualPage == 0)
+                .last(totalElements == 0 || actualPage >= totalPages - 1)
+                .empty(content.isEmpty())
+                .build();
+    }
+    
+    private List<BookEntity> getBooksForFilter(List<Long> libraryIds, Long collectionId) {
+        List<BookEntity> books;
+        
+        if (libraryIds != null && !libraryIds.isEmpty()) {
+            books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds);
+        } else {
+            books = bookRepository.findAllWithMetadata();
+        }
+        
+        // TODO: Filter by collectionId when collections are properly implemented
+        // For now, we ignore collectionId as it's not yet properly mapped to magic shelves
+        
+        return books;
     }
 }

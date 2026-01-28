@@ -32,4 +32,6 @@ public class KomgaUserDto {
     
     @Builder.Default
     private List<String> labelsExclude = new ArrayList<>();
+    
+    private String ageRestriction;
 }

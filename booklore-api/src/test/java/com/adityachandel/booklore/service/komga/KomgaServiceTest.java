@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.komga;
 
 import com.adityachandel.booklore.mapper.komga.KomgaMapper;
+import com.adityachandel.booklore.model.dto.komga.KomgaAuthorDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaBookDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaPageDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaPageableDto;
@@ -245,5 +246,59 @@ class KomgaServiceTest {
         // Verify that only books for Series A and B were loaded (optimization check)
         verify(bookRepository, never()).findAllWithMetadataByLibraryId(anyLong());
         verify(bookRepository, never()).findAllWithMetadata();
+    }
+    
+    @Test
+    void shouldReturnGenresFromBooks() {
+        // Given: Books with categories
+        when(bookRepository.findAllWithMetadata()).thenReturn(seriesBooks);
+        
+        // When
+        List<String> genres = komgaService.getGenres(null, null);
+        
+        // Then: Should return empty list (test books don't have categories)
+        assertThat(genres).isNotNull();
+        assertThat(genres).isEmpty();
+    }
+    
+    @Test
+    void shouldReturnTagsFromBooks() {
+        // Given: Books without tags
+        when(bookRepository.findAllWithMetadata()).thenReturn(seriesBooks);
+        
+        // When
+        List<String> tags = komgaService.getTags(null, null);
+        
+        // Then: Should return empty list (test books don't have tags)
+        assertThat(tags).isNotNull();
+        assertThat(tags).isEmpty();
+    }
+    
+    @Test
+    void shouldReturnPublishersFromBooks() {
+        // Given: Books without publishers
+        when(bookRepository.findAllWithMetadata()).thenReturn(seriesBooks);
+        
+        // When
+        List<String> publishers = komgaService.getPublishers(null, null);
+        
+        // Then: Should return empty list (test books don't have publishers)
+        assertThat(publishers).isNotNull();
+        assertThat(publishers).isEmpty();
+    }
+    
+    @Test
+    void shouldReturnAuthorsPagedResult() {
+        // Given: Books without authors
+        when(bookRepository.findAllWithMetadata()).thenReturn(seriesBooks);
+        
+        // When
+        KomgaPageableDto<KomgaAuthorDto> result = komgaService.getAuthors(
+            null, null, null, null, null, null, 0, 20, false);
+        
+        // Then: Should return empty paged result (test books don't have authors)
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
     }
 }

@@ -3,11 +3,13 @@ package com.adityachandel.booklore.config.security;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.filter.*;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -20,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,6 +39,7 @@ public class SecurityConfig {
     private final OpdsUserDetailsService opdsUserDetailsService;
     private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
     private final AppProperties appProperties;
+    @Lazy private final AppSettingService appSettingService;
 
     private static final String[] SWAGGER_ENDPOINTS = {
             "/api/v1/swagger-ui.html",
@@ -60,6 +64,20 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public TokenBasedRememberMeServices komgaRememberMeServices() {
+        String rememberMeKey = appSettingService.getAppSettings().getKomgaRememberMeKey();
+        Integer rememberMeDuration = appSettingService.getAppSettings().getKomgaRememberMeDuration();
+        
+        // Create remember-me services for Komga API
+        TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(
+                rememberMeKey,
+                opdsUserDetailsService
+        );
+        rememberMeServices.setTokenValiditySeconds(rememberMeDuration);
+        return rememberMeServices;
     }
 
     @Bean
@@ -88,9 +106,9 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain komgaBasicAuthSecurityChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain komgaBasicAuthSecurityChain(HttpSecurity http, TokenBasedRememberMeServices komgaRememberMeServices) throws Exception {
         http
-                .securityMatcher("/komga/api/v1/**", "/komga/api/v2/**")
+                .securityMatcher("/komga/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -103,6 +121,9 @@ public class SecurityConfig {
                             response.setHeader("WWW-Authenticate", "Basic realm=\"Booklore Komga API\"");
                             response.getWriter().write("HTTP Status 401 - " + authException.getMessage());
                         })
+                )
+                .rememberMe(rememberMe -> rememberMe
+                        .rememberMeServices(komgaRememberMeServices)
                 );
 
         return http.build();

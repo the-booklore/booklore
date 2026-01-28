@@ -69,6 +69,12 @@ public class ShelfService {
                 .toList();
     }
 
+    public List<Shelf> getShelvesForUser(Long userId) {
+        return shelfRepository.findByUserIdOrPublicShelfTrue(userId).stream()
+                .map(shelfMapper::toShelf)
+                .toList();
+    }
+
     public Shelf getShelf(Long shelfId) {
         return shelfMapper.toShelf(findShelfByIdOrThrow(shelfId));
     }
