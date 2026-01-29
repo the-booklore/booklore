@@ -183,6 +183,13 @@ public class EpubMetadataWriter implements MetadataWriter {
                 }
                 hasChanges[0] = true;
             });
+            helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), val -> {
+                removeIdentifierByUrn(metadataElement, "hardcoverbook");
+                if (val != null) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcoverbook", String.valueOf(val)));
+                }
+                hasChanges[0] = true;
+            });
             helper.copyLubimyczytacId(clear != null && clear.isLubimyczytacId(), val -> {
                 removeIdentifierByUrn(metadataElement, "lubimyczytac");
                 if (val != null && !val.isBlank()) {
@@ -841,10 +848,6 @@ public class EpubMetadataWriter implements MetadataWriter {
         
         if (metadata.getHardcoverReviewCount() != null && metadata.getHardcoverReviewCount() > 0) {
             metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_review_count", String.valueOf(metadata.getHardcoverReviewCount())));
-        }
-        
-        if (metadata.getHardcoverBookId() != null && metadata.getHardcoverBookId() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_book_id", String.valueOf(metadata.getHardcoverBookId())));
         }
         
         if (metadata.getLubimyczytacRating() != null && metadata.getLubimyczytacRating() > 0) {

@@ -57,7 +57,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("urn:goodreads:", "goodreadsId", BookMetadata.BookMetadataBuilder::goodreadsId),
         new IdentifierMapping("urn:google:", "googleId", BookMetadata.BookMetadataBuilder::googleId),
         new IdentifierMapping("urn:hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
-        new IdentifierMapping("urn:hardcover_book:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
+        new IdentifierMapping("urn:hardcoverbook:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
         new IdentifierMapping("urn:comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
         new IdentifierMapping("urn:lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
         new IdentifierMapping("urn:ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId),
@@ -67,7 +67,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("goodreads:", "goodreadsId", BookMetadata.BookMetadataBuilder::goodreadsId),
         new IdentifierMapping("google:", "googleId", BookMetadata.BookMetadataBuilder::googleId),
         new IdentifierMapping("hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
-        new IdentifierMapping("hardcover_book:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
+        new IdentifierMapping("hardcoverbook:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
         new IdentifierMapping("comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
         new IdentifierMapping("lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
         new IdentifierMapping("ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId)
@@ -386,12 +386,12 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         
         if (cleanIsbn.length() == 13 && ISBN_13_PATTERN.matcher(cleanIsbn).matches()) {
             if (!processedFields.contains("isbn13")) {
-                builder.isbn13(cleanIsbn);
+                builder.isbn13(value);
                 processedFields.add("isbn13");
             }
         } else if (cleanIsbn.length() == 10 && ISBN_10_PATTERN.matcher(cleanIsbn).matches()) {
             if (!processedFields.contains("isbn10")) {
-                builder.isbn10(cleanIsbn);
+                builder.isbn10(value);
                 processedFields.add("isbn10");
             }
         }
