@@ -57,7 +57,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("urn:goodreads:", "goodreadsId", BookMetadata.BookMetadataBuilder::goodreadsId),
         new IdentifierMapping("urn:google:", "googleId", BookMetadata.BookMetadataBuilder::googleId),
         new IdentifierMapping("urn:hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
-        new IdentifierMapping("urn:hardcoverbook:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
+        new IdentifierMapping("urn:hardcoverbook:", "hardcoverBookId", BookMetadata.BookMetadataBuilder::hardcoverBookId),
         new IdentifierMapping("urn:comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
         new IdentifierMapping("urn:lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
         new IdentifierMapping("urn:ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId),
@@ -67,7 +67,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("goodreads:", "goodreadsId", BookMetadata.BookMetadataBuilder::goodreadsId),
         new IdentifierMapping("google:", "googleId", BookMetadata.BookMetadataBuilder::googleId),
         new IdentifierMapping("hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
-        new IdentifierMapping("hardcoverbook:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
+        new IdentifierMapping("hardcoverbook:", "hardcoverBookId", BookMetadata.BookMetadataBuilder::hardcoverBookId),
         new IdentifierMapping("comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
         new IdentifierMapping("lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
         new IdentifierMapping("ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId)
@@ -231,7 +231,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:amazon_review_count" -> safeParseInt(content, builderMeta::amazonReviewCount);
                                     case "booklore:goodreads_rating" -> safeParseDouble(content, builderMeta::goodreadsRating);
                                     case "booklore:goodreads_review_count" -> safeParseInt(content, builderMeta::goodreadsReviewCount);
-                                    case "booklore:hardcover_book_id" -> safeParseInt(content, builderMeta::hardcoverBookId);
+                                    case "booklore:hardcover_book_id" -> builderMeta.hardcoverBookId(content);
                                     case "booklore:hardcover_rating" -> safeParseDouble(content, builderMeta::hardcoverRating);
                                     case "booklore:hardcover_review_count" -> safeParseInt(content, builderMeta::hardcoverReviewCount);
                                     case "booklore:lubimyczytac_rating" -> safeParseDouble(content, value -> builderMeta.lubimyczytacRating(value));

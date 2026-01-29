@@ -142,7 +142,7 @@ public class HardcoverParser implements BookParser {
         BookMetadata metadata = new BookMetadata();
         metadata.setHardcoverId(doc.getSlug());
 
-        Integer bookId = parseBookId(doc.getId());
+        String bookId = parseBookId(doc.getId());
         if (bookId != null) {
             metadata.setHardcoverBookId(bookId);
         }
@@ -182,16 +182,8 @@ public class HardcoverParser implements BookParser {
         return metadata;
     }
 
-    private Integer parseBookId(String id) {
-        if (id == null) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            log.debug("Could not parse Hardcover book ID: {}", id);
-            return null;
-        }
+    private String parseBookId(String id) {
+        return id;
     }
 
     private void mapSeriesInfo(GraphQLResponse.Document doc, BookMetadata metadata) {
@@ -210,7 +202,7 @@ public class HardcoverParser implements BookParser {
         }
     }
 
-    private void mapTagsAndMoods(GraphQLResponse.Document doc, BookMetadata metadata, Integer bookId, boolean fetchDetailedMoods) {
+    private void mapTagsAndMoods(GraphQLResponse.Document doc, BookMetadata metadata, String bookId, boolean fetchDetailedMoods) {
         boolean usedDetailedMoods = false;
 
         if (fetchDetailedMoods && bookId != null) {
@@ -239,9 +231,10 @@ public class HardcoverParser implements BookParser {
         }
     }
 
-    private boolean tryFetchDetailedMoods(Integer bookId, BookMetadata metadata) {
+    private boolean tryFetchDetailedMoods(String bookId, BookMetadata metadata) {
         try {
-            HardcoverBookDetails details = hardcoverBookSearchService.fetchBookDetails(bookId);
+            Integer bookIdInt = Integer.parseInt(bookId);
+            HardcoverBookDetails details = hardcoverBookSearchService.fetchBookDetails(bookIdInt);
             if (details == null || details.getCachedTags() == null || details.getCachedTags().isEmpty()) {
                 return false;
             }

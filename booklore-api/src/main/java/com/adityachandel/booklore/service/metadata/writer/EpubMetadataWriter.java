@@ -185,8 +185,8 @@ public class EpubMetadataWriter implements MetadataWriter {
             });
             helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), val -> {
                 removeIdentifierByUrn(metadataElement, "hardcoverbook");
-                if (val != null) {
-                    metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcoverbook", String.valueOf(val)));
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcoverbook", val));
                 }
                 hasChanges[0] = true;
             });

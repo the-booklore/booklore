@@ -133,7 +133,7 @@ public class MetadataCopyHelper {
         }
     }
 
-    public void copyHardcoverBookId(boolean clear, Consumer<Integer> consumer) {
+    public void copyHardcoverBookId(boolean clear, Consumer<String> consumer) {
         if (!isLocked(metadata.getHardcoverBookIdLocked())) {
             if (clear) consumer.accept(null);
             else if (metadata.getHardcoverBookId() != null) consumer.accept(metadata.getHardcoverBookId());

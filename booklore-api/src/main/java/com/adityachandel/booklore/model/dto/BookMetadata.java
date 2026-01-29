@@ -37,7 +37,7 @@ public class BookMetadata {
     private Double goodreadsRating;
     private Integer goodreadsReviewCount;
     private String hardcoverId;
-    private Integer hardcoverBookId;
+    private String hardcoverBookId;
     private Double hardcoverRating;
     private Integer hardcoverReviewCount;
     private String doubanId;

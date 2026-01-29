@@ -245,7 +245,7 @@ class HardcoverParserTest {
             assertThat(metadata.getSubtitle()).isEqualTo("A Subtitle");
             assertThat(metadata.getDescription()).isEqualTo("A description");
             assertThat(metadata.getHardcoverId()).isEqualTo("test-book-slug");
-            assertThat(metadata.getHardcoverBookId()).isEqualTo(12345);
+            assertThat(metadata.getHardcoverBookId()).isEqualTo("12345");
             assertThat(metadata.getHardcoverRating()).isEqualTo(4.25);
             assertThat(metadata.getHardcoverReviewCount()).isEqualTo(100);
             assertThat(metadata.getPageCount()).isEqualTo(350);
@@ -425,7 +425,7 @@ class HardcoverParserTest {
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
             assertThat(results).hasSize(1);
-            assertThat(results.get(0).getHardcoverBookId()).isNull();
+            assertThat(results.get(0).getHardcoverBookId()).isEqualTo("not-a-number");
         }
 
         @Test
