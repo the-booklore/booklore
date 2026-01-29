@@ -64,7 +64,8 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
 
   replaceModeOptions: { label: string; value: MetadataReplaceMode }[] = [
     { label: 'Replace Missing Only', value: 'REPLACE_MISSING' },
-    { label: 'Replace All Fields', value: 'REPLACE_ALL' }
+    { label: 'Replace All Fields', value: 'REPLACE_ALL' },
+    { label: 'Replace When Provided', value: 'REPLACE_WHEN_PROVIDED' }
   ];
 
   fieldOptions: FieldOptions = this.initializeFieldOptions();

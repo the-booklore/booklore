@@ -206,4 +206,3 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
-

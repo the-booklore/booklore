@@ -3,7 +3,9 @@ package com.adityachandel.booklore.service.book;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.repository.BookFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.kobo.KepubConversionService;
@@ -23,13 +25,18 @@ import org.springframework.util.FileSystemUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Slf4j
 @AllArgsConstructor
@@ -39,6 +46,7 @@ public class BookDownloadService {
     private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookRepository bookRepository;
+    private final BookFileRepository bookFileRepository;
     private final KepubConversionService kepubConversionService;
     private final CbxConversionService cbxConversionService;
     private final AppSettingService appSettingService;
@@ -48,12 +56,22 @@ public class BookDownloadService {
             BookEntity bookEntity = bookRepository.findById(bookId)
                     .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
-            Path file = Paths.get(FileUtils.getBookFullPath(bookEntity)).toAbsolutePath().normalize();
-            File bookFile = file.toFile();
-
-            if (!bookFile.exists()) {
+            BookFileEntity primaryFile = bookEntity.getPrimaryBookFile();
+            if (primaryFile == null) {
                 throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
             }
+            Path file = Paths.get(FileUtils.getBookFullPath(bookEntity)).toAbsolutePath().normalize();
+
+            if (!Files.exists(file)) {
+                throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+            }
+
+            // Handle folder-based audiobooks - create ZIP
+            if (primaryFile.isFolderBased() && Files.isDirectory(file)) {
+                return downloadFolderAsZip(file, primaryFile.getFileName());
+            }
+
+            File bookFile = file.toFile();
 
             // Use FileSystemResource which properly handles file resources and closing
             Resource resource = new FileSystemResource(bookFile);
@@ -77,10 +95,152 @@ public class BookDownloadService {
         }
     }
 
+    public ResponseEntity<Resource> downloadBookFile(Long bookId, Long fileId) {
+        try {
+            BookFileEntity bookFileEntity = bookFileRepository.findById(fileId)
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException(fileId));
+
+            // Verify the file belongs to the specified book
+            if (!bookFileEntity.getBook().getId().equals(bookId)) {
+                throw ApiError.FILE_NOT_FOUND.createException(fileId);
+            }
+
+            Path file = bookFileEntity.getFullFilePath().toAbsolutePath().normalize();
+
+            if (!Files.exists(file)) {
+                throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(fileId);
+            }
+
+            // Handle folder-based audiobooks - create ZIP
+            if (bookFileEntity.isFolderBased() && Files.isDirectory(file)) {
+                return downloadFolderAsZip(file, bookFileEntity.getFileName());
+            }
+
+            File bookFile = file.toFile();
+            Resource resource = new FileSystemResource(bookFile);
+
+            String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            String fallbackFilename = NON_ASCII_PATTERN.matcher(file.getFileName().toString()).replaceAll("_");
+            String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                    fallbackFilename, encodedFilename);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .contentLength(bookFile.length())
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .header(HttpHeaders.EXPIRES, "0")
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("Failed to download book file {}: {}", fileId, e.getMessage(), e);
+            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(fileId);
+        }
+    }
+
+    public void downloadAllBookFiles(Long bookId, HttpServletResponse response) {
+        BookEntity bookEntity = bookRepository.findById(bookId)
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        List<BookFileEntity> allFiles = bookEntity.getBookFiles();
+        if (allFiles == null || allFiles.isEmpty()) {
+            throw ApiError.FILE_NOT_FOUND.createException(bookId);
+        }
+
+        // If only one file and it's not folder-based, download it directly
+        if (allFiles.size() == 1) {
+            BookFileEntity singleFile = allFiles.get(0);
+            Path filePath = singleFile.getFullFilePath();
+
+            if (!Files.exists(filePath)) {
+                throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+            }
+
+            // For folder-based audiobooks, let it fall through to ZIP creation
+            if (!singleFile.isFolderBased() || !Files.isDirectory(filePath)) {
+                File file = filePath.toFile();
+                setResponseHeaders(response, file);
+                streamFileToResponse(file, response);
+                return;
+            }
+        }
+
+        // Sort files by filename for consistent ordering
+        allFiles.sort(Comparator.comparing(BookFileEntity::getFileName));
+
+        // Create ZIP with all files
+        String bookTitle = bookEntity.getMetadata() != null && bookEntity.getMetadata().getTitle() != null
+                ? bookEntity.getMetadata().getTitle()
+                : "book-" + bookId;
+        String safeTitle = bookTitle.replaceAll("[^a-zA-Z0-9\\-_]", "_");
+        String zipFileName = safeTitle + ".zip";
+
+        response.setContentType("application/zip");
+        String encodedFilename = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = NON_ASCII_PATTERN.matcher(zipFileName).replaceAll("_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
+
+        try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
+            for (BookFileEntity bookFile : allFiles) {
+                Path filePath = bookFile.getFullFilePath();
+
+                if (!Files.exists(filePath)) {
+                    log.warn("Skipping missing file during ZIP creation: {}", filePath);
+                    continue;
+                }
+
+                // Handle folder-based audiobooks - add all files from the folder
+                if (bookFile.isFolderBased() && Files.isDirectory(filePath)) {
+                    String folderPrefix = bookFile.getFileName() + "/";
+                    List<Path> audioFiles = Files.list(filePath)
+                            .filter(Files::isRegularFile)
+                            .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                            .toList();
+
+                    for (Path audioFile : audioFiles) {
+                        String entryName = folderPrefix + audioFile.getFileName().toString();
+                        ZipEntry zipEntry = new ZipEntry(entryName);
+                        zipEntry.setSize(Files.size(audioFile));
+                        zos.putNextEntry(zipEntry);
+
+                        try (InputStream fis = Files.newInputStream(audioFile)) {
+                            fis.transferTo(zos);
+                        }
+
+                        zos.closeEntry();
+                    }
+                } else {
+                    // Regular file
+                    ZipEntry zipEntry = new ZipEntry(bookFile.getFileName());
+                    zipEntry.setSize(Files.size(filePath));
+                    zos.putNextEntry(zipEntry);
+
+                    try (InputStream fis = Files.newInputStream(filePath)) {
+                        fis.transferTo(zos);
+                    }
+
+                    zos.closeEntry();
+                }
+            }
+            zos.finish();
+            response.getOutputStream().flush();
+
+            log.info("Successfully created and streamed ZIP for book {} with {} files", bookId, allFiles.size());
+        } catch (IOException e) {
+            log.error("Failed to create ZIP for book {}: {}", bookId, e.getMessage(), e);
+            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+        }
+    }
+
     public void downloadKoboBook(Long bookId, HttpServletResponse response) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        
+
         var primaryFile = bookEntity.getPrimaryBookFile();
+        if (primaryFile == null) {
+            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+        }
         boolean isEpub = primaryFile.getBookType() == BookFileType.EPUB;
         boolean isCbx = primaryFile.getBookType() == BookFileType.CBX;
 
@@ -156,5 +316,42 @@ public class BookDownloadService {
                 log.warn("Failed to delete temporary directory {}: {}", tempDir, e.getMessage());
             }
         }
+    }
+
+    private ResponseEntity<Resource> downloadFolderAsZip(Path folderPath, String folderName) throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            // Get all files in the folder, sorted by name
+            List<Path> files = Files.list(folderPath)
+                    .filter(Files::isRegularFile)
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .toList();
+
+            for (Path audioFile : files) {
+                ZipEntry entry = new ZipEntry(audioFile.getFileName().toString());
+                zos.putNextEntry(entry);
+                Files.copy(audioFile, zos);
+                zos.closeEntry();
+            }
+        }
+
+        byte[] zipBytes = baos.toByteArray();
+        Resource resource = new org.springframework.core.io.ByteArrayResource(zipBytes);
+
+        String zipFileName = folderName + ".zip";
+        String encodedFilename = URLEncoder.encode(zipFileName, StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = NON_ASCII_PATTERN.matcher(zipFileName).replaceAll("_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.valueOf("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(zipBytes.length))
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .header(HttpHeaders.EXPIRES, "0")
+                .body(resource);
     }
 }

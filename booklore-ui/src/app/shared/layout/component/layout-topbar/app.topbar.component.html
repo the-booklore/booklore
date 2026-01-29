@@ -1,16 +1,16 @@
 <div class="layout-topbar">
 
-  <a class="layout-topbar-logo pl-5 pr-24 flex gap-2" routerLink="">
-    <svg class="w-[1.875rem] h-[1.875rem] half-title" viewBox="0 0 126 126" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <a class="layout-topbar-logo topbar-logo" routerLink="">
+    <svg class="logo-icon half-title" viewBox="0 0 126 126" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
       <path
         d="M59 4.79297C71.5051 11.5557 80 24.7854 80 40C80 40.5959 79.987 41.1888 79.9609 41.7783C79.8609 44.0406 81.7355 46 84 46C106.091 46 124 63.9086 124 86C124 108.091 106.091 126 84 126H10C4.47715 126 0 121.523 0 116V39.0068L0.0126953 38.9941C0.357624 25.0252 7.86506 12.8347 19 5.95215V63.832C19 64.8345 20.0676 65.4391 20.9121 64.9902L21.0771 64.8867L38.2227 52.3428C38.6819 52.0068 39.3064 52.0068 39.7656 52.3428L56.9229 64.8945L57.0879 64.998C57.9324 65.447 59 64.8423 59 63.8398V4.79297Z"/>
       <path
         d="M40 0C43.8745 0 47.6199 0.552381 51.1631 1.58008V50.9697L44.3926 46.0176L44.0879 45.8037C40.9061 43.6679 36.7098 43.7393 33.5957 46.0176L26.8369 50.9619V2.21875C30.9593 0.782634 35.3881 0 40 0Z"
         fill="white"/>
     </svg>
-    <span class="flex items-center pt-2">
+    <span class="logo-text-wrapper">
       <p>Book</p>
-      <p class="half-title text-3xl">lore</p>
+      <p class="half-title logo-text-lore">lore</p>
     </span>
   </a>
 
@@ -25,29 +25,29 @@
   >
   </p-button>
 
-  <div class="flex items-center w-full gap-4">
-    <app-book-searcher class="md:block flex-grow"></app-book-searcher>
-    <ul class="topbar-items hidden md:flex items-center gap-3 ml-auto pl-4">
-      <div class="flex gap-4">
+  <div class="topbar-content">
+    <app-book-searcher class="topbar-search"></app-book-searcher>
+    <ul class="topbar-items topbar-desktop-items">
+      <div class="topbar-action-group">
         @if (userService.userState$ | async; as userState) {
           @if (userState.user?.permissions?.canAccessBookdrop || userState.user?.permissions?.admin) {
             <li>
               <a class="topbar-item" (click)="navigateToBookdrop()" pTooltip="Bookdrop" tooltipPosition="bottom">
-                <i class="pi pi-inbox text-surface-100"></i>
+                <i class="pi pi-inbox topbar-icon"></i>
               </a>
             </li>
           }
           @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
             <li>
               <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
-                <i class="pi pi-plus-circle text-surface-100"></i>
+                <i class="pi pi-plus-circle topbar-icon"></i>
               </a>
             </li>
           }
           @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
             <li>
               <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
-                <i class="pi pi-upload text-surface-100"></i>
+                <i class="pi pi-upload topbar-icon"></i>
               </a>
             </li>
           }
@@ -60,14 +60,14 @@
               [pTooltip]="statsTooltip"
               tooltipPosition="bottom">
               <svg class="multi-color-chart-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1.25"  y="10" width="2.5" height="9"  rx="0.5" fill="#ef4444"/>
-                <rect x="6.25"  y="7"  width="2.5" height="12" rx="0.5" fill="#f59e0b"/>
-                <rect x="11.25" y="3"  width="2.5" height="16" rx="0.5" fill="#10b981"/>
-                <rect x="16.25" y="5"  width="2.5" height="14" rx="0.5" fill="#3b82f6"/>
+                <rect x="1.25" y="10" width="2.5" height="9" rx="0.5" fill="#ef4444"/>
+                <rect x="6.25" y="7" width="2.5" height="12" rx="0.5" fill="#f59e0b"/>
+                <rect x="11.25" y="3" width="2.5" height="16" rx="0.5" fill="#10b981"/>
+                <rect x="16.25" y="5" width="2.5" height="14" rx="0.5" fill="#3b82f6"/>
               </svg>
             </button>
             @if (shouldShowStatsMenu) {
-              <p-menu #statsMenu [model]="statsMenuItems" [popup]="true" appendTo="body" />
+              <p-menu #statsMenu [model]="statsMenuItems" [popup]="true" appendTo="body"/>
             }
           </li>
         }
@@ -75,14 +75,14 @@
           @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
             <li>
               <a class="topbar-item" (click)="navigateToMetadataManager()" pTooltip="Metadata Manager" tooltipPosition="bottom">
-                <i class="pi pi-sparkles text-surface-100"></i>
+                <i class="pi pi-sparkles topbar-icon"></i>
               </a>
             </li>
           }
         }
         <li>
           <a class="topbar-item" (click)="navigateToSettings()" pTooltip="Settings" tooltipPosition="bottom">
-            <i class="pi pi-cog text-surface-100"></i>
+            <i class="pi pi-cog topbar-icon"></i>
           </a>
         </li>
       </div>
@@ -90,8 +90,8 @@
       <p-divider layout="vertical"/>
 
 
-      <div class="flex gap-4">
-        <li class="relative">
+      <div class="topbar-action-group">
+        <li class="topbar-item-relative">
           <button
             type="button"
             class="topbar-item"
@@ -116,15 +116,15 @@
           </p-popover>
         </li>
 
-        <li class="relative group overflow-hidden !border-transparent topbar-item" (click)="openGithubSupportDialog()">
+        <li class="topbar-item-relative heart-button topbar-item" (click)="openGithubSupportDialog()">
           <span
             style="animation-duration: 2s; background: conic-gradient(from 90deg, #f97316, #f59e0b, #eab308, #84cc16, #22c55e, #10b981, #14a8a6, #06b6d4, #0ea5e9, #3b82f6, #6366f1, #8b5cf6, #a855f7, #d946ef, #ec4899, #f43f5e)"
-            class="absolute -top-5 -left-5 w-20 h-20 animate-spin">
+            class="heart-spinner">
           </span>
-          <span style="inset: 1px; border-radius: 4px" class="absolute z-2 bg-surface-900 transition-all"></span>
-          <i class="pi pi-heart z-10"></i>
+          <span class="heart-background"></span>
+          <i class="pi pi-heart heart-icon"></i>
         </li>
-        <li class="relative">
+        <li class="topbar-item-relative">
           <button type="button"
                   class="topbar-item config-item"
                   enterActiveClass="animate-scalein"
@@ -138,7 +138,7 @@
         </li>
       </div>
       <p-divider layout="vertical"/>
-      <div class="flex gap-4">
+      <div class="topbar-action-group">
         <li>
           <a class="topbar-item"
              href="https://booklore.org/docs/getting-started"
@@ -146,7 +146,7 @@
              rel="noopener noreferrer"
              pTooltip="Documentation"
              tooltipPosition="bottom">
-            <i class="pi pi-info-circle text-surface-100"></i>
+            <i class="pi pi-info-circle topbar-icon"></i>
           </a>
         </li>
 
@@ -155,7 +155,7 @@
           @if (!userState.user?.permissions?.demoUser) {
             <li>
               <button class="topbar-item" (click)="openUserProfileDialog()" pTooltip="Profile" tooltipPosition="bottom">
-                <i class="pi pi-user text-surface-100"></i>
+                <i class="pi pi-user topbar-icon"></i>
               </button>
             </li>
           }
@@ -163,28 +163,28 @@
 
         <li>
           <button class="topbar-item" (click)="logout()" pTooltip="Logout" tooltipPosition="left">
-            <i class="pi pi-sign-out text-surface-100"></i>
+            <i class="pi pi-sign-out topbar-icon"></i>
           </button>
         </li>
       </div>
     </ul>
     <!-- Trigger Button -->
-    <div class="md:hidden relative ml-auto">
+    <div class="mobile-trigger">
       <p-button
         icon="pi pi-ellipsis-v"
         outlined
         (click)="mobileMenu.toggle($event)"
       />
       <p-popover #mobileMenu>
-        <ul class="flex flex-col gap-1 w-48">
+        <ul class="mobile-menu-list">
           @if (userService.userState$ | async; as userState) {
             @if (userState.user?.permissions?.canAccessBookdrop || userState.user?.permissions?.admin) {
               <li>
                 <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  class="mobile-menu-item"
                   (click)="navigateToBookdrop(); mobileMenu.hide()"
                 >
-                  <i class="pi pi-inbox text-surface-100"></i>
+                  <i class="pi pi-inbox topbar-icon"></i>
                   Bookdrop
                 </button>
               </li>
@@ -192,10 +192,10 @@
             @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
               <li>
                 <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  class="mobile-menu-item"
                   (click)="openLibraryCreatorDialog(); mobileMenu.hide()"
                 >
-                  <i class="pi pi-plus-circle text-surface-100"></i>
+                  <i class="pi pi-plus-circle topbar-icon"></i>
                   Create Library
                 </button>
               </li>
@@ -203,10 +203,10 @@
             @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
               <li>
                 <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  class="mobile-menu-item"
                   (click)="openFileUploadDialog(); mobileMenu.hide()"
                 >
-                  <i class="pi pi-upload text-surface-100"></i>
+                  <i class="pi pi-upload topbar-icon"></i>
                   Upload Book
                 </button>
               </li>
@@ -215,7 +215,7 @@
           @if (hasStatsAccess) {
             <li>
               <button
-                class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                class="mobile-menu-item"
                 (click)="shouldShowStatsMenu ? statsMenuMobile.toggle($event) : handleStatsButtonClick($event)"
               >
                 <svg class="multi-color-chart-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -227,7 +227,7 @@
                 Charts
               </button>
               @if (shouldShowStatsMenu) {
-                <p-menu #statsMenuMobile [model]="statsMenuItems" [popup]="true" />
+                <p-menu #statsMenuMobile [model]="statsMenuItems" [popup]="true"/>
               }
             </li>
           }
@@ -235,10 +235,10 @@
             @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
               <li>
                 <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  class="mobile-menu-item"
                   (click)="navigateToMetadataManager(); mobileMenu.hide()"
                 >
-                  <i class="pi pi-sparkles text-surface-100"></i>
+                  <i class="pi pi-sparkles topbar-icon"></i>
                   Metadata Manager
                 </button>
               </li>
@@ -246,29 +246,29 @@
           }
           <li>
             <button
-              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              class="mobile-menu-item"
               (click)="navigateToSettings(); mobileMenu.hide()"
             >
-              <i class="pi pi-cog text-surface-100"></i>
+              <i class="pi pi-cog topbar-icon"></i>
               Settings
             </button>
           </li>
           <li>
             <a
-              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              class="mobile-menu-item"
               href="https://booklore.org/docs/getting-started"
               target="_blank"
               rel="noopener noreferrer">
-              <i class="pi pi-info-circle text-surface-100"></i>
+              <i class="pi pi-info-circle topbar-icon"></i>
               Documentation
             </a>
           </li>
           <li>
             <button
-              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              class="mobile-menu-item"
               (click)="openGithubSupportDialog(); mobileMenu.hide()"
             >
-              <i class="pi pi-thumbs-up text-surface-100"></i>
+              <i class="pi pi-thumbs-up topbar-icon"></i>
               Support BookLore
             </button>
           </li>
@@ -277,10 +277,10 @@
             @if (!userState.user?.permissions?.demoUser) {
               <li>
                 <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  class="mobile-menu-item"
                   (click)="openUserProfileDialog(); mobileMenu.hide()"
                 >
-                  <i class="pi pi-user text-surface-100"></i>
+                  <i class="pi pi-user topbar-icon"></i>
                   Profile
                 </button>
               </li>
@@ -289,10 +289,10 @@
 
           <li>
             <button
-              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              class="mobile-menu-item"
               (click)="logout(); mobileMenu.hide()"
             >
-              <i class="pi pi-sign-out text-surface-100"></i>
+              <i class="pi pi-sign-out topbar-icon"></i>
               Logout
             </button>
           </li>

@@ -1,0 +1,173 @@
+<div class="series-progress-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-list series-icon"></i>
+        Series Progress Tracker
+      </h3>
+      <p class="chart-description">Track your reading progress across book series</p>
+    </div>
+    @if (stats) {
+      <div class="series-summary">
+        <span class="summary-item completed">
+          <i class="pi pi-check-circle"></i>
+          {{ stats.completedSeries }}
+        </span>
+        <span class="summary-item in-progress">
+          <i class="pi pi-spinner"></i>
+          {{ stats.inProgressSeries }}
+        </span>
+        <span class="summary-item not-started">
+          <i class="pi pi-clock"></i>
+          {{ stats.notStartedSeries }}
+        </span>
+      </div>
+    }
+  </div>
+
+  @if (stats) {
+    <div class="stats-row">
+      <div class="stat-pill">
+        <span class="pill-value">{{ stats.totalSeries }}</span>
+        <span class="pill-label">Series</span>
+      </div>
+      <div class="stat-pill">
+        <span class="pill-value">{{ stats.avgSeriesCompletion }}%</span>
+        <span class="pill-label">Avg. Completion</span>
+      </div>
+      @if (stats.highestRatedSeries) {
+        <div class="stat-pill highlight">
+          <span class="pill-value">{{ stats.highestRatedSeries.avgPersonalRating?.toFixed(1) }}</span>
+          <span class="pill-label">Top Rated</span>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+
+  @if (seriesList.length > 0) {
+    <div class="series-details">
+      <div class="details-header">
+        <h4>Series Breakdown</h4>
+        <span class="series-count">{{ filteredSeriesList.length }} of {{ seriesList.length }}</span>
+      </div>
+
+      <div class="controls-row">
+        <div class="search-box">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            placeholder="Search series..."
+            [value]="searchTerm"
+            (input)="onSearchChange($any($event.target).value)"
+          />
+        </div>
+
+        <div class="filter-controls">
+          <select class="filter-select" [value]="filterStatus" (change)="onFilterChange($any($event.target).value)">
+            <option value="all">All Status</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="not-started">Not Started</option>
+          </select>
+
+          <select class="sort-select" [value]="sortBy" (change)="onSortChange($any($event.target).value)">
+            <option value="progress">Sort by Progress</option>
+            <option value="rating">Sort by Rating</option>
+            <option value="books">Sort by Books</option>
+            <option value="name">Sort by Name</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="series-list">
+        @for (series of displayedSeries; track series.name) {
+          <div class="series-card" [class]="series.status">
+            <div class="series-main">
+              <div class="series-status-icon" [style.color]="getStatusColor(series.status)">
+                <i [class]="'pi ' + getStatusIcon(series.status)"></i>
+              </div>
+              <div class="series-info">
+                <span class="series-name">{{ series.name }}</span>
+                <div class="series-meta">
+                  <span class="books-count">
+                    {{ series.booksRead }}/{{ series.booksOwned }} read
+                    @if (series.totalInSeries) {
+                      <span class="total-hint">({{ series.totalInSeries }} in series)</span>
+                    }
+                  </span>
+                  @if (series.avgPersonalRating) {
+                    <span class="rating">
+                      <i class="pi pi-star-fill"></i>
+                      {{ series.avgPersonalRating.toFixed(1) }}
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="series-progress">
+              <div class="progress-bar-container">
+                <div class="progress-bar read" [style.width.%]="series.completionPercentage"></div>
+                @if (series.booksReading > 0) {
+                  <div class="progress-bar reading"
+                       [style.width.%]="(series.booksReading / series.booksOwned) * 100"
+                       [style.left.%]="series.completionPercentage">
+                  </div>
+                }
+              </div>
+              <span class="progress-text">{{ series.completionPercentage }}%</span>
+            </div>
+            @if (series.nextUnread && series.status !== 'completed') {
+              <div class="next-up">
+                <span class="next-label">Next:</span>
+                <span class="next-title">{{ series.nextUnread }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (filteredSeriesList.length === 0 && searchTerm) {
+          <div class="no-results">
+            <i class="pi pi-search"></i>
+            <span>No series matching "{{ searchTerm }}"</span>
+          </div>
+        }
+      </div>
+
+      @if (getTotalPages() > 1) {
+        <div class="pagination">
+          <button
+            class="page-btn"
+            [disabled]="!hasPrevPage()"
+            (click)="prevPage()">
+            <i class="pi pi-chevron-left"></i>
+          </button>
+          <span class="page-info">
+            Page {{ currentPage + 1 }} of {{ getTotalPages() }}
+          </span>
+          <button
+            class="page-btn"
+            [disabled]="!hasNextPage()"
+            (click)="nextPage()">
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  @if (!stats) {
+    <div class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <p>No series found in your library.</p>
+      <small>Books need series metadata to appear here.</small>
+    </div>
+  }
+</div>

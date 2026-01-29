@@ -59,6 +59,81 @@
   }
 }
 
-:host ::ng-deep .prose h3 {
-  margin-top: 0;
+.release-content {
+  width: 100%;
+  max-width: 100%;
+  line-height: 1.75;
+  color: var(--text-color);
+
+  :host ::ng-deep & {
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--text-color);
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+
+    h3 {
+      margin-top: 0;
+      font-size: 1.125rem;
+    }
+
+    p {
+      margin-top: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    ul, ol {
+      margin-top: 0.75rem;
+      margin-bottom: 0.75rem;
+      padding-left: 1.5rem;
+    }
+
+    li {
+      margin-top: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    code {
+      font-size: 0.875em;
+      background: var(--surface-ground);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+    }
+
+    pre {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: var(--surface-ground);
+      border-radius: 0.5rem;
+      overflow-x: auto;
+
+      code {
+        background: transparent;
+        padding: 0;
+      }
+    }
+
+    a {
+      color: var(--primary-color);
+      text-decoration: underline;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+
+    blockquote {
+      margin: 1rem 0;
+      padding-left: 1rem;
+      border-left: 3px solid var(--border-color);
+      color: var(--text-secondary-color);
+    }
+  }
 }

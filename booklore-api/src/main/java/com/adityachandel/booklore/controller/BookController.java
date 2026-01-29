@@ -5,6 +5,8 @@ import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookRecommendation;
 import com.adityachandel.booklore.model.dto.BookViewerSettings;
+import com.adityachandel.booklore.model.dto.request.AttachBookFileRequest;
+import com.adityachandel.booklore.model.dto.request.CreatePhysicalBookRequest;
 import com.adityachandel.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.request.ReadStatusUpdateRequest;
@@ -13,15 +15,19 @@ import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
+import com.adityachandel.booklore.service.book.BookFileAttachmentService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
+import com.adityachandel.booklore.service.book.PhysicalBookService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
+import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.service.recommender.BookRecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -45,7 +51,10 @@ public class BookController {
     private final BookService bookService;
     private final BookUpdateService bookUpdateService;
     private final BookRecommendationService bookRecommendationService;
+    private final BookFileAttachmentService bookFileAttachmentService;
     private final BookMetadataService bookMetadataService;
+    private final ReadingProgressService readingProgressService;
+    private final PhysicalBookService physicalBookService;
 
     @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
     @ApiResponse(responseCode = "200", description = "List of books returned successfully")
@@ -67,6 +76,20 @@ public class BookController {
             @Parameter(description = "ID of the book to retrieve") @PathVariable long bookId,
             @Parameter(description = "Include book description in the response") @RequestParam(required = false, defaultValue = "false") boolean withDescription) {
         return ResponseEntity.ok(bookService.getBook(bookId, withDescription));
+    }
+
+    @Operation(summary = "Create a physical book", description = "Create a physical book without digital files. Requires library management permission or admin.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Physical book created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Library not found")
+    })
+    @PostMapping("/physical")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Book> createPhysicalBook(
+            @Parameter(description = "Physical book creation request") @RequestBody @Valid CreatePhysicalBookRequest request) {
+        return ResponseEntity.status(201).body(physicalBookService.createPhysicalBook(request));
     }
 
     @Operation(summary = "Delete books", description = "Delete one or more books by their IDs. Requires admin or delete permission.")
@@ -102,8 +125,10 @@ public class BookController {
     @ApiResponse(responseCode = "200", description = "Book content returned successfully")
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<ByteArrayResource> getBookContent(@Parameter(description = "ID of the book") @PathVariable long bookId) throws IOException {
-        return bookService.getBookContent(bookId);
+    public ResponseEntity<ByteArrayResource> getBookContent(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType) throws IOException {
+        return bookService.getBookContent(bookId, bookType);
     }
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")
@@ -118,12 +143,29 @@ public class BookController {
         return bookService.downloadBook(bookId);
     }
 
-    @Operation(summary = "Get viewer settings", description = "Retrieve viewer settings for a specific book.")
+    @Operation(summary = "Download all book files", description = "Download all files for a book as a ZIP archive. For single-file books, downloads the file directly. Requires download permission or admin.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Files downloaded successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @GetMapping("/{bookId}/download-all")
+    @PreAuthorize("@securityUtil.canDownload() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void downloadAllBookFiles(
+            @Parameter(description = "ID of the book") @PathVariable("bookId") Long bookId,
+            HttpServletResponse response) {
+        bookService.downloadAllBookFiles(bookId, response);
+    }
+
+    @Operation(summary = "Get viewer settings", description = "Retrieve viewer settings for a specific book file.")
     @ApiResponse(responseCode = "200", description = "Viewer settings returned successfully")
     @GetMapping("/{bookId}/viewer-setting")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookViewerSettings> getBookViewerSettings(@Parameter(description = "ID of the book") @PathVariable long bookId) {
-        return ResponseEntity.ok(bookService.getBookViewerSetting(bookId));
+    public ResponseEntity<BookViewerSettings> getBookViewerSettings(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "ID of the book file") @RequestParam long bookFileId) {
+        return ResponseEntity.ok(bookService.getBookViewerSetting(bookId, bookFileId));
     }
 
     @Operation(summary = "Update viewer settings", description = "Update viewer settings for a specific book.")
@@ -183,7 +225,7 @@ public class BookController {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
-        return ResponseEntity.ok(bookUpdateService.resetProgress(bookIds, type));
+        return ResponseEntity.ok(readingProgressService.resetProgress(bookIds, type));
     }
 
     @Operation(summary = "Update personal rating", description = "Update the personal rating for one or more books.")
@@ -207,5 +249,20 @@ public class BookController {
         }
         List<PersonalRatingUpdateResponse> updatedBooks = bookUpdateService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Attach book files", description = "Attach book files from single-file source books to a target book as alternative formats.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book files attached successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request - books must be in same library, sources must have exactly one file each"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - requires library management permission"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @PostMapping("/{targetBookId}/attach-file")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Book> attachBookFiles(
+            @Parameter(description = "ID of the target book to attach the files to") @PathVariable Long targetBookId,
+            @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
+        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
     }
 }

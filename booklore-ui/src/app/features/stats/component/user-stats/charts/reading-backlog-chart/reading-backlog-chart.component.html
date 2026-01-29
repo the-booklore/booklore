@@ -1,0 +1,186 @@
+<div class="backlog-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-clock backlog-icon"></i>
+        Reading Backlog Analysis
+      </h3>
+      <p class="chart-description">Track how long books sit in your library and your reading patterns over time</p>
+    </div>
+    @if (stats) {
+      <div class="health-score" [class]="getHealthScoreClass()">
+        <div class="score-circle">
+          <span class="score-value">{{ stats.backlogHealthScore }}</span>
+        </div>
+        <div class="score-info">
+          <span class="score-label">Backlog Health</span>
+          <span class="score-status">{{ getHealthScoreLabel() }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (stats) {
+    <div class="stats-overview">
+      <div class="stat-card">
+        <div class="stat-icon books-icon">
+          <i class="pi pi-book"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.totalBooks }}</span>
+          <span class="stat-label">Total Books</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon unread-icon">
+          <i class="pi pi-inbox"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.unreadBooks }}</span>
+          <span class="stat-label">In Backlog</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon age-icon">
+          <i class="pi pi-calendar"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ formatDays(stats.avgBacklogAge) }}</span>
+          <span class="stat-label">Avg. Library Age</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon velocity-icon">
+          <i class="pi pi-bolt"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.readingVelocity }}</span>
+          <span class="stat-label">Completed (6mo)</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+
+  @if (stats) {
+    <div class="insights-section">
+      <h4>Key Insights</h4>
+      <div class="insights-grid">
+        @if (stats.quickestRead) {
+          <div class="insight-card quickest">
+            <div class="insight-icon">
+              <i class="pi pi-forward"></i>
+            </div>
+            <div class="insight-content">
+              <span class="insight-title">Quickest Read</span>
+              <span class="insight-book">{{ stats.quickestRead.title }}</span>
+              <span class="insight-detail">Read in {{ formatDays(stats.quickestRead.daysToComplete!) }}</span>
+            </div>
+          </div>
+        }
+
+        @if (stats.longestWait) {
+          <div class="insight-card longest">
+            <div class="insight-icon">
+              <i class="pi pi-hourglass"></i>
+            </div>
+            <div class="insight-content">
+              <span class="insight-title">Longest Wait</span>
+              <span class="insight-book">{{ stats.longestWait.title }}</span>
+              <span class="insight-detail">Waited {{ formatDays(stats.longestWait.daysToComplete!) }} to read</span>
+            </div>
+          </div>
+        }
+
+        @if (stats.oldestUnread) {
+          <div class="insight-card oldest">
+            <div class="insight-icon">
+              <i class="pi pi-history"></i>
+            </div>
+            <div class="insight-content">
+              <span class="insight-title">Oldest Unread</span>
+              <span class="insight-book">{{ stats.oldestUnread.title }}</span>
+              <span class="insight-detail">Waiting for {{ formatDays(stats.oldestUnread.daysInLibrary) }}</span>
+            </div>
+          </div>
+        }
+
+        @if (stats.avgDaysToRead > 0) {
+          <div class="insight-card average">
+            <div class="insight-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="insight-content">
+              <span class="insight-title">Average Time to Read</span>
+              <span class="insight-value-large">{{ formatDays(stats.avgDaysToRead) }}</span>
+              <span class="insight-detail">From acquisition to completion</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="bucket-details">
+      <h4>Backlog Breakdown</h4>
+      <div class="bucket-list">
+        @for (bucket of buckets; track bucket.label) {
+          @if (bucket.unread + bucket.reading + bucket.completed > 0) {
+            <div class="bucket-item">
+              <div class="bucket-header">
+                <span class="bucket-label">{{ bucket.label }}</span>
+                <span class="bucket-range">{{ bucket.range }}</span>
+                <span class="bucket-total">{{ bucket.unread + bucket.reading + bucket.completed }} books</span>
+              </div>
+              <div class="bucket-bars">
+                <div class="bucket-bar-container">
+                  @if (bucket.unread > 0) {
+                    <div class="bucket-bar unread"
+                         [style.flex]="bucket.unread"
+                         [title]="bucket.unread + ' unread'">
+                      {{ bucket.unread }}
+                    </div>
+                  }
+                  @if (bucket.reading > 0) {
+                    <div class="bucket-bar reading"
+                         [style.flex]="bucket.reading"
+                         [title]="bucket.reading + ' reading'">
+                      {{ bucket.reading }}
+                    </div>
+                  }
+                  @if (bucket.completed > 0) {
+                    <div class="bucket-bar completed"
+                         [style.flex]="bucket.completed"
+                         [title]="bucket.completed + ' completed'">
+                      {{ bucket.completed }}
+                    </div>
+                  }
+                </div>
+              </div>
+              @if (bucket.avgDaysToRead !== null) {
+                <span class="bucket-avg">Avg. {{ formatDays(bucket.avgDaysToRead) }} to read</span>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  @if (!stats) {
+    <div class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <p>No books with addition dates found.</p>
+      <small>Backlog analysis requires books with "Added On" dates in your library.</small>
+    </div>
+  }
+</div>

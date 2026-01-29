@@ -59,6 +59,7 @@ export class FileMoverComponent implements OnDestroy {
   defaultMovePattern = '';
   loading = false;
   patternsCollapsed = true;
+  infoCollapsed = true;
 
   bookIds = new Set<number>();
   books: Book[] = [];
@@ -391,5 +392,9 @@ export class FileMoverComponent implements OnDestroy {
 
   togglePatternsCollapsed(): void {
     this.patternsCollapsed = !this.patternsCollapsed;
+  }
+
+  toggleInfoCollapsed(): void {
+    this.infoCollapsed = !this.infoCollapsed;
   }
 }

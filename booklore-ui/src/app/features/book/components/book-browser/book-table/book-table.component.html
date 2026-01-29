@@ -24,7 +24,7 @@
         <p-tableHeaderCheckbox/>
       </th>
       <th></th>
-      <th class="max-w-14 min-w-14"></th>
+      <th class="cover-header-cell"></th>
       @for (col of visibleColumns; track col.field) {
         <th pResizableColumn>{{ col.header }}</th>
       }
@@ -37,7 +37,7 @@
         <td>
           <p-tableCheckbox [value]="book"/>
         </td>
-        <td class="text-center">
+        <td class="cell-center">
           <p-button
             [icon]="isMetadataFullyLocked(metadata) ? 'pi pi-lock' : 'pi pi-lock-open'"
             [severity]="isMetadataFullyLocked(metadata) ? 'danger' : 'success'"
@@ -53,27 +53,27 @@
             <img
               [attr.src]="urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn)"
               alt="Book Cover"
-              class="size-7"
+              class="cover-thumbnail"
               tooltipPosition="left"
               [pTooltip]="tooltipContent"
-              tooltipStyleClass="[&>.p-tooltip-text]:p-1"
+              tooltipStyleClass="cover-tooltip"
             />
           </a>
           <ng-template #tooltipContent>
-            <div class="flex flex-col items-center gap-2">
+            <div class="tooltip-cover-container">
               <img
                 [attr.src]="urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn)"
                 alt="Book Cover"
-                class="w-[40rem] h-auto"
+                class="tooltip-cover-image"
               />
-              <em class="text-sm text-balance text-center">{{ metadata.title }}</em>
+              <em class="tooltip-cover-title">{{ metadata.title }}</em>
             </div>
           </ng-template>
         </td>
 
         @for (col of visibleColumns; track col.field) {
           @if (col.field === 'readStatus') {
-            <td class="text-center min-w-[4rem] max-w-[4rem]">
+            <td class="cell-status">
               @if (shouldShowStatusIcon(book.readStatus)) {
                 <div class="read-status-indicator"
                      [ngClass]="getReadStatusClass(book.readStatus)"
@@ -84,8 +84,8 @@
               }
             </td>
           } @else if (col.field === 'amazonRating' || col.field === 'goodreadsRating' || col.field === 'hardcoverRating' || col.field == 'ranobedbRating') {
-            <td class="min-w-[10rem] max-w-[10rem] overflow-hidden truncate">
-              <span class="flex items-center gap-1">
+            <td class="cell-rating">
+              <span class="rating-wrapper">
                 <p-rating
                   [(ngModel)]="metadata[col.field]"
                   readonly
@@ -100,10 +100,10 @@
           } @else {
             <td
               [title]="getCellValue(metadata, book, col.field)"
-              class="overflow-hidden truncate text-right min-w-[6rem] max-w-[12rem]">
+              class="cell-text">
               @if(['title', 'authors', 'publisher', 'seriesName', 'categories', 'language'].includes(col.field)) {
                 @for (item of getCellClickableValue(metadata, book, col.field); track $index; let isLast = $last) {
-                  <a [routerLink]="item.url" class="hover:underline hover:text-blue-400">
+                  <a [routerLink]="item.url" class="cell-link">
                     {{ item.anchor }}</a>@if (!isLast) {<span>, </span>}
                 }
               } @else {

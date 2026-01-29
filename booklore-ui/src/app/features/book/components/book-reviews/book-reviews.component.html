@@ -1,12 +1,12 @@
 <div class="book-reviews-container">
   <div class="reviews-content">
     @if (loading) {
-      <div class="flex flex-col items-center justify-center p-8 gap-4">
+      <div class="loading-state">
         <p-progressSpinner/>
-        <span class="text-gray-400">Getting latest reviews...</span>
+        <span class="loading-text">Getting latest reviews...</span>
       </div>
     } @else if (reviews?.length === 0) {
-      <div class="text-center p-8 text-gray-400 empty-state">
+      <div class="empty-state">
         <div class="empty-state-icon">
           @if (hasPermission && !reviewsLocked && reviewDownloadEnabled) {
             <p-button
@@ -21,13 +21,13 @@
             </p-button>
           }
         </div>
-        <p class="text-gray-200 empty-state-title">No reviews available for this book</p>
+        <p class="empty-state-title">No reviews available for this book</p>
         @if (!reviewDownloadEnabled) {
-          <p class="text-sm text-amber-400 mt-2 empty-state-subtitle">
+          <p class="empty-state-subtitle empty-state-subtitle--warning">
             Book review downloads are currently disabled. Enable this in Metadata Settings to fetch reviews.
           </p>
         } @else if (hasPermission && !reviewsLocked) {
-          <p class="text-sm text-gray-400 mt-2 empty-state-subtitle">
+          <p class="empty-state-subtitle">
             Click "Fetch Reviews" to download reviews from configured providers
           </p>
         }
@@ -37,7 +37,7 @@
       <div class="reviews-scroll-container">
         <div class="reviews-horizontal-list">
           @for (review of reviews; track review.id || $index) {
-            <div [class]="'review-card border border-zinc-700' + (!review.title ? ' no-title' : '') + (review.spoiler && !isSpoilerRevealed(review.id!) ? ' has-spoiler' : '')">
+            <div [class]="'review-card' + (!review.title ? ' no-title' : '') + (review.spoiler && !isSpoilerRevealed(review.id!) ? ' has-spoiler' : '')">
               @if (review.spoiler && !isSpoilerRevealed(review.id!)) {
                 <p-button
                   label="Show Spoiler"
@@ -49,10 +49,10 @@
               }
 
               <div class="review-header">
-                <div class="flex justify-between items-start p-3">
-                  <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-2">
-                      <span class="font-medium text-sm reviewer-name">{{ review.reviewerName || 'Anonymous' }}</span>
+                <div class="review-header-inner">
+                  <div class="reviewer-info-group">
+                    <div class="reviewer-name-row">
+                      <span class="reviewer-name">{{ review.reviewerName || 'Anonymous' }}</span>
                       @if (review.metadataProvider) {
                         <p-tag
                           [rounded]="true"
@@ -67,28 +67,28 @@
                       }
                     </div>
                     <div class="review-meta">
-                      <i class="pi pi-clock text-xs mr-1"></i>
+                      <i class="pi pi-clock review-meta-icon"></i>
                       @if (review.date) {
-                        <span class="text-sm text-gray-400">{{ formatDate(review.date) }}</span>
+                        <span class="review-meta-text">{{ formatDate(review.date) }}</span>
                       }
                     </div>
                   </div>
 
-                  <div class="flex items-center gap-2">
+                  <div class="review-actions">
                     @if (review.rating) {
-                      <div class="flex items-center gap-1">
+                      <div class="rating-wrapper">
                         <p-rating
                           [ngModel]="review.rating"
                           [readonly]="true"
                           [stars]="5"/>
-                        <span class="text-sm font-medium">{{ review.rating }}/5</span>
+                        <span class="rating-text">{{ review.rating }}/5</span>
                       </div>
                     }
 
                     @if (hasPermission) {
                       @if (reviewsLocked) {
-                        <div class="flex items-center justify-center w-8 h-8">
-                          <i class="pi pi-lock text-amber-500 text-sm"
+                        <div class="lock-icon-container">
+                          <i class="pi pi-lock lock-icon"
                              pTooltip="Reviews are locked"
                              tooltipPosition="top"></i>
                         </div>
@@ -110,7 +110,7 @@
 
               @if (review.title && (!review.spoiler || isSpoilerRevealed(review.id!))) {
                 <div class="review-title-section">
-                  <h4 class="font-medium text-xl text-gray-200 leading-tight m-0 review-title"
+                  <h4 class="review-title"
                       [pTooltip]="review.title"
                       tooltipPosition="top">{{ review.title }}
                   </h4>
@@ -121,19 +121,19 @@
                 @if (review.spoiler && !isSpoilerRevealed(review.id!)) {
                   <div class="spoiler-blur-content">
                     @if (review.title) {
-                      <h4 class="font-medium text-gray-200 leading-tight m-0 review-title blur-sm mb-2">{{ review.title }}</h4>
+                      <h4 class="review-title review-title--blurred">{{ review.title }}</h4>
                     }
                     @if (review.body) {
-                      <div class="text-zinc-300 review-body blur-sm">{{ review.body }}</div>
+                      <div class="review-body review-body--blurred">{{ review.body }}</div>
                     } @else {
-                      <div class="text-zinc-400 italic text-sm blur-sm">No review content available</div>
+                      <div class="review-empty-text review-empty-text--blurred">No review content available</div>
                     }
                   </div>
                 } @else {
                   @if (review.body) {
-                    <div class="text-zinc-300 review-body">{{ review.body }}</div>
+                    <div class="review-body">{{ review.body }}</div>
                   } @else {
-                    <div class="text-zinc-400 italic text-sm">No review content available</div>
+                    <div class="review-empty-text">No review content available</div>
                   }
                 }
                 <div class="review-fade-overlay"></div>

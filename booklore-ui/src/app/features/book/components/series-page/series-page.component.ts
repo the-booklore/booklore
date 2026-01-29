@@ -21,10 +21,12 @@ import {BookDialogHelperService} from "../book-browser/book-dialog-helper.servic
 import {TaskHelperService} from "../../../settings/task-management/task-helper.service";
 import {MetadataRefreshType} from "../../../metadata/model/request/metadata-refresh-type.enum";
 import {TieredMenu} from "primeng/tieredmenu";
+import {AppSettingsService} from "../../../../shared/service/app-settings.service";
 import {Tooltip} from "primeng/tooltip";
 import {Divider} from "primeng/divider";
 import {animate, style, transition, trigger} from "@angular/animations";
 import {Component, inject, OnDestroy} from '@angular/core';
+import {BookCardOverlayPreferenceService} from '../book-browser/book-card-overlay-preference.service';
 
 @Component({
   selector: "app-series-page",
@@ -78,6 +80,8 @@ export class SeriesPageComponent implements OnDestroy {
   private dialogHelperService = inject(BookDialogHelperService);
   protected taskHelperService = inject(TaskHelperService);
   private messageService = inject(MessageService);
+  protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
+  protected appSettingsService = inject(AppSettingsService);
 
   tab: string = "view";
   isExpanded = false;
@@ -370,9 +374,15 @@ export class SeriesPageComponent implements OnDestroy {
 
   confirmDeleteBooks(): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${this.selectedBooks.size} book(s)?`,
+      message: `Are you sure you want to delete ${this.selectedBooks.size} book(s)?\n\nThis will permanently remove the book files from your filesystem.\n\nThis action cannot be undone.`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
+      acceptIcon: 'pi pi-trash',
+      rejectIcon: 'pi pi-times',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-outlined',
       accept: () => {
         const count = this.selectedBooks.size;
         const loader = this.loadingService.show(`Deleting ${count} book(s)...`);

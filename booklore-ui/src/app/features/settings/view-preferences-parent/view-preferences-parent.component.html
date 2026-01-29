@@ -1,9 +1,19 @@
-<div class="w-full h-[calc(100dvh-10.5rem)] md:h-[calc(100dvh-11.65rem)] overflow-y-auto">
+<div class="preferences-container">
+  <div class="settings-header">
+    <h2 class="settings-title">
+      <i class="pi pi-eye"></i>
+      View Preferences
+    </h2>
+    <p class="settings-description">
+      Customize how books are displayed in your library, including grid layout, sorting options, and sidebar behavior.
+    </p>
+  </div>
+
   <app-view-preferences></app-view-preferences>
-  <div class="pt-10"><hr></div>
+  <div class="section-divider"><hr></div>
   <app-filter-preferences></app-filter-preferences>
-  <div class="pt-10"><hr></div>
+  <div class="section-divider"><hr></div>
   <app-sidebar-sorting-preferences></app-sidebar-sorting-preferences>
-  <div class="pt-10"><hr></div>
+  <div class="section-divider"><hr></div>
   <app-meta-center-view-mode-component></app-meta-center-view-mode-component>
 </div>

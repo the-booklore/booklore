@@ -1,6 +1,6 @@
 <p-dialog
   [visible]="currentProgress.visible"
-  [header]="'Downloading File'"
+  [header]="currentProgress.preparing ? 'Preparing Download' : 'Downloading File'"
   [modal]="true"
   [closable]="false"
   [draggable]="false"
@@ -10,16 +10,23 @@
   <div class="download-content">
     <div class="filename">{{ currentProgress.filename }}</div>
 
-    <div class="progress-bar-container">
-      <div class="progress-bar-background">
-        <div class="progress-bar-fill" [style.width.%]="currentProgress.progress"></div>
-        <div class="progress-bar-label">{{ currentProgress.progress }}%</div>
+    @if (currentProgress.preparing) {
+      <div class="preparing-container">
+        <i class="pi pi-spin pi-spinner" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
+        <span>Preparing download, please wait...</span>
       </div>
-    </div>
+    } @else {
+      <div class="progress-bar-container">
+        <div class="progress-bar-background">
+          <div class="progress-bar-fill" [style.width.%]="currentProgress.progress"></div>
+          <div class="progress-bar-label">{{ currentProgress.progress }}%</div>
+        </div>
+      </div>
 
-    <div class="download-info">
-      <span>{{ formatBytes(currentProgress.loaded) }} / {{ formatBytes(currentProgress.total) }}</span>
-    </div>
+      <div class="download-info">
+        <span>{{ formatBytes(currentProgress.loaded) }} / {{ formatBytes(currentProgress.total) }}</span>
+      </div>
+    }
   </div>
 
   <ng-template pTemplate="footer">

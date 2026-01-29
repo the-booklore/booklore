@@ -77,23 +77,21 @@
               </p-toggleswitch>
               <label class="setting-label">Hardcover</label>
             </div>
-            @if (hardcoverEnabled) {
-              <div class="setting-options">
-                <div class="config-field">
-                  <div class="config-label-row">
-                    <label class="config-label">API Token</label>
-                    <app-external-doc-link docType="hardcover"></app-external-doc-link>
-                  </div>
-                  <input
-                    type="text"
-                    pInputText
-                    placeholder="Enter Hardcover API token"
-                    [(ngModel)]="hardcoverToken"
-                    (ngModelChange)="onTokenChange($event)"
-                    class="config-input"/>
+            <div class="setting-options">
+              <div class="config-field">
+                <div class="config-label-row">
+                  <label class="config-label">API Token</label>
+                  <app-external-doc-link docType="hardcover"></app-external-doc-link>
                 </div>
+                <input
+                  type="text"
+                  pInputText
+                  placeholder="Enter Hardcover API token"
+                  [(ngModel)]="hardcoverToken"
+                  (ngModelChange)="onTokenChange($event)"
+                  class="config-input"/>
               </div>
-            }
+            </div>
           </div>
 
           <div class="setting-item">

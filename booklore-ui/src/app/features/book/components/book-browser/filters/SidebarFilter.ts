@@ -123,7 +123,7 @@ export class SideBarFilter implements BookFilter {
               case 'matchScore':
                 return filterValues.some(range => isMatchScoreInRange(book.metadataMatchScore, range));
               case 'bookType':
-                return filterValues.includes(book.bookType);
+                return filterValues.includes(book.primaryFile?.bookType);
               default:
                 return false;
             }

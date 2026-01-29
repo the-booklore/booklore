@@ -80,8 +80,12 @@ class BookMarkServiceTest {
 
     @Test
     void createBookmark_Success() {
-        CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
-        
+        CreateBookMarkRequest request = CreateBookMarkRequest.builder()
+                .bookId(bookId)
+                .cfi("new-cfi")
+                .title("New Bookmark")
+                .build();
+
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
         when(bookmarkProperties.getDefaultPriority()).thenReturn(3);
         when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false);
@@ -99,7 +103,11 @@ class BookMarkServiceTest {
 
     @Test
     void createBookmark_Duplicate() {
-        CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
+        CreateBookMarkRequest request = CreateBookMarkRequest.builder()
+                .bookId(bookId)
+                .cfi("new-cfi")
+                .title("New Bookmark")
+                .build();
 
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
         when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(true); // Duplicate exists
@@ -110,7 +118,11 @@ class BookMarkServiceTest {
 
     @Test
     void createBookmark_BookNotFound() {
-        CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
+        CreateBookMarkRequest request = CreateBookMarkRequest.builder()
+                .bookId(bookId)
+                .cfi("new-cfi")
+                .title("New Bookmark")
+                .build();
 
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
         when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false); // No duplicate

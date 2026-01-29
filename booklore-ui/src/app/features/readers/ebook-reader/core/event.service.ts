@@ -48,6 +48,7 @@ export class ReaderEventService {
   private isTextSelectionInProgress = false;
   private touchStartTime = 0;
   private selectionChangeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private lastTouchTime = 0;
 
   private eventSubject = new Subject<ViewEvent>();
   public events$ = this.eventSubject.asObservable();
@@ -121,6 +122,10 @@ export class ReaderEventService {
 
   private attachKeyboardHandler(): void {
     this.keydownHandler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
       const k = event.key;
       if (k === 'ArrowLeft' || k === 'h' || k === 'PageUp') {
         this.viewCallbacks?.prev();
@@ -158,6 +163,11 @@ export class ReaderEventService {
     });
 
     doc.addEventListener('click', (event: MouseEvent) => {
+      // Ignore synthesized mouse events that follow touch events
+      if (Date.now() - this.lastTouchTime < 500) {
+        return;
+      }
+
       const iframe = doc.defaultView?.frameElement as HTMLIFrameElement | null;
       if (!iframe) return;
 
@@ -275,6 +285,7 @@ export class ReaderEventService {
   private handleTouchEnd(event: TouchEvent, doc: Document): void {
     const touchEndTime = Date.now();
     const touchDuration = touchEndTime - this.touchStartTime;
+    this.lastTouchTime = touchEndTime;
 
     const selection = doc.defaultView?.getSelection();
     const hasSelection = selection && !selection.isCollapsed && selection.rangeCount > 0;

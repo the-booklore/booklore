@@ -72,6 +72,10 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
     return this.state.scrollMode === CbxScrollMode.PAGINATED;
   }
 
+  get isPhonePortrait(): boolean {
+    return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+  }
+
   onFitModeSelect(mode: CbxFitMode): void {
     this.quickSettingsService.emitFitModeChange(mode);
   }

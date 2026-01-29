@@ -12,13 +12,18 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class KomgaMapper {
 
+    private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-z0-9]+");
     private final AppSettingService appSettingService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final String UNKNOWN_SERIES = "Unknown Series";
@@ -262,7 +267,7 @@ public class KomgaMapper {
         Long libraryId = book.getLibrary().getId();
         
         // Generate a pseudo-ID based on library and series name
-        return libraryId + "-" + seriesName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
+        return libraryId + "-" + NON_ALPHANUMERIC_PATTERN.matcher(seriesName.toLowerCase()).replaceAll("-");
     }
 
     private String getMediaType(BookFileType bookType) {
@@ -277,6 +282,7 @@ public class KomgaMapper {
             case FB2 -> "application/fictionbook2+zip";
             case MOBI -> "application/x-mobipocket-ebook";
             case AZW3 -> "application/vnd.amazon.ebook";
+            case AUDIOBOOK -> "audio/mp4";
         };
     }
 
@@ -292,6 +298,7 @@ public class KomgaMapper {
             case EPUB -> "EPUB";
             case CBX -> "DIVINA"; // DIVINA is for comic books
             case FB2 -> "DIVINA";
+            case AUDIOBOOK -> "AUDIOBOOK";
         };
     }
 
