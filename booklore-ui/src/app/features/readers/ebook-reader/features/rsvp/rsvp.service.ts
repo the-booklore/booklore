@@ -409,8 +409,9 @@ export class RsvpService {
 
     // Clean the selection text
     const cleanSelection = selectionText.trim().toLowerCase();
-    const selectionWords = cleanSelection.split(/\s+/);
+    if (!cleanSelection) return -1;
 
+    const selectionWords = cleanSelection.split(/\s+/);
     if (selectionWords.length === 0) return -1;
 
     // Find the first word of the selection
