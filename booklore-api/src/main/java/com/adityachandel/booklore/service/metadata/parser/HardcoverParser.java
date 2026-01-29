@@ -8,10 +8,15 @@ import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLRespo
 import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
 import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
 import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverMoodFilter;
+import com.adityachandel.booklore.util.BookUtils;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.commons.text.similarity.FuzzyScore;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -280,23 +285,43 @@ public class HardcoverParser implements BookParser {
         }
 
         String inputIsbn = request.getIsbn();
-
-        if (inputIsbn != null && inputIsbn.length() == 10 && doc.getIsbns().contains(inputIsbn)) {
-            metadata.setIsbn10(inputIsbn);
+        String matchingIsbn = null;
+        if (StringUtils.isBlank(inputIsbn)) {
+            // If we didn't search by ISBN, use first ISBN from results
+            matchingIsbn = doc.getIsbns().stream()
+                .filter(isbn -> isbn.length() == 10 || isbn.length() == 13)
+                .findFirst()
+                .orElse(null);
+        } else if (doc.getIsbns().contains(inputIsbn)) {
+            // If we searched by ISBN and it matches a result perfectly, use that
+            matchingIsbn = inputIsbn;
         } else {
-            metadata.setIsbn10(doc.getIsbns().stream()
-                    .filter(isbn -> isbn.length() == 10)
-                    .findFirst()
-                    .orElse(null));
+            // If we searched by ISBN but got no exact matches, get response ISBN that most closely matches it
+            LevenshteinDistance distance = LevenshteinDistance.getDefaultInstance();
+            int smallestDistance = Integer.MAX_VALUE;
+            for (String isbn : doc.getIsbns()) {
+                if (isbn.length() != 10 && isbn.length() != 13) {
+                    continue;
+                }
+                int currentDistance = distance.apply(isbn, inputIsbn);
+                if (smallestDistance > currentDistance) {
+                    smallestDistance = currentDistance;
+                    matchingIsbn = isbn;
+                }
+            }
         }
 
-        if (inputIsbn != null && inputIsbn.length() == 13 && doc.getIsbns().contains(inputIsbn)) {
-            metadata.setIsbn13(inputIsbn);
+        // Whatever ISBN we end up with, calculate the other one
+        if (matchingIsbn != null && matchingIsbn.length() == 10) {
+            metadata.setIsbn10(matchingIsbn);
+            metadata.setIsbn13(BookUtils.isbn10To13(matchingIsbn));
+        } else if (matchingIsbn != null && matchingIsbn.length() == 13) {
+            metadata.setIsbn10(BookUtils.isbn13to10(matchingIsbn));
+            metadata.setIsbn13(matchingIsbn);
         } else {
-            metadata.setIsbn13(doc.getIsbns().stream()
-                    .filter(isbn -> isbn.length() == 13)
-                    .findFirst()
-                    .orElse(null));
+            // Can only happen if doc.getIsbns() is empty or doesn't have any 10/13 length strings
+            metadata.setIsbn10(null);
+            metadata.setIsbn13(null);
         }
     }
 

@@ -206,12 +206,12 @@ class HardcoverParserTest {
             Book book = Book.builder().title("Any Book").build();
             FetchMetadataRequest request = FetchMetadataRequest.builder()
                     .title("Any Book")
-                    .isbn("1234567890")
+                    .isbn("123456789X")
                     .author("Wrong Author")  // Should be ignored
                     .build();
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Any Book", "Correct Author");
-            when(hardcoverBookSearchService.searchBooks("1234567890"))
+            when(hardcoverBookSearchService.searchBooks("123456789X"))
                     .thenReturn(List.of(hit));
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
@@ -229,11 +229,11 @@ class HardcoverParserTest {
             Book book = Book.builder().title("Test").build();
             FetchMetadataRequest request = FetchMetadataRequest.builder()
                     .title("Test")
-                    .isbn("9781234567890")
+                    .isbn("9781234567897")
                     .build();
 
             GraphQLResponse.Hit hit = createFullyPopulatedHit();
-            when(hardcoverBookSearchService.searchBooks("9781234567890"))
+            when(hardcoverBookSearchService.searchBooks("9781234567897"))
                     .thenReturn(List.of(hit));
 
             List<BookMetadata> results = parser.fetchMetadata(book, request);
@@ -253,9 +253,47 @@ class HardcoverParserTest {
             assertThat(metadata.getSeriesName()).isEqualTo("Test Series");
             assertThat(metadata.getSeriesNumber()).isEqualTo(2.0f);
             assertThat(metadata.getSeriesTotal()).isEqualTo(5);
-            assertThat(metadata.getIsbn13()).isEqualTo("9781234567890");
-            assertThat(metadata.getIsbn10()).isEqualTo("1234567890");
+            assertThat(metadata.getIsbn13()).isEqualTo("9781234567897");
+            assertThat(metadata.getIsbn10()).isEqualTo("123456789X");
             assertThat(metadata.getProvider()).isEqualTo(MetadataProvider.Hardcover);
+        }
+
+        @Test
+        @DisplayName("Should map correct ISBN-13 from ISBN-10")
+        void fetchMetadata_fullDocument_isbn10() {
+            Book book = Book.builder().title("Test").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Test")
+                    .isbn("123456789X")
+                    .build();
+
+            GraphQLResponse.Hit hit = createFullyPopulatedHit();
+            when(hardcoverBookSearchService.searchBooks("123456789X"))
+                    .thenReturn(List.of(hit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results.get(0).getIsbn10()).isEqualTo("123456789X");
+            assertThat(results.get(0).getIsbn13()).isEqualTo("9781234567897");
+        }
+
+        @Test
+        @DisplayName("ISBN-13 not starting with 978 should not have an ISBN-10")
+        void fetchMetadata_fullDocument_noIsbn10() {
+            Book book = Book.builder().title("Test").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Test")
+                    .isbn("9791111111112")
+                    .build();
+
+            GraphQLResponse.Hit hit = createFullyPopulatedHit();
+            when(hardcoverBookSearchService.searchBooks("9791111111112"))
+                    .thenReturn(List.of(hit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results.get(0).getIsbn10()).isNull();
+            assertThat(results.get(0).getIsbn13()).isEqualTo("9791111111112");
         }
 
         @Test
@@ -531,7 +569,7 @@ class HardcoverParserTest {
         doc.setRatingsCount(100);
         doc.setPages(350);
         doc.setReleaseDate("2023-01-15");
-        doc.setIsbns(List.of("9781234567890", "1234567890"));
+        doc.setIsbns(List.of("9781111111113", "1111111111", "9781234567897", "123456789X", "9791111111112"));
         doc.setGenres(List.of("Fiction", "Fantasy"));
         doc.setMoods(List.of("adventurous", "exciting"));
         doc.setTags(List.of("Epic"));
