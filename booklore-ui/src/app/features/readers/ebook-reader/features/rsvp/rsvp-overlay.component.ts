@@ -36,6 +36,7 @@ export class RsvpOverlayComponent implements OnInit, OnDestroy {
   flatChapters: FlatChapter[] = [];
   showChapterDropdown = false;
   countdown: number | null = null;
+  showContext = false;
 
   private touchStartX = 0;
   private touchStartY = 0;
@@ -75,6 +76,34 @@ export class RsvpOverlayComponent implements OnInit, OnDestroy {
       const mins = Math.round(minutesLeft % 60);
       return `${hours}h ${mins}m`;
     }
+  }
+
+  get contextBefore(): string {
+    if (!this.state || this.state.words.length === 0) return '';
+    // Show ~100 words before for full paragraph context
+    const startIndex = Math.max(0, this.state.currentIndex - 100);
+    return this.state.words
+      .slice(startIndex, this.state.currentIndex)
+      .map(w => w.text)
+      .join(' ');
+  }
+
+  get contextAfter(): string {
+    if (!this.state || this.state.words.length === 0) return '';
+    // Show ~100 words after for full paragraph context
+    const endIndex = Math.min(this.state.words.length, this.state.currentIndex + 101);
+    return this.state.words
+      .slice(this.state.currentIndex + 1, endIndex)
+      .map(w => w.text)
+      .join(' ');
+  }
+
+  get currentWordText(): string {
+    return this.currentWord?.text || '';
+  }
+
+  toggleContext(): void {
+    this.showContext = !this.showContext;
   }
 
   ngOnInit(): void {

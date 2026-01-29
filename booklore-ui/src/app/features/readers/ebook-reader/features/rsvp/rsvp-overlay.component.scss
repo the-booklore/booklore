@@ -48,6 +48,68 @@
   opacity: 0.7;
 }
 
+.rsvp-context-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity 0.2s, background-color 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+    background-color: rgba(128, 128, 128, 0.2);
+  }
+
+  &.active {
+    opacity: 1;
+    background-color: rgba(128, 128, 128, 0.25);
+  }
+}
+
+.rsvp-context-panel {
+  margin: 0 1.5rem;
+  padding: 1rem;
+  background: rgba(128, 128, 128, 0.1);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.context-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+.context-text {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  text-align: left;
+}
+
+.context-before,
+.context-after {
+  opacity: 0.7;
+}
+
+.context-current {
+  color: var(--rsvp-accent, #ff6b6b);
+  font-weight: 600;
+}
+
 .rsvp-chapter-selector {
   position: relative;
   flex: 1;
@@ -239,19 +301,6 @@
   }
 }
 
-.rsvp-hint {
-  margin-top: 2rem;
-  font-size: 0.875rem;
-  opacity: 0.5;
-  text-align: center;
-
-  .resumed-indicator {
-    color: #4ade80;
-    opacity: 1;
-    font-weight: 500;
-  }
-}
-
 .rsvp-footer {
   flex-shrink: 0;
   padding: 1rem 1.5rem 2rem;
@@ -423,7 +472,7 @@
   }
 
   .rsvp-content {
-    padding: 1rem;
+    padding: 0.5rem;
   }
 
   .rsvp-word-container {
@@ -438,13 +487,26 @@
     gap: 0.5rem;
   }
 
-  .rsvp-speed-controls {
-    margin-left: 0.5rem;
-    padding-left: 0.5rem;
+  .rsvp-controls-spacer {
+    display: none;
   }
 
-  .rsvp-hint {
-    font-size: 0.75rem;
+  .rsvp-speed-controls {
+    flex: 0;
+  }
+
+  .rsvp-context-panel {
+    margin: 0 0.75rem;
+    padding: 0.75rem;
+    max-height: 25vh;
+  }
+
+  .context-text {
+    font-size: 1rem;
+  }
+
+  .rsvp-chapter-selector {
+    max-width: 150px;
   }
 }
 
@@ -458,11 +520,7 @@
     min-height: 3rem;
   }
 
-  .rsvp-hint {
-    margin-top: 0.5rem;
-  }
-
-  .rsvp-guide-line {
-    display: none;
+  .rsvp-context-panel {
+    max-height: 20vh;
   }
 }

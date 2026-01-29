@@ -41,6 +41,22 @@
       <div class="rsvp-wpm-display">{{ state!.wpm }} WPM</div>
     </div>
 
+    @if (!state!.playing && countdown === null) {
+      <div class="rsvp-context-panel">
+        <div class="context-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h10"/>
+          </svg>
+          <span>Context</span>
+        </div>
+        <div class="context-text">
+          <span class="context-before">{{ contextBefore }} </span>
+          <span class="context-current">{{ currentWordText }}</span>
+          <span class="context-after"> {{ contextAfter }}</span>
+        </div>
+      </div>
+    }
+
     <div class="rsvp-content">
       <div class="rsvp-focus-area">
         <div class="rsvp-vertical-guide">
@@ -65,15 +81,6 @@
         </div>
       </div>
 
-      <div class="rsvp-hint">
-        @if (state!.resumedFromIndex !== null && state!.currentIndex === state!.resumedFromIndex) {
-          <span class="resumed-indicator">Resumed from saved position</span>
-        } @else if (!state!.playing) {
-          <span>Paused - Tap center to resume</span>
-        } @else {
-          <span>Tap: left=back, center=pause, right=skip</span>
-        }
-      </div>
     </div>
 
     <div class="rsvp-footer">
