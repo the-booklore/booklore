@@ -141,6 +141,28 @@ export class ReaderViewManagerService {
     this.view?.next();
   }
 
+  nextAsync(): Observable<void> {
+    if (!this.view) {
+      return of(undefined);
+    }
+    return new Observable(subscriber => {
+      const handler = () => {
+        this.view?.removeEventListener('relocate', handler);
+        subscriber.next();
+        subscriber.complete();
+      };
+      this.view.addEventListener('relocate', handler, { once: true });
+      this.view.next();
+
+      // Timeout fallback in case relocate doesn't fire
+      setTimeout(() => {
+        this.view?.removeEventListener('relocate', handler);
+        subscriber.next();
+        subscriber.complete();
+      }, 1000);
+    });
+  }
+
   getRenderer(): any {
     return this.view?.renderer;
   }
@@ -242,6 +264,26 @@ export class ReaderViewManagerService {
     return this.getCover().pipe(
       map(blob => blob ? URL.createObjectURL(blob) : null)
     );
+  }
+
+  /**
+   * Get the current CFI directly from the view's last location.
+   * This returns the live value, not a cached one.
+   */
+  getCurrentCfi(): string | null {
+    try {
+      const lastLocation = this.view?.lastLocation;
+      if (lastLocation?.cfi) {
+        return lastLocation.cfi;
+      }
+      // Fallback to getting CFI from current position
+      if (lastLocation?.start?.cfi) {
+        return lastLocation.start.cfi;
+      }
+    } catch {
+      // Ignore errors
+    }
+    return null;
   }
 
   async* search(opts: { query: string; matchCase?: boolean; matchWholeWords?: boolean }): AsyncGenerator<any> {
