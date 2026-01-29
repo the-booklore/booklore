@@ -9,7 +9,7 @@ import {EpubStreamingService, EpubBookInfo} from './epub-streaming.service';
 export type {ViewEvent, TextSelection} from './event.service';
 export type {PageInfo, ThemeInfo} from '../shared/header-footer.util';
 
-interface TocItem {
+export interface TocItem {
   label: string;
   href: string;
   subitems?: TocItem[];

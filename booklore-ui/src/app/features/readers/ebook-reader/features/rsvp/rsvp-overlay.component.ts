@@ -1,27 +1,41 @@
 import {Component, EventEmitter, HostListener, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {RsvpService, RsvpState, RsvpWord} from './rsvp.service';
 import {Theme} from '../../state/themes.constant';
+import {TocItem} from '../../core/view-manager.service';
+
+export interface FlatChapter {
+  label: string;
+  href: string;
+  level: number;
+}
 
 @Component({
   selector: 'app-rsvp-overlay',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './rsvp-overlay.component.html',
   styleUrls: ['./rsvp-overlay.component.scss']
 })
 export class RsvpOverlayComponent implements OnInit, OnDestroy {
   @Input() theme!: Theme;
+  @Input() chapters: TocItem[] = [];
+  @Input() currentChapterHref: string | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() requestNextPage = new EventEmitter<void>();
+  @Output() chapterSelect = new EventEmitter<string>();
 
   private rsvpService = inject(RsvpService);
   private destroy$ = new Subject<void>();
 
   state: RsvpState | null = null;
   currentWord: RsvpWord | null = null;
+  flatChapters: FlatChapter[] = [];
+  showChapterDropdown = false;
+  countdown: number | null = null;
 
   private touchStartX = 0;
   private touchStartY = 0;
@@ -44,12 +58,39 @@ export class RsvpOverlayComponent implements OnInit, OnDestroy {
     return this.currentWord.text.substring(this.currentWord.orpIndex + 1);
   }
 
+  get timeRemaining(): string | null {
+    if (!this.state || this.state.words.length === 0) return null;
+    const wordsLeft = this.state.words.length - this.state.currentIndex;
+    const minutesLeft = wordsLeft / this.state.wpm;
+
+    if (minutesLeft < 1) {
+      const seconds = Math.ceil(minutesLeft * 60);
+      return `${seconds}s`;
+    } else if (minutesLeft < 60) {
+      const mins = Math.floor(minutesLeft);
+      const secs = Math.round((minutesLeft - mins) * 60);
+      return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+    } else {
+      const hours = Math.floor(minutesLeft / 60);
+      const mins = Math.round(minutesLeft % 60);
+      return `${hours}h ${mins}m`;
+    }
+  }
+
   ngOnInit(): void {
+    this.flatChapters = this.flattenChapters(this.chapters);
+
     this.rsvpService.state$
       .pipe(takeUntil(this.destroy$))
       .subscribe(state => {
         this.state = state;
         this.currentWord = this.rsvpService.currentWord;
+      });
+
+    this.rsvpService.countdown$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(count => {
+        this.countdown = count;
       });
 
     this.rsvpService.requestNextPage$
@@ -60,6 +101,44 @@ export class RsvpOverlayComponent implements OnInit, OnDestroy {
 
     // Don't call start() here - the parent component is responsible for starting RSVP
     // via startFromBeginning() or startFromSavedPosition()
+  }
+
+  private flattenChapters(items: TocItem[], level = 0): FlatChapter[] {
+    const result: FlatChapter[] = [];
+    for (const item of items) {
+      result.push({ label: item.label, href: item.href, level });
+      if (item.subitems?.length) {
+        result.push(...this.flattenChapters(item.subitems, level + 1));
+      }
+    }
+    return result;
+  }
+
+  get currentChapterLabel(): string {
+    if (!this.currentChapterHref) return 'Select Chapter';
+    const normalizedCurrent = this.currentChapterHref.split('#')[0].replace(/^\//, '');
+    const chapter = this.flatChapters.find(c => {
+      const normalizedHref = c.href.split('#')[0].replace(/^\//, '');
+      return normalizedHref === normalizedCurrent;
+    });
+    return chapter?.label || 'Select Chapter';
+  }
+
+  toggleChapterDropdown(): void {
+    this.showChapterDropdown = !this.showChapterDropdown;
+  }
+
+  onChapterSelect(href: string): void {
+    this.showChapterDropdown = false;
+    this.rsvpService.pause();
+    this.chapterSelect.emit(href);
+  }
+
+  isChapterActive(href: string): boolean {
+    if (!this.currentChapterHref) return false;
+    const normalizedCurrent = this.currentChapterHref.split('#')[0].replace(/^\//, '');
+    const normalizedHref = href.split('#')[0].replace(/^\//, '');
+    return normalizedHref === normalizedCurrent;
   }
 
   ngOnDestroy(): void {
@@ -77,11 +156,11 @@ export class RsvpOverlayComponent implements OnInit, OnDestroy {
   }
 
   onSkipBackward(): void {
-    this.rsvpService.skipBackward(10);
+    this.rsvpService.skipBackward(15);
   }
 
   onSkipForward(): void {
-    this.rsvpService.skipForward(10);
+    this.rsvpService.skipForward(15);
   }
 
   onDecreaseSpeed(): void {

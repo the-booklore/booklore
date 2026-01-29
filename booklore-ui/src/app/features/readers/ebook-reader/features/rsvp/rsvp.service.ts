@@ -66,9 +66,13 @@ export class RsvpService {
   }>();
   public showStartChoice$ = this.showStartChoice.asObservable();
 
+  private countdownSubject = new BehaviorSubject<number | null>(null);
+  public countdown$ = this.countdownSubject.asObservable();
+
   private pendingStartWordIndex: number | null = null;
 
   private playbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   get currentState(): RsvpState {
     return this.stateSubject.value;
@@ -220,25 +224,56 @@ export class RsvpService {
 
     this.updateState({
       active: true,
-      playing: true,
+      playing: false, // Start paused, countdown will set to playing
       words,
       currentIndex: startIndex,
       progress: (startIndex / words.length) * 100,
       resumedFromIndex
     });
 
-    this.scheduleNextWord();
+    // Start with countdown
+    this.startCountdown(() => {
+      this.updateState({playing: true});
+      this.scheduleNextWord();
+    });
   }
 
   pause(): void {
     this.clearTimer();
+    this.clearCountdown();
     this.updateState({playing: false});
   }
 
   resume(): void {
     if (!this.currentState.active) return;
-    this.updateState({playing: true});
-    this.scheduleNextWord();
+    this.startCountdown(() => {
+      this.updateState({playing: true});
+      this.scheduleNextWord();
+    });
+  }
+
+  private startCountdown(onComplete: () => void): void {
+    this.clearCountdown();
+    let count = 3;
+    this.countdownSubject.next(count);
+
+    this.countdownTimer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        this.countdownSubject.next(count);
+      } else {
+        this.clearCountdown();
+        onComplete();
+      }
+    }, 800);
+  }
+
+  private clearCountdown(): void {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+    this.countdownSubject.next(null);
   }
 
   togglePlayPause(): void {
@@ -459,15 +494,22 @@ export class RsvpService {
       return;
     }
 
+    const wasPlaying = this.currentState.playing;
+
     this.updateState({
       words,
       currentIndex: 0,
       progress: 0,
-      resumedFromIndex: null
+      resumedFromIndex: null,
+      playing: false // Pause while countdown runs
     });
 
-    if (this.currentState.playing) {
-      this.scheduleNextWord();
+    if (wasPlaying) {
+      // Show countdown before continuing with new content
+      this.startCountdown(() => {
+        this.updateState({playing: true});
+        this.scheduleNextWord();
+      });
     }
   }
 

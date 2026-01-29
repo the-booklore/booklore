@@ -4,7 +4,7 @@ import {forkJoin, Observable, of, Subject, throwError} from 'rxjs';
 import {catchError, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {ReaderLoaderService} from './core/loader.service';
-import {ReaderViewManagerService} from './core/view-manager.service';
+import {ReaderViewManagerService, TocItem} from './core/view-manager.service';
 import {ReaderStateService} from './state/reader-state.service';
 import {ReaderStyleService} from './core/style.service';
 import {ReaderBookmarkService} from './features/bookmarks/bookmark.service';
@@ -76,7 +76,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private epubCustomFontService = inject(EpubCustomFontService);
   private annotationService = inject(ReaderAnnotationHttpService);
-  private progressService = inject(ReaderProgressService);
+  public progressService = inject(ReaderProgressService);
   private selectionService = inject(ReaderSelectionService);
   private headerService = inject(ReaderHeaderService);
   private noteService = inject(ReaderNoteService);
@@ -122,6 +122,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     firstVisibleWordIndex: number;
   } = { hasSavedPosition: false, hasSelection: false, firstVisibleWordIndex: 0 };
   private rsvpHighlightCfi: string | null = null;
+  rsvpChapters: TocItem[] = [];
 
   get currentProgressData(): any {
     return this.progressService.currentProgressData;
@@ -167,6 +168,8 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.headerService.startRsvp$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
+        // Load chapters for the RSVP chapter selector
+        this.rsvpChapters = this.viewManager.getChapters();
         // Get the current CFI directly from the view (not cached) to avoid race conditions
         // after page navigation. The progressService.currentCfi may be stale due to the
         // 100ms timeout in the relocate handler.
@@ -440,6 +443,22 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           const currentCfi = this.progressService.currentCfi;
           this.rsvpService.setCurrentCfi(currentCfi);
           // Additional delay to ensure content is rendered
+          setTimeout(() => {
+            this.rsvpService.loadNextPageContent();
+          }, 150);
+        }, 200);
+      });
+  }
+
+  onRsvpChapterSelect(href: string): void {
+    this.viewManager.goTo(href)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Wait for navigation and content to load
+        setTimeout(() => {
+          const currentCfi = this.viewManager.getCurrentCfi() || this.progressService.currentCfi;
+          this.rsvpService.setCurrentCfi(currentCfi);
+          // Reload RSVP content for the new chapter
           setTimeout(() => {
             this.rsvpService.loadNextPageContent();
           }, 150);

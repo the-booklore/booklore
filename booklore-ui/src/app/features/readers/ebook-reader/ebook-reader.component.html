@@ -86,8 +86,11 @@
   @if (showRsvp) {
     <app-rsvp-overlay
       [theme]="stateService.currentState.theme"
+      [chapters]="rsvpChapters"
+      [currentChapterHref]="progressService.currentChapterHref"
       (close)="onRsvpClose()"
       (requestNextPage)="onRsvpRequestNextPage()"
+      (chapterSelect)="onRsvpChapterSelect($event)"
     ></app-rsvp-overlay>
   }
 
