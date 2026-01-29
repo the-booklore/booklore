@@ -1,11 +1,11 @@
 import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {Button} from 'primeng/button';
-import {AsyncPipe, DecimalPipe, NgClass, UpperCasePipe} from '@angular/common';
-import {Observable} from 'rxjs';
+import {AsyncPipe, DecimalPipe, NgClass} from '@angular/common';
+import {combineLatest, Observable} from 'rxjs';
 import {BookService} from '../../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
-import {Book, BookMetadata, BookRecommendation, FileInfo, ReadStatus} from '../../../../book/model/book.model';
+import {Book, BookFile, BookMetadata, BookRecommendation, BookType, FileInfo, ReadStatus} from '../../../../book/model/book.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {SplitButton} from 'primeng/splitbutton';
@@ -20,36 +20,28 @@ import {MetadataRefreshType} from '../../../model/request/metadata-refresh-type.
 import {Router} from '@angular/router';
 import {filter, map, switchMap, take, tap} from 'rxjs/operators';
 import {Menu} from 'primeng/menu';
-import {InfiniteScrollDirective} from 'ngx-infinite-scroll';
-import {BookCardLiteComponent} from '../../../../book/components/book-card-lite/book-card-lite-component';
 import {ResetProgressType, ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {DatePicker} from 'primeng/datepicker';
-import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
-import {BookReviewsComponent} from '../../../../book/components/book-reviews/book-reviews.component';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
-import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
-import {
-  fileSizeRanges,
-  matchScoreRanges,
-  pageCountRanges
-} from '../../../../book/components/book-browser/book-filter/book-filter.component';
+import {fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.component';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
-import { BookReadingSessionsComponent } from '../book-reading-sessions/book-reading-sessions.component';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
+import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
+
 
 @Component({
   selector: 'app-metadata-viewer',
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image, TagComponent, UpperCasePipe, Divider, BookReadingSessionsComponent]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, Divider, MetadataTabsComponent]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges {
   @Input() book$!: Observable<Book | null>;
@@ -70,8 +62,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private destroyRef = inject(DestroyRef);
   private dialogRef?: DynamicDialogRef;
 
-  pdfReadMenuItems$!: Observable<MenuItem[]>;
-  epubReadMenuItems$!: Observable<MenuItem[]>;
+  readMenuItems$!: Observable<MenuItem[]>;
   refreshMenuItems$!: Observable<MenuItem[]>;
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
@@ -117,24 +108,72 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       ])
     );
 
-    this.pdfReadMenuItems$ = this.book$.pipe(
+    this.readMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
-      map((book): MenuItem[] => [
-        {
-          label: 'Streaming Reader',
-          command: () => this.read(book.id, 'pdf-streaming')
-        }
-      ])
-    );
+      map((book): MenuItem[] => {
+        const items: MenuItem[] = [];
+        const primaryType = book.primaryFile?.bookType;
 
-    this.epubReadMenuItems$ = this.book$.pipe(
-      filter((book): book is Book => book !== null),
-      map((book): MenuItem[] => [
-        {
-          label: 'Streaming Reader (Beta)',
-          command: () => this.read(book.id, 'epub-streaming')
+        // Add streaming reader option for primary file
+        if (primaryType === 'PDF') {
+          items.push({
+            label: 'Streaming Reader',
+            icon: 'pi pi-play',
+            command: () => this.read(book.id, 'pdf-streaming')
+          });
+        } else if (primaryType === 'EPUB') {
+          items.push({
+            label: 'Streaming Reader',
+            icon: 'pi pi-play',
+            command: () => this.read(book.id, 'epub-streaming')
+          });
         }
-      ])
+
+        // Get readable alternative formats and group by type
+        const readableAlternatives = book.alternativeFormats?.filter(f =>
+          f.bookType && ['PDF', 'EPUB', 'FB2', 'MOBI', 'AZW3', 'CBX', 'AUDIOBOOK'].includes(f.bookType)
+        ) ?? [];
+
+        // Get unique format types from alternatives
+        const uniqueAltTypes = [...new Set(readableAlternatives.map(f => f.bookType))];
+
+        if (uniqueAltTypes.length > 0) {
+          if (items.length > 0) {
+            items.push({separator: true});
+          }
+
+          uniqueAltTypes.forEach(formatType => {
+            if (formatType === 'PDF' || formatType === 'EPUB') {
+              // For PDF/EPUB, offer both standard and streaming readers
+              items.push({
+                label: formatType,
+                icon: this.getFileIcon(formatType),
+                items: [
+                  {
+                    label: 'Standard Reader',
+                    icon: 'pi pi-book',
+                    command: () => this.read(book.id, undefined, formatType)
+                  },
+                  {
+                    label: 'Streaming Reader',
+                    icon: 'pi pi-play',
+                    command: () => this.read(book.id, formatType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', formatType)
+                  }
+                ]
+              });
+            } else {
+              // For other formats, just show the type
+              items.push({
+                label: formatType,
+                icon: this.getFileIcon(formatType ?? null),
+                command: () => this.read(book.id, undefined, formatType)
+              });
+            }
+          });
+        }
+
+        return items;
+      })
     );
 
     this.downloadMenuItems$ = this.book$.pipe(
@@ -144,13 +183,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       map((book): MenuItem[] => {
         const items: MenuItem[] = [];
 
-        // Add alternative formats
+        // Add alternative formats with type and size
         if (book.alternativeFormats && book.alternativeFormats.length > 0) {
           book.alternativeFormats.forEach(format => {
-            const extension = this.getFileExtension(format.filePath);
             items.push({
-              label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
-              icon: this.getFileIcon(extension),
+              label: `${format.bookType ?? 'File'} · ${this.formatFileSize(format)}`,
+              icon: this.getFileIcon(format.bookType ?? null),
               command: () => this.downloadAdditionalFile(book, format.id)
             });
           });
@@ -167,8 +205,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           book.supplementaryFiles.forEach(file => {
             const extension = this.getFileExtension(file.filePath);
             items.push({
-              label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
+              label: `${this.truncateFileName(file.fileName, 20)} · ${this.formatFileSize(file)}`,
               icon: this.getFileIcon(extension),
+              tooltipOptions: {tooltipLabel: file.fileName, tooltipPosition: 'left'},
               command: () => this.downloadAdditionalFile(book, file.id)
             });
           });
@@ -181,10 +220,18 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.otherItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
       switchMap(book =>
-        this.userService.userState$.pipe(
-          take(1),
-          map(userState => {
+        combineLatest([
+          this.userService.userState$.pipe(take(1)),
+          this.appSettingsService.appSettings$.pipe(take(1))
+        ]).pipe(
+          map(([userState, appSettings]) => {
             const items: MenuItem[] = [];
+
+            items.push({
+              label: 'Shelf',
+              icon: 'pi pi-folder',
+              command: () => this.assignShelf(book.id)
+            });
 
             // Add allowed submenus based on user permissions
 
@@ -198,7 +245,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            if (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) {
+            const hasFiles = this.hasAnyFiles(book);
+
+            if (hasFiles && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) && appSettings?.diskType === 'LOCAL') {
               items.push({
                 label: 'Organize Files',
                 icon: 'pi pi-arrows-h',
@@ -208,7 +257,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            if (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin) {
+            if (hasFiles && (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin)) {
               items.push({
                 label: 'Send Book',
                 icon: 'pi pi-send',
@@ -229,18 +278,113 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            if (userState?.user?.permissions.canDeleteBook || userState?.user?.permissions.admin) {
+            // Show "Attach to Another Book" for single-file books (detached books) - not for physical books
+            const isSingleFileBook = hasFiles && !book.alternativeFormats?.length;
+            if (isSingleFileBook && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin)) {
               items.push({
-                label: 'Delete Book',
+                label: 'Attach to Another Book',
+                icon: 'pi pi-link',
+                command: () => {
+                  this.bookDialogHelperService.openBookFileAttacherDialog(book);
+                },
+              });
+            }
+
+            if (userState?.user?.permissions.canDeleteBook || userState?.user?.permissions.admin) {
+              // Delete File Formats submenu - allows deleting individual book format files
+              const deleteFormatItems: MenuItem[] = [];
+              const hasMultipleFormats = (book.alternativeFormats?.length ?? 0) > 0;
+
+              // Add primary file if it exists
+              if (book.primaryFile) {
+                const extension = this.getFileExtension(book.primaryFile.filePath);
+                const isPrimaryOnly = !hasMultipleFormats;
+                const truncatedName = this.truncateFileName(book.primaryFile.fileName, 25);
+                deleteFormatItems.push({
+                  label: `${truncatedName} (${this.formatFileSize(book.primaryFile)}) [Primary]`,
+                  icon: this.getFileIcon(extension),
+                  tooltipOptions: {tooltipLabel: book.primaryFile.fileName, tooltipPosition: 'left'},
+                  command: () => this.deleteBookFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true, isPrimaryOnly)
+                });
+              }
+
+              // Add alternative formats
+              if (book.alternativeFormats && book.alternativeFormats.length > 0) {
+                book.alternativeFormats.forEach(format => {
+                  const extension = this.getFileExtension(format.filePath);
+                  const truncatedName = this.truncateFileName(format.fileName, 25);
+                  deleteFormatItems.push({
+                    label: `${truncatedName} (${this.formatFileSize(format)})`,
+                    icon: this.getFileIcon(extension),
+                    tooltipOptions: {tooltipLabel: format.fileName, tooltipPosition: 'left'},
+                    command: () => this.deleteBookFile(book, format.id, format.fileName || 'file', false, false)
+                  });
+                });
+              }
+
+              if (deleteFormatItems.length > 0) {
+                items.push({
+                  label: 'Delete File Formats',
+                  icon: 'pi pi-file',
+                  items: deleteFormatItems
+                });
+              }
+
+              // Delete Supplementary Files submenu - for non-book files
+              if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+                const deleteSupplementaryItems: MenuItem[] = [];
+                book.supplementaryFiles.forEach(file => {
+                  const extension = this.getFileExtension(file.filePath);
+                  const truncatedName = this.truncateFileName(file.fileName, 25);
+                  deleteSupplementaryItems.push({
+                    label: `${truncatedName} (${this.formatFileSize(file)})`,
+                    icon: this.getFileIcon(extension),
+                    tooltipOptions: {tooltipLabel: file.fileName, tooltipPosition: 'left'},
+                    command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
+                  });
+                });
+
+                items.push({
+                  label: 'Delete Supplementary Files',
+                  icon: 'pi pi-paperclip',
+                  items: deleteSupplementaryItems
+                });
+              }
+
+              // Delete Book & All Files - deletes the entire book entity
+              const allFormats: string[] = [];
+              if (book.primaryFile?.fileName) {
+                allFormats.push(book.primaryFile.fileName);
+              }
+              book.alternativeFormats?.forEach(f => {
+                if (f.fileName) allFormats.push(f.fileName);
+              });
+              book.supplementaryFiles?.forEach(f => {
+                if (f.fileName) allFormats.push(f.fileName);
+              });
+
+              const isPhysical = !hasFiles;
+              const fileListMessage = allFormats.length > 0
+                ? `\n\nThe following files will be permanently deleted:\n• ${allFormats.join('\n• ')}`
+                : '';
+
+              const deleteLabel = isPhysical ? 'Delete Book' : 'Delete Book & All Files';
+              const deleteMessage = isPhysical
+                ? `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record from your library.\n\nThis action cannot be undone.`
+                : `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record AND all associated files from your filesystem.${fileListMessage}\n\nThis action cannot be undone.`;
+              const deleteAcceptLabel = isPhysical ? 'Delete' : 'Delete Everything';
+
+              items.push({
+                label: deleteLabel,
                 icon: 'pi pi-trash',
                 command: () => {
                   this.confirmationService.confirm({
-                    message: `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.`,
-                    header: 'Confirm Deletion',
+                    message: deleteMessage,
+                    header: deleteLabel,
                     icon: 'pi pi-exclamation-triangle',
                     acceptIcon: 'pi pi-trash',
                     rejectIcon: 'pi pi-times',
-                    acceptLabel: 'Delete',
+                    acceptLabel: deleteAcceptLabel,
                     rejectLabel: 'Cancel',
                     acceptButtonStyleClass: 'p-button-danger',
                     rejectButtonStyleClass: 'p-button-outlined',
@@ -260,48 +404,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   });
                 },
               });
-
-              // Add delete additional files menu if there are any additional files
-              if ((book.alternativeFormats && book.alternativeFormats.length > 0) ||
-                (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
-                const deleteFileItems: MenuItem[] = [];
-
-                // Add alternative formats
-                if (book.alternativeFormats && book.alternativeFormats.length > 0) {
-                  book.alternativeFormats.forEach(format => {
-                    const extension = this.getFileExtension(format.filePath);
-                    deleteFileItems.push({
-                      label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
-                      icon: this.getFileIcon(extension),
-                      command: () => this.deleteAdditionalFile(book.id, format.id, format.fileName || 'file')
-                    });
-                  });
-                }
-
-                // Add separator if both types exist
-                if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
-                  book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-                  deleteFileItems.push({separator: true});
-                }
-
-                // Add supplementary files
-                if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-                  book.supplementaryFiles.forEach(file => {
-                    const extension = this.getFileExtension(file.filePath);
-                    deleteFileItems.push({
-                      label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
-                      icon: this.getFileIcon(extension),
-                      command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
-                    });
-                  });
-                }
-
-                items.push({
-                  label: 'Delete Additional Files',
-                  icon: 'pi pi-trash',
-                  items: deleteFileItems
-                });
-              }
             }
 
             return items;
@@ -375,16 +477,29 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     );
   }
 
-  get defaultTabValue(): number {
-    return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
-  }
-
   toggleExpand(): void {
     this.isExpanded = !this.isExpanded;
   }
 
-  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming"): void {
-    if (bookId) this.bookService.readBook(bookId, reader);
+  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming", bookType?: BookType): void {
+    if (bookId) this.bookService.readBook(bookId, reader, bookType);
+  }
+
+  isInProgressStatus(): boolean {
+    return [ReadStatus.READING, ReadStatus.PAUSED, ReadStatus.RE_READING].includes(this.selectedReadStatus);
+  }
+
+  getReadButtonLabel(book: Book): string {
+    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+    if (this.isInProgressStatus()) {
+      return isAudiobook ? 'Continue' : 'Continue Reading';
+    }
+    return isAudiobook ? 'Play' : 'Read';
+  }
+
+  getReadButtonIcon(book: Book): string {
+    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+    return (isAudiobook || this.isInProgressStatus()) ? 'pi pi-play' : 'pi pi-book';
   }
 
   download(book: Book) {
@@ -395,13 +510,39 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.bookService.downloadAdditionalFile(book, fileId);
   }
 
+  // Event handlers for MetadataTabsComponent
+  onReadBook(event: ReadEvent): void {
+    this.read(event.bookId, event.reader, event.bookType);
+  }
+
+  onDownloadBook(event: DownloadEvent): void {
+    this.download(event.book);
+  }
+
+  onDownloadFile(event: DownloadAdditionalFileEvent): void {
+    this.downloadAdditionalFile(event.book, event.fileId);
+  }
+
+  onDownloadAllFiles(event: DownloadAllFilesEvent): void {
+    this.bookService.downloadAllFiles(event.book);
+  }
+
+  onDeleteBookFile(event: DeleteBookFileEvent): void {
+    this.deleteBookFile(event.book, event.fileId, event.fileName, event.isPrimary, event.isOnlyFormat);
+  }
+
+  onDeleteSupplementaryFile(event: DeleteSupplementaryFileEvent): void {
+    this.deleteAdditionalFile(event.bookId, event.fileId, event.fileName);
+  }
+
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the additional file "${fileName}"?`,
-      header: 'Confirm File Deletion',
+      message: `Are you sure you want to delete the supplementary file "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`,
+      header: 'Delete Supplementary File',
       icon: 'pi pi-exclamation-triangle',
       acceptIcon: 'pi pi-trash',
       rejectIcon: 'pi pi-times',
+      rejectButtonStyleClass: 'p-button-secondary',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.bookService.deleteAdditionalFile(bookId, fileId).subscribe({
@@ -409,14 +550,63 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             this.messageService.add({
               severity: 'success',
               summary: 'Success',
-              detail: `Additional file "${fileName}" deleted successfully`
+              detail: `Supplementary file "${fileName}" deleted successfully`
             });
           },
           error: (error) => {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
-              detail: `Failed to delete additional file: ${error.message || 'Unknown error'}`
+              detail: `Failed to delete supplementary file: ${error.message || 'Unknown error'}`
+            });
+          }
+        });
+      }
+    });
+  }
+
+  deleteBookFile(book: Book, fileId: number, fileName: string, isPrimary: boolean, isOnlyFormat: boolean) {
+    let message: string;
+    let header: string;
+
+    if (isOnlyFormat) {
+      // This is the only book format file - warn user strongly
+      message = `Are you sure you want to delete "${fileName}"?\n\nThis is the ONLY book format file for this book. After deletion, the book will have no readable content.\n\nConsider using "Delete Book & All Files" instead to completely remove the book.\n\nThis file will be permanently removed from your filesystem.`;
+      header = 'Delete Only Book Format';
+    } else if (isPrimary) {
+      // This is the primary format but there are alternatives
+      message = `Are you sure you want to delete "${fileName}"?\n\nThis is currently the PRIMARY format for this book. After deletion, an alternative format will become the new primary.\n\nThis file will be permanently removed from your filesystem.`;
+      header = 'Delete Primary Format';
+    } else {
+      // This is an alternative format
+      message = `Are you sure you want to delete "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`;
+      header = 'Delete Book Format';
+    }
+
+    this.confirmationService.confirm({
+      message,
+      header,
+      icon: 'pi pi-exclamation-triangle',
+      acceptIcon: 'pi pi-trash',
+      rejectIcon: 'pi pi-times',
+      acceptLabel: 'Delete File',
+      rejectLabel: 'Cancel',
+      rejectButtonStyleClass: 'p-button-secondary',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.bookService.deleteBookFile(book.id, fileId, isPrimary).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: `Book format "${fileName}" deleted successfully`
+            });
+          },
+          error: (error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: `Failed to delete book format: ${error.message || 'Unknown error'}`
             });
           }
         });
@@ -674,9 +864,42 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return lockedKeys.length > 0 && lockedKeys.every(k => metadata[k] === true);
   }
 
-  getFileSizeInMB(fileInfo: FileInfo | null | undefined): string {
+  formatFileSize(fileInfo: FileInfo | null | undefined): string {
     const sizeKb = fileInfo?.fileSizeKb;
-    return sizeKb != null ? `${(sizeKb / 1024).toFixed(2)} MB` : '-';
+    if (sizeKb == null) return '-';
+
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let size = sizeKb;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+
+    const decimals = size >= 100 ? 0 : size >= 10 ? 1 : 2;
+    return `${size.toFixed(decimals)} ${units[unitIndex]}`;
+  }
+
+  truncateFileName(fileName: string | undefined, maxLength: number = 30): string {
+    if (!fileName) return '';
+    if (fileName.length <= maxLength) return fileName;
+
+    const lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      // No extension - just truncate
+      return fileName.substring(0, maxLength - 3) + '...';
+    }
+
+    const extension = fileName.substring(lastDotIndex);
+    const nameWithoutExt = fileName.substring(0, lastDotIndex);
+    const availableLength = maxLength - extension.length - 3; // 3 for "..."
+
+    if (availableLength <= 0) {
+      return '...' + extension;
+    }
+
+    return nameWithoutExt.substring(0, availableLength) + '...' + extension;
   }
 
   getProgressPercent(book: Book): number | null {
@@ -688,6 +911,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     }
     if (book.cbxProgress?.percentage != null) {
       return book.cbxProgress.percentage;
+    }
+    if (book.audiobookProgress?.percentage != null) {
+      return book.audiobookProgress.percentage;
     }
     return null;
   }
@@ -721,6 +947,38 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return parts.pop()?.toUpperCase() || null;
   }
 
+  getUniqueAlternativeFormatTypes(book: Book): BookType[] {
+    if (!book.alternativeFormats?.length) return [];
+    const primaryType = book.primaryFile?.bookType;
+    const uniqueTypes = new Set<BookType>();
+    for (const format of book.alternativeFormats) {
+      if (format.bookType && format.bookType !== primaryType) {
+        uniqueTypes.add(format.bookType);
+      }
+    }
+    return [...uniqueTypes];
+  }
+
+  getDisplayFormat(bookFile?: BookFile | null): string | null {
+    if (bookFile?.extension) {
+      return bookFile.extension.toUpperCase();
+    }
+    return this.getFileExtension(bookFile?.filePath);
+  }
+
+  getUniqueAlternativeFormats(book: Book): string[] {
+    if (!book.alternativeFormats?.length) return [];
+    const primaryFormat = this.getDisplayFormat(book.primaryFile);
+    const uniqueFormats = new Set<string>();
+    for (const format of book.alternativeFormats) {
+      const formatType = this.getDisplayFormat(format);
+      if (formatType && formatType !== primaryFormat) {
+        uniqueFormats.add(formatType);
+      }
+    }
+    return [...uniqueFormats];
+  }
+
   getFileIcon(fileType: string | null): string {
     if (!fileType) return 'pi pi-file';
     switch (fileType.toLowerCase()) {
@@ -734,6 +992,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       case 'cbr':
       case 'cbx':
         return 'pi pi-image';
+      case 'audiobook':
+      case 'm4b':
+      case 'm4a':
+      case 'mp3':
+        return 'pi pi-headphones';
       default:
         return 'pi pi-file';
     }
@@ -955,5 +1218,17 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   getNavigationPosition(): string {
     const position = this.bookNavigationService.getCurrentPosition();
     return position ? `${position.current} of ${position.total}` : '';
+  }
+
+  hasDigitalFile(book: Book): boolean {
+    return !!book?.primaryFile;
+  }
+
+  hasAnyFiles(book: Book): boolean {
+    return !!book?.primaryFile || (book?.alternativeFormats?.length ?? 0) > 0;
+  }
+
+  isPhysicalBook(book: Book): boolean {
+    return !this.hasAnyFiles(book);
   }
 }

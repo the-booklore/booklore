@@ -1,4 +1,4 @@
-<div class="email-settings-container enclosing-container">
+<div class="email-settings-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-envelope"></i>
@@ -11,13 +11,9 @@
   </div>
 
   @if (hasPermission) {
-    <div class="provider-section">
-      <app-email-v2-provider></app-email-v2-provider>
-    </div>
-    <p-divider></p-divider>
-    <div class="recipient-section">
-      <app-email-v2-recipient></app-email-v2-recipient>
-    </div>
+    <app-email-v2-provider></app-email-v2-provider>
+    <div class="section-divider"><hr></div>
+    <app-email-v2-recipient></app-email-v2-recipient>
   } @else {
     <div class="access-denied-card">
       <i class="pi pi-lock"></i>

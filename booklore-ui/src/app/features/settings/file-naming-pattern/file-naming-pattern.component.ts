@@ -9,14 +9,13 @@ import {catchError, filter, take} from 'rxjs/operators';
 import {Library} from '../../book/model/library.model';
 import {LibraryService} from '../../book/service/library.service';
 import {InputText} from 'primeng/inputtext';
-import {Divider} from 'primeng/divider';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 
 @Component({
   selector: 'app-file-naming-pattern',
   templateUrl: './file-naming-pattern.component.html',
   standalone: true,
-  imports: [FormsModule, Button, InputText, Divider, ExternalDocLinkComponent],
+  imports: [FormsModule, Button, InputText, ExternalDocLinkComponent],
   styleUrls: ['./file-naming-pattern.component.scss'],
 })
 export class FileNamingPatternComponent implements OnInit {
@@ -119,7 +118,7 @@ export class FileNamingPatternComponent implements OnInit {
     }
     this.appSettingsService
       .saveSettings([
-        { key: AppSettingKey.UPLOAD_FILE_PATTERN, newValue: this.defaultPattern },
+        {key: AppSettingKey.UPLOAD_FILE_PATTERN, newValue: this.defaultPattern},
       ])
       .subscribe({
         next: () => this.showMessage('success', 'Settings Saved', 'The default pattern was successfully saved!'),
@@ -144,6 +143,6 @@ export class FileNamingPatternComponent implements OnInit {
   }
 
   private showMessage(severity: 'success' | 'error', summary: string, detail: string): void {
-    this.messageService.add({ severity, summary, detail });
+    this.messageService.add({severity, summary, detail});
   }
 }

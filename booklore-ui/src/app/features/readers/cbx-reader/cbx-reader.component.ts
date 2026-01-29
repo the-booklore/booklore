@@ -2,7 +2,7 @@ import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core'
 import {ActivatedRoute, Router} from '@angular/router';
 import {CommonModule} from '@angular/common';
 import {forkJoin, Subject} from 'rxjs';
-import {filter, first, takeUntil, timeout} from 'rxjs/operators';
+import {filter, first, map, switchMap, takeUntil, timeout} from 'rxjs/operators';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
@@ -55,6 +55,8 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   bookType!: BookType;
   bookId!: number;
+  bookFileId?: number;
+  altBookType?: string;
   pages: number[] = [];
   currentPage = 0;
   isLoading = true;
@@ -129,34 +131,48 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe((params) => {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
+      this.altBookType = this.route.snapshot.queryParamMap.get('bookType') ?? undefined;
 
       this.previousBookInSeries = null;
       this.nextBookInSeries = null;
       this.currentBook = null;
 
-      forkJoin([
-        this.bookService.getBookByIdFromAPI(this.bookId, false),
-        this.bookService.getBookSetting(this.bookId),
-        this.userService.getMyself()
-      ]).subscribe({
-        next: ([book, bookSettings, myself]) => {
-          const userSettings = myself.userSettings;
-          this.bookType = book.bookType;
+      this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
+        switchMap((book) => {
+          // Use alternative bookType from query param if provided, otherwise use primary
+          this.bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
           this.currentBook = book;
+
+          // Determine which file ID to use for progress tracking
+          if (this.altBookType) {
+            const altFile = book.alternativeFormats?.find(f => f.bookType === this.altBookType);
+            this.bookFileId = altFile?.id;
+          } else {
+            this.bookFileId = book.primaryFile?.id;
+          }
+
+          return forkJoin([
+            this.bookService.getBookSetting(this.bookId, this.bookFileId!),
+            this.userService.getMyself()
+          ]).pipe(map(([bookSettings, myself]) => ({ book, bookSettings, myself })));
+        })
+      ).subscribe({
+        next: ({ book, bookSettings, myself }) => {
+          const userSettings = myself.userSettings;
 
           this.pageTitle.setBookPageTitle(book);
 
           const title = book.metadata?.title || book.fileName;
           this.headerService.initialize(this.bookId, title, this.destroy$);
-          this.sidebarService.initialize(this.bookId, book, this.destroy$);
+          this.sidebarService.initialize(this.bookId, book, this.destroy$, this.altBookType);
 
           if (book.metadata?.seriesName) {
             this.loadSeriesNavigationAsync(book);
           }
 
           const pagesObservable = this.bookType === CbxReaderComponent.TYPE_PDF
-            ? this.pdfReaderService.getAvailablePages(this.bookId)
-            : this.cbxReaderService.getAvailablePages(this.bookId);
+            ? this.pdfReaderService.getAvailablePages(this.bookId, this.altBookType)
+            : this.cbxReaderService.getAvailablePages(this.bookId, this.altBookType);
 
           pagesObservable.subscribe({
             next: (pages) => {
@@ -728,8 +744,8 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   private getPageImageUrl(pageIndex: number): string {
     return this.bookType === CbxReaderComponent.TYPE_PDF
-      ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex])
-      : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex]);
+      ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType)
+      : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType);
   }
 
   get infiniteScrollImageUrls(): string[] {
@@ -765,10 +781,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       : 0;
 
     if (this.bookType === CbxReaderComponent.TYPE_CBX) {
-      this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
+      this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
     }
     if (this.bookType === CbxReaderComponent.TYPE_PDF) {
-      this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
+      this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
     }
   }
 

@@ -8,9 +8,9 @@ import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.BookUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class GoogleParser implements BookParser {
 
     private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("^(\\d{4})$");
@@ -44,9 +43,20 @@ public class GoogleParser implements BookParser {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient;
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
     private final AtomicLong lastRequestTime = new AtomicLong(0);
+
+    @Autowired
+    public GoogleParser(ObjectMapper objectMapper, AppSettingService appSettingService) {
+        this(objectMapper, appSettingService, HttpClient.newHttpClient());
+    }
+
+    public GoogleParser(ObjectMapper objectMapper, AppSettingService appSettingService, HttpClient httpClient) {
+        this.objectMapper = objectMapper;
+        this.appSettingService = appSettingService;
+        this.httpClient = httpClient;
+    }
 
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
@@ -56,11 +66,56 @@ public class GoogleParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
+        // 1. Try ISBN Search
         if (fetchMetadataRequest.getIsbn() != null && !fetchMetadataRequest.getIsbn().isBlank()) {
-            return getMetadataListByIsbn(ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn()));
+            List<BookMetadata> isbnResults = getMetadataListByIsbn(ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn()));
+            if (!isbnResults.isEmpty()) {
+                return isbnResults;
+            }
+            log.info("Google Books: ISBN search returned no results, falling back to Title+Author search.");
         }
-        String searchTerm = getSearchTerm(book, fetchMetadataRequest);
-        return searchTerm != null ? getMetadataListByTerm(searchTerm) : List.of();
+
+        String title = fetchMetadataRequest.getTitle();
+        String author = fetchMetadataRequest.getAuthor();
+        String fileName = book.getPrimaryFile() != null ? book.getPrimaryFile().getFileName() : null;
+
+        List<BookMetadata> results = Collections.emptyList();
+
+        // 2. Try Title + Author Search
+        if (title != null && !title.isBlank() && author != null && !author.isBlank()) {
+            String term = buildSearchTerm(title, author);
+            log.info("Google Books: Searching with Title + Author: {}", term);
+            results = getMetadataListByTerm(term);
+        }
+
+        // 3. Try Title Only Search (if Title+Author failed or wasn't attempted)
+        if (results.isEmpty()) {
+            String term = null;
+            if (title != null && !title.isBlank()) {
+                term = buildSearchTerm(title, null);
+                log.info("Google Books: Searching with Title Only: {}", term);
+            } else if (fileName != null && !fileName.isBlank()) {
+                term = buildSearchTerm(BookUtils.cleanFileName(fileName), null);
+                log.info("Google Books: Searching with Filename: {}", term);
+            }
+
+            if (term != null) {
+                results = getMetadataListByTerm(term);
+            }
+        }
+
+        return results;
+    }
+
+    private String buildSearchTerm(String title, String author) {
+        String searchTerm = SPECIAL_CHARACTERS_PATTERN.matcher(title).replaceAll("").trim();
+        searchTerm = "intitle:" + truncateToMaxWords(searchTerm);
+
+        if (author != null && !author.isBlank()) {
+            searchTerm += " inauthor:" + author;
+        }
+
+        return searchTerm;
     }
 
     private List<BookMetadata> getMetadataListByIsbn(String isbn) {
@@ -444,20 +499,14 @@ public class GoogleParser implements BookParser {
     private String getSearchTerm(Book book, FetchMetadataRequest request) {
         String searchTerm = Optional.ofNullable(request.getTitle())
                 .filter(title -> !title.isEmpty())
-                .orElseGet(() -> Optional.ofNullable(book.getFileName())
+                .orElseGet(() -> Optional.ofNullable(book.getPrimaryFile())
+                        .map(pf -> pf.getFileName())
                         .filter(fileName -> !fileName.isEmpty())
                         .map(BookUtils::cleanFileName)
                         .orElse(null));
 
         if (searchTerm == null) {
             return null;
-        }
-
-        searchTerm = SPECIAL_CHARACTERS_PATTERN.matcher(searchTerm).replaceAll("").trim();
-        searchTerm = "intitle:" + truncateToMaxWords(searchTerm);
-
-        if (request.getAuthor() != null && !request.getAuthor().isEmpty()) {
-            searchTerm += " inauthor:" + request.getAuthor();
         }
 
         return searchTerm;
@@ -594,3 +643,6 @@ public class GoogleParser implements BookParser {
         return count;
     }
 }
+
+
+

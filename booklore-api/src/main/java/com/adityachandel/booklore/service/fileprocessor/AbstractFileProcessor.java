@@ -47,7 +47,9 @@ public abstract class AbstractFileProcessor implements BookFileProcessor {
     @Override
     public FileProcessResult processFile(LibraryFile libraryFile) {
         Path path = libraryFile.getFullPath();
-        String hash = FileFingerprint.generateHash(path);
+        String hash = libraryFile.isFolderBased()
+                ? FileFingerprint.generateFolderHash(path)
+                : FileFingerprint.generateHash(path);
         Book book = createAndMapBook(libraryFile, hash);
         return new FileProcessResult(book, FileProcessStatus.NEW);
     }

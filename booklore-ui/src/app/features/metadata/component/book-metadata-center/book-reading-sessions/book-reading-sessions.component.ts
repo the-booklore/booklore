@@ -3,12 +3,10 @@ import {CommonModule} from '@angular/common';
 import {ReadingSessionApiService, ReadingSessionResponse} from '../../../../../shared/service/reading-session-api.service';
 import {TableModule} from 'primeng/table';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
-import {TagModule} from 'primeng/tag';
-
 @Component({
   selector: 'app-book-reading-sessions',
   standalone: true,
-  imports: [CommonModule, TableModule, ProgressSpinnerModule, TagModule],
+  imports: [CommonModule, TableModule, ProgressSpinnerModule],
   templateUrl: './book-reading-sessions.component.html',
   styleUrls: ['./book-reading-sessions.component.scss']
 })
@@ -91,14 +89,79 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
     return new Date(dateString).toLocaleString();
   }
 
+  formatSessionDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+
+  formatTime(dateString: string): string {
+    return new Date(dateString).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  }
+
+  getBookTypeIcon(bookType: string): string {
+    const iconMap: Record<string, string> = {
+      'PDF': 'pi pi-file-pdf',
+      'EPUB': 'pi pi-book',
+      'CBX': 'pi pi-images',
+      'CBZ': 'pi pi-images',
+      'CBR': 'pi pi-images',
+      'CB7': 'pi pi-images',
+      'FB2': 'pi pi-file',
+      'MOBI': 'pi pi-book',
+      'AZW3': 'pi pi-book',
+      'AUDIOBOOK': 'pi pi-headphones'
+    };
+    return iconMap[bookType] || 'pi pi-file';
+  }
+
+  formatBookType(bookType: string): string {
+    if (bookType === 'AUDIOBOOK') return 'Audio';
+    return bookType;
+  }
+
   getProgressColor(delta: number): 'success' | 'secondary' | 'danger' {
     if (delta > 0) return 'success';
     if (delta < 0) return 'danger';
     return 'secondary';
   }
 
+  getProgressDeltaClass(delta: number): string {
+    if (delta > 0) return 'progress-positive';
+    if (delta < 0) return 'progress-negative';
+    return 'progress-neutral';
+  }
+
+  getProgressDeltaIcon(delta: number): string {
+    if (delta > 0) return 'pi pi-arrow-up';
+    if (delta < 0) return 'pi pi-arrow-down';
+    return 'pi pi-minus';
+  }
+
   isPageNumber(location: string | undefined): boolean {
     if (!location) return false;
     return !isNaN(Number(location)) && location.trim() !== '';
+  }
+
+  formatLocation(session: ReadingSessionResponse): string {
+    const start = session.startLocation;
+    const end = session.endLocation;
+
+    if (!start || !end) return '-';
+
+    if (session.bookType === 'AUDIOBOOK') {
+      return `${start} → ${end}`;
+    }
+
+    if (this.isPageNumber(start)) {
+      return `Page ${start} → ${end}`;
+    }
+
+    return '-';
   }
 }

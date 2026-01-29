@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.opds;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
@@ -139,7 +140,7 @@ class OpdsFeedServiceTest {
 
         Book book = Book.builder()
                 .id(10L)
-                .bookType(BookFileType.EPUB)
+                .primaryFile(BookFile.builder().id(1L).bookType(BookFileType.EPUB).build())
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder()
                         .title("Book Title")
@@ -193,7 +194,7 @@ class OpdsFeedServiceTest {
 
         Book book = Book.builder()
                 .id(11L)
-                .bookType(BookFileType.PDF)
+                .primaryFile(BookFile.builder().id(1L).bookType(BookFileType.PDF).build())
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Recent Book").build())
                 .build();
@@ -231,7 +232,7 @@ class OpdsFeedServiceTest {
 
         Book book = Book.builder()
                 .id(12L)
-                .bookType(BookFileType.EPUB)
+                .primaryFile(BookFile.builder().id(1L).bookType(BookFileType.EPUB).build())
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Surprise Book").build())
                 .build();
@@ -391,7 +392,7 @@ class OpdsFeedServiceTest {
 
         Book book = Book.builder()
                 .id(1L)
-                .bookType(BookFileType.EPUB)
+                .primaryFile(BookFile.builder().id(1L).bookType(BookFileType.EPUB).build())
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Shelf Book").build())
                 .build();
@@ -426,7 +427,7 @@ class OpdsFeedServiceTest {
 
         Book book = Book.builder()
                 .id(1L)
-                .bookType(BookFileType.EPUB)
+                .primaryFile(BookFile.builder().id(1L).bookType(BookFileType.EPUB).build())
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Multi Shelf Book").build())
                 .build();
@@ -460,7 +461,7 @@ class OpdsFeedServiceTest {
 
         Book book = Book.builder()
                 .id(1L)
-                .bookType(BookFileType.EPUB)
+                .primaryFile(BookFile.builder().id(1L).bookType(BookFileType.EPUB).build())
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Fantasy Book").build())
                 .build();

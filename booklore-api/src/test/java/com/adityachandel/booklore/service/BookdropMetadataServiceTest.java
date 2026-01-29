@@ -107,7 +107,7 @@ class BookdropMetadataServiceTest {
         when(metadataRefreshService.prepareProviders(any())).thenReturn(List.of());
         when(objectMapper.readValue(sampleFile.getOriginalMetadata(), BookMetadata.class)).thenReturn(fetched);
         when(metadataRefreshService.fetchMetadataForBook(any(), any(Book.class))).thenReturn(Map.of());
-        when(metadataRefreshService.buildFetchMetadata(any(), any(), any())).thenReturn(fetched);
+        when(metadataRefreshService.buildFetchMetadata(any(), any(), any(), any())).thenReturn(fetched);
         when(objectMapper.writeValueAsString(fetched)).thenReturn("{\"title\":\"New Title\"}");
 
         BookdropFileEntity result = bookdropMetadataService.attachFetchedMetadata(1L);
@@ -154,7 +154,7 @@ class BookdropMetadataServiceTest {
         when(metadataRefreshService.prepareProviders(any())).thenReturn(List.of(MetadataProvider.GoodReads));
         when(objectMapper.readValue(anyString(), eq(BookMetadata.class))).thenReturn(fetched);
         when(metadataRefreshService.fetchMetadataForBook(any(), any(Book.class))).thenReturn(Map.of());
-        when(metadataRefreshService.buildFetchMetadata(any(), any(), any())).thenReturn(fetched);
+        when(metadataRefreshService.buildFetchMetadata(any(), any(), any(), any())).thenReturn(fetched);
         when(objectMapper.writeValueAsString(fetched)).thenReturn("{\"title\":\"Fetched Book\"}");
         when(bookdropFileRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 

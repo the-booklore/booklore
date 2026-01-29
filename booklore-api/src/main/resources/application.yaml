@@ -16,6 +16,7 @@ app:
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
   telemetry:
     base-url: ${TELEMETRY_BASE_URL:https://telemetry.booklore.org}
+  disk-type: ${DISK_TYPE:LOCAL}
 
 server:
   forward-headers-strategy: native

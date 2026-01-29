@@ -5,12 +5,11 @@ import {ProgressBar} from 'primeng/progressbar';
 import {MessageService} from 'primeng/api';
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
-import {TaskInfo, MetadataReplaceMode, TaskHistory, TASK_TYPE_CONFIG, TaskCreateRequest, TaskCronConfigRequest, TaskProgressPayload, TaskService, TaskStatus, TaskType, LibraryRescanOptions} from './task.service';
+import {LibraryRescanOptions, MetadataReplaceMode, TASK_TYPE_CONFIG, TaskCreateRequest, TaskCronConfigRequest, TaskHistory, TaskInfo, TaskProgressPayload, TaskService, TaskStatus, TaskType} from './task.service';
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 import {finalize, forkJoin, Subscription} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 import {ToggleSwitch} from 'primeng/toggleswitch';
-import {Badge} from 'primeng/badge';
 import {Tooltip} from 'primeng/tooltip';
 
 @Component({
@@ -24,7 +23,6 @@ import {Tooltip} from 'primeng/tooltip';
     FormsModule,
     ExternalDocLinkComponent,
     ToggleSwitch,
-    Badge,
     Tooltip
   ],
   templateUrl: './task-management.component.html',

@@ -2,6 +2,7 @@ package com.adityachandel.booklore.mapper.v2;
 
 import com.adityachandel.booklore.mapper.ShelfMapper;
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.entity.*;
@@ -21,7 +22,9 @@ public interface BookMapperV2 {
     @Mapping(source = "library.id", target = "libraryId")
     @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
-    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
+    @Mapping(source = "bookFiles", target = "primaryFile", qualifiedByName = "mapPrimaryFile")
+    @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
+    @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     @Mapping(target = "metadata", qualifiedByName = "mapMetadata")
     Book toDTO(BookEntity bookEntity);
 
@@ -56,14 +59,87 @@ public interface BookMapperV2 {
                 tags.stream().map(TagEntity::getName).collect(Collectors.toSet());
     }
 
-    @Named("mapPrimaryBookType")
-    default BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
-        if (bookFiles == null || bookFiles.isEmpty()) return null;
+    @Named("mapPrimaryFile")
+    default BookFile mapPrimaryFile(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+        return toBookFile(primary);
+    }
+
+    @Named("mapAlternativeFormats")
+    default List<BookFile> mapAlternativeFormats(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null) return null;
+        BookFileEntity primary = getPrimaryBookFile(bookFiles);
         return bookFiles.stream()
                 .filter(BookFileEntity::isBook)
-                .map(BookFileEntity::getBookType)
-                .findFirst()
-                .orElse(null);
+                .filter(bf -> !bf.equals(primary))
+                .map(this::toBookFile)
+                .toList();
+    }
+
+    @Named("mapSupplementaryFiles")
+    default List<BookFile> mapSupplementaryFiles(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null) return null;
+        return bookFiles.stream()
+                .filter(bf -> !bf.isBook())
+                .map(this::toBookFile)
+                .toList();
+    }
+
+    default BookFileEntity getPrimaryBookFile(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null || bookFiles.isEmpty()) return null;
+
+        List<BookFileEntity> bookFormats = bookFiles.stream()
+                .filter(BookFileEntity::isBook)
+                .toList();
+
+        if (bookFormats.isEmpty()) return null;
+
+        BookFileEntity firstBook = bookFormats.getFirst();
+        LibraryEntity library = firstBook.getBook() != null ? firstBook.getBook().getLibrary() : null;
+
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                var match = bookFormats.stream()
+                        .filter(bf -> bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
+        }
+        return firstBook;
+    }
+
+    default BookFile toBookFile(BookFileEntity entity) {
+        if (entity == null) return null;
+        return BookFile.builder()
+                .id(entity.getId())
+                .bookId(entity.getBook().getId())
+                .fileName(entity.getFileName())
+                .filePath(entity.getFullFilePath().toString())
+                .fileSubPath(entity.getFileSubPath())
+                .isBook(entity.isBook())
+                .bookType(entity.getBookType())
+                .archiveType(entity.getArchiveType())
+                .fileSizeKb(entity.getFileSizeKb())
+                .extension(extractExtension(entity))
+                .description(entity.getDescription())
+                .addedOn(entity.getAddedOn())
+                .build();
+    }
+
+    default String extractExtension(BookFileEntity entity) {
+        if (entity == null) return null;
+        String fileName;
+        if (entity.isFolderBased()) {
+            var firstFile = entity.getFirstAudioFile();
+            fileName = firstFile != null ? firstFile.getFileName().toString() : null;
+        } else {
+            fileName = entity.getFileName();
+        }
+        if (fileName == null) return null;
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : null;
     }
 
     @Named("mapLibraryPathIdOnly")

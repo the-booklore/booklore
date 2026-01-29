@@ -25,6 +25,7 @@ import {UserStatsGuard} from './core/security/guards/user-stats.guard';
 import {EditMetadataGuard} from './core/security/guards/edit-metdata.guard';
 import {EbookReaderComponent} from './features/readers/ebook-reader';
 import {LibraryStatsComponent} from './features/stats/component/library-stats/library-stats.component';
+import {AudiobookReaderComponent} from './features/readers/audiobook-reader/audiobook-reader.component';
 
 export const routes: Routes = [
   {
@@ -71,6 +72,11 @@ export const routes: Routes = [
   {
     path: 'cbx-reader/book/:bookId',
     component: CbxReaderComponent,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'audiobook-reader/book/:bookId',
+    component: AudiobookReaderComponent,
     canActivate: [AuthGuard]
   },
   {
