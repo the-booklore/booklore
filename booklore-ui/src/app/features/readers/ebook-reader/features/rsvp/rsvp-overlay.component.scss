@@ -85,16 +85,16 @@
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  position: relative;
+  width: 100%;
 }
 
-.word-before {
-  opacity: 0.6;
-}
-
+// ORP character stays fixed at center
 .word-orp {
   color: #ff6b6b;
   font-weight: 700;
   position: relative;
+  z-index: 1;
 
   &::after {
     content: '';
@@ -108,7 +108,19 @@
   }
 }
 
+// Text before ORP - positioned to end just before the ORP
+.word-before {
+  position: absolute;
+  right: calc(50% + 0.3em); // End just before center (ORP position)
+  text-align: right;
+  opacity: 0.6;
+}
+
+// Text after ORP - positioned to start just after the ORP
 .word-after {
+  position: absolute;
+  left: calc(50% + 0.3em); // Start just after center (ORP position)
+  text-align: left;
   opacity: 0.6;
 }
 
