@@ -1,0 +1,94 @@
+@if (state && state.active) {
+  <div
+    class="rsvp-overlay"
+    [style.background]="theme.bg"
+    [style.color]="theme.fg"
+    (touchstart)="onTouchStart($event)"
+    (touchend)="onTouchEnd($event)">
+
+    <div class="rsvp-header">
+      <button class="rsvp-close-btn" (click)="onClose()" title="Close (Esc)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+      <div class="rsvp-wpm-display">{{ state!.wpm }} WPM</div>
+    </div>
+
+    <div class="rsvp-content">
+      <div class="rsvp-focus-area">
+        <div class="rsvp-guide-line"></div>
+        <div class="rsvp-word-container">
+          @if (currentWord) {
+            <span class="word-before">{{ wordBefore }}</span>
+            <span class="word-orp">{{ orpChar }}</span>
+            <span class="word-after">{{ wordAfter }}</span>
+          } @else {
+            <span class="word-placeholder">Ready</span>
+          }
+        </div>
+        <div class="rsvp-guide-line"></div>
+      </div>
+
+      <div class="rsvp-hint">
+        @if (state!.resumedFromIndex !== null && state!.currentIndex === state!.resumedFromIndex) {
+          <span class="resumed-indicator">Resumed from saved position</span>
+        } @else if (!state!.playing) {
+          <span>Paused - Tap center to resume</span>
+        } @else {
+          <span>Tap: left=back, center=pause, right=skip</span>
+        }
+      </div>
+    </div>
+
+    <div class="rsvp-footer">
+      <div
+        class="rsvp-progress-bar"
+        (click)="onProgressBarClick($event)"
+        title="Click to seek">
+        <div class="rsvp-progress-fill" [style.width.%]="state!.progress"></div>
+        <div class="rsvp-progress-thumb" [style.left.%]="state!.progress"></div>
+      </div>
+
+      <div class="rsvp-controls">
+        <button class="rsvp-btn" (click)="onSkipBackward()" title="Back 10 words (Shift+Left)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+          </svg>
+        </button>
+
+        <button class="rsvp-btn rsvp-btn-play" (click)="onPlayPause()" [title]="state!.playing ? 'Pause (Space)' : 'Play (Space)'">
+          @if (state!.playing) {
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+            </svg>
+          } @else {
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          }
+        </button>
+
+        <button class="rsvp-btn" (click)="onSkipForward()" title="Forward 10 words (Shift+Right)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+          </svg>
+        </button>
+
+        <div class="rsvp-speed-controls">
+          <button class="rsvp-btn rsvp-btn-small" (click)="onDecreaseSpeed()" title="Slower (Left/Down)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14"/>
+            </svg>
+          </button>
+          <span class="rsvp-speed-value">{{ state!.wpm }}</span>
+          <button class="rsvp-btn rsvp-btn-small" (click)="onIncreaseSpeed()" title="Faster (Right/Up)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
