@@ -28,8 +28,10 @@ export class ReaderHeaderService {
 
   private _showControls = new Subject<void>();
   private _showMetadata = new Subject<void>();
+  private _startRsvp = new Subject<void>();
   showControls$ = this._showControls.asObservable();
   showMetadata$ = this._showMetadata.asObservable();
+  startRsvp$ = this._startRsvp.asObservable();
 
   get currentState() {
     return this.stateService.currentState;
@@ -75,6 +77,10 @@ export class ReaderHeaderService {
 
   openMetadata(): void {
     this._showMetadata.next();
+  }
+
+  startRsvp(): void {
+    this._startRsvp.next();
   }
 
   close(): void {

@@ -29,6 +29,8 @@ import {ReaderHeaderFooterVisibilityManager} from './shared/visibility.util';
 import {EpubCustomFontService} from './features/fonts/custom-font.service';
 import {TextSelectionPopupComponent, TextSelectionAction} from './shared/selection-popup.component';
 import {ReaderNoteDialogComponent, NoteDialogData, NoteDialogResult} from './dialogs/note-dialog.component';
+import {RsvpService} from './features/rsvp/rsvp.service';
+import {RsvpOverlayComponent} from './features/rsvp/rsvp-overlay.component';
 
 @Component({
   selector: 'app-ebook-reader',
@@ -43,7 +45,8 @@ import {ReaderNoteDialogComponent, NoteDialogData, NoteDialogResult} from './dia
     ReaderLeftSidebarComponent,
     ReaderNavbarComponent,
     TextSelectionPopupComponent,
-    ReaderNoteDialogComponent
+    ReaderNoteDialogComponent,
+    RsvpOverlayComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
@@ -59,7 +62,8 @@ import {ReaderNoteDialogComponent, NoteDialogData, NoteDialogResult} from './dia
     ReaderSidebarService,
     ReaderLeftSidebarService,
     ReaderHeaderService,
-    ReaderNoteService
+    ReaderNoteService,
+    RsvpService
   ],
   templateUrl: './ebook-reader.component.html',
   styleUrls: ['./ebook-reader.component.scss']
@@ -76,6 +80,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private selectionService = inject(ReaderSelectionService);
   private headerService = inject(ReaderHeaderService);
   private noteService = inject(ReaderNoteService);
+  private rsvpService = inject(RsvpService);
 
   public sidebarService = inject(ReaderSidebarService);
   public leftSidebarService = inject(ReaderLeftSidebarService);
@@ -108,6 +113,15 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
 
   showNoteDialog = false;
   noteDialogData: NoteDialogData | null = null;
+  showRsvp = false;
+  showRsvpStartChoice = false;
+  rsvpStartOptions: {
+    hasSavedPosition: boolean;
+    hasSelection: boolean;
+    selectionText?: string;
+    firstVisibleWordIndex: number;
+  } = { hasSavedPosition: false, hasSelection: false, firstVisibleWordIndex: 0 };
+  private rsvpHighlightCfi: string | null = null;
 
   get currentProgressData(): any {
     return this.progressService.currentProgressData;
@@ -150,6 +164,45 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.showMetadata = true);
 
+    this.headerService.startRsvp$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Get the current CFI directly from the view (not cached) to avoid race conditions
+        // after page navigation. The progressService.currentCfi may be stale due to the
+        // 100ms timeout in the relocate handler.
+        const currentCfi = this.viewManager.getCurrentCfi() || this.progressService.currentCfi;
+        this.rsvpService.setCurrentCfi(currentCfi);
+        // Get any selected text
+        const selection = this.viewManager.getSelection();
+        const selectionText = selection?.text || '';
+        // Request start - this will check for saved position, selection, and visible word
+        this.rsvpService.requestStart(selectionText);
+      });
+
+    this.rsvpService.showStartChoice$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((options) => {
+        this.rsvpStartOptions = options;
+        // Always show the start dialog to give users control
+        this.showRsvpStartChoice = true;
+      });
+
+    this.rsvpService.stopPosition$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(positionInfo => {
+        console.log('[RSVP] stopPosition$ received:', positionInfo);
+        if (positionInfo && positionInfo.totalWords > 0) {
+          console.log('[RSVP] Position info valid, checking range and docIndex');
+          // Create highlight for the word (don't navigate - stay on current page)
+          if (positionInfo.range && positionInfo.docIndex !== undefined) {
+            console.log('[RSVP] Calling highlightRsvpWord');
+            this.highlightRsvpWord(positionInfo.range, positionInfo.docIndex);
+          } else {
+            console.log('[RSVP] Missing range or docIndex', {range: positionInfo.range, docIndex: positionInfo.docIndex});
+          }
+        }
+      });
+
     this.isLoading = true;
     this.initializeFoliate().pipe(
       switchMap(() => this.epubCustomFontService.loadAndCacheFonts()),
@@ -181,6 +234,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.leftSidebarService.reset();
     this.headerService.reset();
     this.noteService.reset();
+    this.rsvpService.reset();
     this.epubCustomFontService.cleanup();
 
     if (this._fileUrl) {
@@ -219,6 +273,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         this.progressService.initialize(this.bookId, book.bookType!);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
+        this.rsvpService.initialize(this.bookId);
 
         // Use streaming for EPUB if query param is set, blob loading otherwise (default)
         const useStreaming = this.route.snapshot.queryParamMap.get('streaming') === 'true';
@@ -367,5 +422,175 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
 
   onNoteCancel(): void {
     this.noteService.closeDialog();
+  }
+
+  onRsvpClose(): void {
+    this.showRsvp = false;
+  }
+
+  onRsvpRequestNextPage(): void {
+    this.viewManager.nextAsync()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Wait for relocate event to be fully processed
+        // The relocateTimeout in subscribeToViewEvents uses 100ms
+        // We need to wait a bit longer for the renderer to update
+        setTimeout(() => {
+          // Update CFI for the new page
+          const currentCfi = this.progressService.currentCfi;
+          this.rsvpService.setCurrentCfi(currentCfi);
+          // Additional delay to ensure content is rendered
+          setTimeout(() => {
+            this.rsvpService.loadNextPageContent();
+          }, 150);
+        }, 200);
+      });
+  }
+
+  private highlightRsvpWord(range: Range, docIndex: number): void {
+    try {
+      console.log('[RSVP] highlightRsvpWord called', {range, docIndex});
+
+      // Expand range to include the entire sentence
+      const sentenceRange = this.expandRangeToSentence(range);
+      const rangeToUse = sentenceRange || range;
+
+      const cfi = (this.viewManager as any).view?.getCFI(docIndex, rangeToUse);
+      console.log('[RSVP] Generated CFI:', cfi);
+      if (!cfi) {
+        console.log('[RSVP] No CFI generated, returning');
+        return;
+      }
+
+      // Clear previous highlight
+      this.clearRsvpHighlight();
+
+      // Navigate to the word's location so it's visible
+      console.log('[RSVP] Navigating to CFI...');
+      this.viewManager.goTo(cfi).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe(() => {
+        console.log('[RSVP] Navigation complete, adding annotation');
+        // Add underline annotation for the sentence
+        this.rsvpHighlightCfi = cfi;
+        this.viewManager.addAnnotation({
+          value: cfi,
+          color: '#ff0000',
+          style: 'underline'
+        }).pipe(takeUntil(this.destroy$)).subscribe(() => {
+          console.log('[RSVP] Annotation added successfully');
+        });
+      });
+    } catch (e) {
+      console.error('[RSVP] Error in highlightRsvpWord:', e);
+    }
+  }
+
+  private expandRangeToSentence(wordRange: Range): Range | null {
+    try {
+      const doc = wordRange.startContainer.ownerDocument;
+      if (!doc) return null;
+
+      // Get the text content around the word
+      const container = wordRange.commonAncestorContainer;
+      let textNode = container;
+
+      // If the container is not a text node, find the text node
+      if (textNode.nodeType !== Node.TEXT_NODE) {
+        textNode = wordRange.startContainer;
+      }
+
+      if (textNode.nodeType !== Node.TEXT_NODE || !textNode.textContent) {
+        return null;
+      }
+
+      const fullText = textNode.textContent;
+      const wordStart = wordRange.startOffset;
+
+      // Find sentence start (look for . ! ? or start of text)
+      let sentenceStart = wordStart;
+      for (let i = wordStart - 1; i >= 0; i--) {
+        const char = fullText[i];
+        if (char === '.' || char === '!' || char === '?') {
+          sentenceStart = i + 1;
+          // Skip whitespace after punctuation
+          while (sentenceStart < fullText.length && /\s/.test(fullText[sentenceStart])) {
+            sentenceStart++;
+          }
+          break;
+        }
+        if (i === 0) {
+          sentenceStart = 0;
+        }
+      }
+
+      // Find sentence end (look for . ! ? or end of text)
+      let sentenceEnd = wordRange.endOffset;
+      for (let i = wordRange.endOffset; i < fullText.length; i++) {
+        const char = fullText[i];
+        if (char === '.' || char === '!' || char === '?') {
+          sentenceEnd = i + 1;
+          break;
+        }
+        if (i === fullText.length - 1) {
+          sentenceEnd = fullText.length;
+        }
+      }
+
+      // Create new range for the sentence
+      const sentenceRange = doc.createRange();
+      sentenceRange.setStart(textNode, Math.max(0, sentenceStart));
+      sentenceRange.setEnd(textNode, Math.min(fullText.length, sentenceEnd));
+
+      return sentenceRange;
+    } catch (e) {
+      console.error('[RSVP] Error expanding range to sentence:', e);
+      return null;
+    }
+  }
+
+  private clearRsvpHighlight(): void {
+    if (this.rsvpHighlightCfi) {
+      this.viewManager.deleteAnnotation(this.rsvpHighlightCfi)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe();
+      this.rsvpHighlightCfi = null;
+    }
+  }
+
+  onRsvpStartFromBeginning(): void {
+    this.showRsvpStartChoice = false;
+    this.clearRsvpHighlight();
+    this.showRsvp = true;
+    this.rsvpService.startFromBeginning();
+  }
+
+  onRsvpStartFromSaved(): void {
+    this.showRsvpStartChoice = false;
+    this.clearRsvpHighlight();
+    this.showRsvp = true;
+    this.rsvpService.startFromSavedPosition();
+  }
+
+  onRsvpStartChoiceCancel(): void {
+    this.showRsvpStartChoice = false;
+  }
+
+  onRsvpStartFromCurrentPosition(): void {
+    this.showRsvpStartChoice = false;
+    this.clearRsvpHighlight();
+    this.showRsvp = true;
+    this.rsvpService.startFromCurrentPosition();
+  }
+
+  onRsvpStartFromSelection(): void {
+    this.showRsvpStartChoice = false;
+    this.clearRsvpHighlight();
+    this.showRsvp = true;
+    if (this.rsvpStartOptions.selectionText) {
+      this.rsvpService.startFromSelection(this.rsvpStartOptions.selectionText);
+    } else {
+      this.rsvpService.startFromBeginning();
+    }
   }
 }

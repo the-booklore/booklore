@@ -157,3 +157,83 @@ foliate-view::part(foot) {
   min-height: 32px;
   box-sizing: border-box;
 }
+
+.rsvp-start-choice-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.rsvp-start-choice-dialog {
+  background: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0 0 1.5rem 0;
+    opacity: 0.8;
+    line-height: 1.5;
+  }
+}
+
+.rsvp-start-choice-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rsvp-choice-btn {
+  padding: 0.875rem 1.5rem;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(128, 128, 128, 0.1);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.rsvp-choice-primary {
+  background: #22d3ee;
+  color: #000;
+  border-color: #22d3ee;
+  font-weight: 500;
+
+  &:hover {
+    background: #06b6d4;
+  }
+}
+
+.rsvp-choice-cancel {
+  opacity: 0.6;
+  font-size: 0.875rem;
+
+  &:hover {
+    opacity: 1;
+  }
+}

@@ -82,4 +82,42 @@
       (cancel)="onNoteCancel()"
     ></app-reader-note-dialog>
   }
+
+  @if (showRsvp) {
+    <app-rsvp-overlay
+      [theme]="stateService.currentState.theme"
+      (close)="onRsvpClose()"
+      (requestNextPage)="onRsvpRequestNextPage()"
+    ></app-rsvp-overlay>
+  }
+
+  @if (showRsvpStartChoice) {
+    <div class="rsvp-start-choice-overlay" [style.background]="stateService.currentState.theme.bg" [style.color]="stateService.currentState.theme.fg">
+      <div class="rsvp-start-choice-dialog">
+        <h3>Start Speed Reading</h3>
+        <p>Where would you like to start?</p>
+        <div class="rsvp-start-choice-buttons">
+          @if (rsvpStartOptions.hasSelection) {
+            <button class="rsvp-choice-btn rsvp-choice-primary" (click)="onRsvpStartFromSelection()">
+              Start from selection
+            </button>
+          }
+          @if (rsvpStartOptions.hasSavedPosition) {
+            <button class="rsvp-choice-btn" [class.rsvp-choice-primary]="!rsvpStartOptions.hasSelection" (click)="onRsvpStartFromSaved()">
+              Resume from saved position
+            </button>
+          }
+          <button class="rsvp-choice-btn" [class.rsvp-choice-primary]="!rsvpStartOptions.hasSelection && !rsvpStartOptions.hasSavedPosition" (click)="onRsvpStartFromCurrentPosition()">
+            Start from visible text
+          </button>
+          <button class="rsvp-choice-btn" (click)="onRsvpStartFromBeginning()">
+            Start from chapter beginning
+          </button>
+          <button class="rsvp-choice-btn rsvp-choice-cancel" (click)="onRsvpStartChoiceCancel()">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

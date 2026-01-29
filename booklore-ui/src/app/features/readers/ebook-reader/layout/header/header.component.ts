@@ -63,6 +63,10 @@ export class ReaderHeaderComponent implements OnInit, OnDestroy {
     this.headerService.openControls();
   }
 
+  onStartRsvp(): void {
+    this.headerService.startRsvp();
+  }
+
   onClose(): void {
     if (window.history.length <= 2) {
       this.router.navigate(['/dashboard']);

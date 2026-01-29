@@ -26,7 +26,8 @@ export type ReaderIconName =
   | 'fit-width'
   | 'fit-height'
   | 'actual-size'
-  | 'auto-fit';
+  | 'auto-fit'
+  | 'speed';
 
 interface IconPath {
   d: string;
@@ -147,6 +148,12 @@ const ICONS: Record<ReaderIconName, IconPath[]> = {
   'auto-fit': [
     {d: 'M12 3v3m0 12v3M3 12h3m12 0h3'},
     {d: 'M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0', type: 'path'}
+  ],
+  'speed': [
+    {d: 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0', type: 'path'},
+    {d: 'M12 7v5l3 3'},
+    {d: 'M7.5 7.5L9 9'},
+    {d: 'M16.5 7.5L15 9'}
   ]
 };
 
