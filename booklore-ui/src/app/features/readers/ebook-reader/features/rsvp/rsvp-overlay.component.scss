@@ -113,7 +113,7 @@
   }
 
   &.active {
-    background: rgba(255, 107, 107, 0.2);
+    background: color-mix(in srgb, var(--rsvp-accent, #ff6b6b) 20%, transparent);
     font-weight: 600;
   }
 }
@@ -131,17 +131,39 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
   width: 100%;
-  max-width: 600px;
+  height: 100%;
 }
 
-.rsvp-guide-line {
-  width: 80%;
-  max-width: 400px;
-  height: 2px;
+.rsvp-vertical-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.guide-line {
+  width: 1px;
   background: currentColor;
-  opacity: 0.2;
+  opacity: 0.3;
+  flex: 1;
+}
+
+.guide-line-top {
+  margin-bottom: 0.5rem;
+}
+
+.guide-line-bottom {
+  margin-top: 0.5rem;
+}
+
+.rsvp-word-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .rsvp-word-container {
@@ -159,23 +181,12 @@
   width: 100%;
 }
 
-// ORP character stays fixed at center
+// ORP character stays fixed at center - colored but no underline
 .word-orp {
-  color: #ff6b6b;
+  color: var(--rsvp-accent, #ff6b6b);
   font-weight: 700;
   position: relative;
   z-index: 1;
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: #ff6b6b;
-    border-radius: 2px;
-  }
 }
 
 // Text before ORP - positioned to end just before the ORP
@@ -203,13 +214,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .countdown-number {
   font-size: clamp(3rem, 12vw, 6rem);
   font-weight: 700;
-  color: #ff6b6b;
+  color: var(--rsvp-accent, #ff6b6b);
   animation: countdown-pulse 0.8s ease-in-out;
 }
 
@@ -298,7 +309,7 @@
   top: 0;
   left: 0;
   height: 100%;
-  background: #ff6b6b;
+  background: var(--rsvp-accent, #ff6b6b);
   border-radius: 4px;
   transition: width 0.1s ease-out;
 }
@@ -308,7 +319,7 @@
   top: 50%;
   width: 16px;
   height: 16px;
-  background: #ff6b6b;
+  background: var(--rsvp-accent, #ff6b6b);
   border-radius: 50%;
   transform: translateX(-50%) translateY(-50%);
   transition: transform 0.1s ease-out, left 0.1s ease-out;

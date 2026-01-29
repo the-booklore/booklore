@@ -3,6 +3,9 @@
     class="rsvp-overlay"
     [style.background]="theme.bg"
     [style.color]="theme.fg"
+    [style.--rsvp-accent]="theme.link"
+    [style.--rsvp-fg]="theme.fg"
+    [style.--rsvp-bg]="theme.bg"
     (touchstart)="onTouchStart($event)"
     (touchend)="onTouchEnd($event)">
 
@@ -40,22 +43,26 @@
 
     <div class="rsvp-content">
       <div class="rsvp-focus-area">
-        @if (countdown !== null) {
-          <div class="countdown-container">
-            <span class="countdown-number">{{ countdown }}</span>
+        <div class="rsvp-vertical-guide">
+          <div class="guide-line guide-line-top"></div>
+          <div class="rsvp-word-section">
+            @if (countdown !== null) {
+              <div class="countdown-container">
+                <span class="countdown-number">{{ countdown }}</span>
+              </div>
+            }
+            <div class="rsvp-word-container">
+              @if (currentWord) {
+                <span class="word-before">{{ wordBefore }}</span>
+                <span class="word-orp">{{ orpChar }}</span>
+                <span class="word-after">{{ wordAfter }}</span>
+              } @else {
+                <span class="word-placeholder">Ready</span>
+              }
+            </div>
           </div>
-        }
-        <div class="rsvp-guide-line"></div>
-        <div class="rsvp-word-container">
-          @if (currentWord) {
-            <span class="word-before">{{ wordBefore }}</span>
-            <span class="word-orp">{{ orpChar }}</span>
-            <span class="word-after">{{ wordAfter }}</span>
-          } @else {
-            <span class="word-placeholder">Ready</span>
-          }
+          <div class="guide-line guide-line-bottom"></div>
         </div>
-        <div class="rsvp-guide-line"></div>
       </div>
 
       <div class="rsvp-hint">
