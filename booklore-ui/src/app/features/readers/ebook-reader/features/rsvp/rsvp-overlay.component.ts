@@ -200,6 +200,16 @@ export class RsvpOverlayComponent implements OnInit, OnDestroy {
     this.rsvpService.increaseSpeed();
   }
 
+  get punctuationPauseOptions(): number[] {
+    return this.rsvpService.getPunctuationPauseOptions();
+  }
+
+  onPunctuationPauseChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const value = parseInt(select.value, 10);
+    this.rsvpService.setPunctuationPause(value);
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleKeyboard(event: KeyboardEvent): void {
     if (!this.state?.active) return;

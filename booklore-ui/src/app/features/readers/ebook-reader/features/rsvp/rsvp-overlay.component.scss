@@ -466,6 +466,50 @@
   font-size: 0.875rem;
 }
 
+.rsvp-pause-control {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+}
+
+.rsvp-pause-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.rsvp-pause-select {
+  background: rgba(128, 128, 128, 0.2);
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 0.375rem;
+  color: inherit;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+
+  &:hover {
+    background: rgba(128, 128, 128, 0.3);
+    border-color: rgba(128, 128, 128, 0.4);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--rsvp-accent, #ff6b6b);
+  }
+
+  option {
+    background: var(--rsvp-bg, #1a1a2e);
+    color: var(--rsvp-fg, #e0e0e0);
+  }
+}
+
 @media (max-width: 480px) {
   .rsvp-header {
     padding: 0.75rem 1rem;
@@ -493,6 +537,20 @@
 
   .rsvp-speed-controls {
     flex: 0;
+  }
+
+  .rsvp-pause-control {
+    flex: 0;
+    min-width: auto;
+  }
+
+  .rsvp-pause-label {
+    font-size: 0.7rem;
+  }
+
+  .rsvp-pause-select {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.35rem;
   }
 
   .rsvp-context-panel {

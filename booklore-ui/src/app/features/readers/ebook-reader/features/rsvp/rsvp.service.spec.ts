@@ -29,6 +29,7 @@ describe('RsvpService', () => {
       expect(state.active).toBe(false);
       expect(state.playing).toBe(false);
       expect(state.wpm).toBe(300);
+      expect(state.punctuationPauseMs).toBe(500);
       expect(state.currentIndex).toBe(0);
       expect(state.words).toEqual([]);
       expect(state.progress).toBe(0);
@@ -83,18 +84,6 @@ describe('RsvpService', () => {
       return (service as any).getPauseMultiplier(word);
     };
 
-    it('should return 2.0 for sentence-ending punctuation', () => {
-      expect(getPauseMultiplier('done.')).toBe(2.0);
-      expect(getPauseMultiplier('what?')).toBe(2.0);
-      expect(getPauseMultiplier('wow!')).toBe(2.0);
-    });
-
-    it('should return 1.5 for comma and semicolon', () => {
-      expect(getPauseMultiplier('however,')).toBe(1.5);
-      expect(getPauseMultiplier('first;')).toBe(1.5);
-      expect(getPauseMultiplier('namely:')).toBe(1.5);
-    });
-
     it('should return 1.3 for very long words (>12 chars)', () => {
       expect(getPauseMultiplier('internationally')).toBe(1.3);
       expect(getPauseMultiplier('authentication')).toBe(1.3);
@@ -108,11 +97,6 @@ describe('RsvpService', () => {
     it('should return 1.0 for regular words', () => {
       expect(getPauseMultiplier('the')).toBe(1.0);
       expect(getPauseMultiplier('reading')).toBe(1.0);
-    });
-
-    it('should prioritize punctuation over word length', () => {
-      // Even though "internationally." is long, punctuation takes precedence
-      expect(getPauseMultiplier('internationally.')).toBe(2.0);
     });
   });
 
@@ -130,9 +114,46 @@ describe('RsvpService', () => {
     });
 
     it('should apply pause multiplier to base duration', () => {
-      const wordWithPause: RsvpWord = {text: 'end.', orpIndex: 0, pauseMultiplier: 2.0};
-      // 300 WPM = 200ms base, with 2.0 multiplier = 400ms
-      expect(getWordDisplayDuration(wordWithPause, 300)).toBe(400);
+      const longWord: RsvpWord = {text: 'extraordinary', orpIndex: 3, pauseMultiplier: 1.3};
+      // 300 WPM = 200ms base, with 1.3 multiplier = 260ms
+      expect(getWordDisplayDuration(longWord, 300)).toBe(260);
+    });
+
+    it('should add configurable pause for punctuation (default 500ms)', () => {
+      const wordWithPeriod: RsvpWord = {text: 'end.', orpIndex: 0, pauseMultiplier: 1.0};
+      // 300 WPM = 200ms base + 500ms default pause = 700ms
+      expect(getWordDisplayDuration(wordWithPeriod, 300)).toBe(700);
+
+      const wordWithComma: RsvpWord = {text: 'however,', orpIndex: 2, pauseMultiplier: 1.0};
+      // 300 WPM = 200ms base + 500ms default pause = 700ms
+      expect(getWordDisplayDuration(wordWithComma, 300)).toBe(700);
+    });
+
+    it('should add configurable pause regardless of WPM', () => {
+      const wordWithPeriod: RsvpWord = {text: 'end.', orpIndex: 0, pauseMultiplier: 1.0};
+      // 600 WPM = 100ms base + 500ms default pause = 600ms
+      expect(getWordDisplayDuration(wordWithPeriod, 600)).toBe(600);
+      // 150 WPM = 400ms base + 500ms default pause = 900ms
+      expect(getWordDisplayDuration(wordWithPeriod, 150)).toBe(900);
+    });
+  });
+
+  describe('punctuation pause controls', () => {
+    it('should return available pause options', () => {
+      const options = service.getPunctuationPauseOptions();
+      expect(options).toContain(100);
+      expect(options).toContain(500);
+      expect(options).toContain(1000);
+    });
+
+    it('should allow setting punctuation pause', () => {
+      service.setPunctuationPause(800);
+      expect(service.currentState.punctuationPauseMs).toBe(800);
+    });
+
+    it('should not set invalid pause values', () => {
+      service.setPunctuationPause(999); // Not in options
+      expect(service.currentState.punctuationPauseMs).toBe(500); // Stays at default
     });
   });
 
@@ -198,6 +219,7 @@ describe('RsvpService', () => {
         words,
         currentIndex: 50,
         wpm: 300,
+        punctuationPauseMs: 500,
         progress: 50,
         resumedFromIndex: null
       });
@@ -347,6 +369,7 @@ describe('RsvpService', () => {
         words: [{text: 'test', orpIndex: 1, pauseMultiplier: 1.0}],
         currentIndex: 0,
         wpm: 300,
+        punctuationPauseMs: 500,
         progress: 50,
         resumedFromIndex: 10
       });

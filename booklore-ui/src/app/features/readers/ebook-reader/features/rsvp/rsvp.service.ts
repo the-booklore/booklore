@@ -1,6 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {ReaderViewManagerService} from '../../core/view-manager.service';
+import {ReadingSessionService} from '../../../../../shared/service/reading-session.service';
 
 export interface RsvpWord {
   text: string;
@@ -16,6 +17,7 @@ export interface RsvpState {
   words: RsvpWord[];
   currentIndex: number;
   wpm: number;
+  punctuationPauseMs: number;
   progress: number;
   resumedFromIndex: number | null;
 }
@@ -29,13 +31,18 @@ export interface RsvpPosition {
 @Injectable()
 export class RsvpService {
   private viewManager = inject(ReaderViewManagerService);
+  private readingSessionService = inject(ReadingSessionService);
 
   private readonly DEFAULT_WPM = 300;
   private readonly MIN_WPM = 100;
   private readonly MAX_WPM = 1000;
   private readonly WPM_STEP = 50;
+  private readonly DEFAULT_PUNCTUATION_PAUSE_MS = 500;
+  private readonly PUNCTUATION_PAUSE_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
   private readonly STORAGE_KEY_PREFIX = 'booklore_rsvp_wpm_';
+  private readonly PUNCTUATION_PAUSE_KEY_PREFIX = 'booklore_rsvp_pause_';
   private readonly POSITION_KEY_PREFIX = 'booklore_rsvp_pos_';
+  private readonly SESSION_UPDATE_INTERVAL_MS = 10000; // Update reading session every 10 seconds
 
   private bookId: number | null = null;
   private currentCfi: string | null = null;
@@ -46,6 +53,7 @@ export class RsvpService {
     words: [],
     currentIndex: 0,
     wpm: this.DEFAULT_WPM,
+    punctuationPauseMs: this.DEFAULT_PUNCTUATION_PAUSE_MS,
     progress: 0,
     resumedFromIndex: null
   });
@@ -73,6 +81,7 @@ export class RsvpService {
 
   private playbackTimer: ReturnType<typeof setTimeout> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private lastSessionUpdateTime = 0;
 
   get currentState(): RsvpState {
     return this.stateSubject.value;
@@ -92,6 +101,38 @@ export class RsvpService {
     if (savedWpm) {
       this.updateState({wpm: savedWpm});
     }
+    const savedPause = this.loadPunctuationPauseFromStorage();
+    if (savedPause) {
+      this.updateState({punctuationPauseMs: savedPause});
+    }
+  }
+
+  getPunctuationPauseOptions(): number[] {
+    return this.PUNCTUATION_PAUSE_OPTIONS;
+  }
+
+  setPunctuationPause(pauseMs: number): void {
+    if (this.PUNCTUATION_PAUSE_OPTIONS.includes(pauseMs)) {
+      this.updateState({punctuationPauseMs: pauseMs});
+      this.savePunctuationPauseToStorage(pauseMs);
+    }
+  }
+
+  private loadPunctuationPauseFromStorage(): number | null {
+    if (!this.bookId) return null;
+    const stored = localStorage.getItem(`${this.PUNCTUATION_PAUSE_KEY_PREFIX}${this.bookId}`);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && this.PUNCTUATION_PAUSE_OPTIONS.includes(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  private savePunctuationPauseToStorage(pauseMs: number): void {
+    if (!this.bookId) return;
+    localStorage.setItem(`${this.PUNCTUATION_PAUSE_KEY_PREFIX}${this.bookId}`, pauseMs.toString());
   }
 
   setWpm(wpm: number): void {
@@ -231,6 +272,10 @@ export class RsvpService {
       resumedFromIndex
     });
 
+    // Initialize reading session tracking for RSVP
+    this.lastSessionUpdateTime = Date.now();
+    this.updateReadingSessionFinal(); // Update session to signal RSVP activity started
+
     // Start with countdown
     this.startCountdown(() => {
       this.updateState({playing: true});
@@ -288,6 +333,9 @@ export class RsvpService {
     // Save position before stopping
     this.savePositionToStorage();
 
+    // Update reading session with final progress
+    this.updateReadingSessionFinal();
+
     // Emit position info so reader can update progress and highlight
     const state = this.currentState;
     if (state.words.length > 0) {
@@ -304,6 +352,7 @@ export class RsvpService {
     }
 
     this.clearTimer();
+    this.clearCountdown();
     this.updateState({
       active: false,
       playing: false,
@@ -547,6 +596,9 @@ export class RsvpService {
       progress: (newIndex / state.words.length) * 100
     });
 
+    // Periodically update reading session to keep it alive and track progress
+    this.updateReadingSessionIfNeeded();
+
     this.scheduleNextWord();
   }
 
@@ -669,8 +721,7 @@ export class RsvpService {
   }
 
   private getPauseMultiplier(word: string): number {
-    if (/[.!?]$/.test(word)) return 2.0;
-    if (/[,;:]$/.test(word)) return 1.5;
+    // Punctuation now uses fixed pause, multiplier only for word length
     if (word.length > 12) return 1.3;
     if (word.length > 8) return 1.1;
     return 1.0;
@@ -678,7 +729,53 @@ export class RsvpService {
 
   private getWordDisplayDuration(word: RsvpWord, wpm: number): number {
     const baseMs = 60000 / wpm;
-    return baseMs * word.pauseMultiplier;
+    let duration = baseMs * word.pauseMultiplier;
+
+    // Add configurable pause for punctuation (periods, commas, etc.)
+    if (/[.!?,;:]$/.test(word.text)) {
+      duration += this.currentState.punctuationPauseMs;
+    }
+
+    return duration;
+  }
+
+  /**
+   * Periodically update the reading session to keep it alive during RSVP playback.
+   * This prevents the session from timing out due to lack of user activity.
+   */
+  private updateReadingSessionIfNeeded(): void {
+    const now = Date.now();
+    if (now - this.lastSessionUpdateTime >= this.SESSION_UPDATE_INTERVAL_MS) {
+      this.lastSessionUpdateTime = now;
+      // Update reading session with current CFI to reset idle timer
+      if (this.currentCfi) {
+        const isActive = this.readingSessionService.isSessionActive();
+        console.log('[RSVP] Updating reading session', {
+          cfi: this.currentCfi,
+          sessionActive: isActive
+        });
+        if (isActive) {
+          this.readingSessionService.updateProgress(this.currentCfi, undefined);
+        } else {
+          console.warn('[RSVP] No active reading session to update!');
+        }
+      }
+    }
+  }
+
+  /**
+   * Force update the reading session with current progress.
+   * Called when RSVP stops to ensure final position is tracked.
+   */
+  private updateReadingSessionFinal(): void {
+    const isActive = this.readingSessionService.isSessionActive();
+    console.log('[RSVP] Final reading session update', {
+      cfi: this.currentCfi,
+      sessionActive: isActive
+    });
+    if (this.currentCfi && isActive) {
+      this.readingSessionService.updateProgress(this.currentCfi, undefined);
+    }
   }
 
   private updateState(partial: Partial<RsvpState>): void {
@@ -689,6 +786,6 @@ export class RsvpService {
     this.stop();
     this.clearPositionFromStorage();
     this.currentCfi = null;
-    this.updateState({wpm: this.DEFAULT_WPM, resumedFromIndex: null});
+    this.updateState({wpm: this.DEFAULT_WPM, punctuationPauseMs: this.DEFAULT_PUNCTUATION_PAUSE_MS, resumedFromIndex: null});
   }
 }

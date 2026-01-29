@@ -102,7 +102,19 @@
       </div>
 
       <div class="rsvp-controls">
-        <div class="rsvp-controls-spacer"></div>
+        <div class="rsvp-pause-control">
+          <label class="rsvp-pause-label" title="Extra pause on punctuation (periods, commas, etc.)">
+            Pause:
+            <select
+              class="rsvp-pause-select"
+              [value]="state!.punctuationPauseMs"
+              (change)="onPunctuationPauseChange($event)">
+              @for (option of punctuationPauseOptions; track option) {
+                <option [value]="option">{{ option }}ms</option>
+              }
+            </select>
+          </label>
+        </div>
 
         <div class="rsvp-playback-controls">
           <button class="rsvp-btn rsvp-btn-skip" (click)="onSkipBackward()" title="Back 15 words (Shift+Left)">

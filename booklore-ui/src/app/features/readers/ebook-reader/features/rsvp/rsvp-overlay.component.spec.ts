@@ -28,6 +28,7 @@ describe('RsvpOverlayComponent', () => {
     words: [],
     currentIndex: 0,
     wpm: 300,
+    punctuationPauseMs: 500,
     progress: 0,
     resumedFromIndex: null,
     ...overrides
@@ -64,7 +65,9 @@ describe('RsvpOverlayComponent', () => {
       increaseSpeed: vi.fn(),
       decreaseSpeed: vi.fn(),
       skipForward: vi.fn(),
-      skipBackward: vi.fn()
+      skipBackward: vi.fn(),
+      getPunctuationPauseOptions: vi.fn(() => [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]),
+      setPunctuationPause: vi.fn()
     };
 
     await TestBed.configureTestingModule({
