@@ -797,6 +797,18 @@ public class EpubMetadataWriter implements MetadataWriter {
     }
 
     private void addBookloreMetadata(Element metadataElement, Document doc, BookMetadataEntity metadata) {
+        Element packageElement = doc.getDocumentElement();
+        String existingPrefix = packageElement.getAttribute("prefix");
+        String bookloreNamespace = "booklore: http://booklore.org/metadata/1.0/";
+        
+        if (!existingPrefix.contains("booklore:")) {
+            if (existingPrefix.isEmpty()) {
+                packageElement.setAttribute("prefix", bookloreNamespace);
+            } else {
+                packageElement.setAttribute("prefix", existingPrefix.trim() + " " + bookloreNamespace);
+            }
+        }
+        
         removeAllBookloreMetadata(metadataElement);
         
         if (metadata.getPageCount() != null && metadata.getPageCount() > 0) {
