@@ -419,6 +419,8 @@ public class KoboReadingStateService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim());
+    }
+
     private void saveToFileProgress(BookLoreUserEntity user, BookEntity book, UserBookProgressEntity progress) {
         try {
             BookFileEntity primaryFile = book.getPrimaryBookFile();
