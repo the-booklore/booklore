@@ -15,6 +15,7 @@ import {filter, Subject} from 'rxjs';
 import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Router} from '@angular/router';
+import {RouterLink} from '@angular/router';
 import {ProgressBar} from 'primeng/progressbar';
 import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
@@ -30,7 +31,7 @@ import {AppSettingsService} from '../../../../../shared/service/app-settings.ser
   selector: 'app-book-card',
   templateUrl: './book-card.component.html',
   styleUrls: ['./book-card.component.scss'],
-  imports: [Button, MenuModule, CheckboxModule, FormsModule, NgClass, TieredMenu, ProgressBar, TooltipModule],
+  imports: [Button, MenuModule, CheckboxModule, FormsModule, NgClass, TieredMenu, ProgressBar, TooltipModule, RouterLink],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush
 })

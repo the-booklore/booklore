@@ -34,7 +34,8 @@
     @if (_isSeriesViewActive) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
     } @else {
-      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
+      <a [routerLink]="urlHelper.getBookUrl(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn">
+      </p-button></a>      
     }
 
     @if (!_isSeriesViewActive && hasDigitalFile()) {

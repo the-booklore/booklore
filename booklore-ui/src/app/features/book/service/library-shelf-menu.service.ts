@@ -60,6 +60,13 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to refresh library: ${entity?.name}?`,
                 header: 'Confirmation',
+                icon: undefined,
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
+                acceptIcon: undefined,
+                rejectIcon: undefined,
+                acceptButtonStyleClass: undefined,
+                rejectButtonStyleClass: undefined,
                 rejectButtonProps: {
                   label: 'Cancel',
                   severity: 'secondary',

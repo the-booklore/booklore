@@ -78,7 +78,7 @@ public class BookdropMetadataService {
         }
 
         Map<MetadataProvider, BookMetadata> metadataMap = metadataRefreshService.fetchMetadataForBook(providers, book);
-        BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+        BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(initial, book.getId(), refreshOptions, metadataMap);
         String fetchedJson = objectMapper.writeValueAsString(fetchedMetadata);
 
         entity.setFetchedMetadata(fetchedJson);
