@@ -8,9 +8,9 @@ import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
 import com.adityachandel.booklore.service.library.LibraryRescanHelper;
 import com.adityachandel.booklore.service.library.LibraryService;
-import com.adityachandel.booklore.task.options.RescanLibraryContext;
 import com.adityachandel.booklore.task.TaskCancellationManager;
 import com.adityachandel.booklore.task.options.LibraryRescanOptions;
+import com.adityachandel.booklore.task.options.RescanLibraryContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -37,7 +37,7 @@ public class LibraryRescanTask implements Task {
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {
-        LibraryRescanOptions options = request.getOptions(LibraryRescanOptions.class);
+        LibraryRescanOptions options = request.getOptionsAs(LibraryRescanOptions.class);
         String taskId = request.getTaskId();
 
         long startTime = System.currentTimeMillis();

@@ -145,6 +145,8 @@ public class MetadataCopyHelper {
         }
     }
 
+
+
     public void copyLubimyczytacId(boolean clear, Consumer<String> consumer) {
         if (!isLocked(metadata.getLubimyczytacIdLocked())) {
             if (clear) consumer.accept(null);
@@ -244,12 +246,7 @@ public class MetadataCopyHelper {
         }
     }
 
-    public void copyLubimyczytacId(boolean clear, Consumer<String> consumer) {
-        if (!isLocked(metadata.getLubimyczytacIdLocked())) {
-            if (clear) consumer.accept(null);
-            else if (metadata.getLubimyczytacId() != null) consumer.accept(metadata.getLubimyczytacId());
-        }
-    }
+
 
     public void copyLubimyczytacRating(boolean clear, Consumer<Double> consumer) {
         if (!isLocked(metadata.getLubimyczytacRatingLocked())) {
@@ -265,10 +262,5 @@ public class MetadataCopyHelper {
         }
     }
 
-    public void copyHardcoverBookId(boolean clear, Consumer<Integer> consumer) {
-        if (!isLocked(metadata.getHardcoverBookIdLocked())) {
-            if (clear) consumer.accept(null);
-            else if (metadata.getHardcoverBookId() != null) consumer.accept(metadata.getHardcoverBookId());
-        }
-    }
+
 }

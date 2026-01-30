@@ -268,24 +268,24 @@ class MetadataCopyHelperTest {
 
         @Test
         void copyHardcoverBookId_whenNotLocked_callsConsumer() {
-            metadata.setHardcoverBookId(98765);
+            metadata.setHardcoverBookId("98765");
             metadata.setHardcoverBookIdLocked(false);
 
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
-            AtomicReference<Integer> result = new AtomicReference<>();
+            AtomicReference<String> result = new AtomicReference<>();
 
             helper.copyHardcoverBookId(false, result::set);
 
-            assertEquals(98765, result.get());
+            assertEquals("98765", result.get());
         }
 
         @Test
         void copyHardcoverBookId_whenLocked_doesNotCallConsumer() {
-            metadata.setHardcoverBookId(98765);
+            metadata.setHardcoverBookId("98765");
             metadata.setHardcoverBookIdLocked(true);
 
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
-            AtomicReference<Integer> result = new AtomicReference<>();
+            AtomicReference<String> result = new AtomicReference<>();
 
             helper.copyHardcoverBookId(false, result::set);
 

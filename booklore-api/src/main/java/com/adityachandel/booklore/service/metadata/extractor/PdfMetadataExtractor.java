@@ -115,7 +115,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                 metadataBuilder.pageCount(pdf.getNumberOfPages());
 
                 if (StringUtils.isNotBlank(info.getKeywords())) {
-                    Set<String> categories = Arrays.stream(info.getKeywords().split(","))
+                    Set<String> categories = Arrays.stream(info.getKeywords().split("[,;]"))
                             .map(String::trim)
                             .filter(StringUtils::isNotBlank)
                             .collect(Collectors.toSet());
@@ -210,11 +210,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
                                 String hardcoverBookId = identifiers.get("hardcover_book_id");
                                 if (StringUtils.isNotBlank(hardcoverBookId)) {
-                                    try {
-                                        metadataBuilder.hardcoverBookId(Integer.parseInt(hardcoverBookId));
-                                    } catch (NumberFormatException e) {
-                                        log.warn("Invalid hardcover_book_id: {}", hardcoverBookId);
-                                    }
+                                    metadataBuilder.hardcoverBookId(hardcoverBookId);
                                 }
 
                                 String lubimyczytac = identifiers.get("lubimyczytac");

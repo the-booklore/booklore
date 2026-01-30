@@ -297,7 +297,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
                 case "HardcoverRating" -> safeParseDouble(value, builder::hardcoverRating);
                 case "LubimyczytacRating" -> safeParseDouble(value, builder::lubimyczytacRating);
                 case "RanobedbRating" -> safeParseDouble(value, builder::ranobedbRating);
-                case "HardcoverBookId" -> safeParseInt(value, builder::hardcoverBookId);
+                case "HardcoverBookId" -> builder.hardcoverBookId(value);
                 case "LubimyczytacId" -> builder.lubimyczytacId(value);
                 case "RanobedbId" -> builder.ranobedbId(value);
                 case "GoogleId" -> builder.googleId(value);

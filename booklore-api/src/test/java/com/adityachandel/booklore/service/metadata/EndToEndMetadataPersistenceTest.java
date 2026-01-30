@@ -158,7 +158,7 @@ class EndToEndMetadataPersistenceTest {
                 .goodreadsId("12345")
                 .comicvineId("4000-12345")
                 .hardcoverId("test-book-slug")
-                .hardcoverBookId(999)
+                .hardcoverBookId("999")
                 .googleId("google_id_123")
                 .ranobedbId("ranobe-000")
                 .lubimyczytacId("lub-123")

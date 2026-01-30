@@ -11,8 +11,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import static com.adityachandel.booklore.model.enums.UserPermission.CAN_BULK_AUTO_FETCH_METADATA;
 import static com.adityachandel.booklore.exception.ApiError.PERMISSION_DENIED;
+import static com.adityachandel.booklore.model.enums.UserPermission.CAN_BULK_AUTO_FETCH_METADATA;
 
 @AllArgsConstructor
 @Component
@@ -23,7 +23,7 @@ public class RefreshMetadataTask implements Task {
 
     @Override
     public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
-        MetadataRefreshRequest refreshRequest = request.getOptions(MetadataRefreshRequest.class);
+        MetadataRefreshRequest refreshRequest = request.getOptionsAs(MetadataRefreshRequest.class);
 
         if (requiresBulkPermission(refreshRequest) &&
             !CAN_BULK_AUTO_FETCH_METADATA.isGranted(user.getPermissions())) {
@@ -40,7 +40,7 @@ public class RefreshMetadataTask implements Task {
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {
-        MetadataRefreshRequest refreshRequest = request.getOptions(MetadataRefreshRequest.class);
+        MetadataRefreshRequest refreshRequest = request.getOptionsAs(MetadataRefreshRequest.class);
         String taskId = request.getTaskId();
 
         long startTime = System.currentTimeMillis();

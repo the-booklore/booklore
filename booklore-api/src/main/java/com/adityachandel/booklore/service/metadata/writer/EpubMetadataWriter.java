@@ -41,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -758,7 +757,11 @@ public class EpubMetadataWriter implements MetadataWriter {
                 positionMeta.setPrefix("opf");
                 positionMeta.setAttribute("property", "group-position");
                 positionMeta.setAttribute("refines", "#" + collectionId);
-                positionMeta.setTextContent(String.format("%.0f", seriesNumber));
+                if (seriesNumber % 1.0f == 0) {
+                    positionMeta.setTextContent(String.format("%.0f", seriesNumber));
+                } else {
+                    positionMeta.setTextContent(String.valueOf(seriesNumber));
+                }
                 metadataElement.appendChild(positionMeta);
             }
             

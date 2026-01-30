@@ -277,13 +277,13 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
                                 String scheme = el.getAttributeNS(OPF_NS, "scheme").toUpperCase();
-                                String value = text.toLowerCase();
+                                String value = text.trim();
 
                                 if (processIdentifierWithPrefix(value, builderMeta, processedIdentifierFields)) {
                                     continue;
                                 }
 
-                                if (value.startsWith("isbn:")) {
+                                if (value.toLowerCase().startsWith("isbn:")) {
                                     value = value.substring("isbn:".length());
                                 }
 
@@ -356,7 +356,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     private boolean processIdentifierWithPrefix(String value, BookMetadata.BookMetadataBuilder builder, 
                                                Set<String> processedFields) {
         for (IdentifierMapping mapping : IDENTIFIER_PREFIX_MAPPINGS) {
-            if (value.startsWith(mapping.prefix)) {
+            if (value.toLowerCase().startsWith(mapping.prefix)) {
                 String extractedValue = value.substring(mapping.prefix.length());
                 
                 if ("isbn".equals(mapping.fieldName)) {
