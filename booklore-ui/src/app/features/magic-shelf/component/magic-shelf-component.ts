@@ -82,7 +82,8 @@ export type RuleField =
   | 'addedOn'
   | 'metadataScore'
   | 'moods'
-  | 'tags';
+  | 'tags'
+  | 'incompleteSeries';
 
 
 interface FullFieldConfig {
@@ -168,7 +169,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
   hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
   lubimyczytacRating: {label: 'Lubimyczytac Rating', type: 'decimal', max: 10},
-  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5},
+  incompleteSeries: {label: 'Incomplete Series'}
 };
 
 @Component({
@@ -390,7 +392,7 @@ export class MagicShelfComponent implements OnInit {
 
     if (!field) return [...baseOperators, ...multiValueOperators];
 
-    const config = FIELD_CONFIGS[field];
+    const config = FIELD_CONFIGS[field];, 'incompleteSeries'
     const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId'].includes(field);
     const operators = [...baseOperators];
 

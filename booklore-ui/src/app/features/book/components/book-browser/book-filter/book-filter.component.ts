@@ -393,6 +393,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       try {
         const magicShelfEntity = entity as { filterJson: string };
         const groupRule = JSON.parse(magicShelfEntity.filterJson) as GroupRule;
+        this.bookRuleEvaluatorService.setAllBooks(books);
         return books.filter((book) => this.bookRuleEvaluatorService.evaluateGroup(book, groupRule));
       } catch (e) {
         console.warn('Invalid filterJson for MagicShelf:', e);

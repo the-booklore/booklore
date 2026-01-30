@@ -1,9 +1,19 @@
-import {Injectable} from '@angular/core';
-import {Book} from '../../book/model/book.model';
-import {GroupRule, Rule, RuleField} from '../component/magic-shelf-component';
+import { Injectable, inject } from '@angular/core';
+import { Book } from '../../book/model/book.model';
+import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
+import { IncompleteSeriesService } from './incomplete-series.service';
 
 @Injectable({ providedIn: 'root' })
 export class BookRuleEvaluatorService {
+  private incompleteSeriesService = inject(IncompleteSeriesService);
+  private allBooks: Book[] = [];
+
+  /**
+   * Set all books for context-dependent rules like incompleteSeries
+   */
+  setAllBooks(books: Book[]): void {
+    this.allBooks = books;
+  }
 
   evaluateGroup(book: Book, group: GroupRule): boolean {
     const results = group.rules.map(rule => {
@@ -18,6 +28,21 @@ export class BookRuleEvaluatorService {
 
   private evaluateRule(book: Book, rule: Rule): boolean {
     const rawValue = this.extractBookValue(book, rule.field);
+
+    // Special handling for boolean fields
+    if (rule.field === 'incompleteSeries') {
+      const boolValue = rawValue === true;
+      const ruleBoolValue = rule.value === 'true' || rule.value === true;
+
+      switch (rule.operator) {
+        case 'equals':
+          return boolValue === ruleBoolValue;
+        case 'not_equals':
+          return boolValue !== ruleBoolValue;
+        default:
+          return false;
+      }
+    }
 
     const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
@@ -35,20 +60,6 @@ export class BookRuleEvaluatorService {
     const ruleStart = normalize(rule.valueStart);
     const ruleEnd = normalize(rule.valueEnd);
 
-    const mapFileTypeValue = (uiValue: string): string => {
-      const lowerValue = uiValue.toLowerCase();
-      switch (lowerValue) {
-        case 'cbr':
-        case 'cbz':
-        case 'cb7':
-          return 'cbx';
-        case 'azw':
-          return 'azw3';
-        default:
-          return lowerValue;
-      }
-    };
-
     const getArrayField = (field: RuleField): string[] => {
       switch (field) {
         case 'authors':
@@ -62,7 +73,7 @@ export class BookRuleEvaluatorService {
         case 'readStatus':
           return [String(book.readStatus ?? 'UNSET').toLowerCase()];
         case 'fileType':
-          return [String(book['bookType'] ?? '').toLowerCase()];
+          return [String(this.getFileExtension(book.fileName) ?? '').toLowerCase()];
         case 'library':
           return [String(book.libraryId)];
         case 'shelf':
@@ -81,41 +92,17 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
         case 'isbn10':
           return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
-        case 'asin':
-          return [String(book.metadata?.asin ?? '').toLowerCase()];
-        case 'goodreadsId':
-          return [String(book.metadata?.goodreadsId ?? '').toLowerCase()];
-        case 'comicvineId':
-          return [String(book.metadata?.comicvineId ?? '').toLowerCase()];
-        case 'hardcoverId':
-          return [String(book.metadata?.hardcoverId ?? '').toLowerCase()];
-        case 'googleId':
-          return [String(book.metadata?.googleId ?? '').toLowerCase()];
-        case 'lubimyczytacId':
-          return [String(book.metadata?.lubimyczytacId ?? '').toLowerCase()];
-        case 'ranobedbId':
-          return [String(book.metadata?.ranobedbId ?? '').toLowerCase()];
+        case 'incompleteSeries':
+          return [String(book.incompleteSeries ?? false)];
         default:
           return [];
       }
     };
 
     const isNumericIdField = rule.field === 'library' || rule.field === 'shelf';
-    const isFileTypeField = rule.field === 'fileType';
-
     const ruleList = Array.isArray(rule.value)
-      ? rule.value.map(v => {
-          if (isNumericIdField) return String(v);
-          const lowerValue = String(v).toLowerCase();
-          return isFileTypeField ? mapFileTypeValue(lowerValue) : lowerValue;
-        })
-      : (rule.value ? [
-          isNumericIdField
-            ? String(rule.value)
-            : isFileTypeField
-              ? mapFileTypeValue(String(rule.value).toLowerCase())
-              : String(rule.value).toLowerCase()
-        ] : []);
+      ? rule.value.map(v => isNumericIdField ? String(v) : String(v).toLowerCase())
+      : (rule.value ? [isNumericIdField ? String(rule.value) : String(rule.value).toLowerCase()] : []);
 
     switch (rule.operator) {
       case 'equals':
@@ -125,10 +112,6 @@ export class BookRuleEvaluatorService {
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() === ruleVal.getTime();
         }
-        if (isFileTypeField && typeof ruleVal === 'string') {
-          const mappedRuleVal = mapFileTypeValue(ruleVal.toLowerCase());
-          return value === mappedRuleVal;
-        }
         return value === ruleVal;
 
       case 'not_equals':
@@ -137,10 +120,6 @@ export class BookRuleEvaluatorService {
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() !== ruleVal.getTime();
-        }
-        if (isFileTypeField && typeof ruleVal === 'string') {
-          const mappedRuleVal = mapFileTypeValue(ruleVal.toLowerCase());
-          return value !== mappedRuleVal;
         }
         return value !== ruleVal;
 
@@ -252,7 +231,7 @@ export class BookRuleEvaluatorService {
       case 'readStatus':
         return book.readStatus ?? 'UNSET';
       case 'fileType':
-        return (book['bookType'] as string)?.toLowerCase() ?? null;
+        return this.getFileExtension(book.fileName)?.toLowerCase() ?? null;
       case 'fileSize':
         return book.fileSizeKb;
       case 'metadataScore':
@@ -279,13 +258,6 @@ export class BookRuleEvaluatorService {
         return book.dateFinished ? new Date(book.dateFinished) : null;
       case 'lastReadTime':
         return book.lastReadTime ? new Date(book.lastReadTime) : null;
-      case 'addedOn':
-        if (!book.addedOn) return null;
-        const addedDate = new Date(book.addedOn);
-        const today = new Date();
-        const diffTime = Math.abs(today.getTime() - addedDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
       case 'seriesName':
         return book.metadata?.seriesName?.toLowerCase() ?? null;
       case 'seriesNumber':
@@ -300,22 +272,6 @@ export class BookRuleEvaluatorService {
         return book.metadata?.isbn13?.toLowerCase() ?? null;
       case 'isbn10':
         return book.metadata?.isbn10?.toLowerCase() ?? null;
-      case 'asin':
-        return book.metadata?.asin?.toLowerCase() ?? null;
-      case 'goodreadsId':
-        return book.metadata?.goodreadsId?.toLowerCase() ?? null;
-      case 'comicvineId':
-        return book.metadata?.comicvineId?.toLowerCase() ?? null;
-      case 'hardcoverId':
-        return book.metadata?.hardcoverId?.toLowerCase() ?? null;
-      case 'hardcoverBookId':
-        return book.metadata?.hardcoverBookId;
-      case 'googleId':
-        return book.metadata?.googleId?.toLowerCase() ?? null;
-      case 'lubimyczytacId':
-        return book.metadata?.lubimyczytacId?.toLowerCase() ?? null;
-      case 'ranobedbId':
-        return book.metadata?.ranobedbId?.toLowerCase() ?? null;
       case 'amazonRating':
         return book.metadata?.amazonRating;
       case 'amazonReviewCount':
@@ -328,12 +284,19 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
-      case 'lubimyczytacRating':
-        return book.metadata?.lubimyczytacRating;
       case 'ranobedbRating':
         return book.metadata?.ranobedbRating;
+      case 'incompleteSeries':
+        return book.incompleteSeries ?? false;
       default:
         return (book as Record<string, unknown>)[field];
     }
+  }
+
+  private getFileExtension(filePath?: string): string | null {
+    if (!filePath) return null;
+    const parts = filePath.split('.');
+    if (parts.length < 2) return null;
+    return parts.pop() ?? null;
   }
 }

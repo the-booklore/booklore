@@ -38,6 +38,7 @@ export interface Book extends FileInfo {
   libraryName: string;
   metadata?: BookMetadata;
   shelves?: Shelf[];
+  incompleteSeries?: boolean;
   lastReadTime?: string;
   addedOn?: string;
   epubProgress?: EpubProgress;

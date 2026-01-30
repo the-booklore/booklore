@@ -137,7 +137,10 @@ export class MainDashboardComponent implements OnInit {
 
         return this.bookService.bookState$.pipe(
           map((state: BookState) => {
-            const filteredBooks = (state.books || []).filter((book) =>
+            const allBooks = state.books || [];
+            this.ruleEvaluatorService.setAllBooks(allBooks);
+
+            const filteredBooks = allBooks.filter((book) =>
               this.ruleEvaluatorService.evaluateGroup(book, group)
             );
 
