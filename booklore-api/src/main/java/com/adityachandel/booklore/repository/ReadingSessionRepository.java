@@ -25,6 +25,20 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             """)
     List<ReadingSessionCountDto> findSessionCountsByUserAndYear(@Param("userId") Long userId, @Param("year") int year);
 
+    @Query("""
+            SELECT CAST(rs.startTime AS LocalDate) as date, COUNT(rs) as count
+            FROM ReadingSessionEntity rs
+            WHERE rs.user.id = :userId
+            AND YEAR(rs.startTime) = :year
+            AND MONTH(rs.startTime) = :month
+            GROUP BY CAST(rs.startTime AS LocalDate)
+            ORDER BY date
+            """)
+    List<ReadingSessionCountDto> findSessionCountsByUserAndYearAndMonth(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("month") int month);
+
         @Query("""
                         SELECT
                                 b.id as bookId,

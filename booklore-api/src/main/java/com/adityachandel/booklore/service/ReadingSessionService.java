@@ -4,6 +4,7 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.ReadingSessionRequest;
+import com.adityachandel.booklore.model.dto.response.BookCompletionHeatmapResponse;
 import com.adityachandel.booklore.model.dto.response.CompletionTimelineResponse;
 import com.adityachandel.booklore.model.dto.response.FavoriteReadingDaysResponse;
 import com.adityachandel.booklore.model.dto.response.GenreStatisticsResponse;
@@ -86,6 +87,20 @@ public class ReadingSessionService {
         Long userId = authenticatedUser.getId();
 
         return readingSessionRepository.findSessionCountsByUserAndYear(userId, year)
+                .stream()
+                .map(dto -> ReadingSessionHeatmapResponse.builder()
+                        .date(dto.getDate())
+                        .count(dto.getCount())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReadingSessionHeatmapResponse> getSessionHeatmapForMonth(int year, int month) {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        return readingSessionRepository.findSessionCountsByUserAndYearAndMonth(userId, year, month)
                 .stream()
                 .map(dto -> ReadingSessionHeatmapResponse.builder()
                         .date(dto.getDate())
@@ -253,5 +268,23 @@ public class ReadingSessionService {
                 .endLocation(session.getEndLocation())
                 .createdAt(session.getCreatedAt())
                 .build());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookCompletionHeatmapResponse> getBookCompletionHeatmap() {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        int currentYear = LocalDate.now().getYear();
+        int startYear = currentYear - 9;
+
+        return userBookProgressRepository.findBookCompletionHeatmap(userId, startYear, currentYear)
+                .stream()
+                .map(dto -> BookCompletionHeatmapResponse.builder()
+                        .year(dto.getYear())
+                        .month(dto.getMonth())
+                        .count(dto.getCount())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

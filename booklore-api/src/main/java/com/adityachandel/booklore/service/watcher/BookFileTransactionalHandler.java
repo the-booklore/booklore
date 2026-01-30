@@ -59,21 +59,17 @@ public class BookFileTransactionalHandler {
         LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
         String fileSubPath = FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), path);
 
-        // Check if this is a moved file by looking for existing book with same content hash
         String currentHash = FileFingerprint.generateHash(path);
         Optional<BookEntity> existingByHash = bookRepository.findByCurrentHash(currentHash);
         if (existingByHash.isPresent()) {
-            // File was moved - update the existing book's path instead of creating a duplicate
             bookFilePersistenceService.updatePathIfChanged(existingByHash.get(), libraryEntity, path, currentHash);
             log.info("[CREATE] File '{}' recognized as moved file, updated existing book's path", filePath);
             notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
             return;
         }
 
-        // Check for fileless books that match by metadata
         BookEntity filelessMatch = findMatchingFilelessBook(libraryEntity, fileName, libraryPathEntity);
         if (filelessMatch != null) {
-            // Set libraryPath if not set (fileless books like physical books don't have one)
             if (filelessMatch.getLibraryPath() == null) {
                 filelessMatch.setLibraryPath(libraryPathEntity);
                 bookRepository.save(filelessMatch);
@@ -121,7 +117,6 @@ public class BookFileTransactionalHandler {
         LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
         String fileSubPath = FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), folderPath);
 
-        // For folder-based audiobooks, try to match with book in parent folder
         BookEntity matchingBook = findMatchingBookForFolderAudiobook(libraryPathEntity.getId(), fileSubPath, folderName);
 
         if (matchingBook != null) {
@@ -148,16 +143,11 @@ public class BookFileTransactionalHandler {
 
     private static final double FUZZY_MATCH_THRESHOLD = 0.85;
 
-    /**
-     * Finds a fileless book that matches the given file by metadata title.
-     * Only matches books that either have no libraryPath or have the same libraryPath as the file.
-     */
     private BookEntity findMatchingFilelessBook(LibraryEntity library, String fileName, LibraryPathEntity fileLibraryPath) {
         List<BookEntity> filelessBooks = bookRepository.findFilelessBooksByLibraryId(library.getId());
         String fileBaseName = BookFileGroupingUtils.extractGroupingKey(fileName);
 
         for (BookEntity book : filelessBooks) {
-            // Skip books that already have a different libraryPath
             if (book.getLibraryPath() != null && !book.getLibraryPath().getId().equals(fileLibraryPath.getId())) {
                 continue;
             }
@@ -174,7 +164,6 @@ public class BookFileTransactionalHandler {
     }
 
     private BookEntity findMatchingBook(Long libraryPathId, String fileSubPath, String fileName) {
-        // Skip root-level files
         if (fileSubPath == null || fileSubPath.isEmpty()) {
             return null;
         }
@@ -192,16 +181,14 @@ public class BookFileTransactionalHandler {
             }
             BookFileEntity primaryFile = book.getPrimaryBookFile();
             if (primaryFile == null) {
-                continue; // Skip fileless books
+                continue;
             }
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
 
-            // Try exact match first
             if (fileGroupingKey.equals(existingGroupingKey)) {
                 return book;
             }
 
-            // Track best fuzzy match
             double similarity = BookFileGroupingUtils.calculateSimilarity(fileGroupingKey, existingGroupingKey);
             if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
                 bestSimilarity = similarity;
@@ -209,7 +196,6 @@ public class BookFileTransactionalHandler {
             }
         }
 
-        // Return fuzzy match if found
         if (fuzzyMatch != null) {
             String primaryFileName = fuzzyMatch.hasFiles() ? fuzzyMatch.getPrimaryBookFile().getFileName() : "book#" + fuzzyMatch.getId();
             log.debug("Fuzzy matched '{}' to '{}' with similarity {}", fileName, primaryFileName, bestSimilarity);
@@ -217,12 +203,7 @@ public class BookFileTransactionalHandler {
         return fuzzyMatch;
     }
 
-    /**
-     * Find matching book for a folder-based audiobook.
-     * Looks in the parent folder since audiobook folders are typically nested inside book folders.
-     */
     private BookEntity findMatchingBookForFolderAudiobook(Long libraryPathId, String fileSubPath, String folderName) {
-        // Get parent folder path for matching
         String parentPath = Optional.ofNullable(fileSubPath)
                 .filter(p -> !p.isEmpty())
                 .map(p -> {
@@ -236,7 +217,6 @@ public class BookFileTransactionalHandler {
 
         String folderGroupingKey = BookFileGroupingUtils.extractGroupingKey(folderName);
 
-        // Search in parent folder
         List<BookEntity> booksInParent = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, parentPath);
 
         BookEntity fuzzyMatch = null;
@@ -248,16 +228,14 @@ public class BookFileTransactionalHandler {
             }
             BookFileEntity primaryFile = book.getPrimaryBookFile();
             if (primaryFile == null) {
-                continue; // Skip fileless books
+                continue;
             }
             String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
 
-            // Try exact match first
             if (folderGroupingKey.equals(existingGroupingKey)) {
                 return book;
             }
 
-            // Track best fuzzy match
             double similarity = BookFileGroupingUtils.calculateSimilarity(folderGroupingKey, existingGroupingKey);
             if (similarity >= FUZZY_MATCH_THRESHOLD && similarity > bestSimilarity) {
                 bestSimilarity = similarity;
