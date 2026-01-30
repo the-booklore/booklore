@@ -122,15 +122,17 @@
       }
     </div>
 
-    <div class="setting-item">
-      <div class="setting-header">
-        <p-toggleswitch
-          [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
-          (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
-        </p-toggleswitch>
-        <label class="setting-label">Auto-Move Files on Metadata Update</label>
+    @if ((appSettings$ | async)?.diskType === 'LOCAL') {
+      <div class="setting-item">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
+            (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+          </p-toggleswitch>
+          <label class="setting-label">Auto-Move Files on Metadata Update</label>
+        </div>
+        <p class="setting-description">Automatically move and rename files according to their library's naming pattern when metadata is updated.</p>
       </div>
-      <p class="setting-description">Automatically move and rename files according to their library's naming pattern when metadata is updated.</p>
-    </div>
+    }
   </div>
 </div>

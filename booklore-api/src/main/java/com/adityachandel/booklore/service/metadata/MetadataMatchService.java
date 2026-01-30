@@ -4,8 +4,8 @@ import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataMatchWeights;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -64,6 +64,7 @@ public class MetadataMatchService {
         if (isPositive(metadata.getHardcoverRating(), metadata.getHardcoverRatingLocked())) score += weights.getHardcoverRating();
         if (isPositive(metadata.getHardcoverReviewCount(), metadata.getHardcoverReviewCountLocked())) score += weights.getHardcoverReviewCount();
         if (isPositive(metadata.getRanobedbRating(), metadata.getRanobedbRatingLocked())) score += weights.getRanobedbRating();
+        if (metadata.getCoverUpdatedOn() != null || Boolean.TRUE.equals(metadata.getCoverLocked())) score += weights.getCoverImage();
 
         return (score / totalWeight) * 100f;
     }

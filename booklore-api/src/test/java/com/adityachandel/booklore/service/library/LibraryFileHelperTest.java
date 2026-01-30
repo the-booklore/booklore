@@ -1,25 +1,17 @@
 package com.adityachandel.booklore.service.library;
 
-import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,9 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class LibraryFileHelperTest {
     @TempDir
     Path tempDir;
-
-    @Mock
-    private LibraryFileProcessor processor;
 
     @Test
     void testGetLibraryFiles_HandlesInaccessibleDirectories() throws IOException {
@@ -47,12 +36,11 @@ class LibraryFileHelperTest {
         LibraryEntity testLibrary = LibraryEntity.builder()
                 .name("Test Library")
                 .icon("book")
-                .scanMode(LibraryScanMode.FILE_AS_BOOK)
                 .watch(false)
                 .libraryPaths(List.of(libraryPath))
                 .build();
 
-        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(testLibrary, processor);
+        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(testLibrary);
         assertEquals(libraryFiles.stream().map(LibraryFile::getFileName).sorted().toList(), List.of("happy.epub", "zzzz_happ.epub"));
     }
 }

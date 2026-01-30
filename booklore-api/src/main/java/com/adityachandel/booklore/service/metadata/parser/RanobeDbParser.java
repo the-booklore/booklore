@@ -157,8 +157,8 @@ public class RanobeDbParser implements BookParser {
     private String getSearchTerm(Book book, FetchMetadataRequest request) {
         if (request.getTitle() != null && !request.getTitle().isEmpty()) {
             return request.getTitle();
-        } else if (book.getFileName() != null && !book.getFileName().isEmpty()) {
-            return BookUtils.cleanFileName(book.getFileName());
+        } else if (book.getPrimaryFile() != null && book.getPrimaryFile().getFileName() != null && !book.getPrimaryFile().getFileName().isEmpty()) {
+            return BookUtils.cleanFileName(book.getPrimaryFile().getFileName());
         }
         return null;
     }

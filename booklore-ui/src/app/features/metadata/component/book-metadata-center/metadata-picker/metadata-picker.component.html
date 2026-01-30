@@ -1,465 +1,354 @@
 @if (book$ | async; as book) {
-  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="form-container">
-    <div class="form-content">
-      <div class="metadata-header desktop-only">
-        <p class="metadata-header-text">Current Metadata</p>
-        <p-button
-          severity="info"
-          icon='pi pi-angle-left'
-          class="button-left"
-          [outlined]="true"
-          pTooltip="Move all missing fields" tooltipPosition="bottom"
-          (onClick)="copyMissing()"></p-button>
-        <p-button
-          severity="info"
-          icon='pi pi-angle-double-left'
-          class="button-double-left"
-          [outlined]="true"
-          pTooltip="Move all fields" tooltipPosition="bottom"
-          (onClick)="copyAll()"></p-button>
-        <p class="metadata-header-text">Fetched Metadata</p>
-      </div>
-      <div class="metadata-header-mobile mobile-only">
-        <p-button
-          severity="info"
-          icon='pi pi-angle-up'
-          label="Copy Missing"
-          [outlined]="true"
-          size="small"
-          (onClick)="copyMissing()"></p-button>
-        <p-button
-          severity="info"
-          icon='pi pi-angle-double-up'
-          label="Copy All"
-          [outlined]="true"
-          size="small"
-          (onClick)="copyAll()"></p-button>
-      </div>
-
-      <!-- Thumbnail Row -->
-      <div class="form-row thumbnail-row">
-        <label class="label desktop-only"></label>
-        <div class="input-container thumbnail-container">
-          <!-- Mobile layout: current image -> lock -> arrow -> fetched image -->
-          <div class="mobile-thumbnail-row mobile-only">
-            <p-image
-              class="thumbnail"
-              [src]="metadataForm.get('thumbnailUrl')?.value"
-              alt="Image"
-              appendTo="body"
-              lazyLoad
-              [preview]="true">
-            </p-image>
-            @if (!metadataForm.get('coverLocked')?.value) {
-              <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success" size="small"></p-button>
-            }
-            @if (metadataForm.get('coverLocked')?.value) {
-              <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="warn" size="small"></p-button>
-            }
-            <p-button
-              [icon]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"
-              [outlined]="true"
-              [ngClass]="
-                {
-                  'green-outlined-button': isValueSaved('thumbnailUrl'),
-                  'yellow-outlined-button': isValueCopied('thumbnailUrl') && !hoveredFields['thumbnailUrl'],
-                  'red-outlined-button': isValueCopied('thumbnailUrl') && hoveredFields['thumbnailUrl']
-                }"
-              class="arrow-button"
-              size="small"
-              (click)="hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
-              (mouseenter)="onMouseEnter('thumbnailUrl')"
-              (mouseleave)="onMouseLeave('thumbnailUrl')"/>
-            <p-image
-              class="thumbnail"
-              [src]="fetchedMetadata.thumbnailUrl!"
-              alt="Image"
-              appendTo="body"
-              lazyLoad
-              [preview]="true">
-            </p-image>
-          </div>
-          <!-- Desktop layout -->
-          <div class="desktop-only desktop-field-row">
-            @if (!metadataForm.get('coverLocked')?.value) {
-              <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success"></p-button>
-            }
-            @if (metadataForm.get('coverLocked')?.value) {
-              <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="warn"></p-button>
-            }
-            <p-image
-              class="thumbnail"
-              [src]="metadataForm.get('thumbnailUrl')?.value"
-              alt="Image"
-              appendTo="body"
-              lazyLoad
-              [preview]="true">
-            </p-image>
-            <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl" class="input"/>
-            <p-button
-              [icon]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"
-              [outlined]="true"
-              [ngClass]="
-                {
-                  'green-outlined-button': isValueSaved('thumbnailUrl'),
-                  'yellow-outlined-button': isValueCopied('thumbnailUrl') && !hoveredFields['thumbnailUrl'],
-                  'red-outlined-button': isValueCopied('thumbnailUrl') && hoveredFields['thumbnailUrl']
-                }"
-              class="arrow-button"
-              (click)="hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
-              (mouseenter)="onMouseEnter('thumbnailUrl')"
-              (mouseleave)="onMouseLeave('thumbnailUrl')"/>
-            <input type="hidden" [value]="fetchedMetadata.thumbnailUrl" class="input" readonly/>
-            <p-image
-              class="thumbnail"
-              [src]="fetchedMetadata.thumbnailUrl!"
-              alt="Image"
-              appendTo="body"
-              lazyLoad
-              [preview]="true">
-            </p-image>
-          </div>
+  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="metadata-picker">
+    <div class="dialog-body">
+      <!-- Column Headers (Desktop) -->
+      <div class="column-headers desktop-only">
+        <div class="column-label current">
+          <i class="pi pi-file-edit"></i>
+          <span>Current</span>
+        </div>
+        <div class="column-actions">
+          <p-button
+            icon="pi pi-angle-left"
+            [rounded]="true"
+            [outlined]="true"
+            severity="secondary"
+            pTooltip="Copy missing fields"
+            tooltipPosition="bottom"
+            (onClick)="copyMissing()"
+          />
+          <p-button
+            icon="pi pi-angle-double-left"
+            [rounded]="true"
+            [outlined]="true"
+            severity="primary"
+            pTooltip="Copy all fields"
+            tooltipPosition="bottom"
+            (onClick)="copyAll()"
+          />
+        </div>
+        <div class="column-label fetched">
+          <i class="pi pi-cloud-download"></i>
+          <span>Fetched</span>
         </div>
       </div>
 
-      @for (field of metadataFieldsTop; track field) {
-        <div class="form-row">
-          <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
-          <div class="input-container">
-            <!-- Mobile layout -->
-            <div class="mobile-field-row mobile-only">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" size="small"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" size="small"></p-button>
-              }
-              @if (field.controlName === 'publishedDate') {
-                <input pSize="small" fluid pInputText id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input" placeholder="YYYY-MM-DD"/>
-              } @else {
-                <input pSize="small" fluid pInputText id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"/>
-              }
-            </div>
-            <div class="mobile-field-row mobile-only">
-              <input pSize="small" pInputText [value]="fetchedMetadata[field.fetchedKey] ?? null" class="input fetched-input" readonly/>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-up')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                size="small"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-            </div>
-            <!-- Desktop layout -->
-            <div class="desktop-only desktop-field-row">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
-              }
-              @if (field.controlName === 'publishedDate') {
-                <input pSize="small" fluid pInputText formControlName="{{field.controlName}}" class="input" placeholder="YYYY-MM-DD"/>
-              } @else {
-                <input pSize="small" fluid pInputText formControlName="{{field.controlName}}" class="input"/>
-              }
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <input pSize="small" pInputText [value]="fetchedMetadata[field.fetchedKey] ?? null" class="input" readonly/>
-            </div>
-          </div>
+      <!-- Cover Image Section -->
+      <section class="form-section">
+        <div class="section-header">
+          <i class="pi pi-image"></i>
+          <span>Cover Image</span>
         </div>
-      }
 
-      @for (field of metadataChips; track field) {
-        <div class="form-row">
-          <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
-          <div class="input-container">
-            <!-- Mobile layout -->
-            <div class="mobile-field-row mobile-only">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" size="small"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" size="small"></p-button>
-              }
-              <div class="autocomplete-container">
-                <p-autoComplete
-                  class="autocomplete-full-width"
-                  formControlName="{{field.controlName}}"
-                  [multiple]="true"
-                  [dropdown]="false"
-                  [forceSelection]="false"
-                  [showClear]="true"
-                  [suggestions]="getFiltered(field.controlName)"
-                  (completeMethod)="filterItems($event, field.controlName)"
-                  (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                  (onSelect)="onAutoCompleteSelect(field.controlName, $event)">
-                </p-autoComplete>
+        <div class="section-content">
+          <div class="field-row cover-field-row">
+            <label class="field-label">Cover</label>
+            <div class="field-content">
+              <div class="field-side current cover-side">
+                <span class="cover-label mobile-only">Current</span>
+                <div class="cover-wrapper">
+                  <p-image
+                    class="cover-image"
+                    [src]="metadataForm.get('thumbnailUrl')?.value"
+                    alt="Current cover"
+                    appendTo="body"
+                    lazyLoad
+                    [preview]="true"
+                  />
+                  <button
+                    type="button"
+                    class="lock-badge"
+                    [class.locked]="metadataForm.get('coverLocked')?.value"
+                    (click)="toggleLock('thumbnailUrl')"
+                    [pTooltip]="metadataForm.get('coverLocked')?.value ? 'Unlock cover' : 'Lock cover'"
+                    tooltipPosition="top"
+                  >
+                    <i [class]="metadataForm.get('coverLocked')?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                  </button>
+                </div>
               </div>
-            </div>
-            <div class="mobile-field-row mobile-only">
-              <div class="autocomplete-container">
-                <p-autoComplete
-                  [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                  [ngModelOptions]="{ standalone: true }"
-                  [disabled]="true"
-                  [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="autocomplete-full-width fetched-input">
-                </p-autoComplete>
-              </div>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-up')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                size="small"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-            </div>
-            <!-- Desktop layout -->
-            <div class="desktop-only desktop-field-row">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
-              }
-              <div class="autocomplete-container">
-                <p-autoComplete
-                  class="autocomplete-full-width"
-                  formControlName="{{field.controlName}}"
-                  [multiple]="true"
-                  [dropdown]="false"
-                  [forceSelection]="false"
-                  [showClear]="true"
-                  [suggestions]="getFiltered(field.controlName)"
-                  (completeMethod)="filterItems($event, field.controlName)"
-                  (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                  (onSelect)="onAutoCompleteSelect(field.controlName, $event)">
-                </p-autoComplete>
-              </div>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <div class="autocomplete-container">
-                <p-autoComplete
-                  [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                  [ngModelOptions]="{ standalone: true }"
-                  [disabled]="true"
-                  [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="autocomplete-full-width">
-                </p-autoComplete>
+
+              <button
+                type="button"
+                class="transfer-btn"
+                [class.saved]="isValueSaved('thumbnailUrl')"
+                [class.copied]="isValueCopied('thumbnailUrl') && !hoveredFields['thumbnailUrl']"
+                [class.reset]="isValueCopied('thumbnailUrl') && hoveredFields['thumbnailUrl']"
+                (click)="hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
+                (mouseenter)="onMouseEnter('thumbnailUrl')"
+                (mouseleave)="onMouseLeave('thumbnailUrl')"
+              >
+                <i [class]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+              </button>
+
+              <div class="field-side fetched cover-side">
+                <span class="cover-label mobile-only">Fetched</span>
+                <div class="cover-wrapper">
+                  <p-image
+                    class="cover-image"
+                    [src]="fetchedMetadata.thumbnailUrl!"
+                    alt="Fetched cover"
+                    appendTo="body"
+                    lazyLoad
+                    [preview]="true"
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
-      }
+      </section>
 
-      @for (field of metadataDescription; track field) {
-        <div class="form-row">
-          <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
-          <div class="input-container">
-            <!-- Mobile layout -->
-            <div class="mobile-field-row mobile-only">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" size="small"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" size="small"></p-button>
-              }
-              <textarea rows="3" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"></textarea>
-            </div>
-            <div class="mobile-field-row mobile-only">
-              <textarea rows="3" pInputText [value]="fetchedMetadata[field.fetchedKey] ?? null" class="input fetched-input" readonly></textarea>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-up')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                size="small"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-            </div>
-            <!-- Desktop layout -->
-            <div class="desktop-only desktop-field-row">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
-              }
-              <textarea rows="3" pTextarea formControlName="{{field.controlName}}" class="input"></textarea>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <textarea rows="3" pInputText [value]="fetchedMetadata[field.fetchedKey] ?? null" class="input" readonly></textarea>
-            </div>
-          </div>
+      <!-- Basic Information Section -->
+      <section class="form-section">
+        <div class="section-header">
+          <i class="pi pi-info-circle"></i>
+          <span>Basic Information</span>
         </div>
-      }
 
-      @for (field of metadataFieldsBottom; track field) {
-        <div class="form-row">
-          <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
-          <div class="input-container">
-            <!-- Mobile layout -->
-            <div class="mobile-field-row mobile-only">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success" size="small"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn" size="small"></p-button>
-              }
-              <input pInputText pSize="small" id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"/>
+        <div class="section-content">
+          @for (field of metadataFieldsTop; track field) {
+            <div class="field-row">
+              <label class="field-label">{{ field.label }}</label>
+              <div class="field-content">
+                <div class="field-side current">
+                  <button
+                    type="button"
+                    class="lock-btn"
+                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                    (click)="toggleLock(field.controlName)"
+                  >
+                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                  </button>
+                  @if (field.controlName === 'publishedDate') {
+                    <input pInputText formControlName="{{field.controlName}}" class="field-input" placeholder="YYYY-MM-DD"/>
+                  } @else {
+                    <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
+                  }
+                </div>
+
+                <button
+                  type="button"
+                  class="transfer-btn"
+                  [class.saved]="isValueSaved(field.controlName)"
+                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                  (mouseenter)="onMouseEnter(field.controlName)"
+                  (mouseleave)="onMouseLeave(field.controlName)"
+                >
+                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                </button>
+
+                <div class="field-side fetched">
+                  <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
+                </div>
+              </div>
             </div>
-            <div class="mobile-field-row mobile-only">
-              <input pInputText pSize="small" [value]="fetchedMetadata[field.fetchedKey] ?? null" class="input fetched-input" readonly/>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-up')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                size="small"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-            </div>
-            <!-- Desktop layout -->
-            <div class="desktop-only desktop-field-row">
-              @if (!metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
-              }
-              @if (metadataForm.get(field.lockedKey)?.value) {
-                <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
-              }
-              <input pInputText pSize="small" formControlName="{{field.controlName}}" class="input"/>
-              <p-button
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
-                [outlined]="true"
-                [ngClass]="
-                  {
-                    'green-outlined-button': isValueSaved(field.controlName),
-                    'yellow-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                    'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName]
-                  }"
-                class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <input pInputText pSize="small" [value]="fetchedMetadata[field.fetchedKey] ?? null" class="input" readonly/>
-            </div>
-          </div>
+          }
         </div>
-      }
+      </section>
 
-      <div class="metadata-header desktop-only">
-        <p class="metadata-header-text">Current Metadata</p>
-        <p-button
-          severity="info"
-          icon='pi pi-angle-left'
-          class="button-left"
-          [outlined]="true"
-          pTooltip="Move all missing fields" tooltipPosition="bottom"
-          (onClick)="copyMissing()"></p-button>
-        <p-button
-          severity="info"
-          icon='pi pi-angle-double-left'
-          class="button-double-left"
-          [outlined]="true"
-          pTooltip="Move all fields" tooltipPosition="bottom"
-          (onClick)="copyAll()"></p-button>
-        <p class="metadata-header-text">Fetched Metadata</p>
-      </div>
+      <!-- Tags & Categories Section -->
+      <section class="form-section">
+        <div class="section-header">
+          <i class="pi pi-tags"></i>
+          <span>Tags & Categories</span>
+        </div>
+
+        <div class="section-content">
+          @for (field of metadataChips; track field) {
+            <div class="field-row">
+              <label class="field-label">{{ field.label }}</label>
+              <div class="field-content">
+                <div class="field-side current">
+                  <button
+                    type="button"
+                    class="lock-btn"
+                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                    (click)="toggleLock(field.controlName)"
+                  >
+                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                  </button>
+                  <p-autoComplete
+                    class="chips-input"
+                    formControlName="{{field.controlName}}"
+                    [multiple]="true"
+                    [dropdown]="false"
+                    [forceSelection]="false"
+                    [showClear]="true"
+                    [suggestions]="getFiltered(field.controlName)"
+                    (completeMethod)="filterItems($event, field.controlName)"
+                    (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
+                    (onSelect)="onAutoCompleteSelect(field.controlName, $event)"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  class="transfer-btn"
+                  [class.saved]="isValueSaved(field.controlName)"
+                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                  (mouseenter)="onMouseEnter(field.controlName)"
+                  (mouseleave)="onMouseLeave(field.controlName)"
+                >
+                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                </button>
+
+                <div class="field-side fetched">
+                  <p-autoComplete
+                    [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
+                    [ngModelOptions]="{ standalone: true }"
+                    [disabled]="true"
+                    [multiple]="true"
+                    [typeahead]="false"
+                    [dropdown]="false"
+                    [forceSelection]="false"
+                    class="chips-input readonly"
+                  />
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Description Section -->
+      <section class="form-section">
+        <div class="section-header">
+          <i class="pi pi-align-left"></i>
+          <span>Description</span>
+        </div>
+
+        <div class="section-content">
+          @for (field of metadataDescription; track field) {
+            <div class="field-row textarea-row">
+              <label class="field-label">{{ field.label }}</label>
+              <div class="field-content">
+                <div class="field-side current">
+                  <button
+                    type="button"
+                    class="lock-btn"
+                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                    (click)="toggleLock(field.controlName)"
+                  >
+                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                  </button>
+                  <textarea pTextarea formControlName="{{field.controlName}}" class="field-textarea" rows="4"></textarea>
+                </div>
+
+                <button
+                  type="button"
+                  class="transfer-btn"
+                  [class.saved]="isValueSaved(field.controlName)"
+                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                  (mouseenter)="onMouseEnter(field.controlName)"
+                  (mouseleave)="onMouseLeave(field.controlName)"
+                >
+                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                </button>
+
+                <div class="field-side fetched">
+                  <textarea pTextarea [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-textarea" rows="4" readonly></textarea>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Additional Details Section -->
+      @if (metadataFieldsBottom.length > 0) {
+        <section class="form-section">
+          <div class="section-header">
+            <i class="pi pi-list"></i>
+            <span>Additional Details</span>
+          </div>
+
+          <div class="section-content">
+            @for (field of metadataFieldsBottom; track field) {
+              <div class="field-row">
+                <label class="field-label">{{ field.label }}</label>
+                <div class="field-content">
+                  <div class="field-side current">
+                    <button
+                      type="button"
+                      class="lock-btn"
+                      [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                      (click)="toggleLock(field.controlName)"
+                    >
+                      <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                    </button>
+                    <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="transfer-btn"
+                    [class.saved]="isValueSaved(field.controlName)"
+                    [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                    [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                    (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                    (mouseenter)="onMouseEnter(field.controlName)"
+                    (mouseleave)="onMouseLeave(field.controlName)"
+                  >
+                    <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                  </button>
+
+                  <div class="field-side fetched">
+                    <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
     </div>
 
-
     @if (!reviewMode) {
-      <div class="form-footer">
-        <p-divider></p-divider>
-        <!-- Mobile footer -->
-        <div class="footer-buttons mobile-only">
-          <p-button icon="pi pi-arrow-left" label="Metadata List" outlined severity="info" (onClick)="goBackClick()"></p-button>
-          <div class="footer-buttons-right">
-            <p-button icon="pi pi-lock-open" [outlined]="true" severity="success" pTooltip="Unlock All" (onClick)="unlockAll()"></p-button>
-            <p-button icon="pi pi-lock" [outlined]="true" severity="warn" pTooltip="Lock All" (onClick)="lockAll()"></p-button>
-            <p-button
-              [icon]="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
-              [loading]="isSaving"
-              [disabled]="isSaving"
-              label="Save"
-              type="submit"></p-button>
-          </div>
+      <footer class="dialog-footer">
+        <div class="footer-left">
+          <p-button
+            label="Back to List"
+            icon="pi pi-arrow-left"
+            severity="info"
+            [outlined]="true"
+            (onClick)="goBackClick()"
+          />
         </div>
-        <!-- Desktop footer -->
-        <div class="footer-buttons desktop-only">
-          <p-button label="To Metadata List" icon="pi pi-arrow-left" severity="info" (onClick)="goBackClick()"></p-button>
-          <div class="footer-buttons-right">
-            <p-button label="Unlock All" icon="pi pi-lock-open" [outlined]="true" severity="success" (onClick)="unlockAll()"></p-button>
-            <p-button label="Lock All" icon="pi pi-lock" [outlined]="true" severity="warn" (onClick)="lockAll()"></p-button>
-            <p-divider layout="vertical"/>
-            <p-button
-              label="Save"
-              [icon]="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
-              [loading]="isSaving"
-              [disabled]="isSaving"
-              type="submit"></p-button>
-          </div>
+        <div class="footer-right">
+          <p-button
+            icon="pi pi-lock-open"
+            severity="success"
+            [outlined]="true"
+            pTooltip="Unlock all fields"
+            tooltipPosition="top"
+            (onClick)="unlockAll()"
+          />
+          <p-button
+            icon="pi pi-lock"
+            severity="warn"
+            [outlined]="true"
+            pTooltip="Lock all fields"
+            tooltipPosition="top"
+            (onClick)="lockAll()"
+          />
+          <div class="footer-divider"></div>
+          <p-button
+            label="Save Changes"
+            [icon]="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+            [loading]="isSaving"
+            [disabled]="isSaving"
+            severity="primary"
+            type="submit"
+          />
         </div>
-      </div>
+      </footer>
     }
   </form>
 }

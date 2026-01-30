@@ -36,4 +36,5 @@ public class AppSettings {
     private KoboSettings koboSettings;
     private CoverCroppingSettings coverCroppingSettings;
     private MetadataProviderSpecificFields metadataProviderSpecificFields;
+    private String diskType;
 }

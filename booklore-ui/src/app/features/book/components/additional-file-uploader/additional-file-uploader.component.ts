@@ -104,10 +104,26 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
     // Only take the first file for single file upload
     if (newFiles.length > 0) {
       const file = newFiles[0];
-      this.files = [{
-        file,
-        status: 'Pending'
-      }];
+
+      if (this.maxFileSizeBytes && file.size > this.maxFileSizeBytes) {
+        const errorMsg = `File exceeds maximum size of ${this.formatSize(this.maxFileSizeBytes)}`;
+        this.files = [{
+          file,
+          status: 'Failed',
+          errorMessage: errorMsg
+        }];
+        this.messageService.add({
+          severity: 'error',
+          summary: 'File Too Large',
+          detail: `${file.name} exceeds the maximum file size of ${this.formatSize(this.maxFileSizeBytes)}`,
+          life: 5000
+        });
+      } else {
+        this.files = [{
+          file,
+          status: 'Pending'
+        }];
+      }
     }
   }
 
@@ -183,6 +199,24 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
         return 'danger';
       default:
         return 'info';
+    }
+  }
+
+  getFileStatusLabel(uploadFile: UploadingFile): string {
+    if (uploadFile.status === 'Failed' && uploadFile.errorMessage?.includes('exceeds maximum size')) {
+      return 'Too Large';
+    }
+    switch (uploadFile.status) {
+      case 'Pending':
+        return 'Ready';
+      case 'Uploading':
+        return 'Uploading';
+      case 'Uploaded':
+        return 'Uploaded';
+      case 'Failed':
+        return 'Failed';
+      default:
+        return uploadFile.status;
     }
   }
 

@@ -142,7 +142,7 @@ function getMatchScoreRangeFilters(score?: number | null): { id: string; name: s
 }
 
 function getBookTypeFilter(book: Book): { id: string; name: string }[] {
-  return book.bookType ? [{id: book.bookType, name: book.bookType}] : [];
+  return book.primaryFile?.bookType ? [{id: book.primaryFile.bookType, name: book.primaryFile.bookType}] : [];
 }
 
 export const readStatusLabels: Record<ReadStatus, string> = {
@@ -230,14 +230,14 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   userService = inject(UserService);
   bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
   userData$: Observable<UserState> = this.userService.userState$;
-  filterSortingMode: FilterSortingMode = 'alphabetical';
+  filterSortingMode: FilterSortingMode = 'count';
 
   ngOnInit(): void {
     this.userData$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
     ).subscribe(userState => {
-      this.filterSortingMode = userState.user!.userSettings.filterSortingMode ?? 'alphabetical';
+      this.filterSortingMode = userState.user!.userSettings.filterSortingMode ?? 'count';
     });
 
     combineLatest([
@@ -344,8 +344,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
           return aKey.localeCompare(bKey);
         });
 
-        const isTruncated = sorted.length > 500;
-        const truncated = sorted.slice(0, 500);
+        const isTruncated = sorted.length > 100;
+        const truncated = sorted.slice(0, 100);
 
         return {items: truncated, isTruncated};
       }),

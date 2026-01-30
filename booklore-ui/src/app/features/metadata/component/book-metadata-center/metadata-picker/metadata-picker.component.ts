@@ -4,8 +4,7 @@ import {MessageService} from 'primeng/api';
 import {Button} from 'primeng/button';
 import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {AsyncPipe, NgClass} from '@angular/common';
-import {Divider} from 'primeng/divider';
+import {AsyncPipe} from '@angular/common';
 import {Observable} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
@@ -29,9 +28,7 @@ import {ALL_METADATA_FIELDS, getArrayFields, getBottomFields, getTextareaFields,
     Button,
     FormsModule,
     InputText,
-    Divider,
     ReactiveFormsModule,
-    NgClass,
     Tooltip,
     AsyncPipe,
     Textarea,

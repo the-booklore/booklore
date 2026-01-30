@@ -413,6 +413,10 @@
   gap: 0.375rem;
 }
 
+.format-tags {
+  flex-wrap: wrap;
+}
+
 .metadata-link {
   color: var(--primary-text-color);
   cursor: pointer;
@@ -504,6 +508,17 @@
     min-width: auto !important;
     padding: 10px !important;
   }
+
+  ::ng-deep .read-button-responsive .p-button-label,
+  ::ng-deep .read-button-responsive.p-splitbutton .p-button-label {
+    font-size: 0 !important;
+  }
+
+  ::ng-deep .read-button-responsive .p-button-label::after,
+  ::ng-deep .read-button-responsive.p-splitbutton .p-button-label::after {
+    content: "Read";
+    font-size: 0.875rem;
+  }
 }
 
 .navigation-buttons-desktop {
@@ -584,76 +599,6 @@
   border: none !important;
   height: auto !important;
   font-size: 0.875rem !important;
-}
-
-.custom-p-tabs ::ng-deep .p-tabpanels {
-  padding: 0.5rem 0 0 0 !important;
-}
-
-.tab-content {
-  padding: 0.5rem 0;
-}
-
-.dashboard-scroller-infinite {
-  display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  padding: 0.5rem;
-  gap: 1rem;
-  width: 100%;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
-}
-
-.dashboard-scroller-infinite::-webkit-scrollbar {
-  height: 8px;
-}
-
-.dashboard-scroller-infinite::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.dashboard-scroller-infinite::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-.dashboard-scroller-infinite::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary-color);
-}
-
-.dashboard-scroller-card {
-  width: 115px;
-  flex-basis: 115px;
-  flex-shrink: 0;
-  flex-grow: 0;
-  scroll-snap-align: start;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  border-radius: 0.5rem;
-}
-
-.dashboard-scroller-card:hover {
-  transform: translateY(-6px);
-}
-
-.dashboard-scroller-card:hover::after {
-  opacity: 1;
-}
-
-.dashboard-scroller-card::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 10%;
-  right: 10%;
-  height: 4px;
-  background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  filter: blur(4px);
 }
 
 .loading-state {

@@ -320,6 +320,16 @@
       }
     }
 
+    &.book-type-audiobook {
+      background: color-mix(in srgb, var(--book-type-audiobook-color) 80%, transparent);
+      border: 1px solid var(--book-type-audiobook-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-audiobook-color) 30%, transparent);
+
+      &:hover {
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-audiobook-color) 50%, transparent);
+      }
+    }
+
     &:hover {
       transform: translateY(-2px);
       z-index: 10;
