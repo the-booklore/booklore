@@ -11,7 +11,7 @@ import {AutoComplete, AutoCompleteCompleteEvent} from 'primeng/autocomplete';
 import {BookService} from '../../service/book.service';
 import {LibraryService} from '../../service/library.service';
 import {Library} from '../../model/library.model';
-import {CreatePhysicalBookRequest} from '../../model/book.model';
+import {Book, CreatePhysicalBookRequest} from '../../model/book.model';
 import {filter, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
@@ -156,7 +156,7 @@ export class AddPhysicalBookDialogComponent implements OnInit {
     };
 
     this.bookService.createPhysicalBook(request).subscribe({
-      next: (book) => {
+      next: (book: Book) => {
         this.isLoading = false;
         this.dynamicDialogRef.close(book);
       },

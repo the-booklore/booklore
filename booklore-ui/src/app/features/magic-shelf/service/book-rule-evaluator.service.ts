@@ -47,9 +47,13 @@ export class BookRuleEvaluatorService {
     const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
+      if (typeof val === 'number') return val; // Don't normalize numbers
       if (typeof val === 'string') {
-        const date = new Date(val);
-        if (!isNaN(date.getTime())) return date;
+        // Only try to parse as date if it looks like a date (contains - or /)
+        if (val.includes('-') || val.includes('/')) {
+          const date = new Date(val);
+          if (!isNaN(date.getTime())) return date;
+        }
         return val.toLowerCase();
       }
       return val;
@@ -72,8 +76,16 @@ export class BookRuleEvaluatorService {
           return (book.metadata?.tags ?? []).map(t => t.toLowerCase());
         case 'readStatus':
           return [String(book.readStatus ?? 'UNSET').toLowerCase()];
-        case 'fileType':
-          return [String(this.getFileExtension(book.fileName) ?? '').toLowerCase()];
+        case 'fileType': {
+          const fileType = this.getBookTypeAsFileType(book);
+          if (!fileType) return [];
+          
+          // Special case: CBX books should also match cbr, cbz, cb7
+          if (fileType === 'cbx') {
+            return ['cbx', 'cbr', 'cbz', 'cb7'];
+          }
+          return [fileType];
+        }
         case 'library':
           return [String(book.libraryId)];
         case 'shelf':
@@ -106,6 +118,11 @@ export class BookRuleEvaluatorService {
 
     switch (rule.operator) {
       case 'equals':
+        // Special handling for fileType with CBX books
+        if (rule.field === 'fileType' && value === 'cbx') {
+          const cbxExtensions = ['cbx', 'cbr', 'cbz', 'cb7'];
+          return cbxExtensions.includes(String(ruleVal).toLowerCase());
+        }
         if (Array.isArray(value)) {
           return value.some(v => ruleList.includes(isNumericIdField ? String(v) : String(v).toLowerCase()));
         }
@@ -115,6 +132,11 @@ export class BookRuleEvaluatorService {
         return value === ruleVal;
 
       case 'not_equals':
+        // Special handling for fileType with CBX books
+        if (rule.field === 'fileType' && value === 'cbx') {
+          const cbxExtensions = ['cbx', 'cbr', 'cbz', 'cb7'];
+          return !cbxExtensions.includes(String(ruleVal).toLowerCase());
+        }
         if (Array.isArray(value)) {
           return value.every(v => !ruleList.includes(isNumericIdField ? String(v) : String(v).toLowerCase()));
         }
@@ -231,7 +253,7 @@ export class BookRuleEvaluatorService {
       case 'readStatus':
         return book.readStatus ?? 'UNSET';
       case 'fileType':
-        return this.getFileExtension(book.fileName)?.toLowerCase() ?? null;
+        return this.getBookTypeAsFileType(book);
       case 'fileSize':
         return book.fileSizeKb;
       case 'metadataScore':
@@ -258,6 +280,13 @@ export class BookRuleEvaluatorService {
         return book.dateFinished ? new Date(book.dateFinished) : null;
       case 'lastReadTime':
         return book.lastReadTime ? new Date(book.lastReadTime) : null;
+      case 'addedOn':
+        if (!book.addedOn) return null;
+        const addedDate = new Date(book.addedOn);
+        const today = new Date();
+        const diffTime = Math.abs(today.getTime() - addedDate.getTime());
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
       case 'seriesName':
         return book.metadata?.seriesName?.toLowerCase() ?? null;
       case 'seriesNumber':
@@ -298,5 +327,26 @@ export class BookRuleEvaluatorService {
     const parts = filePath.split('.');
     if (parts.length < 2) return null;
     return parts.pop() ?? null;
+  }
+
+  /**
+   * Get the book type as a file type string (lowercase)
+   * Handles both book.bookType (for tests) and book.primaryFile.bookType
+   */
+  private getBookTypeAsFileType(book: Book): string | null {
+    // Try to get bookType from the book object directly (for tests and backwards compatibility)
+    const directBookType = (book as Record<string, unknown>)['bookType'];
+    if (typeof directBookType === 'string') {
+      return directBookType.toLowerCase();
+    }
+
+    // Try to get bookType from primaryFile
+    const primaryFileType = book.primaryFile?.bookType;
+    if (typeof primaryFileType === 'string') {
+      return primaryFileType.toLowerCase();
+    }
+
+    // Fallback to extracting from fileName
+    return this.getFileExtension(book.fileName)?.toLowerCase() ?? null;
   }
 }

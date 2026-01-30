@@ -602,7 +602,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               detail: `Book format "${fileName}" deleted successfully`
             });
           },
-          error: (error) => {
+          error: (error: { message?: string }) => {
             this.messageService.add({
               severity: 'error',
               summary: 'Error',

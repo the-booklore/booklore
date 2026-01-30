@@ -230,6 +230,11 @@ export class MagicShelfComponent implements OnInit {
     value
   }));
 
+  incompleteSeriesOptions: { label: string; value: string }[] = [
+    {label: 'True', value: 'true'},
+    {label: 'False', value: 'false'}
+  ];
+
   libraries: Library[] = [];
   libraryOptions: { label: string; value: number }[] = [];
   shelves: Shelf[] = [];

@@ -248,7 +248,9 @@ export class BookService {
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader: 'ngx' | 'streaming' = 'ngx'): void {
+  readBook(bookId: number, reader?: 'ngx' | 'streaming' | 'pdf-streaming' | 'epub-streaming', bookType?: string): void {
+    // Normalize reader parameter
+    const normalizedReader = reader === 'pdf-streaming' || reader === 'epub-streaming' ? 'streaming' : (reader || 'ngx');
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -258,19 +260,21 @@ export class BookService {
       return;
     }
 
+    const effectiveBookType = bookType || book['bookType'];
+
     const baseUrl =
-      book.bookType === 'PDF'
-        ? reader === 'ngx'
+      effectiveBookType === 'PDF'
+        ? normalizedReader === 'ngx'
           ? 'pdf-reader'
           : 'cbx-reader'
-        : book.bookType === 'EPUB' || book.bookType === 'FB2' || book.bookType === 'MOBI' || book.bookType === 'AZW3'
+        : effectiveBookType === 'EPUB' || effectiveBookType === 'FB2' || effectiveBookType === 'MOBI' || effectiveBookType === 'AZW3'
           ? 'ebook-reader'
-          : book.bookType === 'CBX'
+          : effectiveBookType === 'CBX'
             ? 'cbx-reader'
             : null;
 
     if (!baseUrl) {
-      console.error('Unsupported book type:', book.bookType);
+      console.error('Unsupported book type:', effectiveBookType);
       return;
     }
 
@@ -278,8 +282,9 @@ export class BookService {
     this.updateLastReadTime(book.id);
   }
 
-  getBookSetting(bookId: number): Observable<BookSetting> {
-    return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting`);
+  getBookSetting(bookId: number, bookFileId?: number): Observable<BookSetting> {
+    const params = bookFileId ? new HttpParams().set('bookFileId', bookFileId.toString()) : undefined;
+    return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting`, { params });
   }
 
   updateViewerSetting(bookSetting: BookSetting, bookId: number): Observable<void> {
@@ -288,13 +293,24 @@ export class BookService {
 
   /*------------------ File Operations ------------------*/
 
-  getFileContent(bookId: number): Observable<Blob> {
-    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json'});
+  getFileContent(bookId: number, bookType?: string): Observable<Blob> {
+    const params = bookType ? new HttpParams().set('bookType', bookType) : undefined;
+    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json', params});
   }
 
   downloadFile(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, book.fileName!);
+  }
+
+  downloadAllFiles(book: Book): void {
+    const downloadUrl = `${this.url}/${book.id}/download-all`;
+    this.fileDownloadService.downloadFile(downloadUrl, `${book.metadata?.title || 'book'}-all-files.zip`);
+  }
+
+  deleteBookFile(bookId: number, fileId: number, isPrimary: boolean): Observable<void> {
+    const params = new HttpParams().set('isPrimary', isPrimary.toString());
+    return this.http.delete<void>(`${this.url}/${bookId}/files/${fileId}`, { params });
   }
 
   deleteAdditionalFile(bookId: number, fileId: number): Observable<void> {
@@ -414,16 +430,16 @@ export class BookService {
     this.bookPatchService.updateLastReadTime(bookId);
   }
 
-  savePdfProgress(bookId: number, page: number, percentage: number): Observable<void> {
-    return this.bookPatchService.savePdfProgress(bookId, page, percentage);
+  savePdfProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
+    return this.bookPatchService.savePdfProgress(bookId, page, percentage, bookFileId);
   }
 
   /*saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): Observable<void> {
     return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
   }*/
 
-  saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
-    return this.bookPatchService.saveCbxProgress(bookId, page, percentage);
+  saveCbxProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
+    return this.bookPatchService.saveCbxProgress(bookId, page, percentage, bookFileId);
   }
 
   updateDateFinished(bookId: number, dateFinished: string | null): Observable<void> {
@@ -571,6 +587,21 @@ export class BookService {
 
   regenerateCoversForBooks(bookIds: number[]): Observable<void> {
     return this.http.post<void>(`${this.url}/bulk-regenerate-covers`, {bookIds});
+  }
+
+  generateCustomCoversForBooks(bookIds: number[]): Observable<void> {
+    return this.regenerateCoversForBooks(bookIds);
+  }
+
+  createPhysicalBook(request: unknown): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/physical`, request);
+  }
+
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<void> {
+    return this.http.post<void>(`${this.url}/${targetBookId}/attach-files`, {
+      sourceBookIds,
+      deleteSourceBooks
+    });
   }
 
   bulkUploadCover(bookIds: number[], file: File): Observable<void> {

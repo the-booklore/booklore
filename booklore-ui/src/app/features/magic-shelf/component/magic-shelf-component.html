@@ -101,7 +101,7 @@
                 <ng-container *ngTemplateOutlet="groupTemplate; context: { group: ruleCtrl }"></ng-container>
               </ng-container>
             } @else {
-              <p-select [options]="fieldOptions" formControlName="field" (onChange)="onFieldChange(ruleCtrl)" placeholder="Field" appendTo="body" class="field-select"/>
+              <p-select [options]="fieldOptions" formControlName="field" (onChange)="onFieldChange(ruleCtrl)" placeholder="Field" appendTo="body" class="field-select" [filter]="true"/>
               <p-select [options]="getOperatorOptionsForField(ruleCtrl.get('field')?.value)" appendTo="body" formControlName="operator" placeholder="Operator" class="operator-select" (onChange)="onOperatorChange(ruleCtrl)"/>
 
               @if (!['is_empty', 'is_not_empty'].includes(ruleCtrl.get('operator')?.value)) {
