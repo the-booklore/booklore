@@ -81,6 +81,20 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
         case 'isbn10':
           return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
+        case 'asin':
+          return [String(book.metadata?.asin ?? '').toLowerCase()];
+        case 'goodreadsId':
+          return [String(book.metadata?.goodreadsId ?? '').toLowerCase()];
+        case 'comicvineId':
+          return [String(book.metadata?.comicvineId ?? '').toLowerCase()];
+        case 'hardcoverId':
+          return [String(book.metadata?.hardcoverId ?? '').toLowerCase()];
+        case 'googleId':
+          return [String(book.metadata?.googleId ?? '').toLowerCase()];
+        case 'lubimyczytacId':
+          return [String(book.metadata?.lubimyczytacId ?? '').toLowerCase()];
+        case 'ranobedbId':
+          return [String(book.metadata?.ranobedbId ?? '').toLowerCase()];
         default:
           return [];
       }
@@ -265,6 +279,13 @@ export class BookRuleEvaluatorService {
         return book.dateFinished ? new Date(book.dateFinished) : null;
       case 'lastReadTime':
         return book.lastReadTime ? new Date(book.lastReadTime) : null;
+      case 'addedOn':
+        if (!book.addedOn) return null;
+        const addedDate = new Date(book.addedOn);
+        const today = new Date();
+        const diffTime = Math.abs(today.getTime() - addedDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
       case 'seriesName':
         return book.metadata?.seriesName?.toLowerCase() ?? null;
       case 'seriesNumber':
@@ -279,6 +300,22 @@ export class BookRuleEvaluatorService {
         return book.metadata?.isbn13?.toLowerCase() ?? null;
       case 'isbn10':
         return book.metadata?.isbn10?.toLowerCase() ?? null;
+      case 'asin':
+        return book.metadata?.asin?.toLowerCase() ?? null;
+      case 'goodreadsId':
+        return book.metadata?.goodreadsId?.toLowerCase() ?? null;
+      case 'comicvineId':
+        return book.metadata?.comicvineId?.toLowerCase() ?? null;
+      case 'hardcoverId':
+        return book.metadata?.hardcoverId?.toLowerCase() ?? null;
+      case 'hardcoverBookId':
+        return book.metadata?.hardcoverBookId;
+      case 'googleId':
+        return book.metadata?.googleId?.toLowerCase() ?? null;
+      case 'lubimyczytacId':
+        return book.metadata?.lubimyczytacId?.toLowerCase() ?? null;
+      case 'ranobedbId':
+        return book.metadata?.ranobedbId?.toLowerCase() ?? null;
       case 'amazonRating':
         return book.metadata?.amazonRating;
       case 'amazonReviewCount':
@@ -291,6 +328,8 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
+      case 'lubimyczytacRating':
+        return book.metadata?.lubimyczytacRating;
       case 'ranobedbRating':
         return book.metadata?.ranobedbRating;
       default:

@@ -57,12 +57,21 @@ export type RuleField =
   | 'language'
   | 'isbn13'
   | 'isbn10'
+  | 'asin'
+  | 'goodreadsId'
+  | 'comicvineId'
+  | 'hardcoverId'
+  | 'hardcoverBookId'
+  | 'googleId'
+  | 'lubimyczytacId'
+  | 'ranobedbId'
   | 'amazonRating'
   | 'amazonReviewCount'
   | 'goodreadsRating'
   | 'goodreadsReviewCount'
   | 'hardcoverRating'
   | 'hardcoverReviewCount'
+  | 'lubimyczytacRating'
   | 'ranobedbRating'
   | 'personalRating'
   | 'fileType'
@@ -70,6 +79,7 @@ export type RuleField =
   | 'readStatus'
   | 'dateFinished'
   | 'lastReadTime'
+  | 'addedOn'
   | 'metadataScore'
   | 'moods'
   | 'tags';
@@ -123,6 +133,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   readStatus: {label: 'Read Status'},
   dateFinished: {label: 'Date Finished', type: 'date'},
   lastReadTime: {label: 'Last Read Time', type: 'date'},
+  addedOn: {label: 'Days Since Added', type: 'number'},
   metadataScore: {label: 'Metadata Score', type: 'decimal', max: 100},
   title: {label: 'Title'},
   authors: {label: 'Authors'},
@@ -136,6 +147,14 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   language: {label: 'Language'},
   isbn13: {label: 'ISBN-13'},
   isbn10: {label: 'ISBN-10'},
+  asin: {label: 'ASIN'},
+  goodreadsId: {label: 'Goodreads ID'},
+  comicvineId: {label: 'ComicVine ID'},
+  hardcoverId: {label: 'Hardcover ID'},
+  hardcoverBookId: {label: 'Hardcover Book ID', type: 'number'},
+  googleId: {label: 'Google Books ID'},
+  lubimyczytacId: {label: 'Lubimyczytac ID'},
+  ranobedbId: {label: 'Ranobedb ID'},
   seriesName: {label: 'Series Name'},
   seriesNumber: {label: 'Series Number', type: 'number'},
   seriesTotal: {label: 'Books in Series', type: 'number'},
@@ -148,6 +167,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
   hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
+  lubimyczytacRating: {label: 'Lubimyczytac Rating', type: 'decimal', max: 10},
   ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
 };
 
@@ -371,7 +391,7 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
