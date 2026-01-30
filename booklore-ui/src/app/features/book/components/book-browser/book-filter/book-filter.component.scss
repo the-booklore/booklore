@@ -6,6 +6,11 @@
   --p-togglebutton-content-padding: 0.25rem 0.5rem;
 }
 
+:host ::ng-deep .cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper {
+  width: 190px !important;
+  min-width: unset;
+}
+
 .book-filter-container {
   height: calc(100dvh - 6.1rem);
   border-radius: 0.75rem;
