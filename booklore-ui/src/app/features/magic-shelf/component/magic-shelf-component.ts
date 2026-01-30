@@ -392,8 +392,8 @@ export class MagicShelfComponent implements OnInit {
 
     if (!field) return [...baseOperators, ...multiValueOperators];
 
-    const config = FIELD_CONFIGS[field];, 'incompleteSeries'
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId'].includes(field);
+    const config = FIELD_CONFIGS[field];
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId', 'incompleteSeries'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
