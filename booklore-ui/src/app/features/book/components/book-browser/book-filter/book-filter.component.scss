@@ -48,11 +48,23 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.filter-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  max-width: 175px;
 }
 
 .active-filter-count {
   font-size: 0.875rem;
   color: var(--primary-color);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .filter-list {
@@ -72,6 +84,18 @@
   &.active {
     color: var(--primary-color);
   }
+}
+
+.filter-value-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-value-badge {
+  flex-shrink: 0;
 }
 
 .truncation-notice {
