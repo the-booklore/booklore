@@ -14,6 +14,7 @@ import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -42,6 +43,8 @@ class ReadingProgressServiceTest {
     private AuthenticationService authenticationService;
     @Mock
     private KoboReadingStateService koboReadingStateService;
+    @Mock
+    private HardcoverSyncService hardcoverSyncService;
 
     @InjectMocks
     private ReadingProgressService readingProgressService;

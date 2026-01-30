@@ -91,7 +91,12 @@ public class EpubMetadataWriter implements MetadataWriter {
             boolean[] hasChanges = {false};
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
 
-            helper.copyTitle(clear != null && clear.isTitle(), val -> replaceAndTrackChange(opfDoc, metadataElement, "title", DC_NS, val, hasChanges));
+            helper.copyTitle(clear != null && clear.isTitle(), val -> {
+                replaceAndTrackChange(opfDoc, metadataElement, "title", DC_NS, val, hasChanges);
+                if (StringUtils.isNotBlank(metadata.getSubtitle())) {
+                    addSubtitleToTitle(metadataElement, opfDoc, metadata.getSubtitle());
+                }
+            });
             helper.copyDescription(clear != null && clear.isDescription(), val -> replaceAndTrackChange(opfDoc, metadataElement, "description", DC_NS, val, hasChanges));
             helper.copyPublisher(clear != null && clear.isPublisher(), val -> replaceAndTrackChange(opfDoc, metadataElement, "publisher", DC_NS, val, hasChanges));
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), val -> replaceAndTrackChange(opfDoc, metadataElement, "date", DC_NS, val != null ? val.toString() : null, hasChanges));
@@ -122,36 +127,83 @@ public class EpubMetadataWriter implements MetadataWriter {
                 hasChanges[0] = true;
             });
 
-            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> replaceMetaElement(metadataElement, opfDoc, "calibre:series", val, hasChanges));
-
-            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
-                String formatted = val != null ? String.format("%.1f", val) : null;
-                replaceMetaElement(metadataElement, opfDoc, "calibre:series_index", formatted, hasChanges);
+            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> {
+                replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges);
             });
 
-            List<String> schemes = List.of("AMAZON", "GOOGLE", "GOODREADS", "HARDCOVER", "ISBN");
+            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
+                replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges);
+            });
 
-            for (String scheme : schemes) {
-
-                boolean clearFlag = clear != null && switch (scheme) {
-                    case "AMAZON" -> clear.isAsin();
-                    case "GOOGLE" -> clear.isGoogleId();
-                    case "COMICVINE" -> clear.isComicvineId();
-                    case "GOODREADS" -> clear.isGoodreadsId();
-                    case "HARDCOVER" -> clear.isHardcoverId();
-                    case "ISBN" -> clear.isIsbn10();
-                    default -> false;
-                };
-
-                switch (scheme) {
-                    case "AMAZON" -> helper.copyAsin(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "GOOGLE" -> helper.copyGoogleId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "GOODREADS" -> helper.copyGoodreadsId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "COMICVINE" -> helper.copyComicvineId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "HARDCOVER" -> helper.copyHardcoverId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "ISBN" -> helper.copyIsbn13(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+            helper.copyIsbn13(clear != null && clear.isIsbn13(), val -> {
+                removeIdentifierByUrn(metadataElement, "isbn");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "isbn", val));
                 }
-            }
+                hasChanges[0] = true;
+            });
+            helper.copyIsbn10(clear != null && clear.isIsbn10(), val -> {
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "isbn", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyAsin(clear != null && clear.isAsin(), val -> {
+                removeIdentifierByUrn(metadataElement, "amazon");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "amazon", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), val -> {
+                removeIdentifierByUrn(metadataElement, "goodreads");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "goodreads", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyGoogleId(clear != null && clear.isGoogleId(), val -> {
+                removeIdentifierByUrn(metadataElement, "google");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "google", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyComicvineId(clear != null && clear.isComicvineId(), val -> {
+                removeIdentifierByUrn(metadataElement, "comicvine");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "comicvine", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyHardcoverId(clear != null && clear.isHardcoverId(), val -> {
+                removeIdentifierByUrn(metadataElement, "hardcover");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcover", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), val -> {
+                removeIdentifierByUrn(metadataElement, "hardcoverbook");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcoverbook", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyLubimyczytacId(clear != null && clear.isLubimyczytacId(), val -> {
+                removeIdentifierByUrn(metadataElement, "lubimyczytac");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "lubimyczytac", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyRanobedbId(clear != null && clear.isRanobedbId(), val -> {
+                removeIdentifierByUrn(metadataElement, "ranobedb");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "ranobedb", val));
+                }
+                hasChanges[0] = true;
+            });
 
             if (StringUtils.isNotBlank(thumbnailUrl)) {
                 byte[] coverData = loadImage(thumbnailUrl);
@@ -162,6 +214,9 @@ public class EpubMetadataWriter implements MetadataWriter {
             }
 
             if (hasChanges[0]) {
+                addBookloreMetadata(metadataElement, opfDoc, metadata);
+                cleanupCalibreArtifacts(metadataElement, opfDoc);
+                organizeMetadataElements(metadataElement);
                 removeEmptyTextNodes(opfDoc);
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -520,12 +575,23 @@ public class EpubMetadataWriter implements MetadataWriter {
             }
         }
     }
+    private void removeIdentifierByUrn(Element metadataElement, String urnScheme) {
+        NodeList identifiers = metadataElement.getElementsByTagNameNS("*", "identifier");
+        String urnPrefix = "urn:" + urnScheme.toLowerCase() + ":";
+        String oldPrefix = urnScheme.toLowerCase() + ":";
+        for (int i = identifiers.getLength() - 1; i >= 0; i--) {
+            Element idElement = (Element) identifiers.item(i);
+            String content = idElement.getTextContent().trim().toLowerCase();
+            if (content.startsWith(urnPrefix) || content.startsWith(oldPrefix)) {
+                metadataElement.removeChild(idElement);
+            }
+        }
+    }
 
     private Element createIdentifierElement(Document doc, String scheme, String value) {
         Element id = doc.createElementNS("http://purl.org/dc/elements/1.1/", "identifier");
         id.setPrefix("dc");
-        id.setAttributeNS(OPF_NS, "opf:scheme", scheme);
-        id.setTextContent(value);
+        id.setTextContent("urn:" + scheme.toLowerCase() + ":" + value);
         return id;
     }
 
@@ -643,5 +709,297 @@ public class EpubMetadataWriter implements MetadataWriter {
         } catch (Exception e) {
             log.warn("Failed to remove empty text nodes", e);
         }
+    }
+
+    private void removeAllBookloreMetadata(Element metadataElement) {
+        NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            String property = meta.getAttribute("property");
+            if (property.startsWith("booklore:")) {
+                metadataElement.removeChild(meta);
+            }
+        }
+    }
+
+    private void replaceBelongsToCollection(Element metadataElement, Document doc, String seriesName, Float seriesNumber, boolean[] hasChanges) {
+        NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            String property = meta.getAttribute("property");
+            if ("belongs-to-collection".equals(property) || "collection-type".equals(property) || "group-position".equals(property)) {
+                String id = meta.getAttribute("id");
+                metadataElement.removeChild(meta);
+                if (StringUtils.isNotBlank(id)) {
+                    removeMetaByRefines(metadataElement, "#" + id);
+                }
+            }
+        }
+        
+        if (StringUtils.isNotBlank(seriesName)) {
+            String collectionId = "collection-" + UUID.randomUUID().toString().substring(0, 8);
+            
+            Element collectionMeta = doc.createElementNS(OPF_NS, "meta");
+            collectionMeta.setPrefix("opf");
+            collectionMeta.setAttribute("id", collectionId);
+            collectionMeta.setAttribute("property", "belongs-to-collection");
+            collectionMeta.setTextContent(seriesName);
+            metadataElement.appendChild(collectionMeta);
+            
+            Element typeMeta = doc.createElementNS(OPF_NS, "meta");
+            typeMeta.setPrefix("opf");
+            typeMeta.setAttribute("property", "collection-type");
+            typeMeta.setAttribute("refines", "#" + collectionId);
+            typeMeta.setTextContent("series");
+            metadataElement.appendChild(typeMeta);
+            
+            if (seriesNumber != null && seriesNumber > 0) {
+                Element positionMeta = doc.createElementNS(OPF_NS, "meta");
+                positionMeta.setPrefix("opf");
+                positionMeta.setAttribute("property", "group-position");
+                positionMeta.setAttribute("refines", "#" + collectionId);
+                positionMeta.setTextContent(String.format("%.0f", seriesNumber));
+                metadataElement.appendChild(positionMeta);
+            }
+            
+            hasChanges[0] = true;
+        }
+    }
+
+    private void addSubtitleToTitle(Element metadataElement, Document doc, String subtitle) {
+        final String DC_NS = "http://purl.org/dc/elements/1.1/";
+        NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            String property = meta.getAttribute("property");
+            String refines = meta.getAttribute("refines");
+            if ("title-type".equals(property) && "subtitle".equals(meta.getTextContent())) {
+                if (StringUtils.isNotBlank(refines)) {
+                    NodeList titles = metadataElement.getElementsByTagNameNS(DC_NS, "title");
+                    for (int j = titles.getLength() - 1; j >= 0; j--) {
+                        Element title = (Element) titles.item(j);
+                        if (("#" + title.getAttribute("id")).equals(refines)) {
+                            metadataElement.removeChild(title);
+                            break;
+                        }
+                    }
+                }
+                metadataElement.removeChild(meta);
+            }
+        }
+        
+        String subtitleId = "subtitle-" + UUID.randomUUID().toString().substring(0, 8);
+        Element subtitleElement = doc.createElementNS(DC_NS, "title");
+        subtitleElement.setPrefix("dc");
+        subtitleElement.setAttribute("id", subtitleId);
+        subtitleElement.setTextContent(subtitle);
+        metadataElement.appendChild(subtitleElement);
+        
+        Element typeMeta = doc.createElementNS(OPF_NS, "meta");
+        typeMeta.setPrefix("opf");
+        typeMeta.setAttribute("refines", "#" + subtitleId);
+        typeMeta.setAttribute("property", "title-type");
+        typeMeta.setTextContent("subtitle");
+        metadataElement.appendChild(typeMeta);
+    }
+
+    private void addBookloreMetadata(Element metadataElement, Document doc, BookMetadataEntity metadata) {
+        Element packageElement = doc.getDocumentElement();
+        String existingPrefix = packageElement.getAttribute("prefix");
+        String bookloreNamespace = "booklore: http://booklore.org/metadata/1.0/";
+        
+        if (!existingPrefix.contains("booklore:")) {
+            if (existingPrefix.isEmpty()) {
+                packageElement.setAttribute("prefix", bookloreNamespace);
+            } else {
+                packageElement.setAttribute("prefix", existingPrefix.trim() + " " + bookloreNamespace);
+            }
+        }
+        
+        removeAllBookloreMetadata(metadataElement);
+        
+        if (metadata.getPageCount() != null && metadata.getPageCount() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "page_count", String.valueOf(metadata.getPageCount())));
+        }
+        
+        if (metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "series_total", String.valueOf(metadata.getSeriesTotal())));
+        }
+        
+        if (metadata.getAmazonRating() != null && metadata.getAmazonRating() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "amazon_rating", String.valueOf(metadata.getAmazonRating())));
+        }
+        
+        if (metadata.getAmazonReviewCount() != null && metadata.getAmazonReviewCount() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "amazon_review_count", String.valueOf(metadata.getAmazonReviewCount())));
+        }
+        
+        if (metadata.getGoodreadsRating() != null && metadata.getGoodreadsRating() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "goodreads_rating", String.valueOf(metadata.getGoodreadsRating())));
+        }
+        
+        if (metadata.getGoodreadsReviewCount() != null && metadata.getGoodreadsReviewCount() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "goodreads_review_count", String.valueOf(metadata.getGoodreadsReviewCount())));
+        }
+        
+        if (metadata.getHardcoverRating() != null && metadata.getHardcoverRating() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_rating", String.valueOf(metadata.getHardcoverRating())));
+        }
+        
+        if (metadata.getHardcoverReviewCount() != null && metadata.getHardcoverReviewCount() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_review_count", String.valueOf(metadata.getHardcoverReviewCount())));
+        }
+        
+        if (metadata.getLubimyczytacRating() != null && metadata.getLubimyczytacRating() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "lubimyczytac_rating", String.valueOf(metadata.getLubimyczytacRating())));
+        }
+        
+        if (metadata.getRanobedbRating() != null && metadata.getRanobedbRating() > 0) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "ranobedb_rating", String.valueOf(metadata.getRanobedbRating())));
+        }
+        
+        if (metadata.getMoods() != null && !metadata.getMoods().isEmpty()) {
+            String moodsJson = "[" + String.join(", ", metadata.getMoods().stream()
+                .map(mood -> "\"" + mood.getName().replace("\"", "\\\"") + "\"")
+                .toList()) + "]";
+            metadataElement.appendChild(createBookloreMetaElement(doc, "moods", moodsJson));
+        }
+        
+        if (metadata.getTags() != null && !metadata.getTags().isEmpty()) {
+            String tagsJson = "[" + String.join(", ", metadata.getTags().stream()
+                .map(tag -> "\"" + tag.getName().replace("\"", "\\\"") + "\"")
+                .toList()) + "]";
+            metadataElement.appendChild(createBookloreMetaElement(doc, "tags", tagsJson));
+        }
+    }
+
+    private Element createBookloreMetaElement(Document doc, String property, String value) {
+        Element meta = doc.createElementNS(OPF_NS, "meta");
+        meta.setPrefix("opf");
+        meta.setAttribute("property", "booklore:" + property);
+        meta.setTextContent(value);
+        return meta;
+    }
+
+    private void cleanupCalibreArtifacts(Element metadataElement, Document doc) {
+        Element packageElement = doc.getDocumentElement();
+        if (packageElement.hasAttribute("prefix")) {
+            String prefix = packageElement.getAttribute("prefix");
+            if (prefix.contains("calibre:")) {
+                prefix = prefix.replaceAll("calibre:\\s*https?://[^\\s]+", "").trim();
+                if (prefix.isEmpty()) {
+                    packageElement.removeAttribute("prefix");
+                } else {
+                    packageElement.setAttribute("prefix", prefix);
+                }
+            }
+        }
+        
+        if (metadataElement.hasAttribute("xmlns:calibre")) {
+            metadataElement.removeAttribute("xmlns:calibre");
+        }
+        
+        final String DC_NS = "http://purl.org/dc/elements/1.1/";
+        NodeList identifiers = metadataElement.getElementsByTagNameNS(DC_NS, "identifier");
+        for (int i = identifiers.getLength() - 1; i >= 0; i--) {
+            Element idElement = (Element) identifiers.item(i);
+            String content = idElement.getTextContent().trim().toLowerCase();
+            if (content.startsWith("calibre:") || content.startsWith("urn:calibre:")) {
+                metadataElement.removeChild(idElement);
+            }
+        }
+        
+        NodeList contributors = metadataElement.getElementsByTagNameNS(DC_NS, "contributor");
+        for (int i = contributors.getLength() - 1; i >= 0; i--) {
+            Element contributor = (Element) contributors.item(i);
+            String text = contributor.getTextContent().toLowerCase();
+            if (text.contains("calibre")) {
+                String id = contributor.getAttribute("id");
+                metadataElement.removeChild(contributor);
+                if (StringUtils.isNotBlank(id)) {
+                    removeMetaByRefines(metadataElement, "#" + id);
+                }
+            }
+        }
+        
+        NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            String property = meta.getAttribute("property");
+            String name = meta.getAttribute("name");
+            
+            if (property.startsWith("calibre:") || name.startsWith("calibre:")) {
+                metadataElement.removeChild(meta);
+            }
+        }
+    }
+
+    private void organizeMetadataElements(Element metadataElement) {
+        final String DC_NS = "http://purl.org/dc/elements/1.1/";
+        java.util.List<Element> identifiers = new java.util.ArrayList<>();
+        java.util.List<Element> titles = new java.util.ArrayList<>();
+        java.util.List<Element> creators = new java.util.ArrayList<>();
+        java.util.List<Element> contributors = new java.util.ArrayList<>();
+        java.util.List<Element> languages = new java.util.ArrayList<>();
+        java.util.List<Element> dates = new java.util.ArrayList<>();
+        java.util.List<Element> publishers = new java.util.ArrayList<>();
+        java.util.List<Element> descriptions = new java.util.ArrayList<>();
+        java.util.List<Element> subjects = new java.util.ArrayList<>();
+        java.util.List<Element> seriesMetas = new java.util.ArrayList<>();
+        java.util.List<Element> bookloreMetas = new java.util.ArrayList<>();
+        java.util.List<Element> modifiedMetas = new java.util.ArrayList<>();
+        java.util.List<Element> otherMetas = new java.util.ArrayList<>();
+        
+        NodeList allChildren = metadataElement.getChildNodes();
+        for (int i = 0; i < allChildren.getLength(); i++) {
+            Node node = allChildren.item(i);
+            if (node.getNodeType() != Node.ELEMENT_NODE) continue;
+            Element elem = (Element) node;
+            String localName = elem.getLocalName();
+            String ns = elem.getNamespaceURI();
+            
+            if (DC_NS.equals(ns)) {
+                switch (localName) {
+                    case "identifier" -> identifiers.add(elem);
+                    case "title" -> titles.add(elem);
+                    case "creator" -> creators.add(elem);
+                    case "contributor" -> contributors.add(elem);
+                    case "language" -> languages.add(elem);
+                    case "date" -> dates.add(elem);
+                    case "publisher" -> publishers.add(elem);
+                    case "description" -> descriptions.add(elem);
+                    case "subject" -> subjects.add(elem);
+                }
+            } else if ("meta".equals(localName)) {
+                String property = elem.getAttribute("property");
+                if (property.startsWith("booklore:")) {
+                    bookloreMetas.add(elem);
+                } else if (property.equals("dcterms:modified") || property.equals("calibre:timestamp")) {
+                    modifiedMetas.add(elem);
+                } else if (property.equals("belongs-to-collection") || property.equals("collection-type") || property.equals("group-position")) {
+                    seriesMetas.add(elem);
+                } else {
+                    otherMetas.add(elem);
+                }
+            }
+        }
+        
+        while (metadataElement.hasChildNodes()) {
+            metadataElement.removeChild(metadataElement.getFirstChild());
+        }
+        
+        identifiers.forEach(metadataElement::appendChild);
+        titles.forEach(metadataElement::appendChild);
+        creators.forEach(metadataElement::appendChild);
+        contributors.forEach(metadataElement::appendChild);
+        languages.forEach(metadataElement::appendChild);
+        dates.forEach(metadataElement::appendChild);
+        publishers.forEach(metadataElement::appendChild);
+        descriptions.forEach(metadataElement::appendChild);
+        subjects.forEach(metadataElement::appendChild);
+        seriesMetas.forEach(metadataElement::appendChild);
+        modifiedMetas.forEach(metadataElement::appendChild);
+        otherMetas.forEach(metadataElement::appendChild);
+        bookloreMetas.forEach(metadataElement::appendChild);
     }
 }

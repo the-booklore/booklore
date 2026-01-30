@@ -20,6 +20,8 @@ public class BookCreatorService {
 
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
+    private final MoodRepository moodRepository;
+    private final TagRepository tagRepository;
     private final BookRepository bookRepository;
     private final BookMetadataRepository bookMetadataRepository;
 
@@ -111,6 +113,28 @@ public class BookCreatorService {
                         .orElseGet(() -> authorRepository.save(AuthorEntity.builder().name(authorName).build())))
                 .forEach(authorEntity -> bookEntity.getMetadata().getAuthors().add(authorEntity));
         bookEntity.getMetadata().updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
+    }
+
+    public void addMoodsToBook(Set<String> moods, BookEntity bookEntity) {
+        if (bookEntity.getMetadata().getMoods() == null) {
+            bookEntity.getMetadata().setMoods(new HashSet<>());
+        }
+        moods.stream()
+                .map(mood -> truncate(mood, 255))
+                .map(truncated -> moodRepository.findByName(truncated)
+                        .orElseGet(() -> moodRepository.save(MoodEntity.builder().name(truncated).build())))
+                .forEach(moodEntity -> bookEntity.getMetadata().getMoods().add(moodEntity));
+    }
+
+    public void addTagsToBook(Set<String> tags, BookEntity bookEntity) {
+        if (bookEntity.getMetadata().getTags() == null) {
+            bookEntity.getMetadata().setTags(new HashSet<>());
+        }
+        tags.stream()
+                .map(tag -> truncate(tag, 255))
+                .map(truncated -> tagRepository.findByName(truncated)
+                        .orElseGet(() -> tagRepository.save(TagEntity.builder().name(truncated).build())))
+                .forEach(tagEntity -> bookEntity.getMetadata().getTags().add(tagEntity));
     }
 
     private String truncate(String input, int maxLength) {

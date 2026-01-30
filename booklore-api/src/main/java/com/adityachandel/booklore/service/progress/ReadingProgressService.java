@@ -18,6 +18,7 @@ import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.repository.*;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
 import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ public class ReadingProgressService {
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final KoboReadingStateService koboReadingStateService;
+    private final HardcoverSyncService hardcoverSyncService;
 
     // ==================== Methods from UserProgressService ====================
 
@@ -242,6 +244,10 @@ public class ReadingProgressService {
         }
 
         userBookProgressRepository.save(progress);
+
+        if (percentage != null) {
+            hardcoverSyncService.syncProgressToHardcover(book.getId(), percentage, user.getId());
+        }
     }
 
     @Transactional

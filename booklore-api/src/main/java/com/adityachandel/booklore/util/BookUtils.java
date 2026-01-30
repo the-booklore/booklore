@@ -105,4 +105,41 @@ public class BookUtils {
         }
         return s;
     }
+    
+    public static String isbn10To13(String isbn10) {
+        if (isbn10 == null || isbn10.length() != 10) {
+            return null;
+        }
+        String isbn13 = "978" + isbn10.substring(0, 9);
+        boolean oneThree = false;
+        int total = 0;
+        for (char c : isbn13.toCharArray()) {
+            total += (c - '0') * (oneThree ? 3 : 1);
+            oneThree = !oneThree;
+        }
+        int checkDigit = 10 - (total % 10);
+        isbn13 += checkDigit;
+        return isbn13;
+    }
+    
+    public static String isbn13to10(String isbn13) {
+        if (isbn13 == null || isbn13.length() != 13 || !"978".equals(isbn13.substring(0, 3))) {
+            // Only ISBN-13s that start with "978" have an equivalent ISBN-10
+            return null;
+        }
+        String isbn10 = isbn13.substring(3, 12);
+        int mult = 10;
+        int total = 0;
+        for (char c : isbn10.toCharArray()) {
+            total += (c - '0') * mult;
+            mult--;
+        }
+        int checkDigit = (11 - (total % 11)) % 11;
+        if (checkDigit == 10) {
+            isbn10 += "X";
+        } else {
+            isbn10 += checkDigit;
+        }
+        return isbn10;
+    }
 }

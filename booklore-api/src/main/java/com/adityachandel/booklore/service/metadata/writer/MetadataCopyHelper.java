@@ -133,10 +133,24 @@ public class MetadataCopyHelper {
         }
     }
 
+    public void copyHardcoverBookId(boolean clear, Consumer<String> consumer) {
+        if (!isLocked(metadata.getHardcoverBookIdLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getHardcoverBookId() != null) consumer.accept(metadata.getHardcoverBookId());
+        }
+    }
+
     public void copyGoogleId(boolean clear, Consumer<String> consumer) {
         if (!isLocked(metadata.getGoogleIdLocked())) {
             if (clear) consumer.accept(null);
             else if (metadata.getGoogleId() != null) consumer.accept(metadata.getGoogleId());
+        }
+    }
+
+    public void copyLubimyczytacId(boolean clear, Consumer<String> consumer) {
+        if (!isLocked(metadata.getLubimyczytacIdLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getLubimyczytacId() != null) consumer.accept(metadata.getLubimyczytacId());
         }
     }
 

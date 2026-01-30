@@ -644,6 +644,9 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverId: wasCleared("hardcoverId"),
       hardcoverRating: wasCleared("hardcoverRating"),
       hardcoverReviewCount: wasCleared("hardcoverReviewCount"),
+      hardcoverBookId: wasCleared("hardcoverBookId"),
+      lubimyczytacId: wasCleared("lubimyczytacId"),
+      lubimyczytacRating: wasCleared("lubimyczytacRating"),
       ranobedbId: wasCleared("ranobedbId"),
       ranobedbRating: wasCleared("ranobedbRating"),
       googleId: wasCleared("googleId"),
@@ -875,4 +878,8 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   protected readonly sample = sample;
+
+  onFieldChange(): void {
+    this.metadataForm.markAsDirty();
+  }
 }

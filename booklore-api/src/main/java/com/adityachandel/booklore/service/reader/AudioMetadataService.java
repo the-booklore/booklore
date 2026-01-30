@@ -28,10 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-/**
- * Service for extracting and caching audiobook metadata.
- * Handles single-file (M4B) and folder-based audiobooks.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -54,17 +50,11 @@ public class AudioMetadataService {
         }
     }
 
-    /**
-     * Get audiobook metadata, using cache if available and valid.
-     */
     public AudiobookInfo getMetadata(BookFileEntity bookFile, Path audioPath) throws Exception {
         CachedAudiobookMetadata metadata = getCachedMetadata(bookFile, audioPath);
         return metadata.info;
     }
 
-    /**
-     * Extract embedded cover art from an audio file.
-     */
     public byte[] getEmbeddedCoverArt(Path audioPath) {
         try {
             AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
@@ -81,9 +71,6 @@ public class AudioMetadataService {
         return null;
     }
 
-    /**
-     * Get the MIME type of embedded cover art.
-     */
     public String getCoverArtMimeType(Path audioPath) {
         try {
             AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
@@ -95,7 +82,6 @@ public class AudioMetadataService {
                     if (mimeType != null && !mimeType.isEmpty()) {
                         return mimeType;
                     }
-                    // Fallback based on binary data magic bytes
                     byte[] data = artwork.getBinaryData();
                     if (data != null && data.length > 2) {
                         if (data[0] == (byte) 0xFF && data[1] == (byte) 0xD8) {
@@ -416,7 +402,6 @@ public class AudioMetadataService {
                     return value;
                 }
             } catch (Exception e) {
-                // Field not supported for this tag type
             }
         }
         return null;
