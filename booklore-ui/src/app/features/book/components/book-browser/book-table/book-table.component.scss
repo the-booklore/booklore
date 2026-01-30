@@ -51,6 +51,14 @@
   height: 1.75rem;
 }
 
+:host {
+  display: block;
+  
+  ::ng-deep .p-datatable-table {
+    table-layout: fixed;
+  }
+}
+
 .tooltip-cover-container {
   display: flex;
   flex-direction: column;
@@ -107,4 +115,21 @@
 
 ::ng-deep .cover-tooltip > .p-tooltip-text {
   padding: 0.25rem;
+}
+
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 2px; /* Closer gap for stars */
+  
+  i {
+    font-size: 12px; /* Smaller stars */
+  }
+}
+
+.rating-value {
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--text-color-secondary);
+  font-weight: normal;
 }

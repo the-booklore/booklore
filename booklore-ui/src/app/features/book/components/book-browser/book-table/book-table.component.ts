@@ -1,7 +1,16 @@
-import {Component, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output} from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output
+} from '@angular/core';
 import {TableModule} from 'primeng/table';
-import {DatePipe, NgClass} from '@angular/common';
-import {Rating} from 'primeng/rating';
+import {DatePipe, NgClass, NgStyle} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {TooltipModule} from "primeng/tooltip";
 import {Book, BookMetadata, ReadStatus} from '../../../model/book.model';
@@ -22,15 +31,16 @@ import {ReadStatusHelper} from '../../../helpers/read-status.helper';
   templateUrl: './book-table.component.html',
   imports: [
     TableModule,
-    Rating,
     FormsModule,
     Button,
     TooltipModule,
     NgClass,
+    NgStyle,
     RouterLink
   ],
   styleUrls: ['./book-table.component.scss'],
-  providers: [DatePipe]
+  providers: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   selectedBooks: Book[] = [];
@@ -39,8 +49,13 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   @Output() selectedBooksChange = new EventEmitter<Set<number>>();
   @Input() books: Book[] = [];
   @Input() sortOption: SortOption | null = null;
-  @Input() visibleColumns: { field: string; header: string }[] = [];
+  @Input() visibleColumns: { field: string; header: string; width?: string }[] = [];
   @Input() preselectedBookIds = new Set<number>();
+  @Input() validSortFields: string[] = [];
+
+  @Output() onSortChange = new EventEmitter<{ field: string, order: number }>();
+  @Output() onColumnsReorder = new EventEmitter<{ field: string; header: string }[]>();
+  @Output() onColumnResize = new EventEmitter<any>();
 
   protected urlHelper = inject(UrlHelperService);
   private bookService = inject(BookService);
@@ -143,6 +158,18 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       this.clearSelectedBooks();
     }
     this.selectedBooksChange.emit(this.selectedBookIds);
+  }
+
+  onSort(event: any) {
+    this.onSortChange.emit({ field: event.field, order: event.order });
+  }
+
+  onColReorder(event: any) {
+    this.onColumnsReorder.emit(event.columns);
+  }
+
+  onColResize(event: any) {
+    this.onColumnResize.emit(event);
   }
 
   getStarColor(rating: number): string {

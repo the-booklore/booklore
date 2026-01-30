@@ -165,6 +165,7 @@ export interface TableColumnPreference {
   field: string;
   visible: boolean;
   order: number;
+  width?: string;
 }
 
 export interface UserSettings {

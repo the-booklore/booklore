@@ -25,6 +25,13 @@ export class BookSorter {
     {label: 'Hardcover #', field: 'hardcoverReviewCount', direction: SortDirection.ASCENDING},
     {label: 'Ranobedb Rating', field: 'ranobedbRating', direction: SortDirection.ASCENDING},
     {label: 'Pages', field: 'pageCount', direction: SortDirection.ASCENDING},
+    {label: 'Series', field: 'seriesName', direction: SortDirection.ASCENDING},
+    {label: 'Series #', field: 'seriesNumber', direction: SortDirection.ASCENDING},
+    {label: 'Genres', field: 'categories', direction: SortDirection.ASCENDING},
+    {label: 'Authors', field: 'authors', direction: SortDirection.ASCENDING},
+    {label: 'ISBN', field: 'isbn', direction: SortDirection.ASCENDING},
+    {label: 'Language', field: 'language', direction: SortDirection.ASCENDING},
+    {label: 'Read Status', field: 'readStatus', direction: SortDirection.ASCENDING},
     {label: 'Random', field: 'random', direction: SortDirection.ASCENDING},
   ];
 
@@ -49,6 +56,20 @@ export class BookSorter {
         direction: SortDirection.ASCENDING
       };
     }
+
+    this.updateSortOptions();
+    this.applySortOption(this.selectedSort);
+  }
+
+  setSortField(field: string, ascending: boolean): void {
+    const existingSort = this.sortOptions.find(opt => opt.field === field);
+    if (!existingSort) return;
+
+    this.selectedSort = {
+      label: existingSort.label,
+      field: existingSort.field,
+      direction: ascending ? SortDirection.ASCENDING : SortDirection.DESCENDING
+    };
 
     this.updateSortOptions();
     this.applySortOption(this.selectedSort);

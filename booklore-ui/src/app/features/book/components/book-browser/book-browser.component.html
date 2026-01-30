@@ -29,7 +29,7 @@
 
           @if (userService.userState$ | async; as userState) {
             @if (entityType !== EntityType.ALL_BOOKS && entityType !== EntityType.UNSHELVED &&
-            (userState.user!.permissions.admin || userState.user!.permissions.canManageLibrary)) {
+            (userState.user?.permissions?.admin || userState.user?.permissions?.canManageLibrary)) {
               <div class="entity-menu-wrapper">
                 <p-button
                   icon="pi pi-ellipsis-v"
@@ -80,12 +80,19 @@
                   ></p-multiSelect>
                 </div>
                 <div class="column-popover-footer">
-                  <p>Set as default?</p>
-                  <p-button
-                    label="Save"
-                    outlined
-                    size="small"
-                    (click)="columnPreferenceService.saveVisibleColumns(visibleColumns)"></p-button>
+                  <div style="display: flex; gap: 8px; justify-content: space-between;">
+                    <p-button
+                      label="Reset View"
+                      outlined
+                      severity="secondary"
+                      size="small"
+                      (click)="resetView()"></p-button>
+                    <p-button
+                      label="Save"
+                      outlined
+                      size="small"
+                      (click)="columnPreferenceService.saveVisibleColumns(visibleColumns)"></p-button>
+                  </div>
                 </div>
               </p-popover>
             </div>
@@ -288,6 +295,10 @@
                 (selectedBooksChange)="onSelectedBooksChange($event)"
                 [sortOption]="this.bookSorter.selectedSort!"
                 [visibleColumns]="visibleColumns"
+                [validSortFields]="validSortFields"
+                (onSortChange)="onBookTableSort($event)"
+                (onColumnsReorder)="onBookTableColumnReorder($event)"
+                (onColumnResize)="onBookTableColumnResize($event)"
               ></app-book-table>
             }
             @if (currentViewMode === 'grid') {
