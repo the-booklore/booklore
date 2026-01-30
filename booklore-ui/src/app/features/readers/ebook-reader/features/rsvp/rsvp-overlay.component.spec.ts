@@ -28,7 +28,7 @@ describe('RsvpOverlayComponent', () => {
     words: [],
     currentIndex: 0,
     wpm: 300,
-    punctuationPauseMs: 500,
+    punctuationPauseMs: 100,
     progress: 0,
     resumedFromIndex: null,
     ...overrides
@@ -66,7 +66,7 @@ describe('RsvpOverlayComponent', () => {
       decreaseSpeed: vi.fn(),
       skipForward: vi.fn(),
       skipBackward: vi.fn(),
-      getPunctuationPauseOptions: vi.fn(() => [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]),
+      getPunctuationPauseOptions: vi.fn(() => [25, 50, 75, 100, 125, 150, 175, 200]),
       setPunctuationPause: vi.fn()
     };
 

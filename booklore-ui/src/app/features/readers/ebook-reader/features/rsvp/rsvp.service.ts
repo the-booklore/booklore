@@ -37,8 +37,8 @@ export class RsvpService {
   private readonly MIN_WPM = 100;
   private readonly MAX_WPM = 1000;
   private readonly WPM_STEP = 50;
-  private readonly DEFAULT_PUNCTUATION_PAUSE_MS = 500;
-  private readonly PUNCTUATION_PAUSE_OPTIONS = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+  private readonly DEFAULT_PUNCTUATION_PAUSE_MS = 100;
+  private readonly PUNCTUATION_PAUSE_OPTIONS = [25, 50, 75, 100, 125, 150, 175, 200];
   private readonly STORAGE_KEY_PREFIX = 'booklore_rsvp_wpm_';
   private readonly PUNCTUATION_PAUSE_KEY_PREFIX = 'booklore_rsvp_pause_';
   private readonly POSITION_KEY_PREFIX = 'booklore_rsvp_pos_';

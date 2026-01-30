@@ -454,15 +454,24 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   }
 
   onRsvpRequestNextPage(): void {
-    this.viewManager.nextAsync()
+    // RSVP extracts ALL words from the current section/chapter at once.
+    // When it finishes, we need to navigate to the NEXT SECTION, not just
+    // scroll within the current section (which view.next() does).
+    this.viewManager.goToNextSection()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
+      .subscribe((navigated) => {
+        if (!navigated) {
+          // We're at the last section - pause RSVP
+          this.rsvpService.pause();
+          return;
+        }
+
         // Wait for relocate event to be fully processed
         // The relocateTimeout in subscribeToViewEvents uses 100ms
         // We need to wait a bit longer for the renderer to update
         setTimeout(() => {
           // Update CFI for the new page
-          const currentCfi = this.progressService.currentCfi;
+          const currentCfi = this.viewManager.getCurrentCfi() || this.progressService.currentCfi;
           this.rsvpService.setCurrentCfi(currentCfi);
           // Additional delay to ensure content is rendered
           setTimeout(() => {

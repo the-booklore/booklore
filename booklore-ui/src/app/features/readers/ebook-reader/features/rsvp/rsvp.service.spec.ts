@@ -29,7 +29,7 @@ describe('RsvpService', () => {
       expect(state.active).toBe(false);
       expect(state.playing).toBe(false);
       expect(state.wpm).toBe(300);
-      expect(state.punctuationPauseMs).toBe(500);
+      expect(state.punctuationPauseMs).toBe(100);
       expect(state.currentIndex).toBe(0);
       expect(state.words).toEqual([]);
       expect(state.progress).toBe(0);
@@ -119,41 +119,41 @@ describe('RsvpService', () => {
       expect(getWordDisplayDuration(longWord, 300)).toBe(260);
     });
 
-    it('should add configurable pause for punctuation (default 500ms)', () => {
+    it('should add configurable pause for punctuation (default 100ms)', () => {
       const wordWithPeriod: RsvpWord = {text: 'end.', orpIndex: 0, pauseMultiplier: 1.0};
-      // 300 WPM = 200ms base + 500ms default pause = 700ms
-      expect(getWordDisplayDuration(wordWithPeriod, 300)).toBe(700);
+      // 300 WPM = 200ms base + 100ms default pause = 300ms
+      expect(getWordDisplayDuration(wordWithPeriod, 300)).toBe(300);
 
       const wordWithComma: RsvpWord = {text: 'however,', orpIndex: 2, pauseMultiplier: 1.0};
-      // 300 WPM = 200ms base + 500ms default pause = 700ms
-      expect(getWordDisplayDuration(wordWithComma, 300)).toBe(700);
+      // 300 WPM = 200ms base + 100ms default pause = 300ms
+      expect(getWordDisplayDuration(wordWithComma, 300)).toBe(300);
     });
 
     it('should add configurable pause regardless of WPM', () => {
       const wordWithPeriod: RsvpWord = {text: 'end.', orpIndex: 0, pauseMultiplier: 1.0};
-      // 600 WPM = 100ms base + 500ms default pause = 600ms
-      expect(getWordDisplayDuration(wordWithPeriod, 600)).toBe(600);
-      // 150 WPM = 400ms base + 500ms default pause = 900ms
-      expect(getWordDisplayDuration(wordWithPeriod, 150)).toBe(900);
+      // 600 WPM = 100ms base + 100ms default pause = 200ms
+      expect(getWordDisplayDuration(wordWithPeriod, 600)).toBe(200);
+      // 150 WPM = 400ms base + 100ms default pause = 500ms
+      expect(getWordDisplayDuration(wordWithPeriod, 150)).toBe(500);
     });
   });
 
   describe('punctuation pause controls', () => {
     it('should return available pause options', () => {
       const options = service.getPunctuationPauseOptions();
+      expect(options).toContain(25);
       expect(options).toContain(100);
-      expect(options).toContain(500);
-      expect(options).toContain(1000);
+      expect(options).toContain(200);
     });
 
     it('should allow setting punctuation pause', () => {
-      service.setPunctuationPause(800);
-      expect(service.currentState.punctuationPauseMs).toBe(800);
+      service.setPunctuationPause(150);
+      expect(service.currentState.punctuationPauseMs).toBe(150);
     });
 
     it('should not set invalid pause values', () => {
       service.setPunctuationPause(999); // Not in options
-      expect(service.currentState.punctuationPauseMs).toBe(500); // Stays at default
+      expect(service.currentState.punctuationPauseMs).toBe(100); // Stays at default
     });
   });
 
@@ -219,7 +219,7 @@ describe('RsvpService', () => {
         words,
         currentIndex: 50,
         wpm: 300,
-        punctuationPauseMs: 500,
+        punctuationPauseMs: 100,
         progress: 50,
         resumedFromIndex: null
       });
@@ -369,7 +369,7 @@ describe('RsvpService', () => {
         words: [{text: 'test', orpIndex: 1, pauseMultiplier: 1.0}],
         currentIndex: 0,
         wpm: 300,
-        punctuationPauseMs: 500,
+        punctuationPauseMs: 100,
         progress: 50,
         resumedFromIndex: 10
       });

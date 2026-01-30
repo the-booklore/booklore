@@ -286,6 +286,74 @@ export class ReaderViewManagerService {
     return null;
   }
 
+  /**
+   * Get the current section index from the renderer's loaded content.
+   */
+  getCurrentSectionIndex(): number {
+    try {
+      // Try getting index from renderer contents (most reliable)
+      const contents = this.view?.renderer?.getContents?.();
+      if (contents && contents.length > 0 && contents[0].index !== undefined) {
+        return contents[0].index;
+      }
+      // Fallback to lastLocation
+      const lastLocation = this.view?.lastLocation;
+      if (lastLocation?.index !== undefined) {
+        return lastLocation.index;
+      }
+    } catch {
+      // Ignore errors
+    }
+    return -1;
+  }
+
+  /**
+   * Get the total number of sections in the book.
+   */
+  getTotalSections(): number {
+    try {
+      // Try multiple possible locations for sections count
+      if (this.view?.book?.sections?.length) {
+        return this.view.book.sections.length;
+      }
+      // Fallback: try spine
+      if (this.view?.book?.spine?.length) {
+        return this.view.book.spine.length;
+      }
+    } catch {
+      // Ignore errors
+    }
+    return 0;
+  }
+
+  /**
+   * Navigate to the next section (chapter).
+   * Returns true if navigation occurred, false if already at last section.
+   */
+  goToNextSection(): Observable<boolean> {
+    const currentIndex = this.getCurrentSectionIndex();
+    const totalSections = this.getTotalSections();
+
+    console.log('[ViewManager] goToNextSection:', {currentIndex, totalSections});
+
+    if (currentIndex < 0 || totalSections === 0) {
+      console.log('[ViewManager] Cannot determine position, falling back to view.next()');
+      // Fall back to regular next() if we can't determine section info
+      return this.nextAsync().pipe(map(() => true));
+    }
+
+    if (currentIndex >= totalSections - 1) {
+      console.log('[ViewManager] Already at last section');
+      return of(false);
+    }
+
+    console.log('[ViewManager] Navigating to section:', currentIndex + 1);
+    return this.goTo(currentIndex + 1).pipe(
+      map(() => true),
+      catchError(() => of(false))
+    );
+  }
+
   async* search(opts: { query: string; matchCase?: boolean; matchWholeWords?: boolean }): AsyncGenerator<any> {
     if (!this.view?.search) return;
     yield* this.view.search(opts);
