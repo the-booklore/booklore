@@ -20,7 +20,9 @@
             <p-accordion-panel [value]="i">
               <p-accordion-header>
             <span class="filter-type-label">
-              {{ filterLabels[filterType] || (filterType | titlecase) }}
+              <span class="filter-label-text">
+                {{ filterLabels[filterType] || (filterType | titlecase) }}
+              </span>
               @if (activeFilters[filterType]?.length) {
                 <span class="active-filter-count">
                   ({{ activeFilters[filterType].length }})
@@ -42,7 +44,7 @@
                     'active': activeFilters[filterType]?.includes(getFilterValueId(filter))
                   }"
                       (click)="handleFilterClick(filterType, getFilterValueId(filter))">
-                      {{ getFilterValueDisplay(filter) }}
+                      <span class="filter-value-text">{{ getFilterValueDisplay(filter) }}</span>
                       <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
                     </div>
                   </cdk-virtual-scroll-viewport>

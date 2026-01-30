@@ -31,6 +31,20 @@ public class UserStatsController {
         return ResponseEntity.ok(heatmapData);
     }
 
+    @Operation(summary = "Get reading session heatmap for a month", description = "Returns daily reading session counts for the authenticated user for a specific year and month")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Heatmap data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/heatmap/monthly")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ReadingSessionHeatmapResponse>> getHeatmapForMonth(
+            @RequestParam int year,
+            @RequestParam int month) {
+        List<ReadingSessionHeatmapResponse> heatmapData = readingSessionService.getSessionHeatmapForMonth(year, month);
+        return ResponseEntity.ok(heatmapData);
+    }
+
     @Operation(summary = "Get reading session timeline for a week", description = "Returns reading sessions grouped by book for calendar timeline view")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Timeline data retrieved successfully"),
@@ -108,5 +122,17 @@ public class UserStatsController {
     public ResponseEntity<List<CompletionTimelineResponse>> getCompletionTimeline(@RequestParam int year) {
         List<CompletionTimelineResponse> timeline = readingSessionService.getCompletionTimeline(year);
         return ResponseEntity.ok(timeline);
+    }
+
+    @Operation(summary = "Get book completion heatmap", description = "Returns monthly book completion counts for the last 10 years for the authenticated user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book completion heatmap data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/book-completion-heatmap")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<BookCompletionHeatmapResponse>> getBookCompletionHeatmap() {
+        List<BookCompletionHeatmapResponse> heatmapData = readingSessionService.getBookCompletionHeatmap();
+        return ResponseEntity.ok(heatmapData);
     }
 }
