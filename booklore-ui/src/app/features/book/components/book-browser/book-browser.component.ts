@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  inject,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
@@ -8,7 +17,7 @@ import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
 import {Shelf} from '../../model/shelf.model';
-import {SortOption} from '../../model/sort.model';
+import {SortDirection, SortOption} from '../../model/sort.model';
 import {BookState} from '../../model/state/book-state.model';
 import {Book} from '../../model/book.model';
 import {LibraryShelfMenuService} from '../../service/library-shelf-menu.service';
@@ -24,7 +33,12 @@ import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
 import {BookFilterComponent} from './book-filter/book-filter.component';
 import {Tooltip} from 'primeng/tooltip';
-import {BookFilterMode, EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
+import {
+  BookFilterMode,
+  EntityViewPreference,
+  EntityViewPreferences,
+  UserService
+} from '../../../settings/user-management/user.service';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
 import {SideBarFilter} from './filters/SidebarFilter';
 import {HeaderFilter} from './filters/HeaderFilter';
@@ -92,6 +106,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
   protected columnPreferenceService = inject(TableColumnPreferenceService);
+  private cdr = inject(ChangeDetectorRef);
   protected sidebarFilterTogglePrefService = inject(SidebarFilterTogglePrefService);
   protected seriesCollapseFilter = inject(SeriesCollapseFilter);
   protected confirmationService = inject(ConfirmationService);
@@ -135,12 +150,24 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   currentFilterLabel: string | null = null;
   rawFilterParamFromUrl: string | null = null;
   hasSearchTerm = false;
-  visibleColumns: { field: string; header: string }[] = [];
+  visibleColumns: { field: string; header: string; width?: string }[] = [];
   entityViewPreferences: EntityViewPreferences | undefined;
   currentViewMode: string | undefined;
   lastAppliedSort: SortOption | null = null;
+  private currentUserId: number | undefined;
   showFilter = false;
   screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  private resizeSubject = new Subject<{ field: string, width: string }[]>();
+
+  constructor() {
+    this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
+    this.resizeSubject.pipe(
+      debounceTime(500),
+      takeUntil(this.destroy$)
+    ).subscribe(widths => {
+      this.columnPreferenceService.saveColumnWidths(widths);
+    });
+  }
   mobileColumnCount = 3;
 
   private readonly MOBILE_BREAKPOINT = 768;
@@ -255,10 +282,21 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.bulkReadActionsMenuItems!.length > 0;
   }
 
+  get validSortFields(): string[] {
+    return this.bookSorter.sortOptions.map(o => o.field);
+  }
+
   ngOnInit(): void {
     this.pageTitle.setPageTitle('');
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
     this.loadMobileColumnsPreference();
+
+    this.columnPreferenceService.preferences$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.visibleColumns = this.columnPreferenceService.visibleColumns;
+        this.cdr.markForCheck();
+      });
 
     this.initializeEntityRouting();
     this.setupRouteChangeHandlers();
@@ -423,9 +461,11 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.entityViewPreferences = user.user?.userSettings?.entityViewPreferences;
       this.coverScalePreferenceService.initScaleValue(this.coverScalePreferenceService.scaleFactor);
-      this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
-      this.visibleColumns = this.columnPreferenceService.visibleColumns;
 
+      if (this.currentUserId !== user.user?.id) {
+        this.currentUserId = user.user?.id;
+        this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
+      }
 
       this.bookSorter.selectedSort = parseResult.sortOption;
       this.currentViewMode = parseResult.viewMode;
@@ -482,10 +522,55 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onVisibleColumnsChange(selected: { field: string; header: string }[]): void {
-    const allFields = this.bookTableComponent.allColumns.map(col => col.field);
-    this.visibleColumns = selected.sort(
-      (a, b) => allFields.indexOf(a.field) - allFields.indexOf(b.field)
-    );
+    const selectedFields = new Set(selected.map(s => s.field));
+    const existingVisible = this.visibleColumns.filter(c => selectedFields.has(c.field));
+    const newlyAdded = selected.filter(s => !this.visibleColumns.some(c => c.field === s.field));
+
+    this.visibleColumns = [...existingVisible, ...newlyAdded];
+    this.columnPreferenceService.saveVisibleColumns(this.visibleColumns);
+  }
+
+  onBookTableSort(event: { field: string, order: number }): void {
+    const direction = event.order === 1; // 1 is ASC, -1 is DESC
+    this.bookSorter.setSortField(event.field, direction);
+  }
+
+  onBookTableColumnReorder(columns: { field: string, header: string }[]): void {
+    this.visibleColumns = columns;
+    this.columnPreferenceService.saveVisibleColumns(columns);
+  }
+
+  onBookTableColumnResize(event: any): void {
+    if (event.element) {
+      const thElement = event.element as HTMLTableCellElement;
+      const columnIndex = thElement.cellIndex;
+
+      // We have 3 fixed columns before the dynamic ones:
+      // 1. Checkbox
+      // 2. Status icon column
+      // 3. Cover column
+      const fixedColumnCount = 3;
+      const dynamicColumnIndex = columnIndex - fixedColumnCount;
+
+      if (dynamicColumnIndex >= 0 && dynamicColumnIndex < this.visibleColumns.length) {
+        const col = this.visibleColumns[dynamicColumnIndex];
+        // PrimeNG sets the width on the element directly during resize
+        const newWidth = thElement.offsetWidth + 'px';
+
+        col.width = newWidth;
+
+        this.resizeSubject.next([{
+          field: col.field,
+          width: newWidth
+        }]);
+      }
+    }
+  }
+
+  resetView(): void {
+    this.columnPreferenceService.resetPreferences();
+    this.visibleColumns = this.columnPreferenceService.visibleColumns;
+    this.cdr.detectChanges();
   }
 
   onCheckboxClicked(event: CheckboxClickEvent): void {
@@ -548,27 +633,39 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onSeriesCollapseCheckboxChange(value: boolean): void {
     this.seriesCollapseFilter.setCollapsed(value);
+    this.saveEntityViewPreferences({seriesCollapsed: value});
   }
 
   onManualSortChange(sortOption: SortOption): void {
-    this.applySortOption(sortOption);
     this.queryParamsService.updateSort(sortOption);
+    this.saveEntityViewPreferences({
+      sortKey: sortOption.field,
+      sortDir: sortOption.direction === SortDirection.ASCENDING ? 'ASC' : 'DESC'
+    });
   }
 
   applySortOption(sortOption: SortOption): void {
+    const sortToSend = {...sortOption};
+    if (sortToSend.field === 'authors') sortToSend.field = 'author';
+    if (sortToSend.field === 'seriesNumber') sortToSend.field = 'metadata.seriesNumber';
+    if (sortToSend.field === 'seriesName') sortToSend.field = 'metadata.seriesName';
+    if (sortToSend.field === 'isbn') sortToSend.field = 'metadata.isbn13';
+    if (sortToSend.field === 'language') sortToSend.field = 'metadata.language';
+    if (sortToSend.field === 'readStatus') sortToSend.field = 'readStatus'; // Assuming on BookEntity? No, BookEntity don't have it.
+
     if (this.entityType === EntityType.ALL_BOOKS) {
-      this.bookState$ = this.entityService.fetchAllBooks(sortOption).pipe(
+      this.bookState$ = this.entityService.fetchAllBooks(sortToSend).pipe(
         switchMap(bookState => this.applyBookFilters(bookState))
       );
     } else if (this.entityType === EntityType.UNSHELVED) {
-      this.bookState$ = this.entityService.fetchUnshelvedBooks(sortOption).pipe(
+      this.bookState$ = this.entityService.fetchUnshelvedBooks(sortToSend).pipe(
         switchMap(bookState => this.applyBookFilters(bookState))
       );
     } else {
       const routeParam$ = this.entityService.getEntityInfoFromRoute(this.activatedRoute);
       this.bookState$ = routeParam$.pipe(
         switchMap(({entityId, entityType}) =>
-          this.entityService.fetchBooksByEntity(entityId, entityType, sortOption)
+          this.entityService.fetchBooksByEntity(entityId, entityType, sortToSend)
         ),
         switchMap(bookState => this.applyBookFilters(bookState))
       );
@@ -609,6 +706,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleTableGrid(): void {
     this.currentViewMode = this.currentViewMode === VIEW_MODES.GRID ? VIEW_MODES.TABLE : VIEW_MODES.GRID;
     this.queryParamsService.updateViewMode(this.currentViewMode as 'grid' | 'table');
+    this.saveEntityViewPreferences({view: this.currentViewMode === VIEW_MODES.GRID ? 'GRID' : 'TABLE'});
   }
 
   unshelfBooks(): void {
@@ -832,6 +930,55 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   setMobileColumns(columns: number): void {
     this.mobileColumnCount = columns;
     this.localStorageService.set(this.MOBILE_COLUMNS_STORAGE_KEY, columns);
+  }
+
+  private saveEntityViewPreferences(changes: Partial<EntityViewPreference>): void {
+    const currentUser = this.userService.getCurrentUser();
+    if (!currentUser) return;
+
+    const currentPrefs = currentUser.userSettings.entityViewPreferences;
+    const isOverride =
+      this.entityType !== EntityType.ALL_BOOKS &&
+      this.entityType !== EntityType.UNSHELVED;
+
+    let updatedGlobal = {...currentPrefs.global};
+    let updatedOverrides = [...currentPrefs.overrides];
+
+    if (isOverride && this.entity && this.entityType) {
+      let entityTypeStr: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
+      switch(this.entityType) {
+        case EntityType.LIBRARY: entityTypeStr = 'LIBRARY'; break;
+        case EntityType.SHELF: entityTypeStr = 'SHELF'; break;
+        case EntityType.MAGIC_SHELF: entityTypeStr = 'MAGIC_SHELF'; break;
+        default: return;
+      }
+
+      const index = updatedOverrides.findIndex(o =>
+        o.entityType === entityTypeStr && o.entityId === this.entity!.id
+      );
+
+      if (index >= 0) {
+        updatedOverrides[index] = {
+          ...updatedOverrides[index],
+          preferences: {...updatedOverrides[index].preferences, ...changes}
+        };
+      } else if (this.entity?.id) {
+        updatedOverrides.push({
+          entityType: entityTypeStr,
+          entityId: this.entity.id,
+          preferences: {...updatedGlobal, ...changes}
+        });
+      }
+    } else {
+      updatedGlobal = {...updatedGlobal, ...changes};
+    }
+
+    const newPrefs: EntityViewPreferences = {
+      global: updatedGlobal,
+      overrides: updatedOverrides
+    };
+
+    this.userService.updateUserSetting(currentUser.id, 'entityViewPreferences', newPrefs);
   }
 
   private loadMobileColumnsPreference(): void {

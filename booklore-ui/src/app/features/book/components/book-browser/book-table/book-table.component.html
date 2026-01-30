@@ -13,10 +13,14 @@
   [scrollHeight]="scrollHeight"
   [virtualScroll]="true"
   [virtualScrollItemSize]="46"
+  [customSort]="true"
   [(selection)]="selectedBooks"
   (onHeaderCheckboxToggle)="onHeaderCheckboxToggle($event)"
   (onRowSelect)="onRowSelect($event)"
   (onRowUnselect)="onRowUnselect($event)"
+  (onSort)="onSort($event)"
+  (onColReorder)="onColReorder($event)"
+  (onColResize)="onColResize($event)"
 >
   <ng-template pTemplate="header">
     <tr>
@@ -26,7 +30,15 @@
       <th></th>
       <th class="cover-header-cell"></th>
       @for (col of visibleColumns; track col.field) {
-        <th pResizableColumn>{{ col.header }}</th>
+        @if (validSortFields.includes(col.field)) {
+          <th pResizableColumn pReorderableColumn pSortableColumn="{{col.field}}" [ngStyle]="{'width': col.width, 'min-width': '100px'}">
+            {{ col.header }} <p-sortIcon field="{{col.field}}"/>
+          </th>
+        } @else {
+          <th pResizableColumn pReorderableColumn [ngStyle]="{'width': col.width, 'min-width': '100px'}">
+            {{ col.header }}
+          </th>
+        }
       }
     </tr>
   </ng-template>
@@ -85,17 +97,18 @@
             </td>
           } @else if (col.field === 'amazonRating' || col.field === 'goodreadsRating' || col.field === 'hardcoverRating' || col.field == 'ranobedbRating') {
             <td class="cell-rating">
-              <span class="rating-wrapper">
-                <p-rating
-                  [(ngModel)]="metadata[col.field]"
-                  readonly
-                  stars="5"
-                  [style.--p-rating-icon-active-color]="getStarColor(metadata[col.field])"
-                ></p-rating>
-                @if (metadata[col.field] != null) {
-                  <span>({{ metadata[col.field]?.toFixed(1) }})</span>
+                <div class="rating-display" [title]="metadata[col.field]">
+                   @for (star of [1,2,3,4,5]; track star) {
+                     <i class="pi"
+                        [class.pi-star-fill]="star <= (metadata[col.field] || 0)"
+                        [class.pi-star]="star > (metadata[col.field] || 0)"
+                        [style.color]="star <= (metadata[col.field] || 0) ? getStarColor(metadata[col.field]) : '#ccc'">
+                     </i>
+                   }
+                </div>
+                @if (metadata[col.field] != null && metadata[col.field] > 0) {
+                  <span class="rating-value">({{ metadata[col.field]?.toFixed(1) }})</span>
                 }
-              </span>
             </td>
           } @else {
             <td
