@@ -51,7 +51,6 @@ export interface PerBookSetting {
 
 export type PageSpread = 'off' | 'even' | 'odd';
 export type BookFilterMode = 'and' | 'or' | 'single';
-export type FilterSortingMode = 'count';
 
 
 export enum CbxPageViewMode {
@@ -178,7 +177,6 @@ export interface UserSettings {
   sidebarShelfSorting: SidebarShelfSorting;
   sidebarMagicShelfSorting: SidebarMagicShelfSorting;
   filterMode: BookFilterMode;
-  filterSortingMode: FilterSortingMode;
   metadataCenterViewMode: 'route' | 'dialog';
   enableSeriesView: boolean;
   entityViewPreferences: EntityViewPreferences;
