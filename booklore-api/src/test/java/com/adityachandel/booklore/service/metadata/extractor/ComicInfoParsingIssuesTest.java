@@ -5,13 +5,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,10 +19,8 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.imageio.ImageIO;
-import java.awt.Color;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ComicInfoParsingIssuesTest {
 
@@ -160,10 +155,10 @@ class ComicInfoParsingIssuesTest {
         
         assertTrue(metadata.getAuthors().contains("Frank Miller"));
         
-        assertTrue(metadata.getCategories().contains("Marvel"));
-        assertTrue(metadata.getCategories().contains("Daredevil"));
+        assertTrue(metadata.getTags().contains("Marvel"));
+        assertTrue(metadata.getTags().contains("Daredevil"));
         assertTrue(metadata.getCategories().contains("Superhero"));
-        assertTrue(metadata.getCategories().contains("Frank Miller"));
+        assertTrue(metadata.getTags().contains("Frank Miller"));
     }
 
     @Test

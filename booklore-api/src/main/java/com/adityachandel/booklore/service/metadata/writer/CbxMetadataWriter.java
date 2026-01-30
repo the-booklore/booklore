@@ -65,7 +65,7 @@ public class CbxMetadataWriter implements MetadataWriter {
         boolean isCb7 = type == ArchiveUtils.ArchiveType.SEVEN_ZIP;
 
         if (type == ArchiveUtils.ArchiveType.UNKNOWN) {
-            log.warn("Unsupported file type for CBX writer: {}", file.getName());
+            log.warn("Unknown archive type for file: {}", file.getName());
             return;
         }
 
@@ -270,8 +270,12 @@ public class CbxMetadataWriter implements MetadataWriter {
             }
         }
         
-        appendBookLoreTag(notesBuilder, "Moods", joinStrings(metadata.getMoods().stream().map(MoodEntity::getName).collect(Collectors.toSet())));
-        appendBookLoreTag(notesBuilder, "Tags", joinStrings(metadata.getTags().stream().map(TagEntity::getName).collect(Collectors.toSet())));
+        if (metadata.getMoods() != null) {
+            appendBookLoreTag(notesBuilder, "Moods", joinStrings(metadata.getMoods().stream().map(MoodEntity::getName).collect(Collectors.toSet())));
+        }
+        if (metadata.getTags() != null) {
+            appendBookLoreTag(notesBuilder, "Tags", joinStrings(metadata.getTags().stream().map(TagEntity::getName).collect(Collectors.toSet())));
+        }
         appendBookLoreTag(notesBuilder, "Subtitle", metadata.getSubtitle());
         appendBookLoreTag(notesBuilder, "ISBN13", metadata.getIsbn13());
         appendBookLoreTag(notesBuilder, "ISBN10", metadata.getIsbn10());

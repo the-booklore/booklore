@@ -247,6 +247,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:hardcover_review_count" -> safeParseInt(content, builderMeta::hardcoverReviewCount);
                                     case "booklore:lubimyczytac_rating" -> safeParseDouble(content, value -> builderMeta.lubimyczytacRating(value));
                                     case "booklore:ranobedb_rating" -> safeParseDouble(content, builderMeta::ranobedbRating);
+                                    case "booklore:ranobedb_id" -> builderMeta.ranobedbId(content);
+                                    case "booklore:lubimyczytac_id" -> builderMeta.lubimyczytacId(content);
+                                    case "booklore:subtitle" -> builderMeta.subtitle(content);
                                 }
 
                                 if ("calibre:user_metadata".equals(prop)) {
