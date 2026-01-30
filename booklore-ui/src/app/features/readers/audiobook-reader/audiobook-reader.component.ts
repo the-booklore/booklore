@@ -54,17 +54,14 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private audiobookSessionService = inject(AudiobookSessionService);
   private pageTitle = inject(PageTitleService);
 
-  // Loading state
   isLoading = true;
   audioLoading = true;
 
-  // Book data
   bookId!: number;
   audiobookInfo!: AudiobookInfo;
   coverUrl?: string;
   bookCoverUrl?: string;
 
-  // Audio state
   isPlaying = false;
   currentTime = 0;
   duration = 0;
@@ -74,20 +71,16 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   playbackRate = 1;
   buffered = 0;
 
-  // Saved position to restore after audio loads
   private savedPosition = 0;
 
-  // Track state (for folder-based audiobooks)
   currentTrackIndex = 0;
   audioSrc = '';
 
-  // UI state
   showTrackList = false;
   showBookmarkList = false;
 
-  // Sleep timer
   sleepTimerActive = false;
-  sleepTimerRemaining = 0; // seconds remaining
+  sleepTimerRemaining = 0;
   sleepTimerEndOfChapter = false;
   private sleepTimerInterval?: ReturnType<typeof setInterval>;
   private originalVolume = 1;
@@ -102,10 +95,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     { label: 'Cancel timer', command: () => this.cancelSleepTimer(), visible: false }
   ];
 
-  // Bookmarks
   bookmarks: BookMark[] = [];
 
-  // Playback speed options
   playbackRates = [
     { label: '0.5x', value: 0.5 },
     { label: '0.75x', value: 0.75 },
@@ -115,7 +106,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     { label: '2x', value: 2 }
   ];
 
-  // Progress save interval
   private progressSaveInterval?: ReturnType<typeof setInterval>;
 
   private seekDebounceTimeout?: ReturnType<typeof setTimeout>;
@@ -152,7 +142,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   private loadAudiobook(): void {
-    // Reset all state when loading a new audiobook
     this.resetState();
     this.isLoading = true;
 
@@ -164,49 +153,38 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.audiobookInfo = info;
         this.pageTitle.setBookPageTitle(book);
 
-        // Set cover URL with auth token
         const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
         this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/cover/${this.bookId}?token=${encodeURIComponent(token || '')}`;
         this.coverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
 
-        // Restore progress and load audio
         if (book.audiobookProgress) {
-          // Store saved position - will be applied when audio loads
           this.savedPosition = book.audiobookProgress.positionMs
             ? book.audiobookProgress.positionMs / 1000
             : 0;
         }
 
         if (info.folderBased && info.tracks && info.tracks.length > 0) {
-          // Folder-based audiobook
           const trackIndex = book.audiobookProgress?.trackIndex ?? 0;
           this.currentTrackIndex = trackIndex;
-          this.loadTrack(trackIndex, false); // false = don't show loading on initial load
-          // Set duration from track info
+          this.loadTrack(trackIndex, false);
           const track = info.tracks[trackIndex];
           if (track?.durationMs) {
             this.duration = track.durationMs / 1000;
           }
         } else {
-          // Single-file audiobook
           this.audioSrc = this.audiobookService.getStreamUrl(this.bookId);
-          // Set duration from API
           if (info.durationMs) {
             this.duration = info.durationMs / 1000;
           }
         }
 
-        // With preload="none", player is ready immediately (no loading spinner)
-        // Audio will load when user presses play
         this.isLoading = false;
         this.audioLoading = false;
 
-        // Set saved position to show in UI
         if (this.savedPosition > 0) {
           this.currentTime = this.savedPosition;
         }
 
-        // Load bookmarks
         this.loadBookmarks();
       },
       error: () => {
@@ -226,11 +204,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     }
     this.currentTrackIndex = index;
     this.audioSrc = this.audiobookService.getTrackStreamUrl(this.bookId, index);
-    // Only show loading for track changes while playing, not initial load
     this.audioLoading = showLoading;
-    // Reset buffered since it's a new track
     this.buffered = 0;
-    // Set duration from track info
     const track = this.audiobookInfo.tracks[index];
     if (track?.durationMs) {
       this.duration = track.durationMs / 1000;
@@ -238,10 +213,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   private resetState(): void {
-    // Stop any existing intervals
     this.stopProgressSaveInterval();
 
-    // Reset audio state
     this.isPlaying = false;
     this.currentTime = 0;
     this.duration = 0;
@@ -251,32 +224,27 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.audioSrc = '';
     this.audioLoading = true;
 
-    // Reset UI state
     this.showTrackList = false;
     this.coverUrl = undefined;
     this.bookCoverUrl = undefined;
   }
 
-  // Audio event handlers
   onAudioLoaded(): void {
     this.audioLoading = false;
     const audio = this.audioElement?.nativeElement;
     if (audio) {
-      // Update duration from actual audio (more accurate than API)
       if (audio.duration && isFinite(audio.duration)) {
         this.duration = audio.duration;
       }
       audio.volume = this.volume;
       audio.playbackRate = this.playbackRate;
 
-      // Apply saved position now that audio is loaded
       if (this.savedPosition > 0 && this.savedPosition < this.duration) {
         audio.currentTime = this.savedPosition;
         this.currentTime = this.savedPosition;
-        this.savedPosition = 0; // Clear after applying
+        this.savedPosition = 0;
       }
 
-      // Setup Media Session for background playback
       this.setupMediaSession();
     }
   }
@@ -289,23 +257,19 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.currentTime = audio.currentTime;
       }
 
-      // Update audiobook session position
       this.audiobookSessionService.updatePosition(
         Math.round(this.currentTime * 1000),
         this.audiobookInfo?.folderBased ? this.currentTrackIndex : undefined
       );
 
-      // Update Media Session position state (throttled to every 5 seconds)
       if (Math.floor(this.currentTime) % 5 === 0) {
         this.updateMediaSessionPositionState();
       }
 
-      // Update metadata if chapter changed (for single-file audiobooks)
       if (!this.audiobookInfo.folderBased && this.getCurrentChapterIndex() !== previousChapterIndex) {
         this.updateMediaSessionMetadata();
       }
 
-      // Check sleep timer end of chapter
       this.checkSleepTimerEndOfChapter();
     }
   }
@@ -318,7 +282,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   onAudioEnded(): void {
-    // For folder-based audiobooks, play next track
     if (this.audiobookInfo.folderBased && this.audiobookInfo.tracks) {
       if (this.currentTrackIndex < this.audiobookInfo.tracks.length - 1) {
         this.nextTrack();
@@ -327,7 +290,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.stopProgressSaveInterval();
         this.saveProgress();
         this.updateMediaSessionPlaybackState();
-        // Pause session when audiobook ends
         this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
       }
     } else {
@@ -335,7 +297,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.stopProgressSaveInterval();
       this.saveProgress();
       this.updateMediaSessionPlaybackState();
-      // Pause session when audiobook ends
       this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
     }
   }
@@ -349,7 +310,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Media Session API for background playback
   private setupMediaSession(): void {
     if (!('mediaSession' in navigator)) return;
 
@@ -412,12 +372,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           position: this.currentTime
         });
       } catch {
-        // Ignore errors from invalid position state
       }
     }
   }
 
-  // Playback controls
   togglePlay(): void {
     const audio = this.audioElement?.nativeElement;
     if (!audio) return;
@@ -426,12 +384,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       audio.pause();
       this.stopProgressSaveInterval();
       this.saveProgress();
-      // Pause the listening session
       this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
     } else {
       audio.play();
       this.startProgressSaveInterval();
-      // Start or resume the listening session
       if (this.audiobookSessionService.isSessionActive()) {
         this.audiobookSessionService.resumeSession(Math.round(this.currentTime * 1000));
       } else {
@@ -476,7 +432,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Volume controls
   setVolume(event: SliderChangeEvent): void {
     const audio = this.audioElement?.nativeElement;
     if (event.value !== undefined) {
@@ -504,7 +459,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Playback rate
   setPlaybackRate(rate: number): void {
     if (rate === undefined || rate === null) return;
     const audio = this.audioElement?.nativeElement;
@@ -513,16 +467,14 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       audio.playbackRate = rate;
     }
     this.updateMediaSessionPositionState();
-    // Update session with new playback rate
     this.audiobookSessionService.updatePlaybackRate(rate);
   }
 
-  // Track navigation (folder-based)
   previousTrack(): void {
     if (this.currentTrackIndex > 0) {
       this.loadTrack(this.currentTrackIndex - 1);
       this.currentTime = 0;
-      this.savedPosition = 0; // Reset saved position for new track
+      this.savedPosition = 0;
       if (this.isPlaying) {
         setTimeout(() => {
           this.audioElement?.nativeElement?.play();
@@ -536,7 +488,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     if (this.audiobookInfo.tracks && this.currentTrackIndex < this.audiobookInfo.tracks.length - 1) {
       this.loadTrack(this.currentTrackIndex + 1);
       this.currentTime = 0;
-      this.savedPosition = 0; // Reset saved position for new track
+      this.savedPosition = 0;
       if (this.isPlaying) {
         setTimeout(() => {
           this.audioElement?.nativeElement?.play();
@@ -549,7 +501,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   selectTrack(track: AudiobookTrack): void {
     this.loadTrack(track.index);
     this.currentTime = 0;
-    this.savedPosition = 0; // Reset saved position for new track
+    this.savedPosition = 0;
     this.showTrackList = false;
     setTimeout(() => {
       this.audioElement?.nativeElement?.play();
@@ -557,7 +509,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.startProgressSaveInterval();
       this.updateMediaSessionMetadata();
       this.updateMediaSessionPlaybackState();
-      // Start or resume listening session
       if (this.audiobookSessionService.isSessionActive()) {
         this.audiobookSessionService.resumeSession(0);
       } else {
@@ -569,7 +520,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
-  // Chapter navigation (single-file)
   selectChapter(chapter: AudiobookChapter): void {
     const audio = this.audioElement?.nativeElement;
     if (audio) {
@@ -582,7 +532,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.isPlaying = true;
         this.startProgressSaveInterval();
         this.updateMediaSessionPlaybackState();
-        // Start or resume listening session
         if (this.audiobookSessionService.isSessionActive()) {
           this.audiobookSessionService.resumeSession(chapter.startTimeMs);
         } else {
@@ -644,9 +593,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Progress management - save every 5 seconds while playing
   private startProgressSaveInterval(): void {
-    if (this.progressSaveInterval) return; // Already running
+    if (this.progressSaveInterval) return;
 
     this.progressSaveInterval = setInterval(() => {
       if (this.isPlaying) {
@@ -669,11 +617,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     const currentPosition = this.getCurrentTotalPosition();
     const percentage = totalDuration > 0 ? (currentPosition / totalDuration) * 100 : 0;
 
-    // For folder-based: positionMs = track position (for seeking within track)
-    // For single-file: positionMs = absolute position
     const positionMs = this.audiobookInfo.folderBased
-      ? Math.round(this.currentTime * 1000)  // Track position
-      : Math.round(currentPosition * 1000);   // Absolute position
+      ? Math.round(this.currentTime * 1000)
+      : Math.round(currentPosition * 1000);
 
     const progress: AudiobookProgress = {
       positionMs: positionMs,
@@ -703,7 +649,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     return this.currentTime;
   }
 
-  // Utility methods
   formatTime(seconds: number): string {
     if (!seconds || !isFinite(seconds)) return '0:00';
     const h = Math.floor(seconds / 3600);
@@ -729,12 +674,9 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   onCoverError(): void {
-    // Fallback to book cover if embedded cover fails
-    // Only fallback once to prevent infinite loop
     if (this.coverUrl !== this.bookCoverUrl) {
       this.coverUrl = this.bookCoverUrl;
     } else {
-      // Both covers failed, use a placeholder
       this.coverUrl = undefined;
     }
   }
@@ -761,8 +703,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     return this.audiobookInfo?.tracks?.[this.currentTrackIndex];
   }
 
-  // ==================== SLEEP TIMER ====================
-
   setSleepTimer(minutes: number): void {
     this.cancelSleepTimer();
     this.sleepTimerRemaining = minutes * 60;
@@ -774,7 +714,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.sleepTimerInterval = setInterval(() => {
       this.sleepTimerRemaining--;
 
-      // Fade out volume in last 30 seconds
       if (this.sleepTimerRemaining <= 30 && this.sleepTimerRemaining > 0) {
         const fadeRatio = this.sleepTimerRemaining / 30;
         const audio = this.audioElement?.nativeElement;
@@ -816,7 +755,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       this.sleepTimerInterval = undefined;
     }
 
-    // Restore original volume if we were fading
     if (this.sleepTimerActive && this.originalVolume > 0) {
       const audio = this.audioElement?.nativeElement;
       if (audio) {
@@ -843,7 +781,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.saveProgress();
     this.cancelSleepTimer();
     this.updateMediaSessionPlaybackState();
-    // Pause the listening session
     this.audiobookSessionService.pauseSession(Math.round(this.currentTime * 1000));
 
     this.messageService.add({
@@ -854,7 +791,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   private updateSleepTimerMenuVisibility(): void {
-    // Show/hide cancel option based on timer state
     const cancelItem = this.sleepTimerOptions.find(item => item.label === 'Cancel timer');
     if (cancelItem) {
       cancelItem.visible = this.sleepTimerActive;
@@ -870,21 +806,17 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  // Check for end of chapter in onTimeUpdate for sleep timer
   private checkSleepTimerEndOfChapter(): void {
     if (!this.sleepTimerEndOfChapter || !this.sleepTimerActive) return;
 
     const currentChapter = this.getCurrentChapter();
     if (currentChapter) {
       const currentMs = this.currentTime * 1000;
-      // If we're within 1 second of chapter end, trigger stop
       if (currentMs >= currentChapter.endTimeMs - 1000) {
         this.triggerSleepTimerStop();
       }
     }
   }
-
-  // ==================== BOOKMARKS ====================
 
   loadBookmarks(): void {
     this.bookMarkService.getBookmarksForBook(this.bookId)
@@ -944,14 +876,11 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   goToBookmark(bookmark: BookMark): void {
-    // Handle track switching for folder-based audiobooks
     if (this.audiobookInfo.folderBased && bookmark.trackIndex !== undefined && bookmark.trackIndex !== null) {
       if (bookmark.trackIndex !== this.currentTrackIndex) {
         this.loadTrack(bookmark.trackIndex);
-        // Wait for track to load, then seek
         this.savedPosition = (bookmark.positionMs || 0) / 1000;
       } else {
-        // Same track, just seek
         const audio = this.audioElement?.nativeElement;
         if (audio && bookmark.positionMs) {
           audio.currentTime = bookmark.positionMs / 1000;
@@ -959,7 +888,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      // Single-file audiobook
       const audio = this.audioElement?.nativeElement;
       if (audio && bookmark.positionMs) {
         audio.currentTime = bookmark.positionMs / 1000;
@@ -974,7 +902,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
         this.audioElement?.nativeElement?.play();
         this.isPlaying = true;
         this.startProgressSaveInterval();
-        // Start or resume listening session
         const positionMs = bookmark.positionMs || 0;
         if (this.audiobookSessionService.isSessionActive()) {
           this.audiobookSessionService.resumeSession(positionMs);
