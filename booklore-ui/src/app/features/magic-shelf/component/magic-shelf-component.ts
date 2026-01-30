@@ -40,6 +40,8 @@ export type RuleOperator =
   | 'includes_any'
   | 'excludes_all'
   | 'includes_all'
+  | 'has'
+  | 'missing'
 
 export type RuleField =
   | 'library'
@@ -55,16 +57,6 @@ export type RuleField =
   | 'seriesTotal'
   | 'pageCount'
   | 'language'
-  | 'isbn13'
-  | 'isbn10'
-  | 'asin'
-  | 'goodreadsId'
-  | 'comicvineId'
-  | 'hardcoverId'
-  | 'hardcoverBookId'
-  | 'googleId'
-  | 'lubimyczytacId'
-  | 'ranobedbId'
   | 'amazonRating'
   | 'amazonReviewCount'
   | 'goodreadsRating'
@@ -83,7 +75,9 @@ export type RuleField =
   | 'metadataScore'
   | 'moods'
   | 'tags'
-  | 'incompleteSeries';
+  | 'incompleteSeries'
+  | 'externalId'
+  | 'externalRating';
 
 
 interface FullFieldConfig {
@@ -146,22 +140,6 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
   pageCount: {label: 'Page Count', type: 'number'},
   language: {label: 'Language'},
-  isbn13: {label: 'ISBN-13'},
-  isbn10: {label: 'ISBN-10'},
-  asin: {label: 'ASIN'},
-  goodreadsId: {label: 'Goodreads ID'},
-  comicvineId: {label: 'ComicVine ID'},
-  hardcoverId: {label: 'Hardcover ID'},
-  hardcoverBookId: {label: 'Hardcover Book ID', type: 'number'},
-  googleId: {label: 'Google Books ID'},
-  lubimyczytacId: {label: 'Lubimyczytac ID'},
-  ranobedbId: {label: 'Ranobedb ID'},
-  seriesName: {label: 'Series Name'},
-  seriesNumber: {label: 'Series Number', type: 'number'},
-  seriesTotal: {label: 'Books in Series', type: 'number'},
-  fileSize: {label: 'File Size (Kb)', type: 'number'},
-  fileType: {label: 'File Type'},
-  subtitle: {label: 'Subtitle'},
   amazonRating: {label: 'Amazon Rating', type: 'decimal', max: 5},
   amazonReviewCount: {label: 'Amazon Review Count', type: 'number'},
   goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
@@ -170,7 +148,15 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
   lubimyczytacRating: {label: 'Lubimyczytac Rating', type: 'decimal', max: 10},
   ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5},
-  incompleteSeries: {label: 'Incomplete Series'}
+  seriesName: {label: 'Series Name'},
+  seriesNumber: {label: 'Series Number', type: 'number'},
+  seriesTotal: {label: 'Books in Series', type: 'number'},
+  fileSize: {label: 'File Size (Kb)', type: 'number'},
+  fileType: {label: 'File Type'},
+  subtitle: {label: 'Subtitle'},
+  incompleteSeries: {label: 'Incomplete Series'},
+  externalId: {label: 'External ID'},
+  externalRating: {label: 'External Rating'}
 };
 
 @Component({
@@ -233,6 +219,28 @@ export class MagicShelfComponent implements OnInit {
   incompleteSeriesOptions: { label: string; value: string }[] = [
     {label: 'True', value: 'true'},
     {label: 'False', value: 'false'}
+  ];
+
+  externalIdOptions: { label: string; value: string }[] = [
+    {label: 'ISBN-13', value: 'isbn13'},
+    {label: 'ISBN-10', value: 'isbn10'},
+    {label: 'ASIN', value: 'asin'},
+    {label: 'Goodreads', value: 'goodreads'},
+    {label: 'ComicVine', value: 'comicvine'},
+    {label: 'Hardcover', value: 'hardcover'},
+    {label: 'Hardcover Book', value: 'hardcoverBook'},
+    {label: 'Google Books', value: 'google'},
+    {label: 'Lubimyczytac', value: 'lubimyczytac'},
+    {label: 'Ranobedb', value: 'ranobedb'}
+  ];
+
+  externalRatingOptions: { label: string; value: string }[] = [
+    {label: 'Amazon', value: 'amazon'},
+    {label: 'Goodreads', value: 'goodreads'},
+    {label: 'Hardcover', value: 'hardcover'},
+    {label: 'Lubimyczytac', value: 'lubimyczytac'},
+    {label: 'Ranobedb', value: 'ranobedb'},
+    {label: 'Personal', value: 'personal'}
   ];
 
   libraries: Library[] = [];
@@ -397,15 +405,23 @@ export class MagicShelfComponent implements OnInit {
 
     if (!field) return [...baseOperators, ...multiValueOperators];
 
+    // Special handling for externalId and externalRating - has/missing operators
+    if (field === 'externalId' || field === 'externalRating') {
+      return [
+        {label: 'Has', value: 'has'},
+        {label: 'Missing', value: 'missing'},
+      ];
+    }
+
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId', 'incompleteSeries'].includes(field);
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'incompleteSeries'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'externalId', 'externalRating', 'incompleteSeries'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);

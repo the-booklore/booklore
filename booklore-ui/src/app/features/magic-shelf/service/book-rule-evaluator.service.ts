@@ -44,6 +44,95 @@ export class BookRuleEvaluatorService {
       }
     }
 
+    // Special handling for externalId and externalRating
+    if (rule.field === 'externalId' || rule.field === 'externalRating') {
+      const source = String(rule.value).toLowerCase();
+      let fieldValue: unknown;
+
+      if (rule.field === 'externalId') {
+        // Map source to the actual ID field
+        switch (source) {
+          case 'isbn13':
+            fieldValue = book.metadata?.isbn13;
+            break;
+          case 'isbn10':
+            fieldValue = book.metadata?.isbn10;
+            break;
+          case 'asin':
+            fieldValue = (book.metadata as Record<string, unknown>)?.['asin'];
+            break;
+          case 'goodreads':
+            fieldValue = book.metadata?.goodreadsId;
+            break;
+          case 'comicvine':
+            fieldValue = book.metadata?.comicvineId;
+            break;
+          case 'hardcover':
+            fieldValue = book.metadata?.hardcoverId;
+            break;
+          case 'hardcoverbook':
+            fieldValue = book.metadata?.hardcoverBookId;
+            break;
+          case 'google':
+            fieldValue = book.metadata?.googleId;
+            break;
+          case 'lubimyczytac':
+            fieldValue = book.metadata?.lubimyczytacId;
+            break;
+          case 'ranobedb':
+            fieldValue = book.metadata?.ranobedbId;
+            break;
+          default:
+            fieldValue = null;
+        }
+      } else if (rule.field === 'externalRating') {
+        // Map source to the actual rating field
+        switch (source) {
+          case 'amazon':
+            fieldValue = book.metadata?.amazonRating;
+            break;
+          case 'goodreads':
+            fieldValue = book.metadata?.goodreadsRating;
+            break;
+          case 'hardcover':
+            fieldValue = book.metadata?.hardcoverRating;
+            break;
+          case 'lubimyczytac':
+            fieldValue = book.metadata?.lubimyczytacRating;
+            break;
+          case 'ranobedb':
+            fieldValue = book.metadata?.ranobedbRating;
+            break;
+          case 'personal':
+            fieldValue = book.personalRating;
+            break;
+          default:
+            fieldValue = null;
+        }
+      }
+
+      // Check if the field is empty/not empty
+      const isEmpty = fieldValue === null || fieldValue === undefined || fieldValue === '';
+      switch (rule.operator) {
+        case 'has':
+          return !isEmpty;
+        case 'missing':
+          return isEmpty;
+        case 'is_empty':
+          return isEmpty;
+        case 'is_not_empty':
+          return !isEmpty;
+        case 'equals':
+          // For equals, we check if it has a value (not empty)
+          return !isEmpty;
+        case 'not_equals':
+          // For not equals, we check if it's empty
+          return isEmpty;
+        default:
+          return false;
+      }
+    }
+
     const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
@@ -100,10 +189,6 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.publisher ?? '').toLowerCase()];
         case 'seriesName':
           return [String(book.metadata?.seriesName ?? '').toLowerCase()];
-        case 'isbn13':
-          return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
-        case 'isbn10':
-          return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
         case 'incompleteSeries':
           return [String(book.incompleteSeries ?? false)];
         default:
@@ -297,10 +382,6 @@ export class BookRuleEvaluatorService {
         return book.metadata?.pageCount;
       case 'language':
         return book.metadata?.language?.toLowerCase() ?? null;
-      case 'isbn13':
-        return book.metadata?.isbn13?.toLowerCase() ?? null;
-      case 'isbn10':
-        return book.metadata?.isbn10?.toLowerCase() ?? null;
       case 'amazonRating':
         return book.metadata?.amazonRating;
       case 'amazonReviewCount':
@@ -313,10 +394,16 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
+      case 'lubimyczytacRating':
+        return book.metadata?.lubimyczytacRating;
       case 'ranobedbRating':
         return book.metadata?.ranobedbRating;
       case 'incompleteSeries':
         return book.incompleteSeries ?? false;
+      case 'externalId':
+      case 'externalRating':
+        // These are meta-fields handled specially in evaluateRule
+        return null;
       default:
         return (book as Record<string, unknown>)[field];
     }
