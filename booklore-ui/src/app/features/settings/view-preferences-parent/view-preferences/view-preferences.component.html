@@ -11,40 +11,36 @@
 
   <div class="section-body">
     <div class="setting-item">
-      <label class="setting-label">Default Preferences</label>
-      <p class="setting-description">
-        <i class="pi pi-info-circle"></i>
-        <span>Configure the default sorting field, direction, and view mode for all libraries and shelves.</span>
-      </p>
-      <div class="setting-controls">
-        <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
-                  [(ngModel)]="selectedSort" placeholder="Sort By" appendTo="body"></p-select>
-        <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="selectedSortDir"
-                  placeholder="Direction" appendTo="body"></p-select>
-        <p-select size="small" [options]="viewModeOptions" [(ngModel)]="selectedView"
-                  placeholder="View Mode" appendTo="body"></p-select>
+      <div class="setting-header-standalone">
+        <label class="setting-label">Default Preferences</label>
+      </div>
+      <p class="setting-description">Configure the default sorting field, direction, and view mode for all libraries and shelves.</p>
+      <div class="setting-options">
+        <div class="select-group">
+          <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
+                    [(ngModel)]="selectedSort" placeholder="Sort By" appendTo="body"></p-select>
+          <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="selectedSortDir"
+                    placeholder="Direction" appendTo="body"></p-select>
+          <p-select size="small" [options]="viewModeOptions" [(ngModel)]="selectedView"
+                    placeholder="View Mode" appendTo="body"></p-select>
+        </div>
       </div>
     </div>
 
     <div class="setting-item">
-      <label class="setting-label">Auto-save on Navigation</label>
-      <p class="setting-description">
-        <i class="pi pi-info-circle"></i>
-        <span>Automatically save changes when navigating to the next or previous book in the metadata editor.</span>
-      </p>
-      <div class="setting-controls">
-        <label class="control-label">Enabled:</label>
+      <div class="setting-header">
         <p-toggleswitch [(ngModel)]="autoSaveMetadata"></p-toggleswitch>
+        <label class="setting-label">Auto-save on Navigation</label>
       </div>
+      <p class="setting-description">Automatically save changes when navigating to the next or previous book in the metadata editor.</p>
     </div>
 
     <div class="setting-item">
-      <label class="setting-label">Override Management</label>
-      <p class="setting-description">
-        <i class="pi pi-info-circle"></i>
-        <span>Add custom preferences for specific libraries or shelves. These will override your default settings.</span>
-      </p>
-      <div class="setting-controls">
+      <div class="setting-header-standalone">
+        <label class="setting-label">Override Management</label>
+      </div>
+      <p class="setting-description">Add custom preferences for specific libraries or shelves. These will override your default settings.</p>
+      <div class="setting-options">
         <p-button label="Add Override" outlined size="small" (onClick)="addOverride()" icon="pi pi-plus" [disabled]="availableLibraries.length === 0"></p-button>
       </div>
     </div>
@@ -99,7 +95,7 @@
       </div>
     }
 
-    <div class="save-section">
+    <div class="setting-actions">
       <p-button label="Save Settings" icon="pi pi-save" outlined severity="success" (onClick)="saveSettings()"></p-button>
     </div>
   </div>

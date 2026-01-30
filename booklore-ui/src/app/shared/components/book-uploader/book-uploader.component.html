@@ -56,7 +56,7 @@
                 optionLabel="name"
                 placeholder="Select Library"
                 [(ngModel)]="selectedLibrary"
-                class="w-full">
+                class="full-width">
               </p-select>
             </div>
             <div class="field-group">
@@ -68,7 +68,7 @@
                 placeholder="Select Subpath"
                 [(ngModel)]="selectedPath"
                 [disabled]="!selectedLibrary"
-                class="w-full">
+                class="full-width">
               </p-select>
             </div>
           </div>
@@ -88,10 +88,9 @@
           name="file"
           [customUpload]="true"
           [multiple]="true"
-          accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3"
+          accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3,.m4b,.mp3"
           (onSelect)="onFilesSelect($event)"
-          (uploadHandler)="uploadFiles($event)"
-          [disabled]="value === 'library' ? (!selectedLibrary || !selectedPath) : false">
+          (uploadHandler)="uploadFiles($event)">
           <ng-template #header let-files let-chooseCallback="chooseCallback" let-clearCallback="clearCallback" let-uploadCallback="uploadCallback">
             <div class="upload-actions">
               <div class="action-buttons">
@@ -192,7 +191,7 @@
               </div>
               <h3 class="empty-title">Drag and Drop Files</h3>
               <p class="empty-description">
-                Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>
+                Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>
                 <br/>
                 Maximum file size: {{ maxFileSizeDisplay }} per file
               </p>

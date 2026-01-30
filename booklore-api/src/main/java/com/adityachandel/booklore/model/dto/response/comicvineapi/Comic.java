@@ -20,9 +20,16 @@ public class Comic {
     @JsonProperty("cover_date")
     private String coverDate;
 
+    @JsonProperty("store_date")
+    private String storeDate;
+
     private String description;
 
+    private String deck;
+
     private String name;
+
+    private String aliases;
 
     @JsonProperty("issue_number")
     private String issueNumber;
@@ -37,6 +44,18 @@ public class Comic {
     @JsonProperty("person_credits")
     private List<PersonCredit> personCredits;
 
+    @JsonProperty("character_credits")
+    private List<CharacterCredit> characterCredits;
+
+    @JsonProperty("team_credits")
+    private List<TeamCredit> teamCredits;
+
+    @JsonProperty("story_arc_credits")
+    private List<StoryArcCredit> storyArcCredits;
+
+    @JsonProperty("location_credits")
+    private List<LocationCredit> locationCredits;
+
     @JsonProperty("start_year")
     private String startYear;
 
@@ -45,6 +64,12 @@ public class Comic {
 
     @JsonProperty("site_detail_url")
     private String siteDetailUrl;
+
+    @JsonProperty("first_issue")
+    private FirstLastIssue firstIssue;
+
+    @JsonProperty("last_issue")
+    private FirstLastIssue lastIssue;
 
     private Publisher publisher;
 
@@ -120,5 +145,57 @@ public class Comic {
         private long id;
         private String name;
         private String role;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CharacterCredit {
+        private long id;
+        private String name;
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TeamCredit {
+        private long id;
+        private String name;
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class StoryArcCredit {
+        private long id;
+        private String name;
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class LocationCredit {
+        private long id;
+        private String name;
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class FirstLastIssue {
+        private int id;
+        private String name;
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+        @JsonProperty("issue_number")
+        private String issueNumber;
     }
 }

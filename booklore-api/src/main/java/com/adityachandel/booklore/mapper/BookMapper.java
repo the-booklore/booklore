@@ -3,8 +3,8 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
-import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -23,7 +23,7 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
-    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
+    @Mapping(source = "bookFiles", target = "primaryFile", qualifiedByName = "mapPrimaryFile")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBook(BookEntity bookEntity);
@@ -33,7 +33,7 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
-    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
+    @Mapping(source = "bookFiles", target = "primaryFile", qualifiedByName = "mapPrimaryFile")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
@@ -74,10 +74,13 @@ public interface BookMapper {
                 .build();
     }
 
-    @Named("mapPrimaryBookType")
-    default BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
+    @Named("mapPrimaryFile")
+    default BookFile mapPrimaryFile(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null || bookFiles.isEmpty()) {
+            return null;
+        }
         BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getBookType();
+        return toBookFile(primary);
     }
 
     @Named("mapAlternativeFormats")
@@ -100,16 +103,29 @@ public interface BookMapper {
                 .toList();
     }
 
-    /*
-    * TODO: evolve the logic so that the user can select the primary book file format to be used.
-    * For now, we just return the first book file in the list.
-    */
     default BookFileEntity getPrimaryBookFile(List<BookFileEntity> bookFiles) {
         if (bookFiles == null || bookFiles.isEmpty()) return null;
-        return bookFiles.stream()
-                .filter(bf -> bf.isBook())
-                .findFirst()
-                .orElse(null);
+
+        List<BookFileEntity> bookFormats = bookFiles.stream()
+                .filter(BookFileEntity::isBook)
+                .toList();
+
+        if (bookFormats.isEmpty()) return null;
+
+        BookFileEntity firstBook = bookFormats.getFirst();
+        LibraryEntity library = firstBook.getBook() != null ? firstBook.getBook().getLibrary() : null;
+
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                var match = bookFormats.stream()
+                        .filter(bf -> bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
+        }
+        return firstBook;
     }
 
     default BookFile toBookFile(BookFileEntity entity) {
@@ -121,10 +137,27 @@ public interface BookMapper {
                 .filePath(entity.getFullFilePath().toString())
                 .fileSubPath(entity.getFileSubPath())
                 .isBook(entity.isBook())
+                .folderBased(entity.isFolderBased())
                 .bookType(entity.getBookType())
+                .archiveType(entity.getArchiveType())
                 .fileSizeKb(entity.getFileSizeKb())
+                .extension(extractExtension(entity))
                 .description(entity.getDescription())
                 .addedOn(entity.getAddedOn())
                 .build();
+    }
+
+    default String extractExtension(BookFileEntity entity) {
+        if (entity == null) return null;
+        String fileName;
+        if (entity.isFolderBased()) {
+            var firstFile = entity.getFirstAudioFile();
+            fileName = firstFile != null ? firstFile.getFileName().toString() : null;
+        } else {
+            fileName = entity.getFileName();
+        }
+        if (fileName == null) return null;
+        int lastDot = fileName.lastIndexOf('.');
+        return lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : null;
     }
 }

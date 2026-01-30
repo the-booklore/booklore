@@ -56,6 +56,13 @@ public class FileMoveHelper {
         return false;
     }
 
+    public boolean validateSourceExists(Path sourcePath, boolean isFolderBased) {
+        if (isFolderBased) {
+            return Files.isDirectory(sourcePath);
+        }
+        return Files.exists(sourcePath);
+    }
+
     public void moveFile(Path source, Path target) throws IOException {
         if (!waitForFileAccessible(source)) {
             throw new NoSuchFileException(source.toString(), null, "Source file not accessible after retries");
@@ -161,7 +168,7 @@ public class FileMoveHelper {
     }
 
     public Path generateNewFilePath(BookEntity book, BookFileEntity bookFile, LibraryPathEntity libraryPathEntity, String pattern) {
-        String newRelativePathStr = PathPatternResolver.resolvePattern(book, bookFile, pattern);
+        String newRelativePathStr = PathPatternResolver.resolvePattern(book, bookFile, pattern, bookFile.isFolderBased());
         if (newRelativePathStr.startsWith("/") || newRelativePathStr.startsWith("\\")) {
             newRelativePathStr = newRelativePathStr.substring(1);
         }

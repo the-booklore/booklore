@@ -1,136 +1,515 @@
-.form-container {
+.metadata-picker {
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
+  background: var(--card-background);
   animation: fadeIn 0.3s ease-in;
 }
 
-.form-content {
-  flex-grow: 1;
-  overflow: auto;
-  padding: 0;
+// Visibility utilities
+.mobile-only {
+  display: flex;
 
   @media (min-width: 768px) {
-    padding: 1rem;
+    display: none !important;
   }
 }
 
-.metadata-header {
+.desktop-only {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+
+// Body
+.dialog-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--primary-color);
+    }
+  }
+}
+
+// Column Headers - mirrors field-row structure for alignment (desktop only)
+.column-headers {
+  display: none;
   align-items: center;
-  padding-bottom: 0.75rem;
-  padding-left: 9.25rem;
-  margin-top: 1rem;
-}
-
-.metadata-header-text {
-  margin-left: 0.75rem;
-  font-size: 1.125rem;
-}
-
-.button-left {
-  padding-left: 3rem;
-  padding-right: 0.5rem;
-}
-
-.button-double-left {
-  padding-left: 0.5rem;
-  padding-right: 2rem;
-}
-
-.form-row {
-  display: flex;
-  align-items: center;
+  padding: 0.875rem 1rem;
   margin-bottom: 0.5rem;
-  width: 100%;
-  justify-content: flex-start;
+  background: var(--overlay-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+
+  // Spacer to match field-label width
+  &::before {
+    content: '';
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+
+  .column-label {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+
+    i {
+      font-size: 1.125rem;
+    }
+
+    &.current {
+      color: var(--primary-color);
+      justify-content: flex-end;
+      padding-right: 1rem;
+    }
+
+    &.fetched {
+      color: var(--p-blue-400);
+      justify-content: flex-start;
+      padding-left: 1rem;
+    }
+  }
+
+  .column-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+    margin-right:  0.75rem;
+  }
 }
 
-.label {
-  width: 8rem;
-  text-align: left;
+// Sections
+.form-section {
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary-color);
+
+    i {
+      font-size: 0.9rem;
+      color: var(--primary-color);
+    }
+  }
+
+  .section-content {
+    background: var(--overlay-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+  }
 }
 
-.input-container {
+// Cover Image
+.cover-wrapper {
+  position: relative;
+}
+
+.cover-image {
+  width: 100px;
+  height: 150px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  @media (min-width: 768px) {
+    width: 120px;
+    height: 180px;
+  }
+
+  ::ng-deep img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.lock-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 24px;
+  height: 24px;
+  background: var(--p-green-500);
+  border: 2px solid var(--card-background);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  i {
+    font-size: 0.625rem;
+    color: white;
+  }
+
+  &.locked {
+    background: var(--p-orange-500);
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 
-.input {
-  width: 50%;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  margin: 0 1rem;
+.cover-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary-color);
 }
 
-.autocomplete-container {
-  width: 100%;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
 
-.autocomplete-full-width {
-  width: 100%;
-}
-
-.thumbnail {
-  width: 15.625rem;
-  height: 21.875rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-left: 2.5rem;
-  margin-right: 2.5rem;
-}
-
-.arrow-button {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-.yellow-outlined-button {
-  --p-button-outlined-primary-border-color: yellow;
-  --p-button-outlined-primary-color: yellow;
-}
-
-.green-outlined-button {
-  --p-button-outlined-primary-border-color: limegreen;
-  --p-button-outlined-primary-color: limegreen;
-}
-
-.red-outlined-button {
-  --p-button-outlined-primary-border-color: #E32636;
-  --p-button-outlined-primary-color: #E32636;
-}
-
-.form-footer {
-  margin-top: auto;
-}
-
-.footer-buttons {
+// Field Rows
+.field-row {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    padding: 0.75rem 1rem;
+  }
+}
+
+// Cover field row specific styles
+.cover-field-row {
+  padding: 1.25rem 1rem;
+
+  .field-label {
+    text-align: center;
+    margin-bottom: 0.5rem;
+
+    @media (min-width: 768px) {
+      text-align: left;
+      margin-bottom: 0;
+    }
+  }
+
+  .field-content {
+    align-items: center;
+    gap: 1rem;
+
+    @media (min-width: 768px) {
+      gap: 1.5rem;
+    }
+  }
+
+  // On mobile, center covers and show labels
+  .field-side {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+    }
+  }
+
+  // Position covers towards the arrow on desktop only
+  @media (min-width: 768px) {
+    padding: 1.5rem 1rem;
+
+    .field-side.current {
+      justify-content: flex-end;
+    }
+
+    .field-side.fetched {
+      justify-content: flex-start;
+    }
+  }
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-color);
+  min-width: 100px;
+
+  @media (min-width: 768px) {
+    min-width: 120px;
+    flex-shrink: 0;
+  }
+}
+
+.field-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
+
+.field-side {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+
+  &.fetched {
+    .field-input,
+    .field-textarea,
+    .chips-input {
+      opacity: 0.7;
+    }
+  }
+}
+
+.lock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--p-green-500);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  i {
+    font-size: 0.75rem;
+    color: white;
+  }
+
+  &.locked {
+    background: var(--p-orange-500);
+  }
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.field-textarea {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  resize: vertical;
+}
+
+.chips-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+
+  &.readonly {
+    pointer-events: none;
+  }
+}
+
+.textarea-row {
+  .field-content {
+    @media (min-width: 768px) {
+      align-items: flex-start;
+    }
+  }
+
+  .field-side {
+    @media (min-width: 768px) {
+      align-items: flex-start;
+    }
+  }
+
+  .lock-btn {
+    @media (min-width: 768px) {
+      margin-top: 0.25rem;
+    }
+  }
+
+  .transfer-btn {
+    @media (min-width: 768px) {
+      margin-top: 0.25rem;
+    }
+  }
+}
+
+// Transfer Button
+.transfer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  i {
+    font-size: 0.875rem;
+    color: var(--text-secondary-color);
+  }
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+
+    i {
+      color: var(--primary-contrast-color);
+    }
+  }
+
+  &.saved {
+    border-color: var(--p-green-500);
+    background: var(--p-green-500);
+
+    i {
+      color: white;
+    }
+  }
+
+  &.copied {
+    border-color: var(--p-yellow-500);
+    background: rgba(234, 179, 8, 0.15);
+
+    i {
+      color: var(--p-yellow-500);
+    }
+  }
+
+  &.reset {
+    border-color: var(--p-red-500);
+    background: rgba(239, 68, 68, 0.15);
+
+    i {
+      color: var(--p-red-500);
+    }
+  }
+}
+
+// Footer
+.dialog-footer {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 1rem 0.5rem 0;
-}
-
-.footer-buttons-right {
-  display: flex;
   gap: 1rem;
-  justify-content: flex-end;
+  padding: 1rem 1.25rem;
+  background: var(--overlay-background);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
-::ng-deep .p-inputchips {
+.footer-left {
+  display: flex;
+  align-items: center;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 0.25rem;
+}
+
+// AutoComplete overrides
+::ng-deep .p-autocomplete {
   width: 100% !important;
+
+  .p-autocomplete-multiple-container {
+    width: 100%;
+  }
 }
 
+// Animation
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+// Mobile optimizations
+@media (max-width: 767px) {
+  .dialog-body {
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .dialog-footer {
+    flex-direction: column;
+    padding: 0.875rem 1rem;
+    gap: 0.75rem;
+
+    .footer-left,
+    .footer-right {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
   }
 }

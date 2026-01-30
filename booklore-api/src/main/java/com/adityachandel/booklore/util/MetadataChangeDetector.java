@@ -119,6 +119,7 @@ public class MetadataChangeDetector {
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
         compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
+        compareValue(diffs, "lubimyczytacId", clear.isLubimyczytacId(), newMeta.getLubimyczytacId(), existingMeta.getLubimyczytacId(), () -> !isTrue(existingMeta.getLubimyczytacIdLocked()));
         compareValue(diffs, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()));
         compareValue(diffs, "language", clear.isLanguage(), newMeta.getLanguage(), existingMeta.getLanguage(), () -> !isTrue(existingMeta.getLanguageLocked()));
         compareValue(diffs, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()));

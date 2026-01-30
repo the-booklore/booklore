@@ -3,6 +3,22 @@ import {API_CONFIG} from '../../../core/config/api-config';
 import {HttpClient} from '@angular/common/http';
 import {AuthService} from '../../../shared/service/auth.service';
 
+export interface PdfInfoPage {
+  pageNumber: number;
+  displayName: string;
+}
+
+export interface PdfOutlineItem {
+  title: string;
+  pageNumber: number;
+  children: PdfOutlineItem[] | null;
+}
+
+export interface PdfInfo {
+  pageCount: number;
+  outline: PdfOutlineItem[] | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -22,11 +38,27 @@ export class NewPdfReaderService {
     return token ? `${url}${url.includes('?') ? '&' : '?'}token=${token}` : url;
   }
 
-  getAvailablePages(bookId: number) {
-    return this.http.get<number[]>(this.appendToken(`${this.pagesUrl}/${bookId}/pages`));
+  getAvailablePages(bookId: number, bookType?: string) {
+    let url = `${this.pagesUrl}/${bookId}/pages`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.http.get<number[]>(this.appendToken(url));
   }
 
-  getPageImageUrl(bookId: number, page: number): string {
-    return this.appendToken(`${this.imageUrl}/${bookId}/pdf/pages/${page}`);
+  getPageInfo(bookId: number, bookType?: string) {
+    let url = `${this.pagesUrl}/${bookId}/info`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.http.get<PdfInfo>(this.appendToken(url));
+  }
+
+  getPageImageUrl(bookId: number, page: number, bookType?: string): string {
+    let url = `${this.imageUrl}/${bookId}/pdf/pages/${page}`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.appendToken(url);
   }
 }

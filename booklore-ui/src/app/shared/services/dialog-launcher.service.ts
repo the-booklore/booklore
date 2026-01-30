@@ -19,6 +19,25 @@ import {MetadataFetchOptionsComponent} from '../../features/metadata/component/m
 import {ShelfEditDialogComponent} from '../../features/book/components/shelf-edit-dialog/shelf-edit-dialog.component';
 import {IconPickerComponent} from '../components/icon-picker/icon-picker-component';
 
+/**
+ * Dialog size classes - use these to control dialog dimensions
+ */
+export const DialogSize = {
+  XS: 'dialog-xs',   // ~400px - confirmations, simple alerts
+  SM: 'dialog-sm',   // ~550px - simple forms, pickers
+  MD: 'dialog-md',   // ~700px - standard dialogs
+  LG: 'dialog-lg',   // ~900px - complex forms, lists
+  XL: 'dialog-xl',   // ~1200px - data-heavy views
+  FULL: 'dialog-full', // viewport - fullscreen editors
+} as const;
+
+/**
+ * Dialog style modifiers - composable with size classes
+ */
+export const DialogStyle = {
+  MINIMAL: 'dialog-minimal', // removes padding for custom headers
+} as const;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -41,41 +60,41 @@ export class DialogLauncherService {
     return this.dialogService.open(component as Type<any>, {
       ...this.defaultDialogOptions,
       ...options,
-
     });
   }
 
   openDashboardSettingsDialog(): DynamicDialogRef | null {
     return this.openDialog(DashboardSettingsComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.XL} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openGithubSupportDialog(): DynamicDialogRef | null {
     return this.openDialog(GithubSupportDialog, {
-      header: 'Support Booklore',
+      showHeader: false,
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openLibraryCreateDialog(): DynamicDialogRef | null {
     return this.openDialog(LibraryCreatorComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openDirectoryPickerDialog(): DynamicDialogRef | null {
     return this.openDialog(DirectoryPickerComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openLibraryEditDialog(libraryId: number): DynamicDialogRef | null {
     return this.openDialog(LibraryCreatorComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       data: {
         mode: 'edit',
         libraryId: libraryId
@@ -85,7 +104,8 @@ export class DialogLauncherService {
 
   openLibraryMetadataFetchDialog(libraryId: number): DynamicDialogRef | null {
     return this.openDialog(MetadataFetchOptionsComponent, {
-      header: 'Metadata Refresh Options',
+      showHeader: false,
+      styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
       data: {
         libraryId: libraryId,
         metadataRefreshType: MetadataRefreshType.LIBRARY,
@@ -96,7 +116,7 @@ export class DialogLauncherService {
   openShelfEditDialog(shelfId: number): DynamicDialogRef | null {
     return this.openDialog(ShelfEditDialogComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
       data: {
         shelfId: shelfId
       },
@@ -106,35 +126,35 @@ export class DialogLauncherService {
   openFileUploadDialog(): DynamicDialogRef | null {
     return this.openDialog(BookUploaderComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openCreateUserDialog(): DynamicDialogRef | null {
     return this.openDialog(CreateUserDialogComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openUserProfileDialog(): DynamicDialogRef | null {
     return this.openDialog(UserProfileDialogComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openMagicShelfCreateDialog(): DynamicDialogRef | null {
     return this.openDialog(MagicShelfComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.XL} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openMagicShelfEditDialog(shelfId: number): DynamicDialogRef | null {
     return this.openDialog(MagicShelfComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.XL} ${DialogStyle.MINIMAL}`,
       data: {
         id: shelfId,
         editMode: true,
@@ -144,28 +164,29 @@ export class DialogLauncherService {
 
   openVersionChangelogDialog(): DynamicDialogRef | null {
     return this.openDialog(VersionChangelogDialogComponent, {
-      header: "What's New",
-      styleClass: 'dialog-medium',
+      showHeader: false,
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openEmailRecipientDialog(): DynamicDialogRef | null {
     return this.openDialog(CreateEmailRecipientDialogComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openEmailProviderDialog(): DynamicDialogRef | null {
     return this.openDialog(CreateEmailProviderDialogComponent, {
       showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
     });
   }
 
   openBookdropFinalizeResultDialog(result: BookdropFinalizeResult): DynamicDialogRef | null {
     return this.openDialog(BookdropFinalizeResultDialogComponent, {
-      header: 'Import Summary',
+      showHeader: false,
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       data: {
         result: result,
       },
@@ -174,19 +195,18 @@ export class DialogLauncherService {
 
   openMetadataReviewDialog(taskId: string): DynamicDialogRef | null {
     return this.openDialog(MetadataReviewDialogComponent, {
-      header: 'Review Metadata Proposal',
+      showHeader: false,
+      styleClass: `${DialogSize.FULL} ${DialogStyle.MINIMAL}`,
       data: {
         taskId,
       },
-      styleClass: 'dialog-maximal',
     });
   }
 
   openIconPickerDialog(): DynamicDialogRef | null {
     return this.openDialog(IconPickerComponent, {
-      header: 'Choose an Icon',
-      styleClass: 'dialog-medium',
+      showHeader: false,
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
     });
   }
-
 }

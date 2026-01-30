@@ -2,4 +2,39 @@
   background: var(--card-background);
   border: 1px solid var(--primary-color);
   border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.widget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widget-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.widget-title {
+  font-weight: 700;
+  color: #d4d4d8;
+}
+
+.widget-count {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.widget-date {
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  margin-top: 0.25rem;
+}
+
+.widget-actions {
+  display: flex;
+  align-items: center;
 }

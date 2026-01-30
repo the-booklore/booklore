@@ -56,7 +56,7 @@ class ExtractFromComicInfoXmlTest {
 
         assertNotNull(metadata);
         assertEquals("Batman: The Dark Knight Returns", metadata.getTitle());
-        assertEquals("Batman: The Dark Knight Returns (1)", metadata.getSeriesName());
+        assertEquals("Batman: The Dark Knight Returns", metadata.getSeriesName());
         assertEquals(1.0f, metadata.getSeriesNumber());
         assertEquals(4, metadata.getSeriesTotal());
         assertEquals(LocalDate.of(1986, 3, 15), metadata.getPublishedDate());
@@ -191,7 +191,7 @@ class ExtractFromComicInfoXmlTest {
         BookMetadata metadata = extractor.extractFromComicInfoXml(xmlFile);
 
         assertNotNull(metadata);
-        assertEquals("Test Series (2)", metadata.getSeriesName());
+        assertEquals("Test Series", metadata.getSeriesName());
         assertEquals(10.0f, metadata.getSeriesNumber());
     }
 
@@ -721,7 +721,7 @@ class ExtractFromComicInfoXmlTest {
 
         assertNotNull(metadata);
         assertEquals("Batman: The Dark Knight Returns", metadata.getTitle());
-        assertEquals("Batman: The Dark Knight Returns (1)", metadata.getSeriesName());
+        assertEquals("Batman: The Dark Knight Returns", metadata.getSeriesName());
         assertEquals(1.0f, metadata.getSeriesNumber());
         assertEquals(4, metadata.getSeriesTotal());
         assertEquals(LocalDate.of(1986, 3, 15), metadata.getPublishedDate());

@@ -1,15 +1,15 @@
 @if (fetchedMetadata && fetchedMetadata.title) {
-  <form [formGroup]="metadataForm" class="metapicker flex flex-col w-full">
-    <div class="flex-grow overflow-auto">
-      <div class="metaheader relative flex items-center">
-        <label class="md:w-[8rem] text-sm"></label>
-        <div class="flex w-full items-center">
-          <p class="w-1/2">File Data</p>
+  <form [formGroup]="metadataForm" class="metapicker">
+    <div class="form-scroll">
+      <div class="metaheader">
+        <label class="field-label"></label>
+        <div class="header-fields-row">
+          <p class="header-column">File Data</p>
           <div class="midbuttons">
             <p-button
               size="small"
               icon="pi pi-angle-left"
-              class="mx-2"
+              class="btn-margin"
               [outlined]="true"
               pTooltip="Copy missing fields from fetched metadata"
               tooltipPosition="bottom"
@@ -18,7 +18,7 @@
             <p-button
               size="small"
               icon="pi pi-angle-double-left"
-              class="mx-2"
+              class="btn-margin"
               [outlined]="true"
               pTooltip="Overwrite all fields with fetched metadata"
               tooltipPosition="bottom"
@@ -28,21 +28,21 @@
               size="small"
               severity="warn"
               icon="pi pi-refresh"
-              class="mx-2"
+              class="btn-margin"
               [outlined]="true"
               pTooltip="Reset all fields to original values"
               tooltipPosition="bottom"
               (onClick)="confirmReset()"
             ></p-button>
           </div>
-          <p class="w-1/2">Fetched Data</p>
+          <p class="header-column">Fetched Data</p>
         </div>
       </div>
       <div class="metacontent">
         <div class="meta-row field-thumbnail">
-          <label class="md:w-[8rem] text-sm"></label>
-          <div class="flex w-full items-center justify-center">
-            <div class="flex w-1/2">
+          <label class="field-label"></label>
+          <div class="thumbnail-row">
+            <div class="thumbnail-column">
               @if (metadataForm.get('thumbnailUrl')?.value) {
                 <p-image
                   class="thumbnail"
@@ -57,7 +57,7 @@
                 ></p-image>
               }
               @else {
-                <div class="thumbnail text-sm">No cover image</div>
+                <div class="thumbnail no-cover-text">No cover image</div>
               }
               <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
             </div>
@@ -70,7 +70,7 @@
               [disabled]="!isFetchedDifferent('thumbnailUrl') && !isValueCopied('thumbnailUrl')"
               (click)="isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
             />
-            <div class="flex w-1/2">
+            <div class="thumbnail-column">
               @if (fetchedMetadata.thumbnailUrl) {
                 <p-image
                 class="thumbnail"
@@ -82,7 +82,7 @@
                 ></p-image>
               }
               @else {
-                <div class="thumbnail text-sm">Cover image not found</div>
+                <div class="thumbnail no-cover-text">Cover image not found</div>
               }
               <input type="hidden" [value]="fetchedMetadata.thumbnailUrl" readonly/>
             </div>
@@ -90,7 +90,7 @@
         </div>
         @for (field of metadataFieldsTop; track field) {
           <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
               <input
                 pSize="small"
@@ -116,7 +116,7 @@
                 (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
               />
               @if (fetchedMetadata[field.fetchedKey]) {
-                <input 
+                <input
                   pSize="small"
                   pInputText
                   [value]="fetchedMetadata[field.fetchedKey] ?? null"
@@ -132,7 +132,7 @@
         }
         @for (field of metadataPublishDate; track field) {
           <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
               <p-datepicker
                 size="small"
@@ -163,7 +163,7 @@
                 (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
               />
               @if (fetchedMetadata[field.fetchedKey]) {
-                <input 
+                <input
                   pSize="small"
                   pInputText
                   [value]="fetchedMetadata[field.fetchedKey] ?? null"
@@ -179,7 +179,7 @@
         }
         @for (field of metadataChips; track field) {
           <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
               <p-autoComplete
                 size="small"
@@ -188,7 +188,7 @@
                 [typeahead]="false"
                 [dropdown]="false"
                 [forceSelection]="false"
-                class="dest w-full"
+                class="dest full-width"
                 [ngClass]="{
                   'changed': isValueChanged(field.controlName),
                 }"
@@ -216,7 +216,7 @@
                   [typeahead]="false"
                   [dropdown]="false"
                   [forceSelection]="false"
-                  class="src w-full"
+                  class="src full-width"
                   [ngClass]="{
                     'diff': isFetchedDifferent(field.controlName),
                   }"
@@ -227,7 +227,7 @@
         }
         @for (field of metadataDescription; track field) {
           <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
               <textarea
                 pTextarea
@@ -270,7 +270,7 @@
         }
         @for (field of metadataFieldsBottom; track field) {
           <div class="meta-row field-{{field.controlName}}">
-            <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
               <input
                 pInputText
@@ -313,10 +313,10 @@
     </div>
   </form>
 } @else {
-  <form [formGroup]="metadataForm" class="metaeditor flex w-full">
-    <div class="flex-grow overflow-auto">
-      <div class="metaheader relative flex items-center">
-        <p class="text-sm missingmd">
+  <form [formGroup]="metadataForm" class="metaeditor">
+    <div class="form-scroll">
+      <div class="metaheader">
+        <p class="missingmd">
           Unable to fetch metadata for this file
         </p>
         <p-button
@@ -329,22 +329,22 @@
           (onClick)="confirmReset()"
         ></p-button>
       </div>
-      <div class="metabody flex flex-col p-4 md:flex-row">
-        <div class="flex items-start justify-center md:w-[20%] md:h-full">
-          <div class="w-full md:h-full field-thumbnail">
-            <img 
+      <div class="metabody">
+        <div class="editor-thumbnail-wrapper">
+          <div class="editor-thumbnail-inner field-thumbnail">
+            <img
               [src]="metadataForm.get('thumbnailUrl')?.value"
               alt="Book Thumbnail"
-              class="thumbnail w-full md:h-full object-contain"
+              class="thumbnail editor-thumbnail-img"
             />
             <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
           </div>
         </div>
-        <div class="metacontent md:w-[80%]">
+        <div class="metacontent editor-metacontent">
           @for (field of metadataFieldsTop; track field) {
             <div class="meta-row field-{{field.controlName}}">
-              <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
-              <div class="flex w-full">
+              <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
+              <div class="field-input-row">
                 <input
                   pSize="small"
                   fluid
@@ -370,8 +370,8 @@
 
           @for (field of metadataPublishDate; track field) {
             <div class="meta-row field-{{field.controlName}}">
-              <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
-              <div class="flex w-full">
+              <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
+              <div class="field-input-row">
                 <p-datepicker
                   size="small"
                   fluid
@@ -383,7 +383,7 @@
                   [showIcon]="true"
                   [iconDisplay]="'input'"
                   appendTo="body"
-                  class="w-full"
+                  class="full-width"
                   [ngClass]="{
                     'changed': isValueChanged(field.controlName),
                   }">
@@ -403,8 +403,8 @@
 
           @for (field of metadataChips; track field) {
             <div class="meta-row field-{{field.controlName}}">
-              <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
-              <div class="flex w-full">
+              <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
+              <div class="field-input-row">
                 <p-autoComplete
                   size="small"
                   formControlName="{{field.controlName}}"
@@ -412,7 +412,7 @@
                   [typeahead]="false"
                   [dropdown]="false"
                   [forceSelection]="false"
-                  class="w-full"
+                  class="full-width"
                   [ngClass]="{
                     'changed': isValueChanged(field.controlName),
                   }"
@@ -433,8 +433,8 @@
 
           @for (field of metadataDescription; track field) {
             <div class="meta-row field-{{field.controlName}}">
-              <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
-              <div class="flex w-full">
+              <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
+              <div class="field-input-row">
                 <textarea
                   pTextarea
                   fluid
@@ -461,8 +461,8 @@
 
           @for (field of metadataFieldsBottom; track field) {
             <div class="meta-row field-{{field.controlName}}">
-              <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
-              <div class="flex w-full">
+              <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
+              <div class="field-input-row">
                 <input
                   pSize="small"
                   fluid
@@ -486,7 +486,7 @@
             </div>
           }
         </div>
-      </div>  
+      </div>
     </div>
   </form>
 }

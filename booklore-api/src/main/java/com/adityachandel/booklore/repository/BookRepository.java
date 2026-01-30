@@ -35,6 +35,9 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.bookFiles bf WHERE b.libraryPath.id = :libraryPathId AND bf.fileSubPath LIKE CONCAT(:fileSubPathPrefix, '%') AND bf.isBookFormat = true AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllByLibraryPathIdAndFileSubPathStartingWith(@Param("libraryPathId") Long libraryPathId, @Param("fileSubPathPrefix") String fileSubPathPrefix);
 
+    @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.bookFiles bf WHERE b.libraryPath.id = :libraryPathId AND bf.fileSubPath = :fileSubPath AND bf.isBookFormat = true AND (b.deleted IS NULL OR b.deleted = false)")
+    List<BookEntity> findAllByLibraryPathIdAndFileSubPath(@Param("libraryPathId") Long libraryPathId, @Param("fileSubPath") String fileSubPath);
+
     @Query("SELECT b FROM BookEntity b JOIN b.bookFiles bf WHERE b.libraryPath.id = :libraryPathId AND bf.fileSubPath = :fileSubPath AND bf.fileName = :fileName AND bf.isBookFormat = true AND (b.deleted IS NULL OR b.deleted = false)")
     Optional<BookEntity> findByLibraryPath_IdAndFileSubPathAndFileName(@Param("libraryPathId") Long libraryPathId,
                                                                        @Param("fileSubPath") String fileSubPath,
@@ -143,6 +146,16 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     long countByLibraryId(@Param("libraryId") Long libraryId);
 
+    @Query("""
+            SELECT b FROM BookEntity b
+            LEFT JOIN b.bookFiles bf
+            WHERE b.library.id = :libraryId
+            AND (b.deleted IS NULL OR b.deleted = false)
+            GROUP BY b
+            HAVING COUNT(bf) = 0
+            """)
+    List<BookEntity> findFilelessBooksByLibraryId(@Param("libraryId") Long libraryId);
+
     @Query("SELECT b.id as id, m.coverUpdatedOn as coverUpdatedOn FROM BookEntity b LEFT JOIN b.metadata m WHERE b.id IN :bookIds")
     List<BookCoverUpdateProjection> findCoverUpdateInfoByIds(@Param("bookIds") Collection<Long> bookIds);
 
@@ -157,4 +170,154 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             @Param("bookId") Long bookId,
             @Param("libraryId") Long libraryId,
             @Param("libraryPath") LibraryPathEntity libraryPath);
+
+    /**
+     * Get distinct series names for a library when groupUnknown=true.
+     * Books without series name are grouped as "Unknown Series".
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    ELSE :unknownSeriesName
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE b.library.id = :libraryId 
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesGroupedByLibraryId(
+            @Param("libraryId") Long libraryId,
+            @Param("unknownSeriesName") String unknownSeriesName);
+
+    /**
+     * Get distinct series names across all libraries when groupUnknown=true.
+     * Books without series name are grouped as "Unknown Series".
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    ELSE :unknownSeriesName
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesGrouped(@Param("unknownSeriesName") String unknownSeriesName);
+
+    /**
+     * Get distinct series names for a library when groupUnknown=false.
+     * Each book without series gets its own entry (title or filename).
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    WHEN m.title IS NOT NULL THEN m.title
+                    ELSE (
+                        SELECT bf2.fileName FROM BookFileEntity bf2
+                        WHERE bf2.book = b
+                          AND bf2.isBookFormat = true
+                          AND bf2.id = (
+                              SELECT MIN(bf3.id) FROM BookFileEntity bf3
+                              WHERE bf3.book = b AND bf3.isBookFormat = true
+                          )
+                    )
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE b.library.id = :libraryId 
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesUngroupedByLibraryId(@Param("libraryId") Long libraryId);
+
+    /**
+     * Get distinct series names across all libraries when groupUnknown=false.
+     * Each book without series gets its own entry (title or filename).
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    WHEN m.title IS NOT NULL THEN m.title
+                    ELSE (
+                        SELECT bf2.fileName FROM BookFileEntity bf2
+                        WHERE bf2.book = b
+                          AND bf2.isBookFormat = true
+                          AND bf2.id = (
+                              SELECT MIN(bf3.id) FROM BookFileEntity bf3
+                              WHERE bf3.book = b AND bf3.isBookFormat = true
+                          )
+                    )
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesUngrouped();
+
+    /**
+     * Find books by series name for a library when groupUnknown=true.
+     * Uses the first bookFile.fileName as fallback when metadata.seriesName is null.
+     */
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query("""
+            SELECT DISTINCT b FROM BookEntity b
+            LEFT JOIN b.metadata m
+            LEFT JOIN b.bookFiles bf
+            WHERE b.library.id = :libraryId
+            AND (
+                (m.seriesName = :seriesName)
+                OR (
+                    m.seriesName IS NULL
+                    AND bf.isBookFormat = true
+                    AND bf.id = (
+                        SELECT MIN(bf2.id) FROM BookFileEntity bf2
+                        WHERE bf2.book = b AND bf2.isBookFormat = true
+                    )
+                    AND bf.fileName = :seriesName
+                )
+            )
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY COALESCE(m.seriesNumber, 0)
+            """)
+    List<BookEntity> findBooksBySeriesNameGroupedByLibraryId(
+            @Param("seriesName") String seriesName,
+            @Param("libraryId") Long libraryId,
+            @Param("unknownSeriesName") String unknownSeriesName);
+
+    /**
+     * Find books by series name for a library when groupUnknown=false.
+     * Matches by series name, or by title/filename for books without series.
+     */
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query("""
+            SELECT b FROM BookEntity b
+            LEFT JOIN b.metadata m
+            LEFT JOIN b.bookFiles bf
+            WHERE b.library.id = :libraryId
+            AND (
+                (m.seriesName = :seriesName)
+                OR (m.seriesName IS NULL AND m.title = :seriesName)
+                OR (
+                    m.seriesName IS NULL AND m.title IS NULL
+                    AND bf.isBookFormat = true
+                    AND bf.id = (
+                        SELECT MIN(bf2.id) FROM BookFileEntity bf2
+                        WHERE bf2.book = b AND bf2.isBookFormat = true
+                    )
+                    AND bf.fileName = :seriesName
+                )
+            )
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY COALESCE(m.seriesNumber, 0)
+            """)
+    List<BookEntity> findBooksBySeriesNameUngroupedByLibraryId(
+            @Param("seriesName") String seriesName,
+            @Param("libraryId") Long libraryId);
 }

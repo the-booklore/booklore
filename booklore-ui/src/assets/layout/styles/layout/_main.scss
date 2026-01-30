@@ -18,7 +18,7 @@ body {
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --glow-image: url(https://github.com/booklore-app/booklore-docs/blob/master/static/img/cdn/bg.png?raw=true), radial-gradient(50% 50% at center -25px, var(--p-primary-color) 0%, #000000 100%);
+  --glow-image: url(../../../images/topbar.png), radial-gradient(50% 50% at center -25px, var(--p-primary-color) 0%, #000000 100%);
   --glow-blend: hard-light, color-dodge;
 }
 

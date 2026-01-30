@@ -1,5 +1,6 @@
-import {Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {Button} from 'primeng/button';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-github-support-dialog',
@@ -10,4 +11,9 @@ import {Button} from 'primeng/button';
   styleUrls: ['./github-support-dialog.scss']
 })
 export class GithubSupportDialog {
+  private dialogRef = inject(DynamicDialogRef);
+
+  close(): void {
+    this.dialogRef.close();
+  }
 }

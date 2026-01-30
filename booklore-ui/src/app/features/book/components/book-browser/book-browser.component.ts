@@ -1,9 +1,9 @@
-import {AfterViewInit, Component, inject, OnInit, ViewChild} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {AfterViewInit, Component, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
 import {BookService} from '../../service/book.service';
-import {debounceTime, filter, map, switchMap} from 'rxjs/operators';
+import {debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
@@ -16,7 +16,7 @@ import {BookTableComponent} from './book-table/book-table.component';
 import {animate, style, transition, trigger} from '@angular/animations';
 import {Button} from 'primeng/button';
 import {AsyncPipe, NgClass, NgStyle} from '@angular/common';
-import {VirtualScrollerModule} from '@iharbeck/ngx-virtual-scroller';
+import {VirtualScrollerComponent, VirtualScrollerModule} from '@iharbeck/ngx-virtual-scroller';
 import {BookCardComponent} from './book-card/book-card.component';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {Menu} from 'primeng/menu';
@@ -45,12 +45,15 @@ import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refr
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
+import {LocalStorageService} from '../../../../shared/service/local-storage.service';
 import {BookNavigationService} from '../../service/book-navigation.service';
 import {BookCardOverlayPreferenceService} from './book-card-overlay-preference.service';
 import {BookSelectionService, CheckboxClickEvent} from './book-selection.service';
 import {BookBrowserQueryParamsService, VIEW_MODES} from './book-browser-query-params.service';
 import {BookBrowserEntityService} from './book-browser-entity.service';
 import {BookFilterOrchestrationService} from './book-filter-orchestration.service';
+import {BookBrowserScrollService} from './book-browser-scroll.service';
+import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -84,8 +87,8 @@ export enum EntityType {
     ])
   ]
 })
-export class BookBrowserComponent implements OnInit, AfterViewInit {
-  // Public injected services (used in template)
+export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
+
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
   protected columnPreferenceService = inject(TableColumnPreferenceService);
@@ -95,9 +98,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   protected taskHelperService = inject(TaskHelperService);
   protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
   protected bookSelectionService = inject(BookSelectionService);
+  protected appSettingsService = inject(AppSettingsService);
 
-  // Private injected services
   private activatedRoute = inject(ActivatedRoute);
+  private router = inject(Router);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
   private dialogHelperService = inject(BookDialogHelperService);
@@ -109,8 +113,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private queryParamsService = inject(BookBrowserQueryParamsService);
   private entityService = inject(BookBrowserEntityService);
   private filterOrchestrationService = inject(BookFilterOrchestrationService);
+  private localStorageService = inject(LocalStorageService);
+  private scrollService = inject(BookBrowserScrollService);
 
-  // Observables
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
   entityType$: Observable<EntityType> | undefined;
@@ -119,7 +124,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
   protected resetFilterSubject = new Subject<void>();
 
-  // State
   parsedFilters: Record<string, string[]> = {};
   entity: Library | Shelf | MagicShelf | null = null;
   entityType: EntityType | undefined;
@@ -136,8 +140,18 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   currentViewMode: string | undefined;
   lastAppliedSort: SortOption | null = null;
   showFilter = false;
+  screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  mobileColumnCount = 3;
+
+  private readonly MOBILE_BREAKPOINT = 768;
+  private readonly CARD_ASPECT_RATIO = 7 / 5;
+  private readonly MOBILE_GAP = 8;
+  private readonly MOBILE_PADDING = 48;
+  private readonly MOBILE_TITLE_BAR_HEIGHT = 32;
+  private readonly MOBILE_COLUMNS_STORAGE_KEY = 'mobileColumnsPreference';
 
   private settingFiltersFromUrl = false;
+  private destroy$ = new Subject<void>();
   protected metadataMenuItems: MenuItem[] | undefined;
   protected bulkReadActionsMenuItems: MenuItem[] | undefined;
 
@@ -151,16 +165,43 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   bookTableComponent!: BookTableComponent;
   @ViewChild(BookFilterComponent, {static: false})
   bookFilterComponent!: BookFilterComponent;
+  @ViewChild('scroll')
+  virtualScroller: VirtualScrollerComponent | undefined;
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.screenWidth = window.innerWidth;
+  }
+
+  get isMobile(): boolean {
+    return this.screenWidth < this.MOBILE_BREAKPOINT;
+  }
+
+  get mobileCardSize(): { width: number; height: number } {
+    const columns = this.mobileColumnCount;
+    const totalGaps = (columns - 1) * this.MOBILE_GAP;
+    const availableWidth = this.screenWidth - totalGaps - this.MOBILE_PADDING;
+    const cardWidth = Math.floor(availableWidth / columns);
+    const coverHeight = Math.floor(cardWidth * this.CARD_ASPECT_RATIO);
+    const cardHeight = coverHeight + this.MOBILE_TITLE_BAR_HEIGHT;
+    return {width: cardWidth, height: cardHeight};
+  }
 
   get selectedBooks(): Set<number> {
     return this.bookSelectionService.selectedBooks;
   }
 
   get currentCardSize() {
+    if (this.isMobile) {
+      return this.mobileCardSize;
+    }
     return this.coverScalePreferenceService.currentCardSize;
   }
 
   get gridColumnMinWidth(): string {
+    if (this.isMobile) {
+      return `${this.mobileCardSize.width}px`;
+    }
     return this.coverScalePreferenceService.gridColumnMinWidth;
   }
 
@@ -217,12 +258,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.pageTitle.setPageTitle('');
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
+    this.loadMobileColumnsPreference();
 
     this.initializeEntityRouting();
     this.setupRouteChangeHandlers();
     this.setupUserStateSubscription();
     this.setupQueryParamSubscription();
     this.setupSearchTermSubscription();
+    this.setupScrollPositionTracking();
   }
 
   ngAfterViewInit(): void {
@@ -230,6 +273,33 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.bookFilterComponent.setFilters?.(this.parsedFilters);
       this.bookFilterComponent.onFiltersChanged?.();
       this.bookFilterComponent.selectedFilterMode = this.selectedFilterMode.getValue();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private getScrollPositionKey(): string {
+    const path = this.activatedRoute.snapshot.routeConfig?.path ?? '';
+    return this.scrollService.createKey(path, this.activatedRoute.snapshot.params);
+  }
+
+  private setupScrollPositionTracking(): void {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationStart),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.saveScrollPosition();
+    });
+  }
+
+  private saveScrollPosition(): void {
+    if (this.virtualScroller?.viewPortInfo) {
+      const key = this.getScrollPositionKey();
+      const position = this.virtualScroller.viewPortInfo.scrollStartPosition ?? 0;
+      this.scrollService.savePosition(key, position);
     }
   }
 
@@ -289,6 +359,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           () => this.bulkEditMetadata(),
           () => this.multiBookEditMetadata(),
           () => this.regenerateCoversForSelected(),
+          () => this.generateCustomCoversForSelected(),
           userState.user
         );
       });
@@ -311,7 +382,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         user.user?.userSettings?.filterMode ?? 'and'
       );
 
-      // Apply filter mode
+
       if (parseResult.filterMode !== this.selectedFilterMode.getValue()) {
         this.selectedFilterMode.next(parseResult.filterMode);
         if (this.bookFilterComponent) {
@@ -323,7 +394,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         this.showFilter = value;
       });
 
-      // Apply filters
+
       this.currentFilterLabel = 'All Books';
       const filterParams = queryParamMap.get('filter');
 
@@ -349,13 +420,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
       this.parsedFilters = parseResult.filters;
 
-      // Apply preferences
+
       this.entityViewPreferences = user.user?.userSettings?.entityViewPreferences;
       this.coverScalePreferenceService.initScaleValue(this.coverScalePreferenceService.scaleFactor);
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
 
-      // Apply sort
+
       this.bookSorter.selectedSort = parseResult.sortOption;
       this.currentViewMode = parseResult.viewMode;
       this.bookSorter.updateSortOptions();
@@ -366,7 +437,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         this.applySortOption(this.bookSorter.selectedSort);
       }
 
-      // Sync query params
+
       this.queryParamsService.syncQueryParams(
         this.currentViewMode!,
         this.bookSorter.selectedSort,
@@ -453,9 +524,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   confirmDeleteBooks(): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${this.selectedBooks.size} book(s)?`,
+      message: `Are you sure you want to delete ${this.selectedBooks.size} book(s)?\n\nThis will permanently remove the book files from your filesystem.\n\nThis action cannot be undone.`,
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
+      acceptIcon: 'pi pi-trash',
+      rejectIcon: 'pi pi-times',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-outlined',
       accept: () => {
         const count = this.selectedBooks.size;
         const loader = this.loadingService.show(`Deleting ${count} book(s)...`);
@@ -619,8 +696,94 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     });
   }
 
+  generateCustomCoversForSelected(): void {
+    if (!this.selectedBooks || this.selectedBooks.size === 0) return;
+    const count = this.selectedBooks.size;
+    this.confirmationService.confirm({
+      message: `Are you sure you want to generate custom covers for ${count} book(s)?`,
+      header: 'Confirm Custom Cover Generation',
+      icon: 'pi pi-palette',
+      acceptLabel: 'Yes',
+      rejectLabel: 'No',
+      accept: () => {
+        this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Custom Cover Generation Started',
+              detail: `Generating custom covers for ${count} book(s).`,
+              life: 3000
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Failed',
+              detail: 'Could not start custom cover generation.',
+              life: 3000
+            });
+          }
+        });
+      }
+    });
+  }
+
   moveFiles(): void {
     this.dialogHelperService.openFileMoverDialog(this.selectedBooks);
+  }
+
+  attachFilesToBook(): void {
+    // Get selected books that are single-file books (no alternative formats)
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedBookIds = Array.from(this.selectedBooks);
+    const sourceBooks = (currentState.books || []).filter(book =>
+      selectedBookIds.includes(book.id) && !book.alternativeFormats?.length
+    );
+
+    if (sourceBooks.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Eligible Books',
+        detail: 'Selected books must be single-file books (no alternative formats).'
+      });
+      return;
+    }
+
+    // Check if all books are from the same library
+    const libraryIds = new Set(sourceBooks.map(b => b.libraryId));
+    if (libraryIds.size > 1) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Multiple Libraries',
+        detail: 'All selected books must be from the same library.'
+      });
+      return;
+    }
+
+    this.dynamicDialogRef = this.dialogHelperService.openBulkBookFileAttacherDialog(sourceBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(result => {
+        if (result?.success) {
+          this.bookSelectionService.deselectAll();
+        }
+      });
+    }
+  }
+
+  canAttachFiles(): boolean {
+    if (this.selectedBooks.size === 0) return false;
+
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedBookIds = Array.from(this.selectedBooks);
+    const eligibleBooks = (currentState.books || []).filter(book =>
+      selectedBookIds.includes(book.id) && !book.alternativeFormats?.length
+    );
+
+    if (eligibleBooks.length === 0) return false;
+
+    // Check if all eligible books are from the same library
+    const libraryIds = new Set(eligibleBooks.map(b => b.libraryId));
+    return libraryIds.size === 1;
   }
 
   user() {
@@ -664,5 +827,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       forceExpandSeries,
       this.bookSorter.selectedSort!
     );
+  }
+
+  setMobileColumns(columns: number): void {
+    this.mobileColumnCount = columns;
+    this.localStorageService.set(this.MOBILE_COLUMNS_STORAGE_KEY, columns);
+  }
+
+  private loadMobileColumnsPreference(): void {
+    const saved = this.localStorageService.get<number>(this.MOBILE_COLUMNS_STORAGE_KEY);
+    if (saved !== null && [2, 3, 4].includes(saved)) {
+      this.mobileColumnCount = saved;
+    }
   }
 }

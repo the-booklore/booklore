@@ -23,6 +23,9 @@ export class ReaderHeaderService {
   private _forceVisible = new BehaviorSubject<boolean>(false);
   forceVisible$ = this._forceVisible.asObservable();
 
+  private _isCurrentCfiBookmarked = new BehaviorSubject<boolean>(false);
+  isCurrentCfiBookmarked$ = this._isCurrentCfiBookmarked.asObservable();
+
   private _showControls = new Subject<void>();
   private _showMetadata = new Subject<void>();
   showControls$ = this._showControls.asObservable();
@@ -50,6 +53,10 @@ export class ReaderHeaderService {
     this._forceVisible.next(visible);
   }
 
+  setCurrentCfiBookmarked(bookmarked: boolean): void {
+    this._isCurrentCfiBookmarked.next(bookmarked);
+  }
+
   openSidebar(): void {
     this.sidebarService.open();
   }
@@ -59,7 +66,7 @@ export class ReaderHeaderService {
   }
 
   createBookmark(): void {
-    this.sidebarService.createBookmark();
+    this.sidebarService.toggleBookmark();
   }
 
   openControls(): void {
@@ -81,26 +88,6 @@ export class ReaderHeaderService {
 
   increaseFontSize(): void {
     this.stateService.updateFontSize(1);
-    this.syncSettingsToBackend();
-  }
-
-  decreaseFontSize(): void {
-    this.stateService.updateFontSize(-1);
-    this.syncSettingsToBackend();
-  }
-
-  increaseLineHeight(): void {
-    this.stateService.updateLineHeight(0.1);
-    this.syncSettingsToBackend();
-  }
-
-  decreaseLineHeight(): void {
-    this.stateService.updateLineHeight(-0.1);
-    this.syncSettingsToBackend();
-  }
-
-  setFlow(flow: 'paginated' | 'scrolled'): void {
-    this.stateService.setFlow(flow);
     this.syncSettingsToBackend();
   }
 
@@ -129,6 +116,7 @@ export class ReaderHeaderService {
 
   reset(): void {
     this._forceVisible.next(false);
+    this._isCurrentCfiBookmarked.next(false);
     this.bookTitle = '';
   }
 }

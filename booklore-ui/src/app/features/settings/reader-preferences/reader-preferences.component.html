@@ -1,4 +1,4 @@
-<div class="main-container enclosing-container">
+<div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-book"></i>
@@ -10,88 +10,7 @@
   </div>
 
   <div class="settings-content">
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-cog"></i>
-          Settings Application Mode
-        </h3>
-        <p class="section-description">
-          Control how default settings are applied. Select "Default Override" to apply your configured defaults to all books of the same format, overriding individual book preferences. Choose "Book-Specific" to let each book retain its own custom reading settings.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">PDF Reader Settings</label>
-              <div class="button-group">
-                @for (item of scopeOptions; track item) {
-                  <button
-                    type="button"
-                    class="option-button"
-                    [class.selected]="selectedPdfScope === item.key"
-                    (click)="selectedPdfScope = item.key; onPdfScopeChange()">
-                    <i [class]="item.icon"></i>
-                    <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-            <p class="setting-description">
-              Choose whether default zoom, layout, and navigation settings override individual PDF preferences or if each document maintains its own settings.
-            </p>
-          </div>
-        </div>
-
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">eBook Reader Settings</label>
-              <div class="button-group">
-                @for (item of scopeOptions; track item) {
-                  <button
-                    type="button"
-                    class="option-button"
-                    [class.selected]="selectedEpubScope === item.key"
-                    (click)="selectedEpubScope = item.key; onEpubScopeChange()">
-                    <i [class]="item.icon"></i>
-                    <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-            <p class="setting-description">
-              Choose whether default font, theme, and layout settings override individual eBook preferences (EPUB, FB2, MOBI, AZW3) or if each book maintains its own settings.
-            </p>
-          </div>
-        </div>
-
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">CBX Reader Settings</label>
-              <div class="button-group">
-                @for (item of scopeOptions; track item) {
-                  <button
-                    type="button"
-                    class="option-button"
-                    [class.selected]="selectedCbxScope === item.key"
-                    (click)="selectedCbxScope = item.key; onCbxScopeChange()">
-                    <i [class]="item.icon"></i>
-                    <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-            <p class="setting-description">
-              Choose whether default layout, direction, and scaling settings override individual comic book preferences (CBZ, CBR, CB7) or if each file maintains its own settings.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <app-settings-application-mode [userSettings]="userSettings"></app-settings-application-mode>
 
     <div class="preferences-section">
       <div class="section-header">
@@ -144,6 +63,24 @@
         <app-cbx-reader-preferences-component
           [userSettings]="userSettings">
         </app-cbx-reader-preferences-component>
+      </div>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-file-pdf"></i>
+          Streaming PDF Reader: Default Settings
+        </h3>
+        <p class="section-description">
+          Configure default preferences for the streaming PDF reader. When "Default Override" mode is enabled, these settings will take precedence over per-file preferences. Adjust page layout, zoom behavior, scrolling mode, and rendering options for an optimal reading experience.
+        </p>
+      </div>
+
+      <div class="settings-card">
+        <app-new-pdf-reader-preferences-component
+          [userSettings]="userSettings">
+        </app-new-pdf-reader-preferences-component>
       </div>
     </div>
 

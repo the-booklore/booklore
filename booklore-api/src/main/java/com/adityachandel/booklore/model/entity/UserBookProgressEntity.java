@@ -30,24 +30,31 @@ public class UserBookProgressEntity {
     @Column(name = "last_read_time")
     private Instant lastReadTime;
 
+    @Deprecated
     @Column(name = "pdf_progress")
     private Integer pdfProgress;
 
+    @Deprecated
     @Column(name = "pdf_progress_percent")
     private Float pdfProgressPercent;
 
+    @Deprecated
     @Column(name = "epub_progress", length = 1000)
     private String epubProgress;
 
+    @Deprecated
     @Column(name = "epub_progress_href", length = 1000)
     private String epubProgressHref;
 
+    @Deprecated
     @Column(name = "epub_progress_percent")
     private Float epubProgressPercent;
 
+    @Deprecated
     @Column(name = "cbx_progress")
     private Integer cbxProgress;
 
+    @Deprecated
     @Column(name = "cbx_progress_percent")
     private Float cbxProgressPercent;
 

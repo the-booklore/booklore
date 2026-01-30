@@ -170,3 +170,36 @@
   height: 1.3rem;
   display: inline-block;
 }
+
+// Animation classes for pStyleClass directive (theme configurator dropdown)
+@keyframes scalein {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes fadeout {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+
+.animate-scalein {
+  animation: scalein 0.15s ease-out forwards;
+}
+
+.animate-fadeout {
+  animation: fadeout 0.15s ease-out forwards;
+}

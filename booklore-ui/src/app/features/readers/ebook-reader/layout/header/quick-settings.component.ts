@@ -76,9 +76,7 @@ export class ReaderQuickSettingsComponent {
     this.openFullSettings.emit();
   }
 
-  onOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement).classList.contains('quick-settings-overlay')) {
-      this.close.emit();
-    }
+  onOverlayClick(): void {
+    this.close.emit();
   }
 }

@@ -27,14 +27,36 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
     private static final String SEARCH_BASE_URL = "https://duckduckgo.com/?q=";
     private static final String JSON_BASE_URL = "https://duckduckgo.com/i.js?o=json&q=";
     private static final String SITE_FILTER = "+(site%3Aamazon.com+OR+site%3Agoodreads.com)";
-    private static final String SEARCH_PARAMS = "&iar=images&iaf=size%3ALarge%2Clayout%3ATall";
-    private static final String JSON_PARAMS = "&iar=images&iaf=size%3ALarge%2Clayout%3ATall";
+    private static final String SEARCH_PARAMS_TALL = "&iar=images&iaf=size%3ALarge%2Clayout%3ATall";
+    private static final String JSON_PARAMS_TALL = "&iar=images&iaf=size%3ALarge%2Clayout%3ATall";
+    private static final String SEARCH_PARAMS_SQUARE = "&iar=images&iaf=size%3ALarge%2Clayout%3ASquare";
+    private static final String JSON_PARAMS_SQUARE = "&iar=images&iaf=size%3ALarge%2Clayout%3ASquare";
 
     private static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
     private static final String REFERRER = "https://duckduckgo.com/";
-    private static final Map<String, String> DEFAULT_HEADERS = Map.ofEntries(
-            Map.entry("accept", "text/html, application/json"),
-            Map.entry("content-type", "application/json"),
+    private static final Map<String, String> HTML_HEADERS = Map.ofEntries(
+            Map.entry("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"),
+            Map.entry("accept-language", "en-US,en;q=0.9"),
+            Map.entry("sec-ch-ua", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""),
+            Map.entry("sec-ch-ua-mobile", "?0"),
+            Map.entry("sec-ch-ua-platform", "\"macOS\""),
+            Map.entry("sec-fetch-dest", "document"),
+            Map.entry("sec-fetch-mode", "navigate"),
+            Map.entry("sec-fetch-site", "same-origin"),
+            Map.entry("sec-fetch-user", "?1"),
+            Map.entry("upgrade-insecure-requests", "1"),
+            Map.entry("user-agent", USER_AGENT)
+    );
+    private static final Map<String, String> JSON_HEADERS = Map.ofEntries(
+            Map.entry("accept", "application/json, text/javascript, */*; q=0.01"),
+            Map.entry("accept-language", "en-US,en;q=0.9"),
+            Map.entry("sec-ch-ua", "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""),
+            Map.entry("sec-ch-ua-mobile", "?0"),
+            Map.entry("sec-ch-ua-platform", "\"macOS\""),
+            Map.entry("sec-fetch-dest", "empty"),
+            Map.entry("sec-fetch-mode", "cors"),
+            Map.entry("sec-fetch-site", "same-origin"),
+            Map.entry("x-requested-with", "XMLHttpRequest"),
             Map.entry("user-agent", USER_AGENT)
     );
 
@@ -43,13 +65,20 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
     public List<CoverImage> getCovers(CoverFetchRequest request) {
         String title = request.getTitle();
         String author = request.getAuthor();
+        boolean squareCover = request.isSquareCover();
+        String bookType = squareCover ? "audiobook" : "book";
         String searchTerm = (author != null && !author.isEmpty())
-                ? title + " " + author + " book"
-                : title + " book";
+                ? title + " " + author + " " + bookType
+                : title + " " + bookType;
+
+        String searchParams = squareCover ? SEARCH_PARAMS_SQUARE : SEARCH_PARAMS_TALL;
+        String jsonParams = squareCover ? JSON_PARAMS_SQUARE : JSON_PARAMS_TALL;
 
         String encodedSiteQuery = URLEncoder.encode(searchTerm, StandardCharsets.UTF_8);
-        String siteUrl = SEARCH_BASE_URL + encodedSiteQuery + SITE_FILTER + SEARCH_PARAMS;
-        Document siteDoc = getDocument(siteUrl);
+        String siteUrl = SEARCH_BASE_URL + encodedSiteQuery + SITE_FILTER + searchParams;
+        Connection.Response siteResponse = getResponse(siteUrl);
+        Document siteDoc = parseResponse(siteResponse);
+        Map<String, String> cookies = siteResponse.cookies();
         Pattern tokenPattern = Pattern.compile("vqd=\"(\\d+-\\d+)\"");
         Matcher siteMatcher = tokenPattern.matcher(siteDoc.html());
         if (!siteMatcher.find()) {
@@ -57,23 +86,33 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
             return Collections.emptyList();
         }
         String siteSearchToken = siteMatcher.group(1);
-        List<CoverImage> siteFilteredImages = fetchImagesFromApi(searchTerm + " (site:amazon.com OR site:goodreads.com)", siteSearchToken);
+        List<CoverImage> siteFilteredImages = fetchImagesFromApi(searchTerm + " (site:amazon.com OR site:goodreads.com)", siteSearchToken, cookies, siteUrl, jsonParams);
         siteFilteredImages.removeIf(dto -> dto.getWidth() < 350);
-        siteFilteredImages.removeIf(dto -> dto.getWidth() >= dto.getHeight());
+        if (squareCover) {
+            siteFilteredImages.removeIf(dto -> !isApproximatelySquare(dto.getWidth(), dto.getHeight()));
+        } else {
+            siteFilteredImages.removeIf(dto -> dto.getWidth() >= dto.getHeight());
+        }
         if (siteFilteredImages.size() > 7) {
             siteFilteredImages = siteFilteredImages.subList(0, 7);
         }
 
         String encodedGeneralQuery = URLEncoder.encode(searchTerm, StandardCharsets.UTF_8);
-        String generalUrl = SEARCH_BASE_URL + encodedGeneralQuery + SEARCH_PARAMS;
-        Document generalDoc = getDocument(generalUrl);
+        String generalUrl = SEARCH_BASE_URL + encodedGeneralQuery + searchParams;
+        Connection.Response generalResponse = getResponse(generalUrl);
+        Document generalDoc = parseResponse(generalResponse);
+        Map<String, String> generalCookies = generalResponse.cookies();
         Matcher generalMatcher = tokenPattern.matcher(generalDoc.html());
         List<CoverImage> generalBookImages = new ArrayList<>();
         if (generalMatcher.find()) {
             String generalSearchToken = generalMatcher.group(1);
-            generalBookImages = fetchImagesFromApi(searchTerm, generalSearchToken);
+            generalBookImages = fetchImagesFromApi(searchTerm, generalSearchToken, generalCookies, generalUrl, jsonParams);
             generalBookImages.removeIf(dto -> dto.getWidth() < 350);
-            generalBookImages.removeIf(dto -> dto.getWidth() >= dto.getHeight());
+            if (squareCover) {
+                generalBookImages.removeIf(dto -> !isApproximatelySquare(dto.getWidth(), dto.getHeight()));
+            } else {
+                generalBookImages.removeIf(dto -> dto.getWidth() >= dto.getHeight());
+            }
             Set<String> siteUrls = siteFilteredImages.stream().map(CoverImage::getUrl).collect(Collectors.toSet());
             generalBookImages.removeIf(dto -> siteUrls.contains(dto.getUrl()));
             if (generalBookImages.size() > 10) {
@@ -97,20 +136,22 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
         return allImages;
     }
 
-    private List<CoverImage> fetchImagesFromApi(String query, String searchToken) {
+    private List<CoverImage> fetchImagesFromApi(String query, String searchToken, Map<String, String> cookies, String referrerUrl, String jsonParams) {
         List<CoverImage> priority = new ArrayList<>();
         List<CoverImage> others = new ArrayList<>();
         try {
             String url = JSON_BASE_URL
                     + URLEncoder.encode(query, StandardCharsets.UTF_8)
-                    + JSON_PARAMS
+                    + jsonParams
                     + "&vqd=" + searchToken;
 
             Connection.Response resp = Jsoup.connect(url)
                     .ignoreContentType(true)
-                    .referrer(REFERRER)
+                    .referrer(referrerUrl)
                     .followRedirects(true)
-                    .headers(DEFAULT_HEADERS)
+                    .headers(JSON_HEADERS)
+                    .header("x-vqd-4", searchToken)
+                    .cookies(cookies)
                     .method(Connection.Method.GET)
                     .execute();
 
@@ -137,18 +178,32 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
         return all;
     }
 
-    private Document getDocument(String url) {
+    private Connection.Response getResponse(String url) {
         try {
-            Connection.Response response = Jsoup.connect(url)
+            return Jsoup.connect(url)
                     .referrer(REFERRER)
                     .followRedirects(true)
-                    .headers(DEFAULT_HEADERS)
+                    .headers(HTML_HEADERS)
                     .method(Connection.Method.GET)
                     .execute();
-            return response.parse();
         } catch (IOException e) {
-            log.error("Error parsing url: {}", url, e);
+            log.error("Error fetching url: {}", url, e);
             throw new RuntimeException(e);
         }
+    }
+
+    private Document parseResponse(Connection.Response response) {
+        try {
+            return response.parse();
+        } catch (IOException e) {
+            log.error("Error parsing response", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isApproximatelySquare(int width, int height) {
+        if (width == 0 || height == 0) return false;
+        double ratio = (double) width / height;
+        return ratio >= 0.85 && ratio <= 1.15;
     }
 }

@@ -1,17 +1,17 @@
-<div class="staging-border p-4 rounded">
-  <div class="flex justify-between items-center">
+<div class="staging-border">
+  <div class="widget-row">
 
-    <div class="flex flex-col justify-center">
-      <p class="text font-bold text-zinc-300">Pending Bookdrop Files</p>
-      <p class="text-lg font-bold text-primary">{{ pendingCount }}</p>
+    <div class="widget-info">
+      <p class="widget-title">Pending Bookdrop Files</p>
+      <p class="widget-count">{{ pendingCount }}</p>
       @if (lastUpdatedAt) {
-        <p class="text-xs text-zinc-400 mt-1">
+        <p class="widget-date">
           Last updated: {{ lastUpdatedAt | date: 'short' }}
         </p>
       }
     </div>
 
-    <div class="flex items-center">
+    <div class="widget-actions">
       <p-button
         size="small"
         outlined

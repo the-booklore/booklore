@@ -93,10 +93,10 @@ export class ReaderStateService {
     this.loadCustomFontsIntoList();
   }
 
-  initializeState(bookId: number): Observable<void> {
+  initializeState(bookId: number, bookFileId: number): Observable<void> {
     return forkJoin([
       this.userService.getMyself(),
-      this.bookService.getBookSetting(bookId)
+      this.bookService.getBookSetting(bookId, bookFileId)
     ]).pipe(
       tap(([myself, bookSetting]) => {
         const settingScope = myself.userSettings.perBookSetting.epub;

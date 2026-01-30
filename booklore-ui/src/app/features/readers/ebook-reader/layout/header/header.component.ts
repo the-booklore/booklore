@@ -3,6 +3,7 @@ import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {ReaderHeaderService} from './header.service';
 import {ReaderIconComponent} from '../../shared/icon.component';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-reader-header',
@@ -13,9 +14,11 @@ import {ReaderIconComponent} from '../../shared/icon.component';
 })
 export class ReaderHeaderComponent implements OnInit, OnDestroy {
   private headerService = inject(ReaderHeaderService);
+  private router = inject(Router);
   private destroy$ = new Subject<void>();
 
   isVisible = false;
+  isCurrentCfiBookmarked = false;
 
   get bookTitle(): string {
     return this.headerService.title;
@@ -29,6 +32,10 @@ export class ReaderHeaderComponent implements OnInit, OnDestroy {
     this.headerService.forceVisible$
       .pipe(takeUntil(this.destroy$))
       .subscribe(visible => this.isVisible = visible);
+
+    this.headerService.isCurrentCfiBookmarked$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(bookmarked => this.isCurrentCfiBookmarked = bookmarked);
   }
 
   ngOnDestroy(): void {
@@ -38,6 +45,10 @@ export class ReaderHeaderComponent implements OnInit, OnDestroy {
 
   onShowChapters(): void {
     this.headerService.openSidebar();
+  }
+
+  onOpenNotes(): void {
+    this.headerService.openLeftSidebar('notes');
   }
 
   onOpenSearch(): void {
@@ -53,6 +64,10 @@ export class ReaderHeaderComponent implements OnInit, OnDestroy {
   }
 
   onClose(): void {
-    this.headerService.close();
+    if (window.history.length <= 2) {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.headerService.close();
+    }
   }
 }

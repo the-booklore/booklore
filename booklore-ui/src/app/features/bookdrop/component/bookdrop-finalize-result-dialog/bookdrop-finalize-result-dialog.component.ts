@@ -2,12 +2,14 @@ import {Component, OnDestroy} from '@angular/core';
 import {DatePipe, NgClass} from '@angular/common';
 import {BookdropFinalizeResult} from '../../service/bookdrop.service';
 import {DynamicDialogConfig, DynamicDialogRef} from "primeng/dynamicdialog";
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-bookdrop-finalize-result-dialog',
   imports: [
     NgClass,
-    DatePipe
+    DatePipe,
+    Button
   ],
   templateUrl: './bookdrop-finalize-result-dialog.component.html',
   styleUrl: './bookdrop-finalize-result-dialog.component.scss'

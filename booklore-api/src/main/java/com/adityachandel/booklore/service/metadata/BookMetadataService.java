@@ -28,13 +28,17 @@ import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,6 +58,7 @@ public class BookMetadataService {
     private final Map<MetadataProvider, BookParser> parserMap;
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
+    private final PlatformTransactionManager transactionManager;
 
 
     public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
@@ -125,8 +130,9 @@ public class BookMetadataService {
     public BookMetadata getComicInfoMetadata(long bookId) {
         log.info("Extracting ComicInfo metadata for book ID: {}", bookId);
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        if (bookEntity.getPrimaryBookFile().getBookType() != BookFileType.CBX) {
-            log.info("Unsupported operation for file type: {}", bookEntity.getPrimaryBookFile().getBookType().name());
+        var primaryFile = bookEntity.getPrimaryBookFile();
+        if (primaryFile == null || primaryFile.getBookType() != BookFileType.CBX) {
+            log.info("Unsupported operation for book ID {} - no file or not CBX type", bookId);
             return null;
         }
         return cbxMetadataExtractor.extractMetadata(new File(FileUtils.getBookFullPath(bookEntity)));
@@ -134,22 +140,38 @@ public class BookMetadataService {
 
     @Transactional
     public void bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories, boolean mergeMoods, boolean mergeTags) {
-        List<BookEntity> books = bookRepository.findAllWithMetadataByIds(request.getBookIds());
-
         MetadataClearFlags clearFlags = metadataClearFlagsMapper.toClearFlags(request);
 
-        for (BookEntity book : books) {
-            BookMetadata bookMetadata = BookMetadata.builder()
-                    .authors(request.getAuthors())
-                    .publisher(request.getPublisher())
-                    .language(request.getLanguage())
-                    .seriesName(request.getSeriesName())
-                    .seriesTotal(request.getSeriesTotal())
-                    .publishedDate(request.getPublishedDate())
-                    .categories(request.getGenres())
-                    .moods(request.getMoods())
-                    .tags(request.getTags())
-                    .build();
+        BookMetadata bookMetadata = BookMetadata.builder()
+                .authors(request.getAuthors())
+                .publisher(request.getPublisher())
+                .language(request.getLanguage())
+                .seriesName(request.getSeriesName())
+                .seriesTotal(request.getSeriesTotal())
+                .publishedDate(request.getPublishedDate())
+                .categories(request.getGenres() != null ? request.getGenres() : Collections.emptySet())
+                .moods(request.getMoods() != null ? request.getMoods() : Collections.emptySet())
+                .tags(request.getTags() != null ? request.getTags() : Collections.emptySet())
+                .build();
+
+        for (Long bookId : request.getBookIds()) {
+            try {
+                processSingleBookUpdate(bookId, bookMetadata, clearFlags, mergeCategories, mergeMoods, mergeTags);
+            } catch (Exception e) {
+                log.error("Failed to update metadata for book ID {}", bookId, e);
+            }
+        }
+    }
+
+    private void processSingleBookUpdate(Long bookId, BookMetadata bookMetadata, MetadataClearFlags clearFlags, boolean mergeCategories, boolean mergeMoods, boolean mergeTags) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.execute(status -> {
+            BookEntity book = bookRepository.findByIdWithBookFiles(bookId).orElse(null);
+            if (book == null) {
+                log.warn("Book not found for metadata update: {}", bookId);
+                return null;
+            }
 
             MetadataUpdateContext context = MetadataUpdateContext.builder()
                     .bookEntity(book)
@@ -165,6 +187,7 @@ public class BookMetadataService {
 
             bookMetadataUpdater.setBookMetadata(context);
             notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBook(book));
-        }
+            return null;
+        });
     }
 }

@@ -1,5 +1,4 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
-import {Toast} from 'primeng/toast';
 import {MessageService} from 'primeng/api';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {BookCoverService, CoverFetchRequest, CoverImage} from '../../../../shared/services/book-cover.service';
@@ -10,6 +9,7 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {BookService} from '../../../book/service/book.service';
 import {Image} from 'primeng/image';
+import {Tooltip} from 'primeng/tooltip';
 
 @Component({
   selector: 'app-cover-search',
@@ -20,7 +20,8 @@ import {Image} from 'primeng/image';
     FormsModule,
     InputText,
     ProgressSpinner,
-    Image
+    Image,
+    Tooltip
   ],
   styleUrls: ['./cover-search.component.scss']
 })
@@ -30,6 +31,7 @@ export class CoverSearchComponent implements OnInit {
   coverImages: CoverImage[] = [];
   loading = false;
   hasSearched = false;
+  isAudiobook = false;
 
   private fb = inject(FormBuilder);
   private bookCoverService = inject(BookCoverService);
@@ -50,6 +52,7 @@ export class CoverSearchComponent implements OnInit {
     const book = this.bookService.getBookByIdFromState(this.bookId);
 
     if (book) {
+      this.isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
       this.searchForm.patchValue({
         title: book.metadata?.title || '',
         author: book.metadata?.authors && book.metadata?.authors.length > 0 ? book.metadata?.authors[0] : ''
@@ -66,7 +69,8 @@ export class CoverSearchComponent implements OnInit {
       this.loading = true;
       const request: CoverFetchRequest = {
         title: this.searchForm.value.title,
-        author: this.searchForm.value.author
+        author: this.searchForm.value.author,
+        squareCover: this.isAudiobook
       };
 
       this.bookCoverService.fetchBookCovers(request)

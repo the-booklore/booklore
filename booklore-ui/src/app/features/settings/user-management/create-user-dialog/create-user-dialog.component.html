@@ -46,23 +46,6 @@
           </div>
 
           <div class="form-field">
-            <label class="field-label">Email</label>
-            <input
-              type="email"
-              pInputText
-              formControlName="email"
-              placeholder="Enter email..."
-              class="field-input"
-            />
-            @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
-              <small class="field-error">
-                <i class="pi pi-exclamation-circle"></i>
-                Enter a valid email address.
-              </small>
-            }
-          </div>
-
-          <div class="form-field">
             <label class="field-label">Username</label>
             <input
               type="text"
@@ -79,21 +62,65 @@
             }
           </div>
 
-          <div class="form-field">
-            <label class="field-label">Password</label>
+          <div class="form-field field-full">
+            <label class="field-label">Email</label>
             <input
-              type="password"
+              type="email"
               pInputText
-              formControlName="password"
-              placeholder="Enter password..."
+              formControlName="email"
+              placeholder="Enter email..."
               class="field-input"
             />
-            @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
+            @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Password must be at least 6 characters long.
+                Enter a valid email address.
               </small>
             }
+          </div>
+
+          <div class="password-row field-full">
+            <div class="password-grid">
+              <div class="form-field">
+                <label class="field-label">Password</label>
+                <input
+                  type="password"
+                  pInputText
+                  formControlName="password"
+                  placeholder="Enter password..."
+                  class="field-input"
+                />
+                @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
+                  <small class="field-error">
+                    <i class="pi pi-exclamation-circle"></i>
+                    Password must be at least 6 characters long.
+                  </small>
+                }
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">Confirm Password</label>
+                <input
+                  type="password"
+                  pInputText
+                  formControlName="confirmPassword"
+                  placeholder="Confirm password..."
+                  class="field-input"
+                />
+                @if (userForm.get('confirmPassword')?.invalid && (userForm.get('confirmPassword')?.dirty || userForm.get('confirmPassword')?.touched)) {
+                  <small class="field-error">
+                    <i class="pi pi-exclamation-circle"></i>
+                    Password confirmation is required
+                  </small>
+                }
+                @if (userForm.errors?.['passwordMismatch'] && (userForm.get('confirmPassword')?.dirty || userForm.get('confirmPassword')?.touched)) {
+                  <small class="field-error">
+                    <i class="pi pi-exclamation-circle"></i>
+                    Passwords do not match.
+                  </small>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>
