@@ -159,6 +159,8 @@
                     <p-select [options]="categoryOptions" formControlName="value" placeholder="Select Genre" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'incompleteSeries') {
                     <p-select [options]="incompleteSeriesOptions" formControlName="value" placeholder="Select True or False" appendTo="body" class="value-input"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'seriesStatus') {
+                    <p-select [options]="seriesStatusOptions" formControlName="value" placeholder="Select Status" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'externalId') {
                     <p-select [options]="externalIdOptions" formControlName="value" placeholder="Select ID Source" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'externalRating') {

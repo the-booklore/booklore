@@ -76,6 +76,7 @@ export type RuleField =
   | 'moods'
   | 'tags'
   | 'incompleteSeries'
+  | 'seriesStatus'
   | 'externalId'
   | 'externalRating';
 
@@ -155,6 +156,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   fileType: {label: 'File Type'},
   subtitle: {label: 'Subtitle'},
   incompleteSeries: {label: 'Incomplete Series'},
+  seriesStatus: {label: 'Series Status'},
   externalId: {label: 'External ID'},
   externalRating: {label: 'External Rating'}
 };
@@ -219,6 +221,11 @@ export class MagicShelfComponent implements OnInit {
   incompleteSeriesOptions: { label: string; value: string }[] = [
     {label: 'True', value: 'true'},
     {label: 'False', value: 'false'}
+  ];
+
+  seriesStatusOptions: { label: string; value: string }[] = [
+    {label: 'Ongoing', value: 'ongoing'},
+    {label: 'Completed', value: 'completed'}
   ];
 
   externalIdOptions: { label: string; value: string }[] = [
@@ -413,6 +420,14 @@ export class MagicShelfComponent implements OnInit {
       ];
     }
 
+    // Special handling for seriesStatus - is/is not operators
+    if (field === 'seriesStatus') {
+      return [
+        {label: 'Is', value: 'equals'},
+        {label: 'Is Not', value: 'not_equals'},
+      ];
+    }
+
     const config = FIELD_CONFIGS[field];
     const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'incompleteSeries'].includes(field);
     const operators = [...baseOperators];
@@ -421,7 +436,7 @@ export class MagicShelfComponent implements OnInit {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'externalId', 'externalRating', 'incompleteSeries'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'externalId', 'externalRating', 'incompleteSeries', 'seriesStatus'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);

@@ -44,6 +44,21 @@ export class BookRuleEvaluatorService {
       }
     }
 
+    // Special handling for seriesStatus field
+    if (rule.field === 'seriesStatus') {
+      const statusValue = String(rawValue).toLowerCase();
+      const ruleStatusValue = String(rule.value).toLowerCase();
+
+      switch (rule.operator) {
+        case 'equals':
+          return statusValue === ruleStatusValue;
+        case 'not_equals':
+          return statusValue !== ruleStatusValue;
+        default:
+          return false;
+      }
+    }
+
     // Special handling for externalId and externalRating
     if (rule.field === 'externalId' || rule.field === 'externalRating') {
       const source = String(rule.value).toLowerCase();
@@ -191,6 +206,8 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.seriesName ?? '').toLowerCase()];
         case 'incompleteSeries':
           return [String(book.incompleteSeries ?? false)];
+        case 'seriesStatus':
+          return [this.getSeriesStatus(book)];
         default:
           return [];
       }
@@ -400,6 +417,8 @@ export class BookRuleEvaluatorService {
         return book.metadata?.ranobedbRating;
       case 'incompleteSeries':
         return book.incompleteSeries ?? false;
+      case 'seriesStatus':
+        return this.getSeriesStatus(book);
       case 'externalId':
       case 'externalRating':
         // These are meta-fields handled specially in evaluateRule
@@ -407,6 +426,34 @@ export class BookRuleEvaluatorService {
       default:
         return (book as Record<string, unknown>)[field];
     }
+  }
+
+  /**
+   * Gets the series status for a book.
+   * Returns 'completed' if seriesNumber === seriesTotal,
+   * 'ongoing' if the book is in a series (has seriesName),
+   * or an empty string if not in a series.
+   */
+  private getSeriesStatus(book: Book): string {
+    const seriesName = book.metadata?.seriesName;
+    if (!seriesName) {
+      return ''; // Not in a series
+    }
+
+    const seriesNumber = book.metadata?.seriesNumber;
+    const seriesTotal = book.metadata?.seriesTotal;
+
+    // If both number and total are defined and equal, it's completed
+    if (
+      seriesNumber !== null && seriesNumber !== undefined &&
+      seriesTotal !== null && seriesTotal !== undefined &&
+      seriesNumber === seriesTotal
+    ) {
+      return 'completed';
+    }
+
+    // Otherwise, if it has a series name, it's ongoing
+    return 'ongoing';
   }
 
   private getFileExtension(filePath?: string): string | null {
