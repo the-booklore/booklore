@@ -52,11 +52,14 @@ public class CronService {
 
     @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS, initialDelay = 12)
     public void sendPing() {
-        String url = appProperties.getTelemetry().getBaseUrl() + "/api/v1/heartbeat";
-        InstallationPing ping = telemetryService.getInstallationPing();
-        if (ping != null && postData(url, ping)) {
-            appSettingService.saveSetting(LAST_PING_KEY, Instant.now().toString());
-            appSettingService.saveSetting(LAST_PING_APP_VERSION_KEY, ping.getAppVersion());
+        AppSettings settings = appSettingService.getAppSettings();
+        if (settings != null && settings.isTelemetryEnabled()) {
+            String url = appProperties.getTelemetry().getBaseUrl() + "/api/v1/heartbeat";
+            InstallationPing ping = telemetryService.getInstallationPing();
+            if (ping != null && postData(url, ping)) {
+                appSettingService.saveSetting(LAST_PING_KEY, Instant.now().toString());
+                appSettingService.saveSetting(LAST_PING_APP_VERSION_KEY, ping.getAppVersion());
+            }
         }
     }
 
