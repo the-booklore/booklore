@@ -115,7 +115,14 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                 metadataBuilder.pageCount(pdf.getNumberOfPages());
 
                 if (StringUtils.isNotBlank(info.getKeywords())) {
-                    Set<String> categories = Arrays.stream(info.getKeywords().split("[,;]"))
+                    String keywords = info.getKeywords();
+                    String[] parts;
+                    if (keywords.contains(";")) {
+                        parts = keywords.split(";");
+                    } else {
+                        parts = keywords.split(",");
+                    }
+                    Set<String> categories = Arrays.stream(parts)
                             .map(String::trim)
                             .filter(StringUtils::isNotBlank)
                             .collect(Collectors.toSet());
@@ -167,15 +174,21 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 }
 
-                                // Extract specific ISBN schemes (overwrites generic if present)
+                                // Extract specific ISBN schemes (overwrites generic only if valid)
                                 String isbn13 = identifiers.get("isbn13");
                                 if (StringUtils.isNotBlank(isbn13)) {
-                                    metadataBuilder.isbn13(ISBN_CLEANUP_PATTERN.matcher(isbn13).replaceAll(""));
+                                    String cleaned = ISBN_CLEANUP_PATTERN.matcher(isbn13).replaceAll("");
+                                    if (!cleaned.isBlank()) {
+                                        metadataBuilder.isbn13(cleaned);
+                                    }
                                 }
 
                                 String isbn10 = identifiers.get("isbn10");
                                 if (StringUtils.isNotBlank(isbn10)) {
-                                    metadataBuilder.isbn10(ISBN_CLEANUP_PATTERN.matcher(isbn10).replaceAll(""));
+                                    String cleaned = ISBN_CLEANUP_PATTERN.matcher(isbn10).replaceAll("");
+                                    if (!cleaned.isBlank()) {
+                                        metadataBuilder.isbn10(cleaned);
+                                    }
                                 }
 
                                 String google = identifiers.get("google");

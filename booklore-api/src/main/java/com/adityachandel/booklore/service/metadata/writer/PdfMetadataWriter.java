@@ -71,7 +71,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             log.warn("Could not create PDF temp backup for {}: {}", file.getName(), e.getMessage());
         }
 
-        try (PDDocument pdf = Loader.loadPDF(file, IOUtils.createMemoryOnlyStreamCache())) {
+        try (PDDocument pdf = Loader.loadPDF(file, IOUtils.createTempFileOnlyStreamCache())) {
             pdf.setAllSecurityToBeRemoved(true);
             applyMetadataToDocument(pdf, metadataEntity, clear);
             tempFile = File.createTempFile("pdfmeta-", ".pdf");

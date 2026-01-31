@@ -58,6 +58,7 @@ public class BookMetadata {
     private MetadataProvider provider;
     private String thumbnailUrl;
     private List<BookReview> bookReviews;
+    private Double rating;
 
     private Boolean titleLocked;
     private Boolean subtitleLocked;
@@ -97,4 +98,5 @@ public class BookMetadata {
     private Boolean moodsLocked;
     private Boolean tagsLocked;
     private Boolean reviewsLocked;
+    private Boolean ratingLocked;
 }
