@@ -771,6 +771,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'pi pi-image',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
@@ -803,6 +811,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'pi pi-palette',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {

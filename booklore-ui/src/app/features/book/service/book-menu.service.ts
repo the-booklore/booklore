@@ -95,6 +95,14 @@ export class BookMenuService {
               icon: 'pi pi-exclamation-triangle',
               acceptLabel: 'Yes',
               rejectLabel: 'No',
+              acceptButtonProps: {
+                label: 'Yes',
+                severity: 'success'
+              },
+              rejectButtonProps: {
+                label: 'No',
+                severity: 'secondary'
+              },
               accept: () => {
                 const loader = this.loadingService.show(`Updating read status for ${count} book(s)...`);
 
