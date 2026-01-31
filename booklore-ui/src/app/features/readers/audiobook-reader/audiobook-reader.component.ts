@@ -144,30 +144,13 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private loadAudiobook(): void {
     this.resetState();
     this.isLoading = true;
-
-    const audiobookInfo$ = this.audiobookService.getAudiobookInfo(this.bookId);
-    const book$ = this.bookService.getBookByIdFromAPI(this.bookId, false);
-
-    forkJoin([audiobookInfo$, book$]).subscribe({
-      next: ([info, book]) => {
+    
+    this.audiobookService.getAudiobookInfo(this.bookId).subscribe({
+      next: (info) => {
         this.audiobookInfo = info;
-        this.pageTitle.setBookPageTitle(book);
-
-        const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
-        this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/cover/${this.bookId}?token=${encodeURIComponent(token || '')}`;
-        this.coverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
-
-        if (book.audiobookProgress) {
-          this.savedPosition = book.audiobookProgress.positionMs
-            ? book.audiobookProgress.positionMs / 1000
-            : 0;
-        }
-
         if (info.folderBased && info.tracks && info.tracks.length > 0) {
-          const trackIndex = book.audiobookProgress?.trackIndex ?? 0;
-          this.currentTrackIndex = trackIndex;
-          this.loadTrack(trackIndex, false);
-          const track = info.tracks[trackIndex];
+          this.loadTrack(0, false);
+          const track = info.tracks[0];
           if (track?.durationMs) {
             this.duration = track.durationMs / 1000;
           }
@@ -178,14 +161,15 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           }
         }
 
+        // Load cover URLs
+        const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
+        this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/cover/${this.bookId}?token=${encodeURIComponent(token || '')}`;
+        this.coverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
+
         this.isLoading = false;
-        this.audioLoading = false;
 
-        if (this.savedPosition > 0) {
-          this.currentTime = this.savedPosition;
-        }
-
-        this.loadBookmarks();
+        // Load book details in parallel (for progress, title, etc.) - non-blocking
+        this.loadBookDetails(info);
       },
       error: () => {
         this.messageService.add({
@@ -194,8 +178,54 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           detail: 'Failed to load audiobook'
         });
         this.isLoading = false;
+        this.audioLoading = false;
       }
     });
+  }
+
+  private loadBookDetails(info: AudiobookInfo): void {
+    this.bookService.getBookByIdFromAPI(this.bookId, false)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (book) => {
+          this.pageTitle.setBookPageTitle(book);
+
+          if (book.audiobookProgress) {
+            this.savedPosition = book.audiobookProgress.positionMs
+              ? book.audiobookProgress.positionMs / 1000
+              : 0;
+
+            // If audio is already loaded, seek to saved position
+            const audio = this.audioElement?.nativeElement;
+            if (audio && audio.readyState >= 1 && this.savedPosition > 0) {
+              audio.currentTime = this.savedPosition;
+              this.currentTime = this.savedPosition;
+            }
+
+            // Handle track index for folder-based audiobooks
+            if (info.folderBased && info.tracks && info.tracks.length > 0) {
+              const trackIndex = book.audiobookProgress?.trackIndex ?? 0;
+              if (trackIndex !== this.currentTrackIndex) {
+                this.currentTrackIndex = trackIndex;
+                this.loadTrack(trackIndex, false);
+                const track = info.tracks[trackIndex];
+                if (track?.durationMs) {
+                  this.duration = track.durationMs / 1000;
+                }
+              }
+            }
+          }
+
+          if (this.savedPosition > 0) {
+            this.currentTime = this.savedPosition;
+          }
+        },
+        error: () => {
+          // Non-critical - audiobook can still play without book details
+        }
+      });
+
+    this.loadBookmarks();
   }
 
   private loadTrack(index: number, showLoading = true): void {
