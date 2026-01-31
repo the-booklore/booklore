@@ -41,7 +41,6 @@ public class MetadataMatchWeights {
                 seriesName + seriesNumber + seriesTotal + isbn13 + isbn10 + language +
                 pageCount + categories + amazonRating + amazonReviewCount +
                 goodreadsRating + goodreadsReviewCount + hardcoverRating +
-                hardcoverReviewCount + doubanRating + doubanReviewCount +
-                ranobedbRating + coverImage;
+                hardcoverReviewCount + ranobedbRating + coverImage;
     }
 }

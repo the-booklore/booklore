@@ -63,6 +63,12 @@ public class LibraryRescanHelper {
                 continue;
             }
 
+            // Skip fileless books (e.g., physical books) - they have no file to extract metadata from
+            if (!bookEntity.hasFiles()) {
+                processedBooks++;
+                continue;
+            }
+
             if (taskId != null && cancellationManager.isTaskCancelled(taskId)) {
                 log.info("Library rescan for library {} was cancelled", library.getId());
                 sendTaskProgressNotification(taskId, (processedBooks * 100) / totalBooks,

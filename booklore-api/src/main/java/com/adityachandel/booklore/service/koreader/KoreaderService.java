@@ -3,13 +3,11 @@ package com.adityachandel.booklore.service.koreader;
 import com.adityachandel.booklore.config.security.userdetails.KoreaderUserDetails;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.progress.KoreaderProgress;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.entity.KoreaderUserEntity;
-import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
+import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.KoreaderUserRepository;
+import com.adityachandel.booklore.repository.UserBookFileProgressRepository;
 import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
@@ -31,6 +29,7 @@ import java.util.Map;
 public class KoreaderService {
 
     private final UserBookProgressRepository progressRepository;
+    private final UserBookFileProgressRepository fileProgressRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
     private final KoreaderUserRepository koreaderUserRepository;
@@ -79,10 +78,49 @@ public class KoreaderService {
 
         progressRepository.save(userProgress);
 
+        // Also save to file-level progress table (dual-write)
+        saveToFileProgress(user, book, userProgress);
+
         log.info("saveProgress: saved progress='{}' percentage={} for userId={} bookHash={}", koProgress.getProgress(), koProgress.getPercentage(), authDetails.getBookLoreUserId(), bookHash);
 
         Float progressPercent = normalizeProgressPercent(koProgress.getPercentage());
         hardcoverSyncService.syncProgressToHardcover(book.getId(), progressPercent, authDetails.getBookLoreUserId());
+    }
+
+    private void saveToFileProgress(BookLoreUserEntity user, BookEntity book, UserBookProgressEntity progress) {
+        try {
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            UserBookFileProgressEntity fileProgress = fileProgressRepository
+                    .findByUserIdAndBookFileId(user.getId(), primaryFile.getId())
+                    .orElseGet(UserBookFileProgressEntity::new);
+
+            fileProgress.setUser(user);
+            fileProgress.setBookFile(primaryFile);
+            fileProgress.setLastReadTime(progress.getLastReadTime());
+
+            // Map progress based on book type
+            switch (primaryFile.getBookType()) {
+                case EPUB, FB2, MOBI, AZW3 -> {
+                    fileProgress.setPositionData(progress.getEpubProgress());
+                    fileProgress.setPositionHref(progress.getEpubProgressHref());
+                    fileProgress.setProgressPercent(progress.getEpubProgressPercent());
+                }
+                case PDF -> {
+                    fileProgress.setPositionData(progress.getPdfProgress() != null ?
+                            String.valueOf(progress.getPdfProgress()) : null);
+                    fileProgress.setProgressPercent(progress.getPdfProgressPercent());
+                }
+                case CBX -> {
+                    fileProgress.setPositionData(progress.getCbxProgress() != null ?
+                            String.valueOf(progress.getCbxProgress()) : null);
+                    fileProgress.setProgressPercent(progress.getCbxProgressPercent());
+                }
+            }
+
+            fileProgressRepository.save(fileProgress);
+        } catch (Exception e) {
+            log.warn("Failed to save file-level progress for book {}: {}", book.getId(), e.getMessage());
+        }
     }
 
     private void updateProgressData(UserBookProgressEntity userProgress, KoreaderProgress koProgress, boolean syncWithBookloreReader, BookEntity book) {

@@ -370,13 +370,24 @@
                             tooltipPosition="top">
                           </p-button>
                         }
-                        @if (userState.user!.permissions.canMoveOrganizeFiles) {
+                        @if (userState.user!.permissions.canMoveOrganizeFiles && (appSettingsService.appSettings$ | async)?.diskType === 'LOCAL') {
                           <p-button
                             outlined="true"
                             icon="pi pi-arrows-h"
                             severity="info"
                             (click)="moveFiles()"
                             pTooltip="Organize Files"
+                            tooltipPosition="top">
+                          </p-button>
+                        }
+                        @if (userState.user!.permissions.canManageLibrary || userState.user!.permissions.admin) {
+                          <p-button
+                            outlined="true"
+                            icon="pi pi-link"
+                            severity="info"
+                            (click)="attachFilesToBook()"
+                            [disabled]="!canAttachFiles()"
+                            pTooltip="Attach to Another Book"
                             tooltipPosition="top">
                           </p-button>
                         }

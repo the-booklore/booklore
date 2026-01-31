@@ -166,7 +166,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should use stored hardcoverBookId when available")
     void syncProgressToHardcover_withStoredBookId_shouldUseStoredId() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         // Mock successful responses for the chain
@@ -212,7 +212,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should set status to READ when progress >= 99%")
     void syncProgressToHardcover_whenProgress99Percent_shouldMakeApiCalls() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         when(responseSpec.body(Map.class))
@@ -228,7 +228,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should set status to CURRENTLY_READING when progress < 99%")
     void syncProgressToHardcover_whenProgressLessThan99_shouldMakeApiCalls() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         when(responseSpec.body(Map.class))
@@ -244,7 +244,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should handle existing user_book gracefully")
     void syncProgressToHardcover_whenUserBookExists_shouldFindExisting() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         // Mock: insert_user_book returns error, then find existing, then create progress
@@ -262,7 +262,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should update existing reading progress")
     void syncProgressToHardcover_whenProgressExists_shouldUpdate() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         // Mock: insert_user_book -> find existing read -> update read
@@ -298,7 +298,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should handle API errors gracefully")
     void syncProgressToHardcover_whenApiError_shouldNotThrow() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         when(responseSpec.body(Map.class)).thenReturn(Map.of("errors", List.of(Map.of("message", "Unauthorized"))));
@@ -309,7 +309,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should handle null response gracefully")
     void syncProgressToHardcover_whenResponseNull_shouldNotThrow() {
-        testMetadata.setHardcoverBookId(12345);
+        testMetadata.setHardcoverBookId("12345");
         testMetadata.setPageCount(300);
 
         when(responseSpec.body(Map.class)).thenReturn(null);
@@ -477,8 +477,8 @@ class HardcoverSyncServiceTest {
 
         Object result = method.invoke(service, 77);
         assertNotNull(result);
-        assertEquals(77, readPrivateField(result, "id"));
-        assertEquals(250, readPrivateField(result, "pages"));
+        assertEquals(77, readPrivateIntField(result, "id"));
+        assertEquals(250, readPrivateIntField(result, "pages"));
     }
 
     @Test
@@ -521,12 +521,18 @@ class HardcoverSyncServiceTest {
 
         Object result = method.invoke(service, 123);
         assertNotNull(result);
-        assertEquals(123, readPrivateField(result, "bookId"));
-        assertEquals(88, readPrivateField(result, "editionId"));
-        assertEquals(320, readPrivateField(result, "pages"));
+        assertEquals("123", readPrivateStringField(result, "bookId"));
+        assertEquals(88, readPrivateIntField(result, "editionId"));
+        assertEquals(320, readPrivateIntField(result, "pages"));
     }
 
-    private Integer readPrivateField(Object target, String fieldName) throws Exception {
+    private String readPrivateStringField(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (String) field.get(target);
+    }
+
+    private Integer readPrivateIntField(Object target, String fieldName) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         return (Integer) field.get(target);

@@ -224,6 +224,9 @@ DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
 DB_USER=booklore
 DB_PASSWORD=ChangeMe_BookLoreApp_2025!
 
+# 💾 Storage type: LOCAL (default) or NETWORK. Set to NETWORK if using NFS/SMB - this disables file reorganization features to prevent data corruption.
+DISK_TYPE=LOCAL
+
 # 🔧 MariaDB Container Settings
 DB_USER_ID=1000
 DB_GROUP_ID=1000

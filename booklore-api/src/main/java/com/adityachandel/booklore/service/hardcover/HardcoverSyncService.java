@@ -101,7 +101,8 @@ public class HardcoverSyncService {
                     log.debug("Using stored Hardcover book ID: {}", hardcoverBook.bookId);
 
                     // Always fetch the default edition and page count from Hardcover
-                    HardcoverBookInfo fetched = findHardcoverBookById(hardcoverBook.bookId);
+                    Integer bookIdInt = Integer.parseInt(hardcoverBook.bookId);
+                    HardcoverBookInfo fetched = findHardcoverBookById(bookIdInt);
                     if (fetched != null) {
                         hardcoverBook.editionId = fetched.editionId;
                         hardcoverBook.pages = fetched.pages;
@@ -131,7 +132,8 @@ public class HardcoverSyncService {
                         userId, progressPercent, hardcoverBook.pages, progressPages);
 
                 // Step 1: Add/update the book in user's library
-                Integer userBookId = insertOrGetUserBook(hardcoverBook.bookId, hardcoverBook.editionId, statusId);
+                Integer bookIdInt = Integer.parseInt(hardcoverBook.bookId);
+                Integer userBookId = insertOrGetUserBook(bookIdInt, hardcoverBook.editionId, statusId);
                 if (userBookId == null) {
                     log.warn("Hardcover sync failed: could not get user_book_id for book {}", bookId);
                     return;
@@ -228,12 +230,12 @@ public class HardcoverSyncService {
             // Extract book info
             HardcoverBookInfo info = new HardcoverBookInfo();
             
-            // The 'id' field contains the numeric book ID
+            // The 'id' field contains the book ID
             Object idObj = document.get("id");
             if (idObj instanceof String) {
-                info.bookId = Integer.parseInt((String) idObj);
+                info.bookId = (String) idObj;
             } else if (idObj instanceof Number) {
-                info.bookId = ((Number) idObj).intValue();
+                info.bookId = String.valueOf(((Number) idObj).intValue());
             }
             
             // Get page count
@@ -286,7 +288,7 @@ public class HardcoverSyncService {
      * Find an edition by ISBN for a given book.
      * This queries Hardcover's editions table to match by ISBN.
      */
-    private EditionInfo findEditionByIsbn(Integer bookId, String isbn) {
+    private EditionInfo findEditionByIsbn(String bookId, String isbn) {
         String query = """
             query FindEditionByIsbn($bookId: Int!, $isbn: String!) {
               editions(where: {
@@ -304,7 +306,7 @@ public class HardcoverSyncService {
 
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(query);
-        request.setVariables(Map.of("bookId", bookId, "isbn", isbn));
+        request.setVariables(Map.of("bookId", Integer.parseInt(bookId), "isbn", isbn));
 
         try {
             Map<String, Object> response = executeGraphQL(request);
@@ -410,7 +412,7 @@ public class HardcoverSyncService {
 
             Map<String, Object> book = books.getFirst();
             HardcoverBookInfo info = new HardcoverBookInfo();
-            info.bookId = bookId;
+            info.bookId = String.valueOf(bookId);
 
             Object defaultPhysicalEditionObj = book.get("default_physical_edition_id");
             if (defaultPhysicalEditionObj instanceof Number) {
@@ -722,7 +724,7 @@ public class HardcoverSyncService {
      * Helper class to hold Hardcover book information.
      */
     private static class HardcoverBookInfo {
-        Integer bookId;
+        String bookId;
         Integer editionId;
         Integer pages;
     }

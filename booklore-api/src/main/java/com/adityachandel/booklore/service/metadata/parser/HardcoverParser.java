@@ -4,11 +4,19 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
-import com.adityachandel.booklore.service.metadata.parser.hardcover.*;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLResponse;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverMoodFilter;
+import com.adityachandel.booklore.util.BookUtils;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.commons.text.similarity.FuzzyScore;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,69 +41,73 @@ public class HardcoverParser implements BookParser {
         String isbnCleaned = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         boolean searchByIsbn = isbnCleaned != null && !isbnCleaned.isBlank();
 
-        List<GraphQLResponse.Hit> hits;
         if (searchByIsbn) {
             log.info("Hardcover: Fetching metadata using ISBN {}", fetchMetadataRequest.getIsbn());
-            hits = hardcoverBookSearchService.searchBooks(fetchMetadataRequest.getIsbn());
-        } else {
-            // Use improved search strategy with title cleaning and fallbacks
-            hits = performSmartSearch(fetchMetadataRequest);
+            List<GraphQLResponse.Hit> hits = hardcoverBookSearchService.searchBooks(fetchMetadataRequest.getIsbn());
+            return processHits(hits, fetchMetadataRequest, true);
         }
 
-        if (hits == null || hits.isEmpty()) {
-            log.info("Hardcover: No results found for {}", 
-                    searchByIsbn ? "ISBN " + fetchMetadataRequest.getIsbn() : "title " + fetchMetadataRequest.getTitle());
-            return List.of();
-        }
-
-        FuzzyScore fuzzyScore = new FuzzyScore(Locale.ENGLISH);
-        String searchAuthor = fetchMetadataRequest.getAuthor() != null ? fetchMetadataRequest.getAuthor() : "";
-
-        // Filter by author and map to metadata
-        List<GraphQLResponse.Document> matchedDocs = hits.stream()
-                .map(GraphQLResponse.Hit::getDocument)
-                .filter(doc -> filterByAuthor(doc, searchAuthor, searchByIsbn, fuzzyScore))
-                .toList();
-
-        if (matchedDocs.isEmpty()) {
-            return List.of();
-        }
-
-        // Only fetch detailed mood data for the TOP match to minimize API calls
-        // Other results use the basic mood data from search
-        List<BookMetadata> results = new ArrayList<>();
-        boolean isFirst = true;
-        
-        for (GraphQLResponse.Document doc : matchedDocs) {
-            BookMetadata metadata = mapDocumentToMetadata(doc, fetchMetadataRequest, isFirst);
-            results.add(metadata);
-            isFirst = false;
-        }
-        
-        return results;
-    }
-
-    private List<GraphQLResponse.Hit> performSmartSearch(FetchMetadataRequest request) {
-        String title = request.getTitle();
-        String author = request.getAuthor();
+        String title = fetchMetadataRequest.getTitle();
+        String author = fetchMetadataRequest.getAuthor();
 
         if (title == null || title.isBlank()) {
             log.warn("Hardcover: No title provided for search");
             return Collections.emptyList();
         }
 
+        List<BookMetadata> results = Collections.emptyList();
+
+        // 1. Try Title + Author
         if (author != null && !author.isBlank()) {
             String combinedQuery = title.trim() + " " + author.trim();
             log.info("Hardcover: Searching with title+author: '{}'", combinedQuery);
-            List<GraphQLResponse.Hit> results = hardcoverBookSearchService.searchBooks(combinedQuery);
-            if (results != null && !results.isEmpty()) {
-                return results;
-            }
+            List<GraphQLResponse.Hit> hits = hardcoverBookSearchService.searchBooks(combinedQuery);
+            results = processHits(hits, fetchMetadataRequest, false);
         }
 
-        log.info("Hardcover: Searching with title: '{}'", title);
-        List<GraphQLResponse.Hit> results = hardcoverBookSearchService.searchBooks(title.trim());
-        return results != null ? results : Collections.emptyList();
+        // 2. If no valid results found (or no author provided), Try Title only
+        if (results.isEmpty()) {
+            log.info("Hardcover: Searching with title only: '{}'", title);
+            List<GraphQLResponse.Hit> hits = hardcoverBookSearchService.searchBooks(title.trim());
+            results = processHits(hits, fetchMetadataRequest, false);
+        }
+
+        if (results.isEmpty()) {
+            log.info("Hardcover: No results found for title '{}'", title);
+        }
+
+        return results;
+    }
+
+    private List<BookMetadata> processHits(List<GraphQLResponse.Hit> hits, FetchMetadataRequest request, boolean searchByIsbn) {
+        if (hits == null || hits.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        FuzzyScore fuzzyScore = new FuzzyScore(Locale.ENGLISH);
+        String searchAuthor = request.getAuthor() != null ? request.getAuthor() : "";
+
+        // Filter by author
+        List<GraphQLResponse.Document> matchedDocs = hits.stream()
+                .map(GraphQLResponse.Hit::getDocument)
+                .filter(doc -> filterByAuthor(doc, searchAuthor, searchByIsbn, fuzzyScore))
+                .toList();
+
+        if (matchedDocs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Only fetch detailed mood data for the TOP match to minimize API calls
+        List<BookMetadata> results = new ArrayList<>();
+        boolean isFirst = true;
+
+        for (GraphQLResponse.Document doc : matchedDocs) {
+            BookMetadata metadata = mapDocumentToMetadata(doc, request, isFirst);
+            results.add(metadata);
+            isFirst = false;
+        }
+
+        return results;
     }
 
     private boolean filterByAuthor(GraphQLResponse.Document doc, String searchAuthor, 
@@ -135,7 +147,7 @@ public class HardcoverParser implements BookParser {
         BookMetadata metadata = new BookMetadata();
         metadata.setHardcoverId(doc.getSlug());
 
-        Integer bookId = parseBookId(doc.getId());
+        String bookId = parseBookId(doc.getId());
         if (bookId != null) {
             metadata.setHardcoverBookId(bookId);
         }
@@ -175,16 +187,8 @@ public class HardcoverParser implements BookParser {
         return metadata;
     }
 
-    private Integer parseBookId(String id) {
-        if (id == null) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            log.debug("Could not parse Hardcover book ID: {}", id);
-            return null;
-        }
+    private String parseBookId(String id) {
+        return id;
     }
 
     private void mapSeriesInfo(GraphQLResponse.Document doc, BookMetadata metadata) {
@@ -203,7 +207,7 @@ public class HardcoverParser implements BookParser {
         }
     }
 
-    private void mapTagsAndMoods(GraphQLResponse.Document doc, BookMetadata metadata, Integer bookId, boolean fetchDetailedMoods) {
+    private void mapTagsAndMoods(GraphQLResponse.Document doc, BookMetadata metadata, String bookId, boolean fetchDetailedMoods) {
         boolean usedDetailedMoods = false;
 
         if (fetchDetailedMoods && bookId != null) {
@@ -232,9 +236,10 @@ public class HardcoverParser implements BookParser {
         }
     }
 
-    private boolean tryFetchDetailedMoods(Integer bookId, BookMetadata metadata) {
+    private boolean tryFetchDetailedMoods(String bookId, BookMetadata metadata) {
         try {
-            HardcoverBookDetails details = hardcoverBookSearchService.fetchBookDetails(bookId);
+            Integer bookIdInt = Integer.parseInt(bookId);
+            HardcoverBookDetails details = hardcoverBookSearchService.fetchBookDetails(bookIdInt);
             if (details == null || details.getCachedTags() == null || details.getCachedTags().isEmpty()) {
                 return false;
             }
@@ -273,23 +278,43 @@ public class HardcoverParser implements BookParser {
         }
 
         String inputIsbn = request.getIsbn();
-
-        if (inputIsbn != null && inputIsbn.length() == 10 && doc.getIsbns().contains(inputIsbn)) {
-            metadata.setIsbn10(inputIsbn);
+        String matchingIsbn = null;
+        if (StringUtils.isBlank(inputIsbn)) {
+            // If we didn't search by ISBN, use first ISBN from results
+            matchingIsbn = doc.getIsbns().stream()
+                .filter(isbn -> isbn.length() == 10 || isbn.length() == 13)
+                .findFirst()
+                .orElse(null);
+        } else if (doc.getIsbns().contains(inputIsbn)) {
+            // If we searched by ISBN and it matches a result perfectly, use that
+            matchingIsbn = inputIsbn;
         } else {
-            metadata.setIsbn10(doc.getIsbns().stream()
-                    .filter(isbn -> isbn.length() == 10)
-                    .findFirst()
-                    .orElse(null));
+            // If we searched by ISBN but got no exact matches, get response ISBN that most closely matches it
+            LevenshteinDistance distance = LevenshteinDistance.getDefaultInstance();
+            int smallestDistance = Integer.MAX_VALUE;
+            for (String isbn : doc.getIsbns()) {
+                if (isbn.length() != 10 && isbn.length() != 13) {
+                    continue;
+                }
+                int currentDistance = distance.apply(isbn, inputIsbn);
+                if (smallestDistance > currentDistance) {
+                    smallestDistance = currentDistance;
+                    matchingIsbn = isbn;
+                }
+            }
         }
 
-        if (inputIsbn != null && inputIsbn.length() == 13 && doc.getIsbns().contains(inputIsbn)) {
-            metadata.setIsbn13(inputIsbn);
+        // Whatever ISBN we end up with, calculate the other one
+        if (matchingIsbn != null && matchingIsbn.length() == 10) {
+            metadata.setIsbn10(matchingIsbn);
+            metadata.setIsbn13(BookUtils.isbn10To13(matchingIsbn));
+        } else if (matchingIsbn != null && matchingIsbn.length() == 13) {
+            metadata.setIsbn10(BookUtils.isbn13to10(matchingIsbn));
+            metadata.setIsbn13(matchingIsbn);
         } else {
-            metadata.setIsbn13(doc.getIsbns().stream()
-                    .filter(isbn -> isbn.length() == 13)
-                    .findFirst()
-                    .orElse(null));
+            // Can only happen if doc.getIsbns() is empty or doesn't have any 10/13 length strings
+            metadata.setIsbn10(null);
+            metadata.setIsbn13(null);
         }
     }
 

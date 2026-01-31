@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.repository;
 
+import com.adityachandel.booklore.model.dto.BookCompletionHeatmapDto;
 import com.adityachandel.booklore.model.dto.CompletionTimelineDto;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -138,4 +139,22 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
           AND ubp.book.id IN :bookIds
     """)
     int bulkUpdatePersonalRating(@Param("userId") Long userId, @Param("bookIds") List<Long> bookIds, @Param("rating") Integer rating);
+
+    @Query("""
+            SELECT
+                YEAR(ubp.dateFinished) as year,
+                MONTH(ubp.dateFinished) as month,
+                COUNT(ubp) as count
+            FROM UserBookProgressEntity ubp
+            WHERE ubp.user.id = :userId
+            AND ubp.dateFinished IS NOT NULL
+            AND YEAR(ubp.dateFinished) >= :startYear
+            AND YEAR(ubp.dateFinished) <= :endYear
+            GROUP BY YEAR(ubp.dateFinished), MONTH(ubp.dateFinished)
+            ORDER BY year ASC, month ASC
+            """)
+    List<BookCompletionHeatmapDto> findBookCompletionHeatmap(
+            @Param("userId") Long userId,
+            @Param("startYear") int startYear,
+            @Param("endYear") int endYear);
 }

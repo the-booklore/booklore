@@ -5,12 +5,15 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.task.options.RescanLibraryContext;
+import com.adityachandel.booklore.util.FileUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.AllArgsConstructor;
@@ -22,7 +25,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,10 +39,11 @@ public class LibraryProcessingService {
     private final LibraryRepository libraryRepository;
     private final NotificationService notificationService;
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
-    private final LibraryFileProcessorRegistry fileProcessorRegistry;
+    private final FileAsBookProcessor fileAsBookProcessor;
     private final BookRestorationService bookRestorationService;
     private final BookDeletionService bookDeletionService;
     private final LibraryFileHelper libraryFileHelper;
+    private final BookGroupingService bookGroupingService;
     @PersistenceContext
     private final EntityManager entityManager;
 
@@ -45,10 +51,14 @@ public class LibraryProcessingService {
     public void processLibrary(long libraryId) {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started processing library: " + libraryEntity.getName()));
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         try {
-            List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-            processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
+            List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity);
+            List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
+
+            // Use BookGroupingService for consistent grouping based on organization mode
+            Map<String, List<LibraryFile>> groups = bookGroupingService.groupForInitialScan(newFiles, libraryEntity);
+            fileAsBookProcessor.processLibraryFilesGrouped(groups, libraryEntity);
+
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
         } catch (IOException e) {
             log.error("Failed to process library {}: {}", libraryEntity.getName(), e.getMessage(), e);
@@ -61,23 +71,22 @@ public class LibraryProcessingService {
     public void rescanLibrary(RescanLibraryContext context) throws IOException {
         LibraryEntity libraryEntity = libraryRepository.findById(context.getLibraryId()).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started refreshing library: " + libraryEntity.getName()));
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
-        
+
         validateLibraryPathsAccessible(libraryEntity);
-        
-        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-        
+
+        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity);
+
         int existingBookCount = libraryEntity.getBookEntities().size();
         if (existingBookCount > 0 && libraryFiles.isEmpty()) {
             String paths = libraryEntity.getLibraryPaths().stream()
-                    .map(p -> p.getPath())
+                    .map(LibraryPathEntity::getPath)
                     .collect(Collectors.joining(", "));
-            log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}", 
+            log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}",
                     libraryEntity.getName(), existingBookCount, paths);
             throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(paths);
         }
-        
-        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity, processor);
+
+        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
             bookDeletionService.deleteRemovedAdditionalFiles(additionalFileIds);
@@ -89,14 +98,30 @@ public class LibraryProcessingService {
         }
         bookRestorationService.restoreDeletedBooks(libraryFiles);
         entityManager.clear();
-        processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
+        // Re-fetch library entity to get fresh state after entity manager was cleared
+        libraryEntity = libraryRepository.findById(context.getLibraryId())
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
+
+        List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
+
+        // Use BookGroupingService to determine what to attach vs create new
+        BookGroupingService.GroupingResult groupingResult = bookGroupingService.groupForRescan(newFiles, libraryEntity);
+
+        // Auto-attach files to existing books
+        for (Map.Entry<BookEntity, List<LibraryFile>> entry : groupingResult.filesToAttach().entrySet()) {
+            for (LibraryFile file : entry.getValue()) {
+                autoAttachFile(entry.getKey(), file);
+            }
+        }
+
+        // Process new book groups
+        fileAsBookProcessor.processLibraryFilesGrouped(groupingResult.newBookGroups(), libraryEntity);
 
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished refreshing library: " + libraryEntity.getName()));
     }
 
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
-        processor.processLibraryFiles(libraryFiles, libraryEntity);
+        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
     }
 
     private void validateLibraryPathsAccessible(LibraryEntity libraryEntity) {
@@ -117,8 +142,9 @@ public class LibraryProcessingService {
         return libraryEntity.getBookEntities().stream()
                 .filter(book -> (book.getDeleted() == null || !book.getDeleted()))
                 .filter(book -> {
-                    if (book.getBookFiles() == null || book.getBookFiles().isEmpty()) {
-                        return true;
+                    // Don't mark fileless books as deleted - they're intentionally without files
+                    if (!book.hasFiles()) {
+                        return false;
                     }
                     return !currentFullPaths.contains(book.getFullFilePath());
                 })
@@ -143,12 +169,63 @@ public class LibraryProcessingService {
                 .collect(Collectors.toList());
     }
 
+    private void autoAttachFile(BookEntity book, LibraryFile file) {
+        // Check if file already exists to prevent duplicates during concurrent rescans
+        var existing = bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(
+                file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
+        if (existing.isPresent()) {
+            log.debug("Additional file already exists, skipping: {}", file.getFileName());
+            return;
+        }
+
+        // Set libraryPath if not set (fileless books like physical books don't have one)
+        if (book.getLibraryPath() == null) {
+            book.setLibraryPath(file.getLibraryPathEntity());
+        } else if (!book.getLibraryPath().getId().equals(file.getLibraryPathEntity().getId())) {
+            // Book already has a different libraryPath - cannot attach files from different paths
+            log.warn("Cannot attach file '{}' to book id={}: file is in libraryPath {} but book is in libraryPath {}",
+                    file.getFileName(), book.getId(), file.getLibraryPathEntity().getId(), book.getLibraryPath().getId());
+            return;
+        }
+
+        String hash = file.isFolderBased()
+                ? FileFingerprint.generateFolderHash(file.getFullPath())
+                : FileFingerprint.generateHash(file.getFullPath());
+        Long fileSizeKb = file.isFolderBased()
+                ? FileUtils.getFolderSizeInKb(file.getFullPath())
+                : FileUtils.getFileSizeInKb(file.getFullPath());
+        BookFileEntity additionalFile = BookFileEntity.builder()
+                .book(book)
+                .fileName(file.getFileName())
+                .fileSubPath(file.getFileSubPath())
+                .isBookFormat(true)
+                .bookType(file.getBookFileType())
+                .folderBased(file.isFolderBased())
+                .fileSizeKb(fileSizeKb)
+                .initialHash(hash)
+                .currentHash(hash)
+                .addedOn(Instant.now())
+                .build();
+
+        try {
+            bookAdditionalFileRepository.save(additionalFile);
+            String primaryFileName = book.hasFiles() ? book.getPrimaryBookFile().getFileName() : "book#" + book.getId();
+            log.info("Auto-attached new format {} to existing book: {}", file.getFileName(), primaryFileName);
+        } catch (Exception e) {
+            log.error("Error auto-attaching file {}: {}", file.getFileName(), e.getMessage());
+        }
+    }
+
     private String generateUniqueKey(BookEntity book) {
-        return generateKey(book.getLibraryPath().getId(), book.getPrimaryBookFile().getFileSubPath(), book.getPrimaryBookFile().getFileName());
+        BookFileEntity primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null) {
+            // Fileless book - use a unique key that won't match any file
+            return "fileless:" + book.getId();
+        }
+        return generateKey(book.getLibraryPath().getId(), primaryFile.getFileSubPath(), primaryFile.getFileName());
     }
 
     private String generateUniqueKey(BookFileEntity file) {
-        // Additional files inherit library path from their parent book
         return generateKey(file.getBook().getLibraryPath().getId(), file.getFileSubPath(), file.getFileName());
     }
 
@@ -161,7 +238,7 @@ public class LibraryProcessingService {
         return libraryPathId + ":" + safeSubPath + ":" + fileName;
     }
 
-    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity, LibraryFileProcessor processor) {
+    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<String> currentFileKeys = libraryFiles.stream()
                 .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
@@ -169,8 +246,7 @@ public class LibraryProcessingService {
         List<BookFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
 
         return allAdditionalFiles.stream()
-                // Only check files that would be scanned: book formats always, non-book files only if processor supports them
-                .filter(additionalFile -> additionalFile.isBookFormat() || processor.supportsSupplementaryFiles())
+                .filter(BookFileEntity::isBookFormat)
                 .filter(additionalFile -> !currentFileKeys.contains(generateUniqueKey(additionalFile)))
                 .map(BookFileEntity::getId)
                 .collect(Collectors.toList());

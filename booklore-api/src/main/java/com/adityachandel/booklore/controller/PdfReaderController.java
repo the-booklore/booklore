@@ -7,10 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,14 +22,18 @@ public class PdfReaderController {
     @Operation(summary = "List pages in a PDF book", description = "Retrieve a list of available page numbers for a PDF book.")
     @ApiResponse(responseCode = "200", description = "Page numbers returned successfully")
     @GetMapping("/{bookId}/pages")
-    public List<Integer> listPages(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return pdfReaderService.getAvailablePages(bookId);
+    public List<Integer> listPages(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., PDF, CBX)") @RequestParam(required = false) String bookType) {
+        return pdfReaderService.getAvailablePages(bookId, bookType);
     }
 
     @Operation(summary = "Get book info for a PDF book", description = "Retrieve book information including page count and hierarchical outline/table of contents.")
     @ApiResponse(responseCode = "200", description = "Book info returned successfully")
     @GetMapping("/{bookId}/info")
-    public PdfBookInfo getBookInfo(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return pdfReaderService.getBookInfo(bookId);
+    public PdfBookInfo getBookInfo(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Optional book type for alternative format (e.g., PDF, CBX)") @RequestParam(required = false) String bookType) {
+        return pdfReaderService.getBookInfo(bookId, bookType);
     }
 }

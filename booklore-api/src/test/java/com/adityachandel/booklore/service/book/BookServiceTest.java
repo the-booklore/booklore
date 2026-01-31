@@ -11,7 +11,7 @@ import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
-import com.adityachandel.booklore.service.user.UserProgressService;
+import com.adityachandel.booklore.service.progress.ReadingProgressService;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ class BookServiceTest {
     @Mock
     private BookQueryService bookQueryService;
     @Mock
-    private UserProgressService userProgressService;
+    private ReadingProgressService readingProgressService;
     @Mock
     private BookDownloadService bookDownloadService;
     @Mock
@@ -89,9 +89,9 @@ class BookServiceTest {
 
     @Test
     void getBookDTOs_adminUser_returnsBooksWithProgress() {
-        Book book = Book.builder().id(1L).bookType(BookFileType.PDF).shelves(Set.of()).build();
+        Book book = Book.builder().id(1L).primaryFile(BookFile.builder().bookType(BookFileType.PDF).build()).shelves(Set.of()).build();
         when(bookQueryService.getAllBooks(anyBoolean())).thenReturn(List.of(book));
-        when(userProgressService.fetchUserProgress(anyLong(), anySet())).thenReturn(Map.of(1L, new UserBookProgressEntity()));
+        when(readingProgressService.fetchUserProgress(anyLong(), anySet())).thenReturn(Map.of(1L, new UserBookProgressEntity()));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
         List<Book> result = bookService.getBookDTOs(true);
@@ -114,8 +114,8 @@ class BookServiceTest {
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
         when(bookQueryService.findAllWithMetadataByIds(anySet())).thenReturn(List.of(entity));
-        when(userProgressService.fetchUserProgress(anyLong(), anySet())).thenReturn(Map.of(2L, new UserBookProgressEntity()));
-        Book mappedBook = Book.builder().id(2L).bookType(BookFileType.EPUB).metadata(BookMetadata.builder().build()).build();
+        when(readingProgressService.fetchUserProgress(anyLong(), anySet())).thenReturn(Map.of(2L, new UserBookProgressEntity()));
+        Book mappedBook = Book.builder().id(2L).primaryFile(BookFile.builder().bookType(BookFileType.EPUB).build()).metadata(BookMetadata.builder().build()).build();
         when(bookMapper.toBook(entity)).thenReturn(mappedBook);
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
@@ -143,7 +143,7 @@ class BookServiceTest {
         entity.setLibrary(library);
         when(bookRepository.findByIdWithBookFiles(3L)).thenReturn(Optional.of(entity));
         when(userBookProgressRepository.findByUserIdAndBookId(anyLong(), eq(3L))).thenReturn(Optional.of(new UserBookProgressEntity()));
-        Book mappedBook = Book.builder().id(3L).bookType(BookFileType.PDF).metadata(BookMetadata.builder().build()).shelves(Set.of()).build();
+        Book mappedBook = Book.builder().id(3L).primaryFile(BookFile.builder().bookType(BookFileType.PDF).build()).metadata(BookMetadata.builder().build()).shelves(Set.of()).build();
         when(bookMapper.toBook(entity)).thenReturn(mappedBook);
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
@@ -167,6 +167,7 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(4L);
         BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setId(1L);
         primaryFile.setBook(entity);
         primaryFile.setBookType(BookFileType.EPUB);
         entity.setBookFiles(List.of(primaryFile));
@@ -186,7 +187,7 @@ class BookServiceTest {
         when(ebookViewerPreferenceRepository.findByBookIdAndUserId(4L, testUser.getId())).thenReturn(Optional.of(epubPref));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
-        BookViewerSettings settings = bookService.getBookViewerSetting(4L);
+        BookViewerSettings settings = bookService.getBookViewerSetting(4L, 1L);
 
         assertNotNull(settings.getEbookSettings());
         assertEquals("Arial", settings.getEbookSettings().getFontFamily());
@@ -207,12 +208,13 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(5L);
         BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setId(1L);
         primaryFile.setBook(entity);
         primaryFile.setBookType(null);
         entity.setBookFiles(List.of(primaryFile));
         when(bookRepository.findByIdWithBookFiles(5L)).thenReturn(Optional.of(entity));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
-        assertThrows(APIException.class, () -> bookService.getBookViewerSetting(5L));
+        assertThrows(APIException.class, () -> bookService.getBookViewerSetting(5L, 1L));
     }
 
     @Test
@@ -223,10 +225,10 @@ class BookServiceTest {
     }
 
     @Test
-    void updateReadProgress_delegatesToUpdateService() {
+    void updateReadProgress_delegatesToReadingProgressService() {
         ReadProgressRequest req = new ReadProgressRequest();
         bookService.updateReadProgress(req);
-        verify(bookUpdateService).updateReadProgress(req);
+        verify(readingProgressService).updateReadProgress(req);
     }
 
     @Test

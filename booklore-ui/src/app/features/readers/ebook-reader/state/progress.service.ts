@@ -30,6 +30,7 @@ export class ReaderProgressService {
 
   private bookId!: number;
   private bookType!: BookType;
+  private bookFileId?: number;
   private hasStartedSession = false;
 
   private _currentCfi: string | null = null;
@@ -61,9 +62,10 @@ export class ReaderProgressService {
     return this._currentPageInfo;
   }
 
-  initialize(bookId: number, bookType: BookType): void {
+  initialize(bookId: number, bookType: BookType, bookFileId?: number): void {
     this.bookId = bookId;
     this.bookType = bookType;
+    this.bookFileId = bookFileId;
     this.hasStartedSession = false;
   }
 
@@ -80,7 +82,7 @@ export class ReaderProgressService {
     }
 
     if (cfi && percentage !== null) {
-      this.bookPatchService.saveEpubProgress(this.bookId, cfi, href, percentage);
+      this.bookPatchService.saveEpubProgress(this.bookId, cfi, href, percentage, this.bookFileId);
       this.readingSessionService.updateProgress(cfi, percentage);
     }
 

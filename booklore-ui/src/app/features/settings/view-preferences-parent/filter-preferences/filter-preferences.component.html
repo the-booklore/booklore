@@ -26,20 +26,5 @@
       </div>
     </div>
 
-    <div class="setting-item">
-      <div class="setting-header-standalone">
-        <label class="setting-label">Sorting Mode</label>
-      </div>
-      <p class="setting-description">Choose how filter options are sorted in the sidebar.</p>
-      <div class="setting-options">
-        <p-select
-          size="small"
-          [options]="filterSortingModes"
-          [(ngModel)]="selectedFilterSortingMode"
-          (ngModelChange)="onFilterSortingModeChange()"
-          appendTo="body">
-        </p-select>
-      </div>
-    </div>
   </div>
 </div>

@@ -4,7 +4,9 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
-import com.adityachandel.booklore.service.metadata.parser.hardcover.*;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLResponse;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
+import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,7 +17,8 @@ import org.mockito.MockitoAnnotations;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.*;
 
 /**
@@ -85,6 +88,33 @@ class HardcoverParserTest {
 
             verify(hardcoverBookSearchService).searchBooks("Some Book Unknown Author");
             verify(hardcoverBookSearchService).searchBooks("Some Book");
+        }
+
+        @Test
+        @DisplayName("Should fall back to title-only search when combined search returns results but they are filtered out")
+        void fetchMetadata_combinedSearchFilteredOut_fallsBackToTitleOnly() {
+            Book book = Book.builder().title("Portrait of a Thief").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Portrait of a Thief")
+                    .author("Grace D. Li")
+                    .build();
+
+            // Simulate combined search returning a result that DOES NOT match the author (e.g. some other book matched the string)
+            GraphQLResponse.Hit badHit = createHitWithAuthor("Portrait of something", "Random Person");
+            when(hardcoverBookSearchService.searchBooks("Portrait of a Thief Grace D. Li"))
+                    .thenReturn(List.of(badHit)); // Returns a hit, but fuzzy score will fail or simple check will fail
+
+            // Fallback search should match
+            GraphQLResponse.Hit goodHit = createHitWithAuthor("Portrait of a Thief", "Grace D. Li");
+            when(hardcoverBookSearchService.searchBooks("Portrait of a Thief"))
+                    .thenReturn(List.of(goodHit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            verify(hardcoverBookSearchService).searchBooks("Portrait of a Thief Grace D. Li");
+            verify(hardcoverBookSearchService).searchBooks("Portrait of a Thief");
+            assertThat(results).hasSize(1);
+            assertThat(results.get(0).getTitle()).isEqualTo("Portrait of a Thief");
         }
 
         @Test
@@ -176,12 +206,12 @@ class HardcoverParserTest {
             Book book = Book.builder().title("Any Book").build();
             FetchMetadataRequest request = FetchMetadataRequest.builder()
                     .title("Any Book")
-                    .isbn("1234567890")
+                    .isbn("123456789X")
                     .author("Wrong Author")  // Should be ignored
                     .build();
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Any Book", "Correct Author");
-            when(hardcoverBookSearchService.searchBooks("1234567890"))
+            when(hardcoverBookSearchService.searchBooks("123456789X"))
                     .thenReturn(List.of(hit));
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
@@ -199,11 +229,11 @@ class HardcoverParserTest {
             Book book = Book.builder().title("Test").build();
             FetchMetadataRequest request = FetchMetadataRequest.builder()
                     .title("Test")
-                    .isbn("9781234567890")
+                    .isbn("9781234567897")
                     .build();
 
             GraphQLResponse.Hit hit = createFullyPopulatedHit();
-            when(hardcoverBookSearchService.searchBooks("9781234567890"))
+            when(hardcoverBookSearchService.searchBooks("9781234567897"))
                     .thenReturn(List.of(hit));
 
             List<BookMetadata> results = parser.fetchMetadata(book, request);
@@ -215,7 +245,7 @@ class HardcoverParserTest {
             assertThat(metadata.getSubtitle()).isEqualTo("A Subtitle");
             assertThat(metadata.getDescription()).isEqualTo("A description");
             assertThat(metadata.getHardcoverId()).isEqualTo("test-book-slug");
-            assertThat(metadata.getHardcoverBookId()).isEqualTo(12345);
+            assertThat(metadata.getHardcoverBookId()).isEqualTo("12345");
             assertThat(metadata.getHardcoverRating()).isEqualTo(4.25);
             assertThat(metadata.getHardcoverReviewCount()).isEqualTo(100);
             assertThat(metadata.getPageCount()).isEqualTo(350);
@@ -223,9 +253,47 @@ class HardcoverParserTest {
             assertThat(metadata.getSeriesName()).isEqualTo("Test Series");
             assertThat(metadata.getSeriesNumber()).isEqualTo(2.0f);
             assertThat(metadata.getSeriesTotal()).isEqualTo(5);
-            assertThat(metadata.getIsbn13()).isEqualTo("9781234567890");
-            assertThat(metadata.getIsbn10()).isEqualTo("1234567890");
+            assertThat(metadata.getIsbn13()).isEqualTo("9781234567897");
+            assertThat(metadata.getIsbn10()).isEqualTo("123456789X");
             assertThat(metadata.getProvider()).isEqualTo(MetadataProvider.Hardcover);
+        }
+
+        @Test
+        @DisplayName("Should map correct ISBN-13 from ISBN-10")
+        void fetchMetadata_fullDocument_isbn10() {
+            Book book = Book.builder().title("Test").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Test")
+                    .isbn("123456789X")
+                    .build();
+
+            GraphQLResponse.Hit hit = createFullyPopulatedHit();
+            when(hardcoverBookSearchService.searchBooks("123456789X"))
+                    .thenReturn(List.of(hit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results.get(0).getIsbn10()).isEqualTo("123456789X");
+            assertThat(results.get(0).getIsbn13()).isEqualTo("9781234567897");
+        }
+
+        @Test
+        @DisplayName("ISBN-13 not starting with 978 should not have an ISBN-10")
+        void fetchMetadata_fullDocument_noIsbn10() {
+            Book book = Book.builder().title("Test").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Test")
+                    .isbn("9791111111112")
+                    .build();
+
+            GraphQLResponse.Hit hit = createFullyPopulatedHit();
+            when(hardcoverBookSearchService.searchBooks("9791111111112"))
+                    .thenReturn(List.of(hit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results.get(0).getIsbn10()).isNull();
+            assertThat(results.get(0).getIsbn13()).isEqualTo("9791111111112");
         }
 
         @Test
@@ -395,7 +463,7 @@ class HardcoverParserTest {
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
             assertThat(results).hasSize(1);
-            assertThat(results.get(0).getHardcoverBookId()).isNull();
+            assertThat(results.get(0).getHardcoverBookId()).isEqualTo("not-a-number");
         }
 
         @Test
@@ -501,7 +569,7 @@ class HardcoverParserTest {
         doc.setRatingsCount(100);
         doc.setPages(350);
         doc.setReleaseDate("2023-01-15");
-        doc.setIsbns(List.of("9781234567890", "1234567890"));
+        doc.setIsbns(List.of("9781111111113", "1111111111", "9781234567897", "123456789X", "9791111111112"));
         doc.setGenres(List.of("Fiction", "Fantasy"));
         doc.setMoods(List.of("adventurous", "exciting"));
         doc.setTags(List.of("Epic"));
