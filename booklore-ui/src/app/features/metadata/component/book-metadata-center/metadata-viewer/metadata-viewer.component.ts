@@ -28,7 +28,7 @@ import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
-import {fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.component';
+import {fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.config';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
@@ -813,14 +813,14 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   goToPageCountRange(pageCount: number): void {
     const range = pageCountRanges.find(r => pageCount >= r.min && pageCount < r.max);
     if (range) {
-      this.handleMetadataClick('pageCount', range.id);
+      this.handleMetadataClick('pageCount', range.id.toString());
     }
   }
 
   goToFileSizeRange(fileSizeKb: number): void {
     const range = fileSizeRanges.find(r => fileSizeKb >= r.min && fileSizeKb < r.max);
     if (range) {
-      this.handleMetadataClick('fileSize', range.id);
+      this.handleMetadataClick('fileSize', range.id.toString());
     }
   }
 
@@ -828,7 +828,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     const normalizedScore = score > 1 ? score / 100 : score;
     const range = matchScoreRanges.find(r => normalizedScore >= r.min && normalizedScore < r.max);
     if (range) {
-      this.handleMetadataClick('matchScore', range.id);
+      this.handleMetadataClick('matchScore', range.id.toString());
     }
   }
 
