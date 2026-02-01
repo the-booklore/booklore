@@ -182,7 +182,7 @@ class FileStreamingServiceTest {
 
         fileStreamingService.streamWithRangeSupport(testFile, "audio/mp4", request, response);
 
-        verify(response).setHeader("Cache-Control", "public, max-age=3600");
+        verify(response).setHeader("Cache-Control", "no-store");
     }
 
     // ==================== parseRange tests ====================
