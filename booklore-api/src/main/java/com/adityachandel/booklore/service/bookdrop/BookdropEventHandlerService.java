@@ -75,7 +75,7 @@ public class BookdropEventHandlerService {
         Path file = event.getFile();
         WatchEvent.Kind<?> kind = event.getKind();
 
-        if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
+        if (kind == StandardWatchEventKinds.ENTRY_CREATE || kind == StandardWatchEventKinds.ENTRY_MODIFY) {
             try {
                 if (!Files.exists(file)) {
                     log.warn("File does not exist, ignoring: {}", file);

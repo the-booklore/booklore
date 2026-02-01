@@ -39,6 +39,19 @@ public interface UserBookFileProgressRepository extends JpaRepository<UserBookFi
     @Query("""
         SELECT ubfp FROM UserBookFileProgressEntity ubfp
         WHERE ubfp.user.id = :userId
+          AND ubfp.bookFile.book.id = :bookId
+          AND ubfp.bookFile.bookType = com.adityachandel.booklore.model.enums.BookFileType.AUDIOBOOK
+        ORDER BY ubfp.lastReadTime DESC
+        LIMIT 1
+    """)
+    Optional<UserBookFileProgressEntity> findMostRecentAudiobookProgressByUserIdAndBookId(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId
+    );
+
+    @Query("""
+        SELECT ubfp FROM UserBookFileProgressEntity ubfp
+        WHERE ubfp.user.id = :userId
           AND ubfp.bookFile.book.id IN :bookIds
     """)
     List<UserBookFileProgressEntity> findByUserIdAndBookFileBookIdIn(

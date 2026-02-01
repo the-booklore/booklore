@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookService} from './book.service';
-import {readStatusLabels} from '../components/book-browser/book-filter/book-filter.component';
+import {readStatusLabels} from '../components/book-browser/book-filter/book-filter.config';
 import {ReadStatus} from '../model/book.model';
 import {ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
 import {finalize} from 'rxjs';
@@ -95,6 +95,14 @@ export class BookMenuService {
               icon: 'pi pi-exclamation-triangle',
               acceptLabel: 'Yes',
               rejectLabel: 'No',
+              acceptButtonProps: {
+                label: 'Yes',
+                severity: 'success'
+              },
+              rejectButtonProps: {
+                label: 'No',
+                severity: 'secondary'
+              },
               accept: () => {
                 const loader = this.loadingService.show(`Updating read status for ${count} book(s)...`);
 
