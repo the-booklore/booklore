@@ -178,11 +178,5 @@ public class ComicInfo {
     @Data
     @NoArgsConstructor
     @XmlAccessorType(XmlAccessType.FIELD)
-    public static class Pages {
-        // Placeholder for Pages element structure if needed, currently not used in logic
-        // But for completeness we can define it or leave it as object.
-        // Given we don't populate it yet, we can leave it simple or empty.
-        // Actually the schema has a list of Page elements.
-        // For now, let's just leave it as is.
-    }
+    public static class Pages {}
 }
