@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.metadata.extractor;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.service.metadata.BookLoreMetadata;
+import com.adityachandel.booklore.util.SecureXmlUtils;
 import io.documentnode.epub4j.domain.Book;
 import io.documentnode.epub4j.domain.MediaType;
 import io.documentnode.epub4j.domain.MediaTypes;
@@ -19,9 +20,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -105,11 +104,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     @Override
     public BookMetadata extractMetadata(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
-
+            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
             FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
             if (containerHdr == null) return null;
 
@@ -455,7 +450,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         }
 
         MediaType mt = res.getMediaType();
-        if (mt == null || !mt.getName().startsWith("image")) {
+        if (mt == null || mt.getName() == null || !mt.getName().startsWith("image")) {
             return null;
         }
 
@@ -469,10 +464,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private String findCoverImageHrefInOpf(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
 
             FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
             if (containerHdr == null) return null;

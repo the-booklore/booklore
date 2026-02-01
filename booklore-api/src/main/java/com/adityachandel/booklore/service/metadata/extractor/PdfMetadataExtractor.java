@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.metadata.extractor;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.util.SecureXmlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -21,7 +22,6 @@ import org.w3c.dom.NodeList;
 import javax.imageio.ImageIO;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -146,9 +146,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                     } else {
                         String rawXmp = IOUtils.toString(is, StandardCharsets.UTF_8);
                         if (StringUtils.isNotBlank(rawXmp)) {
-                            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                            dbFactory.setNamespaceAware(true);
-                            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                            DocumentBuilder dBuilder = SecureXmlUtils.createSecureDocumentBuilder(true);
                             Document doc = dBuilder.parse(new ByteArrayInputStream(rawXmp.getBytes(StandardCharsets.UTF_8)));
 
                             XPathFactory xPathfactory = XPathFactory.newInstance();
@@ -158,6 +156,13 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                             extractDublinCoreMetadata(xpath, doc, metadataBuilder);
                             extractCalibreMetadata(xpath, doc, metadataBuilder);
                             extractBookloreMetadata(xpath, doc, metadataBuilder);
+                            
+                            // Debug logging for troubleshooting extraction issues
+                            if (log.isDebugEnabled()) {
+                                BookMetadata debugMeta = metadataBuilder.build();
+                                log.debug("PDF XMP extraction results - subtitle: '{}', moods: {}, tags: {}", 
+                                    debugMeta.getSubtitle(), debugMeta.getMoods(), debugMeta.getTags());
+                            }
 
                             Map<String, String> identifiers = extractIdentifiers(xpath, doc);
                             if (!identifiers.isEmpty()) {
@@ -350,8 +355,10 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
             // Subtitle (try both old PascalCase and new camelCase)
             String subtitle = extractBookloreField(xpath, doc, "subtitle");
+            log.debug("Extracted subtitle (camelCase): '{}'", subtitle);
             if (StringUtils.isBlank(subtitle)) {
                 subtitle = xpath.evaluate("//booklore:Subtitle/text()", doc);
+                log.debug("Extracted subtitle (PascalCase fallback): '{}'", subtitle);
             }
             if (StringUtils.isNotBlank(subtitle)) {
                 builder.subtitle(subtitle.trim());
@@ -415,9 +422,11 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
             // Moods (try new RDF Bag format first, then legacy semicolon-separated)
             Set<String> moods = extractBookloreBag(xpath, doc, "moods");
+            log.debug("Extracted moods from RDF Bag: {}", moods);
             if (moods.isEmpty()) {
                 // Legacy format support
                 String moodsLegacy = xpath.evaluate("//booklore:Moods/text()", doc);
+                log.debug("Legacy moods string: '{}'", moodsLegacy);
                 if (StringUtils.isNotBlank(moodsLegacy)) {
                     moods = Arrays.stream(moodsLegacy.split(";"))
                             .map(String::trim)
@@ -431,9 +440,11 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
             // Tags (try new RDF Bag format first, then legacy semicolon-separated)
             Set<String> tags = extractBookloreBag(xpath, doc, "tags");
+            log.debug("Extracted tags from RDF Bag: {}", tags);
             if (tags.isEmpty()) {
                 // Legacy format support
                 String tagsLegacy = xpath.evaluate("//booklore:Tags/text()", doc);
+                log.debug("Legacy tags string: '{}'", tagsLegacy);
                 if (StringUtils.isNotBlank(tagsLegacy)) {
                     tags = Arrays.stream(tagsLegacy.split(";"))
                             .map(String::trim)
@@ -477,8 +488,10 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
     private Set<String> extractBookloreBag(XPath xpath, Document doc, String fieldName) {
         Set<String> values = new HashSet<>();
         try {
-            NodeList nodes = (NodeList) xpath.evaluate(
-                    "//booklore:" + fieldName + "/rdf:Bag/rdf:li/text()", doc, XPathConstants.NODESET);
+            String xpathExpr = "//booklore:" + fieldName + "/rdf:Bag/rdf:li/text()";
+            log.debug("Executing XPath for {}: {}", fieldName, xpathExpr);
+            NodeList nodes = (NodeList) xpath.evaluate(xpathExpr, doc, XPathConstants.NODESET);
+            log.debug("XPath for {} returned {} nodes", fieldName, nodes != null ? nodes.getLength() : 0);
             if (nodes != null) {
                 for (int i = 0; i < nodes.getLength(); i++) {
                     String text = nodes.item(i).getNodeValue();
@@ -488,7 +501,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                 }
             }
         } catch (Exception e) {
-            // Ignore, return empty set
+            log.warn("Failed to extract RDF Bag for booklore:{}: {}", fieldName, e.getMessage());
         }
         return values;
     }

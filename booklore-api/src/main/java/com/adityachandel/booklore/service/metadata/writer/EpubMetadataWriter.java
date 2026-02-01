@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.util.SecureXmlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
@@ -20,7 +21,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -78,9 +78,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 return;
             }
 
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
             Document opfDoc = builder.parse(opfFile);
 
             NodeList metadataList = opfDoc.getElementsByTagNameNS(OPF_NS, "metadata");
@@ -369,9 +367,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 return;
             }
 
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
             Document opfDoc = builder.parse(opfFile);
 
             applyCoverImageToEpub(tempDir, opfDoc, coverData);
@@ -490,7 +486,8 @@ public class EpubMetadataWriter implements MetadataWriter {
             throw new IOException("container.xml not found at expected location: " + containerXml);
         }
 
-        Document containerDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(containerXml.toFile());
+        DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
+        Document containerDoc = builder.parse(containerXml.toFile());
         Node rootfile = containerDoc.getElementsByTagName("rootfile").item(0);
         if (rootfile == null) {
             throw new IOException("No <rootfile> found in container.xml");

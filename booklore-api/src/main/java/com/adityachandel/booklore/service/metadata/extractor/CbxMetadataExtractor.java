@@ -201,9 +201,15 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         builder.language(getTextContent(document, "LanguageISO"));
 
         // GTIN is the standard ComicInfo field for ISBN (EAN/UPC)
+        // Validate it's a 13-digit number (ISBN-13/EAN-13)
         String gtin = getTextContent(document, "GTIN");
         if (gtin != null && !gtin.isBlank()) {
-            builder.isbn13(gtin);
+            String normalized = gtin.replaceAll("[- ]", "");
+            if (normalized.matches("\\d{13}")) {
+                builder.isbn13(normalized);
+            } else {
+                log.debug("Invalid GTIN format (expected 13 digits): {}", gtin);
+            }
         }
 
         Set<String> authors = new HashSet<>();

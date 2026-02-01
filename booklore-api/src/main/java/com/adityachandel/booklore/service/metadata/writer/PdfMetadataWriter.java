@@ -21,7 +21,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -77,6 +76,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             // PDFBox 3.x saves in compressed mode by default
             pdf.save(tempFile);
             Files.move(tempFile.toPath(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            tempFile = null; // Prevent deletion in finally block after successful move
             log.info("Successfully embedded metadata into PDF: {}", file.getName());
         } catch (Exception e) {
             log.warn("Failed to write metadata to PDF {}: {}", file.getName(), e.getMessage(), e);
@@ -247,9 +247,7 @@ public class PdfMetadataWriter implements MetadataWriter {
      * - Booklore (booklore:) for series, subtitle, ISBNs, external IDs, ratings, moods, tags, page count
      */
     private byte[] addCustomIdentifiersToXmp(byte[] xmpBytes, BookMetadataEntity metadata, MetadataCopyHelper helper, MetadataClearFlags clear) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
         Document doc = builder.parse(new ByteArrayInputStream(xmpBytes));
 
         Element rdfRoot = (Element) doc.getElementsByTagNameNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "RDF").item(0);
@@ -444,7 +442,7 @@ public class PdfMetadataWriter implements MetadataWriter {
     private boolean isXmpMetadataDifferent(byte[] existingBytes, byte[] newBytes) {
         if (existingBytes == null || newBytes == null) return true;
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
             Document doc1 = builder.parse(new ByteArrayInputStream(existingBytes));
             Document doc2 = builder.parse(new ByteArrayInputStream(newBytes));
             return !Objects.equals(
