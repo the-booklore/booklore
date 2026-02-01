@@ -184,6 +184,7 @@ export class BookFilterService {
   private filterByMagicShelf(books: Book[], magicShelf: MagicShelf): Book[] {
     if (!magicShelf.filterJson) return [];
     try {
+      this.bookRuleEvaluatorService.setAllBooks(books);
       const groupRule = JSON.parse(magicShelf.filterJson) as GroupRule;
       return books.filter(book => this.bookRuleEvaluatorService.evaluateGroup(book, groupRule));
     } catch {

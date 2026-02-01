@@ -205,4 +205,312 @@ describe('BookRuleEvaluatorService', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('metadata field filtering', () => {
+    it('should check if book has ISBN-13', () => {
+      const book = createBook({
+        metadata: {
+          bookId: 1,
+          isbn13: '9781234567890',
+          title: 'Test Book'
+        }
+      });
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'metadata',
+            operator: 'has',
+            value: 'isbn13'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+
+    it('should check if book is missing Goodreads rating', () => {
+      const book = createBook({
+        metadata: {
+          bookId: 1,
+          title: 'Test Book'
+        }
+      });
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'metadata',
+            operator: 'missing',
+            value: 'goodreadsRating'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+
+    it('should check if book has personal rating', () => {
+      const book = createBook({
+        personalRating: 8.5
+      });
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'metadata',
+            operator: 'has',
+            value: 'personalRating'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+
+    it('should check if book has authors', () => {
+      const book = createBook({
+        metadata: {
+          bookId: 1,
+          authors: ['Author One', 'Author Two']
+        }
+      });
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'metadata',
+            operator: 'has',
+            value: 'authors'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+
+    it('should check if book is missing description', () => {
+      const book = createBook({
+        metadata: {
+          bookId: 1,
+          title: 'Test Book'
+        }
+      });
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'metadata',
+            operator: 'missing',
+            value: 'description'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+  });
+
+  describe('series status filtering', () => {
+    it('should return "reading" status for all books in a series when one book is being read', () => {
+      const book1 = createBook({
+        id: 1,
+        metadata: {
+          bookId: 1,
+          seriesName: 'Test Series',
+          seriesNumber: 1,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.READING
+      });
+
+      const book2 = createBook({
+        id: 2,
+        metadata: {
+          bookId: 2,
+          seriesName: 'Test Series',
+          seriesNumber: 2,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.UNREAD
+      });
+
+      // Set all books so the service can check the series
+      service.setAllBooks([book1, book2]);
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'seriesStatus',
+            operator: 'equals',
+            value: 'reading'
+          }
+        ]
+      };
+
+      // Both books should match since they're in the same series and book1 is being read
+      expect(service.evaluateGroup(book1, group)).toBe(true);
+      expect(service.evaluateGroup(book2, group)).toBe(true);
+    });
+
+    it('should return "reading" status for all books in a series when one book is read', () => {
+      const book1 = createBook({
+        id: 1,
+        metadata: {
+          bookId: 1,
+          seriesName: 'Test Series',
+          seriesNumber: 1,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.READ
+      });
+
+      const book2 = createBook({
+        id: 2,
+        metadata: {
+          bookId: 2,
+          seriesName: 'Test Series',
+          seriesNumber: 2,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.UNREAD
+      });
+
+      service.setAllBooks([book1, book2]);
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'seriesStatus',
+            operator: 'equals',
+            value: 'reading'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book1, group)).toBe(true);
+      expect(service.evaluateGroup(book2, group)).toBe(true);
+    });
+
+    it('should return "completed" status when seriesNumber equals seriesTotal', () => {
+      const book = createBook({
+        metadata: {
+          bookId: 1,
+          seriesName: 'Test Series',
+          seriesNumber: 5,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.UNREAD
+      });
+
+      service.setAllBooks([book]);
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'seriesStatus',
+            operator: 'equals',
+            value: 'completed'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+
+    it('should return "ongoing" status for unread books in series with no read books', () => {
+      const book = createBook({
+        metadata: {
+          bookId: 1,
+          seriesName: 'Test Series',
+          seriesNumber: 1,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.UNREAD
+      });
+
+      service.setAllBooks([book]);
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'seriesStatus',
+            operator: 'equals',
+            value: 'ongoing'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book, group)).toBe(true);
+    });
+
+    it('should not match "reading" status when no books in series are read', () => {
+      const book1 = createBook({
+        id: 1,
+        metadata: {
+          bookId: 1,
+          seriesName: 'Test Series',
+          seriesNumber: 1,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.UNREAD
+      });
+
+      const book2 = createBook({
+        id: 2,
+        metadata: {
+          bookId: 2,
+          seriesName: 'Test Series',
+          seriesNumber: 2,
+          seriesTotal: 5
+        },
+        readStatus: ReadStatus.UNREAD
+      });
+
+      service.setAllBooks([book1, book2]);
+
+      const group: GroupRule = {
+        name: 'test',
+        type: 'group',
+        join: 'and',
+        rules: [
+          {
+            field: 'seriesStatus',
+            operator: 'equals',
+            value: 'reading'
+          }
+        ]
+      };
+
+      expect(service.evaluateGroup(book1, group)).toBe(false);
+      expect(service.evaluateGroup(book2, group)).toBe(false);
+    });
+  });
 });

@@ -162,11 +162,14 @@ export class MagicShelfService {
         }
 
         return this.bookService.bookState$.pipe(
-          map((state) =>
-            (state.books ?? []).filter((book) =>
+          map((state) => {
+            const allBooks = state.books ?? [];
+            this.ruleEvaluatorService.setAllBooks(allBooks);
+            
+            return allBooks.filter((book) =>
               this.ruleEvaluatorService.evaluateGroup(book, group)
-            ).length
-          )
+            ).length;
+          })
         );
       })
     );

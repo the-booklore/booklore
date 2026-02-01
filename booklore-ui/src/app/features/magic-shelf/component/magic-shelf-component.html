@@ -161,10 +161,8 @@
                     <p-select [options]="incompleteSeriesOptions" formControlName="value" placeholder="Select True or False" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'seriesStatus') {
                     <p-select [options]="seriesStatusOptions" formControlName="value" placeholder="Select Status" appendTo="body" class="value-input"></p-select>
-                  } @else if (ruleCtrl.get('field')?.value === 'externalId') {
-                    <p-select [options]="externalIdOptions" formControlName="value" placeholder="Select ID Source" appendTo="body" class="value-input"></p-select>
-                  } @else if (ruleCtrl.get('field')?.value === 'externalRating') {
-                    <p-select [options]="externalRatingOptions" formControlName="value" placeholder="Select Rating Source" appendTo="body" class="value-input"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'metadata') {
+                    <p-select [options]="metadataOptions" formControlName="value" placeholder="Select Metadata Field" appendTo="body" class="value-input" [filter]="true"></p-select>
                   } @else {
                     <input pInputText formControlName="value" class="value-input" placeholder="Value"/>
                   }

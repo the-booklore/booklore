@@ -59,71 +59,118 @@ export class BookRuleEvaluatorService {
       }
     }
 
-    // Special handling for externalId and externalRating
-    if (rule.field === 'externalId' || rule.field === 'externalRating') {
-      const source = String(rule.value).toLowerCase();
+    // Special handling for metadata field
+    if (rule.field === 'metadata') {
+      const metadataField = String(rule.value).toLowerCase();
       let fieldValue: unknown;
 
-      if (rule.field === 'externalId') {
-        // Map source to the actual ID field
-        switch (source) {
-          case 'isbn13':
-            fieldValue = book.metadata?.isbn13;
-            break;
-          case 'isbn10':
-            fieldValue = book.metadata?.isbn10;
-            break;
-          case 'asin':
-            fieldValue = (book.metadata as Record<string, unknown>)?.['asin'];
-            break;
-          case 'goodreads':
-            fieldValue = book.metadata?.goodreadsId;
-            break;
-          case 'comicvine':
-            fieldValue = book.metadata?.comicvineId;
-            break;
-          case 'hardcover':
-            fieldValue = book.metadata?.hardcoverId;
-            break;
-          case 'hardcoverbook':
-            fieldValue = book.metadata?.hardcoverBookId;
-            break;
-          case 'google':
-            fieldValue = book.metadata?.googleId;
-            break;
-          case 'lubimyczytac':
-            fieldValue = book.metadata?.lubimyczytacId;
-            break;
-          case 'ranobedb':
-            fieldValue = book.metadata?.ranobedbId;
-            break;
-          default:
-            fieldValue = null;
-        }
-      } else if (rule.field === 'externalRating') {
-        // Map source to the actual rating field
-        switch (source) {
-          case 'amazon':
-            fieldValue = book.metadata?.amazonRating;
-            break;
-          case 'goodreads':
-            fieldValue = book.metadata?.goodreadsRating;
-            break;
-          case 'hardcover':
-            fieldValue = book.metadata?.hardcoverRating;
-            break;
-          case 'lubimyczytac':
-            fieldValue = book.metadata?.lubimyczytacRating;
-            break;
-          case 'ranobedb':
-            fieldValue = book.metadata?.ranobedbRating;
-            break;
-          case 'personal':
-            fieldValue = book.personalRating;
-            break;
-          default:
-            fieldValue = null;
-        }
+      // Map metadata field name to the actual value
+      switch (metadataField) {
+        // IDs
+        case 'isbn13':
+          fieldValue = book.metadata?.isbn13;
+          break;
+        case 'isbn10':
+          fieldValue = book.metadata?.isbn10;
+          break;
+        case 'asin':
+          fieldValue = (book.metadata as Record<string, unknown>)?.['asin'];
+          break;
+        case 'goodreadsid':
+          fieldValue = book.metadata?.goodreadsId;
+          break;
+        case 'comicvineid':
+          fieldValue = book.metadata?.comicvineId;
+          break;
+        case 'hardcoverid':
+          fieldValue = book.metadata?.hardcoverId;
+          break;
+        case 'hardcoverbookid':
+          fieldValue = book.metadata?.hardcoverBookId;
+          break;
+        case 'googleid':
+          fieldValue = book.metadata?.googleId;
+          break;
+        case 'lubimyczytacid':
+          fieldValue = book.metadata?.lubimyczytacId;
+          break;
+        case 'ranobedbid':
+          fieldValue = book.metadata?.ranobedbId;
+          break;
+        // Ratings
+        case 'amazonrating':
+          fieldValue = book.metadata?.amazonRating;
+          break;
+        case 'goodreadsrating':
+          fieldValue = book.metadata?.goodreadsRating;
+          break;
+        case 'hardcoverrating':
+          fieldValue = book.metadata?.hardcoverRating;
+          break;
+        case 'lubimyczytacrating':
+          fieldValue = book.metadata?.lubimyczytacRating;
+          break;
+        case 'ranobedbrating':
+          fieldValue = book.metadata?.ranobedbRating;
+          break;
+        case 'personalrating':
+          fieldValue = book.personalRating;
+          break;
+        // Review Counts
+        case 'amazonreviewcount':
+          fieldValue = book.metadata?.amazonReviewCount;
+          break;
+        case 'goodreadsreviewcount':
+          fieldValue = book.metadata?.goodreadsReviewCount;
+          break;
+        case 'hardcoverreviewcount':
+          fieldValue = book.metadata?.hardcoverReviewCount;
+          break;
+        // Other Metadata
+        case 'title':
+          fieldValue = book.metadata?.title;
+          break;
+        case 'subtitle':
+          fieldValue = book.metadata?.subtitle;
+          break;
+        case 'publisher':
+          fieldValue = book.metadata?.publisher;
+          break;
+        case 'publisheddate':
+          fieldValue = book.metadata?.publishedDate;
+          break;
+        case 'description':
+          fieldValue = book.metadata?.description;
+          break;
+        case 'seriesname':
+          fieldValue = book.metadata?.seriesName;
+          break;
+        case 'seriesnumber':
+          fieldValue = book.metadata?.seriesNumber;
+          break;
+        case 'seriestotal':
+          fieldValue = book.metadata?.seriesTotal;
+          break;
+        case 'pagecount':
+          fieldValue = book.metadata?.pageCount;
+          break;
+        case 'language':
+          fieldValue = book.metadata?.language;
+          break;
+        case 'authors':
+          fieldValue = book.metadata?.authors && book.metadata.authors.length > 0 ? book.metadata.authors : null;
+          break;
+        case 'categories':
+          fieldValue = book.metadata?.categories && book.metadata.categories.length > 0 ? book.metadata.categories : null;
+          break;
+        case 'moods':
+          fieldValue = book.metadata?.moods && book.metadata.moods.length > 0 ? book.metadata.moods : null;
+          break;
+        case 'tags':
+          fieldValue = book.metadata?.tags && book.metadata.tags.length > 0 ? book.metadata.tags : null;
+          break;
+        default:
+          fieldValue = null;
       }
 
       // Check if the field is empty/not empty
@@ -419,9 +466,8 @@ export class BookRuleEvaluatorService {
         return book.incompleteSeries ?? false;
       case 'seriesStatus':
         return this.getSeriesStatus(book);
-      case 'externalId':
-      case 'externalRating':
-        // These are meta-fields handled specially in evaluateRule
+      case 'metadata':
+        // This is a meta-field handled specially in evaluateRule
         return null;
       default:
         return (book as Record<string, unknown>)[field];
@@ -430,7 +476,8 @@ export class BookRuleEvaluatorService {
 
   /**
    * Gets the series status for a book.
-   * Returns 'completed' if seriesNumber === seriesTotal,
+   * Returns 'reading' if the book is in a series and any book in that series has readStatus of READ or READING,
+   * 'completed' if seriesNumber === seriesTotal,
    * 'ongoing' if the book is in a series (has seriesName),
    * or an empty string if not in a series.
    */
@@ -438,6 +485,16 @@ export class BookRuleEvaluatorService {
     const seriesName = book.metadata?.seriesName;
     if (!seriesName) {
       return ''; // Not in a series
+    }
+
+    // Check if any book in this series is being read or has been read
+    const isSeriesBeingRead = this.allBooks.some(b => 
+      b.metadata?.seriesName?.toLowerCase() === seriesName.toLowerCase() &&
+      (b.readStatus === 'READ' || b.readStatus === 'READING')
+    );
+    
+    if (isSeriesBeingRead) {
+      return 'reading';
     }
 
     const seriesNumber = book.metadata?.seriesNumber;

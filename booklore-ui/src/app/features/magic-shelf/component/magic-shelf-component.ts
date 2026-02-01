@@ -77,8 +77,7 @@ export type RuleField =
   | 'moods'
   | 'tags'
   | 'metadataScore'
-  | 'externalId'
-  | 'externalRating';
+  | 'metadata';
 
 
 interface FullFieldConfig {
@@ -157,8 +156,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   subtitle: {label: 'Subtitle'},
   incompleteSeries: {label: 'Incomplete Series'},
   seriesStatus: {label: 'Series Status'},
-  externalId: {label: 'External ID'},
-  externalRating: {label: 'External Rating'}
+  metadata: {label: 'Metadata'}
 };
 
 @Component({
@@ -224,30 +222,49 @@ export class MagicShelfComponent implements OnInit {
   ];
 
   seriesStatusOptions: { label: string; value: string }[] = [
+    {label: 'Reading', value: 'reading'},
     {label: 'Ongoing', value: 'ongoing'},
     {label: 'Completed', value: 'completed'}
   ];
 
-  externalIdOptions: { label: string; value: string }[] = [
+  metadataOptions: { label: string; value: string }[] = [
+    // IDs
     {label: 'ISBN-13', value: 'isbn13'},
     {label: 'ISBN-10', value: 'isbn10'},
     {label: 'ASIN', value: 'asin'},
-    {label: 'Goodreads', value: 'goodreads'},
-    {label: 'ComicVine', value: 'comicvine'},
-    {label: 'Hardcover', value: 'hardcover'},
-    {label: 'Hardcover Book', value: 'hardcoverBook'},
-    {label: 'Google Books', value: 'google'},
-    {label: 'Lubimyczytac', value: 'lubimyczytac'},
-    {label: 'Ranobedb', value: 'ranobedb'}
-  ];
-
-  externalRatingOptions: { label: string; value: string }[] = [
-    {label: 'Amazon', value: 'amazon'},
-    {label: 'Goodreads', value: 'goodreads'},
-    {label: 'Hardcover', value: 'hardcover'},
-    {label: 'Lubimyczytac', value: 'lubimyczytac'},
-    {label: 'Ranobedb', value: 'ranobedb'},
-    {label: 'Personal', value: 'personal'}
+    {label: 'Goodreads ID', value: 'goodreadsId'},
+    {label: 'ComicVine ID', value: 'comicvineId'},
+    {label: 'Hardcover ID', value: 'hardcoverId'},
+    {label: 'Hardcover Book ID', value: 'hardcoverBookId'},
+    {label: 'Google Books ID', value: 'googleId'},
+    {label: 'Lubimyczytac ID', value: 'lubimyczytacId'},
+    {label: 'Ranobedb ID', value: 'ranobedbId'},
+    // Ratings
+    {label: 'Amazon Rating', value: 'amazonRating'},
+    {label: 'Goodreads Rating', value: 'goodreadsRating'},
+    {label: 'Hardcover Rating', value: 'hardcoverRating'},
+    {label: 'Lubimyczytac Rating', value: 'lubimyczytacRating'},
+    {label: 'Ranobedb Rating', value: 'ranobedbRating'},
+    {label: 'Personal Rating', value: 'personalRating'},
+    // Review Counts
+    {label: 'Amazon Review Count', value: 'amazonReviewCount'},
+    {label: 'Goodreads Review Count', value: 'goodreadsReviewCount'},
+    {label: 'Hardcover Review Count', value: 'hardcoverReviewCount'},
+    // Other Metadata
+    {label: 'Title', value: 'title'},
+    {label: 'Subtitle', value: 'subtitle'},
+    {label: 'Publisher', value: 'publisher'},
+    {label: 'Published Date', value: 'publishedDate'},
+    {label: 'Description', value: 'description'},
+    {label: 'Series Name', value: 'seriesName'},
+    {label: 'Series Number', value: 'seriesNumber'},
+    {label: 'Series Total', value: 'seriesTotal'},
+    {label: 'Page Count', value: 'pageCount'},
+    {label: 'Language', value: 'language'},
+    {label: 'Authors', value: 'authors'},
+    {label: 'Categories', value: 'categories'},
+    {label: 'Moods', value: 'moods'},
+    {label: 'Tags', value: 'tags'}
   ];
 
   libraries: Library[] = [];
@@ -412,8 +429,8 @@ export class MagicShelfComponent implements OnInit {
 
     if (!field) return [...baseOperators, ...multiValueOperators];
 
-    // Special handling for externalId and externalRating - has/missing operators
-    if (field === 'externalId' || field === 'externalRating') {
+    // Special handling for metadata - has/missing operators
+    if (field === 'metadata') {
       return [
         {label: 'Has', value: 'has'},
         {label: 'Missing', value: 'missing'},
@@ -436,7 +453,7 @@ export class MagicShelfComponent implements OnInit {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'externalId', 'externalRating', 'incompleteSeries', 'seriesStatus'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'metadata', 'incompleteSeries', 'seriesStatus'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);
