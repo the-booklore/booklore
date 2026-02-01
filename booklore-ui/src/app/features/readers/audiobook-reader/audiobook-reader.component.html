@@ -8,13 +8,11 @@
     <!-- Hidden audio element -->
     <audio
       #audioElement
-      [src]="audioSrc"
       (loadedmetadata)="onAudioLoaded()"
       (timeupdate)="onTimeUpdate()"
       (progress)="onProgress()"
       (ended)="onAudioEnded()"
       (error)="onAudioError()"
-      preload="none"
     ></audio>
 
     <!-- Header -->
