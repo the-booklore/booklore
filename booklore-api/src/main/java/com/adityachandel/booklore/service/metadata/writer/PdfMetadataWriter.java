@@ -133,24 +133,12 @@ public class PdfMetadataWriter implements MetadataWriter {
         PDDocumentInformation info = pdf.getDocumentInformation();
         MetadataCopyHelper helper = new MetadataCopyHelper(entity);
 
-        // Build combined keywords from categories, moods, and tags for PDF legacy compatibility
+        // Build categories-only keywords for PDF legacy compatibility (Info Dictionary)
+        // Moods and tags are stored separately in XMP booklore namespace, so they should NOT be in Info Dict keywords
         StringBuilder keywordsBuilder = new StringBuilder();
         helper.copyCategories(clear != null && clear.isCategories(), cats -> {
             if (cats != null && !cats.isEmpty()) {
-                if (keywordsBuilder.length() > 0) keywordsBuilder.append("; ");
                 keywordsBuilder.append(String.join("; ", cats));
-            }
-        });
-        helper.copyMoods(clear != null && clear.isMoods(), moods -> {
-            if (moods != null && !moods.isEmpty()) {
-                if (keywordsBuilder.length() > 0) keywordsBuilder.append("; ");
-                keywordsBuilder.append(String.join("; ", moods));
-            }
-        });
-        helper.copyTags(clear != null && clear.isTags(), tags -> {
-            if (tags != null && !tags.isEmpty()) {
-                if (keywordsBuilder.length() > 0) keywordsBuilder.append("; ");
-                keywordsBuilder.append(String.join("; ", tags));
             }
         });
 
@@ -190,13 +178,12 @@ public class PdfMetadataWriter implements MetadataWriter {
 
             helper.copyAuthors(clear != null && clear.isAuthors(), authors -> (authors != null ? authors : List.of("")).forEach(dc::addCreator));
 
-            // Add categories, moods, and tags all as dc:subject for semantic correctness (XMP has no length limit)
+            // Add categories as dc:subject
             helper.copyCategories(clear != null && clear.isCategories(), cats -> (cats != null ? cats : List.of("")).forEach(dc::addSubject));
-            helper.copyMoods(clear != null && clear.isMoods(), moods -> (moods != null ? moods : List.of("")).forEach(dc::addSubject));
-            helper.copyTags(clear != null && clear.isTags(), tags -> (tags != null ? tags : List.of("")).forEach(dc::addSubject));
             
             // Note: BookLore custom fields (subtitle, ratings, moods, tags as separate field) 
             // are added via raw XML manipulation in addCustomIdentifiersToXmp to avoid XMPBox namespace issues
+            // Moods and tags are stored separately in booklore namespace to avoid confusion with categories
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new XmpSerializer().serialize(xmp, baos, true);
