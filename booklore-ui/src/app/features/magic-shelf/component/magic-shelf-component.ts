@@ -77,7 +77,17 @@ export type RuleField =
   | 'moods'
   | 'tags'
   | 'metadataScore'
-  | 'metadata';
+  | 'metadata'
+  | 'isbn10'
+  | 'isbn13'
+  | 'asin'
+  | 'goodreadsId'
+  | 'comicvineId'
+  | 'hardcoverId'
+  | 'hardcoverBookId'
+  | 'googleId'
+  | 'lubimyczytacId'
+  | 'ranobedbId';
 
 
 interface FullFieldConfig {
@@ -156,7 +166,18 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   subtitle: {label: 'Subtitle'},
   incompleteSeries: {label: 'Incomplete Series'},
   seriesStatus: {label: 'Series Status'},
-  metadata: {label: 'Metadata'}
+  metadata: {label: 'Metadata'},
+  // Legacy individual ID fields (hidden from UI)
+  isbn10: {label: 'ISBN-10'},
+  isbn13: {label: 'ISBN-13'},
+  asin: {label: 'ASIN'},
+  goodreadsId: {label: 'Goodreads ID'},
+  comicvineId: {label: 'ComicVine ID'},
+  hardcoverId: {label: 'Hardcover ID'},
+  hardcoverBookId: {label: 'Hardcover Book ID'},
+  googleId: {label: 'Google Books ID'},
+  lubimyczytacId: {label: 'Lubimyczytac ID'},
+  ranobedbId: {label: 'Ranobedb ID'}
 };
 
 @Component({
@@ -191,14 +212,16 @@ export class MagicShelfComponent implements OnInit {
     {label: 'OR', value: 'or'},
   ];
 
-  fieldOptions = Object.entries(FIELD_CONFIGS).map(([key, config]) => {
-    // Use "Genre" instead of "Categories" for user-facing label
-    const label = key === 'categories' ? 'Genre' : config.label;
-    return {
-      label: label,
-      value: key as RuleField
-    };
-  });
+  fieldOptions = Object.entries(FIELD_CONFIGS)
+    .filter(([key]) => !['isbn10', 'isbn13', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'hardcoverBookId', 'googleId', 'lubimyczytacId', 'ranobedbId'].includes(key)) // Hide legacy ID fields
+    .map(([key, config]) => {
+      // Use "Genre" instead of "Categories" for user-facing label
+      const label = key === 'categories' ? 'Genre' : config.label;
+      return {
+        label: label,
+        value: key as RuleField
+      };
+    });
 
   fileType: { label: string; value: string }[] = [
     {label: 'PDF', value: 'pdf'},
@@ -437,6 +460,14 @@ export class MagicShelfComponent implements OnInit {
       ];
     }
 
+    // Special handling for legacy individual ID fields - is_empty/is_not_empty operators
+    if (['isbn10', 'isbn13', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'hardcoverBookId', 'googleId', 'lubimyczytacId', 'ranobedbId'].includes(field)) {
+      return [
+        {label: 'Empty', value: 'is_empty'},
+        {label: 'Not Empty', value: 'is_not_empty'},
+      ];
+    }
+
     // Special handling for seriesStatus - is/is not operators
     if (field === 'seriesStatus') {
       return [
@@ -453,7 +484,7 @@ export class MagicShelfComponent implements OnInit {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'metadata', 'incompleteSeries', 'seriesStatus'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'metadata', 'incompleteSeries', 'seriesStatus', 'isbn10', 'isbn13', 'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'hardcoverBookId', 'googleId', 'lubimyczytacId', 'ranobedbId'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);
