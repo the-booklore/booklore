@@ -301,6 +301,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
                 case "LubimyczytacId" -> builder.lubimyczytacId(value);
                 case "RanobedbId" -> builder.ranobedbId(value);
                 case "GoogleId" -> builder.googleId(value);
+                case "GoodreadsId" -> builder.goodreadsId(value);
             }
         }
     }

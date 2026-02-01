@@ -197,10 +197,14 @@ class CbxMetadataWriterTest {
             assertNotNull(ci);
             Document doc = parseXml(zip.getInputStream(ci));
 
+            String notesVal = text(doc, "Notes");
+            assertNotNull(notesVal);
+            assertTrue(notesVal.contains("[BookLore:Tags]"));
+            assertTrue(notesVal.contains("Fantasy"));
+            assertTrue(notesVal.contains("Epic"));
+
             String tagsVal = text(doc, "Tags");
-            assertNotNull(tagsVal);
-            assertTrue(tagsVal.contains("Fantasy"));
-            assertTrue(tagsVal.contains("Epic"));
+            assertNull(tagsVal, "Tags should not be a standalone element in strict ComicInfo");
 
             String rating = text(doc, "CommunityRating");
             assertNotNull(rating);
@@ -209,7 +213,7 @@ class CbxMetadataWriterTest {
             String web = text(doc, "Web");
             assertNotNull(web);
             assertTrue(web.contains("goodreads.com"));
-            assertTrue(web.contains("amazon.com"));
+            // assertTrue(web.contains("amazon.com")); // Only primary URL is stored in Web field now
 
             String notes = text(doc, "Notes");
             assertNotNull(notes);
