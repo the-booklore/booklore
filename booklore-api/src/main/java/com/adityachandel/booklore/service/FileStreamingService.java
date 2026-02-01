@@ -16,10 +16,15 @@ import java.nio.file.Path;
 @Service
 public class FileStreamingService {
 
-    private static final int BUFFER_SIZE = 8192;
-    private static final long MAX_CHUNK_SIZE = 2 * 1024 * 1024;
+    private static final int BUFFER_SIZE = 64 * 1024;
 
-    public void streamWithRangeSupport(Path filePath, String contentType, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void streamWithRangeSupport(
+            Path filePath,
+            String contentType,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws IOException {
+
         if (!Files.exists(filePath)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "File not found");
             return;
@@ -29,29 +34,55 @@ public class FileStreamingService {
         String rangeHeader = request.getHeader("Range");
 
         response.setHeader("Accept-Ranges", "bytes");
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Content-Disposition", "inline");
         response.setContentType(contentType);
-        response.setHeader("Cache-Control", "public, max-age=3600");
+
+        // -------------------------
+        // HEAD
+        // -------------------------
+        if ("HEAD".equalsIgnoreCase(request.getMethod())) {
+            response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+            response.setHeader(
+                    "Content-Range",
+                    "bytes 0-" + (fileSize - 1) + "/" + fileSize
+            );
+            response.setContentLengthLong(fileSize);
+            return;
+        }
 
         try {
+            // -------------------------
+            // NO RANGE
+            // -------------------------
             if (rangeHeader == null) {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentLengthLong(fileSize);
                 streamBytes(filePath, 0, fileSize - 1, response.getOutputStream());
-            } else {
-                RangeInfo range = parseRange(rangeHeader, fileSize);
-                if (range == null) {
-                    response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-                    response.setHeader("Content-Range", "bytes */" + fileSize);
-                    return;
-                }
-
-                long contentLength = range.end - range.start + 1;
-                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-                response.setContentLengthLong(contentLength);
-                response.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + fileSize);
-
-                streamBytes(filePath, range.start, range.end, response.getOutputStream());
+                return;
             }
+
+            // -------------------------
+            // RANGE
+            // -------------------------
+            Range range = parseRange(rangeHeader, fileSize);
+            if (range == null) {
+                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                response.setHeader("Content-Range", "bytes */" + fileSize);
+                return;
+            }
+
+            long length = range.end - range.start + 1;
+
+            response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+            response.setHeader(
+                    "Content-Range",
+                    "bytes " + range.start + "-" + range.end + "/" + fileSize
+            );
+            response.setContentLengthLong(length);
+
+            streamBytes(filePath, range.start, range.end, response.getOutputStream());
+
         } catch (IOException e) {
             if (isClientDisconnect(e)) {
                 log.debug("Client disconnected during streaming: {}", e.getMessage());
@@ -61,90 +92,89 @@ public class FileStreamingService {
         }
     }
 
-    boolean isClientDisconnect(IOException e) {
-        if (e instanceof SocketTimeoutException) {
-            return true;
-        }
-
-        String message = e.getMessage();
-        if (message == null) {
-            String className = e.getClass().getSimpleName();
-            return className.contains("Timeout") || className.contains("Closed");
-        }
-
-        return message.contains("Connection reset") ||
-               message.contains("Broken pipe") ||
-               message.contains("connection was aborted") ||
-               message.contains("An established connection was aborted") ||
-               message.contains("SocketTimeout") ||
-               message.contains("timed out");
-    }
-
-    RangeInfo parseRange(String rangeHeader, long fileSize) {
-        if (!rangeHeader.startsWith("bytes=")) {
+    // ------------------------------------------------------------
+    // RANGE PARSER — RFC 7233 compliant
+    // ------------------------------------------------------------
+    Range parseRange(String header, long size) {
+        if (header == null || !header.startsWith("bytes=")) {
             return null;
         }
 
-        String rangeSpec = rangeHeader.substring(6).trim();
-        String[] ranges = rangeSpec.split(",");
-        if (ranges.length == 0) {
-            return null;
-        }
+        String value = header.substring(6).trim();
+        String[] parts = value.split(",", 2);
+        String range = parts[0].trim();
 
-        String range = ranges[0].trim();
-        String[] parts = range.split("-", -1);
-        if (parts.length != 2) {
-            return null;
-        }
+        int dash = range.indexOf('-');
+        if (dash < 0) return null;
 
         try {
-            long start, end;
-
-            if (parts[0].isEmpty()) {
-                long suffix = Long.parseLong(parts[1]);
-                start = Math.max(0, fileSize - suffix);
-                end = fileSize - 1;
-            } else if (parts[1].isEmpty()) {
-                start = Long.parseLong(parts[0]);
-                end = Math.min(start + MAX_CHUNK_SIZE - 1, fileSize - 1);
-            } else {
-                start = Long.parseLong(parts[0]);
-                end = Long.parseLong(parts[1]);
+            // suffix-byte-range-spec: "-<length>"
+            if (dash == 0) {
+                long suffix = Long.parseLong(range.substring(1));
+                if (suffix <= 0) return null;
+                suffix = Math.min(suffix, size);
+                return new Range(size - suffix, size - 1);
             }
 
-            if (start < 0 || start >= fileSize || end < start) {
-                return null;
+            long start = Long.parseLong(range.substring(0, dash));
+
+            // open-ended: "<start>-"
+            if (dash == range.length() - 1) {
+                if (start >= size) return null;
+                return new Range(start, size - 1);
             }
 
-            end = Math.min(end, fileSize - 1);
+            // "<start>-<end>"
+            long end = Long.parseLong(range.substring(dash + 1));
+            if (start > end || start >= size) return null;
+            end = Math.min(end, size - 1);
 
-            return new RangeInfo(start, end);
+            return new Range(start, end);
+
         } catch (NumberFormatException e) {
             return null;
         }
     }
 
-    private void streamBytes(Path filePath, long start, long end, OutputStream outputStream) throws IOException {
-        try (RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r")) {
+    // ------------------------------------------------------------
+    // STREAM BYTES
+    // ------------------------------------------------------------
+    private void streamBytes(Path path, long start, long end, OutputStream out)
+            throws IOException {
+
+        try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "r")) {
             raf.seek(start);
 
-            long bytesToRead = end - start + 1;
+            long remaining = end - start + 1;
             byte[] buffer = new byte[BUFFER_SIZE];
-            long totalRead = 0;
 
-            while (totalRead < bytesToRead) {
-                int toRead = (int) Math.min(buffer.length, bytesToRead - totalRead);
-                int read = raf.read(buffer, 0, toRead);
-                if (read == -1) {
-                    break;
-                }
-                outputStream.write(buffer, 0, read);
-                totalRead += read;
+            while (remaining > 0) {
+                int read = raf.read(buffer, 0, (int) Math.min(buffer.length, remaining));
+                if (read == -1) break;
+                out.write(buffer, 0, read);
+                remaining -= read;
             }
 
-            outputStream.flush();
+            out.flush();
         }
     }
 
-    record RangeInfo(long start, long end) {}
+    // ------------------------------------------------------------
+    // DISCONNECT DETECTION
+    // ------------------------------------------------------------
+    boolean isClientDisconnect(IOException e) {
+        if (e instanceof SocketTimeoutException) return true;
+
+        String msg = e.getMessage();
+        if (msg == null) return false;
+
+        return msg.contains("Broken pipe")
+                || msg.contains("Connection reset")
+                || msg.contains("connection was aborted")
+                || msg.contains("An established connection was aborted")
+                || msg.contains("SocketTimeout")
+                || msg.contains("timed out");
+    }
+
+    record Range(long start, long end) {}
 }
