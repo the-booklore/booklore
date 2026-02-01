@@ -84,9 +84,10 @@ export class BookFilterService {
       entity$,
       entityType$
     ]).pipe(
-      map(([state, entity, entityType]) =>
-        this.filterBooksByEntity(state.books || [], entity, entityType)
-      ),
+      map(([state, entity, entityType]) => {
+        const books = state.books || [];
+        return this.filterBooksByEntity(books, entity, entityType);
+      }),
       shareReplay({bufferSize: 1, refCount: true})
     );
   }

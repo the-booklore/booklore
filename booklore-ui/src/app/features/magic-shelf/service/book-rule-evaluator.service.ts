@@ -8,6 +8,47 @@ export class BookRuleEvaluatorService {
   private incompleteSeriesService = inject(IncompleteSeriesService);
   private allBooks: Book[] = [];
 
+  // Static map for fast metadata field lookups
+  private static readonly METADATA_FIELD_MAP: Record<string, (book: Book) => unknown> = {
+    // IDs
+    'isbn13': (book) => book.metadata?.isbn13,
+    'isbn10': (book) => book.metadata?.isbn10,
+    'asin': (book) => (book.metadata as Record<string, unknown>)?.['asin'],
+    'goodreadsid': (book) => book.metadata?.goodreadsId,
+    'comicvineid': (book) => book.metadata?.comicvineId,
+    'hardcoverid': (book) => book.metadata?.hardcoverId,
+    'hardcoverbookid': (book) => book.metadata?.hardcoverBookId,
+    'googleid': (book) => book.metadata?.googleId,
+    'lubimyczytacid': (book) => book.metadata?.lubimyczytacId,
+    'ranobedbid': (book) => book.metadata?.ranobedbId,
+    // Ratings
+    'amazonrating': (book) => book.metadata?.amazonRating,
+    'goodreadsrating': (book) => book.metadata?.goodreadsRating,
+    'hardcoverrating': (book) => book.metadata?.hardcoverRating,
+    'lubimyczytacrating': (book) => book.metadata?.lubimyczytacRating,
+    'ranobedbrating': (book) => book.metadata?.ranobedbRating,
+    'personalrating': (book) => book.personalRating,
+    // Review Counts
+    'amazonreviewcount': (book) => book.metadata?.amazonReviewCount,
+    'goodreadsreviewcount': (book) => book.metadata?.goodreadsReviewCount,
+    'hardcoverreviewcount': (book) => book.metadata?.hardcoverReviewCount,
+    // Other Metadata
+    'title': (book) => book.metadata?.title,
+    'subtitle': (book) => book.metadata?.subtitle,
+    'publisher': (book) => book.metadata?.publisher,
+    'publisheddate': (book) => book.metadata?.publishedDate,
+    'description': (book) => book.metadata?.description,
+    'seriesname': (book) => book.metadata?.seriesName,
+    'seriesnumber': (book) => book.metadata?.seriesNumber,
+    'seriestotal': (book) => book.metadata?.seriesTotal,
+    'pagecount': (book) => book.metadata?.pageCount,
+    'language': (book) => book.metadata?.language,
+    'authors': (book) => book.metadata?.authors && book.metadata.authors.length > 0 ? book.metadata.authors : null,
+    'categories': (book) => book.metadata?.categories && book.metadata.categories.length > 0 ? book.metadata.categories : null,
+    'moods': (book) => book.metadata?.moods && book.metadata.moods.length > 0 ? book.metadata.moods : null,
+    'tags': (book) => book.metadata?.tags && book.metadata.tags.length > 0 ? book.metadata.tags : null,
+  };
+
   /**
    * Set all books for context-dependent rules like incompleteSeries
    */
@@ -16,17 +57,202 @@ export class BookRuleEvaluatorService {
   }
 
   evaluateGroup(book: Book, group: GroupRule): boolean {
-    const results = group.rules.map(rule => {
-      if ('type' in rule && rule.type === 'group') {
-        return this.evaluateGroup(book, rule as GroupRule);
-      } else {
-        return this.evaluateRule(book, rule as Rule);
+    // Short-circuit evaluation - stop as soon as we know the result
+    if (group.join === 'and') {
+      for (const rule of group.rules) {
+        const result = 'type' in rule && rule.type === 'group'
+          ? this.evaluateGroup(book, rule as GroupRule)
+          : this.evaluateRule(book, rule as Rule);
+        if (!result) return false; // AND: if any is false, return false immediately
       }
-    });
-    return group.join === 'and' ? results.every(Boolean) : results.some(Boolean);
+      return true;
+    } else {
+      for (const rule of group.rules) {
+        const result = 'type' in rule && rule.type === 'group'
+          ? this.evaluateGroup(book, rule as GroupRule)
+          : this.evaluateRule(book, rule as Rule);
+        if (result) return true; // OR: if any is true, return true immediately
+      }
+      return false;
+    }
   }
 
   private evaluateRule(book: Book, rule: Rule): boolean {
+    // Cache metadata access
+    const metadata = book.metadata;
+    
+    // Ultra-fast path for empty checks - direct property access, no function calls
+    if (rule.operator === 'is_empty' || rule.operator === 'is_not_empty') {
+      let isEmpty: boolean;
+      
+      // Direct property access for common fields
+      switch (rule.field) {
+        case 'title':
+          isEmpty = !metadata?.title;
+          break;
+        case 'subtitle':
+          isEmpty = !metadata?.subtitle;
+          break;
+        case 'publisher':
+          isEmpty = !metadata?.publisher;
+          break;
+        case 'seriesName':
+          isEmpty = !metadata?.seriesName;
+          break;
+        case 'language':
+          isEmpty = !metadata?.language;
+          break;
+        case 'authors':
+          isEmpty = !metadata?.authors || metadata.authors.length === 0;
+          break;
+        case 'categories':
+          isEmpty = !metadata?.categories || metadata.categories.length === 0;
+          break;
+        case 'moods':
+          isEmpty = !metadata?.moods || metadata.moods.length === 0;
+          break;
+        case 'tags':
+          isEmpty = !metadata?.tags || metadata.tags.length === 0;
+          break;
+        case 'isbn10':
+          isEmpty = !metadata?.isbn10;
+          break;
+        case 'isbn13':
+          isEmpty = !metadata?.isbn13;
+          break;
+        default: {
+          // Fall back to extractBookValue for other fields
+          const rawValue = this.extractBookValue(book, rule.field);
+          isEmpty = rawValue == null || rawValue === '' || (Array.isArray(rawValue) && rawValue.length === 0);
+        }
+      }
+      
+      return rule.operator === 'is_empty' ? isEmpty : !isEmpty;
+    }
+
+    // Special handling for metadata field - direct property access for maximum speed
+    if (rule.field === 'metadata') {
+      const metadataField = String(rule.value).toLowerCase();
+      let fieldValue: unknown;
+
+      // Direct property access - faster than function map
+      switch (metadataField) {
+        case 'isbn13':
+          fieldValue = metadata?.isbn13;
+          break;
+        case 'isbn10':
+          fieldValue = metadata?.isbn10;
+          break;
+        case 'asin':
+          fieldValue = (metadata as Record<string, unknown>)?.['asin'];
+          break;
+        case 'goodreadsid':
+          fieldValue = metadata?.goodreadsId;
+          break;
+        case 'comicvineid':
+          fieldValue = metadata?.comicvineId;
+          break;
+        case 'hardcoverid':
+          fieldValue = metadata?.hardcoverId;
+          break;
+        case 'hardcoverbookid':
+          fieldValue = metadata?.hardcoverBookId;
+          break;
+        case 'googleid':
+          fieldValue = metadata?.googleId;
+          break;
+        case 'lubimyczytacid':
+          fieldValue = metadata?.lubimyczytacId;
+          break;
+        case 'ranobedbid':
+          fieldValue = metadata?.ranobedbId;
+          break;
+        case 'amazonrating':
+          fieldValue = metadata?.amazonRating;
+          break;
+        case 'goodreadsrating':
+          fieldValue = metadata?.goodreadsRating;
+          break;
+        case 'hardcoverrating':
+          fieldValue = metadata?.hardcoverRating;
+          break;
+        case 'lubimyczytacrating':
+          fieldValue = metadata?.lubimyczytacRating;
+          break;
+        case 'ranobedbrating':
+          fieldValue = metadata?.ranobedbRating;
+          break;
+        case 'personalrating':
+          fieldValue = book.personalRating;
+          break;
+        case 'amazonreviewcount':
+          fieldValue = metadata?.amazonReviewCount;
+          break;
+        case 'goodreadsreviewcount':
+          fieldValue = metadata?.goodreadsReviewCount;
+          break;
+        case 'hardcoverreviewcount':
+          fieldValue = metadata?.hardcoverReviewCount;
+          break;
+        case 'title':
+          fieldValue = metadata?.title;
+          break;
+        case 'subtitle':
+          fieldValue = metadata?.subtitle;
+          break;
+        case 'publisher':
+          fieldValue = metadata?.publisher;
+          break;
+        case 'publisheddate':
+          fieldValue = metadata?.publishedDate;
+          break;
+        case 'description':
+          fieldValue = metadata?.description;
+          break;
+        case 'seriesname':
+          fieldValue = metadata?.seriesName;
+          break;
+        case 'seriesnumber':
+          fieldValue = metadata?.seriesNumber;
+          break;
+        case 'seriestotal':
+          fieldValue = metadata?.seriesTotal;
+          break;
+        case 'pagecount':
+          fieldValue = metadata?.pageCount;
+          break;
+        case 'language':
+          fieldValue = metadata?.language;
+          break;
+        case 'authors':
+          fieldValue = metadata?.authors && metadata.authors.length > 0 ? metadata.authors : null;
+          break;
+        case 'categories':
+          fieldValue = metadata?.categories && metadata.categories.length > 0 ? metadata.categories : null;
+          break;
+        case 'moods':
+          fieldValue = metadata?.moods && metadata.moods.length > 0 ? metadata.moods : null;
+          break;
+        case 'tags':
+          fieldValue = metadata?.tags && metadata.tags.length > 0 ? metadata.tags : null;
+          break;
+        default:
+          fieldValue = null;
+      }
+
+      const isEmpty = fieldValue === null || fieldValue === undefined || fieldValue === '';
+      switch (rule.operator) {
+        case 'has':
+        case 'equals':
+          return !isEmpty;
+        case 'missing':
+        case 'not_equals':
+          return isEmpty;
+        default:
+          return false;
+      }
+    }
+
     const rawValue = this.extractBookValue(book, rule.field);
 
     // Special handling for boolean fields
@@ -59,211 +285,34 @@ export class BookRuleEvaluatorService {
       }
     }
 
-    // Special handling for metadata field
-    if (rule.field === 'metadata') {
-      const metadataField = String(rule.value).toLowerCase();
-      let fieldValue: unknown;
-
-      // Map metadata field name to the actual value
-      switch (metadataField) {
-        // IDs
-        case 'isbn13':
-          fieldValue = book.metadata?.isbn13;
-          break;
-        case 'isbn10':
-          fieldValue = book.metadata?.isbn10;
-          break;
-        case 'asin':
-          fieldValue = (book.metadata as Record<string, unknown>)?.['asin'];
-          break;
-        case 'goodreadsid':
-          fieldValue = book.metadata?.goodreadsId;
-          break;
-        case 'comicvineid':
-          fieldValue = book.metadata?.comicvineId;
-          break;
-        case 'hardcoverid':
-          fieldValue = book.metadata?.hardcoverId;
-          break;
-        case 'hardcoverbookid':
-          fieldValue = book.metadata?.hardcoverBookId;
-          break;
-        case 'googleid':
-          fieldValue = book.metadata?.googleId;
-          break;
-        case 'lubimyczytacid':
-          fieldValue = book.metadata?.lubimyczytacId;
-          break;
-        case 'ranobedbid':
-          fieldValue = book.metadata?.ranobedbId;
-          break;
-        // Ratings
-        case 'amazonrating':
-          fieldValue = book.metadata?.amazonRating;
-          break;
-        case 'goodreadsrating':
-          fieldValue = book.metadata?.goodreadsRating;
-          break;
-        case 'hardcoverrating':
-          fieldValue = book.metadata?.hardcoverRating;
-          break;
-        case 'lubimyczytacrating':
-          fieldValue = book.metadata?.lubimyczytacRating;
-          break;
-        case 'ranobedbrating':
-          fieldValue = book.metadata?.ranobedbRating;
-          break;
-        case 'personalrating':
-          fieldValue = book.personalRating;
-          break;
-        // Review Counts
-        case 'amazonreviewcount':
-          fieldValue = book.metadata?.amazonReviewCount;
-          break;
-        case 'goodreadsreviewcount':
-          fieldValue = book.metadata?.goodreadsReviewCount;
-          break;
-        case 'hardcoverreviewcount':
-          fieldValue = book.metadata?.hardcoverReviewCount;
-          break;
-        // Other Metadata
-        case 'title':
-          fieldValue = book.metadata?.title;
-          break;
-        case 'subtitle':
-          fieldValue = book.metadata?.subtitle;
-          break;
-        case 'publisher':
-          fieldValue = book.metadata?.publisher;
-          break;
-        case 'publisheddate':
-          fieldValue = book.metadata?.publishedDate;
-          break;
-        case 'description':
-          fieldValue = book.metadata?.description;
-          break;
-        case 'seriesname':
-          fieldValue = book.metadata?.seriesName;
-          break;
-        case 'seriesnumber':
-          fieldValue = book.metadata?.seriesNumber;
-          break;
-        case 'seriestotal':
-          fieldValue = book.metadata?.seriesTotal;
-          break;
-        case 'pagecount':
-          fieldValue = book.metadata?.pageCount;
-          break;
-        case 'language':
-          fieldValue = book.metadata?.language;
-          break;
-        case 'authors':
-          fieldValue = book.metadata?.authors && book.metadata.authors.length > 0 ? book.metadata.authors : null;
-          break;
-        case 'categories':
-          fieldValue = book.metadata?.categories && book.metadata.categories.length > 0 ? book.metadata.categories : null;
-          break;
-        case 'moods':
-          fieldValue = book.metadata?.moods && book.metadata.moods.length > 0 ? book.metadata.moods : null;
-          break;
-        case 'tags':
-          fieldValue = book.metadata?.tags && book.metadata.tags.length > 0 ? book.metadata.tags : null;
-          break;
-        default:
-          fieldValue = null;
-      }
-
-      // Check if the field is empty/not empty
-      const isEmpty = fieldValue === null || fieldValue === undefined || fieldValue === '';
-      switch (rule.operator) {
-        case 'has':
-          return !isEmpty;
-        case 'missing':
-          return isEmpty;
-        case 'is_empty':
-          return isEmpty;
-        case 'is_not_empty':
-          return !isEmpty;
-        case 'equals':
-          // For equals, we check if it has a value (not empty)
-          return !isEmpty;
-        case 'not_equals':
-          // For not equals, we check if it's empty
-          return isEmpty;
-        default:
-          return false;
+    // Fast path for date fields - parse dates only when needed
+    const isDateField = rule.field === 'publishedDate' || rule.field === 'dateFinished' || rule.field === 'lastReadTime';
+    
+    // Optimize value conversion: only convert to lowercase for string comparisons
+    let value: unknown;
+    let ruleVal: unknown = rule.value;
+    let ruleStart: unknown = rule.valueStart;
+    let ruleEnd: unknown = rule.valueEnd;
+    
+    if (isDateField) {
+      value = rawValue;
+      if (typeof rule.value === 'string') ruleVal = new Date(rule.value);
+      if (typeof rule.valueStart === 'string') ruleStart = new Date(rule.valueStart);
+      if (typeof rule.valueEnd === 'string') ruleEnd = new Date(rule.valueEnd);
+    } else {
+      // Only convert to lowercase for actual string operations (contains, starts_with, etc)
+      const needsLowercase = rule.operator === 'contains' || rule.operator === 'does_not_contain' || 
+                              rule.operator === 'starts_with' || rule.operator === 'ends_with';
+      
+      if (needsLowercase) {
+        value = typeof rawValue === 'string' ? rawValue.toLowerCase() : rawValue;
+        ruleVal = typeof rule.value === 'string' ? rule.value.toLowerCase() : rule.value;
+      } else {
+        value = rawValue;
       }
     }
 
-    const normalize = (val: unknown): unknown => {
-      if (val === null || val === undefined) return val;
-      if (val instanceof Date) return val;
-      if (typeof val === 'number') return val; // Don't normalize numbers
-      if (typeof val === 'string') {
-        // Only try to parse as date if it looks like a date (contains - or /)
-        if (val.includes('-') || val.includes('/')) {
-          const date = new Date(val);
-          if (!isNaN(date.getTime())) return date;
-        }
-        return val.toLowerCase();
-      }
-      return val;
-    };
-
-    const value = normalize(rawValue);
-    const ruleVal = normalize(rule.value);
-    const ruleStart = normalize(rule.valueStart);
-    const ruleEnd = normalize(rule.valueEnd);
-
-    const getArrayField = (field: RuleField): string[] => {
-      switch (field) {
-        case 'authors':
-          return (book.metadata?.authors ?? []).map(a => a.toLowerCase());
-        case 'categories':
-          return (book.metadata?.categories ?? []).map(c => c.toLowerCase());
-        case 'moods':
-          return (book.metadata?.moods ?? []).map(m => m.toLowerCase());
-        case 'tags':
-          return (book.metadata?.tags ?? []).map(t => t.toLowerCase());
-        case 'readStatus':
-          return [String(book.readStatus ?? 'UNSET').toLowerCase()];
-        case 'fileType': {
-          const fileType = this.getBookTypeAsFileType(book);
-          if (!fileType) return [];
-          
-          // Special case: CBX books should also match cbr, cbz, cb7
-          if (fileType === 'cbx') {
-            return ['cbx', 'cbr', 'cbz', 'cb7'];
-          }
-          return [fileType];
-        }
-        case 'library':
-          return [String(book.libraryId)];
-        case 'shelf':
-          return (book.shelves ?? []).map(s => String(s.id));
-        case 'language':
-          return [String(book.metadata?.language ?? '').toLowerCase()];
-        case 'title':
-          return [String(book.metadata?.title ?? '').toLowerCase()];
-        case 'subtitle':
-          return [String(book.metadata?.subtitle ?? '').toLowerCase()];
-        case 'publisher':
-          return [String(book.metadata?.publisher ?? '').toLowerCase()];
-        case 'seriesName':
-          return [String(book.metadata?.seriesName ?? '').toLowerCase()];
-        case 'incompleteSeries':
-          return [String(book.incompleteSeries ?? false)];
-        case 'seriesStatus':
-          return [this.getSeriesStatus(book)];
-        default:
-          return [];
-      }
-    };
-
     const isNumericIdField = rule.field === 'library' || rule.field === 'shelf';
-    const ruleList = Array.isArray(rule.value)
-      ? rule.value.map(v => isNumericIdField ? String(v) : String(v).toLowerCase())
-      : (rule.value ? [isNumericIdField ? String(rule.value) : String(rule.value).toLowerCase()] : []);
 
     switch (rule.operator) {
       case 'equals':
@@ -273,10 +322,28 @@ export class BookRuleEvaluatorService {
           return cbxExtensions.includes(String(ruleVal).toLowerCase());
         }
         if (Array.isArray(value)) {
-          return value.some(v => ruleList.includes(isNumericIdField ? String(v) : String(v).toLowerCase()));
+          // Optimize: avoid creating ruleList array, compare directly
+          if (Array.isArray(rule.value)) {
+            const ruleValueArray = rule.value as unknown[];
+            return value.some(v => {
+              const vStr = String(v);
+              return ruleValueArray.some((rv: unknown) => 
+                isNumericIdField ? vStr === String(rv) : vStr.toLowerCase() === String(rv).toLowerCase()
+              );
+            });
+          } else {
+            const ruleStr = String(rule.value);
+            return value.some(v => 
+              isNumericIdField ? String(v) === ruleStr : String(v).toLowerCase() === ruleStr.toLowerCase()
+            );
+          }
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() === ruleVal.getTime();
+        }
+        // Case-insensitive string comparison
+        if (typeof value === 'string' && typeof ruleVal === 'string') {
+          return value.toLowerCase() === ruleVal.toLowerCase();
         }
         return value === ruleVal;
 
@@ -287,10 +354,28 @@ export class BookRuleEvaluatorService {
           return !cbxExtensions.includes(String(ruleVal).toLowerCase());
         }
         if (Array.isArray(value)) {
-          return value.every(v => !ruleList.includes(isNumericIdField ? String(v) : String(v).toLowerCase()));
+          // Optimize: avoid creating ruleList array, compare directly
+          if (Array.isArray(rule.value)) {
+            const ruleValueArray = rule.value as unknown[];
+            return value.every(v => {
+              const vStr = String(v);
+              return ruleValueArray.every((rv: unknown) => 
+                isNumericIdField ? vStr !== String(rv) : vStr.toLowerCase() !== String(rv).toLowerCase()
+              );
+            });
+          } else {
+            const ruleStr = String(rule.value);
+            return value.every(v => 
+              isNumericIdField ? String(v) !== ruleStr : String(v).toLowerCase() !== ruleStr.toLowerCase()
+            );
+          }
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() !== ruleVal.getTime();
+        }
+        // Case-insensitive string comparison
+        if (typeof value === 'string' && typeof ruleVal === 'string') {
+          return value.toLowerCase() !== ruleVal.toLowerCase();
         }
         return value !== ruleVal;
 
@@ -361,31 +446,73 @@ export class BookRuleEvaluatorService {
         }
         return Number(value) >= Number(ruleStart) && Number(value) <= Number(ruleEnd);
 
-      case 'is_empty':
-        if (value == null) return true;
-        if (typeof value === 'string') return value.trim() === '';
-        if (Array.isArray(value)) return value.length === 0;
-        return false;
-
-      case 'is_not_empty':
-        if (value == null) return false;
-        if (typeof value === 'string') return value.trim() !== '';
-        if (Array.isArray(value)) return value.length > 0;
-        return true;
-
       case 'includes_all': {
-        const bookList = getArrayField(rule.field);
-        return ruleList.every(v => bookList.includes(v));
+        const ruleValues = Array.isArray(rule.value) ? rule.value : [rule.value];
+        const isNumericField = rule.field === 'library' || rule.field === 'shelf';
+        
+        // Fast path: avoid creating arrays for scalar fields
+        if (rule.field === 'authors' || rule.field === 'categories' || rule.field === 'moods' || rule.field === 'tags') {
+          const arr = this.extractBookValue(book, rule.field) as string[];
+          return ruleValues.every(rv =>
+            arr.some(item => item.toLowerCase() === String(rv).toLowerCase())
+          );
+        } else if (rule.field === 'title' || rule.field === 'subtitle' || rule.field === 'publisher' || rule.field === 'seriesName' || rule.field === 'language') {
+          const val = this.extractBookValue(book, rule.field) as string | null;
+          const lowerVal = val?.toLowerCase() ?? '';
+          return ruleValues.every(rv => lowerVal === String(rv).toLowerCase());
+        }
+        
+        const bookList = this.getArrayField(book, rule.field);
+        return ruleValues.every(rv => {
+          const rvStr = isNumericField ? String(rv) : String(rv).toLowerCase();
+          return bookList.includes(rvStr);
+        });
       }
 
       case 'excludes_all': {
-        const bookList = getArrayField(rule.field);
-        return ruleList.every(v => !bookList.includes(v));
+        const ruleValues = Array.isArray(rule.value) ? rule.value : [rule.value];
+        const isNumericField = rule.field === 'library' || rule.field === 'shelf';
+        
+        // Fast path: avoid creating arrays for scalar fields
+        if (rule.field === 'authors' || rule.field === 'categories' || rule.field === 'moods' || rule.field === 'tags') {
+          const arr = this.extractBookValue(book, rule.field) as string[];
+          return ruleValues.every(rv =>
+            !arr.some(item => item.toLowerCase() === String(rv).toLowerCase())
+          );
+        } else if (rule.field === 'title' || rule.field === 'subtitle' || rule.field === 'publisher' || rule.field === 'seriesName' || rule.field === 'language') {
+          const val = this.extractBookValue(book, rule.field) as string | null;
+          const lowerVal = val?.toLowerCase() ?? '';
+          return ruleValues.every(rv => lowerVal !== String(rv).toLowerCase());
+        }
+        
+        const bookList = this.getArrayField(book, rule.field);
+        return ruleValues.every(rv => {
+          const rvStr = isNumericField ? String(rv) : String(rv).toLowerCase();
+          return !bookList.includes(rvStr);
+        });
       }
 
       case 'includes_any': {
-        const bookList = getArrayField(rule.field);
-        return ruleList.some(v => bookList.includes(v));
+        const ruleValues = Array.isArray(rule.value) ? rule.value : [rule.value];
+        const isNumericField = rule.field === 'library' || rule.field === 'shelf';
+        
+        // Fast path: avoid creating arrays for scalar fields
+        if (rule.field === 'authors' || rule.field === 'categories' || rule.field === 'moods' || rule.field === 'tags') {
+          const arr = this.extractBookValue(book, rule.field) as string[];
+          return ruleValues.some(rv =>
+            arr.some(item => item.toLowerCase() === String(rv).toLowerCase())
+          );
+        } else if (rule.field === 'title' || rule.field === 'subtitle' || rule.field === 'publisher' || rule.field === 'seriesName' || rule.field === 'language') {
+          const val = this.extractBookValue(book, rule.field) as string | null;
+          const lowerVal = val?.toLowerCase() ?? '';
+          return ruleValues.some(rv => lowerVal === String(rv).toLowerCase());
+        }
+        
+        const bookList = this.getArrayField(book, rule.field);
+        return ruleValues.some(rv => {
+          const rvStr = isNumericField ? String(rv) : String(rv).toLowerCase();
+          return bookList.includes(rvStr);
+        });
       }
 
       default:
@@ -394,6 +521,8 @@ export class BookRuleEvaluatorService {
   }
 
   private extractBookValue(book: Book, field: RuleField): unknown {
+    const metadata = book.metadata;
+    
     switch (field) {
       case 'library':
         return book.libraryId;
@@ -410,21 +539,21 @@ export class BookRuleEvaluatorService {
       case 'personalRating':
         return book.personalRating;
       case 'title':
-        return book.metadata?.title?.toLowerCase() ?? null;
+        return metadata?.title ?? null;
       case 'subtitle':
-        return book.metadata?.subtitle?.toLowerCase() ?? null;
+        return metadata?.subtitle ?? null;
       case 'authors':
-        return (book.metadata?.authors ?? []).map(a => a.toLowerCase());
+        return metadata?.authors ?? [];
       case 'categories':
-        return (book.metadata?.categories ?? []).map(c => c.toLowerCase());
+        return metadata?.categories ?? [];
       case 'moods':
-        return (book.metadata?.moods ?? []).map(m => m.toLowerCase());
+        return metadata?.moods ?? [];
       case 'tags':
-        return (book.metadata?.tags ?? []).map(t => t.toLowerCase());
+        return metadata?.tags ?? [];
       case 'publisher':
-        return book.metadata?.publisher?.toLowerCase() ?? null;
+        return metadata?.publisher ?? null;
       case 'publishedDate':
-        return book.metadata?.publishedDate ? new Date(book.metadata.publishedDate) : null;
+        return metadata?.publishedDate ? new Date(metadata.publishedDate) : null;
       case 'dateFinished':
         return book.dateFinished ? new Date(book.dateFinished) : null;
       case 'lastReadTime':
@@ -437,38 +566,57 @@ export class BookRuleEvaluatorService {
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         return diffDays;
       case 'seriesName':
-        return book.metadata?.seriesName?.toLowerCase() ?? null;
+        return metadata?.seriesName ?? null;
       case 'seriesNumber':
-        return book.metadata?.seriesNumber;
+        return metadata?.seriesNumber;
       case 'seriesTotal':
-        return book.metadata?.seriesTotal;
+        return metadata?.seriesTotal;
       case 'pageCount':
-        return book.metadata?.pageCount;
+        return metadata?.pageCount;
       case 'language':
-        return book.metadata?.language?.toLowerCase() ?? null;
+        return metadata?.language ?? null;
       case 'amazonRating':
-        return book.metadata?.amazonRating;
+        return metadata?.amazonRating;
       case 'amazonReviewCount':
-        return book.metadata?.amazonReviewCount;
+        return metadata?.amazonReviewCount;
       case 'goodreadsRating':
-        return book.metadata?.goodreadsRating;
+        return metadata?.goodreadsRating;
       case 'goodreadsReviewCount':
-        return book.metadata?.goodreadsReviewCount;
+        return metadata?.goodreadsReviewCount;
       case 'hardcoverRating':
-        return book.metadata?.hardcoverRating;
+        return metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
-        return book.metadata?.hardcoverReviewCount;
+        return metadata?.hardcoverReviewCount;
       case 'lubimyczytacRating':
-        return book.metadata?.lubimyczytacRating;
+        return metadata?.lubimyczytacRating;
       case 'ranobedbRating':
-        return book.metadata?.ranobedbRating;
+        return metadata?.ranobedbRating;
       case 'incompleteSeries':
         return book.incompleteSeries ?? false;
       case 'seriesStatus':
         return this.getSeriesStatus(book);
       case 'metadata':
-        // This is a meta-field handled specially in evaluateRule
         return null;
+      case 'isbn10':
+        return metadata?.isbn10;
+      case 'isbn13':
+        return metadata?.isbn13;
+      case 'asin':
+        return (metadata as Record<string, unknown>)?.['asin'];
+      case 'goodreadsId':
+        return metadata?.goodreadsId;
+      case 'comicvineId':
+        return metadata?.comicvineId;
+      case 'hardcoverId':
+        return metadata?.hardcoverId;
+      case 'hardcoverBookId':
+        return metadata?.hardcoverBookId;
+      case 'googleId':
+        return metadata?.googleId;
+      case 'lubimyczytacId':
+        return metadata?.lubimyczytacId;
+      case 'ranobedbId':
+        return metadata?.ranobedbId;
       default:
         return (book as Record<string, unknown>)[field];
     }
@@ -482,23 +630,26 @@ export class BookRuleEvaluatorService {
    * or an empty string if not in a series.
    */
   private getSeriesStatus(book: Book): string {
-    const seriesName = book.metadata?.seriesName;
+    const metadata = book.metadata;
+    const seriesName = metadata?.seriesName;
     if (!seriesName) {
       return ''; // Not in a series
     }
 
     // Check if any book in this series is being read or has been read
-    const isSeriesBeingRead = this.allBooks.some(b => 
-      b.metadata?.seriesName?.toLowerCase() === seriesName.toLowerCase() &&
-      (b.readStatus === 'READ' || b.readStatus === 'READING')
-    );
+    const lowerSeriesName = seriesName.toLowerCase();
+    const isSeriesBeingRead = this.allBooks.some(b => {
+      const bSeriesName = b.metadata?.seriesName;
+      return bSeriesName && bSeriesName.toLowerCase() === lowerSeriesName &&
+        (b.readStatus === 'READ' || b.readStatus === 'READING');
+    });
     
     if (isSeriesBeingRead) {
       return 'reading';
     }
 
-    const seriesNumber = book.metadata?.seriesNumber;
-    const seriesTotal = book.metadata?.seriesTotal;
+    const seriesNumber = metadata?.seriesNumber;
+    const seriesTotal = metadata?.seriesTotal;
 
     // If both number and total are defined and equal, it's completed
     if (
@@ -539,5 +690,57 @@ export class BookRuleEvaluatorService {
 
     // Fallback to extracting from fileName
     return this.getFileExtension(book.fileName)?.toLowerCase() ?? null;
+  }
+
+
+
+  /**
+   * Get array field values for array-based operators
+   */
+  private getArrayField(book: Book, field: RuleField): string[] {
+    const metadata = book.metadata;
+    
+    switch (field) {
+      case 'authors':
+        return (metadata?.authors ?? []).map(a => a.toLowerCase());
+      case 'categories':
+        return (metadata?.categories ?? []).map(c => c.toLowerCase());
+      case 'moods':
+        return (metadata?.moods ?? []).map(m => m.toLowerCase());
+      case 'tags':
+        return (metadata?.tags ?? []).map(t => t.toLowerCase());
+      case 'readStatus':
+        return [String(book.readStatus ?? 'UNSET').toLowerCase()];
+      case 'fileType': {
+        const fileType = this.getBookTypeAsFileType(book);
+        if (!fileType) return [];
+        
+        // Special case: CBX books should also match cbr, cbz, cb7
+        if (fileType === 'cbx') {
+          return ['cbx', 'cbr', 'cbz', 'cb7'];
+        }
+        return [fileType];
+      }
+      case 'library':
+        return [String(book.libraryId)];
+      case 'shelf':
+        return (book.shelves ?? []).map(s => String(s.id));
+      case 'language':
+        return metadata?.language ? [metadata.language.toLowerCase()] : [];
+      case 'title':
+        return metadata?.title ? [metadata.title.toLowerCase()] : [];
+      case 'subtitle':
+        return metadata?.subtitle ? [metadata.subtitle.toLowerCase()] : [];
+      case 'publisher':
+        return metadata?.publisher ? [metadata.publisher.toLowerCase()] : [];
+      case 'seriesName':
+        return metadata?.seriesName ? [metadata.seriesName.toLowerCase()] : [];
+      case 'incompleteSeries':
+        return [String(book.incompleteSeries ?? false)];
+      case 'seriesStatus':
+        return [this.getSeriesStatus(book)];
+      default:
+        return [];
+    }
   }
 }

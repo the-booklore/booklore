@@ -123,28 +123,27 @@ export class MainDashboardComponent implements OnInit {
   }
 
   private getMagicShelfBooks(shelfId: number, maxItems?: number, sortBy?: string): Observable<Book[]> {
-    return this.magicShelfService.getShelf(shelfId).pipe(
-      switchMap((shelf) => {
-        if (!shelf) return this.bookService.bookState$.pipe(map(() => []));
-
-        let group: GroupRule;
-        try {
-          group = JSON.parse(shelf.filterJson);
-        } catch (e) {
-          console.error('Invalid filter JSON', e);
+    return this.magicShelfService.shelvesState$.pipe(
+      switchMap((state) => {
+        const shelf = (state.shelves || []).find((s) => s.id === shelfId);
+        if (!shelf || !shelf.filterJson) {
           return this.bookService.bookState$.pipe(map(() => []));
         }
-
         return this.bookService.bookState$.pipe(
-          map((state: BookState) => {
-            const allBooks = state.books || [];
-            this.ruleEvaluatorService.setAllBooks(allBooks);
+          map((bookState) => {
+            const books = bookState.books || [];
+            try {
+              this.ruleEvaluatorService.setAllBooks(books);
+              const groupRule = JSON.parse(shelf.filterJson) as GroupRule;
+              const filteredBooks = books.filter((book) =>
+                this.ruleEvaluatorService.evaluateGroup(book, groupRule)
+              );
 
-            const filteredBooks = allBooks.filter((book) =>
-              this.ruleEvaluatorService.evaluateGroup(book, group)
-            );
-
-            return maxItems ? filteredBooks.slice(0, maxItems) : filteredBooks;
+              return maxItems ? filteredBooks.slice(0, maxItems) : filteredBooks;
+            } catch {
+              console.warn('Invalid filterJson for MagicShelf');
+              return [];
+            }
           })
         );
       })

@@ -158,21 +158,34 @@ export class BookBrowserEntityService {
 
   private fetchMagicShelfBooks(magicShelfId: number, sortOption: SortOption): Observable<BookState> {
     return combineLatest([
-      this.bookService.bookState$,
-      this.magicShelfService.getShelf(magicShelfId)
+      this.fetchMagicShelf(magicShelfId),
+      this.bookService.bookState$
     ]).pipe(
-      map(([bookState, magicShelf]) => {
-        if (!bookState.loaded || bookState.error || !magicShelf?.filterJson) {
-          return bookState;
+      map(([magicShelf, bookState]) => {
+        if (!magicShelf || !bookState.books) {
+          return {books: [], loaded: true, error: null};
         }
-        const allBooks = bookState.books ?? [];
-        this.bookRuleEvaluatorService.setAllBooks(allBooks);
-        
-        const filteredBooks: Book[] | undefined = allBooks.filter(book =>
-          this.bookRuleEvaluatorService.evaluateGroup(book, JSON.parse(magicShelf.filterJson!) as GroupRule)
-        );
-        const sortedBooks = this.sortService.applySort(filteredBooks ?? [], sortOption);
-        return {...bookState, books: sortedBooks};
+
+        try {
+          const groupRule = JSON.parse(magicShelf.filterJson) as GroupRule;
+          this.bookRuleEvaluatorService.setAllBooks(bookState.books);
+          const filteredBooks = bookState.books.filter(book =>
+            this.bookRuleEvaluatorService.evaluateGroup(book, groupRule)
+          );
+          const sortedBooks = this.sortService.applySort(filteredBooks, sortOption);
+          return {
+            books: sortedBooks,
+            loaded: true,
+            error: null
+          };
+        } catch (error) {
+          console.error('Failed to evaluate magic shelf rules', error);
+          return {
+            books: [],
+            loaded: true,
+            error: 'Invalid filter rules'
+          };
+        }
       })
     );
   }

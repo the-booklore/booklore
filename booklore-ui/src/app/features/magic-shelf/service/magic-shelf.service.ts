@@ -3,6 +3,7 @@ import {API_CONFIG} from '../../../core/config/api-config';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {catchError, distinctUntilChanged, finalize, map, shareReplay, switchMap, tap} from 'rxjs/operators';
+import {Book} from '../../book/model/book.model';
 import {BookService} from '../../book/service/book.service';
 import {BookRuleEvaluatorService} from './book-rule-evaluator.service';
 import {AuthService} from '../../../shared/service/auth.service';
@@ -150,25 +151,26 @@ export class MagicShelfService {
   }
 
   getBookCount(shelfId: number): Observable<number> {
-    return this.getShelf(shelfId).pipe(
-      switchMap((shelf) => {
-        if (!shelf) return of(0);
-        let group: GroupRule;
-        try {
-          group = JSON.parse(shelf.filterJson);
-        } catch (e) {
-          console.error('Invalid filter JSON', e);
+    return this.shelvesState$.pipe(
+      switchMap((state) => {
+        const shelf = (state.shelves || []).find((s) => s.id === shelfId);
+        if (!shelf || !shelf.filterJson) {
           return of(0);
         }
-
         return this.bookService.bookState$.pipe(
-          map((state) => {
-            const allBooks = state.books ?? [];
-            this.ruleEvaluatorService.setAllBooks(allBooks);
-            
-            return allBooks.filter((book) =>
-              this.ruleEvaluatorService.evaluateGroup(book, group)
-            ).length;
+          map((bookState) => {
+            const books = bookState.books || [];
+            try {
+              this.ruleEvaluatorService.setAllBooks(books);
+              const groupRule = JSON.parse(shelf.filterJson) as GroupRule;
+              const filteredBooks = books.filter((book) =>
+                this.ruleEvaluatorService.evaluateGroup(book, groupRule)
+              );
+              return filteredBooks.length;
+            } catch {
+              console.warn('Invalid filterJson for MagicShelf');
+              return 0;
+            }
           })
         );
       })
