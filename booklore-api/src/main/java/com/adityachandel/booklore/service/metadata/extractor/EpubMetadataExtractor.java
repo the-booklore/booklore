@@ -227,18 +227,12 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":ranobedb_rating")) safeParseDouble(content, builderMeta::ranobedbRating);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":moods")) {
                                     if (StringUtils.isNotBlank(content)) {
-                                        builderMeta.moods(Arrays.stream(content.split(","))
-                                                .map(String::trim)
-                                                .filter(StringUtils::isNotBlank)
-                                                .collect(Collectors.toSet()));
+                                        builderMeta.moods(parseJsonArrayOrCsv(content));
                                     }
                                 }
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":tags")) {
                                     if (StringUtils.isNotBlank(content)) {
-                                        builderMeta.tags(Arrays.stream(content.split(","))
-                                                .map(String::trim)
-                                                .filter(StringUtils::isNotBlank)
-                                                .collect(Collectors.toSet()));
+                                        builderMeta.tags(parseJsonArrayOrCsv(content));
                                     }
                                 }
                             }
@@ -261,7 +255,26 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
                                 String scheme = el.getAttributeNS(OPF_NS, "scheme").toUpperCase();
-                                String value = text.toLowerCase().startsWith("isbn:") ? text.substring(5) : text;
+                                String textLower = text.toLowerCase();
+                                
+                                // Parse URN format: urn:scheme:value
+                                String value = text;
+                                String urnScheme = null;
+                                if (textLower.startsWith("urn:")) {
+                                    String[] parts = text.split(":", 3);
+                                    if (parts.length >= 3) {
+                                        urnScheme = parts[1].toUpperCase();
+                                        value = parts[2];
+                                    }
+                                } else if (textLower.startsWith("isbn:")) {
+                                    value = text.substring(5);
+                                    urnScheme = "ISBN";
+                                }
+                                
+                                // Use URN scheme if opf:scheme is not present
+                                if (scheme.isEmpty() && urnScheme != null) {
+                                    scheme = urnScheme;
+                                }
 
                                 if (!scheme.isEmpty()) {
                                     switch (scheme) {
@@ -276,14 +289,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                         case "GOOGLE" -> builderMeta.googleId(value);
                                         case "AMAZON" -> builderMeta.asin(value);
                                         case "HARDCOVER" -> builderMeta.hardcoverId(value);
-                                        case "HARDCOVER_BOOK_ID" -> builderMeta.hardcoverBookId(value);
+                                        case "HARDCOVERBOOK", "HARDCOVER_BOOK_ID" -> builderMeta.hardcoverBookId(value);
                                         case "LUBIMYCZYTAC" -> builderMeta.lubimyczytacId(value);
-                                    }
-                                } else {
-                                    if (text.toLowerCase().startsWith("isbn:")) {
-                                        String cleanValue = ISBN_SEPARATOR_PATTERN.matcher(value).replaceAll("");
-                                        if (cleanValue.length() == 13) builderMeta.isbn13(value);
-                                        else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                     }
                                 }
                             }
@@ -365,6 +372,46 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             setter.accept(Double.parseDouble(value));
         } catch (NumberFormatException ignored) {
         }
+    }
+    
+    /**
+     * Parses a string that may be either a JSON array (e.g., ["item1", "item2"]) or a CSV (item1, item2).
+     * Returns a Set of parsed values.
+     */
+    private Set<String> parseJsonArrayOrCsv(String content) {
+        if (StringUtils.isBlank(content)) {
+            return new HashSet<>();
+        }
+        
+        content = content.trim();
+        
+        // Check if it looks like a JSON array
+        if (content.startsWith("[") && content.endsWith("]")) {
+            // Remove brackets
+            String inner = content.substring(1, content.length() - 1).trim();
+            if (inner.isEmpty()) {
+                return new HashSet<>();
+            }
+            
+            // Split by comma and parse each quoted item
+            return Arrays.stream(inner.split(","))
+                    .map(String::trim)
+                    .map(s -> {
+                        // Remove surrounding quotes if present
+                        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
+                            return s.substring(1, s.length() - 1);
+                        }
+                        return s;
+                    })
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
+        }
+        
+        // Fallback to CSV parsing
+        return Arrays.stream(content.split(","))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
     }
 
     private LocalDate parseDate(String value) {

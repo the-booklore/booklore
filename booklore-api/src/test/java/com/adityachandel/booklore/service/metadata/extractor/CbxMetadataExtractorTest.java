@@ -56,7 +56,7 @@ class CbxMetadataExtractorTest {
                 "  <LanguageISO>en</LanguageISO>" +
                 "  <Writer>Alice</Writer>" +
                 "  <Penciller>Bob</Penciller>" +
-                "  <Tags>action;adventure</Tags>" +
+                "  <Genre>action;adventure</Genre>" +
                 "</ComicInfo>";
 
         File cbz = createCbz("with_meta.cbz", new LinkedHashMap<>() {{
@@ -94,7 +94,7 @@ class CbxMetadataExtractorTest {
                 "  <LanguageISO>en</LanguageISO>" +
                 "  <Writer>Alice</Writer>" +
                 "  <Penciller>Bob</Penciller>" +
-                "  <Tags>action;adventure</Tags>" +
+                "  <Genre>action;adventure</Genre>" +
                 "</ComicInfo>";
 
         File cbz = createCbz("with_meta.cbz", new LinkedHashMap<>() {{
@@ -318,7 +318,7 @@ class CbxMetadataExtractorTest {
     void extractMetadata_fromCbz_withWebField_populatesIds() throws Exception {
         String xml = "<ComicInfo>" +
                 "  <Title>Web Links Comic</Title>" +
-                "  <Web>https://www.goodreads.com/book/show/12345, https://www.amazon.com/dp/B00123, https://comicvine.gamespot.com/issue/9999, https://hardcover.app/books/hc-id</Web>" +
+                "  <Web>https://www.goodreads.com/book/show/12345, https://www.amazon.com/dp/B001234567, https://comicvine.gamespot.com/issue/9999, https://hardcover.app/books/hc-id</Web>" +
                 "</ComicInfo>";
 
         File cbz = createCbz("web_links.cbz", new LinkedHashMap<>() {{
@@ -329,7 +329,7 @@ class CbxMetadataExtractorTest {
         
         assertEquals("Web Links Comic", md.getTitle());
         assertEquals("12345", md.getGoodreadsId());
-        assertEquals("B00123", md.getAsin());
+        assertEquals("B001234567", md.getAsin());
         assertEquals("9999", md.getComicvineId());
         assertEquals("hc-id", md.getHardcoverId());
     }

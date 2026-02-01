@@ -200,6 +200,12 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         );
         builder.language(getTextContent(document, "LanguageISO"));
 
+        // GTIN is the standard ComicInfo field for ISBN (EAN/UPC)
+        String gtin = getTextContent(document, "GTIN");
+        if (gtin != null && !gtin.isBlank()) {
+            builder.isbn13(gtin);
+        }
+
         Set<String> authors = new HashSet<>();
         authors.addAll(splitValues(getTextContent(document, "Writer")));
         if (!authors.isEmpty()) {
@@ -298,10 +304,13 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
                 case "LubimyczytacRating" -> safeParseDouble(value, builder::lubimyczytacRating);
                 case "RanobedbRating" -> safeParseDouble(value, builder::ranobedbRating);
                 case "HardcoverBookId" -> builder.hardcoverBookId(value);
+                case "HardcoverId" -> builder.hardcoverId(value);
                 case "LubimyczytacId" -> builder.lubimyczytacId(value);
                 case "RanobedbId" -> builder.ranobedbId(value);
                 case "GoogleId" -> builder.googleId(value);
                 case "GoodreadsId" -> builder.goodreadsId(value);
+                case "ASIN" -> builder.asin(value);
+                case "ComicvineId" -> builder.comicvineId(value);
             }
         }
     }
