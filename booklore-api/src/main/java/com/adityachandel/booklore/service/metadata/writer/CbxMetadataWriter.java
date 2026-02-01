@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -46,6 +48,10 @@ public class CbxMetadataWriter implements MetadataWriter {
     private static final JAXBContext JAXB_CONTEXT;
 
     static {
+        // XXE protection: Disable external DTD and Schema access for security
+        System.setProperty("javax.xml.accessExternalDTD", "");
+        System.setProperty("javax.xml.accessExternalSchema", "");
+        
         try {
             JAXB_CONTEXT = JAXBContext.newInstance(ComicInfo.class);
         } catch (jakarta.xml.bind.JAXBException e) {
@@ -197,11 +203,12 @@ public class CbxMetadataWriter implements MetadataWriter {
 
         helper.copyTitle(clearFlags != null && clearFlags.isTitle(), info::setTitle);
         
-        // Summary: Remove HTML tags strictly using StringEscapeUtils
+        // Summary: Remove HTML tags safely using Jsoup (handles complex HTML like attributes with '>')
         helper.copyDescription(clearFlags != null && clearFlags.isDescription(), val -> {
             if (val != null) {
-                String unescaped = org.apache.commons.text.StringEscapeUtils.unescapeHtml4(val);
-                String clean = unescaped.replaceAll("<[^>]*>", "").trim();
+                // Jsoup.clean with Safelist.none() removes all HTML tags safely, 
+                // handling edge cases like '<a href="...>">' that regex fails on
+                String clean = Jsoup.clean(val, Safelist.none()).trim();
                 log.debug("CbxMetadataWriter: Setting Summary to: {} (original length: {}, cleaned length: {})", 
                     clean.length() > 50 ? clean.substring(0, 50) + "..." : clean, 
                     val.length(), 
@@ -353,14 +360,16 @@ public class CbxMetadataWriter implements MetadataWriter {
     }
 
     private Path updateZipArchive(File originalFile, byte[] xmlContent) throws Exception {
-        Path tempArchive = Files.createTempFile("cbx_edit", ".cbz");
+        // Create temp file in same directory as original for true atomic move on same filesystem
+        Path tempArchive = Files.createTempFile(originalFile.toPath().getParent(), ".cbx_edit_", ".cbz");
         rebuildZipWithNewXml(originalFile.toPath(), tempArchive, xmlContent);
         replaceFileAtomic(tempArchive, originalFile.toPath());
         return null;
     }
 
     private Path convert7zToZip(File original7z, byte[] xmlContent) throws Exception {
-        Path tempZip = Files.createTempFile("cbx_edit", ".cbz");
+        // Create temp file in same directory as original for true atomic move on same filesystem
+        Path tempZip = Files.createTempFile(original7z.toPath().getParent(), ".cbx_edit_", ".cbz");
         repack7zToZipWithXml(original7z, tempZip, xmlContent);
 
         Path targetPath = original7z.toPath().resolveSibling(removeFileExtension(original7z.getName()) + ".cbz");
@@ -462,7 +471,8 @@ public class CbxMetadataWriter implements MetadataWriter {
     }
 
     private Path convertRarToZipArchive(File rarFile, byte[] xmlContent) throws Exception {
-        Path tempZip = Files.createTempFile("cbx_edit", ".cbz");
+        // Create temp file in same directory as original for true atomic move on same filesystem
+        Path tempZip = Files.createTempFile(rarFile.toPath().getParent(), ".cbx_edit_", ".cbz");
 
         try (Archive rarArchive = new Archive(rarFile);
              ZipOutputStream zipOutput = new ZipOutputStream(Files.newOutputStream(tempZip))) {

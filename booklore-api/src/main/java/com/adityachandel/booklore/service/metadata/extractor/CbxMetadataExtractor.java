@@ -229,12 +229,19 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
             parseWebField(web, builder);
         }
 
+        // Store whether we already have a description from Summary/Description XML elements
+        String existingDescription = coalesce(
+                getTextContent(document, "Summary"),
+                getTextContent(document, "Description")
+        );
+        boolean hasDescription = existingDescription != null && !existingDescription.isBlank();
+
         String notes = getTextContent(document, "Notes");
         if (notes != null && !notes.isBlank()) {
             parseNotes(notes, builder);
             
             // If description is missing, use cleaned notes (removing BookLore tags)
-            if (builder.build().getDescription() == null) {
+            if (!hasDescription) {
                 String cleanedNotes = notes.replaceAll("\\[BookLore:[^\\]]+\\][^\\n]*(\n|$)", "").trim();
                 if (!cleanedNotes.isEmpty()) {
                     builder.description(cleanedNotes);

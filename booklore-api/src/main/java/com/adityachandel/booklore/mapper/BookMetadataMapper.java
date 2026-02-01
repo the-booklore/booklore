@@ -29,7 +29,7 @@ public interface BookMetadataMapper {
     BookMetadata toBookMetadataWithoutRelations(BookMetadataEntity bookMetadataEntity, @Context boolean includeDescription);
 
     default BookMetadata toBookMetadata(BookMetadataEntity bookMetadataEntity) {
-        return toBookMetadata(bookMetadataEntity, false);
+        return toBookMetadata(bookMetadataEntity, true);
     }
 
 }

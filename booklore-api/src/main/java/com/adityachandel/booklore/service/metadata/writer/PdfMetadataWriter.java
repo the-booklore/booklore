@@ -126,6 +126,9 @@ public class PdfMetadataWriter implements MetadataWriter {
         return true;
     }
 
+    // Maximum length for PDF Info Dictionary keywords (some older PDF specs limit to 255 bytes)
+    private static final int MAX_INFO_KEYWORDS_LENGTH = 255;
+
     private void applyMetadataToDocument(PDDocument pdf, BookMetadataEntity entity, MetadataClearFlags clear) {
         PDDocumentInformation info = pdf.getDocumentInformation();
         MetadataCopyHelper helper = new MetadataCopyHelper(entity);
@@ -134,7 +137,20 @@ public class PdfMetadataWriter implements MetadataWriter {
         StringBuilder keywordsBuilder = new StringBuilder();
         helper.copyCategories(clear != null && clear.isCategories(), cats -> {
             if (cats != null && !cats.isEmpty()) {
+                if (keywordsBuilder.length() > 0) keywordsBuilder.append("; ");
                 keywordsBuilder.append(String.join("; ", cats));
+            }
+        });
+        helper.copyMoods(clear != null && clear.isMoods(), moods -> {
+            if (moods != null && !moods.isEmpty()) {
+                if (keywordsBuilder.length() > 0) keywordsBuilder.append("; ");
+                keywordsBuilder.append(String.join("; ", moods));
+            }
+        });
+        helper.copyTags(clear != null && clear.isTags(), tags -> {
+            if (tags != null && !tags.isEmpty()) {
+                if (keywordsBuilder.length() > 0) keywordsBuilder.append("; ");
+                keywordsBuilder.append(String.join("; ", tags));
             }
         });
 
@@ -147,7 +163,15 @@ public class PdfMetadataWriter implements MetadataWriter {
                     .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
             info.setCreationDate(cal);
         });
-        info.setKeywords(keywordsBuilder.toString());
+        
+        // Truncate keywords for legacy PDF Info Dictionary (255 byte limit in older specs)
+        String keywords = keywordsBuilder.toString();
+        if (keywords.length() > MAX_INFO_KEYWORDS_LENGTH) {
+            keywords = keywords.substring(0, MAX_INFO_KEYWORDS_LENGTH - 3) + "...";
+            log.debug("PDF keywords truncated from {} to {} characters for legacy compatibility", 
+                keywordsBuilder.length(), keywords.length());
+        }
+        info.setKeywords(keywords);
 
         try {
             XMPMetadata xmp = XMPMetadata.createXMPMetadata();
@@ -166,8 +190,10 @@ public class PdfMetadataWriter implements MetadataWriter {
 
             helper.copyAuthors(clear != null && clear.isAuthors(), authors -> (authors != null ? authors : List.of("")).forEach(dc::addCreator));
 
-            // Add categories, moods, and tags all as dc:subject for semantic correctness
+            // Add categories, moods, and tags all as dc:subject for semantic correctness (XMP has no length limit)
             helper.copyCategories(clear != null && clear.isCategories(), cats -> (cats != null ? cats : List.of("")).forEach(dc::addSubject));
+            helper.copyMoods(clear != null && clear.isMoods(), moods -> (moods != null ? moods : List.of("")).forEach(dc::addSubject));
+            helper.copyTags(clear != null && clear.isTags(), tags -> (tags != null ? tags : List.of("")).forEach(dc::addSubject));
             
             // Note: BookLore custom fields (subtitle, ratings, moods, tags as separate field) 
             // are added via raw XML manipulation in addCustomIdentifiersToXmp to avoid XMPBox namespace issues
