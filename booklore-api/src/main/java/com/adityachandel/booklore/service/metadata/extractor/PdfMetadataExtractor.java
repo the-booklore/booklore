@@ -409,15 +409,9 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                 builder.ranobedbId(ranobedbId.trim());
             }
 
-            // Page count
-            String pageCount = extractBookloreField(xpath, doc, "pageCount");
-            if (StringUtils.isNotBlank(pageCount)) {
-                try {
-                    builder.pageCount(Integer.parseInt(pageCount.trim()));
-                } catch (NumberFormatException e) {
-                    log.warn("Invalid page count: {}", pageCount);
-                }
-            }
+            // Page count: Do NOT read from XMP metadata for PDFs.
+            // The actual PDF page count (from pdf.getNumberOfPages()) is set earlier
+            // and should not be overridden by metadata that describes the original book.
 
             // Moods (try new RDF Bag format first, then legacy semicolon-separated)
             Set<String> moods = extractBookloreBag(xpath, doc, "moods");

@@ -167,18 +167,41 @@ public class PdfMetadataWriter implements MetadataWriter {
             helper.copyTitle(clear != null && clear.isTitle(), title -> dc.setTitle(title != null ? title : ""));
             helper.copyDescription(clear != null && clear.isDescription(), desc -> dc.setDescription(desc != null ? desc : ""));
             helper.copyPublisher(clear != null && clear.isPublisher(), pub -> dc.addPublisher(pub != null ? pub : ""));
-            helper.copyLanguage(clear != null && clear.isLanguage(), lang -> dc.addLanguage(lang != null ? lang : ""));
+            
+            // Write language as provided by user
+            helper.copyLanguage(clear != null && clear.isLanguage(), lang -> {
+                if (lang != null && !lang.isBlank()) {
+                    dc.addLanguage(lang);
+                }
+            });
+            
+            // Use date-only format for dc:date (YYYY-MM-DD)
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
-                Calendar cal = Calendar.getInstance();
-                cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
-                        .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
-                dc.addDate(cal);
+                if (date != null) {
+                    // XMPBox requires Calendar, but we can create one with just the date (no time)
+                    Calendar cal = Calendar.getInstance();
+                    cal.clear(); // Clear time fields
+                    cal.set(date.getYear(), date.getMonthValue() - 1, date.getDayOfMonth());
+                    dc.addDate(cal);
+                }
             });
 
-            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> (authors != null ? authors : List.of("")).forEach(dc::addCreator));
+            // Clean author names (normalize whitespace)
+            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> {
+                if (authors != null && !authors.isEmpty()) {
+                    authors.stream()
+                        .map(name -> name.replaceAll("\\s+", " ").trim())
+                        .filter(name -> !name.isBlank())
+                        .forEach(dc::addCreator);
+                }
+            });
 
             // Add categories as dc:subject
-            helper.copyCategories(clear != null && clear.isCategories(), cats -> (cats != null ? cats : List.of("")).forEach(dc::addSubject));
+            helper.copyCategories(clear != null && clear.isCategories(), cats -> {
+                if (cats != null && !cats.isEmpty()) {
+                    cats.forEach(dc::addSubject);
+                }
+            });
             
             // Note: BookLore custom fields (subtitle, ratings, moods, tags as separate field) 
             // are added via raw XML manipulation in addCustomIdentifiersToXmp to avoid XMPBox namespace issues
@@ -500,4 +523,5 @@ public class PdfMetadataWriter implements MetadataWriter {
         // Already just the ID, or return as-is if it's all numeric
         return goodreadsId.matches("\\d+") ? goodreadsId : goodreadsId;
     }
+
 }
