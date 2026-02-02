@@ -86,13 +86,19 @@ class KoboStatusSyncProtectionTest {
         when(koboSettingsService.getCurrentUserSettings()).thenReturn(testSettings);
         when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        lenient().when(repository
+                .findFirstByEntitlementIdAndUserIdIsNullOrderByPriorityTimestampDescLastModifiedStringDescIdDesc(
+                        anyString()))
+                .thenReturn(Optional.empty());
+        lenient().when(mapper.toJson(any())).thenCallRealMethod();
+        lenient().when(mapper.cleanString(any())).thenCallRealMethod();
     }
 
     private void setupMocksForSave(String entitlementId, KoboReadingState readingState) {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(mapper.toEntity(any())).thenReturn(entity);
         when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(repository.save(any())).thenReturn(entity);
     }
 
