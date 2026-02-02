@@ -161,12 +161,27 @@ export class MainDashboardComponent implements OnInit {
             return aNum - bNum;
           });
 
-          // Find the first unread book
-          const nextBook = sortedBooks.find(book =>
-            !book.readStatus ||
-            book.readStatus === ReadStatus.UNREAD ||
-            book.readStatus === ReadStatus.UNSET
-          );
+          // Find the highest series number that has been read or is currently being read
+          const highestReadNumber = sortedBooks
+            .filter(book =>
+              book.readStatus === ReadStatus.READ ||
+              book.readStatus === ReadStatus.READING ||
+              book.readStatus === ReadStatus.RE_READING ||
+              book.readStatus === ReadStatus.PARTIALLY_READ
+            )
+            .reduce((max, book) => {
+              const num = book.metadata?.seriesNumber ?? 0;
+              return num > max ? num : max;
+            }, 0);
+
+          // Find the first unread book after the highest read number
+          const nextBook = sortedBooks.find(book => {
+            const bookNum = book.metadata?.seriesNumber ?? 0;
+            const isUnread = !book.readStatus ||
+              book.readStatus === ReadStatus.UNREAD ||
+              book.readStatus === ReadStatus.UNSET;
+            return bookNum > highestReadNumber && isUnread;
+          });
 
           if (nextBook) {
             // Get the most recent read time from the series to prioritize
