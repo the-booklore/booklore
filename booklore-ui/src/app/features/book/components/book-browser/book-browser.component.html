@@ -299,7 +299,7 @@
                   @for (book of scroll.viewPortItems; let i = $index; track book.id) {
                     <div
                       class="virtual-scroller-item"
-                      [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
+                      [ngStyle]="{width: currentCardSize.width + 'px', height: getCardHeight(book) + 'px'}">
                       <app-book-card
                         [index]="books.indexOf(book)"
                         [book]="book"
@@ -391,7 +391,7 @@
                             tooltipPosition="top">
                           </p-button>
                         }
-                        @if (hasBulkReadActionsItems) {
+                        @if (hasMoreActionsItems) {
                           <div class="more-actions-wrapper">
                             <p-button
                               (click)="menu.toggle($event)"
@@ -401,7 +401,7 @@
                               severity="info"
                               icon="pi pi-ellipsis-v">
                             </p-button>
-                            <p-tieredMenu #menu [model]="bulkReadActionsMenuItems" [popup]="true" appendTo="body"/>
+                            <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body"/>
                           </div>
                         }
                       </div>

@@ -94,7 +94,7 @@ export class SeriesPageComponent implements OnDestroy {
 
   // Menu items
   protected metadataMenuItems: MenuItem[] | undefined;
-  protected bulkReadActionsMenuItems: MenuItem[] | undefined;
+  protected moreActionsMenuItems: MenuItem[] | undefined;
 
   seriesParam$: Observable<string> = this.route.paramMap.pipe(
     map((params) => params.get("seriesName") || ""),
@@ -208,7 +208,7 @@ export class SeriesPageComponent implements OnDestroy {
           () => this.generateCustomCoversForSelected(),
           userState.user
         );
-        this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+        this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
       });
   }
 
@@ -351,12 +351,12 @@ export class SeriesPageComponent implements OnDestroy {
         this.handleBookSelection(book, !isUnselectingRange);
       }
     }
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   handleBookSelect(book: Book, selected: boolean): void {
     this.handleBookSelection(book, selected);
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   selectAllBooks(): void {
@@ -364,12 +364,12 @@ export class SeriesPageComponent implements OnDestroy {
     for (const book of this.currentBooks) {
       this.selectedBooks.add(book.id);
     }
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   deselectAllBooks(): void {
     this.selectedBooks.clear();
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   confirmDeleteBooks(): void {
@@ -442,6 +442,14 @@ export class SeriesPageComponent implements OnDestroy {
       icon: 'pi pi-image',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
@@ -474,6 +482,14 @@ export class SeriesPageComponent implements OnDestroy {
       icon: 'pi pi-palette',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
@@ -509,7 +525,7 @@ export class SeriesPageComponent implements OnDestroy {
     return (this.metadataMenuItems?.length ?? 0) > 0;
   }
 
-  get hasBulkReadActionsItems(): boolean {
-    return (this.bulkReadActionsMenuItems?.length ?? 0) > 0;
+  get hasMoreActionsItems(): boolean {
+    return (this.moreActionsMenuItems?.length ?? 0) > 0;
   }
 }

@@ -223,13 +223,20 @@
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-width: 1px 1px 0px 1px;
   background-color: var(--card-background);
-  background-color: color-mix(in srgb, var(--card-background), transparent 90%);
+
+  > .footer-content {
+    width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    left: 0;
+    right: 0;
+  }
 }
 
-.footer-inner {
+.footer-content {
   display: flex;
   align-items: center;
-  width: 100%;
 }
 
 .footer-left {
@@ -289,11 +296,6 @@
 }
 
 @media (max-width: 768px) {
-  .book-browser-footer {
-    left: 0%;
-    right: 0%;
-  }
-
   .selected-count-badge {
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
@@ -303,3 +305,4 @@
     }
   }
 }
+

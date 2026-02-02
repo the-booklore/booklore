@@ -18,7 +18,7 @@ import {Router} from '@angular/router';
 import {RouterLink} from '@angular/router';
 import {ProgressBar} from 'primeng/progressbar';
 import {take, takeUntil} from 'rxjs/operators';
-import {readStatusLabels} from '../book-filter/book-filter.component';
+import {readStatusLabels} from '../book-filter/book-filter.config';
 import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../book-dialog-helper.service';

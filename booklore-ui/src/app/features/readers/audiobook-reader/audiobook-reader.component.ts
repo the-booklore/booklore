@@ -1,27 +1,26 @@
-import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {CommonModule, Location} from '@angular/common';
+import {ActivatedRoute} from '@angular/router';
+import {FormsModule} from '@angular/forms';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
 
-import { Button } from 'primeng/button';
-import { Slider, SliderChangeEvent } from 'primeng/slider';
-import { ProgressSpinner } from 'primeng/progressspinner';
-import { Tooltip } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
-import { SelectButton } from 'primeng/selectbutton';
-import { Menu } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import {Button} from 'primeng/button';
+import {Slider, SliderChangeEvent} from 'primeng/slider';
+import {ProgressSpinner} from 'primeng/progressspinner';
+import {Tooltip} from 'primeng/tooltip';
+import {MenuItem, MessageService} from 'primeng/api';
+import {SelectButton} from 'primeng/selectbutton';
+import {Menu} from 'primeng/menu';
 
-import { AudiobookService } from './audiobook.service';
-import { AudiobookInfo, AudiobookChapter, AudiobookTrack, AudiobookProgress } from './audiobook.model';
-import { BookService } from '../../book/service/book.service';
-import { BookMarkService, BookMark, CreateBookMarkRequest } from '../../../shared/service/book-mark.service';
-import { AudiobookSessionService } from '../../../shared/service/audiobook-session.service';
-import { PageTitleService } from '../../../shared/service/page-title.service';
-import { AuthService } from '../../../shared/service/auth.service';
-import { API_CONFIG } from '../../../core/config/api-config';
+import {AudiobookService} from './audiobook.service';
+import {AudiobookChapter, AudiobookInfo, AudiobookProgress, AudiobookTrack} from './audiobook.model';
+import {BookService} from '../../book/service/book.service';
+import {BookMark, BookMarkService, CreateBookMarkRequest} from '../../../shared/service/book-mark.service';
+import {AudiobookSessionService} from '../../../shared/service/audiobook-session.service';
+import {PageTitleService} from '../../../shared/service/page-title.service';
+import {AuthService} from '../../../shared/service/auth.service';
+import {API_CONFIG} from '../../../core/config/api-config';
 
 @Component({
   selector: 'app-audiobook-reader',
@@ -48,14 +47,14 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private bookMarkService = inject(BookMarkService);
   private authService = inject(AuthService);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private location = inject(Location);
   private messageService = inject(MessageService);
   private audiobookSessionService = inject(AudiobookSessionService);
   private pageTitle = inject(PageTitleService);
 
   isLoading = true;
-  audioLoading = true;
+  audioLoading = false;
+  audioInitialized = false;
 
   bookId!: number;
   audiobookInfo!: AudiobookInfo;
@@ -86,24 +85,24 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private originalVolume = 1;
 
   sleepTimerOptions: MenuItem[] = [
-    { label: '15 minutes', command: () => this.setSleepTimer(15) },
-    { label: '30 minutes', command: () => this.setSleepTimer(30) },
-    { label: '45 minutes', command: () => this.setSleepTimer(45) },
-    { label: '60 minutes', command: () => this.setSleepTimer(60) },
-    { label: 'End of chapter', command: () => this.setSleepTimerEndOfChapter() },
-    { separator: true },
-    { label: 'Cancel timer', command: () => this.cancelSleepTimer(), visible: false }
+    {label: '15 minutes', command: () => this.setSleepTimer(15)},
+    {label: '30 minutes', command: () => this.setSleepTimer(30)},
+    {label: '45 minutes', command: () => this.setSleepTimer(45)},
+    {label: '60 minutes', command: () => this.setSleepTimer(60)},
+    {label: 'End of chapter', command: () => this.setSleepTimerEndOfChapter()},
+    {separator: true},
+    {label: 'Cancel timer', command: () => this.cancelSleepTimer(), visible: false}
   ];
 
   bookmarks: BookMark[] = [];
 
   playbackRates = [
-    { label: '0.5x', value: 0.5 },
-    { label: '0.75x', value: 0.75 },
-    { label: '1x', value: 1 },
-    { label: '1.25x', value: 1.25 },
-    { label: '1.5x', value: 1.5 },
-    { label: '2x', value: 2 }
+    {label: '0.5x', value: 0.5},
+    {label: '0.75x', value: 0.75},
+    {label: '1x', value: 1},
+    {label: '1.25x', value: 1.25},
+    {label: '1.5x', value: 1.5},
+    {label: '2x', value: 2}
   ];
 
   private progressSaveInterval?: ReturnType<typeof setInterval>;
@@ -145,29 +144,13 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.resetState();
     this.isLoading = true;
 
-    const audiobookInfo$ = this.audiobookService.getAudiobookInfo(this.bookId);
-    const book$ = this.bookService.getBookByIdFromAPI(this.bookId, false);
-
-    forkJoin([audiobookInfo$, book$]).subscribe({
-      next: ([info, book]) => {
+    this.audiobookService.getAudiobookInfo(this.bookId).subscribe({
+      next: (info) => {
         this.audiobookInfo = info;
-        this.pageTitle.setBookPageTitle(book);
-
-        const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
-        this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/cover/${this.bookId}?token=${encodeURIComponent(token || '')}`;
-        this.coverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
-
-        if (book.audiobookProgress) {
-          this.savedPosition = book.audiobookProgress.positionMs
-            ? book.audiobookProgress.positionMs / 1000
-            : 0;
-        }
-
         if (info.folderBased && info.tracks && info.tracks.length > 0) {
-          const trackIndex = book.audiobookProgress?.trackIndex ?? 0;
-          this.currentTrackIndex = trackIndex;
-          this.loadTrack(trackIndex, false);
-          const track = info.tracks[trackIndex];
+          // Prepare the source URL but don't load it yet
+          this.audioSrc = this.audiobookService.getTrackStreamUrl(this.bookId, 0);
+          const track = info.tracks[0];
           if (track?.durationMs) {
             this.duration = track.durationMs / 1000;
           }
@@ -178,14 +161,15 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           }
         }
 
+        // Load cover URLs
+        const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
+        this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/cover/${this.bookId}?token=${encodeURIComponent(token || '')}`;
+        this.coverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
+
         this.isLoading = false;
-        this.audioLoading = false;
 
-        if (this.savedPosition > 0) {
-          this.currentTime = this.savedPosition;
-        }
-
-        this.loadBookmarks();
+        // Load book details in parallel (for progress, title, etc.) - non-blocking
+        this.loadBookDetails(info);
       },
       error: () => {
         this.messageService.add({
@@ -194,8 +178,54 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           detail: 'Failed to load audiobook'
         });
         this.isLoading = false;
+        this.audioLoading = false;
       }
     });
+  }
+
+  private loadBookDetails(info: AudiobookInfo): void {
+    this.bookService.getBookByIdFromAPI(this.bookId, false)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (book) => {
+          this.pageTitle.setBookPageTitle(book);
+
+          if (book.audiobookProgress) {
+            this.savedPosition = book.audiobookProgress.positionMs
+              ? book.audiobookProgress.positionMs / 1000
+              : 0;
+
+            // If audio is already loaded, seek to saved position
+            const audio = this.audioElement?.nativeElement;
+            if (audio && audio.readyState >= 1 && this.savedPosition > 0) {
+              audio.currentTime = this.savedPosition;
+              this.currentTime = this.savedPosition;
+            }
+
+            // Handle track index for folder-based audiobooks
+            if (info.folderBased && info.tracks && info.tracks.length > 0) {
+              const trackIndex = book.audiobookProgress?.trackIndex ?? 0;
+              if (trackIndex !== this.currentTrackIndex) {
+                this.currentTrackIndex = trackIndex;
+                this.loadTrack(trackIndex, false);
+                const track = info.tracks[trackIndex];
+                if (track?.durationMs) {
+                  this.duration = track.durationMs / 1000;
+                }
+              }
+            }
+          }
+
+          if (this.savedPosition > 0) {
+            this.currentTime = this.savedPosition;
+          }
+        },
+        error: () => {
+          // Non-critical - audiobook can still play without book details
+        }
+      });
+
+    this.loadBookmarks();
   }
 
   private loadTrack(index: number, showLoading = true): void {
@@ -204,11 +234,20 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     }
     this.currentTrackIndex = index;
     this.audioSrc = this.audiobookService.getTrackStreamUrl(this.bookId, index);
-    this.audioLoading = showLoading;
     this.buffered = 0;
     const track = this.audiobookInfo.tracks[index];
     if (track?.durationMs) {
       this.duration = track.durationMs / 1000;
+    }
+
+    // Only set the audio source if already initialized
+    if (this.audioInitialized) {
+      this.audioLoading = showLoading;
+      const audio = this.audioElement?.nativeElement;
+      if (audio) {
+        audio.src = this.audioSrc;
+        audio.load();
+      }
     }
   }
 
@@ -222,7 +261,8 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
     this.savedPosition = 0;
     this.currentTrackIndex = 0;
     this.audioSrc = '';
-    this.audioLoading = true;
+    this.audioLoading = false;
+    this.audioInitialized = false;
 
     this.showTrackList = false;
     this.coverUrl = undefined;
@@ -352,7 +392,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       artist: this.audiobookInfo.author || 'Unknown Author',
       album: this.audiobookInfo.title,
       artwork: this.coverUrl
-        ? [{ src: this.coverUrl, sizes: '512x512', type: 'image/png' }]
+        ? [{src: this.coverUrl, sizes: '512x512', type: 'image/png'}]
         : []
     });
   }
@@ -379,6 +419,36 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   togglePlay(): void {
     const audio = this.audioElement?.nativeElement;
     if (!audio) return;
+
+    // Initialize audio on first play
+    if (!this.audioInitialized) {
+      this.audioLoading = true;
+      this.audioInitialized = true;
+      audio.src = this.audioSrc;
+      audio.load();
+
+      // Wait for enough data to play
+      const playWhenReady = () => {
+        audio.removeEventListener('canplay', playWhenReady);
+        audio.play();
+        this.isPlaying = true;
+        this.startProgressSaveInterval();
+        this.updateMediaSessionPlaybackState();
+        if (this.audiobookSessionService.isSessionActive()) {
+          this.audiobookSessionService.resumeSession(Math.round(this.currentTime * 1000));
+        } else {
+          this.audiobookSessionService.startSession(
+            this.bookId,
+            Math.round(this.currentTime * 1000),
+            this.playbackRate,
+            this.audiobookInfo?.bookFileId,
+            this.audiobookInfo?.folderBased ? this.currentTrackIndex : undefined
+          );
+        }
+      };
+      audio.addEventListener('canplay', playWhenReady);
+      return;
+    }
 
     if (this.isPlaying) {
       audio.pause();
@@ -499,10 +569,25 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   selectTrack(track: AudiobookTrack): void {
-    this.loadTrack(track.index);
+    this.currentTrackIndex = track.index;
+    this.audioSrc = this.audiobookService.getTrackStreamUrl(this.bookId, track.index);
     this.currentTime = 0;
     this.savedPosition = 0;
+    this.buffered = 0;
+    const trackInfo = this.audiobookInfo.tracks?.[track.index];
+    if (trackInfo?.durationMs) {
+      this.duration = trackInfo.durationMs / 1000;
+    }
     this.showTrackList = false;
+
+    const audio = this.audioElement?.nativeElement;
+    if (audio) {
+      this.audioLoading = true;
+      this.audioInitialized = true;
+      audio.src = this.audioSrc;
+      audio.load();
+    }
+
     setTimeout(() => {
       this.audioElement?.nativeElement?.play();
       this.isPlaying = true;
@@ -522,15 +607,23 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
 
   selectChapter(chapter: AudiobookChapter): void {
     const audio = this.audioElement?.nativeElement;
-    if (audio) {
-      audio.currentTime = chapter.startTimeMs / 1000;
-      this.currentTime = chapter.startTimeMs / 1000;
-      this.showTrackList = false;
-      this.updateMediaSessionMetadata();
-      if (!this.isPlaying) {
+    if (!audio) return;
+
+    // Initialize audio if not yet done
+    if (!this.audioInitialized) {
+      this.audioLoading = true;
+      this.audioInitialized = true;
+      audio.src = this.audioSrc;
+      audio.load();
+
+      const seekAndPlay = () => {
+        audio.removeEventListener('canplay', seekAndPlay);
+        audio.currentTime = chapter.startTimeMs / 1000;
+        this.currentTime = chapter.startTimeMs / 1000;
         audio.play();
         this.isPlaying = true;
         this.startProgressSaveInterval();
+        this.updateMediaSessionMetadata();
         this.updateMediaSessionPlaybackState();
         if (this.audiobookSessionService.isSessionActive()) {
           this.audiobookSessionService.resumeSession(chapter.startTimeMs);
@@ -540,6 +633,28 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
             this.audiobookInfo?.bookFileId
           );
         }
+      };
+      audio.addEventListener('canplay', seekAndPlay);
+      this.showTrackList = false;
+      return;
+    }
+
+    audio.currentTime = chapter.startTimeMs / 1000;
+    this.currentTime = chapter.startTimeMs / 1000;
+    this.showTrackList = false;
+    this.updateMediaSessionMetadata();
+    if (!this.isPlaying) {
+      audio.play();
+      this.isPlaying = true;
+      this.startProgressSaveInterval();
+      this.updateMediaSessionPlaybackState();
+      if (this.audiobookSessionService.isSessionActive()) {
+        this.audiobookSessionService.resumeSession(chapter.startTimeMs);
+      } else {
+        this.audiobookSessionService.startSession(
+          this.bookId, chapter.startTimeMs, this.playbackRate,
+          this.audiobookInfo?.bookFileId
+        );
       }
     }
   }
@@ -876,23 +991,57 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   goToBookmark(bookmark: BookMark): void {
+    const audio = this.audioElement?.nativeElement;
+    if (!audio) return;
+
+    const targetPosition = (bookmark.positionMs || 0) / 1000;
+
+    // Initialize audio if not yet done
+    if (!this.audioInitialized) {
+      if (this.audiobookInfo.folderBased && bookmark.trackIndex !== undefined && bookmark.trackIndex !== null) {
+        this.currentTrackIndex = bookmark.trackIndex;
+        this.audioSrc = this.audiobookService.getTrackStreamUrl(this.bookId, bookmark.trackIndex);
+      }
+
+      this.audioLoading = true;
+      this.audioInitialized = true;
+      audio.src = this.audioSrc;
+      audio.load();
+
+      const seekAndPlay = () => {
+        audio.removeEventListener('canplay', seekAndPlay);
+        audio.currentTime = targetPosition;
+        this.currentTime = targetPosition;
+        audio.play();
+        this.isPlaying = true;
+        this.startProgressSaveInterval();
+        const positionMs = bookmark.positionMs || 0;
+        if (this.audiobookSessionService.isSessionActive()) {
+          this.audiobookSessionService.resumeSession(positionMs);
+        } else {
+          this.audiobookSessionService.startSession(
+            this.bookId, positionMs, this.playbackRate,
+            this.audiobookInfo?.bookFileId,
+            this.audiobookInfo?.folderBased ? bookmark.trackIndex : undefined
+          );
+        }
+      };
+      audio.addEventListener('canplay', seekAndPlay);
+      this.showBookmarkList = false;
+      return;
+    }
+
     if (this.audiobookInfo.folderBased && bookmark.trackIndex !== undefined && bookmark.trackIndex !== null) {
       if (bookmark.trackIndex !== this.currentTrackIndex) {
         this.loadTrack(bookmark.trackIndex);
-        this.savedPosition = (bookmark.positionMs || 0) / 1000;
+        this.savedPosition = targetPosition;
       } else {
-        const audio = this.audioElement?.nativeElement;
-        if (audio && bookmark.positionMs) {
-          audio.currentTime = bookmark.positionMs / 1000;
-          this.currentTime = bookmark.positionMs / 1000;
-        }
+        audio.currentTime = targetPosition;
+        this.currentTime = targetPosition;
       }
     } else {
-      const audio = this.audioElement?.nativeElement;
-      if (audio && bookmark.positionMs) {
-        audio.currentTime = bookmark.positionMs / 1000;
-        this.currentTime = bookmark.positionMs / 1000;
-      }
+      audio.currentTime = targetPosition;
+      this.currentTime = targetPosition;
     }
 
     this.showBookmarkList = false;

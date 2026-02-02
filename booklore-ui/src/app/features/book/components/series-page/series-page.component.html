@@ -124,7 +124,7 @@
 @if (selectedBooks.size > 0) {
   @if (userService.userState$ | async; as userState) {
     <div class="book-browser-footer" [@slideInOut]>
-      <div class="footer-inner">
+      <div class="footer-content">
         <div class="footer-left">
           <div class="selected-count-badge">
             <i class="pi pi-check-circle badge-icon"></i>
@@ -173,7 +173,7 @@
                   tooltipPosition="top">
                 </p-button>
               }
-              @if (hasBulkReadActionsItems) {
+              @if (hasMoreActionsItems) {
                 <div class="more-actions-wrapper">
                   <p-button
                     (click)="menu.toggle($event)"
@@ -183,7 +183,7 @@
                     severity="info"
                     icon="pi pi-ellipsis-v">
                   </p-button>
-                  <p-tieredMenu #menu [model]="bulkReadActionsMenuItems" [popup]="true" appendTo="body"/>
+                  <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body"/>
                 </div>
               }
             </div>

@@ -119,6 +119,8 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete library: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
                 rejectButtonProps: {
                   label: 'Cancel',
                   severity: 'secondary',
@@ -183,8 +185,15 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete shelf: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
                 acceptButtonProps: {
+                  label: 'Yes',
                   severity: 'danger'
+                },
+                rejectButtonProps: {
+                  label: 'Cancel',
+                  severity: 'secondary'
                 },
                 accept: () => {
                   this.shelfService.deleteShelf(entity?.id!).subscribe({
@@ -237,8 +246,15 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete magic shelf: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
                 acceptButtonProps: {
+                  label: 'Yes',
                   severity: 'danger'
+                },
+                rejectButtonProps: {
+                  label: 'Cancel',
+                  severity: 'secondary'
                 },
                 accept: () => {
                   this.magicShelfService.deleteShelf(entity?.id!).subscribe({

@@ -1,5 +1,5 @@
-import {Injectable, inject} from '@angular/core';
-import {Observable, BehaviorSubject} from 'rxjs';
+import {inject, Injectable} from '@angular/core';
+import {Observable} from 'rxjs';
 import {map, switchMap} from 'rxjs/operators';
 import {BookState} from '../../model/state/book-state.model';
 import {SortOption} from '../../model/sort.model';
@@ -7,7 +7,6 @@ import {SortService} from '../../service/sort.service';
 import {HeaderFilter} from './filters/HeaderFilter';
 import {SideBarFilter} from './filters/SidebarFilter';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
-import {BookFilterMode} from '../../../settings/user-management/user.service';
 import {ParamMap} from '@angular/router';
 import {QUERY_PARAMS} from './book-browser-query-params.service';
 
@@ -39,21 +38,6 @@ export class BookFilterOrchestrationService {
 
   shouldForceExpandSeries(queryParamMap: ParamMap): boolean {
     const filterParam = queryParamMap.get(QUERY_PARAMS.FILTER);
-    return (
-      !!filterParam &&
-      typeof filterParam === 'string' &&
-      filterParam.split(',').some(pair => pair.trim().startsWith('series:'))
-    );
-  }
-
-  createHeaderFilter(searchTerm$: BehaviorSubject<string>): HeaderFilter {
-    return new HeaderFilter(searchTerm$);
-  }
-
-  createSideBarFilter(
-    selectedFilter$: BehaviorSubject<Record<string, string[]> | null>,
-    selectedFilterMode$: BehaviorSubject<BookFilterMode>
-  ): SideBarFilter {
-    return new SideBarFilter(selectedFilter$, selectedFilterMode$);
+    return (!!filterParam && filterParam.split(',').some(pair => pair.trim().startsWith('series:')));
   }
 }
