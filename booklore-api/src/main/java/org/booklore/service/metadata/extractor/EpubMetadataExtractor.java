@@ -1,6 +1,5 @@
 package org.booklore.service.metadata.extractor;
 
-import org.booklore.model.dto.BookMetadata;
 import io.documentnode.epub4j.domain.Book;
 import io.documentnode.epub4j.epub.EpubReader;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +7,7 @@ import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.FileHeader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.booklore.model.dto.BookMetadata;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -97,9 +97,16 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     @Override
     public byte[] extractCover(File epubFile) {
+        Book epub = null;
+        io.documentnode.epub4j.domain.Resource coverImage = null;
+
         try (FileInputStream fis = new FileInputStream(epubFile)) {
-            Book epub = new EpubReader().readEpub(fis);
-            io.documentnode.epub4j.domain.Resource coverImage = epub.getCoverImage();
+            try {
+                epub = new EpubReader().readEpub(fis);
+                coverImage = epub.getCoverImage();
+            } catch (Exception e) {
+                log.debug("epub4j failed to parse EPUB for cover extraction (will try fallbacks): {}", e.getMessage());
+            }
 
             if (coverImage == null) {
                 String coverHref = findCoverImageHrefInOpf(epubFile);
@@ -120,7 +127,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                 }
             }
 
-            if (coverImage == null) {
+            if (coverImage == null && epub != null) {
                 for (io.documentnode.epub4j.domain.Resource res : epub.getResources().getAll()) {
                     String id = res.getId();
                     String href = res.getHref();
