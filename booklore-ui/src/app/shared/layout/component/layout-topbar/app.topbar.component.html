@@ -81,6 +81,11 @@
           }
         }
         <li>
+          <a class="topbar-item" (click)="toggleFullscreen()" pTooltip="Fullscreen" tooltipPosition="bottom">
+            <i class="pi pi-window-maximize topbar-icon"></i>
+          </a>
+        </li>
+        <li>
           <a class="topbar-item" (click)="navigateToSettings()" pTooltip="Settings" tooltipPosition="bottom">
             <i class="pi pi-cog topbar-icon"></i>
           </a>
@@ -244,6 +249,15 @@
               </li>
             }
           }
+          <li>
+            <button
+              class="mobile-menu-item"
+              (click)="toggleFullscreen(); mobileMenu.hide()"
+            >
+              <i class="pi pi-window-maximize topbar-icon"></i>
+              Fullscreen
+            </button>
+          </li>
           <li>
             <button
               class="mobile-menu-item"
