@@ -4,6 +4,7 @@ import {NgxExtendedPdfViewerModule, ZoomType} from 'ngx-extended-pdf-viewer';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {BookService} from '../../book/service/book.service';
 import {forkJoin, Subscription} from 'rxjs';
+import {map, switchMap} from 'rxjs/operators';
 import {BookSetting} from '../../book/model/book.model';
 import {UserService} from '../../settings/user-management/user.service';
 
@@ -31,6 +32,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
 
   bookData!: string | Blob;
   bookId!: number;
+  bookFileId?: number;
   private appSettingsSubscription!: Subscription;
 
   private bookService = inject(BookService);
@@ -46,17 +48,21 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
 
-      const myself$ = this.userService.getMyself();
-      const book$ = this.bookService.getBookByIdFromAPI(this.bookId, false);
-      const bookSetting$ = this.bookService.getBookSetting(this.bookId);
-      const pdfData$ = this.bookService.getFileContent(this.bookId);
+      this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
+        switchMap((book) => {
+          // Set the book file ID for progress tracking
+          this.bookFileId = book.primaryFile?.id;
 
-      forkJoin([book$, bookSetting$, pdfData$, myself$]).subscribe({
-        next: (results) => {
-          const pdfMeta = results[0];
-          const pdfPrefs = results[1];
-          const pdfData = results[2];
-          const myself = results[3];
+          return forkJoin([
+            this.bookService.getBookSetting(this.bookId, this.bookFileId!),
+            this.bookService.getFileContent(this.bookId),
+            this.userService.getMyself()
+          ]).pipe(map(([bookSetting, pdfData, myself]) => ({ book, bookSetting, pdfData, myself })));
+        })
+      ).subscribe({
+        next: ({ book, bookSetting, pdfData, myself }) => {
+          const pdfMeta = book;
+          const pdfPrefs = bookSetting;
 
           this.pageTitle.setBookPageTitle(pdfMeta);
 
@@ -115,7 +121,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
 
   updateProgress(): void {
     const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
-    this.bookService.savePdfProgress(this.bookId, this.page, percentage).subscribe();
+    this.bookService.savePdfProgress(this.bookId, this.page, percentage, this.bookFileId).subscribe();
   }
 
   onPdfPagesLoaded(event: { pagesCount: number }): void {

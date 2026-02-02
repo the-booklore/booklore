@@ -1,5 +1,4 @@
 import {Component} from '@angular/core';
-import {Divider} from 'primeng/divider';
 import {KoreaderSettingsComponent} from './component/koreader-settings/koreader-settings-component';
 import {KoboSyncSettingsComponent} from './component/kobo-sync-settings/kobo-sync-settings-component';
 import {HardcoverSettingsComponent} from './component/hardcover-settings/hardcover-settings-component';
@@ -9,8 +8,7 @@ import {HardcoverSettingsComponent} from './component/hardcover-settings/hardcov
   imports: [
     KoreaderSettingsComponent,
     KoboSyncSettingsComponent,
-    HardcoverSettingsComponent,
-    Divider
+    HardcoverSettingsComponent
   ],
   templateUrl: './device-settings-component.html',
   styleUrl: './device-settings-component.scss'
