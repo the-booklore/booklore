@@ -1,27 +1,26 @@
-import { Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {CommonModule, Location} from '@angular/common';
+import {ActivatedRoute} from '@angular/router';
+import {FormsModule} from '@angular/forms';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
 
-import { Button } from 'primeng/button';
-import { Slider, SliderChangeEvent } from 'primeng/slider';
-import { ProgressSpinner } from 'primeng/progressspinner';
-import { Tooltip } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
-import { SelectButton } from 'primeng/selectbutton';
-import { Menu } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import {Button} from 'primeng/button';
+import {Slider, SliderChangeEvent} from 'primeng/slider';
+import {ProgressSpinner} from 'primeng/progressspinner';
+import {Tooltip} from 'primeng/tooltip';
+import {MenuItem, MessageService} from 'primeng/api';
+import {SelectButton} from 'primeng/selectbutton';
+import {Menu} from 'primeng/menu';
 
-import { AudiobookService } from './audiobook.service';
-import { AudiobookInfo, AudiobookChapter, AudiobookTrack, AudiobookProgress } from './audiobook.model';
-import { BookService } from '../../book/service/book.service';
-import { BookMarkService, BookMark, CreateBookMarkRequest } from '../../../shared/service/book-mark.service';
-import { AudiobookSessionService } from '../../../shared/service/audiobook-session.service';
-import { PageTitleService } from '../../../shared/service/page-title.service';
-import { AuthService } from '../../../shared/service/auth.service';
-import { API_CONFIG } from '../../../core/config/api-config';
+import {AudiobookService} from './audiobook.service';
+import {AudiobookChapter, AudiobookInfo, AudiobookProgress, AudiobookTrack} from './audiobook.model';
+import {BookService} from '../../book/service/book.service';
+import {BookMark, BookMarkService, CreateBookMarkRequest} from '../../../shared/service/book-mark.service';
+import {AudiobookSessionService} from '../../../shared/service/audiobook-session.service';
+import {PageTitleService} from '../../../shared/service/page-title.service';
+import {AuthService} from '../../../shared/service/auth.service';
+import {API_CONFIG} from '../../../core/config/api-config';
 
 @Component({
   selector: 'app-audiobook-reader',
@@ -48,7 +47,6 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private bookMarkService = inject(BookMarkService);
   private authService = inject(AuthService);
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private location = inject(Location);
   private messageService = inject(MessageService);
   private audiobookSessionService = inject(AudiobookSessionService);
@@ -87,24 +85,24 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   private originalVolume = 1;
 
   sleepTimerOptions: MenuItem[] = [
-    { label: '15 minutes', command: () => this.setSleepTimer(15) },
-    { label: '30 minutes', command: () => this.setSleepTimer(30) },
-    { label: '45 minutes', command: () => this.setSleepTimer(45) },
-    { label: '60 minutes', command: () => this.setSleepTimer(60) },
-    { label: 'End of chapter', command: () => this.setSleepTimerEndOfChapter() },
-    { separator: true },
-    { label: 'Cancel timer', command: () => this.cancelSleepTimer(), visible: false }
+    {label: '15 minutes', command: () => this.setSleepTimer(15)},
+    {label: '30 minutes', command: () => this.setSleepTimer(30)},
+    {label: '45 minutes', command: () => this.setSleepTimer(45)},
+    {label: '60 minutes', command: () => this.setSleepTimer(60)},
+    {label: 'End of chapter', command: () => this.setSleepTimerEndOfChapter()},
+    {separator: true},
+    {label: 'Cancel timer', command: () => this.cancelSleepTimer(), visible: false}
   ];
 
   bookmarks: BookMark[] = [];
 
   playbackRates = [
-    { label: '0.5x', value: 0.5 },
-    { label: '0.75x', value: 0.75 },
-    { label: '1x', value: 1 },
-    { label: '1.25x', value: 1.25 },
-    { label: '1.5x', value: 1.5 },
-    { label: '2x', value: 2 }
+    {label: '0.5x', value: 0.5},
+    {label: '0.75x', value: 0.75},
+    {label: '1x', value: 1},
+    {label: '1.25x', value: 1.25},
+    {label: '1.5x', value: 1.5},
+    {label: '2x', value: 2}
   ];
 
   private progressSaveInterval?: ReturnType<typeof setInterval>;
@@ -394,7 +392,7 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
       artist: this.audiobookInfo.author || 'Unknown Author',
       album: this.audiobookInfo.title,
       artwork: this.coverUrl
-        ? [{ src: this.coverUrl, sizes: '512x512', type: 'image/png' }]
+        ? [{src: this.coverUrl, sizes: '512x512', type: 'image/png'}]
         : []
     });
   }

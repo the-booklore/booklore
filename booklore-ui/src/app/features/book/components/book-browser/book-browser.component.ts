@@ -205,6 +205,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.coverScalePreferenceService.gridColumnMinWidth;
   }
 
+  getCardHeight(book: Book): number {
+    if (this.isMobile) {
+      const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+      if (isAudiobook) {
+        return this.mobileCardSize.width + this.MOBILE_TITLE_BAR_HEIGHT;
+      }
+      return this.mobileCardSize.height;
+    }
+    return this.coverScalePreferenceService.getCardHeight(book);
+  }
+
   get viewIcon(): string {
     return this.currentViewMode === VIEW_MODES.GRID ? 'pi pi-objects-column' : 'pi pi-table';
   }
