@@ -10,7 +10,6 @@ import java.util.List;
 @Data
 @Builder
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
-public class KoboReadingStateWrapper {
+public class KoboReadingStateRequest {
     private List<KoboReadingState> readingStates;
 }
-

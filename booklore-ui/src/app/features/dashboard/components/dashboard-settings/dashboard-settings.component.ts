@@ -57,6 +57,7 @@ export class DashboardSettingsComponent implements OnInit {
     {label: 'Title', value: 'title'},
     {label: 'Title + Series', value: 'titleSeries'},
     {label: 'File Name', value: 'fileName'},
+    {label: 'File Path', value: 'filePath'},
     {label: 'Date Added', value: 'addedOn'},
     {label: 'Author', value: 'author'},
     {label: 'Author (Surname)', value: 'authorSurnameVorname'},
