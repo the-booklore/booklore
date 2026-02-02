@@ -1,0 +1,165 @@
+.conversion-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  min-width: 500px;
+  max-width: 600px;
+
+  .dialog-header {
+    h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .book-title {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-color-secondary);
+      font-style: italic;
+    }
+  }
+
+  .dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      label {
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: var(--text-color);
+      }
+
+      .field-hint {
+        color: var(--text-color-secondary);
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .resolution-display {
+      padding: 1rem;
+      background: var(--surface-ground);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--surface-border);
+
+      .resolution-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        i {
+          font-size: 1.5rem;
+          color: var(--primary-color);
+        }
+
+        .resolution-text {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--text-color);
+        }
+      }
+    }
+
+    .custom-dimensions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--surface-50);
+      border-radius: var(--border-radius);
+      border: 1px dashed var(--surface-border);
+
+      .dimension-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .field-hint {
+        text-align: center;
+        color: var(--text-color-secondary);
+        font-size: 0.85rem;
+      }
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-color-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .conversion-info {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--blue-50);
+      border-left: 3px solid var(--blue-500);
+      border-radius: var(--border-radius);
+
+      i {
+        color: var(--blue-500);
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        margin-top: 0.125rem;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        line-height: 1.5;
+      }
+    }
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    gap: 1rem;
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+    }
+
+    p {
+      color: var(--text-color-secondary);
+      font-size: 0.95rem;
+    }
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--surface-border);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 600px) {
+  .conversion-dialog {
+    min-width: unset;
+    max-width: unset;
+
+    .dialog-content {
+      .custom-dimensions .dimension-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+}

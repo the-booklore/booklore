@@ -1,0 +1,123 @@
+<div class="conversion-dialog">
+  <div class="dialog-header">
+    <h2>Convert CBZ to EPUB</h2>
+    <p class="book-title">{{ bookTitle }}</p>
+  </div>
+
+  <div class="dialog-content" *ngIf="!loading">
+    <form [formGroup]="conversionForm">
+      <!-- Device Profile Selection -->
+      <div class="form-field">
+        <label for="deviceProfile">Target Device Profile *</label>
+        <p-dropdown
+          id="deviceProfile"
+          formControlName="deviceProfile"
+          [options]="deviceProfiles"
+          optionLabel="displayName"
+          optionValue="value"
+          placeholder="Select a device"
+          [showClear]="false"
+          styleClass="w-full">
+        </p-dropdown>
+        <small class="field-hint">Choose your e-reader model or select "Other" for custom dimensions</small>
+      </div>
+
+      <!-- Target Resolution Display -->
+      <div class="resolution-display" *ngIf="selectedProfile">
+        <div class="resolution-info">
+          <i class="pi pi-desktop"></i>
+          <span class="resolution-text">{{ targetResolution }}</span>
+        </div>
+      </div>
+
+      <!-- Custom Dimensions (only shown for "Other" profile) -->
+      <div class="custom-dimensions" *ngIf="isCustomProfile">
+        <div class="dimension-row">
+          <div class="form-field">
+            <label for="customWidth">Width (pixels) *</label>
+            <p-inputNumber
+              id="customWidth"
+              formControlName="customWidth"
+              [min]="100"
+              [max]="5000"
+              [step]="1"
+              placeholder="e.g., 1072"
+              styleClass="w-full">
+            </p-inputNumber>
+          </div>
+
+          <div class="form-field">
+            <label for="customHeight">Height (pixels) *</label>
+            <p-inputNumber
+              id="customHeight"
+              formControlName="customHeight"
+              [min]="100"
+              [max]="5000"
+              [step]="1"
+              placeholder="e.g., 1448"
+              styleClass="w-full">
+            </p-inputNumber>
+          </div>
+        </div>
+        <small class="field-hint">Minimum dimensions: 100×100 pixels</small>
+      </div>
+
+      <!-- Image Compression -->
+      <div class="form-field">
+        <label for="compressionPercentage">
+          Image Quality: {{ conversionForm.get('compressionPercentage')?.value }}%
+        </label>
+        <p-slider
+          id="compressionPercentage"
+          formControlName="compressionPercentage"
+          [min]="1"
+          [max]="100"
+          [step]="1"
+          styleClass="w-full">
+        </p-slider>
+        <div class="slider-labels">
+          <span>Lower quality (smaller file)</span>
+          <span>Higher quality (larger file)</span>
+        </div>
+        <small class="field-hint">
+          Lower values reduce file size but may decrease image quality
+        </small>
+      </div>
+
+      <!-- Conversion Info -->
+      <div class="conversion-info">
+        <i class="pi pi-info-circle"></i>
+        <p>
+          The converted EPUB will be created as a new book in the same library.
+          Images will be optimized for your selected device resolution.
+        </p>
+      </div>
+    </form>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <p-progressSpinner styleClass="spinner"></p-progressSpinner>
+    <p>Loading device profiles...</p>
+  </div>
+
+  <!-- Dialog Actions -->
+  <div class="dialog-actions">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      severity="secondary"
+      [text]="true"
+      (onClick)="onCancel()"
+      [disabled]="converting">
+    </p-button>
+    <p-button
+      label="Convert"
+      icon="pi pi-check"
+      [loading]="converting"
+      loadingIcon="pi pi-spin pi-spinner"
+      (onClick)="onConvert()"
+      [disabled]="loading || conversionForm.invalid">
+    </p-button>
+  </div>
+</div>
