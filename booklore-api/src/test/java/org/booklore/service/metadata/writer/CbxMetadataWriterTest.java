@@ -1,11 +1,11 @@
-package com.adityachandel.booklore.service.metadata.writer;
+package org.booklore.service.metadata.writer;
 
-import com.adityachandel.booklore.model.MetadataClearFlags;
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import org.booklore.model.MetadataClearFlags;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.MetadataPersistenceSettings;
+import org.booklore.model.entity.*;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

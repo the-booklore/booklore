@@ -1,4 +1,4 @@
-package com.adityachandel.booklore.service.metadata.writer;
+package org.booklore.service.metadata.writer;
 
 import jakarta.xml.bind.annotation.*;
 import lombok.Data;

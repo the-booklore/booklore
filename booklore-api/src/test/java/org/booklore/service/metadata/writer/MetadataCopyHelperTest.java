@@ -1,8 +1,8 @@
-package com.adityachandel.booklore.service.metadata.writer;
+package org.booklore.service.metadata.writer;
 
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.MoodEntity;
-import com.adityachandel.booklore.model.entity.TagEntity;
+import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.model.entity.MoodEntity;
+import org.booklore.model.entity.TagEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

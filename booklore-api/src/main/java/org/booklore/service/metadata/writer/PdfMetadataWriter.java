@@ -1,11 +1,5 @@
-package com.adityachandel.booklore.service.metadata.writer;
+package org.booklore.service.metadata.writer;
 
-import com.adityachandel.booklore.model.MetadataClearFlags;
-import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.metadata.BookLoreMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
@@ -16,6 +10,12 @@ import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.schema.DublinCoreSchema;
 import org.apache.xmpbox.xml.XmpSerializer;
+import org.booklore.model.MetadataClearFlags;
+import org.booklore.model.dto.settings.MetadataPersistenceSettings;
+import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.metadata.BookLoreMetadata;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -247,7 +247,7 @@ public class PdfMetadataWriter implements MetadataWriter {
      * - Booklore (booklore:) for series, subtitle, ISBNs, external IDs, ratings, moods, tags, page count
      */
     private byte[] addCustomIdentifiersToXmp(byte[] xmpBytes, BookMetadataEntity metadata, MetadataCopyHelper helper, MetadataClearFlags clear) throws Exception {
-        DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
+        DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
         Document doc = builder.parse(new ByteArrayInputStream(xmpBytes));
 
         Element rdfRoot = (Element) doc.getElementsByTagNameNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "RDF").item(0);
@@ -442,7 +442,7 @@ public class PdfMetadataWriter implements MetadataWriter {
     private boolean isXmpMetadataDifferent(byte[] existingBytes, byte[] newBytes) {
         if (existingBytes == null || newBytes == null) return true;
         try {
-            DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
+            DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
             Document doc1 = builder.parse(new ByteArrayInputStream(existingBytes));
             Document doc2 = builder.parse(new ByteArrayInputStream(newBytes));
             return !Objects.equals(

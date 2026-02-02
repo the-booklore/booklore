@@ -1,17 +1,17 @@
-package com.adityachandel.booklore.service.metadata.writer;
+package org.booklore.service.metadata.writer;
 
-import com.adityachandel.booklore.model.MetadataClearFlags;
-import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.util.SecureXmlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
 import org.apache.commons.lang3.StringUtils;
+import org.booklore.model.MetadataClearFlags;
+import org.booklore.model.dto.settings.MetadataPersistenceSettings;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.util.SecureXmlUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
@@ -367,7 +367,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 return;
             }
 
-            DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
+            DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
             Document opfDoc = builder.parse(opfFile);
 
             applyCoverImageToEpub(tempDir, opfDoc, coverData);
@@ -486,7 +486,7 @@ public class EpubMetadataWriter implements MetadataWriter {
             throw new IOException("container.xml not found at expected location: " + containerXml);
         }
 
-        DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
+        DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
         Document containerDoc = builder.parse(containerXml.toFile());
         Node rootfile = containerDoc.getElementsByTagName("rootfile").item(0);
         if (rootfile == null) {

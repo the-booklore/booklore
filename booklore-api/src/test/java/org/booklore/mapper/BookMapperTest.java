@@ -1,11 +1,11 @@
-package com.adityachandel.booklore.mapper;
+package org.booklore.mapper;
 
-import com.adityachandel.booklore.model.dto.Book;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookFileEntity;
-import com.adityachandel.booklore.model.entity.LibraryEntity;
-import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.BookFileType;
+import org.booklore.model.dto.Book;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
+import org.booklore.model.entity.LibraryEntity;
+import org.booklore.model.entity.LibraryPathEntity;
+import org.booklore.model.enums.BookFileType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,4 +1,4 @@
-package com.adityachandel.booklore.util;
+package org.booklore.util;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;

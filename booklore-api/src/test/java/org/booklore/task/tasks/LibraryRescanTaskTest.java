@@ -1,13 +1,13 @@
-package com.adityachandel.booklore.task.tasks;
+package org.booklore.task.tasks;
 
-import com.adityachandel.booklore.exception.APIException;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.dto.Library;
-import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
-import com.adityachandel.booklore.service.library.LibraryRescanHelper;
-import com.adityachandel.booklore.service.library.LibraryService;
-import com.adityachandel.booklore.task.TaskCancellationManager;
-import com.adityachandel.booklore.task.options.LibraryRescanOptions;
+import org.booklore.exception.APIException;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.Library;
+import org.booklore.model.dto.request.TaskCreateRequest;
+import org.booklore.service.library.LibraryRescanHelper;
+import org.booklore.service.library.LibraryService;
+import org.booklore.task.TaskCancellationManager;
+import org.booklore.task.options.LibraryRescanOptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

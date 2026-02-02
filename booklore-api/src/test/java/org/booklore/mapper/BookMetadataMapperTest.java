@@ -1,7 +1,7 @@
-package com.adityachandel.booklore.mapper;
+package org.booklore.mapper;
 
-import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

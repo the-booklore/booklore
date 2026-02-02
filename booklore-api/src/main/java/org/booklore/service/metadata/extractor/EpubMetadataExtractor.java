@@ -1,8 +1,5 @@
-package com.adityachandel.booklore.service.metadata.extractor;
+package org.booklore.service.metadata.extractor;
 
-import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.service.metadata.BookLoreMetadata;
-import com.adityachandel.booklore.util.SecureXmlUtils;
 import io.documentnode.epub4j.domain.Book;
 import io.documentnode.epub4j.domain.MediaType;
 import io.documentnode.epub4j.domain.MediaTypes;
@@ -13,6 +10,9 @@ import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.FileHeader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.booklore.model.dto.BookMetadata;
+import org.booklore.service.metadata.BookLoreMetadata;
+import org.booklore.util.SecureXmlUtils;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
@@ -464,7 +464,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private String findCoverImageHrefInOpf(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
-            DocumentBuilder builder = com.adityachandel.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
+            DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
 
             FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
             if (containerHdr == null) return null;
