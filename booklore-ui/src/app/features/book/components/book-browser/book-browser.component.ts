@@ -205,6 +205,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.coverScalePreferenceService.gridColumnMinWidth;
   }
 
+  getCardHeight(book: Book): number {
+    if (this.isMobile) {
+      const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+      if (isAudiobook) {
+        return this.mobileCardSize.width + this.MOBILE_TITLE_BAR_HEIGHT;
+      }
+      return this.mobileCardSize.height;
+    }
+    return this.coverScalePreferenceService.getCardHeight(book);
+  }
+
   get viewIcon(): string {
     return this.currentViewMode === VIEW_MODES.GRID ? 'pi pi-objects-column' : 'pi pi-table';
   }
@@ -673,6 +684,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'pi pi-image',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
@@ -705,6 +724,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'pi pi-palette',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {

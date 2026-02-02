@@ -3,6 +3,7 @@ import {Subject} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {LocalStorageService} from '../../../../shared/service/local-storage.service';
+import {Book} from '../../model/book.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,7 @@ export class CoverScalePreferenceService {
 
   private readonly BASE_WIDTH = 135;
   private readonly BASE_HEIGHT = 220;
+  private readonly TITLE_BAR_HEIGHT = 31;
   private readonly DEBOUNCE_MS = 1000;
   private readonly STORAGE_KEY = 'coverScalePreference';
 
@@ -48,6 +50,14 @@ export class CoverScalePreferenceService {
 
   get gridColumnMinWidth(): string {
     return `${this.currentCardSize.width}px`;
+  }
+
+  getCardHeight(book: Book): number {
+    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+    if (isAudiobook) {
+      return Math.round((this.BASE_WIDTH + this.TITLE_BAR_HEIGHT) * this.scaleFactor);
+    }
+    return this.currentCardSize.height;
   }
 
   private saveScalePreference(scale: number): void {

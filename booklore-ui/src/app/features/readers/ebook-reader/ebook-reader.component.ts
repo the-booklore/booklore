@@ -1,6 +1,6 @@
 import {Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {forkJoin, Observable, of, Subject, throwError} from 'rxjs';
+import {Observable, of, Subject, throwError} from 'rxjs';
 import {catchError, map, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {ReaderLoaderService} from './core/loader.service';
@@ -27,8 +27,8 @@ import {ReaderQuickSettingsComponent} from './layout/header/quick-settings.compo
 import {ReaderBookMetadataDialogComponent} from './dialogs/metadata-dialog.component';
 import {ReaderHeaderFooterVisibilityManager} from './shared/visibility.util';
 import {EpubCustomFontService} from './features/fonts/custom-font.service';
-import {TextSelectionPopupComponent, TextSelectionAction} from './shared/selection-popup.component';
-import {ReaderNoteDialogComponent, NoteDialogData, NoteDialogResult} from './dialogs/note-dialog.component';
+import {TextSelectionAction, TextSelectionPopupComponent} from './shared/selection-popup.component';
+import {NoteDialogData, NoteDialogResult, ReaderNoteDialogComponent} from './dialogs/note-dialog.component';
 
 @Component({
   selector: 'app-ebook-reader',
@@ -102,7 +102,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   sectionFractions: number[] = [];
 
   showSelectionPopup = false;
-  popupPosition = { x: 0, y: 0 };
+  popupPosition = {x: 0, y: 0};
   showPopupBelow = false;
   overlappingAnnotationId: number | null = null;
   selectedText = '';
@@ -229,7 +229,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         }
 
         return this.stateService.initializeState(this.bookId, bookFileId!).pipe(
-          map(() => ({ book, bookType, bookFileId }))
+          map(() => ({book, bookType, bookFileId}))
         );
       }),
       switchMap(({book, bookType, bookFileId}) => {
