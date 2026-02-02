@@ -77,7 +77,7 @@ export class BookMenuService {
     return items;
   }
 
-  getBulkReadActionsMenu(selectedBooks: Set<number>, user: User | null): MenuItem[] {
+  getMoreActionsMenu(selectedBooks: Set<number>, user: User | null): MenuItem[] {
     const count = selectedBooks.size;
     const permissions = user?.permissions;
     const items: MenuItem[] = [];
@@ -132,6 +132,48 @@ export class BookMenuService {
           }
         }))
       });
+    }
+
+    // Shelf Actions
+    if (permissions?.canManageLibrary || permissions?.admin) { // Assuming these permissions cover shelf management for books
+       items.push({
+         label: 'Remove from all shelves',
+         icon: 'pi pi-bookmark-fill', // Or bookmark-slash
+         command: () => {
+           this.confirmationService.confirm({
+             message: `Are you sure you want to remove ${count} book(s) from ALL their shelves?`,
+             header: 'Confirm Unshelve',
+             icon: 'pi pi-exclamation-triangle',
+             acceptLabel: 'Yes',
+             rejectLabel: 'No',
+             accept: () => {
+               const loader = this.loadingService.show(`Removing ${count} book(s) from shelves...`);
+               const books = this.bookService.getBooksByIdsFromState(Array.from(selectedBooks));
+               const allShelfIds = new Set<number>();
+               books.forEach(b => b.shelves?.forEach(s => {
+                 if (s.id) allShelfIds.add(s.id);
+               }));
+
+               if (allShelfIds.size === 0) {
+                 this.loadingService.hide(loader);
+                 this.messageService.add({ severity: 'info', summary: 'Info', detail: 'Selected books are not on any shelves.' });
+                 return;
+               }
+
+               this.bookService.updateBookShelves(selectedBooks, new Set(), allShelfIds)
+                 .pipe(finalize(() => this.loadingService.hide(loader)))
+                 .subscribe({
+                   next: () => {
+                     this.messageService.add({severity: 'success', summary: 'Success', detail: 'Books removed from all shelves'});
+                   },
+                   error: () => {
+                     this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update books shelves'});
+                   }
+                 });
+             }
+           });
+         }
+       });
     }
 
     if (permissions?.canBulkResetBookloreReadProgress) {

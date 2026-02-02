@@ -132,8 +132,12 @@ public class KoboEntitlementService {
     private KoboReadingState getReadingStateForBook(BookEntity book) {
         OffsetDateTime now = getCurrentUtc();
         String entitlementId = String.valueOf(book.getId());
+        Long userId = authenticationService.getAuthenticatedUser().getId();
 
-        KoboReadingState existingState = readingStateRepository.findByEntitlementId(entitlementId)
+        KoboReadingState existingState = readingStateRepository.findByEntitlementIdAndUserId(entitlementId, userId)
+                .or(() -> readingStateRepository
+                        .findFirstByEntitlementIdAndUserIdIsNullOrderByPriorityTimestampDescLastModifiedStringDescIdDesc(
+                                entitlementId))
                 .map(readingStateMapper::toDto)
                 .orElse(null);
 
