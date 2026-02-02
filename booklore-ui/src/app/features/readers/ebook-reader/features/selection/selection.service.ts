@@ -208,27 +208,77 @@ export class ReaderSelectionService {
       return null;
     }
 
-    const getBasePath = (cfi: string): string => {
-      const inner = cfi.replace(/^epubcfi\(/, '').replace(/\)$/, '');
-      const commaIndex = inner.indexOf(',');
-      if (commaIndex > 0) {
-        return inner.substring(0, commaIndex).replace(/:\d+$/, '');
-      }
-      return inner.replace(/:\d+$/, '');
-    };
-
-    const selectionBasePath = getBasePath(selectionCfi);
+    const selectionRange = this.parseCfiRange(selectionCfi);
+    if (!selectionRange) return null;
 
     for (const annotation of this.annotations) {
-      const annotationBasePath = getBasePath(annotation.cfi);
-      if (selectionBasePath.startsWith(annotationBasePath) ||
-          annotationBasePath.startsWith(selectionBasePath) ||
-          selectionBasePath === annotationBasePath) {
+      const annotationRange = this.parseCfiRange(annotation.cfi);
+      if (!annotationRange) continue;
+
+      // Check if base paths match (same text node/element)
+      if (selectionRange.basePath !== annotationRange.basePath) continue;
+
+      // Check if character ranges actually overlap
+      // Two ranges [a, b] and [c, d] overlap if a < d AND c < b
+      if (selectionRange.startOffset < annotationRange.endOffset &&
+          annotationRange.startOffset < selectionRange.endOffset) {
         return annotation.id;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Parses a CFI range and extracts the base path and character offsets.
+   * CFI range format: epubcfi(parent_path,relative_start,relative_end)
+   * Example: epubcfi(/6/4!/4/2/1:0,/4/2/1:15)
+   */
+  private parseCfiRange(cfi: string): { basePath: string; startOffset: number; endOffset: number } | null {
+    // Remove epubcfi() wrapper
+    const inner = cfi.replace(/^epubcfi\(/, '').replace(/\)$/, '');
+
+    // Find the comma that separates parent path from relative offsets
+    const commaIndex = inner.indexOf(',');
+    if (commaIndex <= 0) {
+      // Not a range CFI, might be a point CFI - treat as zero-width range
+      const offsetMatch = inner.match(/:(\d+)$/);
+      if (offsetMatch) {
+        const basePath = inner.replace(/:\d+$/, '');
+        const offset = parseInt(offsetMatch[1], 10);
+        return { basePath, startOffset: offset, endOffset: offset };
+      }
+      return null;
+    }
+
+    // Extract parent path (before first comma)
+    const parentPath = inner.substring(0, commaIndex);
+
+    // Extract relative start and end parts (after commas)
+    const relativePartsStr = inner.substring(commaIndex + 1);
+    const relativeParts = relativePartsStr.split(',');
+    if (relativeParts.length !== 2) return null;
+
+    const relativeStart = relativeParts[0];
+    const relativeEnd = relativeParts[1];
+
+    // Extract character offsets from relative parts
+    const startOffsetMatch = relativeStart.match(/:(\d+)$/);
+    const endOffsetMatch = relativeEnd.match(/:(\d+)$/);
+
+    if (!startOffsetMatch || !endOffsetMatch) return null;
+
+    const startOffset = parseInt(startOffsetMatch[1], 10);
+    const endOffset = parseInt(endOffsetMatch[1], 10);
+
+    // Build the full base path by combining parent with the common path structure
+    // Strip character offsets from the path to get the node path
+    const startNodePath = relativeStart.replace(/:\d+$/, '');
+
+    // Use parent + start node path as base (start and end should be in same node for highlights)
+    const basePath = `${parentPath}${startNodePath}`;
+
+    return { basePath, startOffset, endOffset };
   }
 
   private emitState(): void {
