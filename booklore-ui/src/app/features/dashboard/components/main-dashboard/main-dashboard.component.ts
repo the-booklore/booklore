@@ -122,6 +122,83 @@ export class MainDashboardComponent implements OnInit {
     );
   }
 
+  private getUpNextBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+    return this.bookService.bookState$.pipe(
+      map((state: BookState) => {
+        const books = state.books || [];
+        
+        // Group books by series
+        const seriesMap = new Map<string, Book[]>();
+        books.forEach(book => {
+          if (book.metadata?.seriesName && book.metadata?.seriesNumber != null) {
+            const seriesName = book.metadata.seriesName;
+            if (!seriesMap.has(seriesName)) {
+              seriesMap.set(seriesName, []);
+            }
+            seriesMap.get(seriesName)!.push(book);
+          }
+        });
+
+        const upNextBooks: Array<{book: Book, lastReadTime: number}> = [];
+
+        // For each series, find the next unread book
+        seriesMap.forEach((seriesBooks, seriesName) => {
+          // Check if any book in the series has been read
+          const hasReadBooks = seriesBooks.some(book =>
+            book.readStatus === ReadStatus.READ ||
+            book.readStatus === ReadStatus.READING ||
+            book.readStatus === ReadStatus.RE_READING
+          );
+
+          if (!hasReadBooks) {
+            return; // Skip series with no read books
+          }
+
+          // Sort by series number
+          const sortedBooks = [...seriesBooks].sort((a, b) => {
+            const aNum = a.metadata?.seriesNumber ?? 0;
+            const bNum = b.metadata?.seriesNumber ?? 0;
+            return aNum - bNum;
+          });
+
+          // Find the first unread book
+          const nextBook = sortedBooks.find(book =>
+            !book.readStatus ||
+            book.readStatus === ReadStatus.UNREAD ||
+            book.readStatus === ReadStatus.UNSET
+          );
+
+          if (nextBook) {
+            // Get the most recent read time from the series to prioritize
+            const lastReadTime = seriesBooks
+              .filter(book => book.lastReadTime)
+              .map(book => new Date(book.lastReadTime!).getTime())
+              .sort((a, b) => b - a)[0] || 0;
+
+            upNextBooks.push({book: nextBook, lastReadTime});
+          }
+        });
+
+        // Sort by most recently read series first
+        upNextBooks.sort((a, b) => b.lastReadTime - a.lastReadTime);
+
+        return upNextBooks.slice(0, maxItems).map(item => item.book);
+      })
+    );
+  }
+
+  private getReadAgainBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+    return this.bookService.bookState$.pipe(
+      map((state: BookState) => {
+        const readBooks = (state.books || []).filter(book =>
+          book.readStatus === ReadStatus.READ
+        );
+
+        return this.shuffleBooks(readBooks, maxItems);
+      })
+    );
+  }
+
   private getMagicShelfBooks(shelfId: number, maxItems?: number, sortBy?: string): Observable<Book[]> {
     return this.magicShelfService.getShelf(shelfId).pipe(
       switchMap((shelf) => {
@@ -161,6 +238,12 @@ export class MainDashboardComponent implements OnInit {
           break;
         case ScrollerType.RANDOM:
           books$ = this.getRandomBooks(config.maxItems || DEFAULT_MAX_ITEMS);
+          break;
+        case ScrollerType.UP_NEXT:
+          books$ = this.getUpNextBooks(config.maxItems || DEFAULT_MAX_ITEMS);
+          break;
+        case ScrollerType.READ_AGAIN:
+          books$ = this.getReadAgainBooks(config.maxItems || DEFAULT_MAX_ITEMS);
           break;
         case ScrollerType.MAGIC_SHELF:
           books$ = this.getMagicShelfBooks(config.magicShelfId!, config.maxItems).pipe(

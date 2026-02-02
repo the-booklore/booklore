@@ -12,7 +12,7 @@ import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {map} from 'rxjs/operators';
 
-export const MAX_SCROLLERS = 5;
+export const MAX_SCROLLERS = 10;
 export const DEFAULT_MAX_ITEMS = 20;
 export const MIN_ITEMS = 10;
 export const MAX_ITEMS = 20;
@@ -43,7 +43,9 @@ export class DashboardSettingsComponent implements OnInit {
     {label: 'Continue Reading', value: ScrollerType.LAST_READ},
     {label: 'Recently Added', value: ScrollerType.LATEST_ADDED},
     {label: 'Discover Something New', value: ScrollerType.RANDOM},
-    {label: 'Magic Shelf', value: ScrollerType.MAGIC_SHELF}
+    {label: 'Magic Shelf', value: ScrollerType.MAGIC_SHELF},
+    {label: 'Up Next', value: ScrollerType.UP_NEXT},
+    {label: 'Read Again', value: ScrollerType.READ_AGAIN}
   ];
 
   magicShelves$ = this.magicShelfService.shelvesState$.pipe(
@@ -105,6 +107,10 @@ export class DashboardSettingsComponent implements OnInit {
         return 'Recently Added';
       case ScrollerType.RANDOM:
         return 'Discover Something New';
+      case ScrollerType.UP_NEXT:
+        return 'Up Next';
+      case ScrollerType.READ_AGAIN:
+        return 'Read Again';
       default:
         return 'Scroller';
     }
