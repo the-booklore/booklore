@@ -45,7 +45,8 @@ export class DashboardSettingsComponent implements OnInit {
     {label: 'Discover Something New', value: ScrollerType.RANDOM},
     {label: 'Magic Shelf', value: ScrollerType.MAGIC_SHELF},
     {label: 'Up Next', value: ScrollerType.UP_NEXT},
-    {label: 'Read Again', value: ScrollerType.READ_AGAIN}
+    {label: 'Read Again', value: ScrollerType.READ_AGAIN},
+    {label: 'Recommendations', value: ScrollerType.RECOMMENDATIONS}
   ];
 
   magicShelves$ = this.magicShelfService.shelvesState$.pipe(
@@ -112,6 +113,8 @@ export class DashboardSettingsComponent implements OnInit {
         return 'Up Next';
       case ScrollerType.READ_AGAIN:
         return 'Read Again';
+      case ScrollerType.RECOMMENDATIONS:
+        return 'Recommendations';
       default:
         return 'Scroller';
     }
