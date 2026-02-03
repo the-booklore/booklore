@@ -18,6 +18,7 @@ import {InputIcon} from 'primeng/inputicon';
 import {ActivatedRoute, Router} from '@angular/router';
 import {Subscription} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../../shared/components/external-doc-link/external-doc-link.component';
+import pluralize from 'pluralize';
 
 interface MetadataItem {
   value: string;
@@ -63,6 +64,7 @@ interface TabConfig {
   styleUrls: ['./metadata-manager.component.scss']
 })
 export class MetadataManagerComponent implements OnInit, OnDestroy {
+  pluralize = pluralize
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
   private router = inject(Router);
@@ -296,7 +298,7 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'warn',
         summary: 'Invalid Target',
-        detail: `Each book can only have one ${this.currentMergeType.slice(0, -1)}. Please enter only one value.`
+        detail: `Each book can only have one ${pluralize.singular(this.currentMergeType)}. Please enter only one value.`
       });
       return;
     }
@@ -374,7 +376,7 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'warn',
         summary: 'Invalid Target',
-        detail: `Each book can only have one ${this.currentMergeType.slice(0, -1)}. Please enter only one target value to standardize to.`
+        detail: `Each book can only have one ${pluralize.singular(this.currentMergeType)}. Please enter only one target value to standardize to.`
       });
       return;
     }
@@ -448,7 +450,7 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'success',
           summary: 'Delete Successful',
-          detail: `Successfully deleted ${itemCount} ${this.currentMergeType.slice(0, -1)}${itemCount > 1 ? 's' : ''}. ${affectedBooks} book${affectedBooks > 1 ? 's' : ''} updated.`,
+          detail: `Successfully deleted ${pluralize(pluralize.singular(this.currentMergeType), itemCount, true)}. ${pluralize('book', affectedBooks, true)} updated.`,
           life: 5000
         });
         this.showDeleteDialog = false;
