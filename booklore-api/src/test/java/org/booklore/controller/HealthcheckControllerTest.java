@@ -30,44 +30,22 @@ public class HealthcheckControllerTest {
 
     private MockMvc mockMvc;
 
-
-
-
-
-
-
     @Autowired
-
     private WebApplicationContext webApplicationContext;
 
-
-
     @BeforeEach
-
     public void setup() {
-
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-
     }
 
-
-
     @Test
-
     public void getPing_ShouldReturnHealthcheckResponse() throws Exception {
-
         mockMvc.perform(get("/api/v1/healthcheck"))
-
                 .andExpect(status().isOk())
-
                 .andExpect(jsonPath("$.data.status").value("UP"))
-
                 .andExpect(jsonPath("$.data.message").value("Application is running smoothly."))
-
                 .andExpect(jsonPath("$.data.timestamp").exists())
-
                 .andExpect(jsonPath("$.data.version").value("1.0.0"));
 
     }
-
 }
