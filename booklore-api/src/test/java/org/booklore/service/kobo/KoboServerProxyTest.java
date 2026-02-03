@@ -1,10 +1,10 @@
 package org.booklore.service.kobo;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.booklore.model.dto.BookloreSyncToken;
 import org.booklore.model.dto.kobo.KoboHeaders;
 import org.booklore.util.kobo.BookloreSyncTokenGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,7 +170,7 @@ class KoboServerProxyTest {
         ResponseEntity<JsonNode> response = koboServerProxy.proxyCurrentRequest(null, false);
 
         assertThat(response).isNotNull();
-        assertThat(response.getHeaders()).containsKey("X-Kobo-Response");
+        assertThat(response.getHeaders().getFirst("X-Kobo-Response")).isNotNull();
     }
 
     @Test
