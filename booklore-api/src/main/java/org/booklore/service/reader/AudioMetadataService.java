@@ -1,13 +1,13 @@
 package org.booklore.service.reader;
 
-import org.booklore.model.dto.response.AudiobookChapter;
-import org.booklore.model.dto.response.AudiobookInfo;
-import org.booklore.model.dto.response.AudiobookTrack;
-import org.booklore.model.entity.BookFileEntity;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.response.AudiobookChapter;
+import org.booklore.model.dto.response.AudiobookInfo;
+import org.booklore.model.dto.response.AudiobookTrack;
+import org.booklore.model.entity.BookFileEntity;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -34,6 +36,7 @@ import java.util.stream.Stream;
 public class AudioMetadataService {
 
     private static final int MAX_CACHE_ENTRIES = 50;
+    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^0-9]");
 
     private final AudioFileUtilityService audioFileUtility;
     private final Map<String, CachedAudiobookMetadata> metadataCache = new ConcurrentHashMap<>();
@@ -310,7 +313,7 @@ public class AudioMetadataService {
         Process process = pb.start();
         StringBuilder output = new StringBuilder();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 output.append(line);
@@ -412,7 +415,7 @@ public class AudioMetadataService {
         if (channels.toLowerCase().contains("stereo")) return 2;
         if (channels.toLowerCase().contains("mono")) return 1;
         try {
-            return Integer.parseInt(channels.replaceAll("[^0-9]", ""));
+            return Integer.parseInt(NON_DIGIT_PATTERN.matcher(channels).replaceAll(""));
         } catch (NumberFormatException e) {
             return null;
         }

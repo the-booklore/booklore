@@ -1,5 +1,7 @@
 package org.booklore.service.library;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
@@ -7,8 +9,6 @@ import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.enums.LibraryOrganizationMode;
 import org.booklore.repository.BookRepository;
 import org.booklore.util.BookFileGroupingUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -139,7 +139,7 @@ public class BookGroupingService {
                 .toList();
 
         if (booksWithFiles.size() == 1) {
-            BookEntity book = booksWithFiles.get(0);
+            BookEntity book = booksWithFiles.getFirst();
             log.debug("BOOK_PER_FOLDER: Attaching '{}' to single book in folder: '{}'",
                     file.getFileName(), book.getPrimaryBookFile().getFileName());
             return book;
@@ -164,7 +164,7 @@ public class BookGroupingService {
         }
 
         if (booksWithFiles.size() == 1) {
-            BookEntity book = booksWithFiles.get(0);
+            BookEntity book = booksWithFiles.getFirst();
             log.debug("AUTO_DETECT: Single book in folder '{}', attaching '{}' to '{}'",
                     file.getFileSubPath(), file.getFileName(), book.getPrimaryBookFile().getFileName());
             return book;

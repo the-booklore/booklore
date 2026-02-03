@@ -1,12 +1,12 @@
 package org.booklore.mapper.komga;
 
+import lombok.RequiredArgsConstructor;
 import org.booklore.context.KomgaCleanContext;
 import org.booklore.model.dto.MagicShelf;
 import org.booklore.model.dto.komga.*;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.service.appsettings.AppSettingService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -33,7 +33,7 @@ public class KomgaMapper {
                 .id(library.getId().toString())
                 .name(library.getName())
                 .root(library.getLibraryPaths() != null && !library.getLibraryPaths().isEmpty() 
-                      ? library.getLibraryPaths().get(0).getPath() 
+                      ? library.getLibraryPaths().getFirst().getPath()
                       : "")
                 .unavailable(false)
                 .build();
@@ -72,7 +72,7 @@ public class KomgaMapper {
             return null;
         }
         
-        BookEntity firstBook = books.get(0);
+        BookEntity firstBook = books.getFirst();
         String seriesId = generateSeriesId(firstBook);
         
         // Aggregate metadata from all books
@@ -155,7 +155,7 @@ public class KomgaMapper {
     }
 
     private KomgaSeriesMetadataDto aggregateSeriesMetadata(String seriesName, List<BookEntity> books) {
-        BookEntity firstBook = books.get(0);
+        BookEntity firstBook = books.getFirst();
         BookMetadataEntity firstMetadata = firstBook.getMetadata();
         
         List<String> genres = new ArrayList<>();
@@ -209,7 +209,7 @@ public class KomgaMapper {
         String releaseDate = null;
         String summary = null;
         
-        BookEntity firstBook = books.get(0);
+        BookEntity firstBook = books.getFirst();
             for (BookEntity book : books) {
             BookMetadataEntity metadata = book.getMetadata();
             if (metadata != null) {

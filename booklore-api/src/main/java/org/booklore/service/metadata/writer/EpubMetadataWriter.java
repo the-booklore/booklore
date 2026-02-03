@@ -1,16 +1,16 @@
 package org.booklore.service.metadata.writer;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.ZipParameters;
+import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.service.appsettings.AppSettingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.ZipParameters;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
@@ -43,6 +43,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -50,7 +51,10 @@ import java.util.UUID;
 public class EpubMetadataWriter implements MetadataWriter {
 
     private static final String OPF_NS = "http://www.idpf.org/2007/opf";
+    private static final Pattern CALIBRE_PREFIX_PATTERN = Pattern.compile("calibre:\\s*https?://[^\\s]+");
     private final AppSettingService appSettingService;
+
+
 
     @Override
     public void saveMetadataToFile(File epubFile, BookMetadataEntity metadata, String thumbnailUrl, MetadataClearFlags clear) {
@@ -126,13 +130,9 @@ public class EpubMetadataWriter implements MetadataWriter {
                 hasChanges[0] = true;
             });
 
-            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> {
-                replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges);
-            });
+            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges));
 
-            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
-                replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges);
-            });
+            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges));
 
             helper.copyIsbn13(clear != null && clear.isIsbn13(), val -> {
                 removeIdentifierByUrn(metadataElement, "isbn");
@@ -885,7 +885,7 @@ public class EpubMetadataWriter implements MetadataWriter {
         if (packageElement.hasAttribute("prefix")) {
             String prefix = packageElement.getAttribute("prefix");
             if (prefix.contains("calibre:")) {
-                prefix = prefix.replaceAll("calibre:\\s*https?://[^\\s]+", "").trim();
+                prefix = CALIBRE_PREFIX_PATTERN.matcher(prefix).replaceAll("").trim();
                 if (prefix.isEmpty()) {
                     packageElement.removeAttribute("prefix");
                 } else {

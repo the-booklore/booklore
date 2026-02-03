@@ -1,16 +1,18 @@
 package org.booklore.service.metadata.parser;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.Book;
+import org.booklore.model.dto.BookFile;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.request.FetchMetadataRequest;
 import org.booklore.model.dto.response.GoogleBooksApiResponse;
 import org.booklore.model.enums.MetadataProvider;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.util.BookUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -41,9 +43,18 @@ public class GoogleParser implements BookParser {
     private static final int MAX_SEARCH_TERM_LENGTH = 60;
     private static final int MAX_RESULTS = 20;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final Pattern DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+    private static final Pattern EDGE_CURL_PATTERN = Pattern.compile("&?edge=curl");
+    private static final Pattern ZOOM_PATTERN = Pattern.compile("zoom=\\d+");
+    private static final Pattern CATEGORY_SEPARATOR_PATTERN = Pattern.compile(" / ");
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
     private final HttpClient httpClient;
+
+    @Value("${booklore.metadata.google.key:}")
+    private String apiKey;
+
+
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
     private final AtomicLong lastRequestTime = new AtomicLong(0);
 
@@ -290,7 +301,7 @@ public class GoogleParser implements BookParser {
             Float seriesNumber = null;
             
             if (seriesInfo.getVolumeSeries() != null && !seriesInfo.getVolumeSeries().isEmpty()) {
-                Integer orderNum = seriesInfo.getVolumeSeries().get(0).getOrderNumber();
+                Integer orderNum = seriesInfo.getVolumeSeries().getFirst().getOrderNumber();
                 if (orderNum != null) {
                     seriesNumber = orderNum.floatValue();
                 }
@@ -413,7 +424,7 @@ public class GoogleParser implements BookParser {
                 .flatMap(cat -> {
                     // Split hierarchical categories (e.g., "Fiction / Fantasy / General")
                     if (cat.contains(" / ")) {
-                        return Arrays.stream(cat.split(" / "))
+                        return Arrays.stream(CATEGORY_SEPARATOR_PATTERN.split(cat))
                                 .map(String::trim)
                                 .filter(s -> !s.equalsIgnoreCase("General"));
                     }
@@ -476,10 +487,10 @@ public class GoogleParser implements BookParser {
         imageUrl = imageUrl.replace("http://", "https://");
         
         if (imageUrl.contains("zoom=")) {
-            imageUrl = imageUrl.replaceAll("zoom=\\d+", "zoom=0");
+            imageUrl = ZOOM_PATTERN.matcher(imageUrl).replaceAll("zoom=0");
         }
         
-        imageUrl = imageUrl.replaceAll("&?edge=curl", "");
+        imageUrl = EDGE_CURL_PATTERN.matcher(imageUrl).replaceAll("");
         
         return imageUrl;
     }
@@ -500,7 +511,7 @@ public class GoogleParser implements BookParser {
         String searchTerm = Optional.ofNullable(request.getTitle())
                 .filter(title -> !title.isEmpty())
                 .orElseGet(() -> Optional.ofNullable(book.getPrimaryFile())
-                        .map(pf -> pf.getFileName())
+                        .map(BookFile::getFileName)
                         .filter(fileName -> !fileName.isEmpty())
                         .map(BookUtils::cleanFileName)
                         .orElse(null));
@@ -545,7 +556,7 @@ public class GoogleParser implements BookParser {
         
         try {
             // Try full date format first (YYYY-MM-DD)
-            if (input.length() == 10 && input.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            if (input.length() == 10 && DATE_PATTERN.matcher(input).matches()) {
                 return LocalDate.parse(input, DATE_FORMATTER);
             }
             

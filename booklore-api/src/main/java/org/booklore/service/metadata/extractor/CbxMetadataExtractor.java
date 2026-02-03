@@ -1,13 +1,13 @@
 package org.booklore.service.metadata.extractor;
 
-import org.booklore.model.dto.BookMetadata;
-import org.booklore.util.ArchiveUtils;
 import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.io.FilenameUtils;
+import org.booklore.model.dto.BookMetadata;
+import org.booklore.util.ArchiveUtils;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -192,8 +192,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         );
         builder.language(getTextContent(document, "LanguageISO"));
 
-        Set<String> authors = new HashSet<>();
-        authors.addAll(splitValues(getTextContent(document, "Writer")));
+        Set<String> authors = new HashSet<>(splitValues(getTextContent(document, "Writer")));
         if (!authors.isEmpty()) {
             builder.authors(authors);
         }

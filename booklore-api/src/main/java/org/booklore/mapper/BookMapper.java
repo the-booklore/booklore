@@ -1,15 +1,11 @@
 package org.booklore.mapper;
 
-import org.booklore.model.dto.BookFile;
 import org.booklore.model.dto.Book;
+import org.booklore.model.dto.BookFile;
 import org.booklore.model.dto.LibraryPath;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
-import org.mapstruct.Context;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 import java.util.List;
 import java.util.Set;
@@ -87,7 +83,7 @@ public interface BookMapper {
     default List<BookFile> mapAlternativeFormats(List<BookFileEntity> bookFiles) {
         if (bookFiles == null) return null;
         return bookFiles.stream()
-                .filter(bf -> bf.isBook())
+                .filter(BookFileEntity::isBook)
                 .filter(bf -> !bf.equals(getPrimaryBookFile(bookFiles)))
                 .map(this::toBookFile)
                 .toList();

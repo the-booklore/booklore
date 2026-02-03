@@ -1,11 +1,12 @@
 package org.booklore.service.kobo;
 
-import org.booklore.util.FileService;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.util.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -126,7 +127,7 @@ public class KepubConversionService {
     }
 
     private String readProcessOutput(InputStream inputStream) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             return reader.lines().collect(Collectors.joining("\n"));
         } catch (Exception e) {
             log.warn("Error reading process output: {}", e.getMessage());

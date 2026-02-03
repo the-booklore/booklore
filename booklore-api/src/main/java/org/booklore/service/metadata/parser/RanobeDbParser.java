@@ -1,16 +1,16 @@
 package org.booklore.service.metadata.parser;
 
-import org.booklore.model.dto.Book;
-import org.booklore.model.dto.BookMetadata;
-import org.booklore.model.dto.request.FetchMetadataRequest;
-import org.booklore.model.dto.response.ranobedbapi.RanobedbSearchResponse;
-import org.booklore.model.dto.response.ranobedbapi.RanobedbBookResponse;
-import org.booklore.model.enums.MetadataProvider;
-import org.booklore.service.appsettings.AppSettingService;
-import org.booklore.util.BookUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.Book;
+import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.request.FetchMetadataRequest;
+import org.booklore.model.dto.response.ranobedbapi.RanobedbBookResponse;
+import org.booklore.model.dto.response.ranobedbapi.RanobedbSearchResponse;
+import org.booklore.model.enums.MetadataProvider;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.util.BookUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -204,7 +204,7 @@ public class RanobeDbParser implements BookParser {
 
                 RanobedbBookResponse.TitleEntry englishTitleEntry = book.getTitles().stream()
                         .filter(titleEntry -> "en".equalsIgnoreCase(titleEntry.getLang()))
-                        .filter(titleEntry -> titleEntry.getOfficial())
+                        .filter(RanobedbBookResponse.TitleEntry::getOfficial)
                         .findFirst()
                         .orElse(null);
 

@@ -1,28 +1,28 @@
 package org.booklore.service.upload;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.AppProperties;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.AdditionalFileMapper;
-import org.booklore.model.dto.BookFile;
 import org.booklore.model.dto.Book;
+import org.booklore.model.dto.BookFile;
 import org.booklore.model.dto.BookMetadata;
-import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.entity.LibraryPathEntity;
-import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.BookFileExtension;
+import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.LibraryRepository;
-import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.file.FileMovingHelper;
-import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.util.PathPatternResolver;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -191,7 +191,7 @@ public class FileUploadService {
             throw new IllegalStateException("Cannot upload file to physical book: library has no paths configured");
         }
         // Use the first library path for physical books
-        return book.getLibrary().getLibraryPaths().iterator().next();
+        return book.getLibrary().getLibraryPaths().getFirst();
     }
 
     private BookFileEntity createAdditionalFileEntityWithSubPath(BookEntity book, String fileName, String fileSubPath, boolean isBook, BookFileType bookType, long fileSize, String fileHash, String description) {

@@ -1,5 +1,11 @@
 package org.booklore.service.metadata.parser;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
+import org.apache.commons.text.similarity.FuzzyScore;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.request.FetchMetadataRequest;
@@ -9,14 +15,6 @@ import org.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
 import org.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
 import org.booklore.service.metadata.parser.hardcover.HardcoverMoodFilter;
 import org.booklore.util.BookUtils;
-
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.WordUtils;
-import org.apache.commons.text.similarity.FuzzyScore;
-import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -238,7 +236,7 @@ public class HardcoverParser implements BookParser {
 
     private boolean tryFetchDetailedMoods(String bookId, BookMetadata metadata) {
         try {
-            Integer bookIdInt = Integer.parseInt(bookId);
+            int bookIdInt = Integer.parseInt(bookId);
             HardcoverBookDetails details = hardcoverBookSearchService.fetchBookDetails(bookIdInt);
             if (details == null || details.getCachedTags() == null || details.getCachedTags().isEmpty()) {
                 return false;

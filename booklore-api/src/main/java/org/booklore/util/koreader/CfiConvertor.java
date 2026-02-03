@@ -370,12 +370,12 @@ public class CfiConvertor {
             }
 
             int cfiStep = siblingIndex * 2;
-            pathParts.add(0, "/" + cfiStep);
+            pathParts.addFirst("/" + cfiStep);
 
             current = parent;
         }
 
-        pathParts.add(0, "/4");
+        pathParts.addFirst("/4");
 
         return String.join("", pathParts);
     }
@@ -410,9 +410,9 @@ public class CfiConvertor {
             }
 
             if (totalSameTagSiblings == 1) {
-                pathParts.add(0, tagName);
+                pathParts.addFirst(tagName);
             } else {
-                pathParts.add(0, String.format("%s[%d]", tagName, siblingIndex + 1));
+                pathParts.addFirst(String.format("%s[%d]", tagName, siblingIndex + 1));
             }
 
             current = parent;
@@ -422,8 +422,8 @@ public class CfiConvertor {
                 .append(spineItemIndex + 1)
                 .append("]");
 
-        if (!pathParts.isEmpty() && pathParts.get(0).startsWith("body")) {
-            pathParts.remove(0);
+        if (!pathParts.isEmpty() && pathParts.getFirst().startsWith("body")) {
+            pathParts.removeFirst();
         }
 
         xpointer.append("/body");

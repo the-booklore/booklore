@@ -2,6 +2,7 @@ package org.booklore.service.file;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -67,8 +68,8 @@ public class FileFingerprint {
             int fileCount = audioFiles.size();
 
             MessageDigest md5 = MessageDigest.getInstance("MD5");
-            md5.update(firstFileHash.getBytes());
-            md5.update(String.valueOf(fileCount).getBytes());
+            md5.update(firstFileHash.getBytes(StandardCharsets.UTF_8));
+            md5.update(String.valueOf(fileCount).getBytes(StandardCharsets.UTF_8));
 
             byte[] hash = md5.digest();
             StringBuilder result = new StringBuilder(hash.length * 2);

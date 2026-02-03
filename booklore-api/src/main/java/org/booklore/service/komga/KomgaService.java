@@ -1,5 +1,7 @@
 package org.booklore.service.komga;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.mapper.komga.KomgaMapper;
 import org.booklore.model.dto.MagicShelf;
 import org.booklore.model.dto.komga.*;
@@ -13,8 +15,6 @@ import org.booklore.service.MagicShelfService;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.reader.CbxReaderService;
 import org.booklore.service.reader.PdfReaderService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -127,7 +127,7 @@ public class KomgaService {
                 }
                 
                 if (!seriesBooks.isEmpty()) {
-                    Long libId = seriesBooks.get(0).getLibrary().getId();
+                    Long libId = seriesBooks.getFirst().getLibrary().getId();
                     KomgaSeriesDto seriesDto = komgaMapper.toKomgaSeriesDto(seriesName, libId, seriesBooks);
                     if (seriesDto != null) {
                         content.add(seriesDto);
@@ -179,7 +179,7 @@ public class KomgaService {
             throw new RuntimeException("Series not found");
         }
         
-        String seriesName = komgaMapper.getBookSeriesName(seriesBooks.get(0));
+        String seriesName = komgaMapper.getBookSeriesName(seriesBooks.getFirst());
         
         return komgaMapper.toKomgaSeriesDto(seriesName, libraryId, seriesBooks);
     }
@@ -222,7 +222,7 @@ public class KomgaService {
         if (unpaged) {
             // Return all books without pagination
             content = seriesBooks.stream()
-                    .map(book -> komgaMapper.toKomgaBookDto(book))
+                    .map(komgaMapper::toKomgaBookDto)
                     .collect(Collectors.toList());
             actualPage = 0;
             actualSize = totalElements;
@@ -234,7 +234,7 @@ public class KomgaService {
             int toIndex = Math.min(fromIndex + size, totalElements);
             
             content = seriesBooks.subList(fromIndex, toIndex).stream()
-                    .map(book -> komgaMapper.toKomgaBookDto(book))
+                    .map(komgaMapper::toKomgaBookDto)
                     .collect(Collectors.toList());
             actualPage = page;
             actualSize = size;
@@ -269,7 +269,7 @@ public class KomgaService {
         int toIndex = Math.min(fromIndex + size, totalElements);
         
         List<KomgaBookDto> content = books.subList(fromIndex, toIndex).stream()
-                .map(book -> komgaMapper.toKomgaBookDto(book))
+                .map(komgaMapper::toKomgaBookDto)
                 .collect(Collectors.toList());
         
         return KomgaPageableDto.<KomgaBookDto>builder()
@@ -296,7 +296,7 @@ public class KomgaService {
                 .orElseThrow(() -> new RuntimeException("Book not found"));
         
         BookMetadataEntity metadata = book.getMetadata();
-        Integer pageCount = metadata != null && metadata.getPageCount() != null ? metadata.getPageCount() : 0;
+        int pageCount = metadata != null && metadata.getPageCount() != null ? metadata.getPageCount() : 0;
         
         List<KomgaPageDto> pages = new ArrayList<>();
         if (pageCount > 0) {

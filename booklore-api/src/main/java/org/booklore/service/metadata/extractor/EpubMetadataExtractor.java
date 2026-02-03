@@ -38,6 +38,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     private static final Pattern YEAR_ONLY_PATTERN = Pattern.compile("^\\d{4}$");
     private static final Pattern ISBN_13_PATTERN = Pattern.compile("\\d{13}");
     private static final Pattern ISBN_10_PATTERN = Pattern.compile("\\d{10}|[0-9]{9}[xX]");
+    private static final Pattern ISBN_SEPARATOR_PATTERN = Pattern.compile("[- ]");
 
     private static class IdentifierMapping {
         final String prefix;
@@ -59,7 +60,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("urn:hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
         new IdentifierMapping("urn:hardcoverbook:", "hardcoverBookId", BookMetadata.BookMetadataBuilder::hardcoverBookId),
         new IdentifierMapping("urn:comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
-        new IdentifierMapping("urn:lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
+        new IdentifierMapping("urn:lubimyczytac:", "lubimyczytacId", BookMetadata.BookMetadataBuilder::lubimyczytacId),
         new IdentifierMapping("urn:ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId),
         new IdentifierMapping("asin:", "asin", BookMetadata.BookMetadataBuilder::asin),
         new IdentifierMapping("amazon:", "asin", BookMetadata.BookMetadataBuilder::asin),
@@ -69,7 +70,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
         new IdentifierMapping("hardcoverbook:", "hardcoverBookId", BookMetadata.BookMetadataBuilder::hardcoverBookId),
         new IdentifierMapping("comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
-        new IdentifierMapping("lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
+        new IdentifierMapping("lubimyczytac:", "lubimyczytacId", BookMetadata.BookMetadataBuilder::lubimyczytacId),
         new IdentifierMapping("ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId)
     );
 
@@ -252,7 +253,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:hardcover_book_id" -> builderMeta.hardcoverBookId(content);
                                     case "booklore:hardcover_rating" -> safeParseDouble(content, builderMeta::hardcoverRating);
                                     case "booklore:hardcover_review_count" -> safeParseInt(content, builderMeta::hardcoverReviewCount);
-                                    case "booklore:lubimyczytac_rating" -> safeParseDouble(content, value -> builderMeta.lubimyczytacRating(value));
+                                    case "booklore:lubimyczytac_rating" -> safeParseDouble(content, builderMeta::lubimyczytacRating);
                                     case "booklore:ranobedb_rating" -> safeParseDouble(content, builderMeta::ranobedbRating);
                                 }
 
@@ -399,7 +400,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private void processIsbnIdentifier(String value, BookMetadata.BookMetadataBuilder builder, 
                                       Set<String> processedFields) {
-        String cleanIsbn = value.replaceAll("[- ]", "");
+        String cleanIsbn = ISBN_SEPARATOR_PATTERN.matcher(value).replaceAll("");
         
         if (cleanIsbn.length() == 13 && ISBN_13_PATTERN.matcher(cleanIsbn).matches()) {
             if (!processedFields.contains("isbn13")) {

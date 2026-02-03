@@ -1,8 +1,8 @@
 package org.booklore.service.metadata.extractor;
 
-import org.booklore.model.dto.BookMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.booklore.model.dto.BookMetadata;
 
 import java.io.File;
 import java.io.IOException;
@@ -207,7 +207,7 @@ public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor
             return null;
         }
 
-        PalmDBRecord record0 = palmDB.records.get(0);
+        PalmDBRecord record0 = palmDB.records.getFirst();
         raf.seek(record0.offset);
 
         MobiHeader header = new MobiHeader();

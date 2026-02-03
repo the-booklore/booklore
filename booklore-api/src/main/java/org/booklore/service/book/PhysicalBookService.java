@@ -1,20 +1,16 @@
 package org.booklore.service.book;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.APIException;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.request.CreatePhysicalBookRequest;
-import org.booklore.model.entity.AuthorEntity;
-import org.booklore.model.entity.BookEntity;
-import org.booklore.model.entity.BookMetadataEntity;
-import org.booklore.model.entity.CategoryEntity;
-import org.booklore.model.entity.LibraryEntity;
+import org.booklore.model.entity.*;
 import org.booklore.repository.AuthorRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.CategoryRepository;
 import org.booklore.repository.LibraryRepository;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +22,14 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 @AllArgsConstructor
 public class PhysicalBookService {
 
+    private static final Pattern ISBN_CLEAN_PATTERN = Pattern.compile("[^0-9X]");
     private final BookRepository bookRepository;
     private final LibraryRepository libraryRepository;
     private final AuthorRepository authorRepository;
@@ -98,13 +96,13 @@ public class PhysicalBookService {
 
     private String extractIsbn13(String isbn) {
         if (isbn == null) return null;
-        String cleaned = isbn.replaceAll("[^0-9X]", "");
+        String cleaned = ISBN_CLEAN_PATTERN.matcher(isbn).replaceAll("");
         return cleaned.length() == 13 ? cleaned : null;
     }
 
     private String extractIsbn10(String isbn) {
         if (isbn == null) return null;
-        String cleaned = isbn.replaceAll("[^0-9X]", "");
+        String cleaned = ISBN_CLEAN_PATTERN.matcher(isbn).replaceAll("");
         return cleaned.length() == 10 ? cleaned : null;
     }
 

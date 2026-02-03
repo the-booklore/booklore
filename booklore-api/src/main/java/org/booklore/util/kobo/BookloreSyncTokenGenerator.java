@@ -1,14 +1,15 @@
 package org.booklore.util.kobo;
 
 
-import org.booklore.model.dto.kobo.KoboHeaders;
-import org.booklore.model.dto.BookloreSyncToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.BookloreSyncToken;
+import org.booklore.model.dto.kobo.KoboHeaders;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Slf4j
@@ -42,7 +43,7 @@ public class BookloreSyncTokenGenerator {
     public String toBase64(BookloreSyncToken token) {
         try {
             String json = objectMapper.writeValueAsString(token);
-            return BOOKLORE_TOKEN_PREFIX + base64Encoder.encodeToString(json.getBytes());
+            return BOOKLORE_TOKEN_PREFIX + base64Encoder.encodeToString(json.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             log.error("Failed to serialize Booklore sync token", e);
             return BOOKLORE_TOKEN_PREFIX;

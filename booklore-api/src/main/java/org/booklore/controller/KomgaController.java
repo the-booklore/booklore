@@ -1,17 +1,20 @@
 package org.booklore.controller;
 
-import org.booklore.config.JacksonConfig;
-import org.booklore.mapper.komga.KomgaMapper;
-import org.booklore.model.dto.komga.*;
-import org.booklore.service.book.BookService;
-import org.booklore.service.komga.KomgaService;
-import org.booklore.service.opds.OpdsUserV2Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.JacksonConfig;
+import org.booklore.mapper.komga.KomgaMapper;
+import org.booklore.model.dto.komga.KomgaBookDto;
+import org.booklore.model.dto.komga.KomgaLibraryDto;
+import org.booklore.model.dto.komga.KomgaPageableDto;
+import org.booklore.model.dto.komga.KomgaSeriesDto;
+import org.booklore.service.book.BookService;
+import org.booklore.service.komga.KomgaService;
+import org.booklore.service.opds.OpdsUserV2Service;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -105,7 +108,7 @@ public class KomgaController {
             return ResponseEntity.notFound().build();
         }
         
-        Long firstBookId = Long.parseLong(books.getContent().get(0).getId());
+        long firstBookId = Long.parseLong(books.getContent().getFirst().getId());
         Resource coverImage = bookService.getBookThumbnail(firstBookId);
         return ResponseEntity.ok()
                 .header("Content-Type", "image/jpeg")

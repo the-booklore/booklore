@@ -1,5 +1,7 @@
 package org.booklore.service.metadata.parser;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.BookReview;
@@ -7,8 +9,6 @@ import org.booklore.model.dto.request.FetchMetadataRequest;
 import org.booklore.model.enums.MetadataProvider;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.util.BookUtils;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
@@ -864,8 +864,7 @@ public class AmazonBookParser implements BookParser {
 
             // Remove excessive line breaks (more than 2 consecutive <br> tags)
             Elements brTags = document.select("br");
-            for (int i = 0; i < brTags.size(); i++) {
-                Element br = brTags.get(i);
+            for (Element br : brTags) {
                 int consecutiveBrCount = 1;
                 Element next = br.nextElementSibling();
 

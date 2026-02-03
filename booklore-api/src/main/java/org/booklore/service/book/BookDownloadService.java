@@ -1,5 +1,8 @@
 package org.booklore.service.book;
 
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.settings.KoboSettings;
 import org.booklore.model.entity.BookEntity;
@@ -8,12 +11,9 @@ import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookFileRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.service.appsettings.AppSettingService;
-import org.booklore.service.kobo.KepubConversionService;
 import org.booklore.service.kobo.CbxConversionService;
+import org.booklore.service.kobo.KepubConversionService;
 import org.booklore.util.FileUtils;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -43,6 +43,7 @@ import java.util.zip.ZipOutputStream;
 public class BookDownloadService {
 
     private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
+    private static final Pattern FILENAME_CLEAN_PATTERN = Pattern.compile("[^a-zA-Z0-9\\-_]");
 
     private final BookRepository bookRepository;
     private final BookFileRepository bookFileRepository;
@@ -148,7 +149,7 @@ public class BookDownloadService {
 
         // If only one file and it's not folder-based, download it directly
         if (allFiles.size() == 1) {
-            BookFileEntity singleFile = allFiles.get(0);
+            BookFileEntity singleFile = allFiles.getFirst();
             Path filePath = singleFile.getFullFilePath();
 
             if (!Files.exists(filePath)) {
@@ -171,7 +172,7 @@ public class BookDownloadService {
         String bookTitle = bookEntity.getMetadata() != null && bookEntity.getMetadata().getTitle() != null
                 ? bookEntity.getMetadata().getTitle()
                 : "book-" + bookId;
-        String safeTitle = bookTitle.replaceAll("[^a-zA-Z0-9\\-_]", "_");
+        String safeTitle = FILENAME_CLEAN_PATTERN.matcher(bookTitle).replaceAll("_");
         String zipFileName = safeTitle + ".zip";
 
         response.setContentType("application/zip");
