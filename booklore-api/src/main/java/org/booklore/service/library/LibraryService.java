@@ -1,5 +1,9 @@
 package org.booklore.service.library;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMapper;
@@ -24,10 +28,7 @@ import org.booklore.service.monitoring.MonitoringService;
 import org.booklore.task.options.RescanLibraryContext;
 import org.booklore.util.FileService;
 import org.booklore.util.SecurityContextVirtualThread;
-import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@DependsOn("flyway")
 @AllArgsConstructor
 public class LibraryService {
 
