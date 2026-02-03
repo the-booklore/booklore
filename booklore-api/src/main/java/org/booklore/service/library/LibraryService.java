@@ -227,7 +227,6 @@ public class LibraryService {
     public void deleteLibrary(long id) {
         LibraryEntity library = libraryRepository.findById(id).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(id));
         library.getLibraryPaths().forEach(libraryPath -> {
-            Path path = Paths.get(libraryPath.getPath());
             monitoringService.unregisterLibrary(id);
         });
         Set<Long> bookIds = library.getBookEntities().stream().map(BookEntity::getId).collect(Collectors.toSet());

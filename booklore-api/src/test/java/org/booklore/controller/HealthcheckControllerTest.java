@@ -36,6 +36,14 @@ public class HealthcheckControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
+    @org.springframework.boot.test.context.TestConfiguration
+    static class TestConfig {
+        @org.springframework.context.annotation.Bean("flyway")
+        public String flyway() {
+            return "dummy";
+        }
+    }
+
     @Test
     public void getPing_ShouldReturnHealthcheckResponse() throws Exception {
         mockMvc.perform(get("/api/v1/healthcheck"))
