@@ -1,14 +1,14 @@
 package org.booklore.service.kobo;
 
-import org.booklore.model.dto.BookloreSyncToken;
-import org.booklore.model.dto.kobo.KoboHeaders;
-import org.booklore.util.RequestUtils;
-import org.booklore.util.kobo.BookloreSyncTokenGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.BookloreSyncToken;
+import org.booklore.model.dto.kobo.KoboHeaders;
+import org.booklore.util.RequestUtils;
+import org.booklore.util.kobo.BookloreSyncTokenGenerator;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -128,11 +128,11 @@ public class KoboServerProxy {
             HttpHeaders responseHeaders = new HttpHeaders();
             response.headers().map().forEach((key, values) -> {
                 if (isKoboHeader(key)) {
-                    responseHeaders.put(key, values);
+                    responseHeaders.addAll(key, values);
                 }
             });
 
-            if (responseHeaders.containsKey(KoboHeaders.X_KOBO_SYNCTOKEN) && includeSyncToken && syncToken != null) {
+            if (responseHeaders.getFirst(KoboHeaders.X_KOBO_SYNCTOKEN) != null && includeSyncToken && syncToken != null) {
                 String koboToken = responseHeaders.getFirst(KoboHeaders.X_KOBO_SYNCTOKEN);
                 if (koboToken != null) {
                     BookloreSyncToken updated = BookloreSyncToken.builder()

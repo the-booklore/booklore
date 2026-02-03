@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,8 +18,10 @@ public class JacksonConfig {
     public static final String KOMGA_CLEAN_OBJECT_MAPPER = "komgaCleanObjectMapper";
 
     @Bean(name = KOMGA_CLEAN_OBJECT_MAPPER)
-    public ObjectMapper komgaCleanObjectMapper(Jackson2ObjectMapperBuilder builder) {
-        ObjectMapper mapper = builder.build();
+    public ObjectMapper komgaCleanObjectMapper() {
+        ObjectMapper mapper = com.fasterxml.jackson.databind.json.JsonMapper.builder()
+                .findAndAddModules()
+                .build();
 
         // Register the custom serializer modifier on this dedicated mapper only
         mapper.setSerializerFactory(
