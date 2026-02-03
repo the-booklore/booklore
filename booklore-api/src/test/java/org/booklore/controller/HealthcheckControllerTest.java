@@ -26,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.bookdrop-folder=build/tmp/test-bookdrop"
 })
 public class HealthcheckControllerTest {
-
     private MockMvc mockMvc;
 
     @Autowired
