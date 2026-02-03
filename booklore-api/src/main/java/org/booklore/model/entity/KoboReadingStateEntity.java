@@ -17,7 +17,10 @@ public class KoboReadingStateEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "entitlement_id", nullable = false, unique = true)
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "entitlement_id", nullable = false)
     private String entitlementId;
 
     @Column(name = "created")
