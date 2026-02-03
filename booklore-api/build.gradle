@@ -1,8 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.8'
+    id 'org.springframework.boot' version '4.0.2'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.hibernate.orm' version '6.6.36.Final'
+    id 'org.hibernate.orm' version '7.2.0.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
 }
 
@@ -11,7 +11,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -41,8 +41,8 @@ dependencies {
     implementation 'io.projectreactor:reactor-core'
 
     // --- Database & Migration ---
-    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
-    implementation 'org.flywaydb:flyway-mysql:11.19.0'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.7'
+    implementation 'org.flywaydb:flyway-mysql:12.0.0'
 
     // --- Security & Authentication ---
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
