@@ -1,6 +1,6 @@
 package org.booklore.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,16 +15,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@TestPropertySource(properties = {"app.version=1.0.0"})
+@TestPropertySource(properties = {
+        "app.version=1.0.0",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
+        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "app.path-config=build/tmp/test-config",
+        "app.bookdrop-folder=build/tmp/test-bookdrop"
+})
 public class HealthcheckControllerTest {
 
     private MockMvc mockMvc;
 
 
 
-    @Autowired
 
-    private ObjectMapper objectMapper;
 
 
 
