@@ -11,7 +11,6 @@ import net.lingala.zip4j.model.FileHeader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.dto.BookMetadata;
-import org.booklore.model.dto.BookMetadata;
 import org.booklore.service.metadata.BookLoreMetadata;
 import org.booklore.util.SecureXmlUtils;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -61,9 +60,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             if (image != null) {
                 return image;
             }
-        } catch (Exception e) {
-            log.warn("Failed to extract cover from EPUB: {}", epubFile.getName(), e);
-        }
 
             // First fallback to reading the cover image based on the cover
             String coverId = epub.getMetadata().getMetaAttribute("cover");
@@ -86,21 +82,22 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                 }
             }
 
-        if (coverImage == null && epub != null) {
-            for (io.documentnode.epub4j.domain.Resource res : epub.getResources().getAll()) {
-                String id = res.getId();
-                String href = res.getHref();
-                if ((id != null && id.toLowerCase().contains("cover")) ||
-                        (href != null && href.toLowerCase().contains("cover"))) {
-                    if (res.getMediaType() != null && res.getMediaType().getName().startsWith("image")) {
-                        coverImage = res;
-                        break;
+            if (coverImage == null && epub != null) {
+                for (io.documentnode.epub4j.domain.Resource res : epub.getResources().getAll()) {
+                    String id = res.getId();
+                    String href = res.getHref();
+                    if ((id != null && id.toLowerCase().contains("cover")) ||
+                            (href != null && href.toLowerCase().contains("cover"))) {
+                        if (res.getMediaType() != null && res.getMediaType().getName().startsWith("image")) {
+                            coverImage = res;
+                            break;
+                        }
                     }
                 }
             }
-        }
-                    }
-                }
+
+            if (coverImage != null) {
+                return getImageFromEpubResource(coverImage);
             }
         } catch (Exception e) {
             log.warn("Failed to extract cover from EPUB: {}", epubFile.getName(), e);
