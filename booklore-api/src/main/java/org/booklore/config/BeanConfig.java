@@ -28,4 +28,13 @@ public class BeanConfig {
     public void init() {
         webSocketMessageBrokerStats.setLoggingPeriod(30 * 24 * 60 * 60 * 1000L); // 30 days
     }
+
+    @Bean(initMethod = "migrate")
+    public org.flywaydb.core.Flyway flyway(javax.sql.DataSource dataSource) {
+        return org.flywaydb.core.Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .load();
+    }
 }

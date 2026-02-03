@@ -29,8 +29,10 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.datasource.username=sa",
         "spring.datasource.password=",
         "app.path-config=build/tmp/test-config",
-        "app.bookdrop-folder=build/tmp/test-bookdrop"
+        "app.bookdrop-folder=build/tmp/test-bookdrop",
+        "spring.main.allow-bean-definition-overriding=true"
 })
+@org.springframework.context.annotation.Import(BookOpdsRepositoryDataJpaTest.TestConfig.class)
 class BookOpdsRepositoryDataJpaTest {
 
     @Autowired
@@ -38,6 +40,15 @@ class BookOpdsRepositoryDataJpaTest {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @org.springframework.boot.test.context.TestConfiguration
+    public static class TestConfig {
+        @org.springframework.context.annotation.Bean("flyway")
+        @org.springframework.context.annotation.Primary
+        public org.flywaydb.core.Flyway flyway() {
+            return org.mockito.Mockito.mock(org.flywaydb.core.Flyway.class);
+        }
+    }
 
     @Test
     void contextLoads() {
