@@ -16,10 +16,7 @@ public class ShelfCreateRequest {
     @NotBlank(message = "Shelf name must not be empty.")
     private String name;
 
-    @NotBlank(message = "Shelf icon must not be empty.")
     private String icon;
-
-    @NotNull(message = "Shelf icon type must not be null.")
     private IconType iconType;
 
     private boolean publicShelf;

@@ -70,11 +70,13 @@ export class LibraryCreatorComponent implements OnInit {
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
 
-        if (iconType === 'CUSTOM_SVG') {
-          this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
-        } else {
-          const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
-          this.selectedIcon = {type: 'PRIME_NG', value: value};
+        if (icon != null && iconType) {
+          if (iconType === 'CUSTOM_SVG') {
+            this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
+          } else {
+            const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
+            this.selectedIcon = {type: 'PRIME_NG', value: value};
+          }
         }
 
         this.watch = watch;
@@ -186,7 +188,7 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   isLibraryDetailsValid(): boolean {
-    return !!this.chosenLibraryName.trim() && !!this.selectedIcon;
+    return !!this.chosenLibraryName.trim();
   }
 
   isDirectorySelectionValid(): boolean {
@@ -207,8 +209,8 @@ export class LibraryCreatorComponent implements OnInit {
       }
     }
 
-    const iconValue = this.selectedIcon?.value || 'heart';
-    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+    const iconValue = this.selectedIcon?.value ?? null;
+    const iconType = this.selectedIcon?.type ?? null;
 
     const library: Library = {
       name: this.chosenLibraryName,
