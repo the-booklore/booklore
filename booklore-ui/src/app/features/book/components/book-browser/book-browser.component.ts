@@ -12,7 +12,7 @@ import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
 import {BookService} from '../../service/book.service';
-import {debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
+import {bufferTime, debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject, Subscription} from 'rxjs';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
@@ -140,6 +140,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
   protected resetFilterSubject = new Subject<void>();
 
+  private validSortFieldsSet = new Set<string>();
+  validSortFields: string[] = [];
+
   parsedFilters: Record<string, string[]> = {};
   entity: Library | Shelf | MagicShelf | null = null;
   entityType: EntityType | undefined;
@@ -164,17 +167,24 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor() {
     this.resizeSubject.pipe(
-      debounceTime(500),
+      bufferTime(500),
+      filter((batches): batches is {field: string; width: string}[][] => batches.length > 0),
+      map(batches => batches.flat()),
       takeUntil(this.destroy$)
     ).subscribe(widths => {
-      this.columnPreferenceService.saveColumnWidths(widths);
+      // Dedupe by field, keep last width
+      const widthMap = new Map<string, string>(widths.map(w => [w.field, w.width]));
+      const dedupedWidths = Array.from(widthMap, ([field, width]) => ({field, width}));
+      this.columnPreferenceService.saveColumnWidths(dedupedWidths);
     });
 
     this.preferencesSaveSubject.pipe(
-      debounceTime(1000),
+      bufferTime(1000),
+      filter((changes): changes is Partial<EntityViewPreference>[] => changes.length > 0),
+      map(changes => Object.assign({}, ...changes) as Partial<EntityViewPreference>),
       takeUntil(this.destroy$)
-    ).subscribe(changes => {
-      this.persistEntityViewPreferences(changes);
+    ).subscribe(merged => {
+      this.persistEntityViewPreferences(merged);
     });
   }
   mobileColumnCount = 3;
@@ -304,8 +314,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.moreActionsMenuItems!.length > 0;
   }
 
-  get validSortFields(): string[] {
-    return this.bookSorter.sortOptions.map(o => o.field);
+  private initializeSortFields(): void {
+    this.validSortFields = this.bookSorter.sortOptions.map(o => o.field);
+    this.validSortFieldsSet = new Set(this.validSortFields);
+  }
+
+  isSortable(field: string): boolean {
+    return this.validSortFieldsSet.has(field);
   }
 
   ngOnInit(): void {
@@ -329,12 +344,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
         this.saveEntityViewPreferences({coverSize: scale});
       });
     this.loadMobileColumnsPreference();
+    this.initializeSortFields();
 
     this.columnPreferenceService.preferences$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        this.visibleColumns = this.columnPreferenceService.visibleColumns;
-        this.cdr.markForCheck();
+        const newVisible = this.columnPreferenceService.visibleColumns;
+        // Reference stability check
+        if (JSON.stringify(newVisible) !== JSON.stringify(this.visibleColumns)) {
+          this.visibleColumns = [...newVisible];
+          this.cdr.markForCheck();
+        }
       });
 
     this.initializeEntityRouting();
@@ -599,10 +619,12 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (dynamicColumnIndex >= 0 && dynamicColumnIndex < this.visibleColumns.length) {
         const col = this.visibleColumns[dynamicColumnIndex];
-        // PrimeNG sets the width on the element directly during resize
         const newWidth = thElement.offsetWidth + 'px';
 
-        col.width = newWidth;
+        // Update local state immediately for responsiveness
+        this.visibleColumns = this.visibleColumns.map((c, i) =>
+          i === dynamicColumnIndex ? {...c, width: newWidth} : c
+        );
 
         this.resizeSubject.next([{
           field: col.field,

@@ -3,6 +3,12 @@ import {BehaviorSubject} from 'rxjs';
 import {MessageService} from 'primeng/api';
 import {TableColumnPreference, UserService} from '../../../settings/user-management/user.service';
 
+interface ColumnDef {
+  field: string;
+  header: string;
+  width: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,7 +19,7 @@ export class TableColumnPreferenceService {
   private readonly preferencesSubject = new BehaviorSubject<TableColumnPreference[]>([]);
   readonly preferences$ = this.preferencesSubject.asObservable();
 
-  private readonly allAvailableColumns = [
+  private readonly allAvailableColumns: ReadonlyArray<ColumnDef> = Object.freeze([
     {field: 'readStatus', header: 'Read', width: '80px'},
     {field: 'title', header: 'Title', width: '350px'},
     {field: 'authors', header: 'Authors', width: '200px'},
@@ -35,7 +41,7 @@ export class TableColumnPreferenceService {
     {field: 'hardcoverRating', header: 'Hardcover', width: '140px'},
     {field: 'hardcoverReviewCount', header: 'HC #', width: '100px'},
     {field: 'ranobedbRating', header: 'Ranobedb', width: '140px'},
-  ];
+  ]);
 
   private readonly fallbackPreferences: TableColumnPreference[] = this.allAvailableColumns.map((col, index) => ({
     field: col.field,
@@ -44,24 +50,39 @@ export class TableColumnPreferenceService {
     width: col.width
   }));
 
+  private readonly headerByField: ReadonlyMap<string, string>;
+  private cachedVisibleColumns: { field: string; header: string; width?: string }[] = [];
+  private cacheValid = false;
+
+  constructor() {
+    this.headerByField = new Map(this.allAvailableColumns.map(col => [col.field, col.header]));
+    this.preferences$.subscribe(() => {
+      this.cacheValid = false;
+    });
+  }
+
   initPreferences(savedPrefs: TableColumnPreference[] | undefined): void {
     const effectivePrefs = savedPrefs?.length ? savedPrefs : this.fallbackPreferences;
     this.preferencesSubject.next(this.mergeWithAllColumns(effectivePrefs));
   }
 
   get allColumns(): { field: string; header: string }[] {
-    return this.allAvailableColumns;
+    return this.allAvailableColumns as any;
   }
 
   get visibleColumns(): { field: string; header: string; width?: string }[] {
-    return this.preferencesSubject.value
-      .filter(pref => pref.visible)
-      .sort((a, b) => a.order - b.order)
-      .map(pref => ({
-        field: pref.field,
-        header: this.getColumnHeader(pref.field),
-        width: pref.width
-      }));
+    if (!this.cacheValid) {
+      this.cachedVisibleColumns = this.preferencesSubject.value
+        .filter(pref => pref.visible)
+        .sort((a, b) => a.order - b.order)
+        .map(pref => ({
+          field: pref.field,
+          header: this.getColumnHeader(pref.field),
+          width: pref.width
+        }));
+      this.cacheValid = true;
+    }
+    return this.cachedVisibleColumns;
   }
 
   get preferences(): TableColumnPreference[] {
@@ -89,7 +110,7 @@ export class TableColumnPreferenceService {
   }
 
   private getColumnHeader(field: string): string {
-    return this.allAvailableColumns.find(col => col.field === field)?.header ?? field;
+    return this.headerByField.get(field) ?? field;
   }
 
   private mergeWithAllColumns(savedPrefs: TableColumnPreference[]): TableColumnPreference[] {

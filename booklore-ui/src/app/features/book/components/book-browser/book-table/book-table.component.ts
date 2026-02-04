@@ -52,7 +52,15 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   @Input() sortOption: SortOption | null = null;
   @Input() visibleColumns: { field: string; header: string; width?: string }[] = [];
   @Input() preselectedBookIds = new Set<number>();
-  @Input() validSortFields: string[] = [];
+  @Input() set validSortFields(fields: string[]) {
+    this._validSortFields = fields;
+    this.validSortFieldsSet = new Set(fields);
+  }
+  get validSortFields(): string[] {
+    return this._validSortFields;
+  }
+  private _validSortFields: string[] = [];
+  private validSortFieldsSet = new Set<string>();
 
   @Output() onSortChange = new EventEmitter<{ field: string, order: number }>();
   @Output() onColumnsReorder = new EventEmitter<{ field: string; header: string }[]>();
@@ -69,6 +77,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
   readonly starIndexes = [1, 2, 3, 4, 5] as const;
+  private readonly starColorCache = new Map<number, string>();
 
   readonly allColumns = [
     {field: 'readStatus', header: '📖'},
@@ -172,6 +181,10 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  isSortable(field: string): boolean {
+    return this.validSortFieldsSet.has(field);
+  }
+
   onColReorder(event: TableColumnReorderEvent) {
     this.onColumnsReorder.emit(event.columns as { field: string; header: string }[]);
   }
@@ -181,17 +194,25 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   getStarColor(rating: number): string {
-    if (rating >= 4.5) {
-      return 'rgb(34, 197, 94)';
-    } else if (rating >= 4) {
-      return 'rgb(52, 211, 153)';
-    } else if (rating >= 3.5) {
-      return 'rgb(234, 179, 8)';
-    } else if (rating >= 2.5) {
-      return 'rgb(249, 115, 22)';
-    } else {
-      return 'rgb(239, 68, 68)';
+    if (rating == null) return '#ccc';
+
+    // Round to 1 decimal for cache key stability
+    const key = Math.round(rating * 10);
+
+    let color = this.starColorCache.get(key);
+    if (!color) {
+      color = this.computeStarColor(rating);
+      this.starColorCache.set(key, color);
     }
+    return color;
+  }
+
+  private computeStarColor(rating: number): string {
+    if (rating >= 4.5) return 'rgb(34, 197, 94)';
+    if (rating >= 4) return 'rgb(52, 211, 153)';
+    if (rating >= 3.5) return 'rgb(234, 179, 8)';
+    if (rating >= 2.5) return 'rgb(249, 115, 22)';
+    return 'rgb(239, 68, 68)';
   }
 
   getAuthorNames(authors: string[]): string {

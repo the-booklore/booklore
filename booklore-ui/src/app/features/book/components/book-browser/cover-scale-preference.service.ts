@@ -1,15 +1,15 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, OnDestroy} from '@angular/core';
 import {Subject} from 'rxjs';
-import {debounceTime, distinctUntilChanged, filter, map} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, filter, map, takeUntil} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {LocalStorageService} from '../../../../shared/service/local-storage.service';
 import {Book} from '../../model/book.model';
-import {EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
+import {EntityViewPreferences, User, UserService, UserState} from '../../../settings/user-management/user.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class CoverScalePreferenceService {
+export class CoverScalePreferenceService implements OnDestroy {
 
   private readonly BASE_WIDTH = 135;
   private readonly BASE_HEIGHT = 220;
@@ -21,18 +21,22 @@ export class CoverScalePreferenceService {
   private readonly localStorageService = inject(LocalStorageService);
   private readonly userService = inject(UserService);
 
+  private readonly destroy$ = new Subject<void>();
   private readonly scaleChangeSubject = new Subject<number>();
   readonly scaleChange$ = this.scaleChangeSubject.asObservable();
 
+  private isUpdating = false;
   scaleFactor = 1.0;
 
   constructor() {
     this.userService.userState$.pipe(
-      filter(u => u.loaded && !!u.user),
-      map(u => (u.user?.userSettings.entityViewPreferences as EntityViewPreferences)?.global?.coverSize),
-      filter((size): size is number => !!size && size > 0),
-      distinctUntilChanged()
-    ).subscribe(size => {
+      filter((u: any): u is UserState => !!u && u.loaded && !!u.user),
+      map(u => (u.user?.userSettings?.entityViewPreferences as EntityViewPreferences)?.global?.coverSize),
+      filter((size): size is number => typeof size === 'number' && size > 0),
+      distinctUntilChanged(),
+      filter(() => !this.isUpdating),
+      takeUntil(this.destroy$)
+    ).subscribe((size: number) => {
       this.scaleFactor = size;
       this.scaleChangeSubject.next(size);
     });
@@ -40,14 +44,19 @@ export class CoverScalePreferenceService {
     this.scaleChange$
       .pipe(
         debounceTime(this.DEBOUNCE_MS),
-        // Filter out changes that match the current persisted state to avoid loops
         filter(scale => {
-          const user = this.userService.getCurrentUser();
-          const persistedScale = (user?.userSettings.entityViewPreferences as EntityViewPreferences)?.global?.coverSize;
-          return scale !== persistedScale;
-        })
+          const user = this.userService.getCurrentUser() as User | null;
+          const persistedScale = (user?.userSettings?.entityViewPreferences as EntityViewPreferences)?.global?.coverSize;
+          return typeof scale === 'number' && scale !== persistedScale;
+        }),
+        takeUntil(this.destroy$)
       )
       .subscribe(scale => this.saveScalePreference(scale));
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   initScaleValue(scale: number | undefined): void {
@@ -79,12 +88,12 @@ export class CoverScalePreferenceService {
   }
 
   private saveScalePreference(scale: number): void {
+    this.isUpdating = true;
     try {
       this.localStorageService.set(this.STORAGE_KEY, scale);
-      // Also update via UserService which now handles backend persistence and sync
-      const user = this.userService.getCurrentUser();
+      const user = this.userService.getCurrentUser() as User | null;
       if (user) {
-        const currentPrefs = user.userSettings.entityViewPreferences as EntityViewPreferences;
+        const currentPrefs = (user.userSettings?.entityViewPreferences as EntityViewPreferences) || {global: {}, overrides: []};
         const newPrefs: EntityViewPreferences = {
           ...currentPrefs,
           global: {
@@ -108,6 +117,9 @@ export class CoverScalePreferenceService {
         detail: 'Could not save cover size preference.',
         life: 3000
       });
+    } finally {
+      // Small delay to let userState$ settle before re-enabling sync
+      setTimeout(() => this.isUpdating = false, 100);
     }
   }
 
