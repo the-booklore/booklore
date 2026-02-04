@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   EventEmitter,
   inject,
@@ -9,7 +10,7 @@ import {
   OnInit,
   Output
 } from '@angular/core';
-import {TableModule} from 'primeng/table';
+import {TableColResizeEvent, TableColumnReorderEvent, TableModule} from 'primeng/table';
 import {DatePipe, NgClass, NgStyle} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {TooltipModule} from "primeng/tooltip";
@@ -18,7 +19,7 @@ import {SortOption} from '../../../model/sort.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {Button} from 'primeng/button';
 import {BookService} from '../../../service/book.service';
-import {MessageService} from 'primeng/api';
+import {MessageService, SortEvent} from 'primeng/api';
 import {RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
@@ -63,9 +64,11 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   private userService = inject(UserService);
   private datePipe = inject(DatePipe);
   private readStatusHelper = inject(ReadStatusHelper);
+  private cdr = inject(ChangeDetectorRef);
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
+  readonly starIndexes = [1, 2, 3, 4, 5] as const;
 
   readonly allColumns = [
     {field: 'readStatus', header: '📖'},
@@ -102,6 +105,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       )
       .subscribe(userState => {
         this.metadataCenterViewMode = userState?.user?.userSettings.metadataCenterViewMode ?? 'route';
+        this.cdr.markForCheck();
       });
 
     this.selectedBookIds = this.preselectedBookIds;
@@ -128,12 +132,14 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedBookIds = new Set(this.books.map(book => book.id));
     this.selectedBooks = [...this.books];
     this.selectedBooksChange.emit(this.selectedBookIds);
+    this.cdr.markForCheck();
   }
 
   clearSelectedBooks(): void {
     this.selectedBookIds.clear();
     this.selectedBooks = [];
     this.selectedBooksChange.emit(this.selectedBookIds);
+    this.cdr.markForCheck();
   }
 
   onRowSelect(event: { data?: Book | Book[] }): void {
@@ -160,15 +166,17 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedBooksChange.emit(this.selectedBookIds);
   }
 
-  onSort(event: any) {
-    this.onSortChange.emit({ field: event.field, order: event.order });
+  onSort(event: SortEvent) {
+    if (event.field) {
+      this.onSortChange.emit({field: event.field, order: event.order ?? 1});
+    }
   }
 
-  onColReorder(event: any) {
-    this.onColumnsReorder.emit(event.columns);
+  onColReorder(event: TableColumnReorderEvent) {
+    this.onColumnsReorder.emit(event.columns as { field: string; header: string }[]);
   }
 
-  onColResize(event: any) {
+  onColResize(event: TableColResizeEvent) {
     this.onColumnResize.emit(event);
   }
 

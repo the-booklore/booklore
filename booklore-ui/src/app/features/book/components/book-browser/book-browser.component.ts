@@ -68,6 +68,7 @@ import {BookBrowserEntityService} from './book-browser-entity.service';
 import {BookFilterOrchestrationService} from './book-filter-orchestration.service';
 import {BookBrowserScrollService} from './book-browser-scroll.service';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
+import {mapSortFieldToApi} from './sorting/sort-field-mapping';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -157,15 +158,23 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private currentUserId: number | undefined;
   showFilter = false;
   screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  private static readonly FIXED_COLUMN_COUNT = 3;
   private resizeSubject = new Subject<{ field: string, width: string }[]>();
+  private preferencesSaveSubject = new Subject<Partial<EntityViewPreference>>();
 
   constructor() {
-    this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
     this.resizeSubject.pipe(
       debounceTime(500),
       takeUntil(this.destroy$)
     ).subscribe(widths => {
       this.columnPreferenceService.saveColumnWidths(widths);
+    });
+
+    this.preferencesSaveSubject.pipe(
+      debounceTime(1000),
+      takeUntil(this.destroy$)
+    ).subscribe(changes => {
+      this.persistEntityViewPreferences(changes);
     });
   }
   mobileColumnCount = 3;
@@ -301,7 +310,24 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.pageTitle.setPageTitle('');
-    this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
+
+    // Initialize scale from user preferences if available
+    this.userService.userState$.pipe(
+      filter(u => u.loaded && !!u.user),
+      takeUntil(this.destroy$),
+      map(u => u.user?.userSettings?.entityViewPreferences?.global?.coverSize)
+    ).subscribe(savedScale => {
+      if (savedScale && savedScale > 0) {
+        this.coverScalePreferenceService.initScaleValue(savedScale);
+        this.updateScale();
+      }
+    });
+
+    this.coverScalePreferenceService.scaleChange$
+      .pipe(debounceTime(1000), takeUntil(this.destroy$))
+      .subscribe((scale) => {
+        this.saveEntityViewPreferences({coverSize: scale});
+      });
     this.loadMobileColumnsPreference();
 
     this.columnPreferenceService.preferences$
@@ -540,6 +566,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     const newlyAdded = selected.filter(s => !this.visibleColumns.some(c => c.field === s.field));
 
     this.visibleColumns = [...existingVisible, ...newlyAdded];
+    this.preferencesSaveSubject.next({}); // Trigger debounced save for columns
     this.columnPreferenceService.saveVisibleColumns(this.visibleColumns);
   }
 
@@ -549,8 +576,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onBookTableColumnReorder(columns: { field: string, header: string }[]): void {
-    this.visibleColumns = columns;
-    this.columnPreferenceService.saveVisibleColumns(columns);
+    // Preserve widths from current visibleColumns
+    const widthMap = new Map(this.visibleColumns.map(c => [c.field, c.width]));
+    this.visibleColumns = columns.map(col => ({
+      ...col,
+      width: widthMap.get(col.field)
+    }));
+    this.columnPreferenceService.saveVisibleColumns(this.visibleColumns);
   }
 
   onBookTableColumnResize(event: any): void {
@@ -562,7 +594,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       // 1. Checkbox
       // 2. Status icon column
       // 3. Cover column
-      const fixedColumnCount = 3;
+      const fixedColumnCount = BookBrowserComponent.FIXED_COLUMN_COUNT;
       const dynamicColumnIndex = columnIndex - fixedColumnCount;
 
       if (dynamicColumnIndex >= 0 && dynamicColumnIndex < this.visibleColumns.length) {
@@ -658,13 +690,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   applySortOption(sortOption: SortOption): void {
-    const sortToSend = {...sortOption};
-    if (sortToSend.field === 'authors') sortToSend.field = 'author';
-    if (sortToSend.field === 'seriesNumber') sortToSend.field = 'metadata.seriesNumber';
-    if (sortToSend.field === 'seriesName') sortToSend.field = 'metadata.seriesName';
-    if (sortToSend.field === 'isbn') sortToSend.field = 'metadata.isbn13';
-    if (sortToSend.field === 'language') sortToSend.field = 'metadata.language';
-    if (sortToSend.field === 'readStatus') sortToSend.field = 'readStatus'; // Assuming on BookEntity? No, BookEntity don't have it.
+    const sortToSend = {
+      ...sortOption,
+      field: mapSortFieldToApi(sortOption.field)
+    };
 
     if (this.entityType === EntityType.ALL_BOOKS) {
       this.bookState$ = this.entityService.fetchAllBooks(sortToSend).pipe(
@@ -723,8 +752,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleTableGrid(): void {
     this.currentViewMode = this.currentViewMode === VIEW_MODES.GRID ? VIEW_MODES.TABLE : VIEW_MODES.GRID;
-    this.queryParamsService.updateViewMode(this.currentViewMode as 'grid' | 'table');
-    this.saveEntityViewPreferences({view: this.currentViewMode === VIEW_MODES.GRID ? 'GRID' : 'TABLE'});
+    const updatedViewMode = this.currentViewMode === VIEW_MODES.GRID ? 'grid' : 'table';
+    this.saveEntityViewPreferences({view: updatedViewMode.toUpperCase() as 'GRID' | 'TABLE'});
+    this.queryParamsService.updateViewMode(updatedViewMode);
   }
 
   unshelfBooks(): void {
@@ -967,6 +997,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private saveEntityViewPreferences(changes: Partial<EntityViewPreference>): void {
+    this.preferencesSaveSubject.next(changes);
+  }
+
+  private persistEntityViewPreferences(changes: Partial<EntityViewPreference>): void {
     const currentUser = this.userService.getCurrentUser();
     if (!currentUser) return;
 
@@ -980,11 +1014,18 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (isOverride && this.entity && this.entityType) {
       let entityTypeStr: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
-      switch(this.entityType) {
-        case EntityType.LIBRARY: entityTypeStr = 'LIBRARY'; break;
-        case EntityType.SHELF: entityTypeStr = 'SHELF'; break;
-        case EntityType.MAGIC_SHELF: entityTypeStr = 'MAGIC_SHELF'; break;
-        default: return;
+      switch (this.entityType) {
+        case EntityType.LIBRARY:
+          entityTypeStr = 'LIBRARY';
+          break;
+        case EntityType.SHELF:
+          entityTypeStr = 'SHELF';
+          break;
+        case EntityType.MAGIC_SHELF:
+          entityTypeStr = 'MAGIC_SHELF';
+          break;
+        default:
+          return;
       }
 
       const index = updatedOverrides.findIndex(o =>
@@ -1003,9 +1044,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
           preferences: {...updatedGlobal, ...changes}
         });
       }
-    } else {
-      updatedGlobal = {...updatedGlobal, ...changes};
     }
+
+    // ALWAYS update global preferences to make settings "sticky"
+    updatedGlobal = {
+      ...updatedGlobal,
+      ...changes
+    };
 
     const newPrefs: EntityViewPreferences = {
       global: updatedGlobal,

@@ -318,6 +318,9 @@
   padding: 1rem;
   box-sizing: border-box;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  overflow-anchor: none;
 
   @media (max-width: 768px) {
     height: calc(100dvh - 9rem);
@@ -340,7 +343,6 @@
 
 .virtual-scroller-item {
   position: relative;
-  transition: width 0.2s ease, height 0.2s ease;
 }
 
 // No books state

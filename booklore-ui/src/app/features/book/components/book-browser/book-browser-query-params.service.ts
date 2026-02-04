@@ -1,4 +1,4 @@
-import {Injectable, inject} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {ActivatedRoute, ParamMap, Router} from '@angular/router';
 import {SortDirection, SortOption} from '../../model/sort.model';
 import {BookFilterMode, EntityViewPreferences} from '../../../settings/user-management/user.service';
@@ -102,10 +102,9 @@ export class BookBrowserQueryParamsService {
 
     // Determine view mode
     const viewModeFromToggle = fromParam === 'toggle';
-    const viewMode = viewModeFromToggle
-      ? (viewParam === VIEW_MODES.TABLE || viewParam === VIEW_MODES.GRID
-        ? viewParam
-        : VIEW_MODES.GRID)
+    const effectiveView = viewParam || effectivePrefs.view?.toLowerCase();
+    const viewMode = (effectiveView === VIEW_MODES.TABLE || effectiveView === VIEW_MODES.GRID)
+      ? effectiveView
       : (effectivePrefs.view?.toLowerCase() ?? VIEW_MODES.GRID);
 
     return {

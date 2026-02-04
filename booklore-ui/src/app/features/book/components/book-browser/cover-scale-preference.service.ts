@@ -1,9 +1,10 @@
 import {inject, Injectable} from '@angular/core';
 import {Subject} from 'rxjs';
-import {debounceTime} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, filter, map} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {LocalStorageService} from '../../../../shared/service/local-storage.service';
 import {Book} from '../../model/book.model';
+import {EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,7 @@ export class CoverScalePreferenceService {
 
   private readonly messageService = inject(MessageService);
   private readonly localStorageService = inject(LocalStorageService);
+  private readonly userService = inject(UserService);
 
   private readonly scaleChangeSubject = new Subject<number>();
   readonly scaleChange$ = this.scaleChangeSubject.asObservable();
@@ -25,10 +27,26 @@ export class CoverScalePreferenceService {
   scaleFactor = 1.0;
 
   constructor() {
-    this.loadScaleFromStorage();
+    this.userService.userState$.pipe(
+      filter(u => u.loaded && !!u.user),
+      map(u => (u.user?.userSettings.entityViewPreferences as EntityViewPreferences)?.global?.coverSize),
+      filter((size): size is number => !!size && size > 0),
+      distinctUntilChanged()
+    ).subscribe(size => {
+      this.scaleFactor = size;
+      this.scaleChangeSubject.next(size);
+    });
 
     this.scaleChange$
-      .pipe(debounceTime(this.DEBOUNCE_MS))
+      .pipe(
+        debounceTime(this.DEBOUNCE_MS),
+        // Filter out changes that match the current persisted state to avoid loops
+        filter(scale => {
+          const user = this.userService.getCurrentUser();
+          const persistedScale = (user?.userSettings.entityViewPreferences as EntityViewPreferences)?.global?.coverSize;
+          return scale !== persistedScale;
+        })
+      )
       .subscribe(scale => this.saveScalePreference(scale));
   }
 
@@ -63,6 +81,20 @@ export class CoverScalePreferenceService {
   private saveScalePreference(scale: number): void {
     try {
       this.localStorageService.set(this.STORAGE_KEY, scale);
+      // Also update via UserService which now handles backend persistence and sync
+      const user = this.userService.getCurrentUser();
+      if (user) {
+        const currentPrefs = user.userSettings.entityViewPreferences as EntityViewPreferences;
+        const newPrefs: EntityViewPreferences = {
+          ...currentPrefs,
+          global: {
+            ...currentPrefs.global,
+            coverSize: scale
+          }
+        };
+        this.userService.updateUserSetting(user.id, 'entityViewPreferences', newPrefs);
+      }
+
       this.messageService.add({
         severity: 'success',
         summary: 'Cover Size Saved',
@@ -73,7 +105,7 @@ export class CoverScalePreferenceService {
       this.messageService.add({
         severity: 'error',
         summary: 'Save Failed',
-        detail: 'Could not save cover size preference locally.',
+        detail: 'Could not save cover size preference.',
         life: 3000
       });
     }
