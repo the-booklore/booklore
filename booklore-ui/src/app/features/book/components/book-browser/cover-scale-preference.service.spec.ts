@@ -104,8 +104,8 @@ describe('CoverScalePreferenceService', () => {
     // It should STILL be 2.0 because isUpdating is true
     expect(service.scaleFactor).toBe(2.0);
 
-    // 3. Advance past the settle delay (100ms)
-    vi.advanceTimersByTime(150);
+    // 3. Advance past the settle delay (200ms)
+    vi.advanceTimersByTime(250);
 
     // Now isUpdating is false, new emissions should work
     userStateSubject.next({
@@ -139,5 +139,63 @@ describe('CoverScalePreferenceService', () => {
 
     expect(destroySpy).toHaveBeenCalled();
     expect(completeSpy).toHaveBeenCalled();
+  });
+
+  it('should handle null user gracefully', () => {
+    userService.getCurrentUser.mockReturnValue(null);
+    
+    // Should not throw
+    expect(() => service.setScale(1.5)).not.toThrow();
+  });
+
+  it('should not persist if scale equals persisted value', async () => {
+    vi.useFakeTimers();
+    
+    // Set scale to same as persisted (1.2 from initial state)
+    service.setScale(1.2);
+    vi.advanceTimersByTime(1100);
+    
+    // Should not call updateUserSetting since value is same
+    expect(userService.updateUserSetting).not.toHaveBeenCalled();
+    
+    vi.useRealTimers();
+  });
+
+  it('should clear pending timeout on destroy', () => {
+    vi.useFakeTimers();
+    
+    service.setScale(2.0);
+    vi.advanceTimersByTime(1005); // Triggers save, starts 200ms timeout
+    
+    // Destroy before timeout completes
+    service.ngOnDestroy();
+    
+    // Verify no errors when timeout would have fired
+    expect(() => vi.advanceTimersByTime(300)).not.toThrow();
+    
+    vi.useRealTimers();
+  });
+
+  it('should handle rapid scale changes with debounce', async () => {
+    vi.useFakeTimers();
+    
+    service.setScale(1.1);
+    service.setScale(1.2);
+    service.setScale(1.3);
+    service.setScale(1.4);
+    
+    vi.advanceTimersByTime(1100);
+    
+    // Should only save once with final value
+    expect(userService.updateUserSetting).toHaveBeenCalledTimes(1);
+    expect(userService.updateUserSetting).toHaveBeenCalledWith(
+      1, 
+      'entityViewPreferences', 
+      expect.objectContaining({
+        global: expect.objectContaining({ coverSize: 1.4 })
+      })
+    );
+    
+    vi.useRealTimers();
   });
 });

@@ -215,6 +215,14 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     return 'rgb(239, 68, 68)';
   }
 
+  getRatingColorClass(rating: number): string {
+    if (rating >= 4.5) return 'color-excellent';
+    if (rating >= 4.0) return 'color-good';
+    if (rating >= 3.5) return 'color-average';
+    if (rating >= 2.5) return 'color-below-avg';
+    return 'color-poor';
+  }
+
   getAuthorNames(authors: string[]): string {
     return authors?.join(', ') || '';
   }

@@ -2,6 +2,8 @@
   [value]="books"
   [columns]="visibleColumns"
   [dataKey]="'id'"
+  [sortField]="sortOption?.field ?? ''"
+  [sortOrder]="sortOption?.direction === 'ASCENDING' ? 1 : -1"
   [resizableColumns]="true"
   [reorderableColumns]="true"
   columnResizeMode="expand"
@@ -31,17 +33,22 @@
       <th class="cover-header-cell"></th>
       @for (col of visibleColumns; track col.field) {
         @if (isSortable(col.field)) {
-          <th pResizableColumn pReorderableColumn pSortableColumn="{{col.field}}" [ngStyle]="{'width': col.width || 'auto', 'min-width': '100px'}">
+          <th pResizableColumn pReorderableColumn pSortableColumn="{{col.field}}" 
+              [attr.data-field]="col.field"
+              [ngStyle]="{'width': col.width || 'auto', 'min-width': '100px'}">
             {{ col.header }} <p-sortIcon field="{{col.field}}"/>
           </th>
         } @else {
-          <th pResizableColumn pReorderableColumn [ngStyle]="{'width': col.width || 'auto', 'min-width': '100px'}">
+          <th pResizableColumn pReorderableColumn 
+              [attr.data-field]="col.field"
+              [ngStyle]="{'width': col.width || 'auto', 'min-width': '100px'}">
             {{ col.header }}
           </th>
         }
       }
     </tr>
   </ng-template>
+
 
   <ng-template pTemplate="body" let-book>
     @if (book.metadata; as metadata) {
@@ -100,10 +107,11 @@
                 @if (metadata[col.field] != null && metadata[col.field] > 0) {
                     <div class="rating-display" [title]="metadata[col.field]">
                        @for (star of starIndexes; track star) {
-                         <i class="pi"
+                         <i class="pi star-icon"
                             [class.pi-star-fill]="star <= metadata[col.field]"
                             [class.pi-star]="star > metadata[col.field]"
-                            [style.color]="star <= metadata[col.field] ? getStarColor(metadata[col.field]) : '#ccc'">
+                            [class.filled]="star <= metadata[col.field]"
+                            [ngClass]="star <= metadata[col.field] ? getRatingColorClass(metadata[col.field]) : ''">
                          </i>
                        }
                     </div>

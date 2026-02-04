@@ -106,4 +106,34 @@ describe('TableColumnPreferenceService', () => {
     expect(service.preferences.every(p => p.visible)).toBe(true);
     expect(userService.updateUserSetting).toHaveBeenCalled();
   });
+
+  it('should handle empty saved preferences', () => {
+    service.initPreferences([]);
+    
+    expect(service.preferences.length).toBeGreaterThan(0);
+    expect(service.visibleColumns.length).toBeGreaterThan(0);
+  });
+
+  it('should preserve order when toggling visibility', () => {
+    service.initPreferences([
+      { field: 'title', visible: true, order: 0 },
+      { field: 'authors', visible: true, order: 1 },
+      { field: 'publisher', visible: true, order: 2 }
+    ]);
+    
+    // Remove authors, then add back
+    service.saveVisibleColumns([{ field: 'title' }, { field: 'publisher' }]);
+    service.saveVisibleColumns([{ field: 'title' }, { field: 'publisher' }, { field: 'authors' }]);
+    
+    const authorsPref = service.preferences.find(p => p.field === 'authors');
+    expect(authorsPref).toBeDefined();
+    expect(authorsPref?.order).toBe(2);
+  });
+
+  it('should handle null user gracefully when saving', () => {
+    userService.getCurrentUser.mockReturnValue(null);
+    
+    // Should not throw
+    expect(() => service.saveColumnWidths([{ field: 'title', width: '200px' }])).not.toThrow();
+  });
 });

@@ -118,4 +118,17 @@ describe('BookTableComponent', () => {
     const book = { id: 123 } as any;
     expect(component.trackByBookId(0, book)).toBe(123);
   });
+
+  it('should return correct CSS class for rating colors', () => {
+    expect(component.getRatingColorClass(4.8)).toBe('color-excellent');
+    expect(component.getRatingColorClass(4.5)).toBe('color-excellent');
+    expect(component.getRatingColorClass(4.2)).toBe('color-good');
+    expect(component.getRatingColorClass(4.0)).toBe('color-good');
+    expect(component.getRatingColorClass(3.7)).toBe('color-average');
+    expect(component.getRatingColorClass(3.5)).toBe('color-average');
+    expect(component.getRatingColorClass(3.0)).toBe('color-below-avg');
+    expect(component.getRatingColorClass(2.5)).toBe('color-below-avg');
+    expect(component.getRatingColorClass(2.0)).toBe('color-poor');
+    expect(component.getRatingColorClass(1.0)).toBe('color-poor');
+  });
 });

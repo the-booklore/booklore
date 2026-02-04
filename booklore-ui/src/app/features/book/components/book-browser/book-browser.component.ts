@@ -161,7 +161,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private currentUserId: number | undefined;
   showFilter = false;
   screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-  private static readonly FIXED_COLUMN_COUNT = 3;
   private resizeSubject = new Subject<{ field: string, width: string }[]>();
   private preferencesSaveSubject = new Subject<Partial<EntityViewPreference>>();
 
@@ -349,12 +348,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     this.columnPreferenceService.preferences$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        const newVisible = this.columnPreferenceService.visibleColumns;
-        // Reference stability check
-        if (JSON.stringify(newVisible) !== JSON.stringify(this.visibleColumns)) {
-          this.visibleColumns = [...newVisible];
-          this.cdr.markForCheck();
-        }
+        // Always update when preferences change - the service handles caching
+        this.visibleColumns = [...this.columnPreferenceService.visibleColumns];
+        this.cdr.markForCheck();
       });
 
     this.initializeEntityRouting();
@@ -608,28 +604,24 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   onBookTableColumnResize(event: any): void {
     if (event.element) {
       const thElement = event.element as HTMLTableCellElement;
-      const columnIndex = thElement.cellIndex;
+      // Use data-field attribute for robust column identification
+      const field = thElement.getAttribute('data-field');
 
-      // We have 3 fixed columns before the dynamic ones:
-      // 1. Checkbox
-      // 2. Status icon column
-      // 3. Cover column
-      const fixedColumnCount = BookBrowserComponent.FIXED_COLUMN_COUNT;
-      const dynamicColumnIndex = columnIndex - fixedColumnCount;
-
-      if (dynamicColumnIndex >= 0 && dynamicColumnIndex < this.visibleColumns.length) {
-        const col = this.visibleColumns[dynamicColumnIndex];
+      if (field) {
         const newWidth = thElement.offsetWidth + 'px';
+        const colIndex = this.visibleColumns.findIndex(c => c.field === field);
 
-        // Update local state immediately for responsiveness
-        this.visibleColumns = this.visibleColumns.map((c, i) =>
-          i === dynamicColumnIndex ? {...c, width: newWidth} : c
-        );
+        if (colIndex > -1) {
+          // Update local state immediately for responsiveness
+          this.visibleColumns = this.visibleColumns.map((c, i) =>
+            i === colIndex ? {...c, width: newWidth} : c
+          );
 
-        this.resizeSubject.next([{
-          field: col.field,
-          width: newWidth
-        }]);
+          this.resizeSubject.next([{
+            field,
+            width: newWidth
+          }]);
+        }
       }
     }
   }
@@ -1023,63 +1015,76 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private persistEntityViewPreferences(changes: Partial<EntityViewPreference>): void {
-    const currentUser = this.userService.getCurrentUser();
-    if (!currentUser) return;
-
-    const currentPrefs = currentUser.userSettings.entityViewPreferences;
-    const isOverride =
-      this.entityType !== EntityType.ALL_BOOKS &&
-      this.entityType !== EntityType.UNSHELVED;
-
-    let updatedGlobal = {...currentPrefs.global};
-    let updatedOverrides = [...currentPrefs.overrides];
-
-    if (isOverride && this.entity && this.entityType) {
-      let entityTypeStr: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
-      switch (this.entityType) {
-        case EntityType.LIBRARY:
-          entityTypeStr = 'LIBRARY';
-          break;
-        case EntityType.SHELF:
-          entityTypeStr = 'SHELF';
-          break;
-        case EntityType.MAGIC_SHELF:
-          entityTypeStr = 'MAGIC_SHELF';
-          break;
-        default:
-          return;
+    try {
+      const currentUser = this.userService.getCurrentUser();
+      if (!currentUser) {
+        console.warn('Cannot persist preferences: no current user');
+        return;
       }
 
-      const index = updatedOverrides.findIndex(o =>
-        o.entityType === entityTypeStr && o.entityId === this.entity!.id
-      );
+      const currentPrefs = currentUser.userSettings.entityViewPreferences;
+      const isOverride =
+        this.entityType !== EntityType.ALL_BOOKS &&
+        this.entityType !== EntityType.UNSHELVED;
 
-      if (index >= 0) {
-        updatedOverrides[index] = {
-          ...updatedOverrides[index],
-          preferences: {...updatedOverrides[index].preferences, ...changes}
-        };
-      } else if (this.entity?.id) {
-        updatedOverrides.push({
-          entityType: entityTypeStr,
-          entityId: this.entity.id,
-          preferences: {...updatedGlobal, ...changes}
-        });
+      let updatedGlobal = {...currentPrefs.global};
+      let updatedOverrides = [...currentPrefs.overrides];
+
+      if (isOverride && this.entity && this.entityType) {
+        let entityTypeStr: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
+        switch (this.entityType) {
+          case EntityType.LIBRARY:
+            entityTypeStr = 'LIBRARY';
+            break;
+          case EntityType.SHELF:
+            entityTypeStr = 'SHELF';
+            break;
+          case EntityType.MAGIC_SHELF:
+            entityTypeStr = 'MAGIC_SHELF';
+            break;
+          default:
+            return;
+        }
+
+        const index = updatedOverrides.findIndex(o =>
+          o.entityType === entityTypeStr && o.entityId === this.entity!.id
+        );
+
+        if (index >= 0) {
+          updatedOverrides[index] = {
+            ...updatedOverrides[index],
+            preferences: {...updatedOverrides[index].preferences, ...changes}
+          };
+        } else if (this.entity?.id) {
+          updatedOverrides.push({
+            entityType: entityTypeStr,
+            entityId: this.entity.id,
+            preferences: {...updatedGlobal, ...changes}
+          });
+        }
       }
+
+      // ALWAYS update global preferences to make settings "sticky"
+      updatedGlobal = {
+        ...updatedGlobal,
+        ...changes
+      };
+
+      const newPrefs: EntityViewPreferences = {
+        global: updatedGlobal,
+        overrides: updatedOverrides
+      };
+
+      this.userService.updateUserSetting(currentUser.id, 'entityViewPreferences', newPrefs);
+    } catch (error) {
+      console.error('Failed to persist entity view preferences:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Save Failed',
+        detail: 'Could not save view preferences.',
+        life: 3000
+      });
     }
-
-    // ALWAYS update global preferences to make settings "sticky"
-    updatedGlobal = {
-      ...updatedGlobal,
-      ...changes
-    };
-
-    const newPrefs: EntityViewPreferences = {
-      global: updatedGlobal,
-      overrides: updatedOverrides
-    };
-
-    this.userService.updateUserSetting(currentUser.id, 'entityViewPreferences', newPrefs);
   }
 
   private loadMobileColumnsPreference(): void {

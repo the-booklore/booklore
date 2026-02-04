@@ -26,6 +26,7 @@ export class CoverScalePreferenceService implements OnDestroy {
   readonly scaleChange$ = this.scaleChangeSubject.asObservable();
 
   private isUpdating = false;
+  private updateTimeoutId: ReturnType<typeof setTimeout> | null = null;
   scaleFactor = 1.0;
 
   constructor() {
@@ -55,8 +56,16 @@ export class CoverScalePreferenceService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clearUpdateTimeout();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private clearUpdateTimeout(): void {
+    if (this.updateTimeoutId !== null) {
+      clearTimeout(this.updateTimeoutId);
+      this.updateTimeoutId = null;
+    }
   }
 
   initScaleValue(scale: number | undefined): void {
@@ -89,6 +98,7 @@ export class CoverScalePreferenceService implements OnDestroy {
 
   private saveScalePreference(scale: number): void {
     this.isUpdating = true;
+    this.clearUpdateTimeout();
     try {
       this.localStorageService.set(this.STORAGE_KEY, scale);
       const user = this.userService.getCurrentUser() as User | null;
@@ -118,8 +128,11 @@ export class CoverScalePreferenceService implements OnDestroy {
         life: 3000
       });
     } finally {
-      // Small delay to let userState$ settle before re-enabling sync
-      setTimeout(() => this.isUpdating = false, 100);
+      // Use slightly longer delay and track the timeout for cleanup
+      this.updateTimeoutId = setTimeout(() => {
+        this.isUpdating = false;
+        this.updateTimeoutId = null;
+      }, 200);
     }
   }
 
