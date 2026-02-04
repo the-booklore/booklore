@@ -57,6 +57,24 @@
   ::ng-deep .p-datatable-table {
     table-layout: fixed;
   }
+
+  ::ng-deep .p-datatable-wrapper,
+  ::ng-deep .p-scroller {
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  ::ng-deep .p-datatable-virtual-scrollable-body {
+    scroll-behavior: auto !important; 
+  }
+
+  ::ng-deep .p-datatable-thead > tr > th {
+    background-color: var(--card-background) !important;
+    z-index: 10;
+    position: sticky;
+    top: 0;
+  }
 }
 
 .tooltip-cover-container {

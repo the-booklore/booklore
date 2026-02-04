@@ -1022,13 +1022,18 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
 
-      const currentPrefs = currentUser.userSettings.entityViewPreferences;
+      // Safely access current preferences with fallbacks
+      const currentPrefs = currentUser.userSettings.entityViewPreferences ?? {
+        global: {},
+        overrides: []
+      };
+
       const isOverride =
         this.entityType !== EntityType.ALL_BOOKS &&
         this.entityType !== EntityType.UNSHELVED;
 
-      let updatedGlobal = {...currentPrefs.global};
-      let updatedOverrides = [...currentPrefs.overrides];
+      let updatedGlobal = {...(currentPrefs.global ?? {}), ...changes};
+      let updatedOverrides = [...(currentPrefs.overrides ?? [])];
 
       if (isOverride && this.entity && this.entityType) {
         let entityTypeStr: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
@@ -1065,10 +1070,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       // ALWAYS update global preferences to make settings "sticky"
-      updatedGlobal = {
-        ...updatedGlobal,
-        ...changes
-      };
+      updatedGlobal = {...(updatedGlobal ?? {}), ...changes};
+
+      // Also apply these sticky changes to ALL existing overrides (Most Recent Behavior)
+      updatedOverrides = updatedOverrides.map(override => ({
+        ...override,
+        preferences: {...(override.preferences ?? {}), ...changes}
+      }));
 
       const newPrefs: EntityViewPreferences = {
         global: updatedGlobal,

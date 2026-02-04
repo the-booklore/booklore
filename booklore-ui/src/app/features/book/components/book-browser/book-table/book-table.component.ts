@@ -5,7 +5,6 @@ import {
   EventEmitter,
   inject,
   Input,
-  OnChanges,
   OnDestroy,
   OnInit,
   Output
@@ -43,7 +42,7 @@ import {ReadStatusHelper} from '../../../helpers/read-status.helper';
   providers: [DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
+export class BookTableComponent implements OnInit, OnDestroy {
   selectedBooks: Book[] = [];
   selectedBookIds = new Set<number>();
 
@@ -103,7 +102,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'ranobedbRating', header: 'Ranobedb'},
   ];
 
-  scrollHeight = 'calc(100dvh - 160px)';
+  scrollHeight = 'calc(100vh - 160px)';
 
   ngOnInit(): void {
     this.userService.userState$
@@ -126,16 +125,11 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   setScrollHeight() {
     const isMobile = window.innerWidth <= 768;
     this.scrollHeight = isMobile
-      ? 'calc(100dvh - 125px)'
-      : 'calc(100dvh - 150px)';
+      ? 'calc(100vh - 125px)'
+      : 'calc(100vh - 150px)';
   }
 
-  ngOnChanges() {
-    const wrapperElements: HTMLCollection = document.getElementsByClassName('p-virtualscroller');
-    Array.prototype.forEach.call(wrapperElements, function (wrapperElement) {
-      wrapperElement.style["height"] = 'calc(100dvh - 160px)';
-    });
-  }
+
 
   selectAllBooks(): void {
     this.selectedBookIds = new Set(this.books.map(book => book.id));

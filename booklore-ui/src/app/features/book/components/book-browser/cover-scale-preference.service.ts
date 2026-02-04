@@ -107,9 +107,13 @@ export class CoverScalePreferenceService implements OnDestroy {
         const newPrefs: EntityViewPreferences = {
           ...currentPrefs,
           global: {
-            ...currentPrefs.global,
+            ...(currentPrefs.global ?? {}),
             coverSize: scale
-          }
+          },
+          overrides: (currentPrefs.overrides ?? []).map(o => ({
+            ...o,
+            preferences: {...(o.preferences ?? {}), coverSize: scale}
+          }))
         };
         this.userService.updateUserSetting(user.id, 'entityViewPreferences', newPrefs);
       }
