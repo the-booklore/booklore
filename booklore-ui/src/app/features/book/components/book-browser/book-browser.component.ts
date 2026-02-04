@@ -13,7 +13,7 @@ import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'prim
 import {PageTitleService} from '../../../../shared/service/page-title.service';
 import {BookService} from '../../service/book.service';
 import {debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
-import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject, Subscription} from 'rxjs';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
 import {Shelf} from '../../model/shelf.model';
@@ -180,13 +180,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private settingFiltersFromUrl = false;
   private destroy$ = new Subject<void>();
   protected metadataMenuItems: MenuItem[] | undefined;
-  protected bulkReadActionsMenuItems: MenuItem[] | undefined;
+  protected moreActionsMenuItems: MenuItem[] | undefined;
 
   private sideBarFilter = new SideBarFilter(this.selectedFilter, this.selectedFilterMode);
   private headerFilter = new HeaderFilter(this.searchTerm$);
   protected bookSorter = new BookSorter(
     selectedSort => this.onManualSortChange(selectedSort)
   );
+
+  private bookStateSubscription: Subscription | undefined;
 
   @ViewChild(BookTableComponent)
   bookTableComponent!: BookTableComponent;
@@ -289,8 +291,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.metadataMenuItems!.length > 0;
   }
 
-  get hasBulkReadActionsItems(): boolean {
-    return this.bulkReadActionsMenuItems!.length > 0;
+  get hasMoreActionsItems(): boolean {
+    return this.moreActionsMenuItems!.length > 0;
   }
 
   get validSortFields(): string[] {
@@ -413,7 +415,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
         );
       });
 
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   private setupQueryParamSubscription(): void {
@@ -586,19 +588,19 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCheckboxClicked(event: CheckboxClickEvent): void {
     this.bookSelectionService.handleCheckboxClick(event);
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   handleBookSelect(book: Book, selected: boolean): void {
     this.bookSelectionService.handleBookSelection(book, selected);
     this.isDrawerVisible = this.bookSelectionService.hasSelection();
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   onSelectedBooksChange(selectedBookIds: Set<number>): void {
     this.bookSelectionService.setSelectedBooks(selectedBookIds);
     this.isDrawerVisible = this.bookSelectionService.hasSelection();
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   selectAllBooks(): void {
@@ -606,7 +608,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.bookTableComponent) {
       this.bookTableComponent.selectAllBooks();
     }
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   deselectAllBooks(): void {
@@ -615,7 +617,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.bookTableComponent) {
       this.bookTableComponent.clearSelectedBooks();
     }
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   confirmDeleteBooks(): void {
@@ -682,9 +684,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
-    this.bookState$
+    if (this.bookStateSubscription) {
+      this.bookStateSubscription.unsubscribe();
+    }
+
+    this.bookStateSubscription = this.bookState$
       .pipe(
         filter(state => state.loaded && !state.error),
+        takeUntil(this.destroy$),
         map(state => state.books || [])
       )
       .subscribe(books => {

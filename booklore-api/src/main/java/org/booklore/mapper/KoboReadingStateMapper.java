@@ -21,7 +21,8 @@ public interface KoboReadingStateMapper {
     @Mapping(target = "statusInfoJson", expression = "java(toJson(dto.getStatusInfo()))")
     @Mapping(target = "entitlementId", expression = "java(cleanString(dto.getEntitlementId()))")
     @Mapping(target = "created", expression = "java(dto.getCreated())")
-    @Mapping(target = "lastModified", expression = "java(dto.getLastModified())")
+    @Mapping(target = "lastModifiedString", expression = "java(dto.getLastModified())")
+    @Mapping(target = "lastModified", ignore = true)
     @Mapping(target = "priorityTimestamp", expression = "java(dto.getPriorityTimestamp())")
     KoboReadingStateEntity toEntity(KoboReadingState dto);
 
@@ -30,7 +31,7 @@ public interface KoboReadingStateMapper {
     @Mapping(target = "statusInfo", expression = "java(fromJson(entity.getStatusInfoJson(), KoboReadingState.StatusInfo.class))")
     @Mapping(target = "entitlementId", expression = "java(cleanString(entity.getEntitlementId()))")
     @Mapping(target = "created", expression = "java(entity.getCreated())")
-    @Mapping(target = "lastModified", expression = "java(entity.getLastModified())")
+    @Mapping(target = "lastModified", expression = "java(entity.getLastModifiedString())")
     @Mapping(target = "priorityTimestamp", expression = "java(entity.getPriorityTimestamp())")
     KoboReadingState toDto(KoboReadingStateEntity entity);
 
