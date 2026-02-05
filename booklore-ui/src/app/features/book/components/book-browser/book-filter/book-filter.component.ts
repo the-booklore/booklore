@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {Observable, of, Subject, takeUntil} from 'rxjs';
+import {BehaviorSubject, Observable, of, Subject, takeUntil} from 'rxjs';
 import {Library} from '../../../model/library.model';
 import {Shelf} from '../../../model/shelf.model';
 import {EntityType} from '../book-browser.component';
@@ -40,6 +40,9 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   private readonly filterService = inject(BookFilterService);
   private readonly destroy$ = new Subject<void>();
 
+  private readonly activeFilters$ = new BehaviorSubject<Record<string, unknown[]> | null>(null);
+  private readonly filterMode$ = new BehaviorSubject<BookFilterMode>('and');
+
   activeFilters: Record<string, unknown[]> = {};
   filterStreams: Record<FilterType, Observable<Filter[]>> = {} as Record<FilterType, Observable<Filter[]>>;
   filterTypes: FilterType[] = [];
@@ -62,6 +65,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   set selectedFilterMode(mode: BookFilterMode) {
     if (mode === this._selectedFilterMode) return;
     this._selectedFilterMode = mode;
+    this.filterMode$.next(mode);
     this.filterModeChanged.emit(mode);
     this.emitFilters();
   }
@@ -95,6 +99,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   clearActiveFilter(): void {
     this.activeFilters = {};
     this.expandedPanels = [0];
+    this.activeFilters$.next(null);
     this.filterSelected.emit(null);
   }
 
@@ -134,7 +139,12 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     const entity$ = this.entity$ ?? of(null);
     const entityType$ = this.entityType$ ?? of(EntityType.ALL_BOOKS);
 
-    this.filterStreams = this.filterService.createFilterStreams(entity$, entityType$);
+    this.filterStreams = this.filterService.createFilterStreams(
+      entity$,
+      entityType$,
+      this.activeFilters$,
+      this.filterMode$
+    );
     this.filterTypes = Object.keys(this.filterStreams) as FilterType[];
     this.updateExpandedPanels();
   }
@@ -181,7 +191,9 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   private emitFilters(): void {
     const hasFilters = Object.keys(this.activeFilters).length > 0;
-    this.filterSelected.emit(hasFilters ? {...this.activeFilters} : null);
+    const filtersToEmit = hasFilters ? {...this.activeFilters} : null;
+    this.activeFilters$.next(filtersToEmit);
+    this.filterSelected.emit(filtersToEmit);
   }
 
   private updateExpandedPanels(): void {
