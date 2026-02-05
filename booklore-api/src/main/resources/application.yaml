@@ -22,6 +22,7 @@ app:
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
   telemetry:
     base-url: ${TELEMETRY_BASE_URL:https://telemetry.booklore.org}
+  disk-type: ${DISK_TYPE:LOCAL}
 
 booklore:
   security:
@@ -38,7 +39,7 @@ booklore:
       # Only works when Spring profile is 'dev', 'development', or 'local'
       # For production, always use matching protocols (both HTTP or both HTTPS)
       allow-issuer-protocol-mismatch: ${OIDC_ALLOW_ISSUER_PROTOCOL_MISMATCH:false}
-      
+
       jwks:
         # Connection timeout for JWKS endpoint (Spring Duration format: 5s, 1000ms, etc.)
         # Increased from default to handle slow Docker networking and container startup
@@ -49,19 +50,19 @@ booklore:
         # Maximum size of JWKS response (in bytes)
         # Default 1MB should be sufficient for most JWKS documents
         size-limit: ${OIDC_JWKS_SIZE_LIMIT:1048576}
-        
+
         # New default: 30m (balances security and performance)
         # For high-security environments, consider: cache-ttl: 15m, cache-refresh: 5m
         # How long to cache JWKS keys (Spring Duration format)
         cache-ttl: ${OIDC_JWKS_CACHE_TTL:30m}
         # How often to refresh JWKS cache (Spring Duration format)
         cache-refresh: ${OIDC_JWKS_CACHE_REFRESH:10m}
-        
+
         # Protects JWKS endpoint from flooding attacks
         # Safe to enable even for internal networks
         rate-limit-enabled: ${OIDC_JWKS_RATE_LIMIT_ENABLED:true}
         rate-limit-requests-per-minute: ${OIDC_JWKS_RATE_LIMIT_REQUESTS_PER_MINUTE:100}
-        
+
         # HTTP proxy configuration for JWKS endpoint (optional, for corporate environments)
         proxy-host: ${OIDC_JWKS_PROXY_HOST:}
         proxy-port: ${OIDC_JWKS_PROXY_PORT:}
@@ -69,7 +70,7 @@ booklore:
         user-agent: ${OIDC_USER_AGENT:BookLore-OIDC-Client/1.0}
         proxy-user: ${OIDC_PROXY_USER:}
         proxy-password: ${OIDC_PROXY_PASSWORD:}
-        
+
       jwt:
         # Clock skew tolerance for JWT timestamp validation (default 60s)
         # Handles clock drift between services and authentication servers
@@ -81,7 +82,7 @@ booklore:
         # This provides an extra layer of security to restrict algorithm usage.
         # Example: allowed-algorithms: "RS256,ES256"
         allowed-algorithms: ${OIDC_JWT_ALLOWED_ALGORITHMS:}
-        
+
         # When enabled, tokens with the same JTI cannot be used twice
         # Requires OIDC provider to include 'jti' claim in tokens
         # Disabled by default as many OIDC providers (like Authentik) don't include JTI
@@ -141,7 +142,7 @@ springdoc:
 logging:
   level:
     root: ${ROOT_LOG_LEVEL:INFO}
-    com.adityachandel.booklore: ${LOG_LEVEL:INFO}
+    org.booklore: ${LOG_LEVEL:INFO}
     com.adityachandel.booklore.config.security: ${OIDC_LOG_LEVEL:WARN}
     com.adityachandel.booklore.service.oidc: ${OIDC_SERVICE_LOG_LEVEL:WARN}
     com.nimbusds.jose: INFO

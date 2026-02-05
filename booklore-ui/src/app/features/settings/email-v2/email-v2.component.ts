@@ -1,7 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
-import {Divider} from 'primeng/divider';
 import {EmailV2ProviderComponent} from './email-v2-provider/email-v2-provider.component';
 import {EmailV2RecipientComponent} from './email-v2-recipient/email-v2-recipient.component';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
@@ -15,11 +14,10 @@ import {filter, takeUntil, tap} from 'rxjs/operators';
   imports: [
     FormsModule,
     TableModule,
-    Divider,
     EmailV2ProviderComponent,
     EmailV2RecipientComponent,
     ExternalDocLinkComponent
-],
+  ],
   templateUrl: './email-v2.component.html',
   styleUrls: ['./email-v2.component.scss'],
 })

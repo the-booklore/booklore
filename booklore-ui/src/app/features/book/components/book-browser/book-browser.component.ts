@@ -4,7 +4,7 @@ import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'prim
 import {PageTitleService} from '../../../../shared/service/page-title.service';
 import {BookService} from '../../service/book.service';
 import {debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
-import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject, Subscription} from 'rxjs';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
 import {Shelf} from '../../model/shelf.model';
@@ -53,6 +53,7 @@ import {BookBrowserQueryParamsService, VIEW_MODES} from './book-browser-query-pa
 import {BookBrowserEntityService} from './book-browser-entity.service';
 import {BookFilterOrchestrationService} from './book-filter-orchestration.service';
 import {BookBrowserScrollService} from './book-browser-scroll.service';
+import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -97,6 +98,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   protected taskHelperService = inject(TaskHelperService);
   protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
   protected bookSelectionService = inject(BookSelectionService);
+  protected appSettingsService = inject(AppSettingsService);
 
   private activatedRoute = inject(ActivatedRoute);
   private router = inject(Router);
@@ -151,13 +153,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private settingFiltersFromUrl = false;
   private destroy$ = new Subject<void>();
   protected metadataMenuItems: MenuItem[] | undefined;
-  protected bulkReadActionsMenuItems: MenuItem[] | undefined;
+  protected moreActionsMenuItems: MenuItem[] | undefined;
 
   private sideBarFilter = new SideBarFilter(this.selectedFilter, this.selectedFilterMode);
   private headerFilter = new HeaderFilter(this.searchTerm$);
   protected bookSorter = new BookSorter(
     selectedSort => this.onManualSortChange(selectedSort)
   );
+
+  private bookStateSubscription: Subscription | undefined;
 
   @ViewChild(BookTableComponent)
   bookTableComponent!: BookTableComponent;
@@ -201,6 +205,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       return `${this.mobileCardSize.width}px`;
     }
     return this.coverScalePreferenceService.gridColumnMinWidth;
+  }
+
+  getCardHeight(book: Book): number {
+    if (this.isMobile) {
+      const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+      if (isAudiobook) {
+        return this.mobileCardSize.width + this.MOBILE_TITLE_BAR_HEIGHT;
+      }
+      return this.mobileCardSize.height;
+    }
+    return this.coverScalePreferenceService.getCardHeight(book);
   }
 
   get viewIcon(): string {
@@ -249,8 +264,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.metadataMenuItems!.length > 0;
   }
 
-  get hasBulkReadActionsItems(): boolean {
-    return this.bulkReadActionsMenuItems!.length > 0;
+  get hasMoreActionsItems(): boolean {
+    return this.moreActionsMenuItems!.length > 0;
   }
 
   ngOnInit(): void {
@@ -362,7 +377,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
         );
       });
 
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   private setupQueryParamSubscription(): void {
@@ -488,19 +503,19 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCheckboxClicked(event: CheckboxClickEvent): void {
     this.bookSelectionService.handleCheckboxClick(event);
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   handleBookSelect(book: Book, selected: boolean): void {
     this.bookSelectionService.handleBookSelection(book, selected);
     this.isDrawerVisible = this.bookSelectionService.hasSelection();
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   onSelectedBooksChange(selectedBookIds: Set<number>): void {
     this.bookSelectionService.setSelectedBooks(selectedBookIds);
     this.isDrawerVisible = this.bookSelectionService.hasSelection();
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   selectAllBooks(): void {
@@ -508,7 +523,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.bookTableComponent) {
       this.bookTableComponent.selectAllBooks();
     }
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   deselectAllBooks(): void {
@@ -517,7 +532,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.bookTableComponent) {
       this.bookTableComponent.clearSelectedBooks();
     }
-    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
+    this.moreActionsMenuItems = this.bookMenuService.getMoreActionsMenu(this.selectedBooks, this.user());
   }
 
   confirmDeleteBooks(): void {
@@ -572,9 +587,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
-    this.bookState$
+    if (this.bookStateSubscription) {
+      this.bookStateSubscription.unsubscribe();
+    }
+
+    this.bookStateSubscription = this.bookState$
       .pipe(
         filter(state => state.loaded && !state.error),
+        takeUntil(this.destroy$),
         map(state => state.books || [])
       )
       .subscribe(books => {
@@ -671,6 +691,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'pi pi-image',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
@@ -703,6 +731,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       icon: 'pi pi-palette',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
+      acceptButtonProps: {
+        label: 'Yes',
+        severity: 'success'
+      },
+      rejectButtonProps: {
+        label: 'No',
+        severity: 'secondary'
+      },
       accept: () => {
         this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
@@ -728,6 +764,60 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   moveFiles(): void {
     this.dialogHelperService.openFileMoverDialog(this.selectedBooks);
+  }
+
+  attachFilesToBook(): void {
+    // Get selected books that are single-file books (no alternative formats)
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedBookIds = Array.from(this.selectedBooks);
+    const sourceBooks = (currentState.books || []).filter(book =>
+      selectedBookIds.includes(book.id) && !book.alternativeFormats?.length
+    );
+
+    if (sourceBooks.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Eligible Books',
+        detail: 'Selected books must be single-file books (no alternative formats).'
+      });
+      return;
+    }
+
+    // Check if all books are from the same library
+    const libraryIds = new Set(sourceBooks.map(b => b.libraryId));
+    if (libraryIds.size > 1) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Multiple Libraries',
+        detail: 'All selected books must be from the same library.'
+      });
+      return;
+    }
+
+    this.dynamicDialogRef = this.dialogHelperService.openBulkBookFileAttacherDialog(sourceBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(result => {
+        if (result?.success) {
+          this.bookSelectionService.deselectAll();
+        }
+      });
+    }
+  }
+
+  canAttachFiles(): boolean {
+    if (this.selectedBooks.size === 0) return false;
+
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedBookIds = Array.from(this.selectedBooks);
+    const eligibleBooks = (currentState.books || []).filter(book =>
+      selectedBookIds.includes(book.id) && !book.alternativeFormats?.length
+    );
+
+    if (eligibleBooks.length === 0) return false;
+
+    // Check if all eligible books are from the same library
+    const libraryIds = new Set(eligibleBooks.map(b => b.libraryId));
+    return libraryIds.size === 1;
   }
 
   user() {

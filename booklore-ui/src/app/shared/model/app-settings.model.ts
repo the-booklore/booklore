@@ -164,6 +164,7 @@ export interface AppSettings {
   metadataDownloadOnBookdrop: boolean;
   telemetryEnabled: boolean;
   metadataProviderSpecificFields: MetadataProviderSpecificFields;
+  diskType: string;
 }
 
 export interface MetadataProviderSpecificFields {

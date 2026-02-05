@@ -144,6 +144,25 @@
     transition: all 0.4s ease;
     filter: blur(6px);
   }
+
+  // Audiobook covers should fill the container height
+  ::ng-deep {
+    app-book-card {
+      display: block;
+      height: 100%;
+    }
+
+    .book-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cover-container.audiobook-cover {
+      aspect-ratio: unset;
+      flex: 1;
+    }
+  }
 }
 
 .magic-shelf-icon {

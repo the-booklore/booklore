@@ -224,6 +224,9 @@ DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
 DB_USER=booklore
 DB_PASSWORD=ChangeMe_BookLoreApp_2025!
 
+# 💾 Storage type: LOCAL (default) or NETWORK. Set to NETWORK if using NFS/SMB - this disables file reorganization features to prevent data corruption.
+DISK_TYPE=LOCAL
+
 # 🔧 MariaDB Container Settings
 DB_USER_ID=1000
 DB_GROUP_ID=1000
@@ -440,6 +443,12 @@ Join community!
 &nbsp;&nbsp;&nbsp;&nbsp;
 <a href="https://docs.elfhosted.com/app/booklore">
   <img src="https://docs.elfhosted.com/images/logo.svg" alt="ElfHosted" height="40">
+</a>
+
+### Powered by
+
+<a href="https://jb.gg/OpenSource">
+  <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg" alt="JetBrains logo" height="40">
 </a>
 
 *Become a sponsor and get your logo here! [Support us on Open Collective](https://opencollective.com/booklore)*

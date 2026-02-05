@@ -18,6 +18,8 @@ services:
         condition: service_healthy
     volumes:
       - './booklore-api:/booklore-api'
+      - /booklore-api/build
+      - /booklore-api/.gradle
       - ./shared/data:/app/data
       - ./shared/books:/books
       - ./shared/bookdrop:/bookdrop

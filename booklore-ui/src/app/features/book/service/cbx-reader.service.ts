@@ -25,15 +25,27 @@ export class CbxReaderService {
     return token ? `${url}${url.includes('?') ? '&' : '?'}token=${token}` : url;
   }
 
-  getAvailablePages(bookId: number) {
-    return this.http.get<number[]>(this.appendToken(`${this.pagesUrl}/${bookId}/pages`));
+  getAvailablePages(bookId: number, bookType?: string) {
+    let url = `${this.pagesUrl}/${bookId}/pages`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.http.get<number[]>(this.appendToken(url));
   }
 
-  getPageInfo(bookId: number) {
-    return this.http.get<CbxPageInfo[]>(this.appendToken(`${this.pagesUrl}/${bookId}/page-info`));
+  getPageInfo(bookId: number, bookType?: string) {
+    let url = `${this.pagesUrl}/${bookId}/page-info`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.http.get<CbxPageInfo[]>(this.appendToken(url));
   }
 
-  getPageImageUrl(bookId: number, page: number): string {
-    return this.appendToken(`${this.imageUrl}/${bookId}/cbx/pages/${page}`);
+  getPageImageUrl(bookId: number, page: number, bookType?: string): string {
+    let url = `${this.imageUrl}/${bookId}/cbx/pages/${page}`;
+    if (bookType) {
+      url += `?bookType=${bookType}`;
+    }
+    return this.appendToken(url);
   }
 }
