@@ -206,6 +206,8 @@ public class KoboReadingStateService {
             Instant now = Instant.now();
             progress.setKoboProgressReceivedTime(now);
             progress.setLastReadTime(now);
+            
+            ReadStatus previousReadStatus = progress.getReadStatus();
 
             if (progress.getKoboProgressPercent() != null) {
                 updateReadStatusFromKoboProgress(progress, now);
@@ -219,7 +221,10 @@ public class KoboReadingStateService {
             log.debug("Synced Kobo progress: bookId={}, progress={}%", bookId, progress.getKoboProgressPercent());
 
             // Sync progress to Hardcover asynchronously (if enabled for this user)
-            hardcoverSyncService.syncProgressToHardcover(book.getId(), progress.getKoboProgressPercent(), userId);
+            // But only if our current and previous read status aren't both "READ"
+            if (!(ReadStatus.READ.equals(previousReadStatus) && ReadStatus.READ.equals(progress.getReadStatus()))) {
+                hardcoverSyncService.syncProgressToHardcover(book.getId(), progress.getKoboProgressPercent(), userId);
+            }
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
