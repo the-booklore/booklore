@@ -72,6 +72,40 @@ export class UrlHelperService {
     return this.appendToken(url);
   }
 
+  getAudiobookCoverUrl(bookId: number, audiobookCoverUpdatedOn?: string): string {
+    if (!audiobookCoverUpdatedOn) {
+      const book = this.bookService.getBookByIdFromState(bookId);
+      if (book && book.metadata) {
+        const coverGenerator = new CoverGeneratorComponent();
+        coverGenerator.title = book.metadata.title || '';
+        coverGenerator.author = (book.metadata.authors || []).join(', ');
+        return coverGenerator.generateCover();
+      }
+    }
+    let url = `${this.mediaBaseUrl}/book/${bookId}/audiobook-cover`;
+    if (audiobookCoverUpdatedOn) {
+      url += `?${audiobookCoverUpdatedOn}`;
+    }
+    return this.appendToken(url);
+  }
+
+  getAudiobookThumbnailUrl(bookId: number, audiobookCoverUpdatedOn?: string): string {
+    if (!audiobookCoverUpdatedOn) {
+      const book = this.bookService.getBookByIdFromState(bookId);
+      if (book && book.metadata) {
+        const coverGenerator = new CoverGeneratorComponent();
+        coverGenerator.title = book.metadata.title || '';
+        coverGenerator.author = (book.metadata.authors || []).join(', ');
+        return coverGenerator.generateCover();
+      }
+    }
+    let url = `${this.mediaBaseUrl}/book/${bookId}/audiobook-thumbnail`;
+    if (audiobookCoverUpdatedOn) {
+      url += `?${audiobookCoverUpdatedOn}`;
+    }
+    return this.appendToken(url);
+  }
+
   getBookdropCoverUrl(bookdropId: number): string {
     const url = `${this.mediaBaseUrl}/bookdrop/${bookdropId}/cover`;
     return this.appendToken(url);

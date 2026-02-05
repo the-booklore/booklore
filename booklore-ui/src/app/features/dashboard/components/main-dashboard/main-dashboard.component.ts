@@ -74,7 +74,29 @@ export class MainDashboardComponent implements OnInit {
   private getLastReadBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
-        let books = (state.books || []).filter(book => book.lastReadTime && (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED));
+        let books = (state.books || []).filter(book =>
+          book.lastReadTime &&
+          (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED) &&
+          book.primaryFile?.bookType !== 'AUDIOBOOK'
+        );
+        books = books.sort((a, b) => {
+          const aTime = new Date(a.lastReadTime!).getTime();
+          const bTime = new Date(b.lastReadTime!).getTime();
+          return bTime - aTime;
+        });
+        return books.slice(0, maxItems);
+      })
+    );
+  }
+
+  private getLastListenedBooks(maxItems: number): Observable<Book[]> {
+    return this.bookService.bookState$.pipe(
+      map((state: BookState) => {
+        let books = (state.books || []).filter(book =>
+          book.lastReadTime &&
+          (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED) &&
+          book.primaryFile?.bookType === 'AUDIOBOOK'
+        );
         books = books.sort((a, b) => {
           const aTime = new Date(a.lastReadTime!).getTime();
           const bTime = new Date(b.lastReadTime!).getTime();
@@ -155,6 +177,9 @@ export class MainDashboardComponent implements OnInit {
       switch (config.type) {
         case ScrollerType.LAST_READ:
           books$ = this.getLastReadBooks(config.maxItems || DEFAULT_MAX_ITEMS);
+          break;
+        case ScrollerType.LAST_LISTENED:
+          books$ = this.getLastListenedBooks(config.maxItems || DEFAULT_MAX_ITEMS);
           break;
         case ScrollerType.LATEST_ADDED:
           books$ = this.getLatestAddedBooks(config.maxItems || DEFAULT_MAX_ITEMS);

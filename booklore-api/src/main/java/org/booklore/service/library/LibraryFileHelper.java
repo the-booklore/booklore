@@ -37,7 +37,17 @@ public class LibraryFileHelper {
         for (LibraryPathEntity pathEntity : libraryEntity.getLibraryPaths()) {
             allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity));
         }
-        return allFiles;
+        return filterByAllowedFormats(allFiles, libraryEntity.getAllowedFormats());
+    }
+
+    private List<LibraryFile> filterByAllowedFormats(List<LibraryFile> files, List<BookFileType> allowedFormats) {
+        if (allowedFormats == null || allowedFormats.isEmpty()) {
+            return files;
+        }
+        Set<BookFileType> allowed = new HashSet<>(allowedFormats);
+        return files.stream()
+                .filter(file -> allowed.contains(file.getBookFileType()))
+                .collect(java.util.stream.Collectors.toList());
     }
 
     private List<LibraryFile> findLibraryFiles(LibraryPathEntity pathEntity, LibraryEntity libraryEntity) throws IOException {

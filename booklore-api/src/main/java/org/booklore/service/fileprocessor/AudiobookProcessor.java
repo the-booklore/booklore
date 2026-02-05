@@ -1,9 +1,11 @@
 package org.booklore.service.fileprocessor;
 
 import org.booklore.mapper.BookMapper;
+import org.booklore.model.dto.AudiobookMetadata;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,8 +51,8 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.AUDIOBOOK);
         setBookMetadata(bookEntity, libraryFile.isFolderBased());
         if (generateCover(bookEntity, libraryFile.isFolderBased())) {
-            FileService.setBookCoverPath(bookEntity.getMetadata());
-            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
+            bookEntity.getMetadata().setAudiobookCoverUpdatedOn(Instant.now());
+            bookEntity.setAudiobookCoverHash(BookCoverUtils.generateCoverHash());
         }
         return bookEntity;
     }
@@ -57,6 +60,18 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
     @Override
     public boolean generateCover(BookEntity bookEntity) {
         return generateCover(bookEntity, bookEntity.getPrimaryBookFile().isFolderBased());
+    }
+
+    @Override
+    public boolean generateAudiobookCover(BookEntity bookEntity) {
+        var audiobookFile = bookEntity.getBookFiles().stream()
+                .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
+                .findFirst()
+                .orElse(null);
+        if (audiobookFile == null) {
+            return false;
+        }
+        return generateCover(bookEntity, audiobookFile.isFolderBased());
     }
 
     public boolean generateCover(BookEntity bookEntity, boolean isFolderBased) {
@@ -81,7 +96,7 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
                     log.warn("Failed to decode cover image for audiobook '{}'", bookEntity.getPrimaryBookFile().getFileName());
                     return false;
                 }
-                saved = fileService.saveCoverImages(originalImage, bookEntity.getId());
+                saved = fileService.saveAudiobookCoverImages(originalImage, bookEntity.getId());
                 originalImage.flush();
             }
 
@@ -93,10 +108,6 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
         }
     }
 
-    /**
-     * Get the audio file to use for metadata extraction.
-     * For folder-based audiobooks, returns the first audio file in the folder.
-     */
     private File getAudioFileForMetadata(BookEntity bookEntity, boolean isFolderBased) {
         if (isFolderBased) {
             java.nio.file.Path folderPath = bookEntity.getFullFilePath();
@@ -137,6 +148,8 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
         String lang = audioMetadata.getLanguage();
         metadata.setLanguage(truncate((lang == null || "UND".equalsIgnoreCase(lang)) ? "en" : lang, 1000));
 
+        metadata.setNarrator(truncate(audioMetadata.getNarrator(), 500));
+
         bookCreatorService.addAuthorsToBook(audioMetadata.getAuthors(), bookEntity);
 
         if (audioMetadata.getCategories() != null) {
@@ -145,5 +158,47 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
                     .collect(Collectors.toSet());
             bookCreatorService.addCategoriesToBook(validCategories, bookEntity);
         }
+
+        setAudiobookTechnicalMetadata(bookEntity, audioMetadata);
+    }
+
+    private void setAudiobookTechnicalMetadata(BookEntity bookEntity, BookMetadata audioMetadata) {
+        AudiobookMetadata audiobookDto = audioMetadata.getAudiobookMetadata();
+        if (audiobookDto == null) {
+            return;
+        }
+
+        BookFileEntity audiobookFile = bookEntity.getBookFiles().stream()
+                .filter(bf -> bf.getBookType() == BookFileType.AUDIOBOOK && bf.isBook())
+                .findFirst()
+                .orElse(null);
+
+        if (audiobookFile == null) {
+            log.warn("No audiobook file found for book ID {}", bookEntity.getId());
+            return;
+        }
+
+        audiobookFile.setDurationSeconds(audiobookDto.getDurationSeconds());
+        audiobookFile.setBitrate(audiobookDto.getBitrate());
+        audiobookFile.setSampleRate(audiobookDto.getSampleRate());
+        audiobookFile.setChannels(audiobookDto.getChannels());
+        audiobookFile.setCodec(truncate(audiobookDto.getCodec(), 50));
+        audiobookFile.setChapterCount(audiobookDto.getChapterCount());
+        audiobookFile.setChapters(mapChapters(audiobookDto.getChapters()));
+    }
+
+    private List<BookFileEntity.AudioFileChapter> mapChapters(List<AudiobookMetadata.ChapterInfo> chapters) {
+        if (chapters == null || chapters.isEmpty()) {
+            return null;
+        }
+        return chapters.stream()
+                .map(ch -> BookFileEntity.AudioFileChapter.builder()
+                        .index(ch.getIndex())
+                        .title(ch.getTitle())
+                        .startTimeMs(ch.getStartTimeMs())
+                        .endTimeMs(ch.getEndTimeMs())
+                        .durationMs(ch.getDurationMs())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

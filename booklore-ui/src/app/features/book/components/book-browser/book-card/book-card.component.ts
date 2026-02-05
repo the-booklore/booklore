@@ -158,7 +158,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this._displayTitle = (this.isSeriesCollapsed && this.book.metadata?.seriesName)
       ? this.book.metadata?.seriesName
       : this.book.metadata?.title;
-    this._coverImageUrl = this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
+    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK';
+    this._coverImageUrl = this._isAudiobook
+      ? this.urlHelper.getAudiobookThumbnailUrl(this.book.id, this.book.metadata?.audiobookCoverUpdatedOn)
+      : this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
 
     this._readStatusIcon = this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
     this._readStatusClass = this.readStatusHelper.getReadStatusClass(this.book.readStatus);
@@ -167,7 +170,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this._seriesCountTooltip = 'Series collapsed: ' + this.book.seriesCount + ' books';
     this._titleTooltip = 'Title: ' + this._displayTitle;
-    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK';
   }
 
   get hasProgress(): boolean {

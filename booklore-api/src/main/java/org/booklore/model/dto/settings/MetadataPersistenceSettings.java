@@ -22,11 +22,13 @@ public class MetadataPersistenceSettings {
         private FormatSettings epub;
         private FormatSettings pdf;
         private FormatSettings cbx;
+        private FormatSettings audiobook;
 
         public boolean isAnyFormatEnabled() {
             return (epub != null && epub.isEnabled())
                     || (pdf != null && pdf.isEnabled())
-                    || (cbx != null && cbx.isEnabled());
+                    || (cbx != null && cbx.isEnabled())
+                    || (audiobook != null && audiobook.isEnabled());
         }
     }
 

@@ -70,6 +70,9 @@ public class BookMetadataEntity {
     @Column(name = "cover_updated_on")
     private Instant coverUpdatedOn;
 
+    @Column(name = "audiobook_cover_updated_on")
+    private Instant audiobookCoverUpdatedOn;
+
     @Column(name = "amazon_rating")
     private Double amazonRating;
 
@@ -117,6 +120,15 @@ public class BookMetadataEntity {
 
     @Column(name = "ranobedb_rating")
     private Double ranobedbRating;
+
+    @Column(name = "audible_id", length = 100)
+    private String audibleId;
+
+    @Column(name = "audible_rating")
+    private Double audibleRating;
+
+    @Column(name = "audible_review_count")
+    private Integer audibleReviewCount;
 
     @Column(name = "title_locked")
     @Builder.Default
@@ -186,6 +198,10 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean coverLocked = Boolean.FALSE;
 
+    @Column(name = "audiobook_cover_locked")
+    @Builder.Default
+    private Boolean audiobookCoverLocked = Boolean.FALSE;
+
     @Column(name = "series_name_locked")
     @Builder.Default
     private Boolean seriesNameLocked = Boolean.FALSE;
@@ -250,9 +266,35 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean ranobedbRatingLocked = Boolean.FALSE;
 
+    @Column(name = "audible_id_locked")
+    @Builder.Default
+    private Boolean audibleIdLocked = Boolean.FALSE;
+
+    @Column(name = "audible_rating_locked")
+    @Builder.Default
+    private Boolean audibleRatingLocked = Boolean.FALSE;
+
+    @Column(name = "audible_review_count_locked")
+    @Builder.Default
+    private Boolean audibleReviewCountLocked = Boolean.FALSE;
+
+    @Column(name = "narrator", length = 500)
+    private String narrator;
+
+    @Column(name = "abridged")
+    private Boolean abridged;
+
     @Column(name = "reviews_locked")
     @Builder.Default
     private Boolean reviewsLocked = Boolean.FALSE;
+
+    @Column(name = "narrator_locked")
+    @Builder.Default
+    private Boolean narratorLocked = Boolean.FALSE;
+
+    @Column(name = "abridged_locked")
+    @Builder.Default
+    private Boolean abridgedLocked = Boolean.FALSE;
 
     @Column(name = "embedding_vector", columnDefinition = "TEXT")
     private String embeddingVector;
@@ -327,6 +369,7 @@ public class BookMetadataEntity {
         this.pageCountLocked = lock;
         this.languageLocked = lock;
         this.coverLocked = lock;
+        this.audiobookCoverLocked = lock;
         this.seriesNameLocked = lock;
         this.seriesNumberLocked = lock;
         this.seriesTotalLocked = lock;
@@ -349,7 +392,12 @@ public class BookMetadataEntity {
         this.lubimyczytacIdLocked = lock;
         this.ranobedbIdLocked = lock;
         this.ranobedbRatingLocked = lock;
+        this.audibleIdLocked = lock;
+        this.audibleRatingLocked = lock;
+        this.audibleReviewCountLocked = lock;
         this.reviewsLocked = lock;
+        this.narratorLocked = lock;
+        this.abridgedLocked = lock;
     }
 
     public boolean areAllFieldsLocked() {
@@ -364,6 +412,7 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.pageCountLocked)
                 && Boolean.TRUE.equals(this.languageLocked)
                 && Boolean.TRUE.equals(this.coverLocked)
+                && Boolean.TRUE.equals(this.audiobookCoverLocked)
                 && Boolean.TRUE.equals(this.seriesNameLocked)
                 && Boolean.TRUE.equals(this.seriesNumberLocked)
                 && Boolean.TRUE.equals(this.seriesTotalLocked)
@@ -386,7 +435,12 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.lubimyczytacIdLocked)
                 && Boolean.TRUE.equals(this.ranobedbIdLocked)
                 && Boolean.TRUE.equals(this.ranobedbRatingLocked)
+                && Boolean.TRUE.equals(this.audibleIdLocked)
+                && Boolean.TRUE.equals(this.audibleRatingLocked)
+                && Boolean.TRUE.equals(this.audibleReviewCountLocked)
                 && Boolean.TRUE.equals(this.reviewsLocked)
+                && Boolean.TRUE.equals(this.narratorLocked)
+                && Boolean.TRUE.equals(this.abridgedLocked)
                 ;
     }
 }

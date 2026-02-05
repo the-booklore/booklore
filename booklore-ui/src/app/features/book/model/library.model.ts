@@ -11,6 +11,7 @@ export interface Library {
   sort?: SortOption;
   paths: LibraryPath[];
   formatPriority?: BookType[];
+  allowedFormats?: BookType[];
 }
 
 export interface LibraryPath {

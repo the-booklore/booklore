@@ -13,4 +13,8 @@ public interface BookFileProcessor {
     FileProcessResult processFile(LibraryFile libraryFile);
 
     boolean generateCover(BookEntity bookEntity);
+
+    default boolean generateAudiobookCover(BookEntity bookEntity) {
+        return generateCover(bookEntity);
+    }
 }

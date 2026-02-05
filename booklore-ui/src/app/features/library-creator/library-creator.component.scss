@@ -2,7 +2,7 @@
   max-width: 90vw;
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  max-height: 90vh;
   background: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -88,7 +88,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 1.125rem;
+    margin-bottom: 0.75rem;
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -408,7 +408,8 @@
     --p-toggleswitch-checked-hover-background: var(--p-green-600);
   }
 
-  &.format-priority-option {
+  &.format-priority-option,
+  &.allowed-formats-option {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -431,6 +432,78 @@
         color: var(--primary-color);
       }
     }
+  }
+}
+
+// Allowed formats
+.allowed-formats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  width: 100%;
+}
+
+.allow-all-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .allow-all-label {
+    font-size: 0.875rem;
+    color: var(--text-color);
+    cursor: pointer;
+  }
+}
+
+.format-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding: 0.75rem;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.format-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 100px;
+
+  .format-checkbox-label {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    cursor: pointer;
+  }
+
+  .warning-icon {
+    font-size: 0.75rem;
+    color: var(--p-orange-400);
+    margin-left: 0.25rem;
+  }
+
+  &.has-warning {
+    .format-checkbox-label {
+      color: var(--p-orange-400);
+    }
+  }
+}
+
+.format-warning-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid var(--p-orange-400);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--p-orange-400);
+
+  i {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
   }
 }
 

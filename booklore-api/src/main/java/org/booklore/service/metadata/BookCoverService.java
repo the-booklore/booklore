@@ -118,6 +118,93 @@ public class BookCoverService {
         notifyBookCoverUpdate(bookEntity);
     }
 
+    // =========================
+    // SECTION: AUDIOBOOK COVER UPDATES
+    // =========================
+
+    /**
+     * Update audiobook cover image from uploaded file for a single book.
+     */
+    @Transactional
+    public void updateAudiobookCoverFromFile(Long bookId, MultipartFile file) {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        if (isAudiobookCoverLocked(bookEntity)) {
+            throw ApiError.METADATA_LOCKED.createException();
+        }
+
+        fileService.createAudiobookThumbnailFromFile(bookId, file);
+        writeAudiobookCoverToFile(bookEntity, (writer, book) -> writer.replaceCoverImageFromUpload(book, file));
+        updateAudiobookCoverMetadata(bookEntity);
+        bookRepository.save(bookEntity);
+        notifyBookCoverUpdate(bookEntity);
+    }
+
+    /**
+     * Update audiobook cover image from a URL for a single book.
+     */
+    @Transactional
+    public void updateAudiobookCoverFromUrl(Long bookId, String url) {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        if (isAudiobookCoverLocked(bookEntity)) {
+            throw ApiError.METADATA_LOCKED.createException();
+        }
+
+        fileService.createAudiobookThumbnailFromUrl(bookId, url);
+        writeAudiobookCoverToFile(bookEntity, (writer, book) -> writer.replaceCoverImageFromUrl(book, url));
+        updateAudiobookCoverMetadata(bookEntity);
+        bookRepository.save(bookEntity);
+        notifyBookCoverUpdate(bookEntity);
+    }
+
+    /**
+     * Regenerate audiobook cover for a single book by extracting from the audiobook file.
+     */
+    public void regenerateAudiobookCover(long bookId) {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        if (isAudiobookCoverLocked(bookEntity)) {
+            throw ApiError.METADATA_LOCKED.createException();
+        }
+
+        // Find the audiobook file
+        var audiobookFile = bookEntity.getBookFiles().stream()
+                .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
+                .findFirst()
+                .orElseThrow(() -> ApiError.FAILED_TO_REGENERATE_COVER.createException());
+
+        BookFileProcessor processor = processorRegistry.getProcessorOrThrow(audiobookFile.getBookType());
+        boolean success = processor.generateAudiobookCover(bookEntity);
+        if (!success) {
+            throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
+        }
+        updateAudiobookCoverMetadata(bookEntity);
+        bookRepository.save(bookEntity);
+        notifyBookCoverUpdate(bookEntity);
+    }
+
+    /**
+     * Generate a custom cover for the audiobook cover of a single book.
+     * Uses square cover format appropriate for audiobooks.
+     */
+    public void generateCustomAudiobookCover(long bookId) {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        if (isAudiobookCoverLocked(bookEntity)) {
+            throw ApiError.METADATA_LOCKED.createException();
+        }
+
+        String title = bookEntity.getMetadata().getTitle();
+        String author = getAuthorNames(bookEntity);
+        byte[] coverBytes = coverImageGenerator.generateSquareCover(title, author);
+
+        fileService.createAudiobookThumbnailFromBytes(bookId, coverBytes);
+        writeAudiobookCoverToFile(bookEntity, (writer, book) -> writer.replaceCoverImageFromBytes(book, coverBytes));
+        updateAudiobookCoverMetadata(bookEntity);
+        bookRepository.save(bookEntity);
+        notifyBookCoverUpdate(bookEntity);
+    }
+
     /**
      * Bulk update cover images from a file for multiple books.
      */
@@ -401,6 +488,10 @@ public class BookCoverService {
         return book.getMetadata().getCoverLocked() != null && book.getMetadata().getCoverLocked();
     }
 
+    private boolean isAudiobookCoverLocked(BookEntity book) {
+        return book.getMetadata().getAudiobookCoverLocked() != null && book.getMetadata().getAudiobookCoverLocked();
+    }
+
     private String getAuthorNames(BookEntity bookEntity) {
         if (bookEntity.getMetadata().getAuthors() != null && !bookEntity.getMetadata().getAuthors().isEmpty()) {
             return bookEntity.getMetadata().getAuthors().stream()
@@ -430,11 +521,38 @@ public class BookCoverService {
         }
     }
 
+    private void writeAudiobookCoverToFile(BookEntity bookEntity, BiConsumer<MetadataWriter, BookEntity> writerAction) {
+        var audiobookFile = bookEntity.getBookFiles().stream()
+                .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
+                .findFirst()
+                .orElse(null);
+
+        if (audiobookFile == null) {
+            return;
+        }
+
+        metadataWriterFactory.getWriter(BookFileType.AUDIOBOOK)
+                .ifPresent(writer -> {
+                    writerAction.accept(writer, bookEntity);
+                    if (!audiobookFile.isFolderBased()) {
+                        String newHash = FileFingerprint.generateHash(audiobookFile.getFullFilePath());
+                        audiobookFile.setCurrentHash(newHash);
+                    }
+                });
+    }
+
     private void updateBookCoverMetadata(BookEntity bookEntity) {
         Instant now = Instant.now();
         bookEntity.setMetadataUpdatedAt(now);
         bookEntity.getMetadata().setCoverUpdatedOn(now);
         bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
+    }
+
+    private void updateAudiobookCoverMetadata(BookEntity bookEntity) {
+        Instant now = Instant.now();
+        bookEntity.setMetadataUpdatedAt(now);
+        bookEntity.getMetadata().setAudiobookCoverUpdatedOn(now);
+        bookEntity.setAudiobookCoverHash(BookCoverUtils.generateCoverHash());
     }
 
     private void notifyBookCoverUpdate(BookEntity bookEntity) {

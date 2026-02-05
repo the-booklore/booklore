@@ -23,7 +23,7 @@
       #scrollContainer
       [horizontal]="true">
       @for (book of books; track book.id) {
-        <div class="dashboard-scroller-card" [class.menu-open]="openMenuBookId === book.id">
+        <div class="dashboard-scroller-card" [ngClass]="{'menu-open': openMenuBookId === book.id, 'square-card': useSquareCovers}">
           <app-book-card
             [book]="book"
             [isCheckboxEnabled]="false"
