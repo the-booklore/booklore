@@ -126,4 +126,13 @@ public class LibraryController {
         int processableFilesCount = libraryService.scanLibraryPaths(request);
         return ResponseEntity.ok(processableFilesCount);
     }
+
+    @Operation(summary = "Get book counts by format", description = "Get the count of books for each format in a library.")
+    @ApiResponse(responseCode = "200", description = "Book counts returned successfully")
+    @GetMapping("/{libraryId}/format-counts")
+    @CheckLibraryAccess(libraryIdParam = "libraryId")
+    public ResponseEntity<Map<String, Long>> getBookCountsByFormat(
+            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+        return ResponseEntity.ok(libraryService.getBookCountsByFormat(libraryId));
+    }
 }

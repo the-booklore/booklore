@@ -68,6 +68,22 @@ export class MetadataProviderSettingsComponent implements OnInit {
 
   selectedGoogleLanguage = '';
 
+  audibleDomains = [
+    {label: 'audible.com', value: 'com'},
+    {label: 'audible.co.uk', value: 'co.uk'},
+    {label: 'audible.de', value: 'de'},
+    {label: 'audible.fr', value: 'fr'},
+    {label: 'audible.it', value: 'it'},
+    {label: 'audible.es', value: 'es'},
+    {label: 'audible.ca', value: 'ca'},
+    {label: 'audible.com.au', value: 'com.au'},
+    {label: 'audible.co.jp', value: 'co.jp'},
+    {label: 'audible.in', value: 'in'}
+  ];
+
+  selectedAudibleDomain = 'com';
+  audibleEnabled: boolean = false;
+
   hardcoverToken: string = '';
   amazonCookie: string = '';
   hardcoverEnabled: boolean = false;
@@ -107,6 +123,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.doubanEnabled = metadataProviderSettings?.douban?.enabled ?? false;
         this.lubimyCzytacEnabled = metadataProviderSettings?.lubimyczytac?.enabled ?? false;
         this.ranobedbEnabled = metadataProviderSettings?.ranobedb?.enabled ?? false;
+        this.audibleEnabled = metadataProviderSettings?.audible?.enabled ?? false;
+        this.selectedAudibleDomain = metadataProviderSettings?.audible?.domain ?? 'com';
       });
   }
 
@@ -146,7 +164,11 @@ export class MetadataProviderSettingsComponent implements OnInit {
           },
           douban: {enabled: this.doubanEnabled},
           lubimyczytac: {enabled: this.lubimyCzytacEnabled},
-          ranobedb: {enabled: this.ranobedbEnabled}
+          ranobedb: {enabled: this.ranobedbEnabled},
+          audible: {
+            enabled: this.audibleEnabled,
+            domain: this.selectedAudibleDomain
+          }
         }
       }
     ];

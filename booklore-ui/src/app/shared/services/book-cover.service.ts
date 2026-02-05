@@ -14,7 +14,7 @@ export interface CoverImage {
 export interface CoverFetchRequest {
   title?: string;
   author?: string;
-  squareCover?: boolean;
+  coverType?: 'ebook' | 'audiobook';
 }
 
 @Injectable({

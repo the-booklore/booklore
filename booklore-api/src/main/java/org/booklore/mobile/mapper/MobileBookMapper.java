@@ -29,6 +29,8 @@ public interface MobileBookMapper {
     @Mapping(target = "libraryId", source = "book.library.id")
     @Mapping(target = "addedOn", source = "book.addedOn")
     @Mapping(target = "lastReadTime", source = "progress.lastReadTime")
+    @Mapping(target = "readProgress", source = "progress", qualifiedByName = "mapReadProgress")
+    @Mapping(target = "hasAudiobook", source = "book", qualifiedByName = "mapHasAudiobook")
     MobileBookSummary toSummary(BookEntity book, UserBookProgressEntity progress);
 
     @Mapping(target = "id", source = "book.id")
@@ -126,7 +128,25 @@ public interface MobileBookMapper {
         if (progress.getKoboProgressPercent() != null) {
             return progress.getKoboProgressPercent();
         }
+        if (progress.getEpubProgressPercent() != null) {
+            return progress.getEpubProgressPercent();
+        }
+        if (progress.getPdfProgressPercent() != null) {
+            return progress.getPdfProgressPercent();
+        }
+        if (progress.getCbxProgressPercent() != null) {
+            return progress.getCbxProgressPercent();
+        }
         return null;
+    }
+
+    @Named("mapHasAudiobook")
+    default Boolean mapHasAudiobook(BookEntity book) {
+        if (book == null || book.getBookFiles() == null || book.getBookFiles().isEmpty()) {
+            return false;
+        }
+        return book.getBookFiles().stream()
+                .anyMatch(bf -> bf.getBookType() == BookFileType.AUDIOBOOK);
     }
 
     @Named("mapEpubProgress")

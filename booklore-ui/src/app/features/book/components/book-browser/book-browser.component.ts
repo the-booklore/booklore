@@ -207,15 +207,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.coverScalePreferenceService.gridColumnMinWidth;
   }
 
-  getCardHeight(book: Book): number {
+  getCardHeight(_book: Book): number {
+    // Use uniform height for all book types to ensure smooth virtual scrolling.
+    // Mixed heights cause choppy/jumpy scrolling because the virtual scroller
+    // cannot accurately estimate positions when item heights vary.
     if (this.isMobile) {
-      const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
-      if (isAudiobook) {
-        return this.mobileCardSize.width + this.MOBILE_TITLE_BAR_HEIGHT;
-      }
       return this.mobileCardSize.height;
     }
-    return this.coverScalePreferenceService.getCardHeight(book);
+    return this.coverScalePreferenceService.getCardHeight(_book);
   }
 
   get viewIcon(): string {
