@@ -151,6 +151,51 @@ class KoboReadingStateServiceTest {
     }
 
     @Test
+    @DisplayName("Should not update Hardcover.app when progress hasn't changed")
+    void testSyncKoboProgressToUserBookProgress_IgnoreHardcoverUpdateWhenNoChange() {
+        String entitlementId = "100";
+        testSettings.setProgressMarkAsFinishedThreshold(99f);
+
+        Instant originalFinishedDate = Instant.parse("2025-01-15T10:30:00Z");
+        UserBookProgressEntity existingProgress = new UserBookProgressEntity();
+        existingProgress.setUser(testUserEntity);
+        existingProgress.setBook(testBook);
+        existingProgress.setKoboProgressPercent(12.0f);
+        existingProgress.setReadStatus(ReadStatus.READING);
+        existingProgress.setDateFinished(originalFinishedDate);
+
+        KoboReadingState.CurrentBookmark bookmark = KoboReadingState.CurrentBookmark.builder()
+                .progressPercent(12)
+                .build();
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(bookmark)
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(existingProgress));
+
+        ArgumentCaptor<UserBookProgressEntity> progressCaptor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(progressCaptor.capture())).thenReturn(existingProgress);
+
+        service.saveReadingState(List.of(readingState));
+
+        UserBookProgressEntity savedProgress = progressCaptor.getValue();
+        assertEquals(12.0f, savedProgress.getKoboProgressPercent());
+        assertEquals(ReadStatus.READING, savedProgress.getReadStatus());
+        assertEquals(originalFinishedDate, savedProgress.getDateFinished(), 
+            "Existing finished date should not be overwritten during sync");
+        verify(hardcoverSyncService, never()).syncProgressToHardcover(any(), any(), any());
+    }
+
+    @Test
     @DisplayName("Should handle invalid entitlement ID gracefully")
     void testSyncKoboProgressToUserBookProgress_InvalidEntitlementId() {
         String entitlementId = "not-a-number";
