@@ -4,6 +4,7 @@ import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
@@ -56,19 +57,24 @@ public class MobiProcessor extends AbstractFileProcessor implements BookFileProc
 
     @Override
     public boolean generateCover(BookEntity bookEntity) {
+        return generateCover(bookEntity, bookEntity.getPrimaryBookFile());
+    }
+
+    @Override
+    public boolean generateCover(BookEntity bookEntity, BookFileEntity bookFile) {
         try {
-            File mobiFile = new File(FileUtils.getBookFullPath(bookEntity));
+            File mobiFile = new File(FileUtils.getBookFullPath(bookEntity, bookFile));
             byte[] coverData = mobiMetadataExtractor.extractCover(mobiFile);
 
             if (coverData == null || coverData.length == 0) {
-                log.warn("No cover image found in MOBI '{}'", bookEntity.getPrimaryBookFile().getFileName());
+                log.warn("No cover image found in MOBI '{}'", bookFile.getFileName());
                 return false;
             }
 
             return saveCoverImage(coverData, bookEntity.getId());
 
         } catch (Exception e) {
-            log.error("Error generating cover for MOBI '{}': {}", bookEntity.getPrimaryBookFile(), e.getMessage(), e);
+            log.error("Error generating cover for MOBI '{}': {}", bookFile.getFileName(), e.getMessage(), e);
             return false;
         }
     }

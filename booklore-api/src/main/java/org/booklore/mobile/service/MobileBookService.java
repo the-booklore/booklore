@@ -150,7 +150,42 @@ public class MobileBookService {
                 MobileBookSpecification.notDeleted(),
                 MobileBookSpecification.hasDigitalFile(),
                 MobileBookSpecification.inLibraries(accessibleLibraryIds),
-                MobileBookSpecification.inProgress(userId)
+                MobileBookSpecification.inProgress(userId),
+                MobileBookSpecification.hasNonAudiobookFile()
+        );
+
+        List<BookEntity> books = bookRepository.findAll(spec);
+        Map<Long, UserBookProgressEntity> progressMap = getProgressMapForBooks(userId, books);
+
+        return books.stream()
+                .filter(book -> progressMap.containsKey(book.getId()))
+                .sorted((b1, b2) -> {
+                    Instant t1 = progressMap.get(b1.getId()).getLastReadTime();
+                    Instant t2 = progressMap.get(b2.getId()).getLastReadTime();
+                    if (t1 == null && t2 == null) return 0;
+                    if (t1 == null) return 1;
+                    if (t2 == null) return -1;
+                    return t2.compareTo(t1);
+                })
+                .limit(maxItems)
+                .map(book -> mobileBookMapper.toSummary(book, progressMap.get(book.getId())))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MobileBookSummary> getContinueListening(Integer limit) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        Long userId = user.getId();
+        Set<Long> accessibleLibraryIds = getAccessibleLibraryIds(user);
+
+        int maxItems = validateLimit(limit, 10);
+
+        Specification<BookEntity> spec = MobileBookSpecification.combine(
+                MobileBookSpecification.notDeleted(),
+                MobileBookSpecification.hasDigitalFile(),
+                MobileBookSpecification.inLibraries(accessibleLibraryIds),
+                MobileBookSpecification.inProgress(userId),
+                MobileBookSpecification.hasAudiobookFile()
         );
 
         List<BookEntity> books = bookRepository.findAll(spec);

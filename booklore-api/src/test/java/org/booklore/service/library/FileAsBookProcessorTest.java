@@ -15,6 +15,9 @@ import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.fileprocessor.BookFileProcessor;
 import org.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import org.booklore.service.kobo.KoboAutoShelfService;
+import org.booklore.service.metadata.extractor.AudiobookMetadataExtractor;
+import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import org.booklore.util.FileService;
 import org.booklore.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +51,15 @@ class FileAsBookProcessorTest {
     private BookAdditionalFileRepository bookAdditionalFileRepository;
 
     @Mock
+    private FileService fileService;
+
+    @Mock
+    private MetadataExtractorFactory metadataExtractorFactory;
+
+    @Mock
+    private AudiobookMetadataExtractor audiobookMetadataExtractor;
+
+    @Mock
     private BookFileProcessor bookFileProcessor;
 
     private FileAsBookProcessor fileAsBookProcessor;
@@ -64,7 +76,10 @@ class FileAsBookProcessorTest {
                 processorRegistry,
                 koboAutoShelfService,
                 bookRepository,
-                bookAdditionalFileRepository
+                bookAdditionalFileRepository,
+                fileService,
+                metadataExtractorFactory,
+                audiobookMetadataExtractor
         );
         fileFingerprintMock = mockStatic(FileFingerprint.class);
         fileFingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("testhash");

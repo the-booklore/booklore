@@ -98,6 +98,7 @@ public class BookMetadataUpdater {
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
         updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
+        updateAudiobookMetadataIfNeeded(bookEntity, newMetadata, metadata, clearFlags, replaceMode);
         updateLocks(newMetadata, metadata);
 
         bookEntity.setMetadataUpdatedAt(Instant.now());
@@ -351,6 +352,14 @@ public class BookMetadataUpdater {
         }
     }
 
+    private void updateAudiobookMetadataIfNeeded(BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, MetadataClearFlags clear, MetadataReplaceMode replaceMode) {
+        if (clear == null) {
+            clear = new MetadataClearFlags();
+        }
+        handleFieldUpdate(e.getNarratorLocked(), clear.isNarrator(), m.getNarrator(), v -> e.setNarrator(nullIfBlank(v)), e::getNarrator, replaceMode);
+        handleFieldUpdate(e.getAbridgedLocked(), clear.isAbridged(), m.getAbridged(), e::setAbridged, e::getAbridged, replaceMode);
+    }
+
     private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {
         if (Boolean.TRUE.equals(e.getCoverLocked())) {
             return;
@@ -396,12 +405,18 @@ public class BookMetadataUpdater {
                 Pair.of(m.getHardcoverReviewCountLocked(), e::setHardcoverReviewCountLocked),
                 Pair.of(m.getRanobedbIdLocked(), e::setRanobedbIdLocked),
                 Pair.of(m.getRanobedbRatingLocked(), e::setRanobedbRatingLocked),
+                Pair.of(m.getAudibleIdLocked(), e::setAudibleIdLocked),
+                Pair.of(m.getAudibleRatingLocked(), e::setAudibleRatingLocked),
+                Pair.of(m.getAudibleReviewCountLocked(), e::setAudibleReviewCountLocked),
                 Pair.of(m.getCoverLocked(), e::setCoverLocked),
+                Pair.of(m.getAudiobookCoverLocked(), e::setAudiobookCoverLocked),
                 Pair.of(m.getAuthorsLocked(), e::setAuthorsLocked),
                 Pair.of(m.getCategoriesLocked(), e::setCategoriesLocked),
                 Pair.of(m.getMoodsLocked(), e::setMoodsLocked),
                 Pair.of(m.getTagsLocked(), e::setTagsLocked),
-                Pair.of(m.getReviewsLocked(), e::setReviewsLocked)
+                Pair.of(m.getReviewsLocked(), e::setReviewsLocked),
+                Pair.of(m.getNarratorLocked(), e::setNarratorLocked),
+                Pair.of(m.getAbridgedLocked(), e::setAbridgedLocked)
         );
         lockMappings.forEach(pair -> {
             if (pair.getLeft() != null) pair.getRight().accept(pair.getLeft());

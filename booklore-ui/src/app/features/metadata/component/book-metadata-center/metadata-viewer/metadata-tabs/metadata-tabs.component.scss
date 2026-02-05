@@ -214,3 +214,53 @@
   margin: 0;
   opacity: 0.8;
 }
+
+// Covers tab styles
+.covers-tab-content {
+  padding: 1rem 0;
+}
+
+.covers-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+
+  @media (min-width: 768px) {
+    justify-content: flex-start;
+  }
+}
+
+.cover-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+
+  ::ng-deep .square-cover img {
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 0.5rem;
+  }
+}
+
+.cover-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  padding: 0.25rem 0.75rem;
+  background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+  border-radius: 0.5rem;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &.audiobook {
+    color: var(--purple-500);
+    background: color-mix(in srgb, var(--purple-500) 15%, transparent);
+  }
+}

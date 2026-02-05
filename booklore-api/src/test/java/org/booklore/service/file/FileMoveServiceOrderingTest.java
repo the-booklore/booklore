@@ -1,5 +1,6 @@
 package org.booklore.service.file;
 
+import jakarta.persistence.EntityManager;
 import org.booklore.config.AppProperties;
 import org.booklore.mapper.BookMapper;
 import org.booklore.mapper.LibraryMapper;
@@ -15,7 +16,6 @@ import org.booklore.repository.BookRepository;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.service.NotificationService;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +25,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -51,7 +54,9 @@ class FileMoveServiceOrderingTest {
     @Mock private LibraryMapper libraryMapper;
     @Mock private BookMapper bookMapper;
     @Mock private NotificationService notificationService;
+
     @Mock private EntityManager entityManager;
+    @Mock private TransactionTemplate transactionTemplate;
 
     private FileMoveService service;
     private LibraryEntity library;
@@ -61,9 +66,10 @@ class FileMoveServiceOrderingTest {
         TestableFileMoveService(AppProperties appProperties, BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository,
                                 LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper,
                                 MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper,
-                                BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
+                                BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager,
+                                TransactionTemplate transactionTemplate) {
             super(appProperties, bookRepository, bookFileRepository, libraryRepository, fileMoveHelper,
-                    monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
+                    monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager, transactionTemplate);
         }
 
         @Override
@@ -75,8 +81,15 @@ class FileMoveServiceOrderingTest {
     @BeforeEach
     void setUp() {
         when(appProperties.getDiskType()).thenReturn("LOCAL");
+        
+        doAnswer(invocation -> {
+            Consumer<TransactionStatus> action = invocation.getArgument(0);
+            action.accept(mock(TransactionStatus.class));
+            return null;
+        }).when(transactionTemplate).executeWithoutResult(any());
+
         service = spy(new TestableFileMoveService(appProperties, bookRepository, bookFileRepository, libraryRepository,
-                fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
+                fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager, transactionTemplate));
 
         library = new LibraryEntity();
         library.setId(1L);
@@ -307,5 +320,32 @@ class FileMoveServiceOrderingTest {
 
         verify(fileMoveHelper).unregisterLibrary(1L);
         verify(monitoringRegistrationService).registerLibrary(dto);
+    }
+    @Test
+    @DisplayName("moveSingleFile: rolls back committed files on database failure")
+    void filesRolledBackOnDbFailure() throws IOException {
+        BookEntity book = createBook();
+        Path target = Paths.get("/library/new/path/NewName.epub");
+
+        mockStandardBehavior(book, target);
+        
+        // Mock DB failure
+        doThrow(new RuntimeException("DB Error")).when(transactionTemplate).executeWithoutResult(any());
+        
+        when(monitoringRegistrationService.isLibraryMonitored(anyLong())).thenReturn(false);
+        when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+        try {
+            service.moveSingleFile(book);
+        } catch (RuntimeException e) {
+            // Expected
+        }
+
+        InOrder inOrder = inOrder(fileMoveHelper);
+        inOrder.verify(fileMoveHelper).moveFileWithBackup(any());
+        inOrder.verify(fileMoveHelper).commitMove(any(), any()); // Committed
+        
+        // Verify manual rollback (Target -> Source)
+        inOrder.verify(fileMoveHelper).moveFile(any(), any());
     }
 }

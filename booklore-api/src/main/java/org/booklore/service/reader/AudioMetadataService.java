@@ -1,7 +1,6 @@
 package org.booklore.service.reader;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.booklore.model.entity.BookMetadataEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.response.AudiobookChapter;
@@ -23,176 +22,77 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AudioMetadataService {
 
-    private static final int MAX_CACHE_ENTRIES = 50;
-    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^0-9]");
-
+private static final int MAX_CACHE_ENTRIES = 50;
+private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^0-9]");
     private final AudioFileUtilityService audioFileUtility;
-    private final Map<String, CachedAudiobookMetadata> metadataCache = new ConcurrentHashMap<>();
-
-    private static class CachedAudiobookMetadata {
-        final AudiobookInfo info;
-        final long lastModified;
-        volatile long lastAccessed;
-
-        CachedAudiobookMetadata(AudiobookInfo info, long lastModified) {
-            this.info = info;
-            this.lastModified = lastModified;
-            this.lastAccessed = System.currentTimeMillis();
-        }
-    }
 
     public AudiobookInfo getMetadata(BookFileEntity bookFile, Path audioPath) throws Exception {
-        CachedAudiobookMetadata metadata = getCachedMetadata(bookFile, audioPath);
-        return metadata.info;
-    }
-
-    public byte[] getEmbeddedCoverArt(Path audioPath) {
-        try {
-            AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
-            Tag tag = audioFile.getTag();
-            if (tag != null) {
-                Artwork artwork = tag.getFirstArtwork();
-                if (artwork != null) {
-                    return artwork.getBinaryData();
-                }
-            }
-        } catch (Exception e) {
-            log.debug("No embedded cover art found: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    public String getCoverArtMimeType(Path audioPath) {
-        try {
-            AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
-            Tag tag = audioFile.getTag();
-            if (tag != null) {
-                Artwork artwork = tag.getFirstArtwork();
-                if (artwork != null) {
-                    String mimeType = artwork.getMimeType();
-                    if (mimeType != null && !mimeType.isEmpty()) {
-                        return mimeType;
-                    }
-                    byte[] data = artwork.getBinaryData();
-                    if (data != null && data.length > 2) {
-                        if (data[0] == (byte) 0xFF && data[1] == (byte) 0xD8) {
-                            return "image/jpeg";
-                        } else if (data[0] == (byte) 0x89 && data[1] == (byte) 0x50) {
-                            return "image/png";
-                        }
-                    }
-                    return "image/jpeg";
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Could not determine cover art MIME type: {}", e.getMessage());
-        }
-        return "image/jpeg";
-    }
-
-    private CachedAudiobookMetadata getCachedMetadata(BookFileEntity bookFile, Path audioPath) throws Exception {
-        String cacheKey = audioPath.toString();
-        long currentModified = getLastModified(bookFile, audioPath);
-        CachedAudiobookMetadata cached = metadataCache.get(cacheKey);
-
-        if (cached != null && cached.lastModified == currentModified) {
-            cached.lastAccessed = System.currentTimeMillis();
-            log.debug("Cache hit for audiobook: {}", audioPath.getFileName());
-            return cached;
-        }
-
-        log.debug("Cache miss for audiobook: {}, parsing...", audioPath.getFileName());
-        AudiobookInfo info = parseAudiobookMetadata(bookFile, audioPath);
-        CachedAudiobookMetadata newMetadata = new CachedAudiobookMetadata(info, currentModified);
-        metadataCache.put(cacheKey, newMetadata);
-        evictOldestCacheEntries();
-        return newMetadata;
-    }
-
-    private long getLastModified(BookFileEntity bookFile, Path audioPath) throws IOException {
         if (bookFile.isFolderBased()) {
-            try (Stream<Path> files = Files.list(audioPath)) {
-                return files.filter(audioFileUtility::isAudioFile)
-                        .mapToLong(p -> {
-                            try {
-                                return Files.getLastModifiedTime(p).toMillis();
-                            } catch (IOException e) {
-                                return 0;
-                            }
-                        })
-                        .max()
-                        .orElse(Files.getLastModifiedTime(audioPath).toMillis());
-            }
+            return buildFolderBasedAudiobookInfo(bookFile, audioPath);
+        } else {
+            return buildSingleFileAudiobookInfo(bookFile, audioPath);
         }
-        return Files.getLastModifiedTime(audioPath).toMillis();
     }
 
-    private void evictOldestCacheEntries() {
-        if (metadataCache.size() <= MAX_CACHE_ENTRIES) {
-            return;
-        }
-        List<String> keysToRemove = metadataCache.entrySet().stream()
-                .sorted(Comparator.comparingLong(e -> e.getValue().lastAccessed))
-                .limit(metadataCache.size() - MAX_CACHE_ENTRIES)
-                .map(Map.Entry::getKey)
-                .toList();
-        keysToRemove.forEach(key -> {
-            metadataCache.remove(key);
-            log.debug("Evicted audiobook cache entry: {}", key);
-        });
-    }
-
-    private AudiobookInfo parseAudiobookMetadata(BookFileEntity bookFile, Path audioPath) throws Exception {
+    private AudiobookInfo buildSingleFileAudiobookInfo(BookFileEntity bookFile, Path audioPath) throws Exception {
         AudiobookInfo.AudiobookInfoBuilder builder = AudiobookInfo.builder()
                 .bookId(bookFile.getBook().getId())
                 .bookFileId(bookFile.getId())
-                .folderBased(bookFile.isFolderBased());
+                .folderBased(false);
 
-        if (bookFile.isFolderBased()) {
-            return parseFolderBasedAudiobook(builder, audioPath);
-        } else {
-            return parseSingleFileAudiobook(builder, audioPath);
+        if (bookFile.getDurationSeconds() != null) {
+            BookMetadataEntity metadata = bookFile.getBook().getMetadata();
+            String narrator = metadata != null ? metadata.getNarrator() : null;
+
+            builder.narrator(narrator)
+                    .durationMs(bookFile.getDurationSeconds() * 1000)
+                    .bitrate(bookFile.getBitrate())
+                    .sampleRate(bookFile.getSampleRate())
+                    .channels(bookFile.getChannels())
+                    .codec(bookFile.getCodec());
+
+            if (bookFile.getChapters() != null && !bookFile.getChapters().isEmpty()) {
+                List<AudiobookChapter> chapters = bookFile.getChapters().stream()
+                        .map(ch -> AudiobookChapter.builder()
+                                .index(ch.getIndex())
+                                .title(ch.getTitle())
+                                .startTimeMs(ch.getStartTimeMs())
+                                .endTimeMs(ch.getEndTimeMs())
+                                .durationMs(ch.getDurationMs())
+                                .build())
+                        .collect(Collectors.toList());
+                builder.chapters(chapters);
+            }
+
+            if (metadata != null) {
+                builder.title(metadata.getTitle());
+                if (metadata.getAuthors() != null && !metadata.getAuthors().isEmpty()) {
+                    builder.author(metadata.getAuthors().iterator().next().getName());
+                }
+            }
+
+            return builder.build();
         }
+
+        log.debug("No DB metadata found for audiobook {}, extracting from file", bookFile.getId());
+        return extractSingleFileMetadata(builder, audioPath);
     }
 
-    private AudiobookInfo parseSingleFileAudiobook(AudiobookInfo.AudiobookInfoBuilder builder, Path audioPath) throws Exception {
-        AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
-        AudioHeader header = audioFile.getAudioHeader();
-        Tag tag = audioFile.getTag();
+    private AudiobookInfo buildFolderBasedAudiobookInfo(BookFileEntity bookFile, Path folderPath) throws Exception {
+        AudiobookInfo.AudiobookInfoBuilder builder = AudiobookInfo.builder()
+                .bookId(bookFile.getBook().getId())
+                .bookFileId(bookFile.getId())
+                .folderBased(true);
 
-        long durationMs = (long) (header.getPreciseTrackLength() * 1000);
-        long bitrateValue = header.getBitRateAsNumber();
-        builder.durationMs(durationMs)
-                .bitrate(bitrateValue > 0 ? (int) bitrateValue : null)
-                .codec(header.getEncodingType())
-                .sampleRate(header.getSampleRateAsNumber())
-                .channels(parseChannels(header.getChannels()));
-
-        if (tag != null) {
-            builder.title(getTagValue(tag, FieldKey.TITLE, FieldKey.ALBUM))
-                    .author(getTagValue(tag, FieldKey.ARTIST, FieldKey.ALBUM_ARTIST))
-                    .narrator(getTagValue(tag, FieldKey.COMPOSER));
-        }
-
-        List<AudiobookChapter> chapters = extractChapters(audioPath, durationMs);
-        builder.chapters(chapters);
-
-        return builder.build();
-    }
-
-    private AudiobookInfo parseFolderBasedAudiobook(AudiobookInfo.AudiobookInfoBuilder builder, Path folderPath) throws Exception {
         List<Path> audioFiles = audioFileUtility.listAudioFiles(folderPath);
         if (audioFiles.isEmpty()) {
             throw new IllegalStateException("No audio files found in folder: " + folderPath);
@@ -261,32 +161,75 @@ public class AudioMetadataService {
             }
         }
 
+        BookMetadataEntity metadata = bookFile.getBook().getMetadata();
+        if (metadata != null && metadata.getNarrator() != null) {
+            builder.narrator(metadata.getNarrator());
+        } else {
+            builder.narrator(narrator);
+        }
+
+        if (bookFile.getBitrate() != null) {
+            builder.bitrate(bookFile.getBitrate());
+        } else {
+            builder.bitrate(bitrate);
+        }
+
+        if (bookFile.getCodec() != null) {
+            builder.codec(bookFile.getCodec());
+        } else {
+            builder.codec(codec);
+        }
+
+        if (bookFile.getSampleRate() != null) {
+            builder.sampleRate(bookFile.getSampleRate());
+        } else {
+            builder.sampleRate(sampleRate);
+        }
+
+        if (bookFile.getChannels() != null) {
+            builder.channels(bookFile.getChannels());
+        } else {
+            builder.channels(channels);
+        }
+
+        if (metadata != null) {
+            String bookTitle = metadata.getTitle();
+            if (bookTitle != null) {
+                title = bookTitle;
+            }
+            if (metadata.getAuthors() != null && !metadata.getAuthors().isEmpty()) {
+                author = metadata.getAuthors().iterator().next().getName();
+            }
+        }
+
         return builder
                 .title(title)
                 .author(author)
-                .narrator(narrator)
                 .durationMs(totalDurationMs)
-                .bitrate(bitrate)
-                .codec(codec)
-                .sampleRate(sampleRate)
-                .channels(channels)
                 .tracks(tracks)
                 .build();
     }
 
-    private List<AudiobookChapter> extractChapters(Path audioPath, long totalDurationMs) {
-        List<AudiobookChapter> chapters = new ArrayList<>();
+    private AudiobookInfo extractSingleFileMetadata(AudiobookInfo.AudiobookInfoBuilder builder, Path audioPath) throws Exception {
+        AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
+        AudioHeader header = audioFile.getAudioHeader();
+        Tag tag = audioFile.getTag();
 
-        try {
-            chapters = extractChaptersWithFFprobe(audioPath);
-            if (!chapters.isEmpty()) {
-                log.debug("Extracted {} chapters from {} using FFprobe", chapters.size(), audioPath.getFileName());
-                return chapters;
-            }
-        } catch (Exception e) {
-            log.debug("FFprobe chapter extraction failed for {}: {}", audioPath.getFileName(), e.getMessage());
+        long durationMs = (long) (header.getPreciseTrackLength() * 1000);
+        long bitrateValue = header.getBitRateAsNumber();
+        builder.durationMs(durationMs)
+                .bitrate(bitrateValue > 0 ? (int) bitrateValue : null)
+                .codec(header.getEncodingType())
+                .sampleRate(header.getSampleRateAsNumber())
+                .channels(parseChannels(header.getChannels()));
+
+        if (tag != null) {
+            builder.title(getTagValue(tag, FieldKey.TITLE, FieldKey.ALBUM))
+                    .author(getTagValue(tag, FieldKey.ARTIST, FieldKey.ALBUM_ARTIST))
+                    .narrator(getTagValue(tag, FieldKey.COMPOSER));
         }
 
+        List<AudiobookChapter> chapters = new ArrayList<>();
         chapters.add(AudiobookChapter.builder()
                 .index(0)
                 .title("Full Audiobook")
@@ -381,20 +324,52 @@ public class AudioMetadataService {
         }
 
         return chapters;
+
+        return builder.build();
     }
 
-    private double convertTimebaseToSeconds(long value, String timeBase) {
-        String[] parts = timeBase.split("/");
-        if (parts.length == 2) {
-            try {
-                double numerator = Double.parseDouble(parts[0]);
-                double denominator = Double.parseDouble(parts[1]);
-                return value * (numerator / denominator);
-            } catch (NumberFormatException e) {
-                return value / 1000.0;
+    public byte[] getEmbeddedCoverArt(Path audioPath) {
+        try {
+            AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
+            Tag tag = audioFile.getTag();
+            if (tag != null) {
+                Artwork artwork = tag.getFirstArtwork();
+                if (artwork != null) {
+                    return artwork.getBinaryData();
+                }
             }
+        } catch (Exception e) {
+            log.debug("No embedded cover art found: {}", e.getMessage());
         }
-        return value / 1000.0;
+        return null;
+    }
+
+    public String getCoverArtMimeType(Path audioPath) {
+        try {
+            AudioFile audioFile = AudioFileIO.read(audioPath.toFile());
+            Tag tag = audioFile.getTag();
+            if (tag != null) {
+                Artwork artwork = tag.getFirstArtwork();
+                if (artwork != null) {
+                    String mimeType = artwork.getMimeType();
+                    if (mimeType != null && !mimeType.isEmpty()) {
+                        return mimeType;
+                    }
+                    byte[] data = artwork.getBinaryData();
+                    if (data != null && data.length > 2) {
+                        if (data[0] == (byte) 0xFF && data[1] == (byte) 0xD8) {
+                            return "image/jpeg";
+                        } else if (data[0] == (byte) 0x89 && data[1] == (byte) 0x50) {
+                            return "image/png";
+                        }
+                    }
+                    return "image/jpeg";
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not determine cover art MIME type: {}", e.getMessage());
+        }
+        return "image/jpeg";
     }
 
     private String getTagValue(Tag tag, FieldKey... keys) {

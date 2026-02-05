@@ -41,6 +41,7 @@ export class DashboardSettingsComponent implements OnInit {
 
   availableScrollerTypes = [
     {label: 'Continue Reading', value: ScrollerType.LAST_READ},
+    {label: 'Continue Listening', value: ScrollerType.LAST_LISTENED},
     {label: 'Recently Added', value: ScrollerType.LATEST_ADDED},
     {label: 'Discover Something New', value: ScrollerType.RANDOM},
     {label: 'Magic Shelf', value: ScrollerType.MAGIC_SHELF}
@@ -102,6 +103,8 @@ export class DashboardSettingsComponent implements OnInit {
     switch (scroller.type) {
       case ScrollerType.LAST_READ:
         return 'Continue Reading';
+      case ScrollerType.LAST_LISTENED:
+        return 'Continue Listening';
       case ScrollerType.LATEST_ADDED:
         return 'Recently Added';
       case ScrollerType.RANDOM:
