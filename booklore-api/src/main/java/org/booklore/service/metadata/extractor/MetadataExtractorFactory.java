@@ -55,4 +55,16 @@ public class MetadataExtractorFactory {
             case M4B, M4A, MP3, AAC, FLAC, OPUS, OGG -> audiobookMetadataExtractor.extractCover(file);
         };
     }
+
+    public FileMetadataExtractor getExtractor(BookFileType bookFileType) {
+        return switch (bookFileType) {
+            case PDF -> pdfMetadataExtractor;
+            case EPUB -> epubMetadataExtractor;
+            case CBX -> cbxMetadataExtractor;
+            case FB2 -> fb2MetadataExtractor;
+            case MOBI -> mobiMetadataExtractor;
+            case AZW3 -> azw3MetadataExtractor;
+            case AUDIOBOOK -> audiobookMetadataExtractor;
+        };
+    }
 }

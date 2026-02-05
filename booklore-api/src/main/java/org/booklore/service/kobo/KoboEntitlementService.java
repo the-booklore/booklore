@@ -2,16 +2,21 @@ package org.booklore.service.kobo;
 
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.mapper.KoboReadingStateMapper;
+import org.booklore.model.dto.Book;
 import org.booklore.model.dto.kobo.*;
 import org.booklore.model.dto.settings.KoboSettings;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.KoboBookFormat;
 import org.booklore.model.enums.KoboReadStatus;
+import org.booklore.model.enums.ShelfType;
 import org.booklore.repository.KoboReadingStateRepository;
+import org.booklore.repository.MagicShelfRepository;
+import org.booklore.repository.ShelfRepository;
 import org.booklore.repository.UserBookProgressRepository;
 import org.booklore.service.book.BookQueryService;
 import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.opds.MagicShelfBookService;
 import org.booklore.util.kobo.KoboUrlBuilder;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,10 +25,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,9 @@ public class KoboEntitlementService {
     private final KoboReadingStateMapper readingStateMapper;
     private final AuthenticationService authenticationService;
     private final KoboReadingStateBuilder readingStateBuilder;
+    private final ShelfRepository shelfRepository;
+    private final MagicShelfRepository magicShelfRepository;
+    private final MagicShelfBookService magicShelfBookService;
 
     public List<NewEntitlement> generateNewEntitlements(Set<Long> bookIds, String token) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(bookIds);
@@ -103,6 +108,71 @@ public class KoboEntitlementService {
         return progressEntries.stream()
                 .map(progress -> buildChangedReadingState(progress, timestamp, now))
                 .toList();
+    }
+
+    public List<KoboTagWrapper> generateTags() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        List<Long> koboBookIDs = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
+                .orElseThrow(() -> new NoSuchElementException("Kobo shelf not found for user: " + userId))
+                .getBookEntities().stream().filter(koboCompatibilityService::isBookSupportedForKobo)
+                .map(BookEntity::getId)
+                .toList();
+
+        List<KoboTagWrapper> tags = new ArrayList<>();
+        // Shelves
+        shelfRepository.findByUserId(userId).stream()
+                .filter(shelf -> !Objects.equals(shelf.getName(), ShelfType.KOBO.getName()))
+                .map(shelf -> buildKoboTag("BL-S-" + shelf.getId(), shelf.getName(), null, null,
+                        shelf.getBookEntities().stream().map(BookEntity::getId).toList(), koboBookIDs))
+                .forEach(tags::add);
+
+        // Magic Shelves
+        magicShelfRepository.findAllByUserId(userId).stream()
+                .map(magicShelf -> {
+                    List<Long> bookIds = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelf.getId(), 0, Integer.MAX_VALUE)
+                            .stream().map(Book::getId).toList();
+                    return buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
+                            magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
+                            bookIds, koboBookIDs);
+                })
+                .forEach(tags::add);
+
+        log.info("Synced {} tags to Kobo", tags.size());
+        return tags;
+    }
+
+    private KoboTagWrapper buildKoboTag(String id, String name, String created, String modified, List<Long> bookIds, List<Long> koboFilterIds) {
+        List<KoboTag.KoboTagItem> items = bookIds.stream()
+                .filter(koboFilterIds::contains)
+                .map(bookId -> KoboTag.KoboTagItem.builder()
+                        .revisionId(bookId.toString())
+                        .type("ProductRevisionTagItem")
+                        .build())
+                .toList();
+
+        if (items.isEmpty()) {
+            return KoboTagWrapper.builder()
+                    .deletedTag(KoboTagWrapper.WrappedTag.builder()
+                            .tag(KoboTag.builder()
+                                    .id(id)
+                                    .lastModified(modified)
+                                    .build())
+                            .build())
+                    .build();
+        }
+
+        return KoboTagWrapper.builder()
+                .changedTag(KoboTagWrapper.WrappedTag.builder()
+                        .tag(KoboTag.builder()
+                                .id(id)
+                                .name(name)
+                                .created(created)
+                                .lastModified(modified)
+                                .type("UserTag")
+                                .items(items)
+                                .build())
+                        .build())
+                .build();
     }
 
     private ChangedReadingState buildChangedReadingState(UserBookProgressEntity progress, String timestamp, OffsetDateTime now) {

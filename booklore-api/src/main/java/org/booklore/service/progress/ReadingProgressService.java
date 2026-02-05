@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @Service
 public class ReadingProgressService {
 
-    private static final float READING_THRESHOLD = 0.5f;
+    private static final float READING_THRESHOLD = 0.1f;
     private static final float COMPLETED_THRESHOLD = 99.5f;
 
     private final UserBookProgressRepository userBookProgressRepository;
@@ -233,7 +233,7 @@ public class ReadingProgressService {
         }
 
         if (percentage != null) {
-            progress.setReadStatus(calculateReadStatus(percentage));
+            progress.setReadStatus(calculateReadStatus(percentage, progress.getReadStatus()));
             BookFileEntity primaryFile = book.getPrimaryBookFile();
             if (primaryFile != null) {
                 setProgressPercent(progress, primaryFile.getBookType(), percentage);
@@ -399,10 +399,32 @@ public class ReadingProgressService {
         }
     }
 
-    private ReadStatus calculateReadStatus(Float percentage) {
-        if (percentage >= COMPLETED_THRESHOLD) return ReadStatus.READ;
-        if (percentage > READING_THRESHOLD) return ReadStatus.READING;
-        return ReadStatus.UNREAD;
+    private ReadStatus calculateReadStatus(Float percentage, ReadStatus currentStatus) {
+        ReadStatus newStatus;
+        if (percentage >= COMPLETED_THRESHOLD) {
+            newStatus = ReadStatus.READ;
+        } else if (percentage > READING_THRESHOLD) {
+            newStatus = ReadStatus.READING;
+        } else {
+            newStatus = ReadStatus.UNREAD;
+        }
+
+        // Only allow automatic status changes that represent progress upgrades
+        // Don't downgrade from manually set or higher progress statuses
+        if (newStatus == ReadStatus.UNREAD) {
+            // Preserve any status that indicates the user has engaged with the book
+            if (currentStatus == ReadStatus.READING ||
+                currentStatus == ReadStatus.RE_READING ||
+                currentStatus == ReadStatus.READ ||
+                currentStatus == ReadStatus.PARTIALLY_READ ||
+                currentStatus == ReadStatus.PAUSED ||
+                currentStatus == ReadStatus.ABANDONED ||
+                currentStatus == ReadStatus.WONT_READ) {
+                return currentStatus;
+            }
+        }
+
+        return newStatus;
     }
 
     private void performReset(Long userId, Set<Long> bookIds, ResetProgressType type, Instant now) {

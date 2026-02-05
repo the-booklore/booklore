@@ -57,6 +57,7 @@
                   [bookListType]="scroller.type"
                   [title]="scroller.title"
                   [isMagicShelf]="scroller.type === ScrollerType.MAGIC_SHELF"
+                  [useSquareCovers]="scroller.type === ScrollerType.LAST_LISTENED"
                   [books]="getBooksForScroller(scroller) | async">
                 </app-dashboard-scroller>
               }

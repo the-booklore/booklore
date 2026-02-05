@@ -83,6 +83,16 @@ public class MobileBookController {
         return ResponseEntity.ok(mobileBookService.getContinueReading(limit));
     }
 
+    @Operation(summary = "Get continue listening list",
+            description = "Get audiobooks currently in progress, sorted by last listened time (most recent first).")
+    @ApiResponse(responseCode = "200", description = "Continue listening list retrieved successfully")
+    @GetMapping("/continue-listening")
+    public ResponseEntity<List<MobileBookSummary>> getContinueListening(
+            @Parameter(description = "Maximum number of audiobooks to return") @RequestParam(required = false, defaultValue = "10") Integer limit) {
+
+        return ResponseEntity.ok(mobileBookService.getContinueListening(limit));
+    }
+
     @Operation(summary = "Get recently added books",
             description = "Get books added in the last 30 days, sorted by added date (most recent first).")
     @ApiResponse(responseCode = "200", description = "Recently added books retrieved successfully")

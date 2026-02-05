@@ -6,10 +6,6 @@
   }
 }
 
-::ng-deep p-image {
-  width: 250px;
-}
-
 ::ng-deep .cover-item p-image {
   width: 150px;
 }
@@ -120,15 +116,64 @@ label {
   }
 }
 
+.covers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex-shrink: 0;
+  margin: 0 auto;
+
+  &.dual-covers {
+    flex-direction: row;
+    gap: 1rem;
+
+    @media (max-width: 767px) {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+}
+
 .cover-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: 0.5rem;
   position: relative;
-  width: 250px;
   flex-shrink: 0;
-  margin: 0 auto;
+
+  &.audiobook-cover-section {
+    ::ng-deep .square-cover img {
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 0.5rem;
+    }
+  }
+}
+
+.cover-type-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.25rem;
+
+  i {
+    font-size: 0.9rem;
+  }
+
+  &.ebook {
+    color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+  }
+
+  &.audiobook {
+    color: var(--purple-500);
+    background: color-mix(in srgb, var(--purple-500) 15%, transparent);
+  }
 }
 
 .upload-spinner {

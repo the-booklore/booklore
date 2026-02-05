@@ -4,6 +4,7 @@ import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
@@ -59,7 +60,12 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
 
     @Override
     public boolean generateCover(BookEntity bookEntity) {
-        File pdfFile = new File(FileUtils.getBookFullPath(bookEntity));
+        return generateCover(bookEntity, bookEntity.getPrimaryBookFile());
+    }
+
+    @Override
+    public boolean generateCover(BookEntity bookEntity, BookFileEntity bookFile) {
+        File pdfFile = new File(FileUtils.getBookFullPath(bookEntity, bookFile));
         try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(pdfFile);
              PDDocument pdf = Loader.loadPDF(randomAccessRead)) {
             return generateCoverImageAndSave(bookEntity.getId(), pdf);
@@ -67,17 +73,17 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             // Note: Catching OOM is generally discouraged, but for batch processing
             // of potentially large/corrupted PDFs, we prefer graceful degradation
             // over crashing the entire service.
-            log.error("Out of memory (heap space exhausted) while generating cover for '{}'. Skipping cover generation.", bookEntity.getPrimaryBookFile().getFileName());
+            log.error("Out of memory (heap space exhausted) while generating cover for '{}'. Skipping cover generation.", bookFile.getFileName());
             System.gc(); // Hint to JVM to reclaim memory
             return false;
         } catch (NegativeArraySizeException e) {
             // This can appear on corrupted PDF, or PDF with such large images that the
             // initial memory buffer is already bigger than the entire JVM heap, therefore
             // it leads to NegativeArrayException (basically run out of memory, and overflows)
-            log.warn("Corrupted PDF structure for '{}'. Skipping cover generation.", bookEntity.getPrimaryBookFile().getFileName());
+            log.warn("Corrupted PDF structure for '{}'. Skipping cover generation.", bookFile.getFileName());
             return false;
         } catch (Exception e) {
-            log.warn("Failed to generate cover for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());
+            log.warn("Failed to generate cover for '{}': {}", bookFile.getFileName(), e.getMessage());
             return false;
         }
     }

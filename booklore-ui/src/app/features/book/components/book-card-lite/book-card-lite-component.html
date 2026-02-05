@@ -1,6 +1,6 @@
-<div class="book-cover-wrapper" (mouseenter)="isHovered = true" (mouseleave)="isHovered = false">
+<div class="book-cover-wrapper" [class.audiobook-only]="isAudiobookOnly()" (mouseenter)="isHovered = true" (mouseleave)="isHovered = false">
   <img
-    [src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)"
+    [src]="getThumbnailUrl()"
     class="book-cover"
     alt="Cover of {{ book.metadata?.title }}"
     loading="lazy"/>

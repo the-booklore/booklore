@@ -38,5 +38,8 @@ public class MetadataClearFlags {
     private boolean moods;
     private boolean tags;
     private boolean cover;
+    private boolean audiobookCover;
     private boolean reviews;
+    private boolean narrator;
+    private boolean abridged;
 }

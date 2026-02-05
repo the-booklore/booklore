@@ -22,4 +22,6 @@ public class MobileBookSummary {
     private Long libraryId;
     private Instant addedOn;
     private Instant lastReadTime;
+    private Float readProgress;
+    private Boolean hasAudiobook;
 }

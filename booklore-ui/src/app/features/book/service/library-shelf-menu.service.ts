@@ -61,7 +61,7 @@ export class LibraryShelfMenuService {
                 message: `Are you sure you want to refresh library: ${entity?.name}?`,
                 header: 'Confirmation',
                 icon: undefined,
-                acceptLabel: 'Yes',
+                acceptLabel: 'Rescan',
                 rejectLabel: 'Cancel',
                 acceptIcon: undefined,
                 rejectIcon: undefined,
@@ -72,7 +72,7 @@ export class LibraryShelfMenuService {
                   severity: 'secondary',
                 },
                 acceptButtonProps: {
-                  label: 'Yes',
+                  label: 'Rescan',
                   severity: 'success',
                 },
                 accept: () => {

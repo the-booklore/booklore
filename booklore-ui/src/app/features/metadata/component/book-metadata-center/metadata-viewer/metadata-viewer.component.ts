@@ -1078,7 +1078,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return p != null ? Math.round(p * 10) / 10 : null;
   }
 
-  getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover' | 'lubimyczytac' | 'ranobedb'): string {
+  getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover' | 'lubimyczytac' | 'ranobedb' | 'audible'): string {
     const meta = book?.metadata;
     if (!meta) return '';
 
@@ -1102,6 +1102,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       case 'ranobedb':
         return meta.ranobedbRating != null
           ? `★ ${meta.ranobedbRating}`
+          : '';
+      case 'audible':
+        return meta.audibleRating != null
+          ? `★ ${meta.audibleRating} | ${meta.audibleReviewCount?.toLocaleString() ?? '0'} reviews`
           : '';
       default:
         return '';
@@ -1230,5 +1234,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   isPhysicalBook(book: Book): boolean {
     return !this.hasAnyFiles(book);
+  }
+
+  getBookCoverUrl(book: Book): string {
+    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
+    return isAudiobook
+      ? this.urlHelper.getAudiobookCoverUrl(book.id, book.metadata?.audiobookCoverUpdatedOn)
+      : this.urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn);
   }
 }

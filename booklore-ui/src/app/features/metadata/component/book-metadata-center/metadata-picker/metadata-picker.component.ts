@@ -5,19 +5,20 @@ import {Button} from 'primeng/button';
 import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
 import {AsyncPipe} from '@angular/common';
-import {Observable} from 'rxjs';
+import {forkJoin, Observable} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {BookService} from '../../../../book/service/book.service';
 import {Textarea} from 'primeng/textarea';
-import {filter, map, take} from 'rxjs/operators';
+import {filter, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AutoComplete, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {Image} from 'primeng/image';
+import {Checkbox} from 'primeng/checkbox';
 import {LazyLoadImageModule} from 'ng-lazyload-image';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-settings.model';
-import {ALL_METADATA_FIELDS, getArrayFields, getBottomFields, getTextareaFields, getTopFields, MetadataFieldConfig, MetadataFormBuilder, MetadataUtilsService} from '../../../../../shared/metadata';
+import {ALL_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, getArrayFields, getBookDetailsFields, getBottomFields, getProviderFields, getSeriesFields, getTextareaFields, getTopFields, MetadataFieldConfig, MetadataFormBuilder, MetadataUtilsService} from '../../../../../shared/metadata';
 
 @Component({
   selector: 'app-metadata-picker',
@@ -34,7 +35,8 @@ import {ALL_METADATA_FIELDS, getArrayFields, getBottomFields, getTextareaFields,
     Textarea,
     AutoComplete,
     Image,
-    LazyLoadImageModule
+    LazyLoadImageModule,
+    Checkbox
   ]
 })
 export class MetadataPickerComponent implements OnInit {
@@ -43,12 +45,18 @@ export class MetadataPickerComponent implements OnInit {
   metadataFieldsTop: MetadataFieldConfig[] = [];
   metadataChips: MetadataFieldConfig[] = [];
   metadataDescription: MetadataFieldConfig[] = [];
+  metadataSeriesFields: MetadataFieldConfig[] = [];
+  metadataBookDetailsFields: MetadataFieldConfig[] = [];
+  metadataProviderFields: MetadataFieldConfig[] = [];
   metadataFieldsBottom: MetadataFieldConfig[] = [];
+  audiobookMetadataFields: MetadataFieldConfig[] = [];
 
   @Input() reviewMode!: boolean;
   @Input() fetchedMetadata!: BookMetadata;
   @Input() book$!: Observable<Book | null>;
   @Output() goBack = new EventEmitter<boolean>();
+
+  currentBook: Book | null = null;
 
   private allItems: Record<string, string[]> = {};
   filteredItems: Record<string, string[]> = {};
@@ -80,7 +88,15 @@ export class MetadataPickerComponent implements OnInit {
     this.metadataFieldsTop = getTopFields();
     this.metadataChips = getArrayFields();
     this.metadataDescription = getTextareaFields();
+    this.metadataSeriesFields = getSeriesFields();
+    this.metadataBookDetailsFields = getBookDetailsFields();
+    this.updateProviderFields();
     this.updateBottomFields();
+    this.audiobookMetadataFields = AUDIOBOOK_METADATA_FIELDS;
+  }
+
+  private updateProviderFields(): void {
+    this.metadataProviderFields = getProviderFields(this.enabledProviderFields);
   }
 
   private updateBottomFields(): void {
@@ -106,6 +122,7 @@ export class MetadataPickerComponent implements OnInit {
       .subscribe(settings => {
         if (settings?.metadataProviderSpecificFields) {
           this.enabledProviderFields = settings.metadataProviderSpecificFields;
+          this.updateProviderFields();
           this.updateBottomFields();
         }
       });
@@ -138,9 +155,8 @@ export class MetadataPickerComponent implements OnInit {
     this.book$
       .pipe(
         filter((book): book is Book => !!book && !!book.metadata),
-        map(book => book.metadata),
         takeUntilDestroyed(this.destroyRef)
-      ).subscribe((metadata) => {
+      ).subscribe((book) => {
       if (this.reviewMode) {
         this.metadataForm.reset();
         this.copiedFields = {};
@@ -148,16 +164,16 @@ export class MetadataPickerComponent implements OnInit {
         this.hoveredFields = {};
       }
 
-      if (metadata) {
-        this.originalMetadata = metadata;
-        this.originalMetadata.thumbnailUrl = this.urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn);
-        this.currentBookId = metadata.bookId;
-        this.patchMetadataToForm(metadata);
-      }
+      this.currentBook = book;
+      const metadata = book.metadata!;
+      this.originalMetadata = metadata;
+      this.originalMetadata.thumbnailUrl = this.urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn);
+      this.currentBookId = metadata.bookId;
+      this.patchMetadataToForm(metadata, book);
     });
   }
 
-  private patchMetadataToForm(metadata: BookMetadata): void {
+  private patchMetadataToForm(metadata: BookMetadata, book: Book): void {
     const patchData: Record<string, unknown> = {};
 
     for (const field of ALL_METADATA_FIELDS) {
@@ -173,9 +189,25 @@ export class MetadataPickerComponent implements OnInit {
       patchData[field.lockedKey] = metadata[lockedKey] ?? false;
     }
 
-    // Handle special fields
+    // Handle special fields - ebook cover
     patchData['thumbnailUrl'] = this.urlHelper.getCoverUrl(metadata.bookId, metadata.coverUpdatedOn);
     patchData['coverLocked'] = metadata.coverLocked ?? false;
+
+    // Handle audiobook cover
+    patchData['audiobookThumbnailUrl'] = this.urlHelper.getAudiobookCoverUrl(metadata.bookId, metadata.audiobookCoverUpdatedOn);
+    patchData['audiobookCoverLocked'] = metadata.audiobookCoverLocked ?? false;
+
+    // Handle audiobook-specific metadata fields
+    // narrator/abridged are now at top-level of BookMetadata, but we also check nested for backward compatibility
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      const key = field.controlName as keyof BookMetadata;
+      const lockedKey = field.lockedKey as keyof BookMetadata;
+      // Prefer top-level fields, fallback to nested audiobookMetadata
+      const topLevelValue = metadata[key];
+      const topLevelLocked = metadata[lockedKey];
+      patchData[field.controlName] = topLevelValue ?? (field.type === 'boolean' ? null : '');
+      patchData[field.lockedKey] = topLevelLocked ?? false;
+    }
 
     this.metadataForm.patchValue(patchData);
     this.applyLockStates(metadata);
@@ -184,6 +216,10 @@ export class MetadataPickerComponent implements OnInit {
   private applyLockStates(metadata: BookMetadata): void {
     const lockedFields: Record<string, boolean> = {};
     for (const field of ALL_METADATA_FIELDS) {
+      lockedFields[field.lockedKey] = !!metadata[field.lockedKey as keyof BookMetadata];
+    }
+    // Also handle audiobook metadata lock states (now at top-level of BookMetadata)
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
       lockedFields[field.lockedKey] = !!metadata[field.lockedKey as keyof BookMetadata];
     }
     this.formBuilder.applyLockStates(this.metadataForm, lockedFields);
@@ -214,7 +250,20 @@ export class MetadataPickerComponent implements OnInit {
   onSave(): void {
     this.isSaving = true;
     const updatedBookMetadata = this.buildMetadataWrapper(undefined);
-    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false).subscribe({
+
+    const requests: Observable<unknown>[] = [
+      this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false)
+    ];
+
+    // Handle audiobook cover upload when fetched from Audible provider
+    if (this.isAudibleProvider() && this.copiedFields['audiobookThumbnailUrl']) {
+      const audiobookCoverUrl = this.fetchedMetadata.thumbnailUrl;
+      if (audiobookCoverUrl) {
+        requests.push(this.bookService.uploadAudiobookCoverFromUrl(this.currentBookId, audiobookCoverUrl));
+      }
+    }
+
+    forkJoin(requests).subscribe({
       next: () => {
         this.isSaving = false;
         for (const field of Object.keys(this.copiedFields)) {
@@ -254,6 +303,8 @@ export class MetadataPickerComponent implements OnInit {
         metadata[field.controlName] = this.getArrayValue(field.controlName);
       } else if (field.type === 'number') {
         metadata[field.controlName] = this.getNumberValue(field.controlName);
+      } else if (field.type === 'boolean') {
+        metadata[field.controlName] = this.getBooleanValue(field.controlName);
       } else {
         metadata[field.controlName] = this.getStringValue(field.controlName);
       }
@@ -263,6 +314,17 @@ export class MetadataPickerComponent implements OnInit {
 
     metadata['thumbnailUrl'] = this.getThumbnail();
     metadata['coverLocked'] = this.metadataForm.get('coverLocked')?.value;
+    metadata['audiobookCoverLocked'] = this.metadataForm.get('audiobookCoverLocked')?.value;
+
+    // Set audiobook content metadata (narrator/abridged) at top level
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      if (field.type === 'boolean') {
+        metadata[field.controlName] = this.getBooleanValue(field.controlName);
+      } else {
+        metadata[field.controlName] = this.getStringValue(field.controlName);
+      }
+      metadata[field.lockedKey] = this.metadataForm.get(field.lockedKey)?.value ?? false;
+    }
 
     return metadata as BookMetadata;
   }
@@ -304,6 +366,17 @@ export class MetadataPickerComponent implements OnInit {
     return Array.isArray(fieldValue) ? fieldValue as string[] : [];
   }
 
+  private getBooleanValue(field: string): boolean | null {
+    const formValue = this.metadataForm.get(field)?.value;
+    if (formValue === null || formValue === undefined) {
+      if (this.copiedFields[field]) {
+        return (this.fetchedMetadata[field as keyof BookMetadata] as boolean | null) ?? null;
+      }
+      return null;
+    }
+    return !!formValue;
+  }
+
   private inferClearFlags(current: BookMetadata, original: BookMetadata): MetadataClearFlags {
     const flags: Record<string, boolean> = {};
 
@@ -316,16 +389,36 @@ export class MetadataPickerComponent implements OnInit {
         flags[key] = !(curr as string[])?.length && !!(orig as string[])?.length;
       } else if (field.type === 'number') {
         flags[key] = curr === null && orig !== null;
+      } else if (field.type === 'boolean') {
+        flags[key] = curr === null && orig !== null;
       } else {
         flags[key] = !curr && !!orig;
       }
     }
 
     flags['cover'] = !current.thumbnailUrl && !!original.thumbnailUrl;
+
+    // Handle audiobook metadata clear flags (now at top-level of BookMetadata)
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      const key = field.controlName as keyof BookMetadata;
+      const curr = current[key];
+      const orig = original[key];
+
+      if (field.type === 'boolean') {
+        flags[key] = curr === null && orig !== null;
+      } else {
+        flags[key] = !curr && !!orig;
+      }
+    }
+
     return flags as MetadataClearFlags;
   }
 
   getThumbnail(): string | null {
+    // For Audible provider, cover is handled separately via uploadAudiobookCoverFromUrl
+    if (this.isAudibleProvider()) {
+      return null;
+    }
     const thumbnailUrl = this.metadataForm.get('thumbnailUrl')?.value;
     if (thumbnailUrl?.includes('api/v1')) {
       return null;
@@ -360,16 +453,20 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   toggleLock(field: string): void {
+    const controlName = field;
+    let lockField = field;
     if (field === 'thumbnailUrl') {
-      field = 'cover';
+      lockField = 'cover';
+    } else if (field === 'audiobookThumbnailUrl') {
+      lockField = 'audiobookCover';
     }
-    const isLocked = this.metadataForm.get(field + 'Locked')?.value;
+    const isLocked = this.metadataForm.get(lockField + 'Locked')?.value;
     const updatedLockedState = !isLocked;
-    this.metadataForm.get(field + 'Locked')?.setValue(updatedLockedState);
+    this.metadataForm.get(lockField + 'Locked')?.setValue(updatedLockedState);
     if (updatedLockedState) {
-      this.metadataForm.get(field)?.disable();
+      this.metadataForm.get(controlName)?.disable();
     } else {
-      this.metadataForm.get(field)?.enable();
+      this.metadataForm.get(controlName)?.enable();
     }
     this.updateMetadata(undefined);
   }
@@ -392,20 +489,26 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   copyFetchedToCurrent(field: string): void {
+    let lockField = field;
     if (field === 'thumbnailUrl') {
-      field = 'cover';
+      lockField = 'cover';
+    } else if (field === 'audiobookThumbnailUrl') {
+      lockField = 'audiobookCover';
     }
-    const isLocked = this.metadataForm.get(`${field}Locked`)?.value;
+    const isLocked = this.metadataForm.get(`${lockField}Locked`)?.value;
     if (isLocked) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Action Blocked',
-        detail: `${field} is locked and cannot be updated.`
+        detail: `${lockField} is locked and cannot be updated.`
       });
       return;
     }
-    if (field === 'cover') {
-      field = 'thumbnailUrl';
+    // For audiobook cover from Audible, use the thumbnailUrl from fetched metadata
+    if (field === 'audiobookThumbnailUrl') {
+      this.metadataForm.get('audiobookThumbnailUrl')?.setValue(this.fetchedMetadata.thumbnailUrl);
+      this.highlightCopiedInput(field);
+      return;
     }
     if (this.metadataUtils.copyFieldToForm(field, this.fetchedMetadata, this.metadataForm, this.copiedFields)) {
       this.highlightCopiedInput(field);
@@ -450,5 +553,31 @@ export class MetadataPickerComponent implements OnInit {
 
   resetField(field: string): void {
     this.metadataUtils.resetField(field, this.metadataForm, this.originalMetadata, this.copiedFields, this.hoveredFields);
+  }
+
+  isAudibleProvider(): boolean {
+    return this.fetchedMetadata?.provider?.toLowerCase() === 'audible';
+  }
+
+  getFetchedAudiobookValue(key: string): unknown {
+    return this.fetchedMetadata?.[key as keyof BookMetadata];
+  }
+
+  // Cover type detection methods
+  hasEbookFormat(book: Book): boolean {
+    if (book.isPhysical) {
+      return true;
+    }
+    const allFiles = [book.primaryFile, ...(book.alternativeFormats || [])].filter(f => f?.bookType);
+    return allFiles.some(f => f!.bookType !== 'AUDIOBOOK');
+  }
+
+  hasAudiobookFormat(book: Book): boolean {
+    const allFiles = [book.primaryFile, ...(book.alternativeFormats || [])].filter(f => f?.bookType);
+    return allFiles.some(f => f!.bookType === 'AUDIOBOOK');
+  }
+
+  supportsDualCovers(book: Book): boolean {
+    return this.hasEbookFormat(book) && this.hasAudiobookFormat(book);
   }
 }
