@@ -77,7 +77,7 @@ export class MainDashboardComponent implements OnInit {
         let books = (state.books || []).filter(book =>
           book.lastReadTime &&
           (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED) &&
-          book.primaryFile?.bookType !== 'AUDIOBOOK'
+          this.hasEbookProgress(book)
         );
         books = books.sort((a, b) => {
           const aTime = new Date(a.lastReadTime!).getTime();
@@ -95,7 +95,7 @@ export class MainDashboardComponent implements OnInit {
         let books = (state.books || []).filter(book =>
           book.lastReadTime &&
           (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED) &&
-          book.primaryFile?.bookType === 'AUDIOBOOK'
+          book.audiobookProgress
         );
         books = books.sort((a, b) => {
           const aTime = new Date(a.lastReadTime!).getTime();
@@ -105,6 +105,10 @@ export class MainDashboardComponent implements OnInit {
         return books.slice(0, maxItems);
       })
     );
+  }
+
+  private hasEbookProgress(book: Book): boolean {
+    return !!(book.epubProgress || book.pdfProgress || book.cbxProgress || book.koreaderProgress || book.koboProgress);
   }
 
   private getLatestAddedBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
