@@ -16,12 +16,13 @@ import {DialogLauncherService} from '../../shared/services/dialog-launcher.servi
 import {switchMap} from 'rxjs/operators';
 import {map} from 'rxjs';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
+import {Checkbox} from 'primeng/checkbox';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule],
+  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -34,6 +35,9 @@ export class LibraryCreatorComponent implements OnInit {
   editModeLibraryName: string = '';
   watch: boolean = false;
   formatPriority: {type: BookType, label: string}[] = [];
+  allowAllFormats: boolean = true;
+  selectedAllowedFormats: Set<BookType> = new Set();
+  formatCounts: Record<string, number> = {};
 
   readonly allBookFormats: {type: BookType, label: string}[] = [
     {type: 'EPUB', label: 'EPUB'},
@@ -55,13 +59,14 @@ export class LibraryCreatorComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeFormatPriority();
+    this.initializeAllowedFormats();
 
     const data = this.dynamicDialogConfig?.data;
     if (data?.mode === 'edit') {
       this.mode = data.mode;
       this.library = this.libraryService.findLibraryById(data.libraryId);
       if (this.library) {
-        const {name, icon, iconType, paths, watch, formatPriority} = this.library;
+        const {name, icon, iconType, paths, watch, formatPriority, allowedFormats} = this.library;
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
 
@@ -84,6 +89,19 @@ export class LibraryCreatorComponent implements OnInit {
             }
           });
         }
+
+        if (allowedFormats && allowedFormats.length > 0) {
+          this.allowAllFormats = false;
+          this.selectedAllowedFormats = new Set(allowedFormats);
+        } else {
+          this.allowAllFormats = true;
+          this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+        }
+
+        this.libraryService.getBookCountsByFormat(this.library.id!).subscribe(counts => {
+          this.formatCounts = counts;
+        });
+
         this.folders = paths.map(path => path.path);
       }
     }
@@ -91,6 +109,43 @@ export class LibraryCreatorComponent implements OnInit {
 
   private initializeFormatPriority(): void {
     this.formatPriority = [...this.allBookFormats];
+  }
+
+  private initializeAllowedFormats(): void {
+    this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+  }
+
+  onAllowAllFormatsChange(): void {
+    if (this.allowAllFormats) {
+      this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+    }
+  }
+
+  onFormatCheckboxChange(formatType: BookType, checked: boolean): void {
+    if (checked) {
+      this.selectedAllowedFormats.add(formatType);
+    } else {
+      this.selectedAllowedFormats.delete(formatType);
+    }
+    this.allowAllFormats = this.selectedAllowedFormats.size === this.allBookFormats.length;
+  }
+
+  isFormatSelected(formatType: BookType): boolean {
+    return this.selectedAllowedFormats.has(formatType);
+  }
+
+  getFormatWarning(formatType: BookType): string | null {
+    if (this.mode !== 'edit') return null;
+    const count = this.formatCounts[formatType];
+    if (count && count > 0 && !this.selectedAllowedFormats.has(formatType)) {
+      return `${count} existing book${count > 1 ? 's' : ''} will not appear in future scans`;
+    }
+    return null;
+  }
+
+  hasAnyFormatWarning(): boolean {
+    if (this.mode !== 'edit') return false;
+    return this.allBookFormats.some(f => this.getFormatWarning(f.type) !== null);
   }
 
   closeDialog(): void {
@@ -161,7 +216,8 @@ export class LibraryCreatorComponent implements OnInit {
       iconType: iconType,
       paths: this.folders.map(folder => ({path: folder})),
       watch: this.watch,
-      formatPriority: this.formatPriority.map(f => f.type)
+      formatPriority: this.formatPriority.map(f => f.type),
+      allowedFormats: this.allowAllFormats ? [] : Array.from(this.selectedAllowedFormats)
     };
 
     if (this.mode === 'edit') {

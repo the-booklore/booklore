@@ -266,6 +266,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     if (metadata['lubimyczytacId']) return 'lubimyczytac';
     if (metadata.comicvineId) return 'comicvine';
     if (metadata.ranobedbId) return 'ranobedb';
+    if (metadata.audibleId) return 'audible';
     return null;
   }
 
@@ -378,13 +379,15 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
     } else if (metadata.ranobedbId) {
       return `<a href="https://ranobedb.org/book/${metadata.ranobedbId}" target="_blank">RanobeDB</a>`;
+    } else if (metadata.audibleId) {
+      return `<a href="https://www.audible.com/pd/${metadata.audibleId}" target="_blank">Audible</a>`;
     }
     throw new Error("No provider ID found in metadata.");
   }
 
   trackByMetadata(index: number, metadata: BookMetadata): string {
     return metadata.googleId || metadata.goodreadsId || metadata.asin ||
-      metadata.hardcoverId || metadata.comicvineId || index.toString();
+      metadata.hardcoverId || metadata.comicvineId || metadata.audibleId || index.toString();
   }
 
   onProviderClick(event: MouseEvent) {

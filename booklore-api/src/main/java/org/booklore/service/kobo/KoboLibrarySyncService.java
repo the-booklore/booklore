@@ -88,6 +88,7 @@ public class KoboLibrarySyncService {
 
             if (!shouldContinueSync) {
                 entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
+                entitlements.addAll(entitlementService.generateTags());
             }
         } else {
             int maxRemaining = 5;
@@ -104,6 +105,7 @@ public class KoboLibrarySyncService {
 
             if (!shouldContinueSync) {
                 entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
+                entitlements.addAll(entitlementService.generateTags());
             }
         }
 

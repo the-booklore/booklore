@@ -96,6 +96,17 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 
+  &.square-card {
+    width: 160px;
+    height: auto;
+    flex-basis: 160px;
+
+    ::ng-deep .cover-container.audiobook-cover {
+      aspect-ratio: 1/1 !important;
+      flex: none;
+    }
+  }
+
   &:hover, &.menu-open {
     transform: translateY(-4px) scale(1.04);
     filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4));
@@ -180,6 +191,12 @@
     height: 184px;
     width: 108px;
     flex-basis: 108px;
+
+    &.square-card {
+      width: 150px;
+      height: auto;
+      flex-basis: 150px;
+    }
   }
 
   .dashboard-scroller-no-books {

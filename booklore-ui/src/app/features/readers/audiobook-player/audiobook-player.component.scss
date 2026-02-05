@@ -53,7 +53,7 @@ $border-color: rgba(255, 255, 255, 0.1);
 }
 
 // Main container
-.audiobook-reader {
+.audiobook-player {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -436,9 +436,10 @@ $border-color: rgba(255, 255, 255, 0.1);
 .audio-details {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 1.25rem;
-  padding: 1rem 1rem 0;
+  padding: 1rem;
   color: $text-tertiary;
   font-size: 0.8rem;
   background: rgba(255, 255, 255, 0.03);

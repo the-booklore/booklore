@@ -165,4 +165,8 @@ export class LibraryService {
   setLargeLibraryLoading(isLoading: boolean, expectedCount: number): void {
     this.largeLibraryLoadingSubject.next({ isLoading, expectedCount });
   }
+
+  getBookCountsByFormat(libraryId: number): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(`${this.url}/${libraryId}/format-counts`);
+  }
 }

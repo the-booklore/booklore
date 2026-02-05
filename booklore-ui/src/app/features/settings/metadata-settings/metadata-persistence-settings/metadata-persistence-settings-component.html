@@ -122,6 +122,40 @@
       }
     </div>
 
+    <div class="setting-item">
+      <div class="setting-header">
+        <p-toggleswitch
+          [ngModel]="metadataPersistence.saveToOriginalFile.audiobook.enabled"
+          (onChange)="onSaveToOriginalFileToggle('audiobook')">
+        </p-toggleswitch>
+        <label class="setting-label">Write Metadata to Audiobooks</label>
+      </div>
+      <p class="setting-description">
+        Write metadata directly into audiobook files (M4B, M4A, MP3, etc.) when editing book information.
+        <span class="setting-note">Supports title, authors, narrator, description, publisher, categories, series, language, and cover art. For folder-based audiobooks, cover is saved as cover.jpg in the folder.</span>
+      </p>
+      @if (metadataPersistence.saveToOriginalFile.audiobook.enabled) {
+        <div class="setting-options">
+          <div class="filesize-input">
+            <label>Max file size:</label>
+            <input
+              type="number"
+              [(ngModel)]="metadataPersistence.saveToOriginalFile.audiobook.maxFileSizeInMb"
+              (change)="onFilesizeChange('audiobook')"
+              min="1"
+              max="2000"
+              class="filesize-field">
+            <span class="filesize-unit">MB</span>
+            <i
+              class="pi pi-info-circle"
+              pTooltip="Only files up to this size will be updated. Larger files are ignored."
+              tooltipPosition="right">
+            </i>
+          </div>
+        </div>
+      }
+    </div>
+
     @if ((appSettings$ | async)?.diskType === 'LOCAL') {
       <div class="setting-item">
         <div class="setting-header">

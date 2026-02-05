@@ -57,6 +57,9 @@ public class BookEntity {
     @Column(name = "book_cover_hash", length = 20)
     private String bookCoverHash;
 
+    @Column(name = "audiobook_cover_hash", length = 20)
+    private String audiobookCoverHash;
+
     @Column(name = "deleted")
     @Builder.Default
     private Boolean deleted = Boolean.FALSE;

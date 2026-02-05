@@ -52,11 +52,10 @@ export class CoverScalePreferenceService {
     return `${this.currentCardSize.width}px`;
   }
 
-  getCardHeight(book: Book): number {
-    const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
-    if (isAudiobook) {
-      return Math.round((this.BASE_WIDTH + this.TITLE_BAR_HEIGHT) * this.scaleFactor);
-    }
+  getCardHeight(_book: Book): number {
+    // Use uniform height for all book types to ensure smooth virtual scrolling.
+    // Mixed heights cause choppy/jumpy scrolling because the virtual scroller
+    // cannot accurately estimate positions when item heights vary.
     return this.currentCardSize.height;
   }
 

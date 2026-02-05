@@ -51,6 +51,46 @@ public class BookCoverController {
         bookCoverService.updateCoverFromUrl(bookId, body.get("url"));
     }
 
+    @Operation(summary = "Upload audiobook cover image from file", description = "Upload an audiobook cover image for a book from a file. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "200", description = "Audiobook cover image uploaded successfully")
+    @PostMapping("/{bookId}/metadata/audiobook-cover/upload")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void uploadAudiobookCoverFromFile(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Cover image file") @RequestParam("file") MultipartFile file) {
+        bookCoverService.updateAudiobookCoverFromFile(bookId, file);
+    }
+
+    @Operation(summary = "Upload audiobook cover image from URL", description = "Upload an audiobook cover image for a book from a URL. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "200", description = "Audiobook cover image uploaded successfully")
+    @PostMapping("/{bookId}/metadata/audiobook-cover/from-url")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void uploadAudiobookCoverFromUrl(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "URL body") @RequestBody Map<String, String> body) {
+        bookCoverService.updateAudiobookCoverFromUrl(bookId, body.get("url"));
+    }
+
+    @Operation(summary = "Regenerate audiobook cover for a book", description = "Regenerate audiobook cover for a specific book by extracting from the audiobook file. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Audiobook cover regenerated successfully")
+    @PostMapping("/{bookId}/regenerate-audiobook-cover")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void regenerateAudiobookCover(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
+        bookCoverService.regenerateAudiobookCover(bookId);
+    }
+
+    @Operation(summary = "Generate custom audiobook cover for a book", description = "Generate a custom audiobook cover for a specific book based on its metadata. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Custom audiobook cover generated successfully")
+    @PostMapping("/{bookId}/generate-custom-audiobook-cover")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void generateCustomAudiobookCover(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
+        bookCoverService.generateCustomAudiobookCover(bookId);
+    }
+
     @Operation(summary = "Regenerate all covers", description = "Regenerate covers for all books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Covers regenerated successfully")
     @PostMapping("/regenerate-covers")
