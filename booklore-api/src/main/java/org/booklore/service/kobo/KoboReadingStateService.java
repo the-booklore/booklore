@@ -186,6 +186,8 @@ public class KoboReadingStateService {
                         return newProgress;
                     });
 
+            Float prevousKoboProgressPercent = progress.getKoboProgressPercent();
+
             KoboReadingState.CurrentBookmark bookmark = readingState.getCurrentBookmark();
             if (bookmark != null) {
                 if (bookmark.getProgressPercent() != null) {
@@ -206,8 +208,6 @@ public class KoboReadingStateService {
             Instant now = Instant.now();
             progress.setKoboProgressReceivedTime(now);
             progress.setLastReadTime(now);
-            
-            ReadStatus previousReadStatus = progress.getReadStatus();
 
             if (progress.getKoboProgressPercent() != null) {
                 updateReadStatusFromKoboProgress(progress, now);
@@ -221,8 +221,8 @@ public class KoboReadingStateService {
             log.debug("Synced Kobo progress: bookId={}, progress={}%", bookId, progress.getKoboProgressPercent());
 
             // Sync progress to Hardcover asynchronously (if enabled for this user)
-            // But only if our current and previous read status aren't both "READ"
-            if (!(ReadStatus.READ.equals(previousReadStatus) && ReadStatus.READ.equals(progress.getReadStatus()))) {
+            // But only if the progress percentage has changed from last time
+            if (progress.getKoboProgressPercent() != null && !progress.getKoboProgressPercent().equals(prevousKoboProgressPercent)) {
                 hardcoverSyncService.syncProgressToHardcover(book.getId(), progress.getKoboProgressPercent(), userId);
             }
         } catch (NumberFormatException e) {
