@@ -173,7 +173,7 @@ export class AppMenuComponent implements OnInit {
           bookCount$: this.shelfService.getUnshelvedBookCount?.() ?? of(0),
         };
 
-        const items : MenuItem[] = [unshelvedItem];
+        const items: MenuItem[] = [unshelvedItem];
         if (koboShelf) {
           items.push({
             label: koboShelf.name,
