@@ -1,5 +1,5 @@
 import {inject, Injectable} from '@angular/core';
-import {combineLatest, map, Observable, shareReplay} from 'rxjs';
+import {combineLatest, map, Observable, of, shareReplay} from 'rxjs';
 import {Book} from '../../../model/book.model';
 import {Library} from '../../../model/library.model';
 import {Shelf} from '../../../model/shelf.model';
@@ -10,6 +10,8 @@ import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rul
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
 import {EntityType} from '../book-browser.component';
 import {Filter, FILTER_CONFIGS, FILTER_EXTRACTORS, FilterType, FilterValue, NUMERIC_ID_FILTER_TYPES, SortMode} from './book-filter.config';
+import {filterBooksByFilters} from '../filters/SidebarFilter';
+import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
 const MAX_FILTER_ITEMS = 100;
 
@@ -21,7 +23,9 @@ export class BookFilterService {
 
   createFilterStreams(
     entity$: Observable<Library | Shelf | MagicShelf | null>,
-    entityType$: Observable<EntityType>
+    entityType$: Observable<EntityType>,
+    activeFilters$: Observable<Record<string, unknown[]> | null> = of(null),
+    filterMode$: Observable<BookFilterMode> = of('and')
   ): Record<FilterType, Observable<Filter[]>> {
     const filteredBooks$ = this.createFilteredBooksStream(entity$, entityType$);
 
@@ -29,14 +33,17 @@ export class BookFilterService {
 
     for (const [type, config] of Object.entries(FILTER_CONFIGS)) {
       const filterType = type as Exclude<FilterType, 'library'>;
-      streams[filterType] = this.createFilterStream(
+      streams[filterType] = this.createCascadingFilterStream(
         filteredBooks$,
+        activeFilters$,
+        filterMode$,
+        filterType,
         FILTER_EXTRACTORS[filterType],
         config.sortMode
       );
     }
 
-    streams.library = this.createLibraryFilterStream(filteredBooks$);
+    streams.library = this.createCascadingLibraryFilterStream(filteredBooks$, activeFilters$, filterMode$);
 
     return streams;
   }
@@ -91,20 +98,32 @@ export class BookFilterService {
     );
   }
 
-  private createFilterStream(
+  private createCascadingFilterStream(
     books$: Observable<Book[]>,
+    activeFilters$: Observable<Record<string, unknown[]> | null>,
+    filterMode$: Observable<BookFilterMode>,
+    filterType: FilterType,
     extractor: (book: Book) => FilterValue[],
     sortMode: SortMode
   ): Observable<Filter[]> {
-    return books$.pipe(
-      map(books => this.buildAndSortFilters(books, extractor, sortMode)),
+    return combineLatest([books$, activeFilters$, filterMode$]).pipe(
+      map(([books, activeFilters, mode]) => {
+        const filteredBooks = filterBooksByFilters(books, activeFilters, mode, filterType);
+        return this.buildAndSortFilters(filteredBooks, extractor, sortMode);
+      }),
       shareReplay({bufferSize: 1, refCount: true})
     );
   }
 
-  private createLibraryFilterStream(books$: Observable<Book[]>): Observable<Filter[]> {
-    return combineLatest([books$, this.libraryService.libraryState$]).pipe(
-      map(([books, libraryState]) => {
+  private createCascadingLibraryFilterStream(
+    books$: Observable<Book[]>,
+    activeFilters$: Observable<Record<string, unknown[]> | null>,
+    filterMode$: Observable<BookFilterMode>
+  ): Observable<Filter[]> {
+    return combineLatest([books$, this.libraryService.libraryState$, activeFilters$, filterMode$]).pipe(
+      map(([books, libraryState, activeFilters, mode]) => {
+        const filteredBooks = filterBooksByFilters(books, activeFilters, mode, 'library');
+
         const libraryMap = new Map(
           (libraryState.libraries || [])
             .filter(lib => lib.id !== undefined)
@@ -113,7 +132,7 @@ export class BookFilterService {
 
         const filterMap = new Map<number, Filter>();
 
-        for (const book of books) {
+        for (const book of filteredBooks) {
           if (book.libraryId == null) continue;
 
           if (!filterMap.has(book.libraryId)) {
