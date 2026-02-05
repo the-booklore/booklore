@@ -1,10 +1,10 @@
 <div class="cover-search-container">
   <div class="panel-header">
     <div class="header-icon-wrapper">
-      <i class="pi pi-image header-icon"></i>
+      <i class="pi {{ coverType === 'audiobook' ? 'pi-headphones' : 'pi-image' }} header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Search Cover Images</h2>
+      <h2 class="panel-title">Search {{ coverType === 'audiobook' ? 'Audiobook' : 'Ebook' }} Cover</h2>
       <p class="panel-description">Find and select a cover for your book</p>
     </div>
     <p-button

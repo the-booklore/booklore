@@ -80,6 +80,7 @@ export class MetadataEditorComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   isGeneratingCover = false;
+  isGeneratingAudiobookCover = false;
 
   refreshingBookIds = new Set<number>();
   isAutoFetching = false;
@@ -118,6 +119,9 @@ export class MetadataEditorComponent implements OnInit {
     lubimyczytacRating: true,
     ranobedbId: true,
     ranobedbRating: true,
+    audibleId: true,
+    audibleRating: true,
+    audibleReviewCount: true,
   };
 
   navigationState$ = this.bookNavigationService.getNavigationState();
@@ -195,10 +199,14 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbId: new FormControl(""),
       ranobedbRating: new FormControl(""),
       googleId: new FormControl(""),
+      audibleId: new FormControl(""),
+      audibleRating: new FormControl(""),
+      audibleReviewCount: new FormControl(""),
       seriesName: new FormControl(""),
       seriesNumber: new FormControl(""),
       seriesTotal: new FormControl(""),
       thumbnailUrl: new FormControl(""),
+      audiobookCover: new FormControl(""),
 
       titleLocked: new FormControl(false),
       subtitleLocked: new FormControl(false),
@@ -229,10 +237,14 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbIdLocked: new FormControl(""),
       ranobedbRatingLocked: new FormControl(false),
       googleIdLocked: new FormControl(false),
+      audibleIdLocked: new FormControl(false),
+      audibleRatingLocked: new FormControl(false),
+      audibleReviewCountLocked: new FormControl(false),
       seriesNameLocked: new FormControl(false),
       seriesNumberLocked: new FormControl(false),
       seriesTotalLocked: new FormControl(false),
       coverLocked: new FormControl(false),
+      audiobookCoverLocked: new FormControl(false),
       reviewsLocked: new FormControl(false),
     });
   }
@@ -345,6 +357,9 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbId: metadata.ranobedbId ?? null,
       ranobedbRating: metadata.ranobedbRating ?? null,
       googleId: metadata.googleId ?? null,
+      audibleId: metadata.audibleId ?? null,
+      audibleRating: metadata.audibleRating ?? null,
+      audibleReviewCount: metadata.audibleReviewCount ?? null,
       seriesName: metadata.seriesName ?? null,
       seriesNumber: metadata.seriesNumber ?? null,
       seriesTotal: metadata.seriesTotal ?? null,
@@ -377,10 +392,14 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbIdLocked: metadata.ranobedbIdLocked ?? false,
       ranobedbRatingLocked: metadata.ranobedbRatingLocked ?? false,
       googleIdLocked: metadata.googleIdLocked ?? false,
+      audibleIdLocked: metadata.audibleIdLocked ?? false,
+      audibleRatingLocked: metadata.audibleRatingLocked ?? false,
+      audibleReviewCountLocked: metadata.audibleReviewCountLocked ?? false,
       seriesNameLocked: metadata.seriesNameLocked ?? false,
       seriesNumberLocked: metadata.seriesNumberLocked ?? false,
       seriesTotalLocked: metadata.seriesTotalLocked ?? false,
       coverLocked: metadata.coverLocked ?? false,
+      audiobookCoverLocked: metadata.audiobookCoverLocked ?? false,
       reviewsLocked: metadata.reviewsLocked ?? false,
     });
 
@@ -413,12 +432,16 @@ export class MetadataEditorComponent implements OnInit {
       {key: "ranobedbIdLocked", control: "ranobedbId"},
       {key: "ranobedbRatingLocked", control: "ranobedbRating"},
       {key: "googleIdLocked", control: "googleId"},
+      {key: "audibleIdLocked", control: "audibleId"},
+      {key: "audibleRatingLocked", control: "audibleRating"},
+      {key: "audibleReviewCountLocked", control: "audibleReviewCount"},
       {key: "pageCountLocked", control: "pageCount"},
       {key: "descriptionLocked", control: "description"},
       {key: "seriesNameLocked", control: "seriesName"},
       {key: "seriesNumberLocked", control: "seriesNumber"},
       {key: "seriesTotalLocked", control: "seriesTotal"},
       {key: "coverLocked", control: "thumbnailUrl"},
+      {key: "audiobookCoverLocked", control: "audiobookCover"},
       {key: "reviewsLocked", control: "reviews"},
     ];
 
@@ -496,6 +519,7 @@ export class MetadataEditorComponent implements OnInit {
     const isLocked = this.metadataForm.get(field + "Locked")?.value;
     const updatedLockedState = !isLocked;
     this.metadataForm.get(field + "Locked")?.setValue(updatedLockedState);
+
     if (updatedLockedState) {
       this.metadataForm.get(field)?.disable();
     } else {
@@ -561,11 +585,15 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbId: form.get("ranobedbId")?.value,
       ranobedbRating: form.get("ranobedbRating")?.value,
       googleId: form.get("googleId")?.value,
+      audibleId: form.get("audibleId")?.value,
+      audibleRating: form.get("audibleRating")?.value,
+      audibleReviewCount: form.get("audibleReviewCount")?.value,
       language: form.get("language")?.value,
       seriesName: form.get("seriesName")?.value,
       seriesNumber: form.get("seriesNumber")?.value,
       seriesTotal: form.get("seriesTotal")?.value,
       thumbnailUrl: form.get("thumbnailUrl")?.value,
+      audiobookCover: form.get("audiobookCover")?.value,
 
       // Locks
       titleLocked: form.get("titleLocked")?.value,
@@ -597,10 +625,14 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbIdLocked: form.get("ranobedbIdLocked")?.value,
       ranobedbRatingLocked: form.get("ranobedbRatingLocked")?.value,
       googleIdLocked: form.get("googleIdLocked")?.value,
+      audibleIdLocked: form.get("audibleIdLocked")?.value,
+      audibleRatingLocked: form.get("audibleRatingLocked")?.value,
+      audibleReviewCountLocked: form.get("audibleReviewCountLocked")?.value,
       seriesNameLocked: form.get("seriesNameLocked")?.value,
       seriesNumberLocked: form.get("seriesNumberLocked")?.value,
       seriesTotalLocked: form.get("seriesTotalLocked")?.value,
       coverLocked: form.get("coverLocked")?.value,
+      audiobookCoverLocked: form.get("audiobookCoverLocked")?.value,
       reviewsLocked: form.get("reviewsLocked")?.value,
 
       ...(shouldLockAllFields !== undefined && {
@@ -650,9 +682,13 @@ export class MetadataEditorComponent implements OnInit {
       ranobedbId: wasCleared("ranobedbId"),
       ranobedbRating: wasCleared("ranobedbRating"),
       googleId: wasCleared("googleId"),
+      audibleId: wasCleared("audibleId"),
+      audibleRating: wasCleared("audibleRating"),
+      audibleReviewCount: wasCleared("audibleReviewCount"),
       seriesName: wasCleared("seriesName"),
       seriesNumber: wasCleared("seriesNumber"),
       seriesTotal: wasCleared("seriesTotal"),
+      audiobookCover: wasCleared("audiobookCover"),
       cover: false,
     };
 
@@ -742,6 +778,13 @@ export class MetadataEditorComponent implements OnInit {
           },
         });
       },
+      error: (err) => {
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: err?.error?.message || "Failed to regenerate cover",
+        });
+      }
     });
   }
 
@@ -774,6 +817,71 @@ export class MetadataEditorComponent implements OnInit {
             severity: "error",
             summary: "Error",
             detail: "Failed to generate custom cover",
+          });
+        }
+      });
+  }
+
+  regenerateAudiobookCover(bookId: number) {
+    this.bookService.regenerateAudiobookCover(bookId).subscribe({
+      next: () => {
+        this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+          next: (updatedBook) => {
+            this.bookService.handleBookUpdate(updatedBook);
+            this.messageService.add({
+              severity: "success",
+              summary: "Success",
+              detail: "Audiobook cover regenerated successfully.",
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: "warning",
+              summary: "Partial Success",
+              detail: "Cover regenerated but failed to refresh display. Please refresh the page.",
+            });
+          },
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: err?.error?.message || "Failed to regenerate audiobook cover",
+        });
+      }
+    });
+  }
+
+  generateCustomAudiobookCover(bookId: number) {
+    this.isGeneratingAudiobookCover = true;
+    this.bookService.generateCustomAudiobookCover(bookId)
+      .pipe(finalize(() => this.isGeneratingAudiobookCover = false))
+      .subscribe({
+        next: () => {
+          this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+            next: (updatedBook) => {
+              this.bookService.handleBookUpdate(updatedBook);
+              this.messageService.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Custom audiobook cover generated successfully.",
+              });
+            },
+            error: () => {
+              this.messageService.add({
+                severity: "warning",
+                summary: "Partial Success",
+                detail: "Cover generated but failed to refresh display. Please refresh the page.",
+              });
+            },
+          });
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to generate custom audiobook cover",
           });
         }
       });
@@ -818,11 +926,14 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   openCoverSearch() {
-    const ref = this.bookDialogHelperService.openCoverSearchDialog(this.currentBookId);
+    const ref = this.bookDialogHelperService.openCoverSearchDialog(this.currentBookId, 'ebook');
     ref?.onClose.subscribe((result) => {
       if (result) {
-        this.metadataForm.get("thumbnailUrl")?.setValue(result);
-        this.onSave();
+        this.bookService.getBookByIdFromAPI(this.currentBookId, false).subscribe({
+          next: (updatedBook) => {
+            this.bookService.handleBookUpdate(updatedBook);
+          },
+        });
       }
     });
   }
@@ -881,5 +992,61 @@ export class MetadataEditorComponent implements OnInit {
 
   onFieldChange(): void {
     this.metadataForm.markAsDirty();
+  }
+
+  // Cover type detection methods
+  hasEbookFormat(book: Book): boolean {
+    if (book.isPhysical) {
+      return true;
+    }
+    const allFiles = [book.primaryFile, ...(book.alternativeFormats || [])].filter(f => f?.bookType);
+    return allFiles.some(f => f!.bookType !== 'AUDIOBOOK');
+  }
+
+  hasAudiobookFormat(book: Book): boolean {
+    const allFiles = [book.primaryFile, ...(book.alternativeFormats || [])].filter(f => f?.bookType);
+    return allFiles.some(f => f!.bookType === 'AUDIOBOOK');
+  }
+
+  supportsDualCovers(book: Book): boolean {
+    return this.bookService.supportsDualCovers(book);
+  }
+
+  getUploadAudiobookCoverUrl(): string {
+    return this.bookService.getUploadAudiobookCoverUrl(this.currentBookId);
+  }
+
+  openAudiobookCoverSearch() {
+    const ref = this.bookDialogHelperService.openCoverSearchDialog(this.currentBookId, 'audiobook');
+    ref?.onClose.subscribe((result) => {
+      if (result) {
+        this.bookService.getBookByIdFromAPI(this.currentBookId, false).subscribe({
+          next: (updatedBook) => {
+            this.bookService.handleBookUpdate(updatedBook);
+          },
+        });
+      }
+    });
+  }
+
+  onAudiobookCoverUpload(event: FileUploadEvent): void {
+    const response: HttpResponse<unknown> =
+      event.originalEvent as HttpResponse<unknown>;
+    if (response && response.status === 200) {
+      this.isUploading = false;
+      this.bookService.getBookByIdFromAPI(this.currentBookId, false).subscribe({
+        next: (updatedBook) => {
+          this.bookService.handleBookUpdate(updatedBook);
+        },
+      });
+    } else {
+      this.isUploading = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Upload Failed',
+        detail: 'An error occurred while uploading the audiobook cover',
+        life: 3000,
+      });
+    }
   }
 }

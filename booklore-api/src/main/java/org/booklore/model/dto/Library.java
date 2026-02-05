@@ -22,6 +22,7 @@ public class Library {
     private boolean watch;
     private List<LibraryPath> paths;
     private List<BookFileType> formatPriority;
+    private List<BookFileType> allowedFormats;
     private LibraryOrganizationMode organizationMode;
 }
 

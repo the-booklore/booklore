@@ -9,5 +9,5 @@ public class CoverFetchRequest {
     private String isbn;
     private String title;
     private String author;
-    private boolean squareCover;
+    private String coverType; // "ebook" or "audiobook"
 }

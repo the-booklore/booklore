@@ -56,6 +56,10 @@ public class LibraryEntity {
     @Builder.Default
     private List<BookFileType> formatPriority = new ArrayList<>();
 
+    @Convert(converter = FormatPriorityConverter.class)
+    @Column(name = "allowed_formats")
+    private List<BookFileType> allowedFormats;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "organization_mode")
     @Builder.Default

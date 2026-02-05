@@ -257,6 +257,32 @@ public class BookService {
         return getBookCover(bookEntity.getId());
     }
 
+    public Resource getAudiobookThumbnail(long bookId) {
+        Path thumbnailPath = Paths.get(fileService.getAudiobookThumbnailFile(bookId));
+        try {
+            if (Files.exists(thumbnailPath)) {
+                return new UrlResource(thumbnailPath.toUri());
+            } else {
+                return new ClassPathResource("static/images/missing-cover.jpg");
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to load audiobook thumbnail for bookId=" + bookId, e);
+        }
+    }
+
+    public Resource getAudiobookCover(long bookId) {
+        Path coverPath = Paths.get(fileService.getAudiobookCoverFile(bookId));
+        try {
+            if (Files.exists(coverPath)) {
+                return new UrlResource(coverPath.toUri());
+            } else {
+                return new ClassPathResource("static/images/missing-cover.jpg");
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to load audiobook cover for bookId=" + bookId, e);
+        }
+    }
+
     public ResponseEntity<Resource> downloadBook(Long bookId) {
         return bookDownloadService.downloadBook(bookId);
     }

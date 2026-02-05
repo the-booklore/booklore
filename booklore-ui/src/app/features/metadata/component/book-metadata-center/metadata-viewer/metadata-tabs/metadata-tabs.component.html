@@ -8,6 +8,11 @@
     <p-tab value="similar">
       <i class="pi pi-bookmark"></i> Similar Books
     </p-tab>
+    @if (supportsDualCovers()) {
+      <p-tab value="covers">
+        <i class="pi pi-images"></i> Covers
+      </p-tab>
+    }
     <p-tab value="files">
       <i class="pi pi-folder-open"></i> Files
     </p-tab>
@@ -51,6 +56,39 @@
               }
             </div>
           }
+        </div>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="covers">
+      <ng-template #content>
+        <div class="covers-tab-content">
+          <div class="covers-grid">
+            <div class="cover-item">
+              <div class="cover-label">
+                <i class="pi pi-book"></i> Ebook Cover
+              </div>
+              <p-image
+                [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
+                alt="Ebook Cover"
+                width="200"
+                appendTo="body"
+                [preview]="true">
+              </p-image>
+            </div>
+            <div class="cover-item">
+              <div class="cover-label audiobook">
+                <i class="pi pi-headphones"></i> Audiobook Cover
+              </div>
+              <p-image
+                [src]="urlHelper.getAudiobookCoverUrl(book.id, book.metadata?.audiobookCoverUpdatedOn)"
+                alt="Audiobook Cover"
+                width="200"
+                appendTo="body"
+                [preview]="true"
+                styleClass="square-cover">
+              </p-image>
+            </div>
+          </div>
         </div>
       </ng-template>
     </p-tabpanel>

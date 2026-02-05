@@ -1,10 +1,15 @@
 package org.booklore.model.entity;
 
-import org.booklore.model.enums.BookFileType;
-import org.booklore.util.ArchiveUtils;
 import jakarta.persistence.*;
 import lombok.*;
+import org.booklore.convertor.AudioFileChapterListConverter;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.util.ArchiveUtils;
 
+import java.util.List;
+
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -65,6 +70,28 @@ public class BookFileEntity {
     @Column(name = "added_on")
     private Instant addedOn;
 
+    @Column(name = "duration_seconds")
+    private Long durationSeconds;
+
+    @Column(name = "bitrate")
+    private Integer bitrate;
+
+    @Column(name = "sample_rate")
+    private Integer sampleRate;
+
+    @Column(name = "channels")
+    private Integer channels;
+
+    @Column(name = "codec", length = 50)
+    private String codec;
+
+    @Column(name = "chapter_count")
+    private Integer chapterCount;
+
+    @Convert(converter = AudioFileChapterListConverter.class)
+    @Column(name = "chapters_json", columnDefinition = "TEXT")
+    private List<AudioFileChapter> chapters;
+
     public boolean isBook() {
         return isBookFormat;
     }
@@ -97,7 +124,7 @@ public class BookFileEntity {
         }
         Path folderPath = getFullFilePath();
         try {
-            return java.nio.file.Files.list(folderPath)
+            return Files.list(folderPath)
                     .filter(java.nio.file.Files::isRegularFile)
                     .filter(p -> {
                         String name = p.getFileName().toString().toLowerCase();
@@ -108,8 +135,21 @@ public class BookFileEntity {
                     .sorted()
                     .findFirst()
                     .orElse(folderPath);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             return folderPath;
         }
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AudioFileChapter {
+        private Integer index;
+        private String title;
+        private Long startTimeMs;
+        private Long endTimeMs;
+        private Long durationMs;
     }
 }

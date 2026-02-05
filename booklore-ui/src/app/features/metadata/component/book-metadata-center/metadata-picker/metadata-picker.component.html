@@ -40,62 +40,143 @@
           <span>Cover Image</span>
         </div>
 
-        <div class="section-content">
-          <div class="field-row cover-field-row">
-            <label class="field-label">Cover</label>
-            <div class="field-content">
-              <div class="field-side current cover-side">
-                <span class="cover-label mobile-only">Current</span>
-                <div class="cover-wrapper">
-                  <p-image
-                    class="cover-image"
-                    [src]="metadataForm.get('thumbnailUrl')?.value"
-                    alt="Current cover"
-                    appendTo="body"
-                    lazyLoad
-                    [preview]="true"
-                  />
-                  <button
-                    type="button"
-                    class="lock-badge"
-                    [class.locked]="metadataForm.get('coverLocked')?.value"
-                    (click)="toggleLock('thumbnailUrl')"
-                    [pTooltip]="metadataForm.get('coverLocked')?.value ? 'Unlock cover' : 'Lock cover'"
-                    tooltipPosition="top"
-                  >
-                    <i [class]="metadataForm.get('coverLocked')?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                  </button>
+        <div class="section-content" [class.dual-covers-section]="currentBook && supportsDualCovers(currentBook)">
+          <!-- Ebook Cover Row -->
+          @if (!currentBook || hasEbookFormat(currentBook)) {
+            <div class="field-row cover-field-row">
+              <label class="field-label">
+                @if (currentBook && supportsDualCovers(currentBook)) {
+                  <i class="pi pi-book cover-type-icon"></i> Ebook
+                } @else {
+                  Cover
+                }
+              </label>
+              <div class="field-content">
+                <div class="field-side current cover-side">
+                  <span class="cover-label mobile-only">Current</span>
+                  <div class="cover-wrapper">
+                    <p-image
+                      class="cover-image"
+                      [src]="metadataForm.get('thumbnailUrl')?.value"
+                      alt="Current cover"
+                      appendTo="body"
+                      lazyLoad
+                      [preview]="true"
+                    />
+                    <button
+                      type="button"
+                      class="lock-badge"
+                      [class.locked]="metadataForm.get('coverLocked')?.value"
+                      (click)="toggleLock('thumbnailUrl')"
+                      [pTooltip]="metadataForm.get('coverLocked')?.value ? 'Unlock cover' : 'Lock cover'"
+                      tooltipPosition="top"
+                    >
+                      <i [class]="metadataForm.get('coverLocked')?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="button"
-                class="transfer-btn"
-                [class.saved]="isValueSaved('thumbnailUrl')"
-                [class.copied]="isValueCopied('thumbnailUrl') && !hoveredFields['thumbnailUrl']"
-                [class.reset]="isValueCopied('thumbnailUrl') && hoveredFields['thumbnailUrl']"
-                (click)="hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
-                (mouseenter)="onMouseEnter('thumbnailUrl')"
-                (mouseleave)="onMouseLeave('thumbnailUrl')"
-              >
-                <i [class]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-              </button>
+                <button
+                  type="button"
+                  class="transfer-btn"
+                  [class.saved]="isValueSaved('thumbnailUrl')"
+                  [class.copied]="isValueCopied('thumbnailUrl') && !hoveredFields['thumbnailUrl']"
+                  [class.reset]="isValueCopied('thumbnailUrl') && hoveredFields['thumbnailUrl']"
+                  (click)="hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
+                  (mouseenter)="onMouseEnter('thumbnailUrl')"
+                  (mouseleave)="onMouseLeave('thumbnailUrl')"
+                >
+                  <i [class]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                </button>
 
-              <div class="field-side fetched cover-side">
-                <span class="cover-label mobile-only">Fetched</span>
-                <div class="cover-wrapper">
-                  <p-image
-                    class="cover-image"
-                    [src]="fetchedMetadata.thumbnailUrl!"
-                    alt="Fetched cover"
-                    appendTo="body"
-                    lazyLoad
-                    [preview]="true"
-                  />
+                <div class="field-side fetched cover-side">
+                  <span class="cover-label mobile-only">Fetched</span>
+                  <div class="cover-wrapper">
+                    <p-image
+                      class="cover-image"
+                      [src]="fetchedMetadata.thumbnailUrl!"
+                      alt="Fetched cover"
+                      appendTo="body"
+                      lazyLoad
+                      [preview]="true"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          }
+
+          <!-- Audiobook Cover Row -->
+          @if (currentBook && hasAudiobookFormat(currentBook)) {
+            <div class="field-row cover-field-row audiobook-cover-row">
+              <label class="field-label">
+                <i class="pi pi-headphones cover-type-icon"></i> Audiobook
+              </label>
+              <div class="field-content">
+                <div class="field-side current cover-side">
+                  <span class="cover-label mobile-only">Current</span>
+                  <div class="cover-wrapper">
+                    <p-image
+                      class="cover-image square-cover"
+                      [src]="metadataForm.get('audiobookThumbnailUrl')?.value"
+                      alt="Current audiobook cover"
+                      appendTo="body"
+                      lazyLoad
+                      [preview]="true"
+                    />
+                    <button
+                      type="button"
+                      class="lock-badge"
+                      [class.locked]="metadataForm.get('audiobookCoverLocked')?.value"
+                      (click)="toggleLock('audiobookThumbnailUrl')"
+                      [pTooltip]="metadataForm.get('audiobookCoverLocked')?.value ? 'Unlock cover' : 'Lock cover'"
+                      tooltipPosition="top"
+                    >
+                      <i [class]="metadataForm.get('audiobookCoverLocked')?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                    </button>
+                  </div>
+                </div>
+
+                @if (isAudibleProvider()) {
+                  <button
+                    type="button"
+                    class="transfer-btn"
+                    [class.saved]="isValueSaved('audiobookThumbnailUrl')"
+                    [class.copied]="isValueCopied('audiobookThumbnailUrl') && !hoveredFields['audiobookThumbnailUrl']"
+                    [class.reset]="isValueCopied('audiobookThumbnailUrl') && hoveredFields['audiobookThumbnailUrl']"
+                    (click)="hoveredFields['audiobookThumbnailUrl'] && isValueCopied('audiobookThumbnailUrl') ? resetField('audiobookThumbnailUrl') : copyFetchedToCurrent('audiobookThumbnailUrl')"
+                    (mouseenter)="onMouseEnter('audiobookThumbnailUrl')"
+                    (mouseleave)="onMouseLeave('audiobookThumbnailUrl')"
+                  >
+                    <i [class]="isValueSaved('audiobookThumbnailUrl') ? 'pi pi-check' : (hoveredFields['audiobookThumbnailUrl'] && isValueCopied('audiobookThumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                  </button>
+                } @else {
+                  <div class="transfer-btn-placeholder"></div>
+                }
+
+                <div class="field-side fetched cover-side">
+                  <span class="cover-label mobile-only">Fetched</span>
+                  <div class="cover-wrapper">
+                    @if (isAudibleProvider()) {
+                      <p-image
+                        class="cover-image square-cover"
+                        [src]="fetchedMetadata.thumbnailUrl!"
+                        alt="Fetched audiobook cover"
+                        appendTo="body"
+                        lazyLoad
+                        [preview]="true"
+                      />
+                    } @else {
+                      <div class="no-cover-placeholder">
+                        <i class="pi pi-image"></i>
+                        <span>N/A</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
         </div>
       </section>
 
@@ -261,16 +342,108 @@
         </div>
       </section>
 
-      <!-- Additional Details Section -->
-      @if (metadataFieldsBottom.length > 0) {
+      <!-- Series Information Section -->
+      <section class="form-section">
+        <div class="section-header">
+          <i class="pi pi-book"></i>
+          <span>Series Information</span>
+        </div>
+
+        <div class="section-content">
+          @for (field of metadataSeriesFields; track field) {
+            <div class="field-row">
+              <label class="field-label">{{ field.label }}</label>
+              <div class="field-content">
+                <div class="field-side current">
+                  <button
+                    type="button"
+                    class="lock-btn"
+                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                    (click)="toggleLock(field.controlName)"
+                  >
+                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                  </button>
+                  <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
+                </div>
+
+                <button
+                  type="button"
+                  class="transfer-btn"
+                  [class.saved]="isValueSaved(field.controlName)"
+                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                  (mouseenter)="onMouseEnter(field.controlName)"
+                  (mouseleave)="onMouseLeave(field.controlName)"
+                >
+                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                </button>
+
+                <div class="field-side fetched">
+                  <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Book Details Section -->
+      <section class="form-section">
+        <div class="section-header">
+          <i class="pi pi-id-card"></i>
+          <span>Book Details</span>
+        </div>
+
+        <div class="section-content">
+          @for (field of metadataBookDetailsFields; track field) {
+            <div class="field-row">
+              <label class="field-label">{{ field.label }}</label>
+              <div class="field-content">
+                <div class="field-side current">
+                  <button
+                    type="button"
+                    class="lock-btn"
+                    [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                    (click)="toggleLock(field.controlName)"
+                  >
+                    <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                  </button>
+                  <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
+                </div>
+
+                <button
+                  type="button"
+                  class="transfer-btn"
+                  [class.saved]="isValueSaved(field.controlName)"
+                  [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                  [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                  (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                  (mouseenter)="onMouseEnter(field.controlName)"
+                  (mouseleave)="onMouseLeave(field.controlName)"
+                >
+                  <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                </button>
+
+                <div class="field-side fetched">
+                  <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Provider Metadata Section -->
+      @if (metadataProviderFields.length > 0) {
         <section class="form-section">
           <div class="section-header">
-            <i class="pi pi-list"></i>
-            <span>Additional Details</span>
+            <i class="pi pi-cloud"></i>
+            <span>Provider Metadata</span>
           </div>
 
           <div class="section-content">
-            @for (field of metadataFieldsBottom; track field) {
+            @for (field of metadataProviderFields; track field) {
               <div class="field-row">
                 <label class="field-label">{{ field.label }}</label>
                 <div class="field-content">
@@ -301,6 +474,72 @@
 
                   <div class="field-side fetched">
                     <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Audiobook Details Section -->
+      @if (currentBook && hasAudiobookFormat(currentBook)) {
+        <section class="form-section">
+          <div class="section-header">
+            <i class="pi pi-headphones"></i>
+            <span>Audiobook Details</span>
+          </div>
+
+          <div class="section-content">
+            @for (field of audiobookMetadataFields; track field) {
+              <div class="field-row">
+                <label class="field-label">{{ field.label }}</label>
+                <div class="field-content">
+                  <div class="field-side current">
+                    <button
+                      type="button"
+                      class="lock-btn"
+                      [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                      (click)="toggleLock(field.controlName)"
+                    >
+                      <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                    </button>
+                    @if (field.type === 'boolean') {
+                      <p-checkbox
+                        formControlName="{{field.controlName}}"
+                        [binary]="true"
+                        class="field-checkbox"
+                      />
+                    } @else {
+                      <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
+                    }
+                  </div>
+
+                  <button
+                    type="button"
+                    class="transfer-btn"
+                    [class.saved]="isValueSaved(field.controlName)"
+                    [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                    [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                    (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                    (mouseenter)="onMouseEnter(field.controlName)"
+                    (mouseleave)="onMouseLeave(field.controlName)"
+                  >
+                    <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                  </button>
+
+                  <div class="field-side fetched">
+                    @if (field.type === 'boolean') {
+                      <p-checkbox
+                        [ngModel]="getFetchedAudiobookValue(field.fetchedKey)"
+                        [ngModelOptions]="{ standalone: true }"
+                        [binary]="true"
+                        [disabled]="true"
+                        class="field-checkbox"
+                      />
+                    } @else {
+                      <input pInputText [value]="getFetchedAudiobookValue(field.fetchedKey) ?? ''" class="field-input" readonly/>
+                    }
                   </div>
                 </div>
               </div>
