@@ -427,10 +427,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
                   summary: 'Success',
                   detail: 'Cover regeneration started'
                 }),
-                error: () => this.messageService.add({
+                error: (err) => this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'Failed to regenerate cover'
+                  detail: err?.error?.message || 'Failed to regenerate cover'
                 })
               });
             }
@@ -445,10 +445,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
                   summary: 'Success',
                   detail: 'Cover generated successfully'
                 }),
-                error: () => this.messageService.add({
+                error: (err) => this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'Failed to generate cover'
+                  detail: err?.error?.message || 'Failed to generate cover'
                 })
               });
             }

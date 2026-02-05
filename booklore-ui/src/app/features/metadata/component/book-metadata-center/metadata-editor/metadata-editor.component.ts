@@ -778,6 +778,13 @@ export class MetadataEditorComponent implements OnInit {
           },
         });
       },
+      error: (err) => {
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: err?.error?.message || "Failed to regenerate cover",
+        });
+      }
     });
   }
 
@@ -836,11 +843,11 @@ export class MetadataEditorComponent implements OnInit {
           },
         });
       },
-      error: () => {
+      error: (err) => {
         this.messageService.add({
           severity: "error",
           summary: "Error",
-          detail: "Failed to regenerate audiobook cover",
+          detail: err?.error?.message || "Failed to regenerate audiobook cover",
         });
       }
     });

@@ -1,5 +1,6 @@
 package org.booklore.service.fileprocessor;
 
+import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.AudiobookMetadata;
 import org.booklore.model.dto.BookMetadata;
@@ -71,7 +72,7 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
         if (audiobookFile == null) {
             return false;
         }
-        return generateCover(bookEntity, audiobookFile.isFolderBased());
+        return generateCoverFromFile(bookEntity, audiobookFile);
     }
 
     public boolean generateCover(BookEntity bookEntity, boolean isFolderBased) {
@@ -82,30 +83,63 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
                 return false;
             }
 
-            byte[] coverData = audiobookMetadataExtractor.extractCover(audioFile);
-
-            if (coverData == null) {
-                log.debug("No cover image found in audiobook '{}'", bookEntity.getPrimaryBookFile().getFileName());
-                return false;
-            }
-
-            boolean saved;
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
-                BufferedImage originalImage = FileService.readImage(bais);
-                if (originalImage == null) {
-                    log.warn("Failed to decode cover image for audiobook '{}'", bookEntity.getPrimaryBookFile().getFileName());
-                    return false;
-                }
-                saved = fileService.saveAudiobookCoverImages(originalImage, bookEntity.getId());
-                originalImage.flush();
-            }
-
-            return saved;
+            return extractAndSaveCover(bookEntity, audioFile, false);
 
         } catch (Exception e) {
             log.error("Error generating cover for audiobook '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage(), e);
             return false;
         }
+    }
+
+    private boolean generateCoverFromFile(BookEntity bookEntity, BookFileEntity audiobookFile) {
+        try {
+            File audioFile = getAudioFileForBookFile(bookEntity, audiobookFile);
+            if (audioFile == null) {
+                log.warn("Could not resolve audio file path for audiobook '{}' (bookId: {})", audiobookFile.getFileName(), bookEntity.getId());
+                return false;
+            }
+            if (!audioFile.exists()) {
+                log.warn("Audio file does not exist: {} for audiobook '{}' (bookId: {})", audioFile.getAbsolutePath(), audiobookFile.getFileName(), bookEntity.getId());
+                return false;
+            }
+
+            log.debug("Extracting cover from audio file: {}", audioFile.getAbsolutePath());
+            return extractAndSaveCover(bookEntity, audioFile, true);
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Error generating cover for audiobook '{}' (bookId: {}): {}",
+                    audiobookFile.getFileName(), bookEntity.getId(), e.getMessage(), e);
+            return false;
+        }
+    }
+
+    private boolean extractAndSaveCover(BookEntity bookEntity, File audioFile, boolean throwOnNoCover) throws Exception {
+        byte[] coverData = audiobookMetadataExtractor.extractCover(audioFile);
+
+        if (coverData == null) {
+            log.warn("No embedded cover image found in audiobook file '{}' (bookId: {})", audioFile.getAbsolutePath(), bookEntity.getId());
+            if (throwOnNoCover) {
+                throw ApiError.NO_COVER_IN_FILE.createException();
+            }
+            return false;
+        }
+
+        log.debug("Found cover data ({} bytes) in audiobook file '{}'", coverData.length, audioFile.getName());
+
+        boolean saved;
+        try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
+            BufferedImage originalImage = FileService.readImage(bais);
+            if (originalImage == null) {
+                log.warn("Failed to decode cover image for audiobook '{}'", audioFile.getName());
+                return false;
+            }
+            saved = fileService.saveAudiobookCoverImages(originalImage, bookEntity.getId());
+            originalImage.flush();
+        }
+
+        return saved;
     }
 
     private File getAudioFileForMetadata(BookEntity bookEntity, boolean isFolderBased) {
@@ -116,6 +150,41 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
                     .orElse(null);
         } else {
             return new File(FileUtils.getBookFullPath(bookEntity));
+        }
+    }
+
+    private File getAudioFileForBookFile(BookEntity bookEntity, BookFileEntity bookFile) {
+        if (bookEntity.getLibraryPath() == null || bookFile == null) {
+            log.debug("Cannot get audio file: libraryPath or bookFile is null");
+            return null;
+        }
+
+        String libraryPath = bookEntity.getLibraryPath().getPath();
+        String subPath = bookFile.getFileSubPath();
+        String fileName = bookFile.getFileName();
+
+        if (libraryPath == null || fileName == null) {
+            log.debug("Cannot get audio file: libraryPath='{}', fileName='{}'", libraryPath, fileName);
+            return null;
+        }
+
+        java.nio.file.Path filePath;
+        if (subPath == null || subPath.isEmpty()) {
+            filePath = java.nio.file.Paths.get(libraryPath, fileName).normalize();
+        } else {
+            filePath = java.nio.file.Paths.get(libraryPath, subPath, fileName).normalize();
+        }
+
+        log.debug("Constructed audiobook path: {}, isFolderBased: {}", filePath, bookFile.isFolderBased());
+
+        if (bookFile.isFolderBased()) {
+            var audioFile = FileUtils.getFirstAudioFileInFolder(filePath);
+            if (audioFile.isEmpty()) {
+                log.debug("No audio file found in folder: {}", filePath);
+            }
+            return audioFile.map(java.nio.file.Path::toFile).orElse(null);
+        } else {
+            return filePath.toFile();
         }
     }
 

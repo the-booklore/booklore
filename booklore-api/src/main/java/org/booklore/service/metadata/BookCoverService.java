@@ -127,7 +127,7 @@ public class BookCoverService {
      */
     @Transactional
     public void updateAudiobookCoverFromFile(Long bookId, MultipartFile file) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         if (isAudiobookCoverLocked(bookEntity)) {
             throw ApiError.METADATA_LOCKED.createException();
@@ -145,7 +145,7 @@ public class BookCoverService {
      */
     @Transactional
     public void updateAudiobookCoverFromUrl(Long bookId, String url) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         if (isAudiobookCoverLocked(bookEntity)) {
             throw ApiError.METADATA_LOCKED.createException();
@@ -162,7 +162,7 @@ public class BookCoverService {
      * Regenerate audiobook cover for a single book by extracting from the audiobook file.
      */
     public void regenerateAudiobookCover(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         if (isAudiobookCoverLocked(bookEntity)) {
             throw ApiError.METADATA_LOCKED.createException();
         }
@@ -171,7 +171,7 @@ public class BookCoverService {
         var audiobookFile = bookEntity.getBookFiles().stream()
                 .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
                 .findFirst()
-                .orElseThrow(() -> ApiError.FAILED_TO_REGENERATE_COVER.createException());
+                .orElseThrow(ApiError.FAILED_TO_REGENERATE_COVER::createException);
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(audiobookFile.getBookType());
         boolean success = processor.generateAudiobookCover(bookEntity);
@@ -188,7 +188,7 @@ public class BookCoverService {
      * Uses square cover format appropriate for audiobooks.
      */
     public void generateCustomAudiobookCover(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         if (isAudiobookCoverLocked(bookEntity)) {
             throw ApiError.METADATA_LOCKED.createException();
