@@ -227,6 +227,7 @@ public class FileAsBookProcessor {
                 originalImage.flush();
 
                 if (saved) {
+                    bookEntity.getMetadata().setAudiobookCoverUpdatedOn(Instant.now());
                     bookEntity.setAudiobookCoverHash(BookCoverUtils.generateCoverHash());
                     bookRepository.save(bookEntity);
                     log.info("Generated audiobook cover from additional file: {}", audioFile.getFileName());
