@@ -1,6 +1,6 @@
 import {MetadataProviderSpecificFields} from '../model/app-settings.model';
 
-export type FieldType = 'string' | 'number' | 'array' | 'textarea';
+export type FieldType = 'string' | 'number' | 'array' | 'textarea' | 'boolean';
 
 export interface MetadataFieldConfig {
   label: string;
@@ -43,12 +43,23 @@ export const ALL_METADATA_FIELDS: MetadataFieldConfig[] = [
   {label: 'LB ID', controlName: 'lubimyczytacId', lockedKey: 'lubimyczytacIdLocked', fetchedKey: 'lubimyczytacId', type: 'string', providerKey: 'lubimyczytacId'},
   {label: 'LB ★', controlName: 'lubimyczytacRating', lockedKey: 'lubimyczytacRatingLocked', fetchedKey: 'lubimyczytacRating', type: 'number', providerKey: 'lubimyczytacRating'},
   {label: 'Ranobedb ID', controlName: 'ranobedbId', lockedKey: 'ranobedbIdLocked', fetchedKey: 'ranobedbId', type: 'string', providerKey: 'ranobedbId'},
-  {label: 'Ranobedb ★', controlName: 'ranobedbRating', lockedKey: 'ranobedbRatingLocked', fetchedKey: 'ranobedbRating', type: 'number', providerKey: 'ranobedbRating'}
+  {label: 'Ranobedb ★', controlName: 'ranobedbRating', lockedKey: 'ranobedbRatingLocked', fetchedKey: 'ranobedbRating', type: 'number', providerKey: 'ranobedbRating'},
+  {label: 'Audible ID', controlName: 'audibleId', lockedKey: 'audibleIdLocked', fetchedKey: 'audibleId', type: 'string', providerKey: 'audibleId'},
+  {label: 'Audible ★', controlName: 'audibleRating', lockedKey: 'audibleRatingLocked', fetchedKey: 'audibleRating', type: 'number', providerKey: 'audibleRating'},
+  {label: 'Audible #', controlName: 'audibleReviewCount', lockedKey: 'audibleReviewCountLocked', fetchedKey: 'audibleReviewCount', type: 'number', providerKey: 'audibleReviewCount'}
+];
+
+// Audiobook content metadata fields (narrator/abridged) - now stored at top level of BookMetadata
+export const AUDIOBOOK_METADATA_FIELDS: MetadataFieldConfig[] = [
+  {label: 'Narrator', controlName: 'narrator', lockedKey: 'narratorLocked', fetchedKey: 'narrator', type: 'string'},
+  {label: 'Abridged', controlName: 'abridged', lockedKey: 'abridgedLocked', fetchedKey: 'abridged', type: 'boolean'}
 ];
 
 export const TOP_FIELD_NAMES = ['title', 'subtitle', 'publisher', 'publishedDate'];
 export const ARRAY_FIELD_NAMES = ['authors', 'categories', 'moods', 'tags'];
 export const TEXTAREA_FIELD_NAMES = ['description'];
+export const SERIES_FIELD_NAMES = ['seriesName', 'seriesNumber', 'seriesTotal'];
+export const BOOK_DETAILS_FIELD_NAMES = ['language', 'isbn10', 'isbn13', 'pageCount'];
 
 export function getTopFields(): MetadataFieldConfig[] {
   return ALL_METADATA_FIELDS.filter(f => TOP_FIELD_NAMES.includes(f.controlName));
@@ -60,6 +71,26 @@ export function getArrayFields(): MetadataFieldConfig[] {
 
 export function getTextareaFields(): MetadataFieldConfig[] {
   return ALL_METADATA_FIELDS.filter(f => f.type === 'textarea');
+}
+
+export function getSeriesFields(): MetadataFieldConfig[] {
+  return ALL_METADATA_FIELDS.filter(f => SERIES_FIELD_NAMES.includes(f.controlName));
+}
+
+export function getBookDetailsFields(): MetadataFieldConfig[] {
+  return ALL_METADATA_FIELDS.filter(f => BOOK_DETAILS_FIELD_NAMES.includes(f.controlName));
+}
+
+export function getProviderFields(enabledProviderFields?: MetadataProviderSpecificFields | null): MetadataFieldConfig[] {
+  const providerFields = ALL_METADATA_FIELDS.filter(f => !!f.providerKey);
+
+  if (enabledProviderFields) {
+    return providerFields.filter(field =>
+      !field.providerKey || enabledProviderFields[field.providerKey]
+    );
+  }
+
+  return providerFields;
 }
 
 export function getBottomFields(enabledProviderFields?: MetadataProviderSpecificFields | null): MetadataFieldConfig[] {

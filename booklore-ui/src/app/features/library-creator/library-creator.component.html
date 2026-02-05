@@ -155,6 +155,60 @@
             }
           </div>
         </div>
+
+        <div class="option-item allowed-formats-option">
+          <div class="option-label">
+            <span>Allowed formats</span>
+            <i
+              class="pi pi-question-circle info-icon"
+              pTooltip="Select which book formats this library should accept. Files of other formats will be ignored during scans."
+              tooltipPosition="right"
+            ></i>
+          </div>
+
+          <div class="allowed-formats-container">
+            <div class="allow-all-toggle">
+              <p-checkbox
+                [(ngModel)]="allowAllFormats"
+                [binary]="true"
+                inputId="allowAll"
+                (onChange)="onAllowAllFormatsChange()"
+              />
+              <label for="allowAll" class="allow-all-label">Allow all formats</label>
+            </div>
+
+            @if (!allowAllFormats) {
+              <div class="format-checkboxes">
+                @for (format of allBookFormats; track format.type) {
+                  <div class="format-checkbox-item" [class.has-warning]="getFormatWarning(format.type)">
+                    <p-checkbox
+                      [ngModel]="isFormatSelected(format.type)"
+                      [binary]="true"
+                      [inputId]="'format-' + format.type"
+                      (onChange)="onFormatCheckboxChange(format.type, $event.checked)"
+                    />
+                    <label [for]="'format-' + format.type" class="format-checkbox-label">
+                      {{ format.label }}
+                    </label>
+                    @if (getFormatWarning(format.type); as warning) {
+                      <i
+                        class="pi pi-exclamation-triangle warning-icon"
+                        [pTooltip]="warning"
+                        tooltipPosition="top"
+                      ></i>
+                    }
+                  </div>
+                }
+              </div>
+              @if (hasAnyFormatWarning()) {
+                <div class="format-warning-message">
+                  <i class="pi pi-info-circle"></i>
+                  <span>Deselected formats with existing books will not be affected, but won't appear in future scans</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
       </div>
     </section>
   </div>

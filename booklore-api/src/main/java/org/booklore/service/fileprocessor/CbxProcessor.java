@@ -4,6 +4,7 @@ import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
@@ -69,7 +70,12 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
 
     @Override
     public boolean generateCover(BookEntity bookEntity) {
-        File file = new File(FileUtils.getBookFullPath(bookEntity));
+        return generateCover(bookEntity, bookEntity.getPrimaryBookFile());
+    }
+
+    @Override
+    public boolean generateCover(BookEntity bookEntity, BookFileEntity bookFile) {
+        File file = new File(FileUtils.getBookFullPath(bookEntity, bookFile));
         try {
             Optional<BufferedImage> imageOptional = extractImagesFromArchive(file);
             if (imageOptional.isPresent()) {
@@ -79,16 +85,16 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     if (saved) {
                         return true;
                     } else {
-                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getPrimaryBookFile().getFileName());
+                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookFile.getFileName());
                     }
                 } finally {
                     image.flush(); // Release resources after processing
                 }
             } else {
-                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getPrimaryBookFile().getFileName());
+                log.warn("Could not find cover image in CBZ file '{}'", bookFile.getFileName());
             }
         } catch (Exception e) {
-            log.error("Error generating cover for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());
+            log.error("Error generating cover for '{}': {}", bookFile.getFileName(), e.getMessage());
         }
         return false;
     }

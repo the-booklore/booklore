@@ -1,6 +1,7 @@
 package org.booklore.mobile.specification;
 
 import org.booklore.model.entity.*;
+import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ReadStatus;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -116,6 +117,26 @@ public class MobileBookSpecification {
                 cb.isNull(root.get("isPhysical")),
                 cb.equal(root.get("isPhysical"), false)
         );
+    }
+
+    public static Specification<BookEntity> hasAudiobookFile() {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<BookFileEntity> bookFileRoot = subquery.from(BookFileEntity.class);
+            subquery.select(bookFileRoot.get("book").get("id"))
+                    .where(cb.equal(bookFileRoot.get("bookType"), BookFileType.AUDIOBOOK));
+            return root.get("id").in(subquery);
+        };
+    }
+
+    public static Specification<BookEntity> hasNonAudiobookFile() {
+        return (root, query, cb) -> {
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<BookFileEntity> bookFileRoot = subquery.from(BookFileEntity.class);
+            subquery.select(bookFileRoot.get("book").get("id"))
+                    .where(cb.notEqual(bookFileRoot.get("bookType"), BookFileType.AUDIOBOOK));
+            return root.get("id").in(subquery);
+        };
     }
 
     @SafeVarargs
