@@ -7,7 +7,9 @@ export interface BookMark {
   id: number;
   userId?: number;
   bookId: number;
-  cfi: string;
+  cfi?: string;          // For EPUB bookmarks
+  positionMs?: number;   // For audiobook bookmarks
+  trackIndex?: number;   // For folder-based audiobooks
   title: string;
   color?: string;
   notes?: string;
@@ -18,7 +20,9 @@ export interface BookMark {
 
 export interface CreateBookMarkRequest {
   bookId: number;
-  cfi: string;
+  cfi?: string;          // For EPUB bookmarks
+  positionMs?: number;   // For audiobook bookmarks
+  trackIndex?: number;   // For folder-based audiobooks
   title?: string;
 }
 

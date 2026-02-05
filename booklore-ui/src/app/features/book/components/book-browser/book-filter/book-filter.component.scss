@@ -6,6 +6,11 @@
   --p-togglebutton-content-padding: 0.25rem 0.5rem;
 }
 
+:host ::ng-deep .cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper {
+  width: 190px !important;
+  min-width: unset;
+}
+
 .book-filter-container {
   height: calc(100dvh - 6.1rem);
   border-radius: 0.75rem;
@@ -43,24 +48,33 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.filter-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  max-width: 175px;
 }
 
 .active-filter-count {
   font-size: 0.875rem;
   color: var(--primary-color);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .filter-list {
-  max-height: 27.5rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding-right: 0.25rem;
 }
 
 .filter-row {
   cursor: pointer;
   transition: colors 200ms ease-in-out;
-  padding-bottom: 0.25rem;
+  height: 26px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -70,6 +84,18 @@
   &.active {
     color: var(--primary-color);
   }
+}
+
+.filter-value-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-value-badge {
+  flex-shrink: 0;
 }
 
 .truncation-notice {

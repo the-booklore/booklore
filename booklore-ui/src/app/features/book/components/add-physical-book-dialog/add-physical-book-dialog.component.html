@@ -1,0 +1,238 @@
+<div class="add-physical-book">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-book header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Add Physical Book</h2>
+      <p class="panel-description">Catalog a physical book without a digital file</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      (click)="cancel()"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      class="close-button"
+      pTooltip="Close"
+      tooltipPosition="left"/>
+  </div>
+
+  <div class="form-container">
+    <div class="form-group highlight-group">
+      <label for="library" class="form-label">
+        <i class="pi pi-folder label-icon"></i>
+        Library
+        <span class="required-indicator">*</span>
+      </label>
+      <p-select
+        id="library"
+        [options]="libraries"
+        [(ngModel)]="selectedLibraryId"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Select a library"
+        [style]="{'width': '100%'}"/>
+    </div>
+
+    <div class="gradient-divider"></div>
+
+    <div class="form-row">
+      <div class="form-group highlight-group flex-2">
+        <label for="title" class="form-label">
+          <i class="pi pi-tag label-icon"></i>
+          Title
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="title"
+            type="text"
+            pInputText
+            [(ngModel)]="title"
+            class="input-full"
+            placeholder="e.g., The Great Gatsby"
+            [class.filled]="title.trim()"/>
+        </div>
+      </div>
+
+      <div class="form-group highlight-group flex-1">
+        <label for="isbn" class="form-label">
+          <i class="pi pi-barcode label-icon"></i>
+          ISBN
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="isbn"
+            type="text"
+            pInputText
+            [(ngModel)]="isbn"
+            class="input-full"
+            placeholder="e.g., 9780134685991"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="gradient-divider"></div>
+
+    <div class="form-group highlight-group">
+      <label for="authors" class="form-label">
+        <i class="pi pi-user label-icon"></i>
+        Authors
+      </label>
+      <div class="autocomplete-wrapper">
+        <p-autoComplete
+          appendTo="body"
+          [(ngModel)]="authors"
+          [multiple]="true"
+          [fluid]="true"
+          [dropdown]="false"
+          [suggestions]="filteredAuthors"
+          [forceSelection]="false"
+          [showClear]="false"
+          placeholder="Type author name and press Enter"
+          (completeMethod)="filterAuthors($event)"
+          (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
+          (onSelect)="onAutoCompleteSelect('authors', $event)">
+        </p-autoComplete>
+      </div>
+    </div>
+
+    <div class="gradient-divider"></div>
+
+    <div class="form-group highlight-group">
+      <label for="description" class="form-label">
+        <i class="pi pi-align-left label-icon"></i>
+        Description
+      </label>
+      <textarea
+        id="description"
+        pTextarea
+        [(ngModel)]="description"
+        rows="3"
+        placeholder="Brief description of the book..."
+        class="input-full"></textarea>
+    </div>
+
+    <div class="gradient-divider"></div>
+
+    <div class="form-row">
+      <div class="form-group highlight-group flex-1">
+        <label for="publisher" class="form-label">
+          <i class="pi pi-building label-icon"></i>
+          Publisher
+        </label>
+        <input
+          id="publisher"
+          type="text"
+          pInputText
+          [(ngModel)]="publisher"
+          class="input-full"
+          placeholder="Publisher name"/>
+      </div>
+
+      <div class="form-group highlight-group flex-1">
+        <label for="publishedDate" class="form-label">
+          <i class="pi pi-calendar label-icon"></i>
+          Published Date
+        </label>
+        <input
+          id="publishedDate"
+          type="text"
+          pInputText
+          [(ngModel)]="publishedDate"
+          class="input-full"
+          placeholder="e.g., 2020 or 2020-05-15"/>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group highlight-group flex-1">
+        <label for="language" class="form-label">
+          <i class="pi pi-globe label-icon"></i>
+          Language
+        </label>
+        <input
+          id="language"
+          type="text"
+          pInputText
+          [(ngModel)]="language"
+          class="input-full"
+          placeholder="e.g., English"/>
+      </div>
+
+      <div class="form-group highlight-group flex-1">
+        <label for="pageCount" class="form-label">
+          <i class="pi pi-file label-icon"></i>
+          Page Count
+        </label>
+        <p-inputnumber
+          id="pageCount"
+          [(ngModel)]="pageCount"
+          [useGrouping]="false"
+          placeholder="Number of pages"
+          class="input-full">
+        </p-inputnumber>
+      </div>
+    </div>
+
+    <div class="gradient-divider"></div>
+
+    <div class="form-group highlight-group">
+      <label for="categories" class="form-label">
+        <i class="pi pi-tags label-icon"></i>
+        Categories/Genres
+      </label>
+      <div class="autocomplete-wrapper">
+        <p-autoComplete
+          appendTo="body"
+          [(ngModel)]="categories"
+          [multiple]="true"
+          [fluid]="true"
+          [dropdown]="false"
+          [suggestions]="filteredCategories"
+          [forceSelection]="false"
+          [showClear]="true"
+          placeholder="Type category and press Enter"
+          (completeMethod)="filterCategories($event)"
+          (onKeyUp)="onAutoCompleteKeyUp('categories', $event)"
+          (onSelect)="onAutoCompleteSelect('categories', $event)">
+        </p-autoComplete>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-footer">
+    <div class="validation-status">
+      @if (!selectedLibraryId) {
+        <div class="validation-message error">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>Library is required</span>
+        </div>
+      } @else if (!title.trim() && !isbn.trim()) {
+        <div class="validation-message error">
+          <i class="pi pi-exclamation-circle"></i>
+          <span>Title or ISBN is required</span>
+        </div>
+      } @else {
+        <div class="validation-message success">
+          <i class="pi pi-check-circle"></i>
+          <span>Ready to create</span>
+        </div>
+      }
+    </div>
+    <div class="footer-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="cancel()"/>
+      <p-button
+        label="Add Physical Book"
+        icon="pi pi-plus"
+        severity="success"
+        (onClick)="createBook()"
+        [disabled]="!canCreate() || isLoading"
+        [loading]="isLoading"/>
+    </div>
+  </div>
+</div>

@@ -1,5 +1,4 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
-import {Toast} from 'primeng/toast';
 import {MessageService} from 'primeng/api';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {BookCoverService, CoverFetchRequest, CoverImage} from '../../../../shared/services/book-cover.service';
@@ -32,6 +31,7 @@ export class CoverSearchComponent implements OnInit {
   coverImages: CoverImage[] = [];
   loading = false;
   hasSearched = false;
+  coverType: 'ebook' | 'audiobook' = 'ebook';
 
   private fb = inject(FormBuilder);
   private bookCoverService = inject(BookCoverService);
@@ -51,6 +51,15 @@ export class CoverSearchComponent implements OnInit {
     this.bookId = this.dynamicDialogConfig.data.bookId;
     const book = this.bookService.getBookByIdFromState(this.bookId);
 
+    // Use explicitly provided coverType, or auto-detect based on primary file
+    if (this.dynamicDialogConfig.data.coverType) {
+      this.coverType = this.dynamicDialogConfig.data.coverType;
+    } else if (book?.primaryFile?.bookType === 'AUDIOBOOK') {
+      this.coverType = 'audiobook';
+    } else {
+      this.coverType = 'ebook';
+    }
+
     if (book) {
       this.searchForm.patchValue({
         title: book.metadata?.title || '',
@@ -68,7 +77,8 @@ export class CoverSearchComponent implements OnInit {
       this.loading = true;
       const request: CoverFetchRequest = {
         title: this.searchForm.value.title,
-        author: this.searchForm.value.author
+        author: this.searchForm.value.author,
+        coverType: this.coverType
       };
 
       this.bookCoverService.fetchBookCovers(request)
@@ -93,24 +103,27 @@ export class CoverSearchComponent implements OnInit {
   }
 
   selectAndSave(image: CoverImage) {
-    this.bookService.uploadCoverFromUrl(this.bookId, image.url)
-      .subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Cover Updated',
-            detail: 'Cover image updated successfully.'
-          });
-          this.dynamicDialogRef.close();
-        },
-        error: err => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Cover Update Failed',
-            detail: err?.message || 'Failed to update cover image.'
-          });
-        }
-      });
+    const uploadObservable = this.coverType === 'audiobook'
+      ? this.bookService.uploadAudiobookCoverFromUrl(this.bookId, image.url)
+      : this.bookService.uploadCoverFromUrl(this.bookId, image.url);
+
+    uploadObservable.subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Cover Updated',
+          detail: `${this.coverType === 'audiobook' ? 'Audiobook' : 'Ebook'} cover image updated successfully.`
+        });
+        this.dynamicDialogRef.close(true);
+      },
+      error: err => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Cover Update Failed',
+          detail: err?.message || 'Failed to update cover image.'
+        });
+      }
+    });
   }
 
   onClear() {

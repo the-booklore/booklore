@@ -6,7 +6,7 @@ plugins {
     id 'com.github.ben-manes.versions' version '0.53.0'
 }
 
-group = 'com.adityachandel'
+group = 'org.booklore'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -69,6 +69,9 @@ dependencies {
     implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.13.0'
     
     implementation 'io.documentnode:epub4j-core:4.2.2'
+
+    // --- Audio Metadata (Audiobook Support) ---
+    implementation 'net.jthink:jaudiotagger:3.0.1'
 
     // --- UNRAR Support ---
     implementation 'com.github.junrar:junrar:7.5.7'

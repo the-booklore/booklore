@@ -7,13 +7,15 @@ import {SettingsHelperService} from '../../../../shared/service/settings-helper.
 import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 import {Tooltip} from 'primeng/tooltip';
+import {AsyncPipe} from '@angular/common';
 
 @Component({
   selector: 'app-metadata-persistence-settings-component',
   imports: [
     ToggleSwitch,
     FormsModule,
-    Tooltip
+    Tooltip,
+    AsyncPipe
   ],
   templateUrl: './metadata-persistence-settings-component.html',
   styleUrl: './metadata-persistence-settings-component.scss'
@@ -33,6 +35,10 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
       cbx: {
         enabled: false,
         maxFileSizeInMb: 250
+      },
+      audiobook: {
+        enabled: false,
+        maxFileSizeInMb: 1000
       }
     },
     convertCbrCb7ToCbz: false,
@@ -96,6 +102,10 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
           cbx: {
             enabled: persistenceSettings.saveToOriginalFile?.cbx?.enabled ?? false,
             maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.cbx?.maxFileSizeInMb ?? 250
+          },
+          audiobook: {
+            enabled: persistenceSettings.saveToOriginalFile?.audiobook?.enabled ?? false,
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.audiobook?.maxFileSizeInMb ?? 1000
           }
         }
       };

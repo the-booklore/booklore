@@ -1,6 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Select} from 'primeng/select';
-import {BookFilterMode, FilterSortingMode, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
+import {BookFilterMode, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
@@ -23,13 +23,7 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Single', value: 'single'},
   ];
 
-  readonly filterSortingModes = [
-    {label: 'Alphabetical', value: 'alphabetical'},
-    {label: 'By Count', value: 'count'},
-  ];
-
   selectedFilterMode: BookFilterMode = 'and';
-  selectedFilterSortingMode: FilterSortingMode = 'alphabetical';
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
@@ -55,7 +49,6 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   private loadPreferences(settings: UserSettings): void {
     this.selectedFilterMode = settings.filterMode ?? 'and';
-    this.selectedFilterSortingMode = settings.filterSortingMode ?? 'alphabetical';
   }
 
   private updatePreference(path: string[], value: unknown): void {
@@ -80,9 +73,5 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   onFilterModeChange() {
     this.updatePreference(['filterMode'], this.selectedFilterMode);
-  }
-
-  onFilterSortingModeChange() {
-    this.updatePreference(['filterSortingMode'], this.selectedFilterSortingMode);
   }
 }

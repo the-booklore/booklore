@@ -43,7 +43,6 @@
 
   <!-- File Upload -->
   <p-fileupload class="file-upload" name="file"
-    [maxFileSize]="maxFileSizeBytes"
     [customUpload]="true"
     [multiple]="false"
     (onSelect)="onFilesSelect($event)"
@@ -81,7 +80,7 @@
                 @for (uploadFile of this.files; track uploadFile; let i = $index) {
                   <div class="file-row">
                     <div class="file-info">
-                      <p-badge [value]="uploadFile.status" [severity]="getBadgeSeverity(uploadFile.status)" class="file-badge"/>
+                      <p-badge [value]="getFileStatusLabel(uploadFile)" [severity]="getBadgeSeverity(uploadFile.status)" class="file-badge"/>
                       <span class="file-name">
                         {{ uploadFile.file.name }}
                       </span>
