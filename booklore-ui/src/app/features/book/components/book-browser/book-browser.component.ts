@@ -8,7 +8,7 @@ import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject, Subsc
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
 import {Shelf} from '../../model/shelf.model';
-import {SortOption} from '../../model/sort.model';
+import {SortDirection, SortOption} from '../../model/sort.model';
 import {BookState} from '../../model/state/book-state.model';
 import {Book} from '../../model/book.model';
 import {LibraryShelfMenuService} from '../../service/library-shelf-menu.service';
@@ -138,6 +138,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   visibleColumns: { field: string; header: string }[] = [];
   entityViewPreferences: EntityViewPreferences | undefined;
   currentViewMode: string | undefined;
+
+  get validSortFields(): string[] {
+    return this.bookSorter.sortOptions.map(opt => opt.field);
+  }
   lastAppliedSort: SortOption | null = null;
   showFilter = false;
   screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
@@ -499,6 +503,28 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     this.visibleColumns = selected.sort(
       (a, b) => allFields.indexOf(a.field) - allFields.indexOf(b.field)
     );
+  }
+
+  resetView(): void {
+    this.visibleColumns = this.columnPreferenceService.allColumns;
+    this.columnPreferenceService.saveVisibleColumns(this.visibleColumns);
+  }
+
+  onBookTableSort(event: { field: string; order: number }): void {
+    const direction = event.order === 1 ? SortDirection.ASCENDING : SortDirection.DESCENDING;
+    const sortOption = this.bookSorter.sortOptions.find(opt => opt.field === event.field);
+    if (sortOption) {
+      this.bookSorter.selectedSort = { ...sortOption, direction };
+      this.onManualSortChange(this.bookSorter.selectedSort);
+    }
+  }
+
+  onBookTableColumnReorder(columns: { field: string; header: string }[]): void {
+    this.visibleColumns = columns;
+  }
+
+  onBookTableColumnResize(_event: any): void {
+    // Column resize handling — no-op for now, could persist widths in the future
   }
 
   onCheckboxClicked(event: CheckboxClickEvent): void {
