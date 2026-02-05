@@ -4,6 +4,7 @@ import org.booklore.exception.ApiError;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.AuthorEntity;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.websocket.LogNotification;
 import org.booklore.model.websocket.Topic;
@@ -220,24 +221,59 @@ public class BookCoverService {
     // =========================
 
     /**
-     * Regenerate cover for a single book.
+     * Regenerate cover for a single book from its ebook file.
+     * For books with multiple formats, this specifically uses an ebook (non-audiobook) file,
+     * respecting the library's format priority setting.
      */
     public void regenerateCover(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         if (isCoverLocked(bookEntity)) {
             throw ApiError.METADATA_LOCKED.createException();
         }
-        var primaryFile = bookEntity.getPrimaryBookFile();
-        if (primaryFile == null) {
+
+        BookFileEntity ebookFile = findEbookFile(bookEntity);
+        if (ebookFile == null) {
             throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
         }
-        BookFileProcessor processor = processorRegistry.getProcessorOrThrow(primaryFile.getBookType());
-        boolean success = processor.generateCover(bookEntity);
+
+        BookFileProcessor processor = processorRegistry.getProcessorOrThrow(ebookFile.getBookType());
+        boolean success = processor.generateCover(bookEntity, ebookFile);
         if (!success) {
             throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
         }
         updateBookCoverMetadata(bookEntity);
         bookRepository.save(bookEntity);
+    }
+
+    /**
+     * Find the best ebook (non-audiobook) file for a book, respecting library format priority.
+     */
+    private BookFileEntity findEbookFile(BookEntity bookEntity) {
+        var bookFiles = bookEntity.getBookFiles();
+        if (bookFiles == null || bookFiles.isEmpty()) {
+            return null;
+        }
+
+        var library = bookEntity.getLibrary();
+        if (library != null && library.getFormatPriority() != null && !library.getFormatPriority().isEmpty()) {
+            for (BookFileType format : library.getFormatPriority()) {
+                if (format == BookFileType.AUDIOBOOK) {
+                    continue;
+                }
+                var match = bookFiles.stream()
+                        .filter(bf -> bf.isBookFormat() && bf.getBookType() == format)
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match.get();
+                }
+            }
+        }
+
+        // Fallback: return first non-audiobook file
+        return bookFiles.stream()
+                .filter(f -> f.getBookType() != BookFileType.AUDIOBOOK)
+                .findFirst()
+                .orElse(null);
     }
 
     /**
