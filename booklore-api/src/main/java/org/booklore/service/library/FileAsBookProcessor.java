@@ -166,13 +166,28 @@ public class FileAsBookProcessor {
         }
     }
 
-    private void generateCoverFromAdditionalFile(BookEntity bookEntity, LibraryFile additionalFile) {
-        BookFileType primaryType = bookEntity.getPrimaryBookFile().getBookType();
+    void generateCoverFromAdditionalFile(BookEntity bookEntity, LibraryFile additionalFile) {
         BookFileType additionalType = additionalFile.getBookFileType();
-
-        boolean primaryIsAudiobook = primaryType == BookFileType.AUDIOBOOK;
         boolean additionalIsAudiobook = additionalType == BookFileType.AUDIOBOOK;
 
+        // For fileless books, generate cover based on the additional file type
+        if (!bookEntity.hasFiles()) {
+            try {
+                if (additionalIsAudiobook) {
+                    generateAudiobookCoverFromFile(bookEntity, additionalFile);
+                } else {
+                    generateEbookCoverFromFile(bookEntity, additionalFile);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to generate cover from additional file {}: {}", additionalFile.getFileName(), e.getMessage());
+            }
+            return;
+        }
+
+        BookFileType primaryType = bookEntity.getPrimaryBookFile().getBookType();
+        boolean primaryIsAudiobook = primaryType == BookFileType.AUDIOBOOK;
+
+        // Only generate cover when mixing audiobook with ebook formats
         if (primaryIsAudiobook == additionalIsAudiobook) {
             return;
         }
