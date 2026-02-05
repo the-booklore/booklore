@@ -6,7 +6,7 @@
         <div class="cover-wrapper">
 
           <p-image
-            [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
+            [src]="getBookCoverUrl(book)"
             alt="Image"
             width="250"
             appendTo="body"
@@ -96,12 +96,12 @@
 
           <div class="title-group">
             @if (book?.metadata?.seriesName) {
-              <p class="series-link" (click)="goToSeries(book?.metadata?.seriesName!)">
+              <div class="series-link" (click)="goToSeries(book?.metadata?.seriesName!)">
                 {{ book?.metadata?.seriesName }}
                 @if (book?.metadata?.seriesNumber) {
                   #{{ book?.metadata?.seriesNumber }}
                 }
-              </p>
+              </div>
             }
 
             <div class="title-wrapper">
@@ -154,7 +154,7 @@
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.ranobedbRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.ranobedbRating || book?.metadata?.audibleRating || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
@@ -226,6 +226,20 @@
                 >
                   <img src="https://www.ranobedb.org/favicon.png" alt="Ranobedb" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.ranobedbRating) }}%</span>
+                </a>
+              }
+
+              @if (book?.metadata?.audibleRating) {
+                <a
+                  class="rating-link"
+                  [href]="'https://www.audible.com/pd/' + (book.metadata?.audibleId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'audible')"
+                  tooltipPosition="top"
+                >
+                  <img src="https://www.audible.com/favicon.ico" alt="Audible" class="rating-favicon"/>
+                  <span class="rating-value">{{ getRatingPercent(book.metadata!.audibleRating) }}%</span>
                 </a>
               }
 

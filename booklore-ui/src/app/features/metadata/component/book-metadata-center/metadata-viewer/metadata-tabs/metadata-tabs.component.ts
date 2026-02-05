@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, inject, Input, Output} from '@angular/core';
 import {UpperCasePipe} from '@angular/common';
 import {Book, BookRecommendation, BookType, FileInfo} from '../../../../../book/model/book.model';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
@@ -9,6 +9,9 @@ import {BookNotesComponent} from '../../../../../book/components/book-notes/book
 import {BookReadingSessionsComponent} from '../../book-reading-sessions/book-reading-sessions.component';
 import {Button} from 'primeng/button';
 import {Tooltip} from 'primeng/tooltip';
+import {Image} from 'primeng/image';
+import {UrlHelperService} from '../../../../../../shared/service/url-helper.service';
+import {BookService} from '../../../../../book/service/book.service';
 
 export interface ReadEvent {
   bookId: number;
@@ -59,7 +62,8 @@ export interface DeleteSupplementaryFileEvent {
     BookReadingSessionsComponent,
     Button,
     Tooltip,
-    UpperCasePipe
+    UpperCasePipe,
+    Image
   ],
   templateUrl: './metadata-tabs.component.html',
   styleUrl: './metadata-tabs.component.scss'
@@ -68,6 +72,9 @@ export class MetadataTabsComponent {
   @Input() book!: Book;
   @Input() bookInSeries: Book[] = [];
   @Input() recommendedBooks: BookRecommendation[] = [];
+
+  protected urlHelper = inject(UrlHelperService);
+  private bookService = inject(BookService);
 
   @Output() readBook = new EventEmitter<ReadEvent>();
   @Output() downloadBook = new EventEmitter<DownloadEvent>();
@@ -160,5 +167,9 @@ export class MetadataTabsComponent {
 
   isPhysicalBook(): boolean {
     return !this.book?.primaryFile && (!this.book?.alternativeFormats || this.book.alternativeFormats.length === 0);
+  }
+
+  supportsDualCovers(): boolean {
+    return this.bookService.supportsDualCovers(this.book);
   }
 }

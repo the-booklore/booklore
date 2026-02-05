@@ -35,6 +35,19 @@ export class BookCardLiteComponent implements OnInit, OnDestroy {
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   isHovered: boolean = false;
 
+  isAudiobookOnly(): boolean {
+    const primaryIsAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK';
+    const hasEbookAlternative = this.book.alternativeFormats?.some(f => f.bookType !== 'AUDIOBOOK') ?? false;
+    return primaryIsAudiobook && !hasEbookAlternative;
+  }
+
+  getThumbnailUrl(): string {
+    if (this.isAudiobookOnly()) {
+      return this.urlHelper.getAudiobookThumbnailUrl(this.book.id, this.book.metadata?.audiobookCoverUpdatedOn);
+    }
+    return this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
+  }
+
   ngOnInit(): void {
     this.userService.userState$
       .pipe(

@@ -60,8 +60,6 @@ class AudioMetadataServiceTest {
         Files.createFile(audioPath);
     }
 
-    // ==================== getMetadata tests for single file ====================
-
     @Test
     void getMetadata_singleFile_extractsBasicInfo() throws Exception {
         AudioFile audioFile = mock(AudioFile.class);
@@ -70,7 +68,7 @@ class AudioMetadataServiceTest {
 
         when(audioFile.getAudioHeader()).thenReturn(header);
         when(audioFile.getTag()).thenReturn(tag);
-        when(header.getPreciseTrackLength()).thenReturn(3600.0); // 1 hour
+        when(header.getPreciseTrackLength()).thenReturn(3600.0);
         when(header.getBitRateAsNumber()).thenReturn(128L);
         when(header.getEncodingType()).thenReturn("AAC");
         when(header.getSampleRateAsNumber()).thenReturn(44100);
@@ -89,11 +87,11 @@ class AudioMetadataServiceTest {
             assertEquals(1L, info.getBookId());
             assertEquals(10L, info.getBookFileId());
             assertFalse(info.isFolderBased());
-            assertEquals(3600000L, info.getDurationMs()); // 1 hour in ms
+            assertEquals(3600000L, info.getDurationMs());
             assertEquals(128, info.getBitrate());
             assertEquals("AAC", info.getCodec());
             assertEquals(44100, info.getSampleRate());
-            assertEquals(2, info.getChannels()); // Stereo = 2
+            assertEquals(2, info.getChannels());
             assertEquals("Test Audiobook", info.getTitle());
             assertEquals("Test Author", info.getAuthor());
             assertEquals("Test Narrator", info.getNarrator());
@@ -120,7 +118,7 @@ class AudioMetadataServiceTest {
 
             assertNotNull(info);
             assertEquals(1800000L, info.getDurationMs());
-            assertEquals(1, info.getChannels()); // Mono = 1
+            assertEquals(1, info.getChannels());
             assertNull(info.getTitle());
             assertNull(info.getAuthor());
             assertNull(info.getNarrator());
@@ -134,7 +132,7 @@ class AudioMetadataServiceTest {
 
         when(audioFile.getAudioHeader()).thenReturn(header);
         when(audioFile.getTag()).thenReturn(null);
-        when(header.getPreciseTrackLength()).thenReturn(7200.0); // 2 hours
+        when(header.getPreciseTrackLength()).thenReturn(7200.0);
 
         try (MockedStatic<AudioFileIO> audioFileIOMock = mockStatic(AudioFileIO.class)) {
             audioFileIOMock.when(() -> AudioFileIO.read(audioPath.toFile())).thenReturn(audioFile);
@@ -153,29 +151,43 @@ class AudioMetadataServiceTest {
     }
 
     @Test
-    void getMetadata_cachesResult() throws Exception {
-        AudioFile audioFile = mock(AudioFile.class);
-        AudioHeader header = mock(AudioHeader.class);
+    void getMetadata_usesDbMetadataWhenAvailable() throws Exception {
+        bookFileEntity.setDurationSeconds(3600L);
+        bookFileEntity.setBitrate(192);
+        bookFileEntity.setSampleRate(48000);
+        bookFileEntity.setChannels(2);
+        bookFileEntity.setCodec("MP3");
+        bookFileEntity.setChapterCount(5);
+        bookFileEntity.setChapters(List.of(
+                BookFileEntity.AudioFileChapter.builder()
+                        .index(0)
+                        .title("Chapter 1")
+                        .startTimeMs(0L)
+                        .endTimeMs(1000000L)
+                        .durationMs(1000000L)
+                        .build()
+        ));
 
-        when(audioFile.getAudioHeader()).thenReturn(header);
-        when(audioFile.getTag()).thenReturn(null);
-        when(header.getPreciseTrackLength()).thenReturn(100.0);
+        var bookMetadata = new org.booklore.model.entity.BookMetadataEntity();
+        bookMetadata.setTitle("DB Book Title");
+        bookMetadata.setNarrator("DB Narrator");
+        bookEntity.setMetadata(bookMetadata);
 
         try (MockedStatic<AudioFileIO> audioFileIOMock = mockStatic(AudioFileIO.class)) {
-            audioFileIOMock.when(() -> AudioFileIO.read(audioPath.toFile())).thenReturn(audioFile);
+            AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
 
-            // First call
-            AudiobookInfo info1 = audioMetadataService.getMetadata(bookFileEntity, audioPath);
-            // Second call should use cache
-            AudiobookInfo info2 = audioMetadataService.getMetadata(bookFileEntity, audioPath);
+            assertNotNull(info);
+            assertEquals("DB Narrator", info.getNarrator());
+            assertEquals(3600000L, info.getDurationMs());
+            assertEquals(192, info.getBitrate());
+            assertEquals("MP3", info.getCodec());
+            assertEquals("DB Book Title", info.getTitle());
+            assertEquals(1, info.getChapters().size());
+            assertEquals("Chapter 1", info.getChapters().get(0).getTitle());
 
-            assertSame(info1, info2);
-            // AudioFileIO.read should only be called once
-            audioFileIOMock.verify(() -> AudioFileIO.read(audioPath.toFile()), times(1));
+            audioFileIOMock.verify(() -> AudioFileIO.read(any()), never());
         }
     }
-
-    // ==================== getMetadata tests for folder-based ====================
 
     @Test
     void getMetadata_folderBased_extractsTracksInfo() throws Exception {
@@ -201,7 +213,7 @@ class AudioMetadataServiceTest {
 
         when(audioFile1.getAudioHeader()).thenReturn(header1);
         when(audioFile1.getTag()).thenReturn(tag1);
-        when(header1.getPreciseTrackLength()).thenReturn(1800.0); // 30 min
+        when(header1.getPreciseTrackLength()).thenReturn(1800.0);
         when(header1.getBitRateAsNumber()).thenReturn(192L);
         when(header1.getEncodingType()).thenReturn("MP3");
         when(header1.getSampleRateAsNumber()).thenReturn(44100);
@@ -212,7 +224,7 @@ class AudioMetadataServiceTest {
 
         when(audioFile2.getAudioHeader()).thenReturn(header2);
         when(audioFile2.getTag()).thenReturn(null);
-        when(header2.getPreciseTrackLength()).thenReturn(2400.0); // 40 min
+        when(header2.getPreciseTrackLength()).thenReturn(2400.0);
 
         try (MockedStatic<AudioFileIO> audioFileIOMock = mockStatic(AudioFileIO.class)) {
             audioFileIOMock.when(() -> AudioFileIO.read(track1.toFile())).thenReturn(audioFile1);
@@ -222,7 +234,7 @@ class AudioMetadataServiceTest {
 
             assertNotNull(info);
             assertTrue(info.isFolderBased());
-            assertEquals(4200000L, info.getDurationMs()); // 30 + 40 min = 70 min
+            assertEquals(4200000L, info.getDurationMs());
             assertEquals("Test Album", info.getTitle());
             assertEquals("Test Author", info.getAuthor());
 
@@ -274,7 +286,7 @@ class AudioMetadataServiceTest {
         when(audioFile.getAudioHeader()).thenReturn(header);
         when(audioFile.getTag()).thenReturn(tag);
         when(header.getPreciseTrackLength()).thenReturn(600.0);
-        when(tag.getFirst(FieldKey.TITLE)).thenReturn(""); // Empty title
+        when(tag.getFirst(FieldKey.TITLE)).thenReturn("");
 
         try (MockedStatic<AudioFileIO> audioFileIOMock = mockStatic(AudioFileIO.class)) {
             audioFileIOMock.when(() -> AudioFileIO.read(track1.toFile())).thenReturn(audioFile);
@@ -284,8 +296,6 @@ class AudioMetadataServiceTest {
             assertEquals("track", info.getTracks().get(0).getTitle());
         }
     }
-
-    // ==================== getEmbeddedCoverArt tests ====================
 
     @Test
     void getEmbeddedCoverArt_returnsArtworkData() throws Exception {
@@ -349,8 +359,6 @@ class AudioMetadataServiceTest {
             assertNull(result);
         }
     }
-
-    // ==================== getCoverArtMimeType tests ====================
 
     @Test
     void getCoverArtMimeType_returnsMimeTypeFromArtwork() throws Exception {
@@ -442,8 +450,6 @@ class AudioMetadataServiceTest {
         }
     }
 
-    // ==================== Channel parsing tests ====================
-
     @Test
     void getMetadata_parsesStereoChannels() throws Exception {
         AudioFile audioFile = mock(AudioFile.class);
@@ -515,8 +521,6 @@ class AudioMetadataServiceTest {
             assertNull(info.getChannels());
         }
     }
-
-    // ==================== Bitrate handling ====================
 
     @Test
     void getMetadata_handlesZeroBitrate() throws Exception {
