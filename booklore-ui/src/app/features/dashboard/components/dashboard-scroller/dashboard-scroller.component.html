@@ -27,6 +27,7 @@
           <app-book-card
             [book]="book"
             [isCheckboxEnabled]="false"
+            [forceEbookMode]="forceEbookMode"
             (menuToggled)="handleMenuToggle(book.id, $event)"
             [overlayPreferenceService]="bookCardOverlayPreferenceService"
           ></app-book-card>

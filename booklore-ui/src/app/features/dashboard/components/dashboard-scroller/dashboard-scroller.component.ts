@@ -33,6 +33,10 @@ export class DashboardScrollerComponent {
 
   public bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
 
+  get forceEbookMode(): boolean {
+    return this.bookListType === ScrollerType.LAST_READ;
+  }
+
   handleMenuToggle(bookId: number, isOpen: boolean) {
     this.openMenuBookId = isOpen ? bookId : null;
   }
