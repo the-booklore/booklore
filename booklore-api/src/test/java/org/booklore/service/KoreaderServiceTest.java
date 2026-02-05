@@ -10,6 +10,7 @@ import org.booklore.model.dto.progress.KoreaderProgress;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.model.entity.UserBookProgressEntity;
+import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.UserBookProgressRepository;
 import org.booklore.repository.UserRepository;
@@ -242,6 +243,7 @@ class KoreaderServiceTest {
         when(userRepo.findById(42L)).thenReturn(Optional.of(user));
         var existing = new UserBookProgressEntity();
         existing.setKoreaderProgressPercent(0.4F);
+        existing.setReadStatus(ReadStatus.READING);
         when(progressRepo.findByUserIdAndBookId(42L, 8L))
                 .thenReturn(Optional.of(existing));
 
