@@ -23,7 +23,7 @@ import {AuthService} from '../../../shared/service/auth.service';
 import {API_CONFIG} from '../../../core/config/api-config';
 
 @Component({
-  selector: 'app-audiobook-reader',
+  selector: 'app-audiobook-player',
   standalone: true,
   imports: [
     CommonModule,
@@ -35,10 +35,10 @@ import {API_CONFIG} from '../../../core/config/api-config';
     SelectButton,
     Menu
   ],
-  templateUrl: './audiobook-reader.component.html',
-  styleUrls: ['./audiobook-reader.component.scss']
+  templateUrl: './audiobook-player.component.html',
+  styleUrls: ['./audiobook-player.component.scss']
 })
-export class AudiobookReaderComponent implements OnInit, OnDestroy {
+export class AudiobookPlayerComponent implements OnInit, OnDestroy {
   @ViewChild('audioElement') audioElement!: ElementRef<HTMLAudioElement>;
 
   private destroy$ = new Subject<void>();
@@ -161,10 +161,10 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
           }
         }
 
-        // Load cover URLs
+        // Load cover URLs - prefer stored audiobook cover, fall back to embedded, then book cover
         const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
-        this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/cover/${this.bookId}?token=${encodeURIComponent(token || '')}`;
-        this.coverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
+        this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/book/${this.bookId}/cover?token=${encodeURIComponent(token || '')}`;
+        this.coverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/book/${this.bookId}/audiobook-cover?token=${encodeURIComponent(token || '')}`;
 
         this.isLoading = false;
 
@@ -789,7 +789,13 @@ export class AudiobookReaderComponent implements OnInit, OnDestroy {
   }
 
   onCoverError(): void {
-    if (this.coverUrl !== this.bookCoverUrl) {
+    // Fallback chain: stored audiobook cover -> embedded cover -> book cover
+    const embeddedCoverUrl = this.audiobookService.getEmbeddedCoverUrl(this.bookId);
+    if (this.coverUrl && !this.coverUrl.includes('/audiobook/') && this.coverUrl !== this.bookCoverUrl) {
+      // First fallback: try embedded cover from file
+      this.coverUrl = embeddedCoverUrl;
+    } else if (this.coverUrl !== this.bookCoverUrl) {
+      // Second fallback: try book cover
       this.coverUrl = this.bookCoverUrl;
     } else {
       this.coverUrl = undefined;

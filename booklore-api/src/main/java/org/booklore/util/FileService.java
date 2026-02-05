@@ -4,7 +4,6 @@ import org.booklore.config.AppProperties;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.settings.CoverCroppingSettings;
 import org.booklore.model.entity.BookMetadataEntity;
-import org.booklore.repository.BookMetadataRepository;
 import org.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,27 +38,30 @@ public class FileService {
     private final AppProperties appProperties;
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
-    private final BookMetadataRepository bookMetadataRepository;
 
     private static final double TARGET_COVER_ASPECT_RATIO = 1.5;
     private static final int SMART_CROP_COLOR_TOLERANCE = 30;
     private static final double SMART_CROP_MARGIN_PERCENT = 0.02;
 
     // @formatter:off
-    private static final String IMAGES_DIR          = "images";
-    private static final String BACKGROUNDS_DIR     = "backgrounds";
-    private static final String ICONS_DIR           = "icons";
-    private static final String SVG_DIR             = "svg";
-    private static final String THUMBNAIL_FILENAME  = "thumbnail.jpg";
-    private static final String COVER_FILENAME      = "cover.jpg";
-    private static final String JPEG_MIME_TYPE      = "image/jpeg";
-    private static final String PNG_MIME_TYPE       = "image/png";
-    private static final long   MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
-    private static final int    THUMBNAIL_WIDTH     = 250;
-    private static final int    THUMBNAIL_HEIGHT    = 350;
-    private static final int    MAX_ORIGINAL_WIDTH  = 1000;
-    private static final int    MAX_ORIGINAL_HEIGHT = 1500;
-    private static final String IMAGE_FORMAT        = "JPEG";
+    private static final String IMAGES_DIR                    = "images";
+    private static final String BACKGROUNDS_DIR               = "backgrounds";
+    private static final String ICONS_DIR                     = "icons";
+    private static final String SVG_DIR                       = "svg";
+    private static final String THUMBNAIL_FILENAME            = "thumbnail.jpg";
+    private static final String COVER_FILENAME                = "cover.jpg";
+    private static final String AUDIOBOOK_THUMBNAIL_FILENAME  = "audiobook-thumbnail.jpg";
+    private static final String AUDIOBOOK_COVER_FILENAME      = "audiobook-cover.jpg";
+    private static final String JPEG_MIME_TYPE                = "image/jpeg";
+    private static final String PNG_MIME_TYPE                 = "image/png";
+    private static final long   MAX_FILE_SIZE_BYTES           = 5L * 1024 * 1024;
+    private static final int    THUMBNAIL_WIDTH               = 250;
+    private static final int    THUMBNAIL_HEIGHT              = 350;
+    private static final int    SQUARE_THUMBNAIL_SIZE         = 250;
+    private static final int    MAX_ORIGINAL_WIDTH            = 1000;
+    private static final int    MAX_ORIGINAL_HEIGHT           = 1500;
+    private static final int    MAX_SQUARE_SIZE               = 1000;
+    private static final String IMAGE_FORMAT                  = "JPEG";
     // @formatter:on
 
     // ========================================
@@ -76,6 +78,14 @@ public class FileService {
 
     public String getCoverFile(long bookId) {
         return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId), COVER_FILENAME).toString();
+    }
+
+    public String getAudiobookThumbnailFile(long bookId) {
+        return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId), AUDIOBOOK_THUMBNAIL_FILENAME).toString();
+    }
+
+    public String getAudiobookCoverFile(long bookId) {
+        return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId), AUDIOBOOK_COVER_FILENAME).toString();
     }
 
     public String getBackgroundsFolder(Long userId) {
@@ -282,6 +292,126 @@ public class FileService {
         }
     }
 
+    // ========================================
+    // AUDIOBOOK COVER OPERATIONS
+    // ========================================
+
+    public void createAudiobookThumbnailFromFile(long bookId, MultipartFile file) {
+        try {
+            validateCoverFile(file);
+            BufferedImage originalImage;
+            try (InputStream inputStream = file.getInputStream()) {
+                originalImage = readImage(inputStream);
+            }
+            if (originalImage == null) {
+                log.warn("Could not decode image from file, skipping audiobook thumbnail creation for book: {}", bookId);
+                return;
+            }
+            boolean success = saveAudiobookCoverImages(originalImage, bookId);
+            if (!success) {
+                throw ApiError.FILE_READ_ERROR.createException("Failed to save audiobook cover images");
+            }
+            originalImage.flush();
+            log.info("Audiobook cover images created and saved for book ID: {}", bookId);
+        } catch (Exception e) {
+            log.error("An error occurred while creating the audiobook thumbnail: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
+    public void createAudiobookThumbnailFromBytes(long bookId, byte[] imageBytes) {
+        try {
+            BufferedImage originalImage = readImage(imageBytes);
+            if (originalImage == null) {
+                log.warn("Skipping audiobook thumbnail creation for book {}: image decode failed", bookId);
+                return;
+            }
+            boolean success = saveAudiobookCoverImages(originalImage, bookId);
+            if (!success) {
+                throw ApiError.FILE_READ_ERROR.createException("Failed to save audiobook cover images");
+            }
+            originalImage.flush();
+            log.info("Audiobook cover images created and saved from bytes for book ID: {}", bookId);
+        } catch (Exception e) {
+            log.error("An error occurred while creating audiobook thumbnail from bytes: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
+    public void createAudiobookThumbnailFromUrl(long bookId, String imageUrl) {
+        try {
+            BufferedImage originalImage = downloadImageFromUrl(imageUrl);
+            if (originalImage == null) {
+                log.warn("Skipping audiobook thumbnail creation for book {}: download/decode failed", bookId);
+                return;
+            }
+            boolean success = saveAudiobookCoverImages(originalImage, bookId);
+            if (!success) {
+                throw ApiError.FILE_READ_ERROR.createException("Failed to save audiobook cover images");
+            }
+            originalImage.flush();
+            log.info("Audiobook cover images created and saved from URL for book ID: {}", bookId);
+        } catch (Exception e) {
+            log.error("An error occurred while creating audiobook thumbnail from URL: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
+    public boolean saveAudiobookCoverImages(BufferedImage coverImage, long bookId) throws IOException {
+        BufferedImage rgbImage = null;
+        BufferedImage resized = null;
+        BufferedImage thumb = null;
+        try {
+            String folderPath = getImagesFolder(bookId);
+            File folder = new File(folderPath);
+            if (!folder.exists() && !folder.mkdirs()) {
+                throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
+            }
+
+            rgbImage = new BufferedImage(
+                    coverImage.getWidth(),
+                    coverImage.getHeight(),
+                    BufferedImage.TYPE_INT_RGB
+            );
+            Graphics2D g = rgbImage.createGraphics();
+            g.drawImage(coverImage, 0, 0, Color.WHITE, null);
+            g.dispose();
+
+            // Resize to square if needed, maintaining 1:1 aspect ratio
+            int size = Math.min(rgbImage.getWidth(), rgbImage.getHeight());
+            int x = (rgbImage.getWidth() - size) / 2;
+            int y = (rgbImage.getHeight() - size) / 2;
+            BufferedImage cropped = rgbImage.getSubimage(x, y, size, size);
+
+            // Resize if too large
+            if (size > MAX_SQUARE_SIZE) {
+                resized = resizeImage(cropped, MAX_SQUARE_SIZE, MAX_SQUARE_SIZE);
+            } else {
+                resized = cropped;
+            }
+
+            File originalFile = new File(folder, AUDIOBOOK_COVER_FILENAME);
+            boolean originalSaved = ImageIO.write(resized, IMAGE_FORMAT, originalFile);
+
+            // Create square thumbnail
+            thumb = resizeImage(resized, SQUARE_THUMBNAIL_SIZE, SQUARE_THUMBNAIL_SIZE);
+            File thumbnailFile = new File(folder, AUDIOBOOK_THUMBNAIL_FILENAME);
+            boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+
+            return originalSaved && thumbnailSaved;
+        } finally {
+            if (rgbImage != null) {
+                rgbImage.flush();
+            }
+            if (resized != null && resized != rgbImage) {
+                resized.flush();
+            }
+            if (thumb != null) {
+                thumb.flush();
+            }
+        }
+    }
+
     public boolean saveCoverImages(BufferedImage coverImage, long bookId) throws IOException {
         BufferedImage rgbImage = null;
         BufferedImage cropped = null;
@@ -340,9 +470,6 @@ public class FileService {
             File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
             boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
 
-            if (originalSaved && thumbnailSaved) {
-                bookMetadataRepository.updateCoverTimestamp(bookId, Instant.now());
-            }
             return originalSaved && thumbnailSaved;
         } finally {
             // Cleanup resources created within this method

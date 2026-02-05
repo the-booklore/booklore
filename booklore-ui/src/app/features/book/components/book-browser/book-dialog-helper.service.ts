@@ -124,12 +124,13 @@ export class BookDialogHelperService {
     });
   }
 
-  openCoverSearchDialog(bookId: number): DynamicDialogRef | null {
+  openCoverSearchDialog(bookId: number, coverType?: 'ebook' | 'audiobook'): DynamicDialogRef | null {
     return this.openDialog(CoverSearchComponent, {
       showHeader: false,
       styleClass: `${DialogSize.FULL} ${DialogStyle.MINIMAL}`,
       data: {
         bookId: bookId,
+        coverType: coverType,
       },
     });
   }

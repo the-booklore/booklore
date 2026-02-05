@@ -23,6 +23,7 @@ public class CoverImageGenerator {
 
     private static final int WIDTH = 1200;
     private static final int HEIGHT = 1600;
+    private static final int SQUARE_SIZE = 1200;
     private static final int SCALE = 2;
     private static final double PHI = 1.618033988749;
     private static final double PHI_INV = 1.0 / PHI;
@@ -88,6 +89,57 @@ public class CoverImageGenerator {
         } catch (Exception e) {
             log.error("Cover generation failed: {}", title, e);
             throw new RuntimeException("Cover generation failed", e);
+        } finally {
+            cleanup(g, render, result);
+        }
+    }
+
+    /**
+     * Generates a square cover image suitable for audiobooks.
+     */
+    public byte[] generateSquareCover(String title, String author) {
+        BufferedImage render = null;
+        BufferedImage result = null;
+        Graphics2D g = null;
+
+        try {
+            String safeTitle = sanitize(title, MAX_TITLE_LEN, "Unknown Title");
+            String safeAuthor = sanitize(author, MAX_AUTHOR_LEN, "Unknown Author");
+
+            int size = SQUARE_SIZE * SCALE;
+
+            render = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+            g = render.createGraphics();
+
+            try {
+                configureGraphics(g);
+                Palette p = selectPalette(safeTitle);
+                int margin = calcSquareMargin(size);
+
+                renderBaseGradient(g, p, size, size);
+                renderDepthGradient(g, p, size, size);
+                renderGlow(g, p, size, size);
+                renderBokeh(g, p, size, size);
+                renderTexture(g, size, size);
+                renderSquareFrame(g, p, size);
+                renderSquareTitle(g, safeTitle, p, size, margin);
+                renderSquareAuthor(g, safeAuthor, p, size, margin);
+                renderVignette(g, size, size);
+                renderEdges(g, size, size);
+
+            } finally {
+                if (g != null) g.dispose();
+            }
+
+            result = downscaleSquare(render);
+            render.flush();
+            render = null;
+
+            return encodeJpeg(result);
+
+        } catch (Exception e) {
+            log.error("Square cover generation failed: {}", title, e);
+            throw new RuntimeException("Square cover generation failed", e);
         } finally {
             cleanup(g, render, result);
         }
@@ -669,6 +721,129 @@ public class CoverImageGenerator {
         } finally {
             g.dispose();
         }
+    }
+
+    private BufferedImage downscaleSquare(BufferedImage src) {
+        BufferedImage dst = new BufferedImage(SQUARE_SIZE, SQUARE_SIZE, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = dst.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.drawImage(src, 0, 0, SQUARE_SIZE, SQUARE_SIZE, null);
+            return dst;
+        } finally {
+            g.dispose();
+        }
+    }
+
+    private int calcSquareMargin(int size) {
+        int frameOuter = (int) (size * PHI_SQ_INV * 0.10);
+        int frameInner = (int) (frameOuter * PHI);
+        return frameInner + (int) (size * 0.04);
+    }
+
+    private void renderSquareFrame(Graphics2D g, Palette p, int size) {
+        int outer = (int) (size * PHI_SQ_INV * 0.10);
+        int inner = (int) (outer * PHI);
+
+        g.setColor(alpha(p.ornament, 28));
+        g.setStroke(new BasicStroke(8f));
+        g.drawRect(outer - 4, outer - 4, size - (outer - 4) * 2, size - (outer - 4) * 2);
+
+        g.setColor(alpha(p.ornament, 95));
+        g.setStroke(new BasicStroke(2.5f));
+        g.drawRect(outer, outer, size - outer * 2, size - outer * 2);
+
+        g.setColor(alpha(p.ornament, 55));
+        g.setStroke(new BasicStroke(1f));
+        g.drawRect(inner, inner, size - inner * 2, size - inner * 2);
+
+        renderSquareCorners(g, p, size, outer);
+    }
+
+    private static void renderSquareCorners(Graphics2D g, Palette p, int size, int m) {
+        g.setColor(alpha(p.ornament, 105));
+        g.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        int cornerSize = (int) (m * PHI * 0.8);
+
+        int[][] corners = {{m, m, 0}, {size - m, m, 90}, {size - m, size - m, 180}, {m, size - m, 270}};
+        for (int[] c : corners) renderCorner(g, c[0], c[1], cornerSize, c[2]);
+    }
+
+    private void renderSquareTitle(Graphics2D g, String title, Palette p, int size, int margin) {
+        int maxW = size - margin * 2;
+
+        String text = title.toUpperCase();
+        Font font = resolveFont(g, text, maxW, squareTitleSize(title.length()), 3, true);
+        g.setFont(font);
+        FontMetrics fm = g.getFontMetrics();
+
+        List<String> lines = wrapText(text, fm, maxW, 3);
+        int lineH = (int) (fm.getHeight() * 1.12);
+        int totalH = lines.size() * lineH;
+
+        // Center title vertically in top portion
+        int topZone = (int) (size * 0.55);
+        int startY = margin + (topZone - margin - totalH) / 2 + fm.getAscent();
+        startY = Math.max(startY, margin + fm.getAscent());
+
+        float tracking = 0.05f;
+
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            int lw = trackedWidth(fm, line, tracking);
+            int x = (size - lw) / 2;
+            int y = startY + i * lineH;
+            if (y + fm.getDescent() > topZone) break;
+            renderText(g, line, x, y, tracking, p.textMain, true);
+        }
+    }
+
+    private void renderSquareAuthor(Graphics2D g, String author, Palette p, int size, int margin) {
+        int maxW = size - margin * 2;
+
+        Font authorFont = resolveFont(g, author, maxW, squareAuthorSize(author.length()), 2, false);
+        g.setFont(authorFont);
+        FontMetrics authorFm = g.getFontMetrics();
+
+        List<String> lines = wrapText(author, authorFm, maxW, 2);
+        int authorLineH = (int) (authorFm.getHeight() * 1.15);
+        int totalH = lines.size() * authorLineH;
+
+        // Position author in bottom portion
+        int bottomStart = (int) (size * 0.65);
+        int bottomEnd = size - margin;
+        int availableH = bottomEnd - bottomStart - totalH;
+        int startY = bottomStart + availableH / 2 + authorFm.getAscent();
+
+        float tracking = 0.08f;
+
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (!line.isEmpty()) {
+                int lw = trackedWidth(authorFm, line, tracking);
+                int x = (size - lw) / 2;
+                int y = startY + i * authorLineH;
+                if (y + authorFm.getDescent() > bottomEnd) break;
+                renderText(g, line, x, y, tracking, p.textSub, false);
+            }
+        }
+    }
+
+    private int squareTitleSize(int len) {
+        if (len < 8) return 130 * SCALE;
+        if (len < 15) return 110 * SCALE;
+        if (len < 25) return 95 * SCALE;
+        if (len < 40) return 80 * SCALE;
+        if (len < 60) return 68 * SCALE;
+        return 58 * SCALE;
+    }
+
+    private int squareAuthorSize(int len) {
+        if (len < 15) return 70 * SCALE;
+        if (len < 25) return 60 * SCALE;
+        if (len < 40) return 52 * SCALE;
+        return 45 * SCALE;
     }
 
     private byte[] encodeJpeg(BufferedImage img) {

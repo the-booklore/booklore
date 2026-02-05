@@ -143,6 +143,16 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             """)
     long countByBookType(@Param("type") BookFileType type);
 
+    @Query("""
+            SELECT COUNT(DISTINCT b) FROM BookEntity b
+            JOIN b.bookFiles bf
+            WHERE b.library.id = :libraryId
+              AND bf.isBookFormat = true
+              AND bf.bookType = :type
+              AND (b.deleted IS NULL OR b.deleted = false)
+            """)
+    long countByLibraryIdAndBookType(@Param("libraryId") Long libraryId, @Param("type") BookFileType type);
+
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     long countByLibraryId(@Param("libraryId") Long libraryId);
 
@@ -265,7 +275,7 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
      * Find books by series name for a library when groupUnknown=true.
      * Uses the first bookFile.fileName as fallback when metadata.seriesName is null.
      */
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("""
             SELECT DISTINCT b FROM BookEntity b
             LEFT JOIN b.metadata m
@@ -295,7 +305,7 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
      * Find books by series name for a library when groupUnknown=false.
      * Matches by series name, or by title/filename for books without series.
      */
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("""
             SELECT b FROM BookEntity b
             LEFT JOIN b.metadata m

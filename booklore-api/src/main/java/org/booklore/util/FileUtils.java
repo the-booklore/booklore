@@ -33,6 +33,17 @@ public class FileUtils {
                 .replace("\\", "/");
     }
 
+    public String getBookFullPath(BookEntity bookEntity, BookFileEntity bookFile) {
+        if (bookFile == null || bookEntity.getLibraryPath() == null) {
+            return null;
+        }
+
+        return Path.of(bookEntity.getLibraryPath().getPath(), bookFile.getFileSubPath(), bookFile.getFileName())
+                .normalize()
+                .toString()
+                .replace("\\", "/");
+    }
+
     public String getBookFullPath(Book book) {
         return book.getPrimaryFile().getFilePath();
     }

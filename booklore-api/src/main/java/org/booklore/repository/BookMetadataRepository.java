@@ -20,6 +20,11 @@ public interface BookMetadataRepository extends JpaRepository<BookMetadataEntity
     @Query("UPDATE BookMetadataEntity m SET m.coverUpdatedOn = :timestamp WHERE m.bookId = :bookId")
     void updateCoverTimestamp(@Param("bookId") Long bookId, @Param("timestamp") Instant timestamp);
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE BookMetadataEntity m SET m.audiobookCoverUpdatedOn = :timestamp WHERE m.bookId = :bookId")
+    void updateAudiobookCoverTimestamp(@Param("bookId") Long bookId, @Param("timestamp") Instant timestamp);
+
     List<BookMetadataEntity> findAllByAuthorsContaining(AuthorEntity author);
 
     List<BookMetadataEntity> findAllByCategoriesContaining(CategoryEntity category);
