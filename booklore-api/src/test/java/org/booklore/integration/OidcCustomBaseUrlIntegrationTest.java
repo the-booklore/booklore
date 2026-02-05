@@ -1,10 +1,8 @@
-package com.adityachandel.booklore.integration;
+package org.booklore.integration;
 
-import com.adityachandel.booklore.config.security.service.OidcProperties;
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
+import org.booklore.config.security.service.OidcProperties;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.oidc.OidcDiscoveryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -14,7 +12,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Integration-style test to verify OIDC functionality works properly with custom base URLs.

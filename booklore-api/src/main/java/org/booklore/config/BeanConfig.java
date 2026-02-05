@@ -1,8 +1,8 @@
 package org.booklore.config;
 
-import com.adityachandel.booklore.config.properties.WebSocketProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
+import org.booklore.config.properties.WebSocketProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;

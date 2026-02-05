@@ -1,7 +1,16 @@
-import {Component, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output} from '@angular/core';
-import {TableModule} from 'primeng/table';
-import {DatePipe, NgClass} from '@angular/common';
-import {Rating} from 'primeng/rating';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output
+} from '@angular/core';
+import {TableColResizeEvent, TableColumnReorderEvent, TableModule} from 'primeng/table';
+import {DatePipe, NgClass, NgStyle} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {TooltipModule} from "primeng/tooltip";
 import {Book, BookMetadata, ReadStatus} from '../../../model/book.model';
@@ -9,7 +18,7 @@ import {SortOption} from '../../../model/sort.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {Button} from 'primeng/button';
 import {BookService} from '../../../service/book.service';
-import {MessageService} from 'primeng/api';
+import {MessageService, SortEvent} from 'primeng/api';
 import {RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
@@ -22,25 +31,39 @@ import {ReadStatusHelper} from '../../../helpers/read-status.helper';
   templateUrl: './book-table.component.html',
   imports: [
     TableModule,
-    Rating,
     FormsModule,
     Button,
     TooltipModule,
     NgClass,
+    NgStyle,
     RouterLink
   ],
   styleUrls: ['./book-table.component.scss'],
-  providers: [DatePipe]
+  providers: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
+export class BookTableComponent implements OnInit, OnDestroy {
   selectedBooks: Book[] = [];
   selectedBookIds = new Set<number>();
 
   @Output() selectedBooksChange = new EventEmitter<Set<number>>();
   @Input() books: Book[] = [];
   @Input() sortOption: SortOption | null = null;
-  @Input() visibleColumns: { field: string; header: string }[] = [];
+  @Input() visibleColumns: { field: string; header: string; width?: string }[] = [];
   @Input() preselectedBookIds = new Set<number>();
+  @Input() set validSortFields(fields: string[]) {
+    this._validSortFields = fields;
+    this.validSortFieldsSet = new Set(fields);
+  }
+  get validSortFields(): string[] {
+    return this._validSortFields;
+  }
+  private _validSortFields: string[] = [];
+  private validSortFieldsSet = new Set<string>();
+
+  @Output() onSortChange = new EventEmitter<{ field: string, order: number }>();
+  @Output() onColumnsReorder = new EventEmitter<{ field: string; header: string }[]>();
+  @Output() onColumnResize = new EventEmitter<any>();
 
   protected urlHelper = inject(UrlHelperService);
   private bookService = inject(BookService);
@@ -48,9 +71,12 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   private userService = inject(UserService);
   private datePipe = inject(DatePipe);
   private readStatusHelper = inject(ReadStatusHelper);
+  private cdr = inject(ChangeDetectorRef);
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
+  readonly starIndexes = [1, 2, 3, 4, 5] as const;
+  private readonly starColorCache = new Map<number, string>();
 
   readonly allColumns = [
     {field: 'readStatus', header: '📖'},
@@ -76,7 +102,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'ranobedbRating', header: 'Ranobedb'},
   ];
 
-  scrollHeight = 'calc(100dvh - 160px)';
+  scrollHeight = 'calc(100vh - 160px)';
 
   ngOnInit(): void {
     this.userService.userState$
@@ -87,6 +113,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       )
       .subscribe(userState => {
         this.metadataCenterViewMode = userState?.user?.userSettings.metadataCenterViewMode ?? 'route';
+        this.cdr.markForCheck();
       });
 
     this.selectedBookIds = this.preselectedBookIds;
@@ -98,27 +125,24 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   setScrollHeight() {
     const isMobile = window.innerWidth <= 768;
     this.scrollHeight = isMobile
-      ? 'calc(100dvh - 125px)'
-      : 'calc(100dvh - 150px)';
+      ? 'calc(100vh - 125px)'
+      : 'calc(100vh - 150px)';
   }
 
-  ngOnChanges() {
-    const wrapperElements: HTMLCollection = document.getElementsByClassName('p-virtualscroller');
-    Array.prototype.forEach.call(wrapperElements, function (wrapperElement) {
-      wrapperElement.style["height"] = 'calc(100dvh - 160px)';
-    });
-  }
+
 
   selectAllBooks(): void {
     this.selectedBookIds = new Set(this.books.map(book => book.id));
     this.selectedBooks = [...this.books];
     this.selectedBooksChange.emit(this.selectedBookIds);
+    this.cdr.markForCheck();
   }
 
   clearSelectedBooks(): void {
     this.selectedBookIds.clear();
     this.selectedBooks = [];
     this.selectedBooksChange.emit(this.selectedBookIds);
+    this.cdr.markForCheck();
   }
 
   onRowSelect(event: { data?: Book | Book[] }): void {
@@ -145,18 +169,52 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedBooksChange.emit(this.selectedBookIds);
   }
 
-  getStarColor(rating: number): string {
-    if (rating >= 4.5) {
-      return 'rgb(34, 197, 94)';
-    } else if (rating >= 4) {
-      return 'rgb(52, 211, 153)';
-    } else if (rating >= 3.5) {
-      return 'rgb(234, 179, 8)';
-    } else if (rating >= 2.5) {
-      return 'rgb(249, 115, 22)';
-    } else {
-      return 'rgb(239, 68, 68)';
+  onSort(event: SortEvent) {
+    if (event.field) {
+      this.onSortChange.emit({field: event.field, order: event.order ?? 1});
     }
+  }
+
+  isSortable(field: string): boolean {
+    return this.validSortFieldsSet.has(field);
+  }
+
+  onColReorder(event: TableColumnReorderEvent) {
+    this.onColumnsReorder.emit(event.columns as { field: string; header: string }[]);
+  }
+
+  onColResize(event: TableColResizeEvent) {
+    this.onColumnResize.emit(event);
+  }
+
+  getStarColor(rating: number): string {
+    if (rating == null) return '#ccc';
+
+    // Round to 1 decimal for cache key stability
+    const key = Math.round(rating * 10);
+
+    let color = this.starColorCache.get(key);
+    if (!color) {
+      color = this.computeStarColor(rating);
+      this.starColorCache.set(key, color);
+    }
+    return color;
+  }
+
+  private computeStarColor(rating: number): string {
+    if (rating >= 4.5) return 'rgb(34, 197, 94)';
+    if (rating >= 4) return 'rgb(52, 211, 153)';
+    if (rating >= 3.5) return 'rgb(234, 179, 8)';
+    if (rating >= 2.5) return 'rgb(249, 115, 22)';
+    return 'rgb(239, 68, 68)';
+  }
+
+  getRatingColorClass(rating: number): string {
+    if (rating >= 4.5) return 'color-excellent';
+    if (rating >= 4.0) return 'color-good';
+    if (rating >= 3.5) return 'color-average';
+    if (rating >= 2.5) return 'color-below-avg';
+    return 'color-poor';
   }
 
   getAuthorNames(authors: string[]): string {

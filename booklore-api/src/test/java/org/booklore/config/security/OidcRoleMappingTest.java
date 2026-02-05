@@ -1,6 +1,6 @@
-package com.adityachandel.booklore.config.security;
+package org.booklore.config.security;
 
-import com.adityachandel.booklore.config.security.service.SimpleRoleConverter;
+import org.booklore.config.security.service.SimpleRoleConverter;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;

@@ -2,6 +2,8 @@
   [value]="books"
   [columns]="visibleColumns"
   [dataKey]="'id'"
+  [sortField]="sortOption?.field ?? ''"
+  [sortOrder]="sortOption?.direction === 'ASCENDING' ? 1 : -1"
   [resizableColumns]="true"
   [reorderableColumns]="true"
   columnResizeMode="expand"
@@ -13,10 +15,14 @@
   [scrollHeight]="scrollHeight"
   [virtualScroll]="true"
   [virtualScrollItemSize]="46"
+  [customSort]="true"
   [(selection)]="selectedBooks"
   (onHeaderCheckboxToggle)="onHeaderCheckboxToggle($event)"
   (onRowSelect)="onRowSelect($event)"
   (onRowUnselect)="onRowUnselect($event)"
+  (onSort)="onSort($event)"
+  (onColReorder)="onColReorder($event)"
+  (onColResize)="onColResize($event)"
 >
   <ng-template pTemplate="header">
     <tr>
@@ -26,10 +32,23 @@
       <th></th>
       <th class="cover-header-cell"></th>
       @for (col of visibleColumns; track col.field) {
-        <th pResizableColumn>{{ col.header }}</th>
+        @if (isSortable(col.field)) {
+          <th pResizableColumn pReorderableColumn pSortableColumn="{{col.field}}" 
+              [attr.data-field]="col.field"
+              [ngStyle]="{'width': col.width || 'auto', 'min-width': '100px'}">
+            {{ col.header }} <p-sortIcon field="{{col.field}}"/>
+          </th>
+        } @else {
+          <th pResizableColumn pReorderableColumn 
+              [attr.data-field]="col.field"
+              [ngStyle]="{'width': col.width || 'auto', 'min-width': '100px'}">
+            {{ col.header }}
+          </th>
+        }
       }
     </tr>
   </ng-template>
+
 
   <ng-template pTemplate="body" let-book>
     @if (book.metadata; as metadata) {
@@ -85,24 +104,26 @@
             </td>
           } @else if (col.field === 'amazonRating' || col.field === 'goodreadsRating' || col.field === 'hardcoverRating' || col.field == 'ranobedbRating') {
             <td class="cell-rating">
-              <span class="rating-wrapper">
-                <p-rating
-                  [(ngModel)]="metadata[col.field]"
-                  readonly
-                  stars="5"
-                  [style.--p-rating-icon-active-color]="getStarColor(metadata[col.field])"
-                ></p-rating>
-                @if (metadata[col.field] != null) {
-                  <span>({{ metadata[col.field]?.toFixed(1) }})</span>
+                @if (metadata[col.field] != null && metadata[col.field] > 0) {
+                    <div class="rating-display" [title]="metadata[col.field]">
+                       @for (star of starIndexes; track star) {
+                         <i class="pi star-icon"
+                            [class.pi-star-fill]="star <= metadata[col.field]"
+                            [class.pi-star]="star > metadata[col.field]"
+                            [class.filled]="star <= metadata[col.field]"
+                            [ngClass]="star <= metadata[col.field] ? getRatingColorClass(metadata[col.field]) : ''">
+                         </i>
+                       }
+                    </div>
+                    <span class="rating-value">({{ metadata[col.field].toFixed(1) }})</span>
                 }
-              </span>
             </td>
           } @else {
             <td
               [title]="getCellValue(metadata, book, col.field)"
               class="cell-text">
               @if(['title', 'authors', 'publisher', 'seriesName', 'categories', 'language'].includes(col.field)) {
-                @for (item of getCellClickableValue(metadata, book, col.field); track $index; let isLast = $last) {
+                @for (item of getCellClickableValue(metadata, book, col.field); track item.anchor; let isLast = $last) {
                   <a [routerLink]="item.url" class="cell-link">
                     {{ item.anchor }}</a>@if (!isLast) {<span>, </span>}
                 }

@@ -1,9 +1,9 @@
-package com.adityachandel.booklore.service.event;
+package org.booklore.service.event;
 
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.websocket.Topic;
-import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.service.user.UserService;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.websocket.Topic;
+import org.booklore.service.NotificationService;
+import org.booklore.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

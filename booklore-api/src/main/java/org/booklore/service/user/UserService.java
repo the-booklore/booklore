@@ -1,5 +1,8 @@
 package org.booklore.service.user;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.custom.BookLoreUserTransformer;
@@ -15,9 +18,6 @@ import org.booklore.model.entity.UserSettingEntity;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -97,7 +97,7 @@ public class UserService {
         if (!bookLoreUserEntity.getPermissions().isPermissionChangePassword()) {
             log.warn("User '{}' (ID: {}) attempted password change without permission", bookLoreUser.getUsername(), bookLoreUser.getId());
 
-            if (bookLoreUserEntity.getProvisioningMethod() == com.adityachandel.booklore.model.enums.ProvisioningMethod.OIDC) {
+            if (bookLoreUserEntity.getProvisioningMethod() == org.booklore.model.enums.ProvisioningMethod.OIDC) {
                 throw ApiError.GENERIC_UNAUTHORIZED.createException(
                     "Password changes are managed by your SSO provider. Please change your password through your organization's identity provider."
                 );
@@ -107,7 +107,7 @@ public class UserService {
             );
         }
 
-        boolean isOidcUserSettingInitialPassword = bookLoreUserEntity.getProvisioningMethod() == com.adityachandel.booklore.model.enums.ProvisioningMethod.OIDC &&
+        boolean isOidcUserSettingInitialPassword = bookLoreUserEntity.getProvisioningMethod() == org.booklore.model.enums.ProvisioningMethod.OIDC &&
                 UserPersistenceService.hasLockedOidcPassword(bookLoreUserEntity);
 
         if (!isOidcUserSettingInitialPassword) {

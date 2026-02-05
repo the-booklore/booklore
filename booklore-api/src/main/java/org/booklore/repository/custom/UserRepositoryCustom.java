@@ -1,7 +1,7 @@
-package com.adityachandel.booklore.repository.custom;
+package org.booklore.repository.custom;
 
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.enums.PermissionType;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.enums.PermissionType;
 
 import java.util.List;
 import java.util.Set;

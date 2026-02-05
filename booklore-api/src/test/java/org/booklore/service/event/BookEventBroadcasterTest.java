@@ -1,13 +1,14 @@
-package com.adityachandel.booklore.service.event;
+package org.booklore.service.event;
 
-import com.adityachandel.booklore.model.dto.Book;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.dto.Library;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.websocket.LogNotification;
-import com.adityachandel.booklore.model.websocket.Topic;
-import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.service.user.UserService;
+import org.booklore.model.dto.Book;
+import org.booklore.model.dto.BookFile;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.Library;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.model.websocket.LogNotification;
+import org.booklore.model.websocket.Topic;
+import org.booklore.service.NotificationService;
+import org.booklore.service.user.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +20,8 @@ import java.util.List;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BookEventBroadcasterTest {
@@ -41,9 +43,8 @@ class BookEventBroadcasterTest {
     void broadcastBookAddEvent_withAdminUser_sendsNotifications() {
         Book book = Book.builder()
                 .id(1L)
-                .fileName("test-book.pdf")
+                .primaryFile(BookFile.builder().fileName("test-book.pdf").bookType(BookFileType.PDF).build())
                 .libraryId(1L)
-                .bookType(BookFileType.PDF)
                 .build();
 
         BookLoreUser adminUser = new BookLoreUser();
@@ -66,9 +67,8 @@ class BookEventBroadcasterTest {
     void broadcastBookAddEvent_withLibraryUser_sendsNotifications() {
         Book book = Book.builder()
                 .id(1L)
-                .fileName("test-book.pdf")
+                .primaryFile(BookFile.builder().fileName("test-book.pdf").bookType(BookFileType.PDF).build())
                 .libraryId(1L)
-                .bookType(BookFileType.PDF)
                 .build();
 
         BookLoreUser libraryUser = new BookLoreUser();

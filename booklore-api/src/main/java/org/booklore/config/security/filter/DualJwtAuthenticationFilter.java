@@ -1,17 +1,17 @@
-package com.adityachandel.booklore.config.security.filter;
+package org.booklore.config.security.filter;
 
-import com.adityachandel.booklore.config.security.JwtUtils;
-import com.adityachandel.booklore.config.security.userdetails.UserAuthenticationDetails;
-import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.security.JwtUtils;
+import org.booklore.config.security.userdetails.UserAuthenticationDetails;
+import org.booklore.mapper.custom.BookLoreUserTransformer;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.repository.UserRepository;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

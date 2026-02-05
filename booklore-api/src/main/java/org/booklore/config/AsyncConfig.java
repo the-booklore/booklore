@@ -1,4 +1,4 @@
-package com.adityachandel.booklore.config;
+package org.booklore.config;
 
 import lombok.AllArgsConstructor;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;

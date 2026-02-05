@@ -1,25 +1,24 @@
-package com.adityachandel.booklore.service.user;
+package org.booklore.service.user;
 
-import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.entity.LibraryEntity;
-import com.adityachandel.booklore.model.entity.UserPermissionsEntity;
-import com.adityachandel.booklore.model.enums.ProvisioningMethod;
-import com.adityachandel.booklore.repository.LibraryRepository;
-import com.adityachandel.booklore.repository.UserRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.settings.OidcAutoProvisionDetails;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.entity.LibraryEntity;
+import org.booklore.model.entity.UserPermissionsEntity;
+import org.booklore.model.enums.ProvisioningMethod;
+import org.booklore.repository.LibraryRepository;
+import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 

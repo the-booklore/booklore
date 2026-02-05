@@ -1,9 +1,9 @@
-package com.adityachandel.booklore.controller;
+package org.booklore.controller;
 
-import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.security.service.DynamicOidcJwtProcessor;
+import org.booklore.service.appsettings.AppSettingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

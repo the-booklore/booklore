@@ -1,14 +1,14 @@
-package com.adityachandel.booklore.config.security;
+package org.booklore.config.security;
 
-import com.adityachandel.booklore.config.security.service.SimpleRoleConverter;
-import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.user.UserProvisioningService;
+import org.booklore.config.security.service.SimpleRoleConverter;
+import org.booklore.mapper.custom.BookLoreUserTransformer;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.OidcAutoProvisionDetails;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.user.UserProvisioningService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

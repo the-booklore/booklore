@@ -1,9 +1,9 @@
-package com.adityachandel.booklore.controller;
+package org.booklore.controller;
 
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.oidc.OidcDiscoveryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,8 +12,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OidcDiscoveryControllerWithCustomBaseUrlTest {

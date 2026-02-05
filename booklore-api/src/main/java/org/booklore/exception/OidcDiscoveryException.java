@@ -1,4 +1,4 @@
-package com.adityachandel.booklore.exception;
+package org.booklore.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

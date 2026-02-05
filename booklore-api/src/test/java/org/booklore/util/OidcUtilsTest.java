@@ -1,4 +1,4 @@
-package com.adityachandel.booklore.util;
+package org.booklore.util;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

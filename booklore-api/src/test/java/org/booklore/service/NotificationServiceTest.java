@@ -1,11 +1,11 @@
-package com.adityachandel.booklore.service;
+package org.booklore.service;
 
-import com.adityachandel.booklore.config.security.service.AuthenticationService;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.enums.PermissionType;
-import com.adityachandel.booklore.model.websocket.Topic;
-import com.adityachandel.booklore.repository.UserRepository;
+import org.booklore.config.security.service.AuthenticationService;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.enums.PermissionType;
+import org.booklore.model.websocket.Topic;
+import org.booklore.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

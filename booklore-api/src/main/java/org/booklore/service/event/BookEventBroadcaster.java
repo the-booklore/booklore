@@ -1,12 +1,12 @@
-package com.adityachandel.booklore.service.event;
+package org.booklore.service.event;
 
-import com.adityachandel.booklore.model.dto.Book;
-import com.adityachandel.booklore.model.websocket.LogNotification;
-import com.adityachandel.booklore.model.websocket.Topic;
-import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.service.user.UserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.Book;
+import org.booklore.model.websocket.LogNotification;
+import org.booklore.model.websocket.Topic;
+import org.booklore.service.NotificationService;
+import org.booklore.service.user.UserService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +26,7 @@ public class BookEventBroadcaster {
                         .anyMatch(lib -> lib.getId().equals(libraryId)))
                 .forEach(u -> {
                     notificationService.sendMessageToUser(u.getUsername(), Topic.BOOK_ADD, book);
-                    notificationService.sendMessageToUser(u.getUsername(), Topic.LOG, LogNotification.info("Book added: " + book.getFileName()));
+                    notificationService.sendMessageToUser(u.getUsername(), Topic.LOG, LogNotification.info("Book added: " + book.getPrimaryFile().getFileName()));
                 });
     }
 }

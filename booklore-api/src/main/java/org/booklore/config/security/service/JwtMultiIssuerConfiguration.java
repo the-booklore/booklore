@@ -1,20 +1,20 @@
-package com.adityachandel.booklore.config.security.service;
+package org.booklore.config.security.service;
 
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.security.JwtSecretService;
 import com.nimbusds.jwt.SignedJWT;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.security.JwtSecretService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.SecretKey;

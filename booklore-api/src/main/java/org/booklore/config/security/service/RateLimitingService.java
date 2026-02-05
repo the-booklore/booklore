@@ -1,4 +1,4 @@
-package com.adityachandel.booklore.config.security.service;
+package org.booklore.config.security.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

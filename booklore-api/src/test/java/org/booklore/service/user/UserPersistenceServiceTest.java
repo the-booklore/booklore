@@ -1,13 +1,13 @@
-package com.adityachandel.booklore.service.user;
+package org.booklore.service.user;
 
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.entity.UserPermissionsEntity;
-import com.adityachandel.booklore.repository.LibraryRepository;
-import com.adityachandel.booklore.repository.UserRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.OidcAutoProvisionDetails;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.entity.UserPermissionsEntity;
+import org.booklore.repository.LibraryRepository;
+import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -20,7 +20,8 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserPersistenceServiceTest {

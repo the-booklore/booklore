@@ -1,13 +1,13 @@
-package com.adityachandel.booklore.config.security.interceptor;
+package org.booklore.config.security.interceptor;
 
-import com.adityachandel.booklore.config.security.JwtUtils;
-import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.repository.UserRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.user.UserProvisioningService;
+import org.booklore.config.security.JwtUtils;
+import org.booklore.mapper.custom.BookLoreUserTransformer;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.user.UserProvisioningService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,13 +17,11 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
-import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class WebSocketAuthInterceptorTest {

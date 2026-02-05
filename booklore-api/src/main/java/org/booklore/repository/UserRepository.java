@@ -1,13 +1,11 @@
-package com.adityachandel.booklore.repository;
+package org.booklore.repository;
 
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.enums.PermissionType;
-import com.adityachandel.booklore.model.enums.ProvisioningMethod;
-import com.adityachandel.booklore.repository.custom.UserRepositoryCustom;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.enums.PermissionType;
+import org.booklore.model.enums.ProvisioningMethod;
+import org.booklore.repository.custom.UserRepositoryCustom;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

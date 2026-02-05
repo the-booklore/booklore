@@ -1,10 +1,10 @@
-package com.adityachandel.booklore.controller;
+package org.booklore.controller;
 
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.oidc.OidcDiscoveryService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;

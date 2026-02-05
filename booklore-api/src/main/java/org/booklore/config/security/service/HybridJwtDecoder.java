@@ -1,11 +1,11 @@
-package com.adityachandel.booklore.config.security.service;
+package org.booklore.config.security.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.BadJwtException;
 
 import java.time.Instant;
 import java.util.Base64;

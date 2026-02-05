@@ -1,11 +1,12 @@
-package com.adityachandel.booklore.config.security.service;
+package org.booklore.config.security.service;
 
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.util.OidcUtils;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.util.OidcUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class DynamicOidcJwtProcessorWithCustomBaseUrlTest {
 

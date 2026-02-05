@@ -1,9 +1,9 @@
-package com.adityachandel.booklore.config.security.service;
+package org.booklore.config.security.service;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.util.Set;
 import java.time.Duration;
+import java.util.Set;
 
 /**
  * OIDC security configuration properties.

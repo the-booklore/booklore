@@ -1,8 +1,5 @@
-package com.adityachandel.booklore.config.security;
+package org.booklore.config.security;
 
-import com.adityachandel.booklore.config.security.service.OidcProperties;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.service.security.JwtSecretService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -11,6 +8,9 @@ import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.security.service.OidcProperties;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.service.security.JwtSecretService;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 

@@ -1,33 +1,32 @@
-package com.adityachandel.booklore.service.user;
+package org.booklore.service.user;
 
-import com.adityachandel.booklore.config.AppProperties;
-import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
-import com.adityachandel.booklore.exception.ApiError;
-import com.adityachandel.booklore.exception.OidcProvisioningException;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.dto.UserCreateRequest;
-import com.adityachandel.booklore.model.dto.request.InitialUserRequest;
-import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.*;
-import com.adityachandel.booklore.repository.LibraryRepository;
-import com.adityachandel.booklore.repository.UserRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jose.proc.BadJOSEException;
-
-import org.springframework.transaction.annotation.Transactional;
+import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.booklore.config.AppProperties;
+import org.booklore.config.security.service.DynamicOidcJwtProcessor;
+import org.booklore.exception.ApiError;
+import org.booklore.exception.OidcProvisioningException;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.UserCreateRequest;
+import org.booklore.model.dto.request.InitialUserRequest;
+import org.booklore.model.dto.settings.OidcAutoProvisionDetails;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.entity.LibraryEntity;
+import org.booklore.model.entity.UserPermissionsEntity;
+import org.booklore.model.enums.ProvisioningMethod;
+import org.booklore.repository.LibraryRepository;
+import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-
-
 import java.util.*;
 import java.util.regex.Pattern;
 

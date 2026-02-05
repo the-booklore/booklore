@@ -143,8 +143,8 @@ logging:
   level:
     root: ${ROOT_LOG_LEVEL:INFO}
     org.booklore: ${LOG_LEVEL:INFO}
-    com.adityachandel.booklore.config.security: ${OIDC_LOG_LEVEL:WARN}
-    com.adityachandel.booklore.service.oidc: ${OIDC_SERVICE_LOG_LEVEL:WARN}
+    org.booklore.config.security: ${OIDC_LOG_LEVEL:WARN}
+    org.booklore.service.oidc: ${OIDC_SERVICE_LOG_LEVEL:WARN}
     com.nimbusds.jose: INFO
     org.apache.fontbox: ERROR
     org.apache.pdfbox: ERROR

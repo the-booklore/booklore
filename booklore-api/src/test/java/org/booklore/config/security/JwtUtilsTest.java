@@ -1,8 +1,8 @@
-package com.adityachandel.booklore.config.security;
+package org.booklore.config.security;
 
-import com.adityachandel.booklore.config.security.service.OidcProperties;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.service.security.JwtSecretService;
+import org.booklore.config.security.service.OidcProperties;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.service.security.JwtSecretService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,7 +29,7 @@ class JwtUtilsTest {
     @Test
     void generateRefreshToken_ShouldBeUnique_InSameSecond() {
         when(jwtSecretService.getSecret()).thenReturn("verysecretkeythatislongenoughforhs256encryption");
-        when(oidcProperties.jwt()).thenReturn(new com.adityachandel.booklore.config.security.service.OidcProperties.Jwt(Duration.ofSeconds(60), false, 10000, null));
+        when(oidcProperties.jwt()).thenReturn(new org.booklore.config.security.service.OidcProperties.Jwt(Duration.ofSeconds(60), false, 10000, null));
         
         BookLoreUserEntity user = new BookLoreUserEntity();
         user.setId(1L);

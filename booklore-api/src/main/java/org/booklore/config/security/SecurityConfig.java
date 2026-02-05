@@ -1,12 +1,11 @@
-package com.adityachandel.booklore.config.security;
+package org.booklore.config.security;
 
-import com.adityachandel.booklore.config.AppProperties;
-import com.adityachandel.booklore.config.security.filter.*;
-import com.adityachandel.booklore.config.security.filter.OidcRateLimitFilter;
-import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import org.booklore.config.AppProperties;
+import org.booklore.config.security.filter.*;
+import org.booklore.config.security.service.OpdsUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

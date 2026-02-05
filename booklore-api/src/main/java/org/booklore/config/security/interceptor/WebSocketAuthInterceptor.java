@@ -1,16 +1,14 @@
-package com.adityachandel.booklore.config.security.interceptor;
+package org.booklore.config.security.interceptor;
 
-import com.adityachandel.booklore.config.security.JwtUtils;
-import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
-import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
-import com.adityachandel.booklore.repository.UserRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.user.UserProvisioningService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.security.JwtUtils;
+import org.booklore.mapper.custom.BookLoreUserTransformer;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.user.UserProvisioningService;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.lang.Nullable;

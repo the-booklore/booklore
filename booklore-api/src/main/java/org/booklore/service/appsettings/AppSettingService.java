@@ -1,17 +1,17 @@
-package com.adityachandel.booklore.service.appsettings;
+package org.booklore.service.appsettings;
 
-import com.adityachandel.booklore.config.AppProperties;
-import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
-import com.adityachandel.booklore.config.security.service.AuthenticationService;
-import com.adityachandel.booklore.model.dto.BookLoreUser;
-import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
-import com.adityachandel.booklore.model.dto.settings.*;
-import com.adityachandel.booklore.model.entity.AppSettingEntity;
-import com.adityachandel.booklore.model.enums.PermissionType;
-import com.adityachandel.booklore.util.UserPermissionUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.transaction.Transactional;
+import org.booklore.config.AppProperties;
+import org.booklore.config.security.service.AuthenticationService;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.request.MetadataRefreshOptions;
+import org.booklore.model.dto.settings.*;
+import org.booklore.model.entity.AppSettingEntity;
+import org.booklore.model.enums.PermissionType;
+import org.booklore.service.oidc.OidcDiscoveryService;
+import org.booklore.util.UserPermissionUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;

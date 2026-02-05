@@ -1,6 +1,6 @@
-package com.adityachandel.booklore.service.user;
+package org.booklore.service.user;
 
-import com.adityachandel.booklore.exception.APIException;
+import org.booklore.exception.APIException;
 import org.springframework.http.HttpStatus;
 
 public class DuplicateUserRetryException extends APIException {

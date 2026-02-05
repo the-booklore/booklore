@@ -1,6 +1,5 @@
-package com.adityachandel.booklore.config.security.filter;
+package org.booklore.config.security.filter;
 
-import com.adityachandel.booklore.config.security.service.OidcProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
@@ -8,6 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.security.service.OidcProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
