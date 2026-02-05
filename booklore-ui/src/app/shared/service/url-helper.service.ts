@@ -79,6 +79,7 @@ export class UrlHelperService {
         const coverGenerator = new CoverGeneratorComponent();
         coverGenerator.title = book.metadata.title || '';
         coverGenerator.author = (book.metadata.authors || []).join(', ');
+        coverGenerator.isSquare = true;
         return coverGenerator.generateCover();
       }
     }
@@ -96,6 +97,7 @@ export class UrlHelperService {
         const coverGenerator = new CoverGeneratorComponent();
         coverGenerator.title = book.metadata.title || '';
         coverGenerator.author = (book.metadata.authors || []).join(', ');
+        coverGenerator.isSquare = true;
         return coverGenerator.generateCover();
       }
     }
