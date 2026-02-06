@@ -4,10 +4,11 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.config.WebSocketMessageBrokerStats;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 
 @Configuration
@@ -17,10 +18,9 @@ public class BeanConfig {
     private WebSocketMessageBrokerStats webSocketMessageBrokerStats;
 
     @Bean
-    public RestTemplate restTemplate() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout((int) Duration.ofSeconds(10).toMillis());
-        factory.setReadTimeout((int) Duration.ofSeconds(15).toMillis());
+    public RestTemplate restTemplate(HttpClient httpClient) {
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(Duration.ofSeconds(15));
         return new RestTemplate(factory);
     }
 
