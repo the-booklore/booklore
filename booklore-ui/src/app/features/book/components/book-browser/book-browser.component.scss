@@ -232,6 +232,15 @@
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-width: 1px 1px 0 1px;
   background-color: var(--card-background);
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+  transform: translateY(0);
+  opacity: 1;
+
+  &.footer-hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
 
   > .footer-content {
     width: 100%;
