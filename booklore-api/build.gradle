@@ -42,6 +42,7 @@ dependencies {
 
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.7'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-mysql:11.19.0'
 
     // --- Security & Authentication ---
