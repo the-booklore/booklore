@@ -33,6 +33,22 @@ public enum RuleField {
     ISBN13,
     @JsonProperty("isbn10")
     ISBN10,
+    @JsonProperty("asin")
+    ASIN,
+    @JsonProperty("goodreadsId")
+    GOODREADS_ID,
+    @JsonProperty("comicvineId")
+    COMICVINE_ID,
+    @JsonProperty("hardcoverId")
+    HARDCOVER_ID,
+    @JsonProperty("hardcoverBookId")
+    HARDCOVER_BOOK_ID,
+    @JsonProperty("googleId")
+    GOOGLE_ID,
+    @JsonProperty("lubimyczytacId")
+    LUBIMYCZYTAC_ID,
+    @JsonProperty("ranobedbId")
+    RANOBEDB_ID,
     @JsonProperty("amazonRating")
     AMAZON_RATING,
     @JsonProperty("amazonReviewCount")
@@ -47,6 +63,8 @@ public enum RuleField {
     HARDCOVER_REVIEW_COUNT,
     @JsonProperty("ranobedbRating")
     RANOBEDB_RATING,
+    @JsonProperty("lubimyczytacRating")
+    LUBIMYCZYTAC_RATING,
     @JsonProperty("personalRating")
     PERSONAL_RATING,
     @JsonProperty("fileType")
@@ -66,6 +84,15 @@ public enum RuleField {
     @JsonProperty("tags")
     TAGS,
     @JsonProperty("genre")
-    GENRE
+    GENRE,
+    @JsonProperty("metadata")
+    METADATA,
+    @JsonProperty("incompleteSeries")
+    INCOMPLETE_SERIES,
+    @JsonProperty("seriesStatus")
+    SERIES_STATUS,
+    @JsonProperty("addedOn")
+    ADDED_ON,
+    
 }
 

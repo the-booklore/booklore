@@ -86,7 +86,9 @@ export class BookService {
   }
 
   private fetchBooks(): Observable<Book[]> {
-    return this.http.get<Book[]>(this.url).pipe(
+    // Include descriptions for magic shelf metadata filtering
+    const params = new HttpParams().set('withDescription', 'true');
+    return this.http.get<Book[]>(this.url, { params }).pipe(
       map((books) => this.computeIncompleteSeriesProperty(books)),
       tap(books => {
         this.bookStateService.updateBookState({

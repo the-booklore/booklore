@@ -34,5 +34,9 @@ public enum RuleOperator {
     @JsonProperty("excludes_all")
     EXCLUDES_ALL,
     @JsonProperty("includes_all")
-    INCLUDES_ALL
+    INCLUDES_ALL,
+    @JsonProperty("has")
+    HAS,
+    @JsonProperty("missing")
+    MISSING
 }

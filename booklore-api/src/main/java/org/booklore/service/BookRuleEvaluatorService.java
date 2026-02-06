@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class BookRuleEvaluatorService {
 
     private final ObjectMapper objectMapper;
+    private final SeriesCompletenessService seriesCompletenessService;
 
     public Specification<BookEntity> toSpecification(GroupRule groupRule, Long userId) {
         return (root, query, cb) -> {
@@ -85,6 +86,23 @@ public class BookRuleEvaluatorService {
     private Predicate buildRulePredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         if (rule.getField() == null || rule.getOperator() == null) return null;
 
+        // Special handling for METADATA field
+        if (rule.getField() == RuleField.METADATA) {
+            return buildMetadataPredicate(rule, cb, root, progressJoin);
+        }
+
+        // Special handling for INCOMPLETE_SERIES field
+        if (rule.getField() == RuleField.INCOMPLETE_SERIES) {
+            return buildIncompleteSeriesPredicate(rule, cb, root);
+        }
+
+        // Special handling for SERIES_STATUS field (not yet implemented server-side)
+        // Return conjunction (always true) as placeholder
+        if (rule.getField() == RuleField.SERIES_STATUS) {
+            log.warn("SERIES_STATUS filter is not yet implemented server-side, returning all results");
+            return cb.conjunction();
+        }
+
         return switch (rule.getOperator()) {
             case EQUALS -> buildEquals(rule, cb, root, progressJoin);
             case NOT_EQUALS -> buildNotEquals(rule, cb, root, progressJoin);
@@ -102,7 +120,335 @@ public class BookRuleEvaluatorService {
             case INCLUDES_ANY -> buildIncludesAny(rule, cb, root, progressJoin);
             case EXCLUDES_ALL -> buildExcludesAll(rule, cb, root, progressJoin);
             case INCLUDES_ALL -> buildIncludesAll(rule, cb, root, progressJoin);
+            case HAS -> cb.not(buildIsEmpty(rule, cb, root, progressJoin));
+            case MISSING -> buildIsEmpty(rule, cb, root, progressJoin);
         };
+    }
+
+    /**
+     * Builds a predicate for the METADATA field rule.
+     * Supports checking any metadata field by name using HAS/MISSING operators.
+     *
+     * @param rule The rule containing the metadata field name and operator
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @param progressJoin Join to UserBookProgressEntity
+     * @return Predicate for metadata field check, or conjunction if invalid
+     */
+    private Predicate buildMetadataPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+        if (rule.getValue() == null) {
+            log.warn("METADATA rule missing field name value");
+            return cb.conjunction();
+        }
+
+        String metadataFieldName = rule.getValue().toString().toLowerCase();
+        
+        // Special handling for collection/array fields (moods, tags, authors, categories)
+        if (isArrayMetadataField(metadataFieldName)) {
+            return buildArrayMetadataFieldPredicate(rule, metadataFieldName, cb, root);
+        }
+        
+        Expression<?> fieldExpression = getMetadataFieldExpression(metadataFieldName, cb, root, progressJoin);
+
+        if (fieldExpression == null) {
+            log.warn("Invalid metadata field name: {}", metadataFieldName);
+            return cb.conjunction();
+        }
+
+        // HAS and MISSING operators check for null/empty
+        if (rule.getOperator() == org.booklore.model.dto.RuleOperator.HAS) {
+            // HAS: Field should not be null (empty strings count as "has")
+            log.info("METADATA filter: checking if '{}' HAS value", metadataFieldName);
+            return cb.isNotNull(fieldExpression);
+        } else if (rule.getOperator() == org.booklore.model.dto.RuleOperator.MISSING) {
+            // MISSING: Field should be null
+            log.info("METADATA filter: checking if '{}' is MISSING value", metadataFieldName);
+            return cb.isNull(fieldExpression);
+        }
+
+        log.warn("METADATA field only supports HAS and MISSING operators, got: {}", rule.getOperator());
+        return cb.conjunction();
+    }
+
+    /**
+     * Maps metadata field names to their JPA expressions.
+     * Supports case-insensitive field name matching.
+     *
+     * @param fieldName The metadata field name (case-insensitive)
+     * @param cb CriteriaBuilder for creating expressions
+     * @param root Root entity for BookEntity
+     * @param progressJoin Join to UserBookProgressEntity
+     * @return Expression for the field, or null if field name is invalid
+     */
+    private Expression<?> getMetadataFieldExpression(String fieldName, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+        return switch (fieldName.toLowerCase()) {
+            // IDs
+            case "isbn13" -> root.get("metadata").get("isbn13");
+            case "isbn10" -> root.get("metadata").get("isbn10");
+            case "asin" -> root.get("metadata").get("asin");
+            case "goodreadsid" -> root.get("metadata").get("goodreadsId");
+            case "comicvineid" -> root.get("metadata").get("comicvineId");
+            case "hardcoverid" -> root.get("metadata").get("hardcoverId");
+            case "hardcoverbookid" -> root.get("metadata").get("hardcoverBookId");
+            case "googleid" -> root.get("metadata").get("googleId");
+            case "lubimyczytacid" -> root.get("metadata").get("lubimyczytacId");
+            case "ranobedbid" -> root.get("metadata").get("ranobedbId");
+            
+            // Ratings
+            case "amazonrating" -> root.get("metadata").get("amazonRating");
+            case "goodreadsrating" -> root.get("metadata").get("goodreadsRating");
+            case "hardcoverrating" -> root.get("metadata").get("hardcoverRating");
+            case "lubimyczytacrating" -> root.get("metadata").get("lubimyczytacRating");
+            case "ranobedbrating" -> root.get("metadata").get("ranobedbRating");
+            case "personalrating" -> progressJoin.get("personalRating");
+            
+            // Review counts
+            case "amazonreviewcount" -> root.get("metadata").get("amazonReviewCount");
+            case "goodreadsreviewcount" -> root.get("metadata").get("goodreadsReviewCount");
+            case "hardcoverreviewcount" -> root.get("metadata").get("hardcoverReviewCount");
+            
+            // Text fields
+            case "title" -> root.get("metadata").get("title");
+            case "subtitle" -> root.get("metadata").get("subtitle");
+            case "publisher" -> root.get("metadata").get("publisher");
+            case "description" -> root.get("metadata").get("description");
+            case "seriesname" -> root.get("metadata").get("seriesName");
+            case "language" -> root.get("metadata").get("language");
+            
+            // Numbers
+            case "pagecount" -> root.get("metadata").get("pageCount");
+            case "seriesnumber" -> root.get("metadata").get("seriesNumber");
+            case "seriestotal" -> root.get("metadata").get("seriesTotal");
+            
+            // Dates
+            case "publisheddate" -> root.get("metadata").get("publishedDate");
+            
+            default -> null;
+        };
+    }
+
+    /**
+     * Checks if a metadata field is a text field that needs empty string checking.
+     *
+     * @param fieldName The metadata field name (case-insensitive)
+     * @return true if field is a text field, false otherwise
+     */
+    private boolean isTextMetadataField(String fieldName) {
+        return switch (fieldName.toLowerCase()) {
+            case "isbn13", "isbn10", "asin", "goodreadsid", "comicvineid", "hardcoverid",
+                 "hardcoverbookid", "googleid", "lubimyczytacid", "ranobedbid",
+                 "title", "subtitle", "publisher", "description", "seriesname", "language" -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * Checks if a metadata field is an array/collection field.
+     *
+     * @param fieldName The metadata field name (case-insensitive)
+     * @return true if field is an array field, false otherwise
+     */
+    private boolean isArrayMetadataField(String fieldName) {
+        return switch (fieldName.toLowerCase()) {
+            case "authors", "categories", "moods", "tags" -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * Builds a predicate for array metadata fields (moods, tags, authors, categories).
+     * Checks if the collection exists and has elements.
+     *
+     * @param rule The rule containing the operator (HAS/MISSING)
+     * @param fieldName The array field name (lowercase)
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @return Predicate for collection existence check
+     */
+    private Predicate buildArrayMetadataFieldPredicate(Rule rule, String fieldName, CriteriaBuilder cb, Root<BookEntity> root) {
+        RuleField arrayField = switch (fieldName) {
+            case "authors" -> RuleField.AUTHORS;
+            case "categories" -> RuleField.CATEGORIES;
+            case "moods" -> RuleField.MOODS;
+            case "tags" -> RuleField.TAGS;
+            default -> null;
+        };
+
+        if (arrayField == null) {
+            log.warn("Invalid array metadata field name: {}", fieldName);
+            return cb.conjunction();
+        }
+
+        // Create a subquery to check if the collection has any elements
+        Subquery<Long> subquery = cb.createQuery().subquery(Long.class);
+        Root<BookEntity> subRoot = subquery.from(BookEntity.class);
+
+        Join<Object, Object> metadataJoin = subRoot.join("metadata", JoinType.INNER);
+        joinArrayField(arrayField, metadataJoin);
+
+        subquery.select(cb.literal(1L)).where(cb.equal(subRoot.get("id"), root.get("id")));
+
+        boolean hasOperator = rule.getOperator() == org.booklore.model.dto.RuleOperator.HAS;
+        return hasOperator ? cb.exists(subquery) : cb.not(cb.exists(subquery));
+    }
+
+    /**
+     * Builds a predicate for the INCOMPLETE_SERIES field rule.
+     * Checks if a book belongs to a series that appears incomplete.
+     *
+     * @param rule The rule containing the boolean value (true/false)
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @return Predicate for incomplete series check
+     */
+    private Predicate buildIncompleteSeriesPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root) {
+        if (rule.getValue() == null) {
+            log.warn("INCOMPLETE_SERIES rule missing boolean value");
+            return cb.conjunction();
+        }
+
+        boolean wantIncomplete = Boolean.parseBoolean(rule.getValue().toString());
+        
+        // Books with series name but null series number are excluded from both groups
+        Expression<String> seriesName = root.get("metadata").get("seriesName");
+        Expression<Double> seriesNumber = root.get("metadata").get("seriesNumber");
+        
+        Predicate hasValidSeries = cb.and(
+            cb.isNotNull(seriesName),
+            cb.notEqual(cb.trim(seriesName), ""),
+            cb.isNotNull(seriesNumber)
+        );
+
+        if (wantIncomplete) {
+            // Return books with valid series that are incomplete
+            // Use optimized table-based lookup for better performance
+            return cb.and(hasValidSeries, isSeriesIncompleteOptimized(cb, root, seriesName));
+        } else {
+            // Return books that are either:
+            // 1. Not in a series (seriesName is null or empty), or
+            // 2. In a complete series
+            Predicate notInSeries = cb.or(
+                cb.isNull(seriesName),
+                cb.equal(cb.trim(seriesName), "")
+            );
+            
+            return cb.or(notInSeries, cb.and(hasValidSeries, cb.not(isSeriesIncompleteOptimized(cb, root, seriesName))));
+        }
+    }
+
+    /**
+     * Optimized version that uses the series_completeness table for fast lookups.
+     * Falls back to the subquery method if table lookup fails.
+     *
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @param seriesName Expression for the series name to check
+     * @return Predicate that is true if series is incomplete
+     */
+    private Predicate isSeriesIncompleteOptimized(CriteriaBuilder cb, Root<BookEntity> root, Expression<String> seriesName) {
+        try {
+            // Use JOIN with series_completeness table for optimal performance
+            // This is much faster than the subquery approach
+            Subquery<Long> completenessSubquery = cb.createQuery().subquery(Long.class);
+            Root<org.booklore.model.entity.SeriesCompletenessEntity> scRoot = completenessSubquery.from(org.booklore.model.entity.SeriesCompletenessEntity.class);
+            
+            completenessSubquery.select(cb.literal(1L))
+                .where(
+                    cb.and(
+                        cb.equal(scRoot.get("libraryId"), root.get("library").get("id")),
+                        cb.equal(scRoot.get("seriesNameNormalized"), 
+                                cb.lower(cb.trim(seriesName))),
+                        cb.isTrue(scRoot.get("isIncomplete"))
+                    )
+                );
+            
+            // Return true if the series is found in the table and marked as incomplete
+            return cb.exists(completenessSubquery);
+            
+        } catch (Exception e) {
+            // If series_completeness table is unavailable or has issues, fall back to subquery
+            log.warn("Failed to use series_completeness table, falling back to subquery method: {}", e.getMessage());
+            return isSeriesIncompleteSubquery(cb, root, seriesName);
+        }
+    }
+
+    /**
+     * Original subquery-based method for checking if a series is incomplete.
+     * This is kept as a fallback if the series_completeness table is unavailable.
+     * Checks if a book's series appears to be incomplete based on series number gaps.
+     * Uses the approximation algorithm: (max - min + 1) != count
+     * 
+     * Performance: This query has a 5-second timeout with warning logging.
+     *
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @param seriesName Expression for the series name to check
+     * @return Predicate that is true if series appears incomplete
+     */
+    private Predicate isSeriesIncompleteSubquery(CriteriaBuilder cb, Root<BookEntity> root, Expression<String> seriesName) {
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            // Subquery to count books in the series
+            Subquery<Long> countSubquery = cb.createQuery().subquery(Long.class);
+            Root<BookEntity> countRoot = countSubquery.from(BookEntity.class);
+            countSubquery.select(cb.count(countRoot.get("id")))
+                .where(
+                    cb.and(
+                        cb.equal(cb.lower(cb.trim(countRoot.get("metadata").get("seriesName"))), 
+                                cb.lower(cb.trim(seriesName))),
+                        cb.isNotNull(countRoot.get("metadata").get("seriesNumber"))
+                    )
+                );
+
+            // Subquery to find minimum series number
+            Subquery<Double> minSubquery = cb.createQuery().subquery(Double.class);
+            Root<BookEntity> minRoot = minSubquery.from(BookEntity.class);
+            Expression<Double> minSeriesNumber = minRoot.get("metadata").get("seriesNumber");
+            minSubquery.select(cb.least(minSeriesNumber))
+                .where(
+                    cb.and(
+                        cb.equal(cb.lower(cb.trim(minRoot.get("metadata").get("seriesName"))), 
+                                cb.lower(cb.trim(seriesName))),
+                        cb.isNotNull(minRoot.get("metadata").get("seriesNumber"))
+                    )
+                );
+
+            // Subquery to find maximum series number
+            Subquery<Double> maxSubquery = cb.createQuery().subquery(Double.class);
+            Root<BookEntity> maxRoot = maxSubquery.from(BookEntity.class);
+            Expression<Double> maxSeriesNumber = maxRoot.get("metadata").get("seriesNumber");
+            maxSubquery.select(cb.greatest(maxSeriesNumber))
+                .where(
+                    cb.and(
+                        cb.equal(cb.lower(cb.trim(maxRoot.get("metadata").get("seriesName"))), 
+                                cb.lower(cb.trim(seriesName))),
+                        cb.isNotNull(maxRoot.get("metadata").get("seriesNumber"))
+                    )
+                );
+
+            // Algorithm: series is incomplete if (max - min + 1) != count
+            // This works for fractional series numbers (1.0, 1.5, 2.0) as well
+            Expression<Double> expectedCount = cb.sum(cb.diff(maxSubquery, minSubquery), cb.literal(1.0));
+            Expression<Long> actualCount = countSubquery;
+            
+            long elapsed = System.currentTimeMillis() - startTime;
+            if (elapsed > 5000) {
+                log.warn("INCOMPLETE_SERIES query took {}ms (exceeds 5s timeout threshold)", elapsed);
+                throw new RuntimeException("Incomplete series query timed out after " + elapsed + "ms");
+            }
+            
+            if (elapsed > 1000) {
+                log.info("INCOMPLETE_SERIES query took {}ms", elapsed);
+            }
+
+            return cb.notEqual(actualCount.as(Double.class), expectedCount);
+            
+        } catch (Exception e) {
+            long elapsed = System.currentTimeMillis() - startTime;
+            log.error("Error evaluating incomplete series predicate after {}ms: {}", elapsed, e.getMessage(), e);
+            throw e;
+        }
     }
 
     private Predicate buildEquals(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
@@ -171,31 +517,31 @@ public class BookRuleEvaluatorService {
     private Predicate buildGreaterThan(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
             (field, dateValue) -> cb.greaterThan(field.as(LocalDateTime.class), dateValue),
-            (field, numValue) -> cb.gt(field.as(Number.class), numValue));
+            (field, numValue) -> cb.gt((Expression<? extends Number>) field, numValue));
     }
 
     private Predicate buildGreaterThanEqual(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
             (field, dateValue) -> cb.greaterThanOrEqualTo(field.as(LocalDateTime.class), dateValue),
-            (field, numValue) -> cb.ge(field.as(Number.class), numValue));
+            (field, numValue) -> cb.ge((Expression<? extends Number>) field, numValue));
     }
 
     private Predicate buildLessThan(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
             (field, dateValue) -> cb.lessThan(field.as(LocalDateTime.class), dateValue),
-            (field, numValue) -> cb.lt(field.as(Number.class), numValue));
+            (field, numValue) -> cb.lt((Expression<? extends Number>) field, numValue));
     }
 
     private Predicate buildLessThanEqual(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
             (field, dateValue) -> cb.lessThanOrEqualTo(field.as(LocalDateTime.class), dateValue),
-            (field, numValue) -> cb.le(field.as(Number.class), numValue));
+            (field, numValue) -> cb.le((Expression<? extends Number>) field, numValue));
     }
 
     private Predicate buildComparisonPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root,
                                               Join<BookEntity, UserBookProgressEntity> progressJoin,
                                               BiFunction<Expression<?>, LocalDateTime, Predicate> dateComparator,
-                                              BiFunction<Expression<?>, Double, Predicate> numberComparator) {
+                                              BiFunction<Expression<?>, Number, Predicate> numberComparator) {
         Expression<?> field = getFieldExpression(rule.getField(), cb, root, progressJoin);
         if (field == null) return cb.conjunction();
 
@@ -204,7 +550,7 @@ public class BookRuleEvaluatorService {
         if (value instanceof LocalDateTime) {
             return dateComparator.apply(field, (LocalDateTime) value);
         }
-        return numberComparator.apply(field, ((Number) value).doubleValue());
+        return numberComparator.apply(field, ((Number) value));
     }
 
     private Predicate buildInBetween(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
@@ -224,7 +570,9 @@ public class BookRuleEvaluatorService {
             return cb.conjunction();
         }
 
-        return cb.between(field.as(Double.class), ((Number) start).doubleValue(), ((Number) end).doubleValue());
+        // Cast to Double expression for proper type inference in between()
+        Expression<Double> doubleField = field.as(Double.class);
+        return cb.between(doubleField, ((Number) start).doubleValue(), ((Number) end).doubleValue());
     }
 
     private Predicate buildIsEmpty(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
@@ -331,6 +679,14 @@ public class BookRuleEvaluatorService {
             case SERIES_TOTAL -> root.get("metadata").get("seriesTotal");
             case ISBN13 -> root.get("metadata").get("isbn13");
             case ISBN10 -> root.get("metadata").get("isbn10");
+            case ASIN -> root.get("metadata").get("asin");
+            case GOODREADS_ID -> root.get("metadata").get("goodreadsId");
+            case COMICVINE_ID -> root.get("metadata").get("comicvineId");
+            case HARDCOVER_ID -> root.get("metadata").get("hardcoverId");
+            case HARDCOVER_BOOK_ID -> root.get("metadata").get("hardcoverBookId");
+            case GOOGLE_ID -> root.get("metadata").get("googleId");
+            case LUBIMYCZYTAC_ID -> root.get("metadata").get("lubimyczytacId");
+            case RANOBEDB_ID -> root.get("metadata").get("ranobedbId");
             case AMAZON_RATING -> root.get("metadata").get("amazonRating");
             case AMAZON_REVIEW_COUNT -> root.get("metadata").get("amazonReviewCount");
             case GOODREADS_RATING -> root.get("metadata").get("goodreadsRating");
@@ -338,8 +694,13 @@ public class BookRuleEvaluatorService {
             case HARDCOVER_RATING -> root.get("metadata").get("hardcoverRating");
             case HARDCOVER_REVIEW_COUNT -> root.get("metadata").get("hardcoverReviewCount");
             case RANOBEDB_RATING -> root.get("metadata").get("ranobedbRating");
+            case LUBIMYCZYTAC_RATING -> root.get("metadata").get("lubimyczytacRating");
             case FILE_TYPE -> cb.function("SUBSTRING_INDEX", String.class,
                     root.get("fileName"), cb.literal("."), cb.literal(-1));
+            case ADDED_ON -> cb.function("DATEDIFF", Integer.class,
+                    cb.currentDate(),
+                    cb.function("DATE", LocalDate.class, root.get("addedOn"))).as(Double.class);
+            case METADATA, INCOMPLETE_SERIES, SERIES_STATUS -> null; // Handled specially in buildRulePredicate
             default -> null;
         };
     }

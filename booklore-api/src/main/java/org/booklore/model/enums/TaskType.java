@@ -50,6 +50,14 @@ public enum TaskType {
             true,
             "Refresh Metadata",
             "Updates metadata information for your selected books."
+    ),
+    CALCULATE_SERIES_COMPLETENESS(
+            false,
+            true,
+            true,
+            false,
+            "Calculate Series Completeness",
+            "Analyzes all book series in your libraries to determine which series are complete or incomplete."
     );
 
     @Getter

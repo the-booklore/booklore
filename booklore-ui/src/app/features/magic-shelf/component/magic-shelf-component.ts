@@ -476,8 +476,16 @@ export class MagicShelfComponent implements OnInit {
       ];
     }
 
+    // Special handling for incompleteSeries - is/is not operators
+    if (field === 'incompleteSeries') {
+      return [
+        {label: 'Is', value: 'equals'},
+        {label: 'Is Not', value: 'not_equals'},
+      ];
+    }
+
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'incompleteSeries'].includes(field);
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
@@ -649,6 +657,7 @@ export class MagicShelfComponent implements OnInit {
             isPublic: savedShelf.isPublic
           });
         }
+        this.ref.close(true);
       },
       error: (err) => {
         this.messageService.add({

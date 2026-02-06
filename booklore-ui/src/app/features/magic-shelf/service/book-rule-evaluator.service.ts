@@ -240,7 +240,10 @@ export class BookRuleEvaluatorService {
           fieldValue = null;
       }
 
-      const isEmpty = fieldValue === null || fieldValue === undefined || fieldValue === '';
+      // HAS/MISSING for metadata fields: simply check if field is not null/undefined
+      // This matches backend behavior - any non-null value (including empty strings) counts as "has"
+      const isEmpty = fieldValue === null || fieldValue === undefined;
+
       switch (rule.operator) {
         case 'has':
         case 'equals':

@@ -42,10 +42,14 @@ export class IncompleteSeriesService {
         continue;
       }
 
+      const minNumber = Math.min(...presentNumbers);
       const maxNumber = Math.max(...presentNumbers);
+      
+      // Series must start at exactly 1 (with small tolerance for float comparison)
+      const startsAtOne = Math.abs(minNumber - 1.0) < 0.01;
       const missingNumbers = this.findMissingNumbers(presentNumbers, maxNumber);
 
-      if (missingNumbers.length > 0) {
+      if (!startsAtOne || missingNumbers.length > 0) {
         incompleteSeriesNames.add(seriesKey);
       }
     }
@@ -94,14 +98,18 @@ export class IncompleteSeriesService {
       return false; // Can't determine if incomplete without series numbers
     }
 
-    // Find the maximum series number
+    // Find the minimum and maximum series numbers
+    const minNumber = Math.min(...presentNumbers);
     const maxNumber = Math.max(...presentNumbers);
+
+    // Series must start at exactly 1 (with small tolerance for float comparison)
+    const startsAtOne = Math.abs(minNumber - 1.0) < 0.01;
 
     // Get missing numbers
     const missingNumbers = this.findMissingNumbers(presentNumbers, maxNumber);
 
-    // Series is incomplete if there are missing numbers
-    return missingNumbers.length > 0;
+    // Series is incomplete if it doesn't start at 1 or has missing numbers
+    return !startsAtOne || missingNumbers.length > 0;
   }
 
   /**

@@ -49,6 +49,7 @@ public class BookMetadataUpdater {
     private final MetadataWriterFactory metadataWriterFactory;
     private final BookReviewUpdateService bookReviewUpdateService;
     private final FileMoveService fileMoveService;
+    private final org.booklore.service.SeriesCompletenessService seriesCompletenessService;
 
     @Transactional
     public void setBookMetadata(MetadataUpdateContext context) {
@@ -107,6 +108,15 @@ public class BookMetadataUpdater {
             bookEntity.setMetadataMatchScore(score);
         } catch (Exception e) {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
+        }
+
+        // Update series completeness if series information changed
+        try {
+            if (hasSeriesInformationChanged(newMetadata, metadata, clearFlags)) {
+                seriesCompletenessService.updateSeriesForBook(bookId);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to update series completeness for book ID {}: {}", bookId, e.getMessage());
         }
 
         if (primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
@@ -423,5 +433,31 @@ public class BookMetadataUpdater {
             log.warn("Invalid thumbnail URL '{}': {}", url, e.getMessage());
             return true;
         }
+    }
+
+    /**
+     * Checks if series information (series name or series number) has changed.
+     * This is used to determine if we need to update the series_completeness table.
+     */
+    private boolean hasSeriesInformationChanged(BookMetadata newMetadata, BookMetadataEntity existingMetadata, MetadataClearFlags clearFlags) {
+        // If series is being cleared, that's a change
+        if (clearFlags != null && (clearFlags.isSeriesName() || clearFlags.isSeriesNumber())) {
+            return true;
+        }
+
+        // Check if series name changed
+        String newSeriesName = newMetadata != null ? newMetadata.getSeriesName() : null;
+        String existingSeriesName = existingMetadata != null ? existingMetadata.getSeriesName() : null;
+        boolean seriesNameChanged = !Objects.equals(
+                newSeriesName != null ? newSeriesName.trim() : null,
+                existingSeriesName != null ? existingSeriesName.trim() : null
+        );
+
+        // Check if series number changed
+        Float newSeriesNumber = newMetadata != null ? newMetadata.getSeriesNumber() : null;
+        Float existingSeriesNumber = existingMetadata != null ? existingMetadata.getSeriesNumber() : null;
+        boolean seriesNumberChanged = !Objects.equals(newSeriesNumber, existingSeriesNumber);
+
+        return seriesNameChanged || seriesNumberChanged;
     }
 }
