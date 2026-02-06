@@ -95,6 +95,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
   doubanEnabled: boolean = false;
   lubimyCzytacEnabled: boolean = false;
   ranobedbEnabled: boolean = false;
+  googleApiKey: string = '';
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
@@ -116,6 +117,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.goodreadsEnabled = metadataProviderSettings?.goodReads?.enabled ?? false;
         this.googleEnabled = metadataProviderSettings?.google?.enabled ?? false;
         this.selectedGoogleLanguage = metadataProviderSettings?.google?.language ?? '';
+        this.googleApiKey = metadataProviderSettings?.google?.apiKey ?? '';
         this.hardcoverToken = metadataProviderSettings?.hardcover?.apiKey ?? '';
         this.hardcoverEnabled = metadataProviderSettings?.hardcover?.enabled ?? false;
         this.comicvineEnabled = metadataProviderSettings?.comicvine?.enabled ?? false;
@@ -157,6 +159,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
           google: {
             enabled: this.googleEnabled,
             language: this.selectedGoogleLanguage,
+            apiKey: this.googleApiKey.trim()
           },
           hardcover: {
             enabled: this.hardcoverEnabled,

@@ -19,7 +19,8 @@ export type FilterType =
   | 'author' | 'category' | 'series' | 'bookType' | 'readStatus'
   | 'personalRating' | 'publisher' | 'matchScore' | 'library' | 'shelf'
   | 'shelfStatus' | 'tag' | 'publishedDate' | 'fileSize' | 'amazonRating'
-  | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood';
+  | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood'
+  | 'ageRating' | 'contentRating';
 
 export type SortMode = 'count' | 'sortIndex';
 
@@ -102,6 +103,24 @@ export const MATCH_SCORE_RANGES: readonly RangeConfig[] = [
   {id: 6, min: 0.00, max: 0.30, label: 'Poor (0–29%)', sortIndex: 6}
 ];
 
+export const AGE_RATING_OPTIONS: readonly RangeConfig[] = [
+  {id: 0, min: 0, max: 1, label: 'All Ages', sortIndex: 0},
+  {id: 6, min: 6, max: 7, label: '6+', sortIndex: 1},
+  {id: 10, min: 10, max: 11, label: '10+', sortIndex: 2},
+  {id: 13, min: 13, max: 14, label: '13+', sortIndex: 3},
+  {id: 16, min: 16, max: 17, label: '16+', sortIndex: 4},
+  {id: 18, min: 18, max: 19, label: '18+', sortIndex: 5},
+  {id: 21, min: 21, max: 22, label: '21+', sortIndex: 6}
+];
+
+export const CONTENT_RATING_LABELS: Readonly<Record<string, string>> = {
+  'EVERYONE': 'Everyone',
+  'TEEN': 'Teen',
+  'MATURE': 'Mature',
+  'ADULT': 'Adult',
+  'EXPLICIT': 'Explicit'
+};
+
 export const readStatusLabels = READ_STATUS_LABELS;
 export const ratingRanges = RATING_RANGES_5;
 export const ratingOptions10 = RATING_OPTIONS_10;
@@ -111,7 +130,8 @@ export const matchScoreRanges = MATCH_SCORE_RANGES;
 
 export const NUMERIC_ID_FILTER_TYPES = new Set<FilterType>([
   'personalRating', 'matchScore', 'fileSize', 'amazonRating',
-  'goodreadsRating', 'hardcoverRating', 'pageCount', 'library', 'shelf'
+  'goodreadsRating', 'hardcoverRating', 'pageCount', 'library', 'shelf',
+  'ageRating'
 ]);
 
 export const FILTER_LABELS: Readonly<Record<FilterType, string>> = {
@@ -134,7 +154,9 @@ export const FILTER_LABELS: Readonly<Record<FilterType, string>> = {
   hardcoverRating: 'Hardcover Rating',
   language: 'Language',
   pageCount: 'Page Count',
-  mood: 'Mood'
+  mood: 'Mood',
+  ageRating: 'Age Rating',
+  contentRating: 'Content Rating'
 };
 
 // ============================================================================
@@ -163,6 +185,12 @@ const extractStringsAsFilters = (values: string[] | undefined): FilterValue[] =>
 
 const extractSingleString = (value: string | undefined | null): FilterValue[] =>
   value ? [{id: value, name: value}] : [];
+
+const findExactAgeRating = (ageRating: number | null | undefined): FilterValue[] => {
+  if (ageRating == null) return [];
+  const match = AGE_RATING_OPTIONS.find(r => r.id === ageRating);
+  return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
+};
 
 export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, (book: Book) => FilterValue[]>> = {
   author: (book) => extractStringsAsFilters(book.metadata?.authors),
@@ -195,7 +223,14 @@ export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, 
   hardcoverRating: (book) => findInRange(book.metadata?.hardcoverRating, RATING_RANGES_5),
   language: (book) => extractSingleString(book.metadata?.language),
   pageCount: (book) => findInRange(book.metadata?.pageCount, PAGE_COUNT_RANGES),
-  mood: (book) => extractStringsAsFilters(book.metadata?.moods)
+  mood: (book) => extractStringsAsFilters(book.metadata?.moods),
+  ageRating: (book) => findExactAgeRating(book.metadata?.ageRating),
+  contentRating: (book) => {
+    const rating = book.metadata?.contentRating;
+    if (!rating) return [];
+    const label = CONTENT_RATING_LABELS[rating] ?? rating;
+    return [{id: rating, name: label}];
+  }
 };
 
 export const FILTER_CONFIGS: Readonly<Record<Exclude<FilterType, 'library'>, Omit<FilterConfig, 'extractor'>>> = {
@@ -217,5 +252,7 @@ export const FILTER_CONFIGS: Readonly<Record<Exclude<FilterType, 'library'>, Omi
   hardcoverRating: {label: 'Hardcover Rating', sortMode: 'sortIndex', isNumericId: true},
   language: {label: 'Language', sortMode: 'count'},
   pageCount: {label: 'Page Count', sortMode: 'sortIndex', isNumericId: true},
-  mood: {label: 'Mood', sortMode: 'count'}
+  mood: {label: 'Mood', sortMode: 'count'},
+  ageRating: {label: 'Age Rating', sortMode: 'sortIndex', isNumericId: true},
+  contentRating: {label: 'Content Rating', sortMode: 'count'}
 };

@@ -17,6 +17,46 @@
     outline: none;
   }
 
+  // RTL reading mode - reverse page order in two-page view
+  &.rtl-reading {
+    .two-page-view {
+      .pages-wrapper,
+      .previous-page-layer,
+      .current-page-layer {
+        flex-direction: row-reverse;
+      }
+    }
+  }
+
+  // Slideshow indicator
+  .slideshow-indicator {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 11;
+    pointer-events: none;
+
+    .slideshow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(74, 144, 226, 0.9);
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
   .bookmark-indicator {
     position: absolute;
     top: 0;
@@ -349,6 +389,74 @@
           width: auto;
           height: auto;
         }
+      }
+
+      .loading-more {
+        padding: 2rem;
+        display: flex;
+        justify-content: center;
+      }
+    }
+
+    // Long Strip / Webtoon mode - no gaps between pages
+    &.long-strip {
+      overflow-y: auto;
+      overflow-x: hidden;
+      align-items: flex-start;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+
+      .long-strip-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        width: 100%;
+        padding: 0;
+      }
+
+      .page-image {
+        box-shadow: none;
+        border-radius: 0;
+        transition: none;
+        display: block;
+
+        &:hover {
+          transform: none;
+        }
+      }
+
+      &.fit-width .page-image {
+        width: 100%;
+        height: auto;
+      }
+
+      &.fit-height .page-image {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+      }
+
+      &.fit-actual-size {
+        overflow-x: auto;
+
+        .long-strip-wrapper {
+          width: max-content;
+          min-width: 100%;
+        }
+
+        .page-image {
+          width: auto;
+          height: auto;
+        }
+      }
+
+      &.fit-page .page-image,
+      &.fit-auto .page-image {
+        max-width: 100%;
+        width: auto;
+        height: auto;
       }
 
       .loading-more {

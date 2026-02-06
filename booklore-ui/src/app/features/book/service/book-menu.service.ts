@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookService} from './book.service';
-import {readStatusLabels} from '../components/book-browser/book-filter/book-filter.config';
+import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS, readStatusLabels} from '../components/book-browser/book-filter/book-filter.config';
 import {ReadStatus} from '../model/book.model';
 import {ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
 import {finalize} from 'rxjs';
@@ -131,6 +131,182 @@ export class BookMenuService {
             });
           }
         }))
+      });
+    }
+
+    if (permissions?.canBulkEditMetadata) {
+      items.push({
+        label: 'Set Age Rating',
+        icon: 'pi pi-user',
+        items: [
+          ...AGE_RATING_OPTIONS.map(option => ({
+            label: option.label,
+            command: () => {
+              this.confirmationService.confirm({
+                message: `Are you sure you want to set the age rating to "${option.label}" for ${count} book(s)?`,
+                header: 'Confirm Age Rating Update',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Yes',
+                rejectLabel: 'No',
+                accept: () => {
+                  const loader = this.loadingService.show(`Setting age rating for ${count} book(s)...`);
+                  this.bookService.updateBooksMetadata({
+                    bookIds: Array.from(selectedBooks),
+                    ageRating: option.id
+                  }).pipe(finalize(() => this.loadingService.hide(loader)))
+                    .subscribe({
+                      next: () => {
+                        this.messageService.add({
+                          severity: 'success',
+                          summary: 'Age Rating Updated',
+                          detail: `Set to "${option.label}"`,
+                          life: 2000
+                        });
+                      },
+                      error: (err: HttpErrorResponse) => {
+                        const apiError = err.error as APIException;
+                        this.messageService.add({
+                          severity: 'error',
+                          summary: 'Update Failed',
+                          detail: apiError?.message || 'Could not update age rating.',
+                          life: 3000
+                        });
+                      }
+                    });
+                }
+              });
+            }
+          })),
+          {
+            separator: true
+          },
+          {
+            label: 'Clear Age Rating',
+            icon: 'pi pi-times',
+            command: () => {
+              this.confirmationService.confirm({
+                message: `Are you sure you want to clear the age rating for ${count} book(s)?`,
+                header: 'Confirm Clear Age Rating',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Yes',
+                rejectLabel: 'No',
+                accept: () => {
+                  const loader = this.loadingService.show(`Clearing age rating for ${count} book(s)...`);
+                  this.bookService.updateBooksMetadata({
+                    bookIds: Array.from(selectedBooks),
+                    clearAgeRating: true
+                  }).pipe(finalize(() => this.loadingService.hide(loader)))
+                    .subscribe({
+                      next: () => {
+                        this.messageService.add({
+                          severity: 'success',
+                          summary: 'Age Rating Cleared',
+                          detail: 'Age rating has been cleared.',
+                          life: 2000
+                        });
+                      },
+                      error: (err: HttpErrorResponse) => {
+                        const apiError = err.error as APIException;
+                        this.messageService.add({
+                          severity: 'error',
+                          summary: 'Update Failed',
+                          detail: apiError?.message || 'Could not clear age rating.',
+                          life: 3000
+                        });
+                      }
+                    });
+                }
+              });
+            }
+          }
+        ]
+      });
+
+      items.push({
+        label: 'Set Content Rating',
+        icon: 'pi pi-shield',
+        items: [
+          ...Object.entries(CONTENT_RATING_LABELS).map(([value, label]) => ({
+            label: label,
+            command: () => {
+              this.confirmationService.confirm({
+                message: `Are you sure you want to set the content rating to "${label}" for ${count} book(s)?`,
+                header: 'Confirm Content Rating Update',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Yes',
+                rejectLabel: 'No',
+                accept: () => {
+                  const loader = this.loadingService.show(`Setting content rating for ${count} book(s)...`);
+                  this.bookService.updateBooksMetadata({
+                    bookIds: Array.from(selectedBooks),
+                    contentRating: value
+                  }).pipe(finalize(() => this.loadingService.hide(loader)))
+                    .subscribe({
+                      next: () => {
+                        this.messageService.add({
+                          severity: 'success',
+                          summary: 'Content Rating Updated',
+                          detail: `Set to "${label}"`,
+                          life: 2000
+                        });
+                      },
+                      error: (err: HttpErrorResponse) => {
+                        const apiError = err.error as APIException;
+                        this.messageService.add({
+                          severity: 'error',
+                          summary: 'Update Failed',
+                          detail: apiError?.message || 'Could not update content rating.',
+                          life: 3000
+                        });
+                      }
+                    });
+                }
+              });
+            }
+          })),
+          {
+            separator: true
+          },
+          {
+            label: 'Clear Content Rating',
+            icon: 'pi pi-times',
+            command: () => {
+              this.confirmationService.confirm({
+                message: `Are you sure you want to clear the content rating for ${count} book(s)?`,
+                header: 'Confirm Clear Content Rating',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Yes',
+                rejectLabel: 'No',
+                accept: () => {
+                  const loader = this.loadingService.show(`Clearing content rating for ${count} book(s)...`);
+                  this.bookService.updateBooksMetadata({
+                    bookIds: Array.from(selectedBooks),
+                    clearContentRating: true
+                  }).pipe(finalize(() => this.loadingService.hide(loader)))
+                    .subscribe({
+                      next: () => {
+                        this.messageService.add({
+                          severity: 'success',
+                          summary: 'Content Rating Cleared',
+                          detail: 'Content rating has been cleared.',
+                          life: 2000
+                        });
+                      },
+                      error: (err: HttpErrorResponse) => {
+                        const apiError = err.error as APIException;
+                        this.messageService.add({
+                          severity: 'error',
+                          summary: 'Update Failed',
+                          detail: apiError?.message || 'Could not clear content rating.',
+                          life: 3000
+                        });
+                      }
+                    });
+                }
+              });
+            }
+          }
+        ]
       });
     }
 

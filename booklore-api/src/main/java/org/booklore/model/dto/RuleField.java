@@ -66,6 +66,10 @@ public enum RuleField {
     @JsonProperty("tags")
     TAGS,
     @JsonProperty("genre")
-    GENRE
+    GENRE,
+    @JsonProperty("ageRating")
+    AGE_RATING,
+    @JsonProperty("contentRating")
+    CONTENT_RATING
 }
 
