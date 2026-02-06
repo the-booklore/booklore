@@ -28,7 +28,7 @@ import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
-import {fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.config';
+import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS, fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.config';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
@@ -830,6 +830,25 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     if (range) {
       this.handleMetadataClick('matchScore', range.id.toString());
     }
+  }
+
+  goToAgeRating(ageRating: number): void {
+    this.handleMetadataClick('ageRating', ageRating.toString());
+  }
+
+  goToContentRating(contentRating: string): void {
+    this.handleMetadataClick('contentRating', contentRating);
+  }
+
+  getAgeRatingLabel(ageRating: number | null | undefined): string {
+    if (ageRating == null) return '-';
+    const match = AGE_RATING_OPTIONS.find(r => r.id === ageRating);
+    return match?.label ?? `${ageRating}+`;
+  }
+
+  getContentRatingLabel(contentRating: string | null | undefined): string {
+    if (!contentRating) return '-';
+    return CONTENT_RATING_LABELS[contentRating] ?? contentRating;
   }
 
   private extractYear(dateString: string | null | undefined): string | null {

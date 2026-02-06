@@ -12,9 +12,15 @@ export interface EntityViewPreferences {
   overrides: EntityViewPreferenceOverride[];
 }
 
+export interface SortCriterion {
+  field: string;
+  direction: 'ASC' | 'DESC';
+}
+
 export interface EntityViewPreference {
   sortKey: string;
   sortDir: 'ASC' | 'DESC';
+  sortCriteria?: SortCriterion[];
   view: 'GRID' | 'TABLE';
   coverSize: number;
   seriesCollapsed: boolean;
@@ -79,7 +85,21 @@ export enum CbxFitMode {
 
 export enum CbxScrollMode {
   PAGINATED = 'PAGINATED',
-  INFINITE = 'INFINITE'
+  INFINITE = 'INFINITE',
+  LONG_STRIP = 'LONG_STRIP'
+}
+
+export enum CbxReadingDirection {
+  LTR = 'LTR',
+  RTL = 'RTL'
+}
+
+export enum CbxSlideshowInterval {
+  THREE_SECONDS = 3000,
+  FIVE_SECONDS = 5000,
+  TEN_SECONDS = 10000,
+  FIFTEEN_SECONDS = 15000,
+  THIRTY_SECONDS = 30000
 }
 
 export interface PdfReaderSetting {
@@ -158,6 +178,8 @@ export interface CbxReaderSetting {
   fitMode: CbxFitMode;
   scrollMode?: CbxScrollMode;
   backgroundColor?: CbxBackgroundColor;
+  readingDirection?: CbxReadingDirection;
+  slideshowInterval?: CbxSlideshowInterval;
 }
 
 export interface TableColumnPreference {
@@ -165,6 +187,44 @@ export interface TableColumnPreference {
   visible: boolean;
   order: number;
 }
+
+export type VisibleFilterType =
+  | 'author' | 'category' | 'series' | 'bookType' | 'readStatus'
+  | 'personalRating' | 'publisher' | 'matchScore' | 'library' | 'shelf'
+  | 'shelfStatus' | 'tag' | 'publishedDate' | 'fileSize' | 'amazonRating'
+  | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood'
+  | 'ageRating' | 'contentRating';
+
+export const DEFAULT_VISIBLE_FILTERS: VisibleFilterType[] = [
+  'author', 'category', 'series', 'bookType', 'readStatus',
+  'personalRating', 'library', 'tag', 'ageRating', 'contentRating',
+  'matchScore', 'publisher', 'publishedDate', 'fileSize'
+];
+
+export const ALL_FILTER_OPTIONS: { label: string; value: VisibleFilterType }[] = [
+  {label: 'Author', value: 'author'},
+  {label: 'Genre', value: 'category'},
+  {label: 'Series', value: 'series'},
+  {label: 'Book Type', value: 'bookType'},
+  {label: 'Read Status', value: 'readStatus'},
+  {label: 'Personal Rating', value: 'personalRating'},
+  {label: 'Library', value: 'library'},
+  {label: 'Tag', value: 'tag'},
+  {label: 'Age Rating', value: 'ageRating'},
+  {label: 'Content Rating', value: 'contentRating'},
+  {label: 'Metadata Match Score', value: 'matchScore'},
+  {label: 'Publisher', value: 'publisher'},
+  {label: 'Published Year', value: 'publishedDate'},
+  {label: 'File Size', value: 'fileSize'},
+  {label: 'Shelf', value: 'shelf'},
+  {label: 'Shelf Status', value: 'shelfStatus'},
+  {label: 'Language', value: 'language'},
+  {label: 'Page Count', value: 'pageCount'},
+  {label: 'Mood', value: 'mood'},
+  {label: 'Amazon Rating', value: 'amazonRating'},
+  {label: 'Goodreads Rating', value: 'goodreadsRating'},
+  {label: 'Hardcover Rating', value: 'hardcoverRating'}
+];
 
 export interface UserSettings {
   perBookSetting: PerBookSetting;
@@ -177,6 +237,7 @@ export interface UserSettings {
   sidebarShelfSorting: SidebarShelfSorting;
   sidebarMagicShelfSorting: SidebarMagicShelfSorting;
   filterMode: BookFilterMode;
+  visibleFilters?: VisibleFilterType[];
   metadataCenterViewMode: 'route' | 'dialog';
   enableSeriesView: boolean;
   entityViewPreferences: EntityViewPreferences;

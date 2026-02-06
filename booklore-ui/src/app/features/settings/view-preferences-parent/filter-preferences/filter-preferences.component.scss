@@ -47,4 +47,19 @@
       width: 100%;
     }
   }
+
+  p-multiselect {
+    min-width: 300px;
+    max-width: 100%;
+
+    @media (max-width: 768px) {
+      min-width: 100%;
+      width: 100%;
+    }
+  }
+}
+
+.filter-count {
+  font-weight: 500;
+  color: var(--p-primary-color);
 }

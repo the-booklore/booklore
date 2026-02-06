@@ -5,7 +5,7 @@ import {BookState} from '../../model/state/book-state.model';
 import {SortOption} from '../../model/sort.model';
 import {SortService} from '../../service/sort.service';
 import {HeaderFilter} from './filters/HeaderFilter';
-import {SideBarFilter} from './filters/SidebarFilter';
+import {SideBarFilter} from './filters/sidebar-filter';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
 import {ParamMap} from '@angular/router';
 import {QUERY_PARAMS} from './book-browser-query-params.service';
