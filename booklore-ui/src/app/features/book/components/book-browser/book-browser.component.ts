@@ -26,7 +26,7 @@ import {BookFilterComponent} from './book-filter/book-filter.component';
 import {Tooltip} from 'primeng/tooltip';
 import {BookFilterMode, EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
-import {SideBarFilter} from './filters/SidebarFilter';
+import {SideBarFilter} from './filters/sidebar-filter';
 import {HeaderFilter} from './filters/HeaderFilter';
 import {CoverScalePreferenceService} from './cover-scale-preference.service';
 import {BookSorter} from './sorting/BookSorter';

@@ -6,6 +6,7 @@ import org.booklore.exception.ApiError;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.repository.BookRepository;
+import org.booklore.service.restriction.ContentRestrictionService;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -14,6 +15,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -25,6 +27,7 @@ public class BookAccessAspect {
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("\\d+");
     private final AuthenticationService authenticationService;
     private final BookRepository bookRepository;
+    private final ContentRestrictionService contentRestrictionService;
 
     @Before("@annotation(org.booklore.config.security.annotation.CheckBookAccess)")
     public void checkBookAccess(JoinPoint joinPoint) {
@@ -49,9 +52,14 @@ public class BookAccessAspect {
             return;
         }
 
-        boolean hasAccess = user.getAssignedLibraries().stream().anyMatch(library -> library.getId().equals(bookEntity.getLibrary().getId()));
+        boolean hasLibraryAccess = user.getAssignedLibraries().stream().anyMatch(library -> library.getId().equals(bookEntity.getLibrary().getId()));
 
-        if (!hasAccess) {
+        if (!hasLibraryAccess) {
+            throw ApiError.FORBIDDEN.createException("You are not authorized to access this book.");
+        }
+
+        List<BookEntity> filteredBooks = contentRestrictionService.applyRestrictions(List.of(bookEntity), user.getId());
+        if (filteredBooks.isEmpty()) {
             throw ApiError.FORBIDDEN.createException("You are not authorized to access this book.");
         }
     }
