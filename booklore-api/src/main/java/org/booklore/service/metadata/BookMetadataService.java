@@ -152,6 +152,8 @@ public class BookMetadataService {
                 .categories(request.getGenres() != null ? request.getGenres() : Collections.emptySet())
                 .moods(request.getMoods() != null ? request.getMoods() : Collections.emptySet())
                 .tags(request.getTags() != null ? request.getTags() : Collections.emptySet())
+                .ageRating(request.getAgeRating())
+                .contentRating(request.getContentRating())
                 .build();
 
         for (Long bookId : request.getBookIds()) {

@@ -35,6 +35,10 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
       cbx: {
         enabled: false,
         maxFileSizeInMb: 250
+      },
+      audiobook: {
+        enabled: false,
+        maxFileSizeInMb: 1000
       }
     },
     convertCbrCb7ToCbz: false,
@@ -98,6 +102,10 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
           cbx: {
             enabled: persistenceSettings.saveToOriginalFile?.cbx?.enabled ?? false,
             maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.cbx?.maxFileSizeInMb ?? 250
+          },
+          audiobook: {
+            enabled: persistenceSettings.saveToOriginalFile?.audiobook?.enabled ?? false,
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.audiobook?.maxFileSizeInMb ?? 1000
           }
         }
       };

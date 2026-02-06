@@ -338,6 +338,8 @@ public class BookRuleEvaluatorService {
             case HARDCOVER_RATING -> root.get("metadata").get("hardcoverRating");
             case HARDCOVER_REVIEW_COUNT -> root.get("metadata").get("hardcoverReviewCount");
             case RANOBEDB_RATING -> root.get("metadata").get("ranobedbRating");
+            case AGE_RATING -> root.get("metadata").get("ageRating");
+            case CONTENT_RATING -> root.get("metadata").get("contentRating");
             case FILE_TYPE -> cb.function("SUBSTRING_INDEX", String.class,
                     root.get("fileName"), cb.literal("."), cb.literal(-1));
             default -> null;
