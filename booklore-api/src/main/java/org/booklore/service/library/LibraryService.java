@@ -1,5 +1,9 @@
 package org.booklore.service.library;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMapper;
@@ -24,10 +28,6 @@ import org.booklore.service.monitoring.MonitoringService;
 import org.booklore.task.options.RescanLibraryContext;
 import org.booklore.util.FileService;
 import org.booklore.util.SecurityContextVirtualThread;
-import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -37,10 +37,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -77,6 +74,7 @@ public class LibraryService {
         library.setIconType(request.getIconType());
         library.setWatch(request.isWatch());
         library.setFormatPriority(request.getFormatPriority());
+        library.setAllowedFormats(request.getAllowedFormats());
 
         Set<String> currentPaths = library.getLibraryPaths().stream()
                 .map(LibraryPathEntity::getPath)
@@ -156,6 +154,7 @@ public class LibraryService {
                 .iconType(request.getIconType())
                 .watch(request.isWatch())
                 .formatPriority(request.getFormatPriority())
+                .allowedFormats(request.getAllowedFormats())
                 .users(List.of(user.get()))
                 .build();
 
@@ -252,11 +251,26 @@ public class LibraryService {
         return libraryMapper.toLibrary(libraryRepository.save(library));
     }
 
+    public Map<String, Long> getBookCountsByFormat(long libraryId) {
+        libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
+        Map<String, Long> counts = new HashMap<>();
+        for (BookFileType type : BookFileType.values()) {
+            long count = bookRepository.countByLibraryIdAndBookType(libraryId, type);
+            if (count > 0) {
+                counts.put(type.name(), count);
+            }
+        }
+        return counts;
+    }
+
     public int scanLibraryPaths(CreateLibraryRequest request) {
         int count = 0;
         if (request.getPaths() == null || request.getPaths().isEmpty()) {
             return count;
         }
+        Set<BookFileType> allowedFormats = request.getAllowedFormats() != null && !request.getAllowedFormats().isEmpty()
+                ? Set.copyOf(request.getAllowedFormats())
+                : null;
         for (LibraryPath libraryPath : request.getPaths()) {
             Path path = Paths.get(libraryPath.getPath());
             if (!Files.exists(path)) {
@@ -264,21 +278,21 @@ public class LibraryService {
                 continue;
             }
             if (Files.isDirectory(path)) {
-                count += scanDirectory(path);
-            } else if (Files.isRegularFile(path) && isProcessableFile(path)) {
+                count += scanDirectory(path, allowedFormats);
+            } else if (Files.isRegularFile(path) && isProcessableFile(path, allowedFormats)) {
                 count++;
             }
         }
         return count;
     }
 
-    private int scanDirectory(Path directory) {
+    private int scanDirectory(Path directory, Set<BookFileType> allowedFormats) {
         int count = 0;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
             for (Path entry : stream) {
                 if (Files.isDirectory(entry)) {
-                    count += scanDirectory(entry);
-                } else if (Files.isRegularFile(entry) && isProcessableFile(entry)) {
+                    count += scanDirectory(entry, allowedFormats);
+                } else if (Files.isRegularFile(entry) && isProcessableFile(entry, allowedFormats)) {
                     count++;
                 }
             }
@@ -288,11 +302,16 @@ public class LibraryService {
         return count;
     }
 
-    private boolean isProcessableFile(Path file) {
+    private boolean isProcessableFile(Path file, Set<BookFileType> allowedFormats) {
         String fileName = file.getFileName().toString().toLowerCase();
         for (BookFileType fileType : BookFileType.values()) {
-            if (fileName.endsWith("." + fileType.name().toLowerCase())) {
-                return true;
+            if (allowedFormats != null && !allowedFormats.contains(fileType)) {
+                continue;
+            }
+            for (String ext : fileType.getExtensions()) {
+                if (fileName.endsWith("." + ext)) {
+                    return true;
+                }
             }
         }
         return false;

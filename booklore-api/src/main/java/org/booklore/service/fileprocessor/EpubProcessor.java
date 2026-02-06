@@ -4,6 +4,7 @@ import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
@@ -57,12 +58,17 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
 
     @Override
     public boolean generateCover(BookEntity bookEntity) {
+        return generateCover(bookEntity, bookEntity.getPrimaryBookFile());
+    }
+
+    @Override
+    public boolean generateCover(BookEntity bookEntity, BookFileEntity bookFile) {
         try {
-            File epubFile = new File(FileUtils.getBookFullPath(bookEntity));
+            File epubFile = new File(FileUtils.getBookFullPath(bookEntity, bookFile));
             byte[] coverData = epubMetadataExtractor.extractCover(epubFile);
 
             if (coverData == null) {
-                log.warn("No cover image found in EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
+                log.warn("No cover image found in EPUB '{}'", bookFile.getFileName());
                 return false;
             }
 
@@ -70,7 +76,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
                 BufferedImage originalImage = ImageIO.read(bais);
                 if (originalImage == null) {
-                    log.warn("Cover image found but could not be decoded (possibly SVG or unsupported format) in EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
+                    log.warn("Cover image found but could not be decoded (possibly SVG or unsupported format) in EPUB '{}'", bookFile.getFileName());
                     return false;
                 }
                 saved = fileService.saveCoverImages(originalImage, bookEntity.getId());
@@ -80,7 +86,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             return saved;
 
         } catch (Exception e) {
-            log.error("Error generating cover for EPUB '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for EPUB '{}': {}", bookFile.getFileName(), e.getMessage(), e);
             return false;
         }
     }

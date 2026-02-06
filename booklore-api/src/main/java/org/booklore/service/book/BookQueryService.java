@@ -4,6 +4,7 @@ import org.booklore.mapper.v2.BookMapperV2;
 import org.booklore.model.dto.Book;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.repository.BookRepository;
+import org.booklore.service.restriction.ContentRestrictionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ public class BookQueryService {
 
     private final BookRepository bookRepository;
     private final BookMapperV2 bookMapperV2;
+    private final ContentRestrictionService contentRestrictionService;
 
     public List<Book> getAllBooks(boolean includeDescription) {
         List<BookEntity> books = bookRepository.findAllWithMetadata();
@@ -25,6 +27,7 @@ public class BookQueryService {
 
     public List<Book> getAllBooksByLibraryIds(Set<Long> libraryIds, boolean includeDescription, Long userId) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds);
+        books = contentRestrictionService.applyRestrictions(books, userId);
         return mapBooksToDto(books, includeDescription, userId);
     }
 

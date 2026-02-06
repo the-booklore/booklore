@@ -53,6 +53,9 @@ export interface FieldOptions {
   lubimyczytacRating: FieldProvider;
   ranobedbId: FieldProvider;
   ranobedbRating: FieldProvider;
+  audibleId: FieldProvider;
+  audibleRating: FieldProvider;
+  audibleReviewCount: FieldProvider;
   moods: FieldProvider;
   tags: FieldProvider;
 }

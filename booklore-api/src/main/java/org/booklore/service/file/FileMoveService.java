@@ -1,5 +1,8 @@
 package org.booklore.service.file;
 
+import jakarta.persistence.EntityManager;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.AppProperties;
 import org.booklore.mapper.BookMapper;
 import org.booklore.mapper.LibraryMapper;
@@ -15,11 +18,8 @@ import org.booklore.repository.BookRepository;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.service.NotificationService;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
-import jakarta.persistence.EntityManager;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,9 +42,9 @@ public class FileMoveService {
     private final BookMapper bookMapper;
     private final NotificationService notificationService;
     private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
 
 
-    @Transactional
     public void bulkMoveFiles(FileMoveRequest request) {
         List<FileMoveRequest.Move> moves = request.getMoves();
 
@@ -171,25 +171,42 @@ public class FileMoveService {
                 return;
             }
 
+            List<PlannedMove> committedMoves = new ArrayList<>();
+
             // Commit file moves FIRST before updating database
             for (PlannedMove planned : plannedMovesByBookFileId.values()) {
                 fileMoveHelper.commitMove(planned.temp(), planned.target());
+                committedMoves.add(planned);
             }
             plannedMovesByBookFileId.clear();
 
             // Only update database after all file commits succeed
-            for (var bookFile : bookEntity.getBookFiles()) {
-                String newFileName;
-                if (bookFile.isBook()) {
-                    Path targetPath = fileMoveHelper.generateNewFilePath(bookEntity, bookFile, libraryPathEntity, pattern);
-                    newFileName = targetPath.getFileName().toString();
-                } else {
-                    newFileName = bookFile.getFileName();
-                }
-                bookFileRepository.updateFileNameAndSubPath(bookFile.getId(), newFileName, newFileSubPath);
-            }
+            try {
+                transactionTemplate.executeWithoutResult(status -> {
+                    for (var bookFile : bookEntity.getBookFiles()) {
+                        String newFileName;
+                        if (bookFile.isBook()) {
+                            Path targetPath = fileMoveHelper.generateNewFilePath(bookEntity, bookFile, libraryPathEntity, pattern);
+                            newFileName = targetPath.getFileName().toString();
+                        } else {
+                            newFileName = bookFile.getFileName();
+                        }
+                        bookFileRepository.updateFileNameAndSubPath(bookFile.getId(), newFileName, newFileSubPath);
+                    }
 
-            bookRepository.updateLibrary(bookEntity.getId(), targetLibrary.getId(), libraryPathEntity);
+                    bookRepository.updateLibrary(bookEntity.getId(), targetLibrary.getId(), libraryPathEntity);
+                });
+            } catch (Exception e) {
+                log.error("Database update failed after files were moved. Attempting to rollback file moves for book ID {}", bookId, e);
+                for (PlannedMove committed : committedMoves) {
+                    try {
+                        fileMoveHelper.moveFile(committed.target(), committed.source());
+                    } catch (Exception rollbackEx) {
+                        log.error("Failed to rollback file move (Target -> Source) for book ID {}: {} -> {}", bookId, committed.target(), committed.source(), rollbackEx);
+                    }
+                }
+                throw e;
+            }
 
             Path libraryRoot = Paths.get(libraryPathEntity.getPath()).toAbsolutePath().normalize();
             for (Path sourceParent : sourceParentsToCleanup) {
@@ -211,7 +228,6 @@ public class FileMoveService {
         }
     }
 
-    @Transactional
     public FileMoveResult moveSingleFile(BookEntity bookEntity) {
         record PlannedMove(Path source, Path temp, Path target) {}
 
@@ -302,22 +318,40 @@ public class FileMoveService {
                 return FileMoveResult.builder().moved(false).build();
             }
 
+            List<PlannedMove> committedMoves = new ArrayList<>();
+
             // Commit all file moves FIRST before updating database
             for (PlannedMove planned : plannedMovesByBookFileId.values()) {
                 fileMoveHelper.commitMove(planned.temp(), planned.target());
+                committedMoves.add(planned);
             }
             plannedMovesByBookFileId.clear();
 
             // Update database for ALL BookFileEntity records (only after all commits succeed)
-            for (var bookFile : bookWithFiles.getBookFiles()) {
-                String newFileName;
-                if (bookFile.isBook()) {
-                    Path targetPath = fileMoveHelper.generateNewFilePath(bookWithFiles, bookFile, bookWithFiles.getLibraryPath(), pattern);
-                    newFileName = targetPath.getFileName().toString();
-                } else {
-                    newFileName = bookFile.getFileName();
+            BookEntity finalBookWithFiles = bookWithFiles;
+            try {
+                transactionTemplate.executeWithoutResult(status -> {
+                    for (var bookFile : finalBookWithFiles.getBookFiles()) {
+                        String newFileName;
+                        if (bookFile.isBook()) {
+                            Path targetPath = fileMoveHelper.generateNewFilePath(finalBookWithFiles, bookFile, finalBookWithFiles.getLibraryPath(), pattern);
+                            newFileName = targetPath.getFileName().toString();
+                        } else {
+                            newFileName = bookFile.getFileName();
+                        }
+                        bookFileRepository.updateFileNameAndSubPath(bookFile.getId(), newFileName, newFileSubPath);
+                    }
+                });
+            } catch (Exception e) {
+                log.error("Database update failed after files were moved. Attempting to rollback file moves for book ID {}", bookEntity.getId(), e);
+                for (PlannedMove committed : committedMoves) {
+                    try {
+                        fileMoveHelper.moveFile(committed.target(), committed.source());
+                    } catch (Exception rollbackEx) {
+                        log.error("Failed to rollback file move (Target -> Source) for book ID {}: {} -> {}", bookEntity.getId(), committed.target(), committed.source(), rollbackEx);
+                    }
                 }
-                bookFileRepository.updateFileNameAndSubPath(bookFile.getId(), newFileName, newFileSubPath);
+                throw e;
             }
 
             // Clean up empty parent directories

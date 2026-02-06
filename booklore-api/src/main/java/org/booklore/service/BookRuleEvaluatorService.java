@@ -695,6 +695,8 @@ public class BookRuleEvaluatorService {
             case HARDCOVER_REVIEW_COUNT -> root.get("metadata").get("hardcoverReviewCount");
             case RANOBEDB_RATING -> root.get("metadata").get("ranobedbRating");
             case LUBIMYCZYTAC_RATING -> root.get("metadata").get("lubimyczytacRating");
+            case AGE_RATING -> root.get("metadata").get("ageRating");
+            case CONTENT_RATING -> root.get("metadata").get("contentRating");
             case FILE_TYPE -> cb.function("SUBSTRING_INDEX", String.class,
                     root.get("fileName"), cb.literal("."), cb.literal(-1));
             case ADDED_ON -> cb.function("DATEDIFF", Integer.class,

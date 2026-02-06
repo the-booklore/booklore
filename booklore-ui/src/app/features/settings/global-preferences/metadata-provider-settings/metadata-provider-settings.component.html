@@ -65,6 +65,16 @@
                     class="config-select">
                   </p-select>
                 </div>
+                <div class="config-field">
+                  <label class="config-label">API Key (Optional)</label>
+                  <p class="config-description">Providing a Google Books API key increases rate limits and improves reliability.</p>
+                  <input
+                    type="text"
+                    pInputText
+                    placeholder="Enter Google Books API key"
+                    [(ngModel)]="googleApiKey"
+                    class="config-input"/>
+                </div>
               </div>
             }
           </div>
@@ -110,6 +120,26 @@
                     [(ngModel)]="comicvineToken"
                     (ngModelChange)="onComicTokenChange($event)"
                     class="config-input"/>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-header">
+              <p-toggleswitch [(ngModel)]="audibleEnabled"></p-toggleswitch>
+              <label class="setting-label">Audible</label>
+            </div>
+            @if (audibleEnabled) {
+              <div class="setting-options">
+                <div class="config-field">
+                  <label class="config-label">Region</label>
+                  <p-select
+                    [options]="audibleDomains"
+                    [(ngModel)]="selectedAudibleDomain"
+                    placeholder="Select Domain"
+                    class="config-select">
+                  </p-select>
                 </div>
               </div>
             }

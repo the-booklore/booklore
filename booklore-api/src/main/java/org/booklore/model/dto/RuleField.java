@@ -93,6 +93,9 @@ public enum RuleField {
     SERIES_STATUS,
     @JsonProperty("addedOn")
     ADDED_ON,
-    
+    @JsonProperty("ageRating")
+    AGE_RATING,
+    @JsonProperty("contentRating")
+    CONTENT_RATING
 }
 

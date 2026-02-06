@@ -8,73 +8,161 @@
     }
     <div class="form-content">
       <div class="main-section">
-        <div class="cover-section">
-          <p-image
-            [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
-            alt="Cover Image"
-            width="250"
-            appendTo="body"
-            lazyLoad
-            [preview]="true">
-          </p-image>
-          @if (isUploading) {
-            <p-progressSpinner class="upload-spinner"></p-progressSpinner>
+        <div class="covers-section" [class.dual-covers]="supportsDualCovers(book)">
+          <!-- Ebook Cover Section -->
+          @if (hasEbookFormat(book)) {
+            <div class="cover-section">
+              @if (supportsDualCovers(book)) {
+                <div class="cover-type-label ebook">
+                  <i class="pi pi-book"></i> Ebook Cover
+                </div>
+              }
+              <p-image
+                [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
+                alt="Cover Image"
+                width="200"
+                appendTo="body"
+                lazyLoad
+                [preview]="true">
+              </p-image>
+              @if (isUploading) {
+                <p-progressSpinner class="upload-spinner"></p-progressSpinner>
+              }
+              <div class="cover-actions">
+                @if (!book.isPhysical) {
+                  <p-button
+                    icon="pi pi-refresh"
+                    (onClick)="regenerateCover(book.id)"
+                    pTooltip="Regenerate cover (From File)"
+                    tooltipPosition="top"
+                    [outlined]="true"
+                    severity="warn"
+                    size="small"
+                    [disabled]="book.metadata!['coverLocked']">
+                  </p-button>
+                }
+                <p-button
+                  icon="pi pi-palette"
+                  (onClick)="generateCustomCover(book.id)"
+                  pTooltip="Generate Custom Cover"
+                  tooltipPosition="top"
+                  [outlined]="true"
+                  severity="help"
+                  size="small"
+                  [loading]="isGeneratingCover"
+                  [disabled]="book.metadata!['coverLocked'] || isGeneratingCover">
+                </p-button>
+                <p-button
+                  [disabled]="book.metadata!['coverLocked']"
+                  outlined
+                  size="small"
+                  icon="pi pi-search"
+                  (onClick)="openCoverSearch()"
+                  pTooltip="Search for cover"
+                  tooltipPosition="top"
+                  severity="info">
+                </p-button>
+                <p-fileupload
+                  [chooseStyleClass]="'p-button-sm p-button-outlined p-button-danger'"
+                  pTooltip="Upload cover"
+                  tooltipPosition="top"
+                  [disabled]="book.metadata!['coverLocked']"
+                  name="file"
+                  [url]="getUploadCoverUrl()"
+                  mode="basic"
+                  chooseIcon="pi pi-upload"
+                  accept="image/jpeg,image/png"
+                  maxFileSize="5000000"
+                  (onUpload)="onUpload($event)"
+                  (onError)="onUploadError($event)"
+                  [auto]="true"
+                  (onBeforeUpload)="onBeforeSend()">
+                </p-fileupload>
+                @if (!book.metadata!['coverLocked']) {
+                  <p-button pTooltip="Lock Cover" tooltipPosition="top" size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success"></p-button>
+                }
+                @if (book.metadata!['coverLocked']) {
+                  <p-button pTooltip="Unlock Cover" tooltipPosition="top" size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
           }
-          <div class="cover-actions">
-            <p-button
-              icon="pi pi-refresh"
-              (onClick)="regenerateCover(book.id)"
-              pTooltip="Regenerate cover (From File)"
-              tooltipPosition="top"
-              [outlined]="true"
-              severity="warn"
-              size="small"
-              [disabled]="book.metadata!['coverLocked']">
-            </p-button>
-            <p-button
-              icon="pi pi-palette"
-              (onClick)="generateCustomCover(book.id)"
-              pTooltip="Generate Custom Cover"
-              tooltipPosition="top"
-              [outlined]="true"
-              severity="help"
-              size="small"
-              [loading]="isGeneratingCover"
-              [disabled]="book.metadata!['coverLocked'] || isGeneratingCover">
-            </p-button>
-            <p-button
-              [disabled]="book.metadata!['coverLocked']"
-              outlined
-              size="small"
-              icon="pi pi-search"
-              (onClick)="openCoverSearch()"
-              pTooltip="Search for cover"
-              tooltipPosition="top"
-              severity="info">
-            </p-button>
-            <p-fileupload
-              [chooseStyleClass]="'p-button-sm p-button-outlined p-button-danger'"
-              pTooltip="Upload cover"
-              tooltipPosition="top"
-              [disabled]="book.metadata!['coverLocked']"
-              name="file"
-              [url]="getUploadCoverUrl()"
-              mode="basic"
-              chooseIcon="pi pi-upload"
-              accept="image/jpeg,image/png"
-              maxFileSize="5000000"
-              (onUpload)="onUpload($event)"
-              (onError)="onUploadError($event)"
-              [auto]="true"
-              (onBeforeUpload)="onBeforeSend()">
-            </p-fileupload>
-            @if (!book.metadata!['coverLocked']) {
-              <p-button pTooltip="Lock Cover" tooltipPosition="top" size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success"></p-button>
-            }
-            @if (book.metadata!['coverLocked']) {
-              <p-button pTooltip="Unlock Cover" tooltipPosition="top" size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="warn"></p-button>
-            }
-          </div>
+
+          <!-- Audiobook Cover Section -->
+          @if (hasAudiobookFormat(book)) {
+            <div class="cover-section audiobook-cover-section">
+              <div class="cover-type-label audiobook">
+                <i class="pi pi-headphones"></i> Audiobook Cover
+              </div>
+              <p-image
+                [src]="urlHelper.getAudiobookCoverUrl(book.id, book.metadata?.audiobookCoverUpdatedOn)"
+                alt="Audiobook Cover"
+                width="200"
+                appendTo="body"
+                lazyLoad
+                [preview]="true"
+                class="square-cover">
+              </p-image>
+              @if (isUploading) {
+                <p-progressSpinner class="upload-spinner"></p-progressSpinner>
+              }
+              <div class="cover-actions">
+                <p-button
+                  icon="pi pi-refresh"
+                  (onClick)="regenerateAudiobookCover(book.id)"
+                  pTooltip="Regenerate cover (From File)"
+                  tooltipPosition="top"
+                  [outlined]="true"
+                  severity="warn"
+                  size="small"
+                  [disabled]="book.metadata!['audiobookCoverLocked']">
+                </p-button>
+                <p-button
+                  icon="pi pi-palette"
+                  (onClick)="generateCustomAudiobookCover(book.id)"
+                  pTooltip="Generate Custom Cover"
+                  tooltipPosition="top"
+                  [outlined]="true"
+                  severity="help"
+                  size="small"
+                  [loading]="isGeneratingAudiobookCover"
+                  [disabled]="book.metadata!['audiobookCoverLocked'] || isGeneratingAudiobookCover">
+                </p-button>
+                <p-button
+                  [disabled]="book.metadata!['audiobookCoverLocked']"
+                  outlined
+                  size="small"
+                  icon="pi pi-search"
+                  (onClick)="openAudiobookCoverSearch()"
+                  pTooltip="Search for audiobook cover"
+                  tooltipPosition="top"
+                  severity="info">
+                </p-button>
+                <p-fileupload
+                  [chooseStyleClass]="'p-button-sm p-button-outlined p-button-danger'"
+                  pTooltip="Upload audiobook cover"
+                  tooltipPosition="top"
+                  [disabled]="book.metadata!['audiobookCoverLocked']"
+                  name="file"
+                  [url]="getUploadAudiobookCoverUrl()"
+                  mode="basic"
+                  chooseIcon="pi pi-upload"
+                  accept="image/jpeg,image/png"
+                  maxFileSize="5000000"
+                  (onUpload)="onAudiobookCoverUpload($event)"
+                  (onError)="onUploadError($event)"
+                  [auto]="true"
+                  (onBeforeUpload)="onBeforeSend()">
+                </p-fileupload>
+                @if (!book.metadata!['audiobookCoverLocked']) {
+                  <p-button pTooltip="Lock Cover" tooltipPosition="top" size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('audiobookCover')" severity="success"></p-button>
+                }
+                @if (book.metadata!['audiobookCoverLocked']) {
+                  <p-button pTooltip="Unlock Cover" tooltipPosition="top" size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('audiobookCover')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
+          }
         </div>
         <div class="fields-section">
 
@@ -328,6 +416,50 @@
                 }
                 @if (book.metadata!['pageCountLocked']) {
                   <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('pageCount')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
+
+            <div class="field-group small-field">
+              <label for="ageRating">Age Rating</label>
+              <div class="field-with-lock">
+                <p-select
+                  id="ageRating"
+                  formControlName="ageRating"
+                  [options]="ageRatingOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select"
+                  [showClear]="true"
+                  appendTo="body">
+                </p-select>
+                @if (!book.metadata!['ageRatingLocked']) {
+                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ageRating')" severity="success"></p-button>
+                }
+                @if (book.metadata!['ageRatingLocked']) {
+                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ageRating')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
+
+            <div class="field-group small-field">
+              <label for="contentRating">Content Rating</label>
+              <div class="field-with-lock">
+                <p-select
+                  id="contentRating"
+                  formControlName="contentRating"
+                  [options]="contentRatingOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select"
+                  [showClear]="true"
+                  appendTo="body">
+                </p-select>
+                @if (!book.metadata!['contentRatingLocked']) {
+                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('contentRating')" severity="success"></p-button>
+                }
+                @if (book.metadata!['contentRatingLocked']) {
+                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('contentRating')" severity="warn"></p-button>
                 }
               </div>
             </div>
@@ -592,6 +724,48 @@
               }
               @if (book.metadata!['ranobedbRatingLocked']) {
                 <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="warn"></p-button>
+              }
+            </div>
+          </div>
+        }
+        @if (isFieldVisible('audibleId')) {
+          <div class="field-group metadata-id-field">
+            <label for="audibleId">Audible ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="audibleId" formControlName="audibleId"/>
+              @if (!book.metadata!['audibleIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('audibleId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['audibleIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('audibleId')" severity="warn"></p-button>
+              }
+            </div>
+          </div>
+        }
+        @if (isFieldVisible('audibleRating')) {
+          <div class="field-group metadata-id-field">
+            <label for="audibleRating">Audible ★</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="audibleRating" formControlName="audibleRating"/>
+              @if (!book.metadata!['audibleRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('audibleRating')" severity="success"></p-button>
+              }
+              @if (book.metadata!['audibleRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('audibleRating')" severity="warn"></p-button>
+              }
+            </div>
+          </div>
+        }
+        @if (isFieldVisible('audibleReviewCount')) {
+          <div class="field-group metadata-id-field">
+            <label for="audibleReviewCount">Audible #</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="audibleReviewCount" formControlName="audibleReviewCount"/>
+              @if (!book.metadata!['audibleReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('audibleReviewCount')" severity="success"></p-button>
+              }
+              @if (book.metadata!['audibleReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('audibleReviewCount')" severity="warn"></p-button>
               }
             </div>
           </div>
