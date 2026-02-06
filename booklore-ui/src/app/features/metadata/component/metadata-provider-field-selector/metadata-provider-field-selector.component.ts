@@ -45,6 +45,10 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
     {
       label: 'Ranobedb',
       fields: ['ranobedbId', 'ranobedbRating']
+    },
+    {
+      label: 'Audible',
+      fields: ['audibleId', 'audibleRating', 'audibleReviewCount']
     }
   ];
 
@@ -65,6 +69,9 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
     'lubimyczytacRating': 'Lubimyczytac Rating',
     'ranobedbId': 'Ranobedb ID',
     'ranobedbRating': 'Ranobedb Rating',
+    'audibleId': 'Audible ID',
+    'audibleRating': 'Audible Rating',
+    'audibleReviewCount': 'Audible Review Count',
   };
 
   private readonly allFieldNames: (keyof MetadataProviderSpecificFields)[] = [
@@ -74,7 +81,8 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
     'hardcoverId', 'hardcoverBookId', 'hardcoverRating', 'hardcoverReviewCount',
     'comicvineId',
     'lubimyczytacId', 'lubimyczytacRating',
-    'ranobedbId', 'ranobedbRating'
+    'ranobedbId', 'ranobedbRating',
+    'audibleId', 'audibleRating', 'audibleReviewCount'
   ];
 
   ngOnInit(): void {

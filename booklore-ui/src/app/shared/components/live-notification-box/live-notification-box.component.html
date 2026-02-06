@@ -1,11 +1,11 @@
-<div class="flex flex-col p-4 space-y-2 live-border">
-  <div class="flex flex-row items-center gap-2">
+<div class="notification-container live-border">
+  <div class="notification-header">
     @if (latestNotification.severity) {
-      <app-tag [color]="getSeverityColor(latestNotification.severity)" size="3xs" class="self-center">
+      <app-tag [color]="getSeverityColor(latestNotification.severity)" size="3xs" class="tag-centered">
         {{ latestNotification.severity }}
       </app-tag>
     }
-    <span class="text-xs text-zinc-400 self-center">{{ latestNotification.timestamp }}</span>
+    <span class="notification-timestamp">{{ latestNotification.timestamp }}</span>
   </div>
-  <p class="font-normal text-zinc-200">{{ latestNotification.message }}</p>
+  <p class="notification-message">{{ latestNotification.message }}</p>
 </div>

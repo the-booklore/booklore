@@ -1,198 +1,69 @@
-.settings-header {
-  margin-top: 1rem;
-  margin-bottom: 2rem;
+@use '../../../shared/styles/settings-shared' as settings;
+
+.metadata-settings-container {
+  @include settings.settings-page-container;
 }
 
-.settings-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--p-text-color);
-  margin: 0 0 0.75rem 0;
+@include settings.settings-page-header;
 
-  .pi {
-    color: var(--p-primary-color);
-    font-size: 1.25rem;
-  }
+.settings-title {
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
 }
 
 .settings-description {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+  @include settings.settings-page-description;
 }
 
-.settings-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+@include settings.settings-section-divider;
+
+.settings-card {
+  @include settings.settings-card;
 }
 
 .section-header {
-  margin-bottom: 1rem;
-
-  .section-description {
-    color: var(--p-text-muted-color);
-    font-size: 0.875rem;
-    line-height: 1.5;
-    margin: 0.5rem 0 0 0;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-
-    .pi {
-      margin-top: 0.125rem;
-      flex-shrink: 0;
-    }
-
-    .pi-exclamation-triangle {
-      color: var(--p-orange-500);
-    }
-
-    .pi-info-circle {
-      color: var(--p-primary-color);
-    }
-  }
+  @include settings.settings-section-header;
 }
 
 .section-title {
+  @include settings.settings-section-title;
+}
+
+.section-description {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--p-text-color);
+  font-size: settings.$settings-section-description-size;
+  line-height: 1.5;
+  color: var(--p-text-muted-color);
   margin: 0;
 
   .pi {
-    color: var(--p-primary-color);
+    margin-top: 0.125rem;
+    flex-shrink: 0;
   }
-}
 
-.settings-card {
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  background: var(--p-content-background);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  .pi-exclamation-triangle {
+    color: var(--p-orange-500);
+  }
 
-  .section-header {
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--p-content-border-color);
-    margin-bottom: 0;
-
-    + .setting-item {
-      margin-top: 0.5rem;
-    }
+  .pi-info-circle {
+    color: var(--primary-color);
   }
 }
 
 .section-body {
-  padding-left: 1rem;
-
-  > .setting-item {
-    margin-bottom: 0.75rem;
-  }
+  @include settings.settings-section-body;
 }
 
 .setting-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 2rem;
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  &.setting-item-indented {
-    margin-top: 0.5rem;
-    margin-left: 0;
-    padding: 0.75rem 0.75rem 0.625rem 0.75rem;
-    border-left: 3px solid var(--primary-color);
-    border-bottom: none;
-    background: var(--p-surface-800);
-    border-radius: 6px;
-    position: relative;
-
-    &::before {
-      display: none;
-    }
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 1rem;
-
-    &.setting-item-indented {
-      margin-left: 0;
-      padding: 0.625rem 0.625rem 0.5rem 0.625rem;
-    }
-  }
-
-  .setting-label {
-    display: block;
-    font-weight: 600;
-    color: var(--p-text-color);
-    font-size: 1rem;
-    margin-bottom: 0.375rem;
-    letter-spacing: -0.01em;
-  }
-
-  .setting-label-row {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    flex-wrap: wrap;
-
-    .setting-label {
-      margin-bottom: 0;
-      flex-shrink: 0;
-      font-size: 1rem;
-      color: var(--p-text-color);
-      font-weight: 600;
-      letter-spacing: -0.01em;
-    }
-  }
-
-  .setting-description {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    color: var(--p-text-muted-color);
-    font-size: 0.875rem;
-    line-height: 1.5;
-    margin: 0;
-
-    .pi {
-      margin-top: 0.125rem;
-      flex-shrink: 0;
-    }
-
-    .pi-exclamation-triangle {
-      color: var(--p-orange-500);
-    }
-
-    .pi-info-circle {
-      color: var(--p-primary-color);
-    }
-  }
+  @include settings.settings-item;
 }
 
-.setting-control {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  align-items: flex-end;
+.setting-header {
+  @include settings.settings-item-header;
+}
 
-  @media (max-width: 768px) {
-    align-items: flex-start;
-    width: 100%;
-  }
+.setting-label {
+  @include settings.settings-label;
 }

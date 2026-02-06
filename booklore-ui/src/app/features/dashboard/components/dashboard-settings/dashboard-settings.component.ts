@@ -7,7 +7,6 @@ import {CheckboxModule} from 'primeng/checkbox';
 import {InputTextModule} from 'primeng/inputtext';
 import {SelectModule} from 'primeng/select';
 import {InputNumberModule} from 'primeng/inputnumber';
-import {SortDirection} from "../../../book/model/sort.model";
 import {DashboardConfig, ScrollerConfig, ScrollerType} from '../../models/dashboard-config.model';
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
@@ -42,6 +41,7 @@ export class DashboardSettingsComponent implements OnInit {
 
   availableScrollerTypes = [
     {label: 'Continue Reading', value: ScrollerType.LAST_READ},
+    {label: 'Continue Listening', value: ScrollerType.LAST_LISTENED},
     {label: 'Recently Added', value: ScrollerType.LATEST_ADDED},
     {label: 'Discover Something New', value: ScrollerType.RANDOM},
     {label: 'Magic Shelf', value: ScrollerType.MAGIC_SHELF}
@@ -57,10 +57,12 @@ export class DashboardSettingsComponent implements OnInit {
   sortFieldOptions = [
     {label: 'Title', value: 'title'},
     {label: 'Title + Series', value: 'titleSeries'},
-    {label: 'File Name', field: 'fileName'},
+    {label: 'File Name', value: 'fileName'},
+    {label: 'File Path', value: 'filePath'},
     {label: 'Date Added', value: 'addedOn'},
     {label: 'Author', value: 'author'},
-    {label: 'Author + Series', field: 'authorSeries'},
+    {label: 'Author (Surname)', value: 'authorSurnameVorname'},
+    {label: 'Author + Series', value: 'authorSeries'},
     {label: 'Personal Rating', value: 'personalRating'},
     {label: 'Publisher', value: 'publisher'},
     {label: 'Published Date', value: 'publishedDate'},
@@ -101,6 +103,8 @@ export class DashboardSettingsComponent implements OnInit {
     switch (scroller.type) {
       case ScrollerType.LAST_READ:
         return 'Continue Reading';
+      case ScrollerType.LAST_LISTENED:
+        return 'Continue Listening';
       case ScrollerType.LATEST_ADDED:
         return 'Recently Added';
       case ScrollerType.RANDOM:

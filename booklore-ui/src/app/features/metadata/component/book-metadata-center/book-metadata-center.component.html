@@ -18,7 +18,7 @@
       </p-button>
     </div>
   }
-  <div class="rounded-xl overflow-hidden border-[1px] border-solid border-[var(--p-content-border-color)]" [class.dialog-mode]="config">
+  <div class="tabs-wrapper" [class.dialog-mode]="config">
     <p-tabs [(value)]="tab" lazy="true" scrollable>
     <p-tablist>
       <p-tab value="view">
@@ -38,7 +38,7 @@
         </p-tab>
       }
     </p-tablist>
-    <p-tabpanels class="tabpanels-responsive overflow-auto">
+    <p-tabpanels class="tabpanels-responsive">
       <p-tabpanel value="view">
         <app-metadata-viewer
           [book$]="book$"

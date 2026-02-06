@@ -1,3 +1,11 @@
-.enclosing-container {
-  border-color: var(--p-content-border-color);
+@use '../../../shared/styles/settings-shared' as settings;
+
+.device-settings-container {
+  @include settings.settings-page-container;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }

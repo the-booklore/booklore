@@ -16,6 +16,7 @@ app:
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
   telemetry:
     base-url: ${TELEMETRY_BASE_URL:https://telemetry.booklore.org}
+  disk-type: ${DISK_TYPE:LOCAL}
 
 server:
   forward-headers-strategy: native
@@ -67,7 +68,7 @@ springdoc:
 logging:
   level:
     root: ${ROOT_LOG_LEVEL:INFO}
-    com.adityachandel.booklore: ${LOG_LEVEL:INFO}
+    org.booklore: ${LOG_LEVEL:INFO}
     org.apache.fontbox: ERROR
     org.apache.pdfbox: ERROR
     org.quartz.core.QuartzScheduler: WARN
