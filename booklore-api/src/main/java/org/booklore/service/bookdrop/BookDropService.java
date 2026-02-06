@@ -382,6 +382,15 @@ public class BookDropService {
                 .findFirst()
                 .orElseThrow(() -> ApiError.INVALID_LIBRARY_PATH.createException(libraryId));
 
+        BookFileType fileType = BookFileExtension.fromFileName(bookdropFile.getFileName())
+                .map(BookFileExtension::getType)
+                .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
+
+        if (!isFormatAllowed(library, fileType)) {
+            return failureResult(bookdropFile.getFileName(),
+                    "Format '" + fileType.name() + "' is not allowed in library '" + library.getName() + "'");
+        }
+
         String filePattern = fileMovingHelper.getFileNamingPattern(library);
         Path source = Path.of(bookdropFile.getFilePath());
         Path target = fileMovingHelper.generateNewFilePath(path.getPath(), metadata, filePattern, bookdropFile.getFilePath());
@@ -623,6 +632,11 @@ public class BookDropService {
                 .message(message)
                 .success(false)
                 .build();
+    }
+
+    private boolean isFormatAllowed(LibraryEntity library, BookFileType fileType) {
+        var allowedFormats = library.getAllowedFormats();
+        return allowedFormats == null || allowedFormats.isEmpty() || allowedFormats.contains(fileType);
     }
 
     private record FileProcessingContext(Long libraryId, Long pathId, BookMetadata metadata) {

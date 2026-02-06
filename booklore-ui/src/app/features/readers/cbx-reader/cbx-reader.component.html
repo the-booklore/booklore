@@ -1,4 +1,7 @@
-<div class="comic-reader-container" tabindex="0">
+<div class="comic-reader-container" tabindex="0"
+  [class.rtl-reading]="readingDirection === CbxReadingDirection.RTL"
+  [class.fullscreen-mode]="isFullscreen"
+  [class.slideshow-active]="isSlideshowActive">
   <app-cbx-header [isCurrentPageBookmarked]="isCurrentPageBookmarked" [currentPageHasNotes]="currentPageHasNotes"></app-cbx-header>
 
   <app-cbx-sidebar></app-cbx-sidebar>
@@ -23,9 +26,22 @@
     ></app-cbx-note-dialog>
   }
 
+  @if (showShortcutsHelp) {
+    <app-cbx-shortcuts-help
+      (close)="onShortcutsHelpClose()"
+    ></app-cbx-shortcuts-help>
+  }
+
+  @if (isSlideshowActive) {
+    <div class="slideshow-indicator">
+      <span class="slideshow-badge">Slideshow</span>
+    </div>
+  }
+
   <div class="image-container"
     [class.two-page-view]="isTwoPageView && scrollMode === CbxScrollMode.PAGINATED"
     [class.infinite-scroll]="scrollMode === CbxScrollMode.INFINITE"
+    [class.long-strip]="scrollMode === CbxScrollMode.LONG_STRIP"
     [class.fit-actual-size]="fitMode === CbxFitMode.ACTUAL_SIZE"
     [class.fit-page]="fitMode === CbxFitMode.FIT_PAGE"
     [class.fit-width]="fitMode === CbxFitMode.FIT_WIDTH"
@@ -38,7 +54,7 @@
     @if (!isLoading) {
       @if (pages.length > 0) {
         @if (scrollMode === CbxScrollMode.PAGINATED) {
-          <div class="pages-wrapper" (click)="onImageClick()">
+          <div class="pages-wrapper" (click)="onImageClick()" (dblclick)="onImageDoubleClick()">
             @if (isPageTransitioning && previousImageUrls.length > 0) {
               <div class="previous-page-layer">
                 @for (url of previousImageUrls; track url) {
@@ -47,8 +63,8 @@
               </div>
             }
             <div class="current-page-layer" [class.fade-in]="isPageTransitioning && imagesLoaded">
-              @for (url of currentImageUrls; track url) {
-                <img [src]="url" alt="Page Image" class="page-image" (load)="onImageLoad()"/>
+              @for (url of currentImageUrls; track url; let i = $index) {
+                <img [src]="url" alt="Page Image" class="page-image" (load)="onPageImageLoad($event, currentPage + i)"/>
               }
             </div>
           </div>
@@ -62,9 +78,9 @@
             </div>
           }
         } @else {
-          <div class="infinite-scroll-wrapper">
+          <div class="infinite-scroll-wrapper" [class.long-strip-wrapper]="scrollMode === CbxScrollMode.LONG_STRIP">
             @for (url of infiniteScrollImageUrls; track url; let i = $index) {
-              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image" (click)="onImageClick()"/>
+              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image" (click)="onImageClick()" (dblclick)="onImageDoubleClick()" (load)="onPageImageLoad($event, infiniteScrollPages[i])"/>
             }
             @if (isLoadingMore) {
               <div class="loading-more">

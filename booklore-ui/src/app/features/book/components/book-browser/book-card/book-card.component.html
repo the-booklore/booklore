@@ -39,7 +39,7 @@
     }
 
     @if (!_isSeriesViewActive && hasDigitalFile()) {
-      <p-button [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
+      <p-button [rounded]="true" [icon]="_isAudiobook ? 'pi pi-play' : 'pi pi-book'" class="read-btn" (click)="readBook(book)"></p-button>
     }
 
     @if (isCheckboxEnabled) {

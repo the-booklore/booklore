@@ -30,4 +30,5 @@ public class CreateLibraryRequest {
 
     private boolean watch;
     private List<BookFileType> formatPriority;
+    private List<BookFileType> allowedFormats;
 }

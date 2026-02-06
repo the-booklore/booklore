@@ -61,13 +61,13 @@ public class FileUploadService {
         final LibraryEntity libraryEntity = findLibraryById(libraryId);
         final LibraryPathEntity libraryPathEntity = findLibraryPathById(libraryEntity, pathId);
         final String originalFileName = getValidatedFileName(file);
+        final BookFileExtension fileExtension = getFileExtension(originalFileName);
+        validateAllowedFormat(libraryEntity, fileExtension.getType());
 
         Path tempPath = null;
         try {
             tempPath = createTempFile(UPLOAD_TEMP_PREFIX, originalFileName);
             file.transferTo(tempPath);
-
-            final BookFileExtension fileExtension = getFileExtension(originalFileName);
             final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
@@ -357,6 +357,13 @@ public class FileUploadService {
         final int maxSizeMb = appSettingService.getAppSettings().getMaxFileUploadSizeInMb();
         if (file.getSize() > maxSizeMb * MB_TO_BYTES_MULTIPLIER) {
             throw ApiError.FILE_TOO_LARGE.createException(maxSizeMb);
+        }
+    }
+
+    private void validateAllowedFormat(LibraryEntity library, BookFileType fileType) {
+        var allowedFormats = library.getAllowedFormats();
+        if (allowedFormats != null && !allowedFormats.isEmpty() && !allowedFormats.contains(fileType)) {
+            throw ApiError.FORMAT_NOT_ALLOWED.createException(fileType.name(), library.getName());
         }
     }
 }

@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {Observable, of, Subject, takeUntil} from 'rxjs';
+import {BehaviorSubject, Observable, of, Subject, takeUntil} from 'rxjs';
 import {Library} from '../../../model/library.model';
 import {Shelf} from '../../../model/shelf.model';
 import {EntityType} from '../book-browser.component';
@@ -9,10 +9,11 @@ import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
 import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
 import {SelectButton} from 'primeng/selectbutton';
-import {BookFilterMode} from '../../../../settings/user-management/user.service';
+import {BookFilterMode, DEFAULT_VISIBLE_FILTERS, UserService, VisibleFilterType} from '../../../../settings/user-management/user.service';
 import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {Filter, FILTER_LABELS, FilterType} from './book-filter.config';
 import {BookFilterService} from './book-filter.service';
+import {filter} from 'rxjs/operators';
 
 type FilterModeOption = { label: string; value: BookFilterMode };
 
@@ -38,15 +39,21 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   @Output() filterModeChanged = new EventEmitter<BookFilterMode>();
 
   private readonly filterService = inject(BookFilterService);
+  private readonly userService = inject(UserService);
   private readonly destroy$ = new Subject<void>();
+
+  private readonly activeFilters$ = new BehaviorSubject<Record<string, unknown[]> | null>(null);
+  private readonly filterMode$ = new BehaviorSubject<BookFilterMode>('and');
 
   activeFilters: Record<string, unknown[]> = {};
   filterStreams: Record<FilterType, Observable<Filter[]>> = {} as Record<FilterType, Observable<Filter[]>>;
   filterTypes: FilterType[] = [];
+  visibleFilterTypes: FilterType[] = [];
   expandedPanels: number[] = [0];
   truncatedFilters: Record<string, boolean> = {};
 
   private _selectedFilterMode: BookFilterMode = 'and';
+  private _visibleFilters: VisibleFilterType[] = [...DEFAULT_VISIBLE_FILTERS];
 
   readonly filterLabels = FILTER_LABELS;
   readonly filterModeOptions: FilterModeOption[] = [
@@ -62,11 +69,13 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   set selectedFilterMode(mode: BookFilterMode) {
     if (mode === this._selectedFilterMode) return;
     this._selectedFilterMode = mode;
+    this.filterMode$.next(mode);
     this.filterModeChanged.emit(mode);
     this.emitFilters();
   }
 
   ngOnInit(): void {
+    this.subscribeToUserSettings();
     this.initializeFilterStreams();
     this.subscribeToReset();
   }
@@ -95,6 +104,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   clearActiveFilter(): void {
     this.activeFilters = {};
     this.expandedPanels = [0];
+    this.activeFilters$.next(null);
     this.filterSelected.emit(null);
   }
 
@@ -113,30 +123,54 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   trackByFilterType = (_: number, type: FilterType): string => type;
 
-  trackByFilter = (_: number, filter: Filter): unknown => this.getFilterValueId(filter);
+  trackByFilter = (_: number, f: Filter): unknown => this.getFilterValueId(f);
 
-  getFilterValueId(filter: Filter): unknown {
-    const value = filter.value;
+  getFilterValueId(f: Filter): unknown {
+    const value = f.value;
     return typeof value === 'object' && value !== null && 'id' in value
       ? value.id
-      : filter.value;
+      : f.value;
   }
 
-  getFilterValueDisplay(filter: Filter): string {
-    const value = filter.value;
+  getFilterValueDisplay(f: Filter): string {
+    const value = f.value;
     if (typeof value === 'object' && value !== null && 'name' in value) {
       return String(value.name ?? '');
     }
     return String(value ?? '');
   }
 
+  private subscribeToUserSettings(): void {
+    this.userService.userState$.pipe(
+      filter(state => !!state?.user && state.loaded),
+      takeUntil(this.destroy$)
+    ).subscribe(state => {
+      const settings = state.user!.userSettings;
+      this._visibleFilters = settings.visibleFilters ?? [...DEFAULT_VISIBLE_FILTERS];
+      this.updateVisibleFilterTypes();
+    });
+  }
+
   private initializeFilterStreams(): void {
     const entity$ = this.entity$ ?? of(null);
     const entityType$ = this.entityType$ ?? of(EntityType.ALL_BOOKS);
 
-    this.filterStreams = this.filterService.createFilterStreams(entity$, entityType$);
+    this.filterStreams = this.filterService.createFilterStreams(
+      entity$,
+      entityType$,
+      this.activeFilters$,
+      this.filterMode$
+    );
     this.filterTypes = Object.keys(this.filterStreams) as FilterType[];
+    this.updateVisibleFilterTypes();
     this.updateExpandedPanels();
+  }
+
+  private updateVisibleFilterTypes(): void {
+    // Filter and order filterTypes based on user's visible filter preferences
+    this.visibleFilterTypes = this._visibleFilters.filter(
+      vf => this.filterTypes.includes(vf as FilterType)
+    ) as FilterType[];
   }
 
   private subscribeToReset(): void {
@@ -181,12 +215,14 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   private emitFilters(): void {
     const hasFilters = Object.keys(this.activeFilters).length > 0;
-    this.filterSelected.emit(hasFilters ? {...this.activeFilters} : null);
+    const filtersToEmit = hasFilters ? {...this.activeFilters} : null;
+    this.activeFilters$.next(filtersToEmit);
+    this.filterSelected.emit(filtersToEmit);
   }
 
   private updateExpandedPanels(): void {
     const panels = new Set(this.expandedPanels);
-    this.filterTypes.forEach((type, i) => {
+    this.visibleFilterTypes.forEach((type, i) => {
       if (this.activeFilters[type]?.length) panels.add(i);
     });
     this.expandedPanels = panels.size > 0 ? [...panels] : [0];

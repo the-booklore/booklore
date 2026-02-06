@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild} from '@angular/core';
 import {TooltipModule} from "primeng/tooltip";
-import {AdditionalFile, Book, ReadStatus} from '../../../model/book.model';
+import {AdditionalFile, Book, BookType, ReadStatus} from '../../../model/book.model';
 import {Button} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
@@ -49,6 +49,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
   @Input() overlayPreferenceService?: BookCardOverlayPreferenceService;
+  @Input() forceEbookMode: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
@@ -128,9 +129,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['book']) {
+    if (changes['book'] || changes['forceEbookMode']) {
       this.computeAllMemoizedValues();
-      if (!changes['book'].firstChange && this.menuInitialized) {
+      if (changes['book'] && !changes['book'].firstChange && this.menuInitialized) {
         this.additionalFilesLoaded = false;
         this.initMenu();
       }
@@ -158,7 +159,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this._displayTitle = (this.isSeriesCollapsed && this.book.metadata?.seriesName)
       ? this.book.metadata?.seriesName
       : this.book.metadata?.title;
-    this._coverImageUrl = this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
+    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK' && !this.forceEbookMode;
+    this._coverImageUrl = this._isAudiobook
+      ? this.urlHelper.getAudiobookThumbnailUrl(this.book.id, this.book.metadata?.audiobookCoverUpdatedOn)
+      : this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
 
     this._readStatusIcon = this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
     this._readStatusClass = this.readStatusHelper.getReadStatusClass(this.book.readStatus);
@@ -167,7 +171,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this._seriesCountTooltip = 'Series collapsed: ' + this.book.seriesCount + ' books';
     this._titleTooltip = 'Title: ' + this._displayTitle;
-    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK';
   }
 
   get hasProgress(): boolean {
@@ -200,7 +203,24 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   readBook(book: Book): void {
+    if (this.forceEbookMode && book.primaryFile?.bookType === 'AUDIOBOOK') {
+      const ebookType = this.getEbookType(book);
+      if (ebookType) {
+        this.bookService.readBook(book.id, undefined, ebookType);
+        return;
+      }
+    }
     this.bookService.readBook(book.id);
+  }
+
+  private getEbookType(book: Book): BookType | undefined {
+    if (book.epubProgress) return 'EPUB';
+    if (book.pdfProgress) return 'PDF';
+    if (book.cbxProgress) return 'CBX';
+    const alternativeFormat = book.alternativeFormats?.find(f =>
+      f.bookType && ['EPUB', 'PDF', 'CBX', 'FB2', 'MOBI', 'AZW3'].includes(f.bookType)
+    );
+    return alternativeFormat?.bookType;
   }
 
   onMenuShow(): void {
@@ -425,10 +445,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
                   summary: 'Success',
                   detail: 'Cover regeneration started'
                 }),
-                error: () => this.messageService.add({
+                error: (err) => this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'Failed to regenerate cover'
+                  detail: err?.error?.message || 'Failed to regenerate cover'
                 })
               });
             }
@@ -443,10 +463,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
                   summary: 'Success',
                   detail: 'Cover generated successfully'
                 }),
-                error: () => this.messageService.add({
+                error: (err) => this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'Failed to generate cover'
+                  detail: err?.error?.message || 'Failed to generate cover'
                 })
               });
             }
@@ -739,6 +759,12 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   getDisplayFormat(): string | null {
     if (!this.book?.primaryFile) {
       return 'PHYSICAL';
+    }
+    if (this.forceEbookMode && this.book.primaryFile?.bookType === 'AUDIOBOOK') {
+      const ebookType = this.getEbookType(this.book);
+      if (ebookType) {
+        return ebookType;
+      }
     }
     const ext = this.book?.primaryFile?.extension;
     if (ext) {

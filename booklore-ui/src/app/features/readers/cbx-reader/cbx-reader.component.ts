@@ -6,7 +6,7 @@ import {filter, first, map, switchMap, takeUntil, timeout} from 'rxjs/operators'
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
-import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode, UserService} from '../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode, UserService} from '../../settings/user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Book, BookSetting, BookType} from '../../book/model/book.model';
 import {BookState} from '../../book/model/state/book-state.model';
@@ -25,6 +25,7 @@ import {CbxFooterService} from './layout/footer/cbx-footer.service';
 import {CbxQuickSettingsComponent} from './layout/quick-settings/cbx-quick-settings.component';
 import {CbxQuickSettingsService} from './layout/quick-settings/cbx-quick-settings.service';
 import {CbxNoteDialogComponent, CbxNoteDialogData, CbxNoteDialogResult} from './dialogs/cbx-note-dialog.component';
+import {CbxShortcutsHelpComponent} from './dialogs/cbx-shortcuts-help.component';
 import {BookNoteV2} from '../../../shared/service/book-note-v2.service';
 
 
@@ -39,7 +40,8 @@ import {BookNoteV2} from '../../../shared/service/book-note-v2.service';
     CbxSidebarComponent,
     CbxFooterComponent,
     CbxQuickSettingsComponent,
-    CbxNoteDialogComponent
+    CbxNoteDialogComponent,
+    CbxShortcutsHelpComponent
   ],
   providers: [
     CbxHeaderService,
@@ -91,6 +93,30 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   showNoteDialog = false;
   noteDialogData: CbxNoteDialogData | null = null;
   private editingNote: BookNoteV2 | null = null;
+
+  // Fullscreen state
+  isFullscreen = false;
+
+  // Reading direction
+  readingDirection: CbxReadingDirection = CbxReadingDirection.LTR;
+
+  // Slideshow state
+  isSlideshowActive = false;
+  slideshowInterval: CbxSlideshowInterval = CbxSlideshowInterval.FIVE_SECONDS;
+  private slideshowTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Double-tap zoom
+  private lastTapTime = 0;
+  private originalFitMode: CbxFitMode | PdfFitMode | null = null;
+
+  // Shortcuts help dialog
+  showShortcutsHelp = false;
+
+  // Double page detection
+  private pageDimensionsCache = new Map<number, {width: number, height: number}>();
+
+  protected readonly CbxReadingDirection = CbxReadingDirection;
+  protected readonly CbxSlideshowInterval = CbxSlideshowInterval;
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -276,6 +302,24 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.openNoteDialog();
       });
+
+    this.headerService.toggleFullscreen$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.toggleFullscreen();
+      });
+
+    this.headerService.toggleSlideshow$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.toggleSlideshow();
+      });
+
+    this.headerService.showShortcutsHelp$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.showShortcutsHelp = true;
+      });
   }
 
   private subscribeToSidebarEvents(): void {
@@ -364,6 +408,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.quickSettingsService.backgroundColorChange$
       .pipe(takeUntil(this.destroy$))
       .subscribe(color => this.onBackgroundColorChange(color));
+
+    this.quickSettingsService.readingDirectionChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(direction => this.onReadingDirectionChange(direction));
+
+    this.quickSettingsService.slideshowIntervalChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(interval => this.onSlideshowIntervalChange(interval));
   }
 
   private updateServiceStates(): void {
@@ -381,7 +433,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       scrollMode: this.scrollMode,
       pageViewMode: this.pageViewMode,
       pageSpread: this.pageSpread,
-      backgroundColor: this.backgroundColor
+      backgroundColor: this.backgroundColor,
+      readingDirection: this.readingDirection,
+      slideshowInterval: this.slideshowInterval
+    });
+
+    this.headerService.updateState({
+      isFullscreen: this.isFullscreen,
+      isSlideshowActive: this.isSlideshowActive
     });
 
     this.sidebarService.setCurrentPage(this.currentPage + 1);
@@ -411,7 +470,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   private preloadAdjacentPages(): void {
-    if (!this.pages.length || this.scrollMode === CbxScrollMode.INFINITE) return;
+    if (!this.pages.length || this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) return;
 
     const pagesToPreload: number[] = [];
 
@@ -460,7 +519,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   private transitionToNewPage(): void {
-    if (this.scrollMode === CbxScrollMode.INFINITE) {
+    if (this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) {
       this.updateCurrentImageUrls();
       return;
     }
@@ -556,43 +615,23 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   nextPage() {
-    const previousPage = this.currentPage;
-
-    if (this.scrollMode === CbxScrollMode.INFINITE) {
-      if (this.currentPage < this.pages.length - 1) {
-        this.currentPage++;
-        this.scrollToPage(this.currentPage);
-        this.updateProgress();
-        this.updateSessionProgress();
-        this.updateFooterPage();
-      }
-      return;
-    }
-
-    if (this.isTwoPageView) {
-      if (this.currentPage + 2 < this.pages.length) {
-        this.currentPage += 2;
-      } else if (this.currentPage + 1 < this.pages.length) {
-        this.currentPage += 1;
-      }
-    } else if (this.currentPage < this.pages.length - 1) {
-      this.currentPage++;
-    }
-
-    if (this.currentPage !== previousPage) {
-      this.transitionToNewPage();
-      this.updateProgress();
-      this.updateSessionProgress();
-      this.updateFooterPage();
-    }
+    this.pauseSlideshowOnInteraction();
+    this.advancePage(1);
   }
 
   previousPage() {
-    const previousPage = this.currentPage;
+    this.pauseSlideshowOnInteraction();
+    this.advancePage(-1);
+  }
 
-    if (this.scrollMode === CbxScrollMode.INFINITE) {
-      if (this.currentPage > 0) {
-        this.currentPage--;
+  private advancePage(direction: 1 | -1): void {
+    const previousPage = this.currentPage;
+    const step = this.getPageStep();
+
+    if (this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) {
+      const newPage = this.currentPage + direction;
+      if (newPage >= 0 && newPage < this.pages.length) {
+        this.currentPage = newPage;
         this.scrollToPage(this.currentPage);
         this.updateProgress();
         this.updateSessionProgress();
@@ -601,10 +640,25 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.isTwoPageView) {
-      this.currentPage = Math.max(0, this.currentPage - 2);
+    if (direction > 0) {
+      // Forward navigation
+      if (this.isTwoPageView) {
+        const effectiveStep = this.shouldShowSinglePage(this.currentPage) ? 1 : step;
+        if (this.currentPage + effectiveStep < this.pages.length) {
+          this.currentPage += effectiveStep;
+        } else if (this.currentPage + 1 < this.pages.length) {
+          this.currentPage += 1;
+        }
+      } else if (this.currentPage < this.pages.length - 1) {
+        this.currentPage++;
+      }
     } else {
-      this.currentPage = Math.max(0, this.currentPage - 1);
+      // Backward navigation
+      if (this.isTwoPageView) {
+        this.currentPage = Math.max(0, this.currentPage - step);
+      } else {
+        this.currentPage = Math.max(0, this.currentPage - 1);
+      }
     }
 
     if (this.currentPage !== previousPage) {
@@ -613,6 +667,15 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       this.updateSessionProgress();
       this.updateFooterPage();
     }
+
+    // Stop slideshow at last page
+    if (this.isSlideshowActive && this.currentPage >= this.pages.length - 1) {
+      this.stopSlideshow();
+    }
+  }
+
+  private getPageStep(): number {
+    return this.isTwoPageView ? 2 : 1;
   }
 
   private alignCurrentPageToParity() {
@@ -646,7 +709,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.quickSettingsService.setScrollMode(mode);
     this.updateViewerSetting();
 
-    if (this.scrollMode === CbxScrollMode.INFINITE) {
+    if (this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) {
       this.initializeInfiniteScroll();
       setTimeout(() => this.scrollToPage(this.currentPage), 100);
     } else {
@@ -690,7 +753,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   onScroll(event: Event): void {
-    if (this.scrollMode !== CbxScrollMode.INFINITE || this.isLoadingMore) return;
+    if ((this.scrollMode !== CbxScrollMode.INFINITE && this.scrollMode !== CbxScrollMode.LONG_STRIP) || this.isLoadingMore) return;
 
     const container = event.target as HTMLElement;
     const scrollPosition = container.scrollTop + container.clientHeight;
@@ -864,8 +927,80 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'ArrowRight') this.nextPage();
-    else if (event.key === 'ArrowLeft') this.previousPage();
+    // Ignore if typing in input/textarea
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return;
+    }
+
+    const isRtl = this.readingDirection === CbxReadingDirection.RTL;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        isRtl ? this.previousPage() : this.nextPage();
+        event.preventDefault();
+        break;
+      case 'ArrowLeft':
+        isRtl ? this.nextPage() : this.previousPage();
+        event.preventDefault();
+        break;
+      case ' ':
+        event.preventDefault();
+        event.shiftKey ? this.previousPage() : this.nextPage();
+        break;
+      case 'Home':
+        event.preventDefault();
+        this.firstPage();
+        break;
+      case 'End':
+        event.preventDefault();
+        this.lastPage();
+        break;
+      case 'PageUp':
+        event.preventDefault();
+        this.previousPage();
+        break;
+      case 'PageDown':
+        event.preventDefault();
+        this.nextPage();
+        break;
+      case 'f':
+      case 'F':
+        event.preventDefault();
+        this.toggleFullscreen();
+        break;
+      case 'd':
+      case 'D':
+        event.preventDefault();
+        this.toggleReadingDirection();
+        break;
+      case 'p':
+      case 'P':
+        event.preventDefault();
+        this.toggleSlideshow();
+        break;
+      case '?':
+        event.preventDefault();
+        this.showShortcutsHelp = true;
+        break;
+      case 'Escape':
+        if (this.showShortcutsHelp) {
+          this.showShortcutsHelp = false;
+        } else if (this.showNoteDialog) {
+          this.showNoteDialog = false;
+        } else if (this.showQuickSettings) {
+          this.quickSettingsService.close();
+        } else if (this.isFullscreen) {
+          this.exitFullscreen();
+        }
+        break;
+    }
+  }
+
+  @HostListener('document:fullscreenchange')
+  onFullscreenChange(): void {
+    this.isFullscreen = !!document.fullscreenElement;
+    this.headerService.updateState({isFullscreen: this.isFullscreen, isSlideshowActive: this.isSlideshowActive});
   }
 
   @HostListener('touchstart', ['$event'])
@@ -897,7 +1032,12 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   private handleSwipeGesture() {
     const delta = this.touchEndX - this.touchStartX;
-    if (Math.abs(delta) >= 50) delta < 0 ? this.nextPage() : this.previousPage();
+    if (Math.abs(delta) >= 50) {
+      // In RTL mode, swipe directions are reversed
+      const isRtl = this.readingDirection === CbxReadingDirection.RTL;
+      const shouldGoNext = isRtl ? delta > 0 : delta < 0;
+      shouldGoNext ? this.nextPage() : this.previousPage();
+    }
   }
 
   private enforcePortraitSinglePageView() {
@@ -996,7 +1136,138 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     return parts.join(' - ');
   }
 
+  // Fullscreen methods
+  toggleFullscreen(): void {
+    if (this.isFullscreen) {
+      this.exitFullscreen();
+    } else {
+      this.enterFullscreen();
+    }
+  }
+
+  private enterFullscreen(): void {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(() => {});
+    }
+  }
+
+  private exitFullscreen(): void {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  // Reading direction methods
+  toggleReadingDirection(): void {
+    const newDirection = this.readingDirection === CbxReadingDirection.LTR
+      ? CbxReadingDirection.RTL
+      : CbxReadingDirection.LTR;
+    this.onReadingDirectionChange(newDirection);
+  }
+
+  onReadingDirectionChange(direction: CbxReadingDirection): void {
+    this.readingDirection = direction;
+    this.quickSettingsService.setReadingDirection(direction);
+  }
+
+  // Slideshow methods
+  toggleSlideshow(): void {
+    if (this.isSlideshowActive) {
+      this.stopSlideshow();
+    } else {
+      this.startSlideshow();
+    }
+  }
+
+  startSlideshow(): void {
+    if (this.currentPage >= this.pages.length - 1) return;
+
+    this.isSlideshowActive = true;
+    this.headerService.updateState({isFullscreen: this.isFullscreen, isSlideshowActive: true});
+
+    this.slideshowTimer = setInterval(() => {
+      if (this.currentPage < this.pages.length - 1) {
+        this.advancePage(1);
+      } else {
+        this.stopSlideshow();
+      }
+    }, this.slideshowInterval);
+  }
+
+  stopSlideshow(): void {
+    if (this.slideshowTimer) {
+      clearInterval(this.slideshowTimer);
+      this.slideshowTimer = null;
+    }
+    this.isSlideshowActive = false;
+    this.headerService.updateState({isFullscreen: this.isFullscreen, isSlideshowActive: false});
+  }
+
+  private pauseSlideshowOnInteraction(): void {
+    if (this.isSlideshowActive) {
+      this.stopSlideshow();
+    }
+  }
+
+  onSlideshowIntervalChange(interval: CbxSlideshowInterval): void {
+    this.slideshowInterval = interval;
+    this.quickSettingsService.setSlideshowInterval(interval);
+
+    // Restart slideshow with new interval if active
+    if (this.isSlideshowActive) {
+      this.stopSlideshow();
+      this.startSlideshow();
+    }
+  }
+
+  // Double-tap zoom
+  onImageDoubleClick(): void {
+    if (this.originalFitMode === null) {
+      // Store current fit mode and switch to actual size
+      this.originalFitMode = this.fitMode;
+      this.onFitModeChange(CbxFitMode.ACTUAL_SIZE);
+    } else {
+      // Restore original fit mode
+      this.onFitModeChange(this.originalFitMode as CbxFitMode);
+      this.originalFitMode = null;
+    }
+  }
+
+  // Double page detection
+  onPageImageLoad(event: Event, pageIndex: number): void {
+    const img = event.target as HTMLImageElement;
+    if (img.naturalWidth && img.naturalHeight) {
+      this.pageDimensionsCache.set(pageIndex, {
+        width: img.naturalWidth,
+        height: img.naturalHeight
+      });
+    }
+    this.imagesLoaded = true;
+  }
+
+  isSpreadPage(pageIndex: number): boolean {
+    const dims = this.pageDimensionsCache.get(pageIndex);
+    if (!dims) return false;
+    return dims.width > dims.height * 1.5;
+  }
+
+  shouldShowSinglePage(pageIndex: number): boolean {
+    return this.isTwoPageView && this.isSpreadPage(pageIndex);
+  }
+
+  // Shortcuts help dialog
+  onShortcutsHelpClose(): void {
+    this.showShortcutsHelp = false;
+  }
+
+  // Long strip mode check
+  get isLongStripMode(): boolean {
+    return this.scrollMode === CbxScrollMode.LONG_STRIP;
+  }
+
   ngOnDestroy(): void {
+    this.stopSlideshow();
     this.endReadingSession();
     this.destroy$.next();
     this.destroy$.complete();

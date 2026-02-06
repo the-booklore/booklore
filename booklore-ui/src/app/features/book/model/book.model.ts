@@ -97,6 +97,19 @@ export interface BookFileProgress {
   progressPercent: number;
 }
 
+export interface AudiobookMetadata {
+  narrator?: string;
+  abridged?: boolean | null;
+  durationSeconds?: number;
+  bitrate?: number;
+  sampleRate?: number;
+  channels?: number;
+  codec?: string;
+  chapterCount?: number;
+  narratorLocked?: boolean;
+  abridgedLocked?: boolean;
+}
+
 export interface BookMetadata {
   bookId: number;
   title?: string;
@@ -129,7 +142,16 @@ export interface BookMetadata {
   ranobedbId?: string;
   ranobedbRating?: number | null;
   hardcoverRating?: number | null;
+  audibleId?: string;
+  audibleRating?: number | null;
+  audibleReviewCount?: number | null;
+  narrator?: string;
+  abridged?: boolean | null;
+  narratorLocked?: boolean;
+  abridgedLocked?: boolean;
+  audiobookMetadata?: AudiobookMetadata;
   coverUpdatedOn?: string;
+  audiobookCoverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
   moods?: string[];
@@ -166,13 +188,21 @@ export interface BookMetadata {
   lubimyczytacRatingLocked?: boolean;
   ranobedbIdLocked?: boolean;
   ranobedbRatingLocked?: boolean;
+  audibleIdLocked?: boolean;
+  audibleRatingLocked?: boolean;
+  audibleReviewCountLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
   moodsLocked?: boolean;
   tagsLocked?: boolean;
   coverLocked?: boolean;
+  audiobookCoverLocked?: boolean;
   reviewsLocked?: boolean;
+  ageRating?: number | null;
+  contentRating?: string | null;
+  ageRatingLocked?: boolean;
+  contentRatingLocked?: boolean;
 
   [key: string]: unknown;
 }
@@ -206,11 +236,19 @@ export interface MetadataClearFlags {
   lubimyczytacRating?: boolean;
   ranobedbId?: boolean;
   ranobedbRating?: boolean;
+  audibleId?: boolean;
+  audibleRating?: boolean;
+  audibleReviewCount?: boolean;
+  narrator?: boolean;
+  abridged?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;
   tags?: boolean;
   cover?: boolean;
+  audiobookCover?: boolean;
+  ageRating?: boolean;
+  contentRating?: boolean;
 }
 
 export interface MetadataUpdateWrapper {
@@ -295,6 +333,10 @@ export interface BulkMetadataUpdateRequest {
   mergeCategories?: boolean;
   mergeMoods?: boolean;
   mergeTags?: boolean;
+  ageRating?: number | null;
+  clearAgeRating?: boolean;
+  contentRating?: string | null;
+  clearContentRating?: boolean;
 }
 
 export interface BookDeletionResponse {

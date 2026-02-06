@@ -39,4 +39,10 @@ public class BulkMetadataUpdateRequest {
     private boolean mergeCategories;
     private boolean mergeMoods;
     private boolean mergeTags;
+
+    private Integer ageRating;
+    private boolean clearAgeRating;
+
+    private String contentRating;
+    private boolean clearContentRating;
 }
