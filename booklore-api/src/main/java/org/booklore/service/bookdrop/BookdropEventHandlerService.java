@@ -1,19 +1,18 @@
 package org.booklore.service.bookdrop;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.BookDropFileEvent;
 import org.booklore.model.entity.BookdropFileEntity;
-import org.booklore.model.enums.BookFileExtension;
 import org.booklore.model.enums.PermissionType;
 import org.booklore.model.websocket.LogNotification;
 import org.booklore.model.websocket.Topic;
 import org.booklore.repository.BookdropFileRepository;
 import org.booklore.service.NotificationService;
 import org.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.util.BookFileTypeDetector;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.booklore.util.BookFileTypeDetector;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;

@@ -1,32 +1,31 @@
-package com.adityachandel.booklore.util.builder;
+package org.booklore.util.builder;
 
-import com.adityachandel.booklore.mapper.BookMapper;
-import com.adityachandel.booklore.mapper.BookMapperImpl;
-import com.adityachandel.booklore.model.FileProcessResult;
-import com.adityachandel.booklore.model.dto.Book;
-import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.*;
-import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.file.FileFingerprint;
-import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
-import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
-import com.adityachandel.booklore.util.BookFileTypeDetector;
-import com.adityachandel.booklore.util.FileUtils;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.io.FilenameUtils;
+import org.booklore.mapper.BookMapper;
+import org.booklore.mapper.BookMapperImpl;
+import org.booklore.model.FileProcessResult;
+import org.booklore.model.dto.Book;
+import org.booklore.model.dto.settings.LibraryFile;
+import org.booklore.model.entity.*;
+import org.booklore.model.enums.BookFileExtension;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.model.enums.FileProcessStatus;
+import org.booklore.model.enums.LibraryOrganizationMode;
+import org.booklore.repository.BookAdditionalFileRepository;
+import org.booklore.repository.BookRepository;
+import org.booklore.service.file.FileFingerprint;
+import org.booklore.service.fileprocessor.BookFileProcessor;
+import org.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import org.booklore.util.BookFileTypeDetector;
+import org.booklore.util.FileUtils;
 import org.mockito.MockedStatic;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -134,8 +133,7 @@ public class LibraryTestBuilder {
         LibraryEntity library = new LibraryEntity();
         library.setId(libraryId++);
         library.setName(name);
-        library.setScanMode(LibraryScanMode.FOLDER_AS_BOOK);
-        library.setDefaultBookFormat(BookFileType.EPUB);
+        library.setOrganizationMode(LibraryOrganizationMode.BOOK_PER_FOLDER);
         library.setLibraryPaths(new ArrayList<>());
 
         libraries.add(library);

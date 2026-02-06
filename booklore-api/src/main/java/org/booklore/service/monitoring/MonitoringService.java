@@ -1,18 +1,20 @@
-package com.adityachandel.booklore.service.monitoring;
+package org.booklore.service.monitoring;
 
-import com.adityachandel.booklore.model.dto.Library;
-import com.adityachandel.booklore.service.watcher.LibraryFileEventProcessor;
-import com.adityachandel.booklore.util.BookFileTypeDetector;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.Library;
+import org.booklore.service.watcher.LibraryFileEventProcessor;
+import org.booklore.util.BookFileTypeDetector;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

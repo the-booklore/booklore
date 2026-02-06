@@ -1,12 +1,11 @@
-package com.adityachandel.booklore.service.bookdrop;
+package org.booklore.service.bookdrop;
 
-import com.adityachandel.booklore.config.AppProperties;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
-import com.adityachandel.booklore.util.BookFileTypeDetector;
-import com.adityachandel.booklore.util.FileUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.AppProperties;
+import org.booklore.util.BookFileTypeDetector;
+import org.booklore.util.FileUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;

@@ -1,8 +1,8 @@
-package com.adityachandel.booklore.util;
+package org.booklore.util;
 
-import com.adityachandel.booklore.model.enums.BookFileExtension;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.enums.BookFileExtension;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

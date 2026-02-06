@@ -1,6 +1,6 @@
-package com.adityachandel.booklore.util;
+package org.booklore.util;
 
-import com.adityachandel.booklore.model.enums.BookFileExtension;
+import org.booklore.model.enums.BookFileExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
