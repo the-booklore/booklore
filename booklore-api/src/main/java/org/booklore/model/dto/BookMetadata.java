@@ -112,4 +112,9 @@ public class BookMetadata {
     private Boolean reviewsLocked;
     private Boolean narratorLocked;
     private Boolean abridgedLocked;
+
+    private Integer ageRating;
+    private String contentRating;
+    private Boolean ageRatingLocked;
+    private Boolean contentRatingLocked;
 }

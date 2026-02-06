@@ -524,6 +524,28 @@
               }
             </div>
 
+            <div class="metadata-item">
+              <span class="metadata-key">Age Rating:</span>
+              @if (book?.metadata?.ageRating != null) {
+                <span class="metadata-value metadata-link" (click)="goToAgeRating(book?.metadata?.ageRating!)">
+                  {{ getAgeRatingLabel(book?.metadata?.ageRating) }}
+                </span>
+              } @else {
+                <span class="metadata-value">-</span>
+              }
+            </div>
+
+            <div class="metadata-item">
+              <span class="metadata-key">Content Rating:</span>
+              @if (book?.metadata?.contentRating) {
+                <span class="metadata-value metadata-link" (click)="goToContentRating(book?.metadata?.contentRating!)">
+                  {{ getContentRatingLabel(book?.metadata?.contentRating) }}
+                </span>
+              } @else {
+                <span class="metadata-value">-</span>
+              }
+            </div>
+
             @if (hasDigitalFile(book)) {
               <div class="metadata-item">
                 <span class="metadata-key">File Size:</span>
