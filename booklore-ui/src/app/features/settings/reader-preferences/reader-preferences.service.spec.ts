@@ -82,7 +82,6 @@ const mockUser: User = {
     sidebarShelfSorting: {field: '', order: ''},
     sidebarMagicShelfSorting: {field: '', order: ''},
     filterMode: 'and',
-    filterSortingMode: 'alphabetical',
     metadataCenterViewMode: 'route',
     enableSeriesView: true,
     entityViewPreferences: {

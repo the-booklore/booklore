@@ -39,13 +39,14 @@ const mockAppSettings: AppSettings = {
   maxFileUploadSizeInMb: 0,
   metadataProviderSettings: {
     amazon: {enabled: false, cookie: '', domain: ''},
-    google: {enabled: false, language: ''},
+    google: {enabled: false, language: '', apiKey: ''},
     goodReads: {enabled: false},
     hardcover: {enabled: false, apiKey: ''},
     comicvine: {enabled: false, apiKey: ''},
     douban: {enabled: false},
     lubimyczytac: {enabled: false},
-    ranobedb: {enabled: false}
+    ranobedb: {enabled: false},
+    audible: {enabled: false, domain: ''}
   },
   metadataMatchWeights: {
     title: 0,
@@ -79,7 +80,8 @@ const mockAppSettings: AppSettings = {
     saveToOriginalFile: {
       epub: {enabled: false, maxFileSizeInMb: 0},
       pdf: {enabled: false, maxFileSizeInMb: 0},
-      cbx: {enabled: false, maxFileSizeInMb: 0}
+      cbx: {enabled: false, maxFileSizeInMb: 0},
+      audiobook: {enabled: false, maxFileSizeInMb: 0}
     },
     convertCbrCb7ToCbz: false
   },
@@ -120,8 +122,12 @@ const mockAppSettings: AppSettings = {
     lubimyczytacId: false,
     lubimyczytacRating: false,
     ranobedbId: false,
-    ranobedbRating: false
-  }
+    ranobedbRating: false,
+    audibleId: false,
+    audibleRating: false,
+    audibleReviewCount: false
+  },
+  diskType: 'HDD'
 };
 
 const mockPublicSettings: PublicAppSettings = {
@@ -475,14 +481,15 @@ describe('AppSettingsService - API Contract Tests', () => {
         },
         maxFileUploadSizeInMb: 0,
         metadataProviderSettings: {
-          amazon: {enabled: false, cookie: '', domain: ''},
-          google: {enabled: false, language: ''},
-          goodReads: {enabled: false},
-          hardcover: {enabled: false, apiKey: ''},
-          comicvine: {enabled: false, apiKey: ''},
-          douban: {enabled: false},
-          lubimyczytac: {enabled: false},
-          ranobedb: {enabled: false}
+        amazon: {enabled: false, cookie: '', domain: ''},
+        google: {enabled: false, language: '', apiKey: ''},
+        goodReads: {enabled: false},
+        hardcover: {enabled: false, apiKey: ''},
+        comicvine: {enabled: false, apiKey: ''},
+        douban: {enabled: false},
+        lubimyczytac: {enabled: false},
+        ranobedb: {enabled: false},
+        audible: {enabled: false, domain: ''}
         },
         metadataMatchWeights: {
           title: 0,
@@ -516,7 +523,8 @@ describe('AppSettingsService - API Contract Tests', () => {
           saveToOriginalFile: {
             epub: {enabled: false, maxFileSizeInMb: 0},
             pdf: {enabled: false, maxFileSizeInMb: 0},
-            cbx: {enabled: false, maxFileSizeInMb: 0}
+            cbx: {enabled: false, maxFileSizeInMb: 0},
+            audiobook: {enabled: false, maxFileSizeInMb: 0}
           },
           convertCbrCb7ToCbz: false
         },
@@ -557,8 +565,12 @@ describe('AppSettingsService - API Contract Tests', () => {
           lubimyczytacId: false,
           lubimyczytacRating: false,
           ranobedbId: false,
-          ranobedbRating: false
-        }
+          ranobedbRating: false,
+          audibleId: false,
+          audibleRating: false,
+          audibleReviewCount: false
+        },
+        diskType: 'HDD'
       };
       httpClientMock.get.mockReturnValue(of(mockSettings));
       service['fetchAppSettings']().subscribe(settings => {
