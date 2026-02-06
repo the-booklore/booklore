@@ -1,17 +1,9 @@
 package org.booklore.mapper;
 
-import org.booklore.model.dto.Book;
-import org.booklore.model.dto.BookFile;
-import org.booklore.model.dto.LibraryPath;
+import org.booklore.model.dto.*;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Context;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.Named;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 import java.util.List;
 import java.util.Set;

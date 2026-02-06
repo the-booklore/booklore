@@ -1,12 +1,14 @@
 package org.booklore.service.reader;
 
-import org.booklore.model.entity.BookMetadataEntity;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.response.AudiobookChapter;
 import org.booklore.model.dto.response.AudiobookInfo;
 import org.booklore.model.dto.response.AudiobookTrack;
 import org.booklore.model.entity.BookFileEntity;
+import org.booklore.model.entity.BookMetadataEntity;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -16,7 +18,6 @@ import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -234,11 +235,11 @@ private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^0-9]");
                 .index(0)
                 .title("Full Audiobook")
                 .startTimeMs(0L)
-                .endTimeMs(totalDurationMs)
-                .durationMs(totalDurationMs)
+                .endTimeMs(durationMs)
+                .durationMs(durationMs)
                 .build());
 
-        return chapters;
+        return builder.chapters(chapters).build();
     }
 
     private List<AudiobookChapter> extractChaptersWithFFprobe(Path audioPath) throws Exception {
@@ -324,8 +325,20 @@ private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^0-9]");
         }
 
         return chapters;
+    }
 
-        return builder.build();
+    private double convertTimebaseToSeconds(long value, String timeBase) {
+        String[] parts = timeBase.split("/");
+        if (parts.length == 2) {
+            try {
+                double numerator = Double.parseDouble(parts[0]);
+                double denominator = Double.parseDouble(parts[1]);
+                return value * (numerator / denominator);
+            } catch (NumberFormatException e) {
+                return value / 1000.0;
+            }
+        }
+        return value / 1000.0;
     }
 
     public byte[] getEmbeddedCoverArt(Path audioPath) {
