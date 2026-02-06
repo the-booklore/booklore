@@ -421,7 +421,19 @@
                             <div class="permission-item">
                               <p-checkbox [binary]="true" [(ngModel)]="user.permissions.admin" (onChange)="onAdminCheckboxChange(user)" [disabled]="!user.isEditing" inputId="admin-{{user.id}}"></p-checkbox>
                               <label [for]="'admin-'+user.id">Full Administrator Access</label>
-                            </div>
+            <div class="content-restrictions-section">
+                    <h4 class="details-title">
+                      <i class="pi pi-eye-slash"></i>
+                      Content Restrictions
+                    </h4>
+                    <p class="section-description">
+                      Configure which content this user can see based on categories, tags, moods, or age ratings.
+                    </p>
+                    <app-content-restrictions-editor
+                      [userId]="user.id"
+                      [isEditing]="user.isEditing ?? false">
+                    </app-content-restrictions-editor>
+                  </div>                </div>
                           </div>
                         </div>
                       </div>

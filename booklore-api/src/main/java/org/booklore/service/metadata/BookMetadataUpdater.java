@@ -180,6 +180,8 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getLubimyczytacRatingLocked(), clear.isLubimyczytacRating(), m.getLubimyczytacRating(), v -> e.setLubimyczytacRating(v), () -> e.getLubimyczytacRating(), replaceMode);
         handleFieldUpdate(e.getRanobedbIdLocked(), clear.isRanobedbId(), m.getRanobedbId(), v -> e.setRanobedbId(nullIfBlank(v)), e::getRanobedbId, replaceMode);
         handleFieldUpdate(e.getRanobedbRatingLocked(), clear.isRanobedbRating(), m.getRanobedbRating(), e::setRanobedbRating, e::getRanobedbRating, replaceMode);
+        handleFieldUpdate(e.getAgeRatingLocked(), clear.isAgeRating(), m.getAgeRating(), e::setAgeRating, e::getAgeRating, replaceMode);
+        handleFieldUpdate(e.getContentRatingLocked(), clear.isContentRating(), m.getContentRating(), v -> e.setContentRating(nullIfBlank(v)), e::getContentRating, replaceMode);
     }
 
     private <T> void handleFieldUpdate(Boolean locked, boolean shouldClear, T newValue, Consumer<T> setter, Supplier<T> getter, MetadataReplaceMode mode) {
@@ -416,7 +418,9 @@ public class BookMetadataUpdater {
                 Pair.of(m.getTagsLocked(), e::setTagsLocked),
                 Pair.of(m.getReviewsLocked(), e::setReviewsLocked),
                 Pair.of(m.getNarratorLocked(), e::setNarratorLocked),
-                Pair.of(m.getAbridgedLocked(), e::setAbridgedLocked)
+                Pair.of(m.getAbridgedLocked(), e::setAbridgedLocked),
+                Pair.of(m.getAgeRatingLocked(), e::setAgeRatingLocked),
+                Pair.of(m.getContentRatingLocked(), e::setContentRatingLocked)
         );
         lockMappings.forEach(pair -> {
             if (pair.getLeft() != null) pair.getRight().accept(pair.getLeft());

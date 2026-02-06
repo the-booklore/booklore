@@ -305,6 +305,20 @@ public class BookMetadataEntity {
     @Column(name = "search_text", columnDefinition = "TEXT")
     private String searchText;
 
+    @Column(name = "age_rating")
+    private Integer ageRating;
+
+    @Column(name = "content_rating", length = 20)
+    private String contentRating;
+
+    @Column(name = "age_rating_locked")
+    @Builder.Default
+    private Boolean ageRatingLocked = Boolean.FALSE;
+
+    @Column(name = "content_rating_locked")
+    @Builder.Default
+    private Boolean contentRatingLocked = Boolean.FALSE;
+
     @PrePersist
     @PreUpdate
     public void updateSearchText() {
@@ -398,6 +412,8 @@ public class BookMetadataEntity {
         this.reviewsLocked = lock;
         this.narratorLocked = lock;
         this.abridgedLocked = lock;
+        this.ageRatingLocked = lock;
+        this.contentRatingLocked = lock;
     }
 
     public boolean areAllFieldsLocked() {
@@ -441,6 +457,8 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.reviewsLocked)
                 && Boolean.TRUE.equals(this.narratorLocked)
                 && Boolean.TRUE.equals(this.abridgedLocked)
+                && Boolean.TRUE.equals(this.ageRatingLocked)
+                && Boolean.TRUE.equals(this.contentRatingLocked)
                 ;
     }
 }

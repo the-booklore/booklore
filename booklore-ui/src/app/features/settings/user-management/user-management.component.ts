@@ -17,6 +17,7 @@ import {filter, take, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogLauncherService} from '../../../shared/services/dialog-launcher.service';
+import {ContentRestrictionsEditorComponent} from './content-restrictions-editor/content-restrictions-editor.component';
 
 interface UserWithEditing extends User {
   isEditing?: boolean;
@@ -37,7 +38,8 @@ interface UserWithEditing extends User {
     InputText,
     LowerCasePipe,
     TitleCasePipe,
-    Tooltip
+    Tooltip,
+    ContentRestrictionsEditorComponent
   ],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss'],
