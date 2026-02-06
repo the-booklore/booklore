@@ -6,11 +6,15 @@ import org.booklore.interceptor.KomgaEnabledInterceptor;
 import org.booklore.interceptor.OpdsEnabledInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.VirtualThreadTaskExecutor;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import static org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO;
+
 @Configuration
+@EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
