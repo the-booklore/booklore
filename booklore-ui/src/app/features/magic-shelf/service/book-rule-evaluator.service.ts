@@ -47,6 +47,8 @@ export class BookRuleEvaluatorService {
     'categories': (book) => book.metadata?.categories && book.metadata.categories.length > 0 ? book.metadata.categories : null,
     'moods': (book) => book.metadata?.moods && book.metadata.moods.length > 0 ? book.metadata.moods : null,
     'tags': (book) => book.metadata?.tags && book.metadata.tags.length > 0 ? book.metadata.tags : null,
+    'agerating': (book) => book.metadata?.ageRating,
+    'contentrating': (book) => book.metadata?.contentRating,
   };
 
   /**
@@ -235,6 +237,12 @@ export class BookRuleEvaluatorService {
           break;
         case 'tags':
           fieldValue = metadata?.tags && metadata.tags.length > 0 ? metadata.tags : null;
+          break;
+        case 'agerating':
+          fieldValue = metadata?.ageRating;
+          break;
+        case 'contentrating':
+          fieldValue = metadata?.contentRating;
           break;
         default:
           fieldValue = null;

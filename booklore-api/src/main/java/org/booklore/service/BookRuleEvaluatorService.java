@@ -158,11 +158,11 @@ public class BookRuleEvaluatorService {
         // HAS and MISSING operators check for null/empty
         if (rule.getOperator() == org.booklore.model.dto.RuleOperator.HAS) {
             // HAS: Field should not be null (empty strings count as "has")
-            log.info("METADATA filter: checking if '{}' HAS value", metadataFieldName);
+            log.debug("METADATA filter: checking if '{}' HAS value", metadataFieldName);
             return cb.isNotNull(fieldExpression);
         } else if (rule.getOperator() == org.booklore.model.dto.RuleOperator.MISSING) {
             // MISSING: Field should be null
-            log.info("METADATA filter: checking if '{}' is MISSING value", metadataFieldName);
+            log.debug("METADATA filter: checking if '{}' is MISSING value", metadataFieldName);
             return cb.isNull(fieldExpression);
         }
 
@@ -223,6 +223,10 @@ public class BookRuleEvaluatorService {
             // Dates
             case "publisheddate" -> root.get("metadata").get("publishedDate");
             
+            // Content ratings
+            case "agerating" -> root.get("metadata").get("ageRating");
+            case "contentrating" -> root.get("metadata").get("contentRating");
+            
             default -> null;
         };
     }
@@ -237,7 +241,7 @@ public class BookRuleEvaluatorService {
         return switch (fieldName.toLowerCase()) {
             case "isbn13", "isbn10", "asin", "goodreadsid", "comicvineid", "hardcoverid",
                  "hardcoverbookid", "googleid", "lubimyczytacid", "ranobedbid",
-                 "title", "subtitle", "publisher", "description", "seriesname", "language" -> true;
+                 "title", "subtitle", "publisher", "description", "seriesname", "language", "contentrating" -> true;
             default -> false;
         };
     }

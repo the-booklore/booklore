@@ -78,6 +78,8 @@ export type RuleField =
   | 'tags'
   | 'metadataScore'
   | 'metadata'
+  | 'ageRating'
+  | 'contentRating'
   | 'isbn10'
   | 'isbn13'
   | 'asin'
@@ -167,6 +169,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   incompleteSeries: {label: 'Incomplete Series'},
   seriesStatus: {label: 'Series Status'},
   metadata: {label: 'Metadata'},
+  ageRating: {label: 'Age Rating', type: 'number'},
+  contentRating: {label: 'Content Rating'},
   // Legacy individual ID fields (hidden from UI)
   isbn10: {label: 'ISBN-10'},
   isbn13: {label: 'ISBN-13'},
@@ -287,7 +291,9 @@ export class MagicShelfComponent implements OnInit {
     {label: 'Authors', value: 'authors'},
     {label: 'Categories', value: 'categories'},
     {label: 'Moods', value: 'moods'},
-    {label: 'Tags', value: 'tags'}
+    {label: 'Tags', value: 'tags'},
+    {label: 'Age Rating', value: 'ageRating'},
+    {label: 'Content Rating', value: 'contentRating'}
   ];
 
   libraries: Library[] = [];
