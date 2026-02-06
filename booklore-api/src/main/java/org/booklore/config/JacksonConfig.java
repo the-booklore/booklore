@@ -1,13 +1,13 @@
 package org.booklore.config;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.ser.ValueSerializerModifier;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,27 +22,24 @@ public class JacksonConfig {
 
     @Bean(name = KOMGA_CLEAN_OBJECT_MAPPER)
     public ObjectMapper komgaCleanObjectMapper() {
-        ObjectMapper mapper = com.fasterxml.jackson.databind.json.JsonMapper.builder()
+        return JsonMapper.builder()
                 .findAndAddModules()
+                .serializerFactory(
+                    tools.jackson.databind.ser.BeanSerializerFactory.instance
+                        .withSerializerModifier(new ValueSerializerModifier() {
+                            @Override
+                            public List<BeanPropertyWriter> changeProperties(
+                                    tools.jackson.databind.SerializationConfig config,
+                                    tools.jackson.databind.BeanDescription.Supplier beanDescSupplier,
+                                    List<BeanPropertyWriter> beanProperties) {
+
+                                return beanProperties.stream()
+                                    .map(KomgaCleanBeanPropertyWriter::new)
+                                    .collect(Collectors.toList());
+                            }
+                        })
+                )
                 .build();
-
-        // Register the custom serializer modifier on this dedicated mapper only
-        mapper.setSerializerFactory(
-            mapper.getSerializerFactory().withSerializerModifier(new BeanSerializerModifier() {
-                @Override
-                public List<BeanPropertyWriter> changeProperties(
-                        com.fasterxml.jackson.databind.SerializationConfig config,
-                        com.fasterxml.jackson.databind.BeanDescription beanDesc,
-                        List<BeanPropertyWriter> beanProperties) {
-
-                    return beanProperties.stream()
-                        .map(KomgaCleanBeanPropertyWriter::new)
-                        .collect(Collectors.toList());
-                }
-            })
-        );
-
-        return mapper;
     }
 
     @Bean
