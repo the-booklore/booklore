@@ -465,6 +465,30 @@ class EpubMetadataExtractorTest {
             assertTrue(cover.length > 0);
             assertArrayEquals(pngImage, cover);
         }
+
+        @Test
+        @DisplayName("Should extract cover using manifest heuristic fallback (href containing 'cover')")
+        void extractCover_manifestHeuristic_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            File epubFile = createEpubWithHeuristicManifestCover(pngImage, "some-id", "some-cover-file.png");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via manifest heuristic");
+            assertArrayEquals(pngImage, cover);
+        }
+
+        @Test
+        @DisplayName("Should extract cover using ZIP heuristic fallback (ZIP entry containing 'cover')")
+        void extractCover_zipHeuristic_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            File epubFile = createEpubWithHeuristicZipCover(pngImage, "OEBPS/my-cool-cover.jpg");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via ZIP heuristic");
+            assertArrayEquals(pngImage, cover);
+        }
     }
 
     @Nested
