@@ -42,4 +42,6 @@ public class MetadataClearFlags {
     private boolean reviews;
     private boolean narrator;
     private boolean abridged;
+    private boolean ageRating;
+    private boolean contentRating;
 }

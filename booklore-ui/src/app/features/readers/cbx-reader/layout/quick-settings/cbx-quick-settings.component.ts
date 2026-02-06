@@ -8,6 +8,8 @@ import {
   CbxPageViewMode,
   CbxPageSpread,
   CbxBackgroundColor,
+  CbxReadingDirection,
+  CbxSlideshowInterval,
   PdfPageViewMode,
   PdfPageSpread
 } from '../../../../settings/user-management/user.service';
@@ -30,7 +32,9 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
     scrollMode: CbxScrollMode.PAGINATED,
     pageViewMode: CbxPageViewMode.SINGLE_PAGE,
     pageSpread: CbxPageSpread.ODD,
-    backgroundColor: CbxBackgroundColor.GRAY
+    backgroundColor: CbxBackgroundColor.GRAY,
+    readingDirection: CbxReadingDirection.LTR,
+    slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS
   };
 
   protected readonly CbxFitMode = CbxFitMode;
@@ -38,6 +42,8 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
   protected readonly CbxPageViewMode = CbxPageViewMode;
   protected readonly CbxPageSpread = CbxPageSpread;
   protected readonly CbxBackgroundColor = CbxBackgroundColor;
+  protected readonly CbxReadingDirection = CbxReadingDirection;
+  protected readonly CbxSlideshowInterval = CbxSlideshowInterval;
 
   fitModeOptions: {value: CbxFitMode, label: string, icon: ReaderIconName}[] = [
     {value: CbxFitMode.FIT_PAGE, label: 'Fit Page', icon: 'fit-page'},
@@ -45,6 +51,20 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
     {value: CbxFitMode.FIT_HEIGHT, label: 'Fit Height', icon: 'fit-height'},
     {value: CbxFitMode.ACTUAL_SIZE, label: 'Actual Size', icon: 'actual-size'},
     {value: CbxFitMode.AUTO, label: 'Automatic', icon: 'auto-fit'}
+  ];
+
+  scrollModeOptions: {value: CbxScrollMode, label: string}[] = [
+    {value: CbxScrollMode.PAGINATED, label: 'Paginated'},
+    {value: CbxScrollMode.INFINITE, label: 'Infinite'},
+    {value: CbxScrollMode.LONG_STRIP, label: 'Long Strip'}
+  ];
+
+  slideshowIntervalOptions: {value: CbxSlideshowInterval, label: string}[] = [
+    {value: CbxSlideshowInterval.THREE_SECONDS, label: '3s'},
+    {value: CbxSlideshowInterval.FIVE_SECONDS, label: '5s'},
+    {value: CbxSlideshowInterval.TEN_SECONDS, label: '10s'},
+    {value: CbxSlideshowInterval.FIFTEEN_SECONDS, label: '15s'},
+    {value: CbxSlideshowInterval.THIRTY_SECONDS, label: '30s'}
   ];
 
   backgroundOptions = [
@@ -72,19 +92,28 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
     return this.state.scrollMode === CbxScrollMode.PAGINATED;
   }
 
+  get isLongStrip(): boolean {
+    return this.state.scrollMode === CbxScrollMode.LONG_STRIP;
+  }
+
   get isPhonePortrait(): boolean {
     return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+  }
+
+  get currentScrollModeLabel(): string {
+    return this.scrollModeOptions.find(o => o.value === this.state.scrollMode)?.label || 'Paginated';
+  }
+
+  get currentSlideshowIntervalLabel(): string {
+    return this.slideshowIntervalOptions.find(o => o.value === this.state.slideshowInterval)?.label || '5s';
   }
 
   onFitModeSelect(mode: CbxFitMode): void {
     this.quickSettingsService.emitFitModeChange(mode);
   }
 
-  onScrollModeToggle(): void {
-    const newMode = this.state.scrollMode === CbxScrollMode.PAGINATED
-      ? CbxScrollMode.INFINITE
-      : CbxScrollMode.PAGINATED;
-    this.quickSettingsService.emitScrollModeChange(newMode);
+  onScrollModeSelect(mode: CbxScrollMode): void {
+    this.quickSettingsService.emitScrollModeChange(mode);
   }
 
   onPageViewToggle(): void {
@@ -103,6 +132,17 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
 
   onBackgroundSelect(color: CbxBackgroundColor): void {
     this.quickSettingsService.emitBackgroundColorChange(color);
+  }
+
+  onReadingDirectionToggle(): void {
+    const newDirection = this.state.readingDirection === CbxReadingDirection.LTR
+      ? CbxReadingDirection.RTL
+      : CbxReadingDirection.LTR;
+    this.quickSettingsService.emitReadingDirectionChange(newDirection);
+  }
+
+  onSlideshowIntervalSelect(interval: CbxSlideshowInterval): void {
+    this.quickSettingsService.emitSlideshowIntervalChange(interval);
   }
 
   onOverlayClick(): void {

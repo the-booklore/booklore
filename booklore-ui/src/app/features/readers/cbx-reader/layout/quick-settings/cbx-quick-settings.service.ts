@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
-import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode} from '../../../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode} from '../../../../settings/user-management/user.service';
 
 export interface CbxQuickSettingsState {
   fitMode: CbxFitMode | PdfFitMode;
@@ -8,6 +8,8 @@ export interface CbxQuickSettingsState {
   pageViewMode: CbxPageViewMode | PdfPageViewMode;
   pageSpread: CbxPageSpread | PdfPageSpread;
   backgroundColor: CbxBackgroundColor | PdfBackgroundColor;
+  readingDirection: CbxReadingDirection;
+  slideshowInterval: CbxSlideshowInterval;
 }
 
 @Injectable()
@@ -17,7 +19,9 @@ export class CbxQuickSettingsService {
     scrollMode: CbxScrollMode.PAGINATED,
     pageViewMode: CbxPageViewMode.SINGLE_PAGE,
     pageSpread: CbxPageSpread.ODD,
-    backgroundColor: CbxBackgroundColor.GRAY
+    backgroundColor: CbxBackgroundColor.GRAY,
+    readingDirection: CbxReadingDirection.LTR,
+    slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS
   });
   state$ = this._state.asObservable();
 
@@ -38,6 +42,12 @@ export class CbxQuickSettingsService {
 
   private _backgroundColorChange = new Subject<CbxBackgroundColor>();
   backgroundColorChange$ = this._backgroundColorChange.asObservable();
+
+  private _readingDirectionChange = new Subject<CbxReadingDirection>();
+  readingDirectionChange$ = this._readingDirectionChange.asObservable();
+
+  private _slideshowIntervalChange = new Subject<CbxSlideshowInterval>();
+  slideshowIntervalChange$ = this._slideshowIntervalChange.asObservable();
 
   get state(): CbxQuickSettingsState {
     return this._state.value;
@@ -79,6 +89,14 @@ export class CbxQuickSettingsService {
     this.updateState({backgroundColor: color});
   }
 
+  setReadingDirection(direction: CbxReadingDirection): void {
+    this.updateState({readingDirection: direction});
+  }
+
+  setSlideshowInterval(interval: CbxSlideshowInterval): void {
+    this.updateState({slideshowInterval: interval});
+  }
+
   // Actions emitted from component
   emitFitModeChange(mode: CbxFitMode): void {
     this._fitModeChange.next(mode);
@@ -100,13 +118,23 @@ export class CbxQuickSettingsService {
     this._backgroundColorChange.next(color);
   }
 
+  emitReadingDirectionChange(direction: CbxReadingDirection): void {
+    this._readingDirectionChange.next(direction);
+  }
+
+  emitSlideshowIntervalChange(interval: CbxSlideshowInterval): void {
+    this._slideshowIntervalChange.next(interval);
+  }
+
   reset(): void {
     this._state.next({
       fitMode: CbxFitMode.FIT_PAGE,
       scrollMode: CbxScrollMode.PAGINATED,
       pageViewMode: CbxPageViewMode.SINGLE_PAGE,
       pageSpread: CbxPageSpread.ODD,
-      backgroundColor: CbxBackgroundColor.GRAY
+      backgroundColor: CbxBackgroundColor.GRAY,
+      readingDirection: CbxReadingDirection.LTR,
+      slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS
     });
     this._visible.next(false);
   }

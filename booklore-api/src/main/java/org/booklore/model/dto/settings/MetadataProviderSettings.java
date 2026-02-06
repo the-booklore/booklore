@@ -27,6 +27,7 @@ public class MetadataProviderSettings {
     public static class Google {
         private boolean enabled;
         private String language;
+        private String apiKey;
     }
 
     @Data

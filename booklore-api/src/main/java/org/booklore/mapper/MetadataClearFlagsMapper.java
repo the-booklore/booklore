@@ -18,5 +18,7 @@ public interface MetadataClearFlagsMapper {
     @Mapping(target = "categories", source = "clearGenres")
     @Mapping(target = "moods", source = "clearMoods")
     @Mapping(target = "tags", source = "clearTags")
+    @Mapping(target = "ageRating", source = "clearAgeRating")
+    @Mapping(target = "contentRating", source = "clearContentRating")
     MetadataClearFlags toClearFlags(BulkMetadataUpdateRequest request);
 }
