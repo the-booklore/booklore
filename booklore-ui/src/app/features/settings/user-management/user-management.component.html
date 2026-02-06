@@ -397,6 +397,20 @@
                       </div>
                     </div>
                   </div>
+
+                  <div class="content-restrictions-section">
+                    <h4 class="details-title">
+                      <i class="pi pi-eye-slash"></i>
+                      Content Restrictions
+                    </h4>
+                    <p class="section-description">
+                      Configure which content this user can see based on categories, tags, moods, or age ratings.
+                    </p>
+                    <app-content-restrictions-editor
+                      [userId]="user.id"
+                      [isEditing]="user.isEditing ?? false">
+                    </app-content-restrictions-editor>
+                  </div>
                 </div>
               }
             </div>

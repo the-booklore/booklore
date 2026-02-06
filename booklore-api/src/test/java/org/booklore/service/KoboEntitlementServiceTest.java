@@ -384,8 +384,17 @@ class KoboEntitlementServiceTest {
     private BookEntity createEpubBookEntity(Long id) {
         BookEntity book = new BookEntity();
         book.setId(id);
-        book.setBookType(BookFileType.EPUB);
-        book.setFileSizeKb(1024L);
+        book.setBookFiles(new java.util.ArrayList<>());
+
+        BookFileEntity bookFile = BookFileEntity.builder()
+                .book(book)
+                .fileName("test-book-" + id + ".epub")
+                .fileSubPath("")
+                .isBookFormat(true)
+                .bookType(BookFileType.EPUB)
+                .fileSizeKb(1024L)
+                .build();
+        book.getBookFiles().add(bookFile);
 
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Test EPUB Book " + id);

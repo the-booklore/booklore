@@ -70,6 +70,10 @@ public class BookLoreUserEntity {
     @Builder.Default
     private Set<ReadingSessionEntity> readingSessions = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<UserContentRestrictionEntity> contentRestrictions = new HashSet<>();
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
