@@ -122,7 +122,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{series} #{seriesIndex} - {title}", "original.pdf");
 
-        assertEquals("Series Name #2 - Book Title.pdf", result);
+        assertEquals("Series Name #02 - Book Title.pdf", result);
     }
 
     @Test
@@ -135,7 +135,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{series} #{seriesIndex} - {title}", "original.pdf");
 
-        assertEquals("Series Name #2.5 - Book Title.pdf", result);
+        assertEquals("Series Name #02.5 - Book Title.pdf", result);
     }
 
     @Test
@@ -339,8 +339,8 @@ class PathPatternResolverTest {
         String result = PathPatternResolver.resolvePattern(metadata, "{authors} - {title}< [{series} #{seriesIndex}]>< ({year})>", "original.pdf");
 
         // Authors from a Set may be in any order
-        assertTrue(result.equals("John Doe, Jane Smith - The Great Book [Awesome Series #3] (2023).pdf") ||
-                   result.equals("Jane Smith, John Doe - The Great Book [Awesome Series #3] (2023).pdf"));
+        assertTrue(result.equals("John Doe, Jane Smith - The Great Book [Awesome Series #03] (2023).pdf") ||
+                   result.equals("Jane Smith, John Doe - The Great Book [Awesome Series #03] (2023).pdf"));
     }
 
     @Test
@@ -552,7 +552,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{series} - Chapter {seriesIndex}", "original.cbz");
 
-        assertEquals("Series Name - Chapter 8.1.cbz", result, "Extension should be preserved for files with numeric patterns");
+        assertEquals("Series Name - Chapter 08.1.cbz", result, "Extension should be preserved for files with numeric patterns");
     }
 
     @Test
@@ -614,7 +614,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{series} - Chapter {seriesIndex}", "One Punch Man - Chapter 8.1.cbz");
 
-        assertEquals("One Punch Man - Chapter 8.1.cbz", result, "CBZ extension should be preserved for comics");
+        assertEquals("One Punch Man - Chapter 08.1.cbz", result, "CBZ extension should be preserved for comics");
     }
 
     @Test
