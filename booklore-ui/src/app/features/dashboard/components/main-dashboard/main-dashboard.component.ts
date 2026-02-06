@@ -330,11 +330,14 @@ export class MainDashboardComponent implements OnInit {
               recommendations.forEach(rec => {
                 const bookId = rec.book.id;
                 
-                // Skip books that are already read or currently being read
+                // Skip books that are already read, in progress, or otherwise not truly unread
                 if (rec.book.readStatus === ReadStatus.READ ||
                     rec.book.readStatus === ReadStatus.READING ||
                     rec.book.readStatus === ReadStatus.PAUSED ||
-                    rec.book.readStatus === ReadStatus.RE_READING) {
+                    rec.book.readStatus === ReadStatus.RE_READING ||
+                    rec.book.readStatus === ReadStatus.PARTIALLY_READ ||
+                    rec.book.readStatus === ReadStatus.WONT_READ ||
+                    rec.book.readStatus === ReadStatus.ABANDONED) {
                   return;
                 }
 
