@@ -65,6 +65,16 @@
                     class="config-select">
                   </p-select>
                 </div>
+                <div class="config-field">
+                  <label class="config-label">API Key (Optional)</label>
+                  <p class="config-description">Providing a Google Books API key increases rate limits and improves reliability.</p>
+                  <input
+                    type="text"
+                    pInputText
+                    placeholder="Enter Google Books API key"
+                    [(ngModel)]="googleApiKey"
+                    class="config-input"/>
+                </div>
               </div>
             }
           </div>
