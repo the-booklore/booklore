@@ -224,6 +224,9 @@ DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
 DB_USER=booklore
 DB_PASSWORD=ChangeMe_BookLoreApp_2025!
 
+# 💾 Storage type: LOCAL (default) or NETWORK. Set to NETWORK if using NFS/SMB - this disables file reorganization features to prevent data corruption.
+DISK_TYPE=LOCAL
+
 # 🔧 MariaDB Container Settings
 DB_USER_ID=1000
 DB_GROUP_ID=1000
@@ -437,6 +440,16 @@ Join community!
 <a href="https://www.pikapods.com/pods?run=booklore">
   <img src="https://www.pikapods.com/static/run-button.svg" alt="Run on PikaPods" height="40">
 </a>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="https://docs.elfhosted.com/app/booklore">
+  <img src="https://docs.elfhosted.com/images/logo.svg" alt="ElfHosted" height="40">
+</a>
+
+### Powered by
+
+<a href="https://jb.gg/OpenSource">
+  <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg" alt="JetBrains logo" height="40">
+</a>
 
 *Become a sponsor and get your logo here! [Support us on Open Collective](https://opencollective.com/booklore)*
 
@@ -448,12 +461,11 @@ Join community!
 
 ## ⚖️ **License**
 
-**GNU General Public License v3.0**
+**GNU Affero General Public License v3.0 (AGPL-3.0)**
 
-Copyright © 2024-2025 BookLore
+Copyright © 2024-2026 BookLore
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](http://www.gnu.org/licenses/gpl.html)
-
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/agpl-3.0.html)
 ---
 
 <sub>Made with ❤️ by the BookLore community</sub>

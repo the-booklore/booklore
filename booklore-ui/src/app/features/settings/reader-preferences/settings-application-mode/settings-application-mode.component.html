@@ -1,0 +1,105 @@
+<div class="preferences-section">
+  <div class="section-header">
+    <h3 class="section-title">
+      <i class="pi pi-cog"></i>
+      Settings Application Mode
+    </h3>
+    <p class="section-description">
+      Configure how default reader settings are applied across your library. Choose "Default Override" to enforce your preferred defaults across all books of the same format, or select "Book-Specific" to preserve individual reading preferences for each book.
+    </p>
+  </div>
+
+  <div class="settings-card">
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">PDF Reader Settings</label>
+          <div class="button-group">
+            @for (item of scopeOptions; track item) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedPdfScope === item.key"
+                (click)="selectedPdfScope = item.key; onPdfScopeChange()">
+                <i [class]="item.icon"></i>
+                <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
+              </button>
+            }
+          </div>
+        </div>
+        <p class="setting-description">
+          Control whether your default zoom level, page layout, and navigation preferences apply to all PDFs or if each document retains its own settings.
+        </p>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">eBook Reader Settings</label>
+          <div class="button-group">
+            @for (item of scopeOptions; track item) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedEpubScope === item.key"
+                (click)="selectedEpubScope = item.key; onEpubScopeChange()">
+                <i [class]="item.icon"></i>
+                <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
+              </button>
+            }
+          </div>
+        </div>
+        <p class="setting-description">
+          Determine whether your default font, theme, and layout preferences apply to all eBooks (EPUB, FB2, MOBI, AZW3) or if each book maintains its own settings.
+        </p>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Comic Book Reader Settings</label>
+          <div class="button-group">
+            @for (item of scopeOptions; track item) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedCbxScope === item.key"
+                (click)="selectedCbxScope = item.key; onCbxScopeChange()">
+                <i [class]="item.icon"></i>
+                <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
+              </button>
+            }
+          </div>
+        </div>
+        <p class="setting-description">
+          Set whether your default page layout, reading direction, and scaling preferences apply to all comics (CBZ, CBR, CB7) or if each file keeps its own settings.
+        </p>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Streaming PDF Reader Settings</label>
+          <div class="button-group">
+            @for (item of scopeOptions; track item) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedNewPdfScope === item.key"
+                (click)="selectedNewPdfScope = item.key; onNewPdfScopeChange()">
+                <i [class]="item.icon"></i>
+                <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
+              </button>
+            }
+          </div>
+        </div>
+        <p class="setting-description">
+          Choose whether your default view mode, fit mode, and scroll direction apply to all streaming PDFs or if each document maintains its own configuration.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

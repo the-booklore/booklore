@@ -10,29 +10,27 @@
   </div>
 
   <div class="section-body">
-    <div class="preferences-section">
-      <div class="provider-groups-container">
-        @for (group of providerGroups; track group.label) {
-          <div class="provider-group">
-            <div class="group-header">
-              <span class="group-icon pi pi-database"></span>
-              <h4 class="group-label">{{ group.label }}</h4>
-            </div>
-            <div class="field-list">
-              @for (field of group.fields; track field) {
-                <div class="field-checkbox">
-                  <p-toggleswitch
-                    [inputId]="field"
-                    [ngModel]="selectedFields.includes(field)"
-                    (ngModelChange)="toggleField(field, $event)">
-                  </p-toggleswitch>
-                  <label [for]="field">{{ fieldLabels[field] || field }}</label>
-                </div>
-              }
-            </div>
+    <div class="provider-groups-container">
+      @for (group of providerGroups; track group.label) {
+        <div class="provider-group">
+          <div class="group-header">
+            <span class="group-icon pi pi-database"></span>
+            <h4 class="group-label">{{ group.label }}</h4>
           </div>
-        }
-      </div>
+          <div class="field-list">
+            @for (field of group.fields; track field) {
+              <div class="field-item">
+                <p-toggleswitch
+                  [inputId]="field"
+                  [ngModel]="selectedFields.includes(field)"
+                  (ngModelChange)="toggleField(field, $event)">
+                </p-toggleswitch>
+                <label [for]="field">{{ fieldLabels[field] || field }}</label>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </div>
   </div>
 </div>

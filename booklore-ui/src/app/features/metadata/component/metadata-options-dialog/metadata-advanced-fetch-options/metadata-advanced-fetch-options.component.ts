@@ -5,7 +5,11 @@ import {FormsModule} from '@angular/forms';
 import {Checkbox} from 'primeng/checkbox';
 import {Button} from 'primeng/button';
 import {MessageService} from 'primeng/api';
-import {FieldOptions, MetadataRefreshOptions} from '../../../model/request/metadata-refresh-options.model';
+import {
+  FieldOptions,
+  MetadataRefreshOptions,
+  MetadataReplaceMode
+} from '../../../model/request/metadata-refresh-options.model';
 import {Tooltip} from 'primeng/tooltip';
 
 @Component({
@@ -31,7 +35,8 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'hardcoverId', 'hardcoverRating', 'hardcoverReviewCount', 'moods', 'tags',
     'comicvineId',
     'lubimyczytacId', 'lubimyczytacRating',
-    'ranobedbId', 'ranobedbRating'
+    'ranobedbId', 'ranobedbRating',
+    'audibleId', 'audibleRating', 'audibleReviewCount'
   ];
 
   providerSpecificFields: (keyof FieldOptions)[] = [
@@ -42,6 +47,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'comicvineId',
     'lubimyczytacId', 'lubimyczytacRating',
     'ranobedbId', 'ranobedbRating',
+    'audibleId', 'audibleRating', 'audibleReviewCount',
   ];
 
   nonProviderSpecificFields: (keyof FieldOptions)[] = [
@@ -50,12 +56,19 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'language', 'categories', 'cover', 'pageCount',
   ];
 
-  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac', 'Ranobedb'];
-  providersWithClear: string[] = ['Clear All', 'Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac', 'Ranobedb'];
+  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac', 'Ranobedb', 'Audible'];
+  providersWithClear: string[] = ['Clear All', 'Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac', 'Ranobedb', 'Audible'];
 
   refreshCovers: boolean = false;
   mergeCategories: boolean = false;
   reviewBeforeApply: boolean = false;
+  replaceMode: MetadataReplaceMode = 'REPLACE_MISSING';
+
+  replaceModeOptions: { label: string; value: MetadataReplaceMode }[] = [
+    { label: 'Replace Missing Only', value: 'REPLACE_MISSING' },
+    { label: 'Replace All Fields', value: 'REPLACE_ALL' },
+    { label: 'Replace When Provided', value: 'REPLACE_WHEN_PROVIDED' }
+  ];
 
   fieldOptions: FieldOptions = this.initializeFieldOptions();
   enabledFields: Record<keyof FieldOptions, boolean> = this.initializeEnabledFields();
@@ -91,6 +104,9 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     // Ranobedb
     'ranobedbId', 'ranobedbRating',
 
+    // Audible
+    'audibleId', 'audibleRating', 'audibleReviewCount',
+
     // Generic provider-specific
     'moods', 'tags'
   ];
@@ -114,6 +130,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       this.refreshCovers = this.currentMetadataOptions.refreshCovers || false;
       this.mergeCategories = this.currentMetadataOptions.mergeCategories || false;
       this.reviewBeforeApply = this.currentMetadataOptions.reviewBeforeApply || false;
+      this.replaceMode = this.currentMetadataOptions.replaceMode || 'REPLACE_MISSING';
 
       const backendFieldOptions = this.deepCloneFieldOptions(this.currentMetadataOptions.fieldOptions as FieldOptions || {});
       for (const field of this.fields) {
@@ -161,6 +178,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
         refreshCovers: this.refreshCovers,
         mergeCategories: this.mergeCategories,
         reviewBeforeApply: this.reviewBeforeApply,
+        replaceMode: this.replaceMode,
         fieldOptions: this.fieldOptions,
         enabledFields: this.enabledFields
       };
@@ -218,6 +236,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       };
     }
     this.enabledFields = this.initializeEnabledFields();
+    this.replaceMode = 'REPLACE_MISSING';
 
     // Reset bulk selectors
     this.bulkP1 = null;
@@ -260,6 +279,9 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       'lubimyczytacRating': 'Lubimyczytac Rating',
       'ranobedbId': 'Ranobedb ID',
       'ranobedbRating': 'Ranobedb Rating',
+      'audibleId': 'Audible ID',
+      'audibleRating': 'Audible Rating',
+      'audibleReviewCount': 'Audible Review Count',
       'moods': 'Moods (Hardcover)',
       'tags': 'Tags (Hardcover)'
     };

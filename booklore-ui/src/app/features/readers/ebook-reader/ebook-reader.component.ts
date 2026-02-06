@@ -1,7 +1,7 @@
 import {Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {forkJoin, Observable, of, Subject, throwError} from 'rxjs';
-import {catchError, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {Observable, of, Subject, throwError} from 'rxjs';
+import {catchError, map, switchMap, takeUntil, tap} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
 import {ReaderLoaderService} from './core/loader.service';
 import {ReaderViewManagerService} from './core/view-manager.service';
@@ -17,7 +17,7 @@ import {ReaderHeaderService} from './layout/header/header.service';
 import {ReaderNoteService} from './features/notes/note.service';
 import {BookService} from '../../book/service/book.service';
 import {ActivatedRoute} from '@angular/router';
-import {Book} from '../../book/model/book.model';
+import {Book, BookType} from '../../book/model/book.model';
 import {ReaderHeaderComponent} from './layout/header/header.component';
 import {ReaderSidebarComponent} from './layout/sidebar/sidebar.component';
 import {ReaderLeftSidebarComponent} from './layout/panel/panel.component';
@@ -27,8 +27,8 @@ import {ReaderQuickSettingsComponent} from './layout/header/quick-settings.compo
 import {ReaderBookMetadataDialogComponent} from './dialogs/metadata-dialog.component';
 import {ReaderHeaderFooterVisibilityManager} from './shared/visibility.util';
 import {EpubCustomFontService} from './features/fonts/custom-font.service';
-import {TextSelectionPopupComponent, TextSelectionAction} from './shared/selection-popup.component';
-import {ReaderNoteDialogComponent, NoteDialogData, NoteDialogResult} from './dialogs/note-dialog.component';
+import {TextSelectionAction, TextSelectionPopupComponent} from './shared/selection-popup.component';
+import {NoteDialogData, NoteDialogResult, ReaderNoteDialogComponent} from './dialogs/note-dialog.component';
 
 @Component({
   selector: 'app-ebook-reader',
@@ -83,6 +83,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   public stateService = inject(ReaderStateService);
 
   protected bookId!: number;
+  protected altBookType?: string;
 
   private hasLoadedOnce = false;
   private _fileUrl: string | null = null;
@@ -96,11 +97,12 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   showMetadata = false;
   isCurrentCfiBookmarked = false;
   forceNavbarVisible = false;
+  headerVisible = false;
   book: Book | null = null;
   sectionFractions: number[] = [];
 
   showSelectionPopup = false;
-  popupPosition = { x: 0, y: 0 };
+  popupPosition = {x: 0, y: 0};
   showPopupBelow = false;
   overlappingAnnotationId: number | null = null;
   selectedText = '';
@@ -115,6 +117,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.visibilityManager = new ReaderHeaderFooterVisibilityManager(window.innerHeight);
     this.visibilityManager.onStateChange((state) => {
+      this.headerVisible = state.headerVisible;
       this.headerService.setForceVisible(state.headerVisible);
       this.forceNavbarVisible = state.footerVisible;
     });
@@ -205,23 +208,42 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
 
   private loadBookFromAPI(): Observable<void> {
     this.bookId = +this.route.snapshot.paramMap.get('bookId')!;
+    this.altBookType = this.route.snapshot.queryParamMap.get('bookType') ?? undefined;
 
-    return this.stateService.initializeState(this.bookId).pipe(
-      switchMap(() => forkJoin({
-        state: this.stateService.initializeState(this.bookId),
-        book: this.bookService.getBookByIdFromAPI(this.bookId, false),
-        fileBlob: this.bookService.getFileContent(this.bookId)
-      })),
-      switchMap(({book, fileBlob}) => {
+    return this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
+      switchMap((book) => {
         this.book = book;
-        const fileUrl = URL.createObjectURL(fileBlob);
-        this._fileUrl = fileUrl;
 
-        this.progressService.initialize(this.bookId, book.bookType!);
+        // Use alternative bookType from query param if provided, otherwise use primary
+        const bookType = (this.altBookType as BookType) ?? book.primaryFile?.bookType!;
+
+        // Determine which file ID to use for progress tracking
+        let bookFileId: number | undefined;
+        if (this.altBookType) {
+          // Look for the alternative format file with matching type
+          const altFile = book.alternativeFormats?.find(f => f.bookType === this.altBookType);
+          bookFileId = altFile?.id;
+        } else {
+          // Use the primary file
+          bookFileId = book.primaryFile?.id;
+        }
+
+        return this.stateService.initializeState(this.bookId, bookFileId!).pipe(
+          map(() => ({book, bookType, bookFileId}))
+        );
+      }),
+      switchMap(({book, bookType, bookFileId}) => {
+        this.progressService.initialize(this.bookId, bookType, bookFileId);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
 
-        return this.viewManager.loadEpub(fileUrl).pipe(
+        // Use streaming for EPUB if query param is set, blob loading otherwise (default)
+        const useStreaming = this.route.snapshot.queryParamMap.get('streaming') === 'true';
+        const loadBook$ = bookType === 'EPUB' && useStreaming
+          ? this.viewManager.loadEpubStreaming(this.bookId, this.altBookType)
+          : this.loadBookBlob();
+
+        return loadBook$.pipe(
           tap(() => {
             this.applyStyles();
             this.sidebarService.initialize(this.bookId, book, this.destroy$);
@@ -232,11 +254,26 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           switchMap(() => {
             if (!this.hasLoadedOnce) {
               this.hasLoadedOnce = true;
-              return this.viewManager.goTo(book.epubProgress!.cfi);
+              // Navigate to saved position if progress exists, otherwise go to first page
+              if (book.epubProgress?.cfi) {
+                return this.viewManager.goTo(book.epubProgress.cfi);
+              } else {
+                return this.viewManager.goTo(0);
+              }
             }
             return of(undefined);
           })
         );
+      })
+    );
+  }
+
+  private loadBookBlob(): Observable<void> {
+    return this.bookService.getFileContent(this.bookId, this.altBookType).pipe(
+      switchMap(fileBlob => {
+        const fileUrl = URL.createObjectURL(fileBlob);
+        this._fileUrl = fileUrl;
+        return this.viewManager.loadEpub(fileUrl);
       })
     );
   }
@@ -291,6 +328,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         this.isCurrentCfiBookmarked = currentCfi
           ? bookmarks.some(b => b.cfi === currentCfi)
           : false;
+        this.headerService.setCurrentCfiBookmarked(this.isCurrentCfiBookmarked);
       });
   }
 
@@ -327,6 +365,14 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   @HostListener('window:resize', ['$event'])
   onWindowResize(event: Event): void {
     this.visibilityManager.updateWindowHeight(window.innerHeight);
+  }
+
+  onHeaderTriggerZoneEnter(): void {
+    this.visibilityManager.handleHeaderZoneEnter();
+  }
+
+  onFooterTriggerZoneEnter(): void {
+    this.visibilityManager.handleFooterZoneEnter();
   }
 
   handleSelectionAction(action: TextSelectionAction): void {

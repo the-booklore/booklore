@@ -1,181 +1,47 @@
-<div class="comic-reader-container" tabindex="0">
-  <div class="navigation">
-    <div class="goto-page-controls">
-      @if (currentBook?.metadata?.seriesName) {
-        <button
-          class="series-nav-button prev-book"
-          (click)="navigateToPreviousBook()"
-          [disabled]="!previousBookInSeries"
-          [title]="getPreviousBookTooltip()">
-          <span>← Previous Book</span>
-        </button>
-      }
+<div class="comic-reader-container" tabindex="0"
+  [class.rtl-reading]="readingDirection === CbxReadingDirection.RTL"
+  [class.fullscreen-mode]="isFullscreen"
+  [class.slideshow-active]="isSlideshowActive">
+  <app-cbx-header [isCurrentPageBookmarked]="isCurrentPageBookmarked" [currentPageHasNotes]="currentPageHasNotes"></app-cbx-header>
 
-      <div class="input-group">
-        <input
-          type="number"
-          [(ngModel)]="goToPageInput"
-          [min]="1"
-          [max]="pages.length"
-          placeholder="Page"
-          class="page-input"
-          />
-        <button
-          class="go-button"
-          (click)="goToPageInput !== null && goToPage(goToPageInput)"
-          [disabled]="goToPageInput === null || goToPageInput < 1 || goToPageInput > pages.length">
-          Go
-        </button>
-      </div>
+  <app-cbx-sidebar></app-cbx-sidebar>
 
-      @if (currentBook?.metadata?.seriesName) {
-        <button
-          class="series-nav-button next-book"
-          (click)="navigateToNextBook()"
-          [disabled]="!nextBookInSeries"
-          [title]="getNextBookTooltip()">
-          <span>Next Book →</span>
-        </button>
-      }
+  @if (showQuickSettings) {
+    <app-cbx-quick-settings></app-cbx-quick-settings>
+  }
+
+  @if (isCurrentPageBookmarked) {
+    <div class="bookmark-indicator">
+      <svg width="48" height="64" viewBox="0 0 48 64">
+        <polygon points="0,0 48,0 48,64 24,48 0,64" fill="red"/>
+      </svg>
     </div>
+  }
 
-    <div class="page-controls">
-      <button class="nav-button first-page" (click)="goToPage(1)" [disabled]="currentPage === 0" title="First Page">
-        <span>⟨⟨</span>
-      </button>
-      <button class="nav-button prev-page" (click)="previousPage()" [disabled]="currentPage === 0" title="Previous Page">
-        <span>⟨</span>
-      </button>
-      <div class="page-info">
-        <span class="current-page">{{ currentPage + 1 }}</span>
-        <span class="page-separator">{{ isTwoPageView && imageUrls.length > 1 ? '-' + (currentPage + 2) : '' }}</span>
-        <span class="total-pages"> of {{ pages.length }}</span>
-      </div>
-      <button class="nav-button next-page" (click)="nextPage()" [disabled]="currentPage >= pages.length - 1" title="Next Page">
-        <span>⟩</span>
-      </button>
-      <button class="nav-button last-page" (click)="goToPage(pages.length)" [disabled]="currentPage >= pages.length - 1" title="Last Page">
-        <span>⟩⟩</span>
-      </button>
+  @if (showNoteDialog) {
+    <app-cbx-note-dialog
+      [data]="noteDialogData"
+      (save)="onNoteSave($event)"
+      (cancel)="onNoteCancel()"
+    ></app-cbx-note-dialog>
+  }
+
+  @if (showShortcutsHelp) {
+    <app-cbx-shortcuts-help
+      (close)="onShortcutsHelpClose()"
+    ></app-cbx-shortcuts-help>
+  }
+
+  @if (isSlideshowActive) {
+    <div class="slideshow-indicator">
+      <span class="slideshow-badge">Slideshow</span>
     </div>
-
-    <div class="spread-controls">
-      <div class="desktop-controls">
-        <div class="fit-mode-dropdown">
-          <button class="view-button fit-mode-toggle"
-            (click)="toggleFitModeDropdown()"
-            title="Fit Mode">
-            <span>{{ displayLabel }}</span>
-          </button>
-          @if (showFitModeDropdown) {
-            <div class="fit-mode-menu">
-              @for (mode of fitModeOptions; track mode.value) {
-                <button
-                  class="fit-mode-option"
-                  [class.active]="fitMode === mode.value"
-                  (click)="selectFitMode(mode.value)">
-                  <span class="fit-mode-icon">{{ mode.icon }}</span>
-                  <span class="fit-mode-label">{{ mode.label }}</span>
-                </button>
-              }
-            </div>
-          }
-        </div>
-        <button class="view-button scroll-toggle" (click)="toggleScrollMode()" title="Toggle Scroll Mode">
-          <span>{{ scrollModeIcon }}</span>
-        </button>
-        @if (isTwoPageView && scrollMode === CbxScrollMode.PAGINATED) {
-          <button class="view-button spread-toggle" (click)="toggleSpreadDirection()" title="Toggle Spread Direction">
-            <span>{{ pageSpread === CbxPageSpread.ODD ? '⬅️' : '➡️' }}</span>
-          </button>
-        }
-        @if (scrollMode === CbxScrollMode.PAGINATED) {
-          <button class="view-button layout-toggle" (click)="toggleView()" title="Toggle View">
-            <span>{{ isTwoPageView ? '📄' : '📖' }}</span>
-          </button>
-        }
-        <button class="view-button background-toggle" (click)="toggleBackground()" title="Toggle Background Color">
-          <span>{{ backgroundColorIcon }}</span>
-        </button>
-        <button class="view-button close-button" (click)="closeReader()" title="Close Reader">
-          <span>✕</span>
-        </button>
-      </div>
-
-      <div class="mobile-controls">
-        <button class="view-button more-options-toggle"
-          (click)="toggleMobileOptionsDropdown()"
-          title="More Options">
-          <span>⋮</span>
-        </button>
-        @if (showMobileOptionsDropdown) {
-          <div class="mobile-options-menu">
-            @if (currentBook?.metadata?.seriesName) {
-              <button
-                class="mobile-option"
-                (click)="navigateToPreviousBook(); toggleMobileOptionsDropdown()"
-                [disabled]="!previousBookInSeries">
-                <span class="option-icon">⬅️</span>
-                <span class="option-label">Previous Book</span>
-              </button>
-              <button
-                class="mobile-option"
-                (click)="navigateToNextBook(); toggleMobileOptionsDropdown()"
-                [disabled]="!nextBookInSeries">
-                <span class="option-icon">➡️</span>
-                <span class="option-label">Next Book</span>
-              </button>
-            }
-            <button class="mobile-option" (click)="selectMobileOption('fitMode')">
-              <span class="option-icon">{{ displayLabel }}</span>
-              <span class="option-label">Fit Mode</span>
-            </button>
-            @if (showFitModeSubmenu) {
-              <div class="submenu">
-                @for (mode of fitModeOptions; track mode.value) {
-                  <button
-                    class="submenu-option"
-                    [class.active]="fitMode === mode.value"
-                    (click)="selectFitModeFromMobile(mode.value)">
-                    <span class="fit-mode-icon">{{ mode.icon }}</span>
-                    <span class="fit-mode-label">{{ mode.label }}</span>
-                  </button>
-                }
-              </div>
-            }
-            <button class="mobile-option" (click)="toggleScrollModeFromMobile()">
-              <span class="option-icon">{{ scrollModeIcon }}</span>
-              <span class="option-label">Scroll Mode</span>
-            </button>
-            @if (isTwoPageView && scrollMode === CbxScrollMode.PAGINATED) {
-              <button class="mobile-option" (click)="toggleSpreadDirectionFromMobile()">
-                <span class="option-icon">{{ pageSpread === CbxPageSpread.ODD ? '⬅️' : '➡️' }}</span>
-                <span class="option-label">Spread Direction</span>
-              </button>
-            }
-            @if (scrollMode === CbxScrollMode.PAGINATED) {
-              <button class="mobile-option" (click)="toggleViewFromMobile()">
-                <span class="option-icon">{{ isTwoPageView ? '📄' : '📖' }}</span>
-                <span class="option-label">Layout</span>
-              </button>
-            }
-            <button class="mobile-option" (click)="toggleBackgroundFromMobile()">
-              <span class="option-icon">{{ backgroundColorIcon }}</span>
-              <span class="option-label">Background</span>
-            </button>
-            <button class="mobile-option" (click)="closeReader()">
-              <span class="option-icon">✕</span>
-              <span class="option-label">Close Reader</span>
-            </button>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
+  }
 
   <div class="image-container"
     [class.two-page-view]="isTwoPageView && scrollMode === CbxScrollMode.PAGINATED"
     [class.infinite-scroll]="scrollMode === CbxScrollMode.INFINITE"
+    [class.long-strip]="scrollMode === CbxScrollMode.LONG_STRIP"
     [class.fit-actual-size]="fitMode === CbxFitMode.ACTUAL_SIZE"
     [class.fit-page]="fitMode === CbxFitMode.FIT_PAGE"
     [class.fit-width]="fitMode === CbxFitMode.FIT_WIDTH"
@@ -188,10 +54,19 @@
     @if (!isLoading) {
       @if (pages.length > 0) {
         @if (scrollMode === CbxScrollMode.PAGINATED) {
-          <div class="pages-wrapper">
-            @for (url of imageUrls; track url) {
-              <img [src]="url" alt="Page Image" class="page-image"/>
+          <div class="pages-wrapper" (click)="onImageClick()" (dblclick)="onImageDoubleClick()">
+            @if (isPageTransitioning && previousImageUrls.length > 0) {
+              <div class="previous-page-layer">
+                @for (url of previousImageUrls; track url) {
+                  <img [src]="url" alt="Previous Page" class="page-image previous-image"/>
+                }
+              </div>
             }
+            <div class="current-page-layer" [class.fade-in]="isPageTransitioning && imagesLoaded">
+              @for (url of currentImageUrls; track url; let i = $index) {
+                <img [src]="url" alt="Page Image" class="page-image" (load)="onPageImageLoad($event, currentPage + i)"/>
+              }
+            </div>
           </div>
           @if (isAtLastPage && nextBookInSeries) {
             <div class="end-of-comic-action">
@@ -203,9 +78,9 @@
             </div>
           }
         } @else {
-          <div class="infinite-scroll-wrapper">
+          <div class="infinite-scroll-wrapper" [class.long-strip-wrapper]="scrollMode === CbxScrollMode.LONG_STRIP">
             @for (url of infiniteScrollImageUrls; track url; let i = $index) {
-              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image"/>
+              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image" (click)="onImageClick()" (dblclick)="onImageDoubleClick()" (load)="onPageImageLoad($event, infiniteScrollPages[i])"/>
             }
             @if (isLoadingMore) {
               <div class="loading-more">
@@ -229,10 +104,14 @@
         </div>
       }
     } @else {
-      <div class="loading-container">
-        <p-progressSpinner class="custom-spinner"></p-progressSpinner>
-        <p class="loading-text">Processing pages... This may take a few seconds on first load. Future loads will be significantly faster.</p>
+      <div class="loader-overlay">
+        <div class="loader-content">
+          <div class="spinner"></div>
+          <p class="loader-text">Loading book...</p>
+        </div>
       </div>
     }
   </div>
+
+  <app-cbx-footer></app-cbx-footer>
 </div>

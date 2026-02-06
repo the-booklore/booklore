@@ -150,6 +150,30 @@ export class DirectoryPickerComponent implements OnInit {
     this.dynamicDialogRef.close(null);
   }
 
+  selectAll(): void {
+    this.filteredPaths.forEach(folder => {
+      if (!this.selectedFolders.includes(folder)) {
+        this.selectedFolders.push(folder);
+      }
+      this.selectedFoldersMap[folder] = true;
+    });
+  }
+
+  deselectAll(): void {
+    this.selectedFolders = [];
+    Object.keys(this.selectedFoldersMap).forEach(key => {
+      this.selectedFoldersMap[key] = false;
+    });
+  }
+
+  selectCurrent(): void {
+    const currentPath = this.selectedProductName || '/';
+    if (!this.selectedFolders.includes(currentPath)) {
+      this.selectedFolders.push(currentPath);
+    }
+    this.selectedFoldersMap[currentPath] = true;
+  }
+
   getFolderName(path: string): string {
     return path.split('/').filter(p => p).pop() || path;
   }

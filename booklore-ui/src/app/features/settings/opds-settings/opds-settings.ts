@@ -13,7 +13,6 @@ import {OpdsService, OpdsSortOrder, OpdsUserV2, OpdsUserV2CreateRequest} from '.
 import {catchError, filter, take, takeUntil, tap} from 'rxjs/operators';
 import {UserService} from '../user-management/user.service';
 import {of, Subject} from 'rxjs';
-import {Password} from 'primeng/password';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
 import {AppSettingKey} from '../../../shared/model/app-settings.model';
@@ -30,11 +29,10 @@ import {Select} from 'primeng/select';
     FormsModule,
     ConfirmDialog,
     TableModule,
-    Password,
     ToggleSwitch,
     ExternalDocLinkComponent,
     Select
-],
+  ],
   providers: [ConfirmationService],
   templateUrl: './opds-settings.html',
   styleUrl: './opds-settings.scss'
@@ -42,7 +40,10 @@ import {Select} from 'primeng/select';
 export class OpdsSettings implements OnInit, OnDestroy {
 
   opdsEndpoint = `${API_CONFIG.BASE_URL}/api/v1/opds`;
+  komgaEndpoint = `${API_CONFIG.BASE_URL}/komga`;
   opdsEnabled = false;
+  komgaApiEnabled = false;
+  komgaGroupUnknown = true;
 
   private opdsService = inject(OpdsService);
   private confirmationService = inject(ConfirmationService);
@@ -64,15 +65,15 @@ export class OpdsSettings implements OnInit, OnDestroy {
   dummyPassword: string = "***********************";
 
   sortOrderOptions = [
-    { label: 'Recently Added', value: 'RECENT' as OpdsSortOrder },
-    { label: 'Title (A-Z)', value: 'TITLE_ASC' as OpdsSortOrder },
-    { label: 'Title (Z-A)', value: 'TITLE_DESC' as OpdsSortOrder },
-    { label: 'Author (A-Z)', value: 'AUTHOR_ASC' as OpdsSortOrder },
-    { label: 'Author (Z-A)', value: 'AUTHOR_DESC' as OpdsSortOrder },
-    { label: 'Series (A-Z)', value: 'SERIES_ASC' as OpdsSortOrder },
-    { label: 'Series (Z-A)', value: 'SERIES_DESC' as OpdsSortOrder },
-    { label: 'Rating (Low to High)', value: 'RATING_ASC' as OpdsSortOrder },
-    { label: 'Rating (High to Low)', value: 'RATING_DESC' as OpdsSortOrder }
+    {label: 'Recently Added', value: 'RECENT' as OpdsSortOrder},
+    {label: 'Title (A-Z)', value: 'TITLE_ASC' as OpdsSortOrder},
+    {label: 'Title (Z-A)', value: 'TITLE_DESC' as OpdsSortOrder},
+    {label: 'Author (A-Z)', value: 'AUTHOR_ASC' as OpdsSortOrder},
+    {label: 'Author (Z-A)', value: 'AUTHOR_DESC' as OpdsSortOrder},
+    {label: 'Series (A-Z)', value: 'SERIES_ASC' as OpdsSortOrder},
+    {label: 'Series (Z-A)', value: 'SERIES_DESC' as OpdsSortOrder},
+    {label: 'Rating (Low to High)', value: 'RATING_ASC' as OpdsSortOrder},
+    {label: 'Rating (High to Low)', value: 'RATING_DESC' as OpdsSortOrder}
   ];
 
   ngOnInit(): void {
@@ -102,7 +103,9 @@ export class OpdsSettings implements OnInit, OnDestroy {
       )
       .subscribe(settings => {
         this.opdsEnabled = settings.opdsServerEnabled ?? false;
-        if (this.opdsEnabled) {
+        this.komgaApiEnabled = settings.komgaApiEnabled ?? false;
+        this.komgaGroupUnknown = settings.komgaGroupUnknown ?? true;
+        if (this.opdsEnabled || this.komgaApiEnabled) {
           this.loadUsers();
         } else {
           this.loading = false;
@@ -182,11 +185,40 @@ export class OpdsSettings implements OnInit, OnDestroy {
 
   toggleOpdsServer(): void {
     this.saveSetting(AppSettingKey.OPDS_SERVER_ENABLED, this.opdsEnabled);
-    if (this.opdsEnabled) {
+    if (this.opdsEnabled || this.komgaApiEnabled) {
       this.loadUsers();
     } else {
       this.users = [];
     }
+  }
+
+  toggleKomgaApi(): void {
+    this.saveKomgaSetting(AppSettingKey.KOMGA_API_ENABLED, this.komgaApiEnabled);
+    if (this.opdsEnabled || this.komgaApiEnabled) {
+      this.loadUsers();
+    } else {
+      this.users = [];
+    }
+  }
+
+  copyKomgaEndpoint(): void {
+    navigator.clipboard.writeText(this.komgaEndpoint).then(() => {
+      this.showMessage('success', 'Copied', 'Komga API endpoint copied to clipboard');
+    });
+  }
+
+  toggleKomgaGroupUnknown(): void {
+    this.appSettingsService.saveSettings([{key: AppSettingKey.KOMGA_GROUP_UNKNOWN, newValue: this.komgaGroupUnknown}]).subscribe({
+      next: () => {
+        const successMessage = (this.komgaGroupUnknown === true)
+          ? 'Books without series will be grouped under "Unknown Series".'
+          : 'Books without series will appear as individual series.';
+        this.showMessage('success', 'Settings Saved', successMessage);
+      },
+      error: () => {
+        this.showMessage('error', 'Error', 'There was an error saving the settings.');
+      }
+    });
   }
 
   private saveSetting(key: string, value: unknown): void {
@@ -195,6 +227,20 @@ export class OpdsSettings implements OnInit, OnDestroy {
         const successMessage = (value === true)
           ? 'OPDS Server Enabled.'
           : 'OPDS Server Disabled.';
+        this.showMessage('success', 'Settings Saved', successMessage);
+      },
+      error: () => {
+        this.showMessage('error', 'Error', 'There was an error saving the settings.');
+      }
+    });
+  }
+
+  private saveKomgaSetting(key: string, value: unknown): void {
+    this.appSettingsService.saveSettings([{key, newValue: value}]).subscribe({
+      next: () => {
+        const successMessage = (value === true)
+          ? 'Komga API Enabled.'
+          : 'Komga API Disabled.';
         this.showMessage('success', 'Settings Saved', successMessage);
       },
       error: () => {

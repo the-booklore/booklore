@@ -32,6 +32,7 @@ export class LibraryMetadataSettingsComponent implements OnInit {
 
   defaultMetadataOptions: MetadataRefreshOptions = this.getDefaultMetadataOptions();
   libraryMetadataOptions: Record<number, MetadataRefreshOptions> = {};
+  activePanel: number | null = null;
 
   ngOnInit() {
     this.appSettingsService.appSettings$.subscribe(appSettings => {
@@ -52,6 +53,10 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         }
       });
     });
+  }
+
+  onPanelChange(event: unknown) {
+    this.activePanel = typeof event === 'number' ? event : null;
   }
 
   onDefaultMetadataOptionsSubmitted(options: MetadataRefreshOptions) {
@@ -219,6 +224,9 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         lubimyczytacRating: {p1: null, p2: null, p3: null, p4: null},
         ranobedbId: {p1: null, p2: null, p3: null, p4: null},
         ranobedbRating: {p1: null, p2: null, p3: null, p4: null},
+        audibleId: {p1: null, p2: null, p3: null, p4: null},
+        audibleRating: {p1: null, p2: null, p3: null, p4: null},
+        audibleReviewCount: {p1: null, p2: null, p3: null, p4: null},
         moods: {p1: null, p2: null, p3: null, p4: null},
         tags: {p1: null, p2: null, p3: null, p4: null}
       }

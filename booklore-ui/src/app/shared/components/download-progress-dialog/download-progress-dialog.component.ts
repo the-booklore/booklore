@@ -23,7 +23,8 @@ export class DownloadProgressDialogComponent implements OnDestroy {
     filename: '',
     progress: 0,
     loaded: 0,
-    total: 0
+    total: 0,
+    preparing: false
   };
 
   constructor() {

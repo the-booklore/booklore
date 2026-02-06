@@ -39,7 +39,7 @@
                 {{ release.name }} ({{ release.publishedAt | date: 'mediumDate' }})
               </a>
             </p>
-            <div [innerHTML]="markdownToHtml(release.changelog)" class="prose prose-invert w-full max-w-full"></div>
+            <div [innerHTML]="markdownToHtml(release.changelog)" class="release-content"></div>
           </div>
         }
       </div>

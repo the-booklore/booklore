@@ -54,6 +54,7 @@ export interface MetadataProviderSettings {
   comicvine: Comicvine;
   douban: Douban;
   lubimyczytac: Lubimyczytac;
+  audible: Audible;
 }
 
 export interface Amazon {
@@ -65,6 +66,7 @@ export interface Amazon {
 export interface Google {
   enabled: boolean;
   language: string;
+  apiKey: string;
 }
 
 export interface Goodreads {
@@ -93,6 +95,11 @@ export interface Lubimyczytac {
   enabled: boolean;
 }
 
+export interface Audible {
+  enabled: boolean;
+  domain: string;
+}
+
 export interface FormatWriteSettings {
   enabled: boolean;
   maxFileSizeInMb: number;
@@ -102,6 +109,7 @@ export interface SaveToOriginalFileSettings {
   epub: FormatWriteSettings;
   pdf: FormatWriteSettings;
   cbx: FormatWriteSettings;
+  audiobook: FormatWriteSettings;
 }
 
 export interface MetadataPersistenceSettings {
@@ -145,6 +153,8 @@ export interface AppSettings {
   libraryMetadataRefreshOptions: MetadataRefreshOptions[];
   uploadPattern: string;
   opdsServerEnabled: boolean;
+  komgaApiEnabled: boolean;
+  komgaGroupUnknown: boolean;
   remoteAuthEnabled: boolean;
   oidcEnabled: boolean;
   oidcProviderDetails: OidcProviderDetails;
@@ -159,6 +169,7 @@ export interface AppSettings {
   metadataDownloadOnBookdrop: boolean;
   telemetryEnabled: boolean;
   metadataProviderSpecificFields: MetadataProviderSpecificFields;
+  diskType: string;
 }
 
 export interface MetadataProviderSpecificFields {
@@ -178,6 +189,9 @@ export interface MetadataProviderSpecificFields {
   lubimyczytacRating: boolean;
   ranobedbId: boolean;
   ranobedbRating: boolean;
+  audibleId: boolean;
+  audibleRating: boolean;
+  audibleReviewCount: boolean;
 }
 
 export enum AppSettingKey {
@@ -187,6 +201,8 @@ export enum AppSettingKey {
   LIBRARY_METADATA_REFRESH_OPTIONS = 'LIBRARY_METADATA_REFRESH_OPTIONS',
   UPLOAD_FILE_PATTERN = 'UPLOAD_FILE_PATTERN',
   OPDS_SERVER_ENABLED = 'OPDS_SERVER_ENABLED',
+  KOMGA_API_ENABLED = 'KOMGA_API_ENABLED',
+  KOMGA_GROUP_UNKNOWN = 'KOMGA_GROUP_UNKNOWN',
   OIDC_ENABLED = 'OIDC_ENABLED',
   OIDC_PROVIDER_DETAILS = 'OIDC_PROVIDER_DETAILS',
   OIDC_AUTO_PROVISION_DETAILS = 'OIDC_AUTO_PROVISION_DETAILS',

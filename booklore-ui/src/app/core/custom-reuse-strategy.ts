@@ -1,39 +1,78 @@
-import { Injectable } from '@angular/core';
-import { ActivatedRouteSnapshot, DetachedRouteHandle, RouteReuseStrategy } from '@angular/router';
+import {inject, Injectable} from '@angular/core';
+import {ActivatedRouteSnapshot, DetachedRouteHandle, RouteReuseStrategy} from '@angular/router';
+import {BookBrowserScrollService} from '../features/book/components/book-browser/book-browser-scroll.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CustomReuseStrategy implements RouteReuseStrategy {
   private storedRoutes = new Map<string, DetachedRouteHandle>();
+  private scrollService = inject(BookBrowserScrollService);
 
-  // Only detach the route if it's for the book details page
-  shouldDetach(route: ActivatedRouteSnapshot): boolean {
-    return route.routeConfig?.path === 'book/:id'; // Match the path of the route you want to reuse
+  private readonly BOOK_BROWSER_PATHS = [
+    'all-books',
+    'unshelved-books',
+    'library/:libraryId/books',
+    'shelf/:shelfId/books',
+    'magic-shelf/:magicShelfId/books'
+  ];
+
+  private readonly BOOK_DETAILS_PATH = 'book/:bookId';
+
+  private getRouteKey(route: ActivatedRouteSnapshot): string {
+    const path = route.routeConfig?.path || '';
+    return this.scrollService.createKey(path, route.params);
   }
 
-  // Store the route component instance when detaching
+  private isBookBrowserRoute(route: ActivatedRouteSnapshot): boolean {
+    const path = route.routeConfig?.path;
+    return this.BOOK_BROWSER_PATHS.includes(path || '');
+  }
+
+  private isBookDetailsRoute(route: ActivatedRouteSnapshot): boolean {
+    return route.routeConfig?.path === this.BOOK_DETAILS_PATH;
+  }
+
+  shouldDetach(route: ActivatedRouteSnapshot): boolean {
+    return this.isBookBrowserRoute(route);
+  }
+
   store(route: ActivatedRouteSnapshot, handle: DetachedRouteHandle | null): void {
-    if (handle) {
-      // Save the handle if we are detaching this route
-      this.storedRoutes.set(route.routeConfig?.path || '', handle);
+    if (handle && this.isBookBrowserRoute(route)) {
+      const key = this.getRouteKey(route);
+      this.storedRoutes.set(key, handle);
     }
   }
 
-  // Check if we should attach the route (reuse it) when navigating back to it
   shouldAttach(route: ActivatedRouteSnapshot): boolean {
-    // Attach the route only if there's a stored instance for this route
-    return !!this.storedRoutes.get(route.routeConfig?.path || '');
+    if (!this.isBookBrowserRoute(route)) {
+      return false;
+    }
+    const key = this.getRouteKey(route);
+    return this.storedRoutes.has(key);
   }
 
-  // Retrieve the stored route component instance
   retrieve(route: ActivatedRouteSnapshot): DetachedRouteHandle | null {
-    return this.storedRoutes.get(route.routeConfig?.path || '') || null;
+    const key = this.getRouteKey(route);
+    const handle = this.storedRoutes.get(key) || null;
+
+    if (handle) {
+      const savedPosition = this.scrollService.getPosition(key);
+      if (savedPosition !== undefined) {
+        setTimeout(() => {
+          const scrollElement = document.querySelector('.virtual-scroller');
+          if (scrollElement) {
+            (scrollElement as HTMLElement).scrollTop = savedPosition;
+          }
+        }, 0);
+      }
+    }
+
+    return handle;
   }
 
-  // Determine if the route should be reused based on its configuration
   shouldReuseRoute(future: ActivatedRouteSnapshot, curr: ActivatedRouteSnapshot): boolean {
-    // Reuse the route if the path and parameters match
-    return future.routeConfig === curr.routeConfig && future.params['id'] === curr.params['id'];
+    return future.routeConfig === curr.routeConfig &&
+      JSON.stringify(future.params) === JSON.stringify(curr.params);
   }
 }

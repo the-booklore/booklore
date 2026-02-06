@@ -11,9 +11,19 @@
   flex-shrink: 0;
 }
 
+.tabs-wrapper {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--p-content-border-color);
+}
+
 .dialog-mode {
   border-radius: 0 0 0.75rem 0.75rem !important;
   border-width: 1px 0 0 !important;
+}
+
+.tabpanels-responsive {
+  overflow: auto;
 }
 
 ::ng-deep .layout-main .tabpanels-responsive {

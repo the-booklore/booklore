@@ -558,6 +558,8 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
         hardcoverBookId: original?.hardcoverBookId ?? null,
         hardcoverRating: original?.hardcoverRating ?? null,
         hardcoverReviewCount: original?.hardcoverReviewCount ?? null,
+        lubimyczytacId: original?.lubimyczytacId ?? null,
+        lubimyczytacRating: original?.lubimyczytacRating ?? null,
         googleId: original?.googleId ?? null,
         comicvineId: original?.comicvineId ?? null,
         ranobedbId: original?.ranobedbId ?? null,
@@ -649,7 +651,16 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
       message: 'Are you sure you want to reset all metadata changes made to the selected files?',
       header: 'Confirm Reset',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Reset',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'danger',
+        outlined: true
+      },
       accept: () => this.resetMetadata()
     });
   }
@@ -669,7 +680,16 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
       message: `Are you sure you want to finalize the import of ${selectedCount} file${selectedCount !== 1 ? 's' : ''}?`,
       header: 'Confirm Finalize',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Finalize',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'success',
+        outlined: true
+      },
       accept: () => this.finalizeImport(),
     });
   }
@@ -689,7 +709,16 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
       message: `Are you sure you want to delete ${selectedCount} selected Bookdrop file${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`,
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptButtonProps: {
+        severity: 'danger',
+        outlined: true
+      },
       accept: () => {
         const payload: { selectAll: boolean; excludedIds?: number[]; selectedIds?: number[] } = {
           selectAll: this.selectAllAcrossPages,
@@ -842,6 +871,8 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
       hardcoverBookId: new FormControl(original?.hardcoverBookId ?? ''),
       hardcoverRating: new FormControl(original?.hardcoverRating ?? ''),
       hardcoverReviewCount: new FormControl(original?.hardcoverReviewCount ?? ''),
+      lubimyczytacId: new FormControl(original?.lubimyczytacId ?? ''),
+      lubimyczytacRating: new FormControl(original?.lubimyczytacRating ?? ''),
       ranobedbId: new FormControl(original?.ranobedbId ?? ''),
       ranobedbRating: new FormControl(original?.ranobedbRating ?? ''),
       googleId: new FormControl(original?.googleId ?? ''),

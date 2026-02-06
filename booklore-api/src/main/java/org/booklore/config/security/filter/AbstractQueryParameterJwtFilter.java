@@ -1,0 +1,93 @@
+package org.booklore.config.security.filter;
+
+import org.booklore.config.security.JwtUtils;
+import org.booklore.config.security.service.DynamicOidcJwtProcessor;
+import org.booklore.config.security.userdetails.UserAuthenticationDetails;
+import org.booklore.mapper.custom.BookLoreUserTransformer;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.settings.OidcProviderDetails;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.time.Instant;
+
+@AllArgsConstructor
+public abstract class AbstractQueryParameterJwtFilter extends OncePerRequestFilter {
+
+    protected final JwtUtils jwtUtils;
+    protected final UserRepository userRepository;
+    protected final BookLoreUserTransformer bookLoreUserTransformer;
+    protected final AppSettingService appSettingService;
+    protected final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
+        // Extract token from query parameter (not from Authorization header)
+        String token = request.getParameter("token");
+        if (token == null || token.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing authentication token");
+            return;
+        }
+
+        try {
+            if (jwtUtils.validateToken(token)) {
+                authenticateLocalUser(token, request);
+            } else if (appSettingService.getAppSettings().isOidcEnabled()) {
+                authenticateOidcUser(token, request);
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                return;
+            }
+        } catch (Exception ex) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + ex.getMessage());
+            return;
+        }
+
+        chain.doFilter(request, response);
+    }
+
+    protected void authenticateLocalUser(String token, HttpServletRequest request) {
+        Long userId = jwtUtils.extractUserId(token);
+        BookLoreUserEntity entity = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(user, null, null);
+        authentication.setDetails(new UserAuthenticationDetails(request, user.getId()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    protected void authenticateOidcUser(String token, HttpServletRequest request) throws Exception {
+        var processor = dynamicOidcJwtProcessor.getProcessor();
+        var claimsSet = processor.process(token, null);
+
+        if (claimsSet.getExpirationTime() == null ||
+            claimsSet.getExpirationTime().toInstant().isBefore(Instant.now())) {
+            throw new RuntimeException("OIDC token expired or invalid");
+        }
+
+        OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
+        OidcProviderDetails.ClaimMapping claimMapping = providerDetails.getClaimMapping();
+        String username = claimsSet.getStringClaim(claimMapping.getUsername());
+        BookLoreUserEntity entity = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("OIDC user not found: " + username));
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(user, null, null);
+        authentication.setDetails(new UserAuthenticationDetails(request, user.getId()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+}

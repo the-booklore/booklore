@@ -13,7 +13,7 @@ export class PageTitleService {
             `${book.libraryName}/${book.metadata?.title || book.fileName}`,
             book.metadata?.seriesName ? `(${book.metadata.seriesName} series)` : false,
             book.metadata?.authors?.length ? `- by ${new Intl.ListFormat('en').format(book.metadata?.authors)}` : false,
-            `(${book.bookType})`
+            `(${book.primaryFile?.bookType})`
         ].filter(part => part);
 
         this.setPageTitle(title.join(' '));
