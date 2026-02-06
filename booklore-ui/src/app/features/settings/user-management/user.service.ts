@@ -85,7 +85,21 @@ export enum CbxFitMode {
 
 export enum CbxScrollMode {
   PAGINATED = 'PAGINATED',
-  INFINITE = 'INFINITE'
+  INFINITE = 'INFINITE',
+  LONG_STRIP = 'LONG_STRIP'
+}
+
+export enum CbxReadingDirection {
+  LTR = 'LTR',
+  RTL = 'RTL'
+}
+
+export enum CbxSlideshowInterval {
+  THREE_SECONDS = 3000,
+  FIVE_SECONDS = 5000,
+  TEN_SECONDS = 10000,
+  FIFTEEN_SECONDS = 15000,
+  THIRTY_SECONDS = 30000
 }
 
 export interface PdfReaderSetting {
@@ -164,6 +178,8 @@ export interface CbxReaderSetting {
   fitMode: CbxFitMode;
   scrollMode?: CbxScrollMode;
   backgroundColor?: CbxBackgroundColor;
+  readingDirection?: CbxReadingDirection;
+  slideshowInterval?: CbxSlideshowInterval;
 }
 
 export interface TableColumnPreference {
