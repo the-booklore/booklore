@@ -1,8 +1,9 @@
 package org.booklore.service.security;
 
+import jakarta.annotation.PostConstruct;
 import org.booklore.model.entity.JwtSecretEntity;
 import org.booklore.repository.JwtSecretRepository;
-import jakarta.annotation.PostConstruct;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 @Service
+@DependsOnDatabaseInitialization
 public class JwtSecretService {
 
     private final JwtSecretRepository jwtSecretRepository;

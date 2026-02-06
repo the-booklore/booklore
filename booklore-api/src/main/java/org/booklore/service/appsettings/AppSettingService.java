@@ -1,5 +1,8 @@
 package org.booklore.service.appsettings;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.transaction.Transactional;
 import org.booklore.config.AppProperties;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.model.dto.BookLoreUser;
@@ -8,9 +11,7 @@ import org.booklore.model.dto.settings.*;
 import org.booklore.model.entity.AppSettingEntity;
 import org.booklore.model.enums.PermissionType;
 import org.booklore.util.UserPermissionUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import jakarta.transaction.Transactional;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
+@DependsOnDatabaseInitialization
 public class AppSettingService {
 
     private final AppProperties appProperties;
