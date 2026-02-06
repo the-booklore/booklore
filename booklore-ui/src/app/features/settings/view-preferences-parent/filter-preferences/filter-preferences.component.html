@@ -26,5 +26,33 @@
       </div>
     </div>
 
+    <div class="setting-item">
+      <div class="setting-header-standalone">
+        <label class="setting-label">Visible Filters</label>
+      </div>
+      <p class="setting-description">
+        Select which filters appear in the filter sidebar. Choose between {{ minFilters }} and {{ maxFilters }} filters.
+        <span class="filter-count">({{ selectionCountText }})</span>
+      </p>
+      <div class="setting-options">
+        <p-multiselect
+          [options]="allFilterOptions"
+          [(ngModel)]="selectedVisibleFilters"
+          (ngModelChange)="onVisibleFiltersChange()"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="false"
+          [filter]="true"
+          filterPlaceHolder="Search filters..."
+          placeholder="Select filters"
+          display="chip"
+          appendTo="body"
+          [maxSelectedLabels]="5"
+          selectedItemsLabel="{0} filters selected"
+          styleClass="visible-filters-select">
+        </p-multiselect>
+      </div>
+    </div>
+
   </div>
 </div>
