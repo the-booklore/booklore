@@ -21,6 +21,8 @@ export interface ScrollerConfig {
   magicShelfId?: number;
   sortField?: string;
   sortDirection?: string;
+  upNextShowFirstUnread?: boolean;
+  readAgainSortByFinished?: boolean;
 }
 
 export interface DashboardConfig {
@@ -33,8 +35,8 @@ export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
     {id: '2', type: ScrollerType.LAST_READ, title: 'Continue Reading', enabled: true, order: 2, maxItems: DEFAULT_MAX_ITEMS},
     {id: '3', type: ScrollerType.LATEST_ADDED, title: 'Recently Added', enabled: true, order: 3, maxItems: DEFAULT_MAX_ITEMS},
     {id: '4', type: ScrollerType.RANDOM, title: 'Discover Something New', enabled: true, order: 4, maxItems: DEFAULT_MAX_ITEMS},
-    {id: '5', type: ScrollerType.UP_NEXT, title: 'Up Next', enabled: true, order: 5, maxItems: DEFAULT_MAX_ITEMS},
-    {id: '6', type: ScrollerType.READ_AGAIN, title: 'Read Again', enabled: false, order: 6, maxItems: DEFAULT_MAX_ITEMS},
+    {id: '5', type: ScrollerType.UP_NEXT, title: 'Up Next', enabled: true, order: 5, maxItems: DEFAULT_MAX_ITEMS, upNextShowFirstUnread: false},
+    {id: '6', type: ScrollerType.READ_AGAIN, title: 'Read Again', enabled: false, order: 6, maxItems: DEFAULT_MAX_ITEMS, readAgainSortByFinished: false},
     {id: '7', type: ScrollerType.RECOMMENDATIONS, title: 'Recommendations', enabled: true, order: 7, maxItems: DEFAULT_MAX_ITEMS}
   ]
 };

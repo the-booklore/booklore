@@ -78,6 +78,16 @@ export class DashboardSettingsComponent implements OnInit {
     {label: 'Descending', value: 'desc'}
   ];
 
+  upNextModeOptions = [
+    {label: 'Next book in series', value: false},
+    {label: 'First unread in series', value: true}
+  ];
+
+  readAgainSortOptions = [
+    {label: 'Random', value: false},
+    {label: 'Recently finished', value: true}
+  ];
+
   private magicShelvesMap = new Map<number, string>();
 
   readonly MIN_ITEMS = MIN_ITEMS;
@@ -151,6 +161,18 @@ export class DashboardSettingsComponent implements OnInit {
       scroller.magicShelfId = undefined;
     } else {
       delete scroller.magicShelfId;
+    }
+
+    if (scroller.type === ScrollerType.UP_NEXT) {
+      scroller.upNextShowFirstUnread = false;
+    } else {
+      delete scroller.upNextShowFirstUnread;
+    }
+
+    if (scroller.type === ScrollerType.READ_AGAIN) {
+      scroller.readAgainSortByFinished = false;
+    } else {
+      delete scroller.readAgainSortByFinished;
     }
   }
 

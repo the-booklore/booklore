@@ -72,6 +72,32 @@
                 </p-select>
               </div>
             }
+
+            @if (scroller.type === 'upNext') {
+              <div class="scroller-field">
+                <label>Book Selection</label>
+                <p-select
+                  fluid
+                  [options]="upNextModeOptions"
+                  [(ngModel)]="scroller.upNextShowFirstUnread"
+                  placeholder="Select mode"
+                  appendTo="body">
+                </p-select>
+              </div>
+            }
+
+            @if (scroller.type === 'readAgain') {
+              <div class="scroller-field">
+                <label>Sort Order</label>
+                <p-select
+                  fluid
+                  [options]="readAgainSortOptions"
+                  [(ngModel)]="scroller.readAgainSortByFinished"
+                  placeholder="Select sorting"
+                  appendTo="body">
+                </p-select>
+              </div>
+            }
           </div>
 
           <div class="scroller-field max-items-field">
