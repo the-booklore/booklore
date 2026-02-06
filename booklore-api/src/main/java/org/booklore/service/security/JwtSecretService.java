@@ -9,12 +9,6 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Manages JWT secret key retrieval and generation.
- * Uses lazy initialization because this service is transitively required by servlet filters
- * (e.g. AudiobookStreamingJwtFilter → JwtUtils → JwtSecretService) which are instantiated
- * during Tomcat startup, before Flyway migrations have run.
- */
 @Service
 public class JwtSecretService {
 
