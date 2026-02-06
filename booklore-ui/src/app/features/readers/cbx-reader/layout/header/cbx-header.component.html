@@ -15,6 +15,15 @@
   </div>
   <span class="book-title">{{ bookTitle }}</span>
   <div class="header-right">
+    <button class="icon-btn" (click)="onToggleSlideshow()" [title]="state.isSlideshowActive ? 'Stop Slideshow (P)' : 'Start Slideshow (P)'" [class.active]="state.isSlideshowActive">
+      <app-reader-icon [name]="state.isSlideshowActive ? 'pause' : 'play'" [size]="20" />
+    </button>
+    <button class="icon-btn" (click)="onToggleFullscreen()" [title]="state.isFullscreen ? 'Exit Fullscreen (F)' : 'Fullscreen (F)'">
+      <app-reader-icon [name]="state.isFullscreen ? 'fullscreen-exit' : 'fullscreen'" [size]="20" />
+    </button>
+    <button class="icon-btn" (click)="onShowShortcutsHelp()" title="Keyboard Shortcuts (?)">
+      <app-reader-icon name="help" [size]="20" />
+    </button>
     <button class="icon-btn" (click)="onOpenSettings()" title="Settings">
       <app-reader-icon name="settings" [size]="20" />
     </button>

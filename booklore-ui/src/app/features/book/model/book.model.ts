@@ -199,6 +199,10 @@ export interface BookMetadata {
   coverLocked?: boolean;
   audiobookCoverLocked?: boolean;
   reviewsLocked?: boolean;
+  ageRating?: number | null;
+  contentRating?: string | null;
+  ageRatingLocked?: boolean;
+  contentRatingLocked?: boolean;
 
   [key: string]: unknown;
 }
@@ -243,6 +247,8 @@ export interface MetadataClearFlags {
   tags?: boolean;
   cover?: boolean;
   audiobookCover?: boolean;
+  ageRating?: boolean;
+  contentRating?: boolean;
 }
 
 export interface MetadataUpdateWrapper {
@@ -327,6 +333,10 @@ export interface BulkMetadataUpdateRequest {
   mergeCategories?: boolean;
   mergeMoods?: boolean;
   mergeTags?: boolean;
+  ageRating?: number | null;
+  clearAgeRating?: boolean;
+  contentRating?: string | null;
+  clearContentRating?: boolean;
 }
 
 export interface BookDeletionResponse {

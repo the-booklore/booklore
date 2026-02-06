@@ -21,6 +21,7 @@ import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
+import {Select} from "primeng/select";
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookDialogHelperService} from "../../../../book/components/book-browser/book-dialog-helper.service";
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
@@ -50,6 +51,7 @@ import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-se
     Textarea,
     Image,
     LazyLoadImageModule,
+    Select,
   ],
 })
 export class MetadataEditorComponent implements OnInit {
@@ -101,6 +103,9 @@ export class MetadataEditorComponent implements OnInit {
   filteredPublishers: string[] = [];
   filteredSeries: string[] = [];
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
+
+  contentRatingOptions: {label: string, value: string}[] = [];
+  ageRatingOptions: {label: string, value: number}[] = [];
 
   providerSpecificFields: MetadataProviderSpecificFields = {
     asin: true,
@@ -246,7 +251,29 @@ export class MetadataEditorComponent implements OnInit {
       coverLocked: new FormControl(false),
       audiobookCoverLocked: new FormControl(false),
       reviewsLocked: new FormControl(false),
+      ageRating: new FormControl(""),
+      contentRating: new FormControl(""),
+      ageRatingLocked: new FormControl(false),
+      contentRatingLocked: new FormControl(false),
     });
+
+    this.contentRatingOptions = [
+      {label: 'Everyone', value: 'EVERYONE'},
+      {label: 'Teen', value: 'TEEN'},
+      {label: 'Mature', value: 'MATURE'},
+      {label: 'Adult', value: 'ADULT'},
+      {label: 'Explicit', value: 'EXPLICIT'}
+    ];
+
+    this.ageRatingOptions = [
+      {label: 'All Ages', value: 0},
+      {label: '6+', value: 6},
+      {label: '10+', value: 10},
+      {label: '13+', value: 13},
+      {label: '16+', value: 16},
+      {label: '18+', value: 18},
+      {label: '21+', value: 21}
+    ];
   }
 
   ngOnInit(): void {
@@ -401,6 +428,10 @@ export class MetadataEditorComponent implements OnInit {
       coverLocked: metadata.coverLocked ?? false,
       audiobookCoverLocked: metadata.audiobookCoverLocked ?? false,
       reviewsLocked: metadata.reviewsLocked ?? false,
+      ageRating: metadata.ageRating ?? null,
+      contentRating: metadata.contentRating ?? null,
+      ageRatingLocked: metadata.ageRatingLocked ?? false,
+      contentRatingLocked: metadata.contentRatingLocked ?? false,
     });
 
     const lockableFields: { key: keyof BookMetadata; control: string }[] = [
@@ -443,6 +474,8 @@ export class MetadataEditorComponent implements OnInit {
       {key: "coverLocked", control: "thumbnailUrl"},
       {key: "audiobookCoverLocked", control: "audiobookCover"},
       {key: "reviewsLocked", control: "reviews"},
+      {key: "ageRatingLocked", control: "ageRating"},
+      {key: "contentRatingLocked", control: "contentRating"},
     ];
 
     for (const {key, control} of lockableFields) {
@@ -634,6 +667,10 @@ export class MetadataEditorComponent implements OnInit {
       coverLocked: form.get("coverLocked")?.value,
       audiobookCoverLocked: form.get("audiobookCoverLocked")?.value,
       reviewsLocked: form.get("reviewsLocked")?.value,
+      ageRating: form.get("ageRating")?.value,
+      contentRating: form.get("contentRating")?.value,
+      ageRatingLocked: form.get("ageRatingLocked")?.value,
+      contentRatingLocked: form.get("contentRatingLocked")?.value,
 
       ...(shouldLockAllFields !== undefined && {
         allFieldsLocked: shouldLockAllFields,
@@ -690,6 +727,8 @@ export class MetadataEditorComponent implements OnInit {
       seriesTotal: wasCleared("seriesTotal"),
       audiobookCover: wasCleared("audiobookCover"),
       cover: false,
+      ageRating: wasCleared("ageRating"),
+      contentRating: wasCleared("contentRating"),
     };
 
     return {metadata, clearFlags};

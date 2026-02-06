@@ -419,6 +419,50 @@
                 }
               </div>
             </div>
+
+            <div class="field-group small-field">
+              <label for="ageRating">Age Rating</label>
+              <div class="field-with-lock">
+                <p-select
+                  id="ageRating"
+                  formControlName="ageRating"
+                  [options]="ageRatingOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select"
+                  [showClear]="true"
+                  appendTo="body">
+                </p-select>
+                @if (!book.metadata!['ageRatingLocked']) {
+                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ageRating')" severity="success"></p-button>
+                }
+                @if (book.metadata!['ageRatingLocked']) {
+                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ageRating')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
+
+            <div class="field-group small-field">
+              <label for="contentRating">Content Rating</label>
+              <div class="field-with-lock">
+                <p-select
+                  id="contentRating"
+                  formControlName="contentRating"
+                  [options]="contentRatingOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select"
+                  [showClear]="true"
+                  appendTo="body">
+                </p-select>
+                @if (!book.metadata!['contentRatingLocked']) {
+                  <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('contentRating')" severity="success"></p-button>
+                }
+                @if (book.metadata!['contentRatingLocked']) {
+                  <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('contentRating')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,16 +1,30 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Select} from 'primeng/select';
-import {BookFilterMode, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
+import {
+  ALL_FILTER_OPTIONS,
+  BookFilterMode,
+  DEFAULT_VISIBLE_FILTERS,
+  User,
+  UserService,
+  UserSettings,
+  UserState,
+  VisibleFilterType
+} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
+import {MultiSelect} from 'primeng/multiselect';
+
+const MIN_VISIBLE_FILTERS = 5;
+const MAX_VISIBLE_FILTERS = 15;
 
 @Component({
   selector: 'app-filter-preferences',
   imports: [
     Select,
-    FormsModule
+    FormsModule,
+    MultiSelect
   ],
   templateUrl: './filter-preferences.component.html',
   styleUrl: './filter-preferences.component.scss'
@@ -23,7 +37,12 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Single', value: 'single'},
   ];
 
+  readonly allFilterOptions = ALL_FILTER_OPTIONS;
+  readonly minFilters = MIN_VISIBLE_FILTERS;
+  readonly maxFilters = MAX_VISIBLE_FILTERS;
+
   selectedFilterMode: BookFilterMode = 'and';
+  selectedVisibleFilters: VisibleFilterType[] = [...DEFAULT_VISIBLE_FILTERS];
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
@@ -49,6 +68,7 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   private loadPreferences(settings: UserSettings): void {
     this.selectedFilterMode = settings.filterMode ?? 'and';
+    this.selectedVisibleFilters = settings.visibleFilters ?? [...DEFAULT_VISIBLE_FILTERS];
   }
 
   private updatePreference(path: string[], value: unknown): void {
@@ -71,7 +91,33 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     });
   }
 
-  onFilterModeChange() {
+  onFilterModeChange(): void {
     this.updatePreference(['filterMode'], this.selectedFilterMode);
+  }
+
+  onVisibleFiltersChange(): void {
+    if (this.selectedVisibleFilters.length < MIN_VISIBLE_FILTERS) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Minimum Filters Required',
+        detail: `Please select at least ${MIN_VISIBLE_FILTERS} filters.`,
+        life: 2000
+      });
+      return;
+    }
+    if (this.selectedVisibleFilters.length > MAX_VISIBLE_FILTERS) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Maximum Filters Exceeded',
+        detail: `Please select at most ${MAX_VISIBLE_FILTERS} filters.`,
+        life: 2000
+      });
+      return;
+    }
+    this.updatePreference(['visibleFilters'], this.selectedVisibleFilters);
+  }
+
+  get selectionCountText(): string {
+    return `${this.selectedVisibleFilters.length} of ${this.allFilterOptions.length} selected`;
   }
 }
