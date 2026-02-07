@@ -68,8 +68,8 @@ class BookOpdsRepositoryDataJpaTest {
         
         @Bean
         @Primary
-        public com.fasterxml.jackson.databind.ObjectMapper objectMapper() {
-            return new com.fasterxml.jackson.databind.ObjectMapper();
+        public tools.jackson.databind.ObjectMapper objectMapper() {
+            return new tools.jackson.databind.ObjectMapper();
         }
     }
 
