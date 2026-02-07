@@ -573,7 +573,7 @@ export class BookRuleEvaluatorService {
         if (!book.addedOn) return null;
         const addedDate = new Date(book.addedOn);
         const today = new Date();
-        const diffTime = Math.abs(today.getTime() - addedDate.getTime());
+        const diffTime = today.getTime() - addedDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         return diffDays;
       case 'seriesName':
