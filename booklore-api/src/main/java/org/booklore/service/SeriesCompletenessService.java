@@ -111,18 +111,20 @@ public class SeriesCompletenessService {
                 continue;
             }
 
-            // Calculate completeness: series must start at 1 and have no gaps
-            // A series is complete only if min is approximately 1.0 and has all positions
+            // Calculate completeness: series can start at 0 or 1 and have no gaps
+            // A series is complete only if min is approximately 0.0 or 1.0 and has all positions
+            // For integer series (0, 1, 2, 3): starts at 0, has 4 positions out of 4 expected → complete
             // For integer series (1, 2, 3): starts at 1, has 3 positions out of 3 expected → complete
             // For decimal series (1, 1.5, 2, 2.5, 3): starts at 1, has 3 positions out of 3 → complete
-            // For series starting later (1.5, 2, 3): starts at 1.5 ≠ 1.0 → incomplete
-            // For series starting later (3, 4, 5): starts at 3 ≠ 1.0 → incomplete
-            boolean startsAtOne = Math.abs(minSeriesNumber - 1.0) < 0.01;
-            int expectedPositions = (int) Math.floor(maxSeriesNumber); // Expected number of integer positions (1, 2, 3, ..., floor(max))
+            // For series starting later (1.5, 2, 3): starts at 1.5 ≠ 0.0 or 1.0 → incomplete
+            // For series starting later (3, 4, 5): starts at 3 ≠ 0.0 or 1.0 → incomplete
+            boolean startsAtZeroOrOne = Math.abs(minSeriesNumber - 0.0) < 0.01 || Math.abs(minSeriesNumber - 1.0) < 0.01;
+            // Calculate expected positions based on the range from min to max
+            int expectedPositions = (int) Math.floor(maxSeriesNumber) - (int) Math.floor(minSeriesNumber) + 1;
             boolean hasAllPositions = distinctPositions == expectedPositions;
             
-            // Series is complete only if it starts at exactly 1 and has all integer positions covered
-            boolean isComplete = startsAtOne && hasAllPositions;
+            // Series is complete only if it starts at 0 or 1 and has all integer positions covered
+            boolean isComplete = startsAtZeroOrOne && hasAllPositions;
             boolean isIncomplete = !isComplete;
 
             SeriesCompletenessEntity entity = SeriesCompletenessEntity.builder()
@@ -243,11 +245,12 @@ public class SeriesCompletenessService {
             return;
         }
 
-        // Calculate completeness: series must start at exactly 1 and have no gaps
-        boolean startsAtOne = Math.abs(minSeriesNumber - 1.0) < 0.01;
-        int expectedPositions = (int) Math.floor(maxSeriesNumber);
+        // Calculate completeness: series can start at 0 or 1 and have no gaps
+        boolean startsAtZeroOrOne = Math.abs(minSeriesNumber - 0.0) < 0.01 || Math.abs(minSeriesNumber - 1.0) < 0.01;
+        // Calculate expected positions based on the range from min to max
+        int expectedPositions = (int) Math.floor(maxSeriesNumber) - (int) Math.floor(minSeriesNumber) + 1;
         boolean hasAllPositions = distinctPositions == expectedPositions;
-        boolean isComplete = startsAtOne && hasAllPositions;
+        boolean isComplete = startsAtZeroOrOne && hasAllPositions;
         boolean isIncomplete = !isComplete;
 
         // Find or create the entity
