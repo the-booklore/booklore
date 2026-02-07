@@ -100,7 +100,8 @@ dependencies {
     implementation 'tools.jackson.module:jackson-module-blackbird'
 
     // --- Jackson 2 (Compatibility) ---
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.18.2'
+    // jackson-annotations version is managed by Jackson 3 BOM (requires 2.20+)
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
 
     // --- Caching ---
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
