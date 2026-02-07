@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,6 +48,17 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @DependsOnDatabaseInitialization
 public class LibraryService {
+
+    private static final Set<Long> scanningLibraries = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Checks whether a library is currently being scanned.
+     * Can be used by other components (e.g., file watcher) to avoid processing
+     * files while a full scan is in progress.
+     */
+    public static boolean isLibraryScanning(long libraryId) {
+        return scanningLibraries.contains(libraryId);
+    }
 
     private final LibraryRepository libraryRepository;
     private final LibraryPathRepository libraryPathRepository;
@@ -128,10 +140,16 @@ public class LibraryService {
 
         if (!newPaths.isEmpty()) {
             SecurityContextVirtualThread.runWithSecurityContext(() -> {
+                if (!scanningLibraries.add(libraryId)) {
+                    log.warn("Library {} is already being scanned, skipping duplicate process request", libraryId);
+                    return;
+                }
                 try {
                     libraryProcessingService.processLibrary(libraryId);
                 } catch (InvalidDataAccessApiUsageException e) {
                     log.debug("InvalidDataAccessApiUsageException - Library id: {}", libraryId);
+                } finally {
+                    scanningLibraries.remove(libraryId);
                 }
                 log.info("Parsing task completed!");
             });
@@ -172,10 +190,16 @@ public class LibraryService {
         }
 
         SecurityContextVirtualThread.runWithSecurityContext(() -> {
+            if (!scanningLibraries.add(libraryId)) {
+                log.warn("Library {} is already being scanned, skipping duplicate process request", libraryId);
+                return;
+            }
             try {
                 libraryProcessingService.processLibrary(libraryId);
             } catch (InvalidDataAccessApiUsageException e) {
                 log.debug("InvalidDataAccessApiUsageException - Library id: {}", libraryId);
+            } finally {
+                scanningLibraries.remove(libraryId);
             }
             log.info("Parsing task completed!");
         });
@@ -187,6 +211,10 @@ public class LibraryService {
         libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
 
         SecurityContextVirtualThread.runWithSecurityContext(() -> {
+            if (!scanningLibraries.add(libraryId)) {
+                log.warn("Library {} is already being scanned, skipping duplicate rescan request", libraryId);
+                return;
+            }
             try {
                 RescanLibraryContext context = RescanLibraryContext.builder()
                         .libraryId(libraryId)
@@ -196,6 +224,8 @@ public class LibraryService {
                 log.debug("InvalidDataAccessApiUsageException - Library id: {}", libraryId);
             } catch (IOException e) {
                 log.error("Error while parsing library books", e);
+            } finally {
+                scanningLibraries.remove(libraryId);
             }
             log.info("Parsing task completed!");
         });
