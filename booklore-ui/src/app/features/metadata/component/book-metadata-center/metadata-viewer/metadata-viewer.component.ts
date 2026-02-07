@@ -256,7 +256,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                     label: 'Custom Send',
                     icon: 'pi pi-cog',
                     command: () => {
-                      this.bookDialogHelperService.openCustomSendDialog(book.id);
+                      this.bookDialogHelperService.openCustomSendDialog(book);
                     }
                   }
                 ]

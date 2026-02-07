@@ -395,7 +395,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
               label: 'Custom Send',
               icon: 'pi pi-envelope',
               command: () => {
-                this.bookDialogHelperService.openCustomSendDialog(this.book.id);
+                this.bookDialogHelperService.openCustomSendDialog(this.book);
               }
             }
           ]
