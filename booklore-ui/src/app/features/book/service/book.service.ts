@@ -110,7 +110,9 @@ export class BookService {
   }
 
   refreshBooks(): void {
-    this.http.get<Book[]>(this.url).pipe(
+    // Include descriptions for magic shelf metadata filtering
+    const params = new HttpParams().set('withDescription', 'true');
+    this.http.get<Book[]>(this.url, { params }).pipe(
       map((books) => this.computeIncompleteSeriesProperty(books)),
       tap(books => {
         this.bookStateService.updateBookState({
@@ -621,8 +623,8 @@ export class BookService {
     return this.http.post<Book>(`${this.url}/physical`, request);
   }
 
-  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<void> {
-    return this.http.post<void>(`${this.url}/${targetBookId}/attach-files`, {
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
       sourceBookIds,
       deleteSourceBooks
     });
