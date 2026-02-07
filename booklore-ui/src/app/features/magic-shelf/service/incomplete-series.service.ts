@@ -122,12 +122,13 @@ export class IncompleteSeriesService {
    */
   private findMissingNumbers(presentNumbers: number[], max: number): number[] {
     const hasDecimals = presentNumbers.some((n) => n % 1 !== 0);
+    const numberSet = new Set(presentNumbers);
 
     if (!hasDecimals) {
       // Integer series: check for gaps from 1 to max
       const missing: number[] = [];
       for (let i = 1; i <= Math.floor(max); i++) {
-        if (!presentNumbers.includes(i)) {
+        if (!numberSet.has(i)) {
           missing.push(i);
         }
       }
