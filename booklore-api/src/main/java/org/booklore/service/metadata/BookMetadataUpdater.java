@@ -12,6 +12,7 @@ import org.booklore.model.dto.FileMoveResult;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
+import org.booklore.model.enums.ComicCreatorRole;
 import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.repository.*;
 import org.booklore.service.appsettings.AppSettingService;
@@ -45,6 +46,10 @@ public class BookMetadataUpdater {
     private final TagRepository tagRepository;
     private final BookRepository bookRepository;
     private final ComicMetadataRepository comicMetadataRepository;
+    private final ComicCharacterRepository comicCharacterRepository;
+    private final ComicTeamRepository comicTeamRepository;
+    private final ComicLocationRepository comicLocationRepository;
+    private final ComicCreatorRepository comicCreatorRepository;
     private final FileService fileService;
     private final MetadataMatchService metadataMatchService;
     private final AppSettingService appSettingService;
@@ -381,6 +386,8 @@ public class BookMetadataUpdater {
         }
 
         ComicMetadataEntity c = comic;
+
+        // Update basic fields
         handleFieldUpdate(c.getIssueNumberLocked(), false, comicDto.getIssueNumber(), v -> c.setIssueNumber(nullIfBlank(v)), c::getIssueNumber, replaceMode);
         handleFieldUpdate(c.getVolumeNameLocked(), false, comicDto.getVolumeName(), v -> c.setVolumeName(nullIfBlank(v)), c::getVolumeName, replaceMode);
         handleFieldUpdate(c.getVolumeNumberLocked(), false, comicDto.getVolumeNumber(), c::setVolumeNumber, c::getVolumeNumber, replaceMode);
@@ -388,39 +395,156 @@ public class BookMetadataUpdater {
         handleFieldUpdate(null, false, comicDto.getStoryArcNumber(), c::setStoryArcNumber, c::getStoryArcNumber, replaceMode);
         handleFieldUpdate(null, false, comicDto.getAlternateSeries(), v -> c.setAlternateSeries(nullIfBlank(v)), c::getAlternateSeries, replaceMode);
         handleFieldUpdate(null, false, comicDto.getAlternateIssue(), v -> c.setAlternateIssue(nullIfBlank(v)), c::getAlternateIssue, replaceMode);
-        handleFieldUpdate(c.getPencillerLocked(), false, comicDto.getPenciller(), v -> c.setPenciller(nullIfBlank(v)), c::getPenciller, replaceMode);
-        handleFieldUpdate(c.getInkerLocked(), false, comicDto.getInker(), v -> c.setInker(nullIfBlank(v)), c::getInker, replaceMode);
-        handleFieldUpdate(c.getColoristLocked(), false, comicDto.getColorist(), v -> c.setColorist(nullIfBlank(v)), c::getColorist, replaceMode);
-        handleFieldUpdate(c.getLettererLocked(), false, comicDto.getLetterer(), v -> c.setLetterer(nullIfBlank(v)), c::getLetterer, replaceMode);
-        handleFieldUpdate(c.getCoverArtistLocked(), false, comicDto.getCoverArtist(), v -> c.setCoverArtist(nullIfBlank(v)), c::getCoverArtist, replaceMode);
-        handleFieldUpdate(c.getEditorLocked(), false, comicDto.getEditor(), v -> c.setEditor(nullIfBlank(v)), c::getEditor, replaceMode);
         handleFieldUpdate(null, false, comicDto.getImprint(), v -> c.setImprint(nullIfBlank(v)), c::getImprint, replaceMode);
         handleFieldUpdate(null, false, comicDto.getFormat(), v -> c.setFormat(nullIfBlank(v)), c::getFormat, replaceMode);
         handleFieldUpdate(null, false, comicDto.getBlackAndWhite(), c::setBlackAndWhite, c::getBlackAndWhite, replaceMode);
         handleFieldUpdate(null, false, comicDto.getManga(), c::setManga, c::getManga, replaceMode);
         handleFieldUpdate(null, false, comicDto.getReadingDirection(), v -> c.setReadingDirection(nullIfBlank(v)), c::getReadingDirection, replaceMode);
-        handleFieldUpdate(c.getCharactersLocked(), false, comicDto.getCharacters(), v -> c.setCharacters(nullIfBlank(v)), c::getCharacters, replaceMode);
-        handleFieldUpdate(c.getTeamsLocked(), false, comicDto.getTeams(), v -> c.setTeams(nullIfBlank(v)), c::getTeams, replaceMode);
-        handleFieldUpdate(c.getLocationsLocked(), false, comicDto.getLocations(), v -> c.setLocations(nullIfBlank(v)), c::getLocations, replaceMode);
         handleFieldUpdate(null, false, comicDto.getWebLink(), v -> c.setWebLink(nullIfBlank(v)), c::getWebLink, replaceMode);
         handleFieldUpdate(null, false, comicDto.getNotes(), v -> c.setNotes(nullIfBlank(v)), c::getNotes, replaceMode);
+
+        // Update relationships if not locked
+        if (!Boolean.TRUE.equals(c.getCharactersLocked())) {
+            updateComicCharacters(c, comicDto.getCharacters(), replaceMode);
+        }
+        if (!Boolean.TRUE.equals(c.getTeamsLocked())) {
+            updateComicTeams(c, comicDto.getTeams(), replaceMode);
+        }
+        if (!Boolean.TRUE.equals(c.getLocationsLocked())) {
+            updateComicLocations(c, comicDto.getLocations(), replaceMode);
+        }
+        if (!Boolean.TRUE.equals(c.getCreatorsLocked())) {
+            updateComicCreators(c, comicDto, replaceMode);
+        }
 
         // Update locks if provided
         if (comicDto.getIssueNumberLocked() != null) c.setIssueNumberLocked(comicDto.getIssueNumberLocked());
         if (comicDto.getVolumeNameLocked() != null) c.setVolumeNameLocked(comicDto.getVolumeNameLocked());
         if (comicDto.getVolumeNumberLocked() != null) c.setVolumeNumberLocked(comicDto.getVolumeNumberLocked());
         if (comicDto.getStoryArcLocked() != null) c.setStoryArcLocked(comicDto.getStoryArcLocked());
-        if (comicDto.getPencillerLocked() != null) c.setPencillerLocked(comicDto.getPencillerLocked());
-        if (comicDto.getInkerLocked() != null) c.setInkerLocked(comicDto.getInkerLocked());
-        if (comicDto.getColoristLocked() != null) c.setColoristLocked(comicDto.getColoristLocked());
-        if (comicDto.getLettererLocked() != null) c.setLettererLocked(comicDto.getLettererLocked());
-        if (comicDto.getCoverArtistLocked() != null) c.setCoverArtistLocked(comicDto.getCoverArtistLocked());
-        if (comicDto.getEditorLocked() != null) c.setEditorLocked(comicDto.getEditorLocked());
+        if (comicDto.getCreatorsLocked() != null) c.setCreatorsLocked(comicDto.getCreatorsLocked());
         if (comicDto.getCharactersLocked() != null) c.setCharactersLocked(comicDto.getCharactersLocked());
         if (comicDto.getTeamsLocked() != null) c.setTeamsLocked(comicDto.getTeamsLocked());
         if (comicDto.getLocationsLocked() != null) c.setLocationsLocked(comicDto.getLocationsLocked());
 
         comicMetadataRepository.save(c);
+    }
+
+    private void updateComicCharacters(ComicMetadataEntity c, Set<String> characters, MetadataReplaceMode mode) {
+        if (characters == null || characters.isEmpty()) {
+            if (mode == MetadataReplaceMode.REPLACE_ALL) {
+                c.getCharacters().clear();
+            }
+            return;
+        }
+        if (c.getCharacters() == null) {
+            c.setCharacters(new HashSet<>());
+        }
+        if (mode == MetadataReplaceMode.REPLACE_ALL || mode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
+            c.getCharacters().clear();
+        }
+        if (mode == MetadataReplaceMode.REPLACE_MISSING && !c.getCharacters().isEmpty()) {
+            return;
+        }
+        characters.stream()
+                .map(name -> comicCharacterRepository.findByName(name)
+                        .orElseGet(() -> comicCharacterRepository.save(ComicCharacterEntity.builder().name(name).build())))
+                .forEach(entity -> c.getCharacters().add(entity));
+    }
+
+    private void updateComicTeams(ComicMetadataEntity c, Set<String> teams, MetadataReplaceMode mode) {
+        if (teams == null || teams.isEmpty()) {
+            if (mode == MetadataReplaceMode.REPLACE_ALL) {
+                c.getTeams().clear();
+            }
+            return;
+        }
+        if (c.getTeams() == null) {
+            c.setTeams(new HashSet<>());
+        }
+        if (mode == MetadataReplaceMode.REPLACE_ALL || mode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
+            c.getTeams().clear();
+        }
+        if (mode == MetadataReplaceMode.REPLACE_MISSING && !c.getTeams().isEmpty()) {
+            return;
+        }
+        teams.stream()
+                .map(name -> comicTeamRepository.findByName(name)
+                        .orElseGet(() -> comicTeamRepository.save(ComicTeamEntity.builder().name(name).build())))
+                .forEach(entity -> c.getTeams().add(entity));
+    }
+
+    private void updateComicLocations(ComicMetadataEntity c, Set<String> locations, MetadataReplaceMode mode) {
+        if (locations == null || locations.isEmpty()) {
+            if (mode == MetadataReplaceMode.REPLACE_ALL) {
+                c.getLocations().clear();
+            }
+            return;
+        }
+        if (c.getLocations() == null) {
+            c.setLocations(new HashSet<>());
+        }
+        if (mode == MetadataReplaceMode.REPLACE_ALL || mode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
+            c.getLocations().clear();
+        }
+        if (mode == MetadataReplaceMode.REPLACE_MISSING && !c.getLocations().isEmpty()) {
+            return;
+        }
+        locations.stream()
+                .map(name -> comicLocationRepository.findByName(name)
+                        .orElseGet(() -> comicLocationRepository.save(ComicLocationEntity.builder().name(name).build())))
+                .forEach(entity -> c.getLocations().add(entity));
+    }
+
+    private void updateComicCreators(ComicMetadataEntity c, ComicMetadata dto, MetadataReplaceMode mode) {
+        if (c.getCreatorMappings() == null) {
+            c.setCreatorMappings(new HashSet<>());
+        }
+
+        boolean hasNewCreators = (dto.getPencillers() != null && !dto.getPencillers().isEmpty()) ||
+                (dto.getInkers() != null && !dto.getInkers().isEmpty()) ||
+                (dto.getColorists() != null && !dto.getColorists().isEmpty()) ||
+                (dto.getLetterers() != null && !dto.getLetterers().isEmpty()) ||
+                (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty()) ||
+                (dto.getEditors() != null && !dto.getEditors().isEmpty());
+
+        if (!hasNewCreators) {
+            if (mode == MetadataReplaceMode.REPLACE_ALL) {
+                c.getCreatorMappings().clear();
+            }
+            return;
+        }
+
+        if (mode == MetadataReplaceMode.REPLACE_ALL || mode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
+            c.getCreatorMappings().clear();
+        }
+        if (mode == MetadataReplaceMode.REPLACE_MISSING && !c.getCreatorMappings().isEmpty()) {
+            return;
+        }
+
+        addCreatorsWithRole(c, dto.getPencillers(), ComicCreatorRole.PENCILLER);
+        addCreatorsWithRole(c, dto.getInkers(), ComicCreatorRole.INKER);
+        addCreatorsWithRole(c, dto.getColorists(), ComicCreatorRole.COLORIST);
+        addCreatorsWithRole(c, dto.getLetterers(), ComicCreatorRole.LETTERER);
+        addCreatorsWithRole(c, dto.getCoverArtists(), ComicCreatorRole.COVER_ARTIST);
+        addCreatorsWithRole(c, dto.getEditors(), ComicCreatorRole.EDITOR);
+    }
+
+    private void addCreatorsWithRole(ComicMetadataEntity comic, Set<String> names, ComicCreatorRole role) {
+        if (names == null || names.isEmpty()) {
+            return;
+        }
+        for (String name : names) {
+            ComicCreatorEntity creator = comicCreatorRepository.findByName(name)
+                    .orElseGet(() -> comicCreatorRepository.save(ComicCreatorEntity.builder().name(name).build()));
+
+            ComicCreatorMappingEntity mapping = ComicCreatorMappingEntity.builder()
+                    .comicMetadata(comic)
+                    .creator(creator)
+                    .role(role)
+                    .build();
+            comic.getCreatorMappings().add(mapping);
+        }
     }
 
     private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {

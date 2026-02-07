@@ -237,39 +237,39 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
             hasComicFields = true;
         }
 
-        String penciller = getTextContent(document, "Penciller");
-        if (penciller != null && !penciller.isBlank()) {
-            comicBuilder.penciller(penciller);
+        Set<String> pencillers = splitValues(getTextContent(document, "Penciller"));
+        if (!pencillers.isEmpty()) {
+            comicBuilder.pencillers(pencillers);
             hasComicFields = true;
         }
 
-        String inker = getTextContent(document, "Inker");
-        if (inker != null && !inker.isBlank()) {
-            comicBuilder.inker(inker);
+        Set<String> inkers = splitValues(getTextContent(document, "Inker"));
+        if (!inkers.isEmpty()) {
+            comicBuilder.inkers(inkers);
             hasComicFields = true;
         }
 
-        String colorist = getTextContent(document, "Colorist");
-        if (colorist != null && !colorist.isBlank()) {
-            comicBuilder.colorist(colorist);
+        Set<String> colorists = splitValues(getTextContent(document, "Colorist"));
+        if (!colorists.isEmpty()) {
+            comicBuilder.colorists(colorists);
             hasComicFields = true;
         }
 
-        String letterer = getTextContent(document, "Letterer");
-        if (letterer != null && !letterer.isBlank()) {
-            comicBuilder.letterer(letterer);
+        Set<String> letterers = splitValues(getTextContent(document, "Letterer"));
+        if (!letterers.isEmpty()) {
+            comicBuilder.letterers(letterers);
             hasComicFields = true;
         }
 
-        String coverArtist = getTextContent(document, "CoverArtist");
-        if (coverArtist != null && !coverArtist.isBlank()) {
-            comicBuilder.coverArtist(coverArtist);
+        Set<String> coverArtists = splitValues(getTextContent(document, "CoverArtist"));
+        if (!coverArtists.isEmpty()) {
+            comicBuilder.coverArtists(coverArtists);
             hasComicFields = true;
         }
 
-        String editor = getTextContent(document, "Editor");
-        if (editor != null && !editor.isBlank()) {
-            comicBuilder.editor(editor);
+        Set<String> editors = splitValues(getTextContent(document, "Editor"));
+        if (!editors.isEmpty()) {
+            comicBuilder.editors(editors);
             hasComicFields = true;
         }
 
@@ -303,20 +303,20 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
             hasComicFields = true;
         }
 
-        String characters = getTextContent(document, "Characters");
-        if (characters != null && !characters.isBlank()) {
+        Set<String> characters = splitValues(getTextContent(document, "Characters"));
+        if (!characters.isEmpty()) {
             comicBuilder.characters(characters);
             hasComicFields = true;
         }
 
-        String teams = getTextContent(document, "Teams");
-        if (teams != null && !teams.isBlank()) {
+        Set<String> teams = splitValues(getTextContent(document, "Teams"));
+        if (!teams.isEmpty()) {
             comicBuilder.teams(teams);
             hasComicFields = true;
         }
 
-        String locations = getTextContent(document, "Locations");
-        if (locations != null && !locations.isBlank()) {
+        Set<String> locations = splitValues(getTextContent(document, "Locations"));
+        if (!locations.isEmpty()) {
             comicBuilder.locations(locations);
             hasComicFields = true;
         }

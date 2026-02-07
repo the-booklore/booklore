@@ -16,6 +16,6 @@ public interface ComicMetadataRepository extends JpaRepository<ComicMetadataEnti
 
     List<ComicMetadataEntity> findAllByVolumeNameIgnoreCase(String volumeName);
 
-    @Query("SELECT c FROM ComicMetadataEntity c WHERE c.penciller LIKE %:name% OR c.inker LIKE %:name% OR c.colorist LIKE %:name% OR c.letterer LIKE %:name% OR c.coverArtist LIKE %:name% OR c.editor LIKE %:name%")
+    @Query("SELECT DISTINCT c FROM ComicMetadataEntity c JOIN c.creatorMappings m WHERE m.creator.name LIKE %:name%")
     List<ComicMetadataEntity> findAllByCreatorName(@Param("name") String name);
 }

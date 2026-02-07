@@ -11,7 +11,6 @@ import org.booklore.model.entity.ComicMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
-import org.booklore.repository.ComicMetadataRepository;
 import org.booklore.service.book.BookCreatorService;
 import org.booklore.service.metadata.MetadataMatchService;
 import org.booklore.service.metadata.extractor.CbxMetadataExtractor;
@@ -47,7 +46,6 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
     private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
     private final CbxMetadataExtractor cbxMetadataExtractor;
-    private final ComicMetadataRepository comicMetadataRepository;
 
     public CbxProcessor(BookRepository bookRepository,
                         BookAdditionalFileRepository bookAdditionalFileRepository,
@@ -55,11 +53,9 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                         BookMapper bookMapper,
                         FileService fileService,
                         MetadataMatchService metadataMatchService,
-                        CbxMetadataExtractor cbxMetadataExtractor,
-                        ComicMetadataRepository comicMetadataRepository) {
+                        CbxMetadataExtractor cbxMetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
         this.cbxMetadataExtractor = cbxMetadataExtractor;
-        this.comicMetadataRepository = comicMetadataRepository;
     }
 
     @Override
@@ -280,25 +276,19 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
         comic.setStoryArcNumber(comicDto.getStoryArcNumber());
         comic.setAlternateSeries(comicDto.getAlternateSeries());
         comic.setAlternateIssue(comicDto.getAlternateIssue());
-        comic.setPenciller(comicDto.getPenciller());
-        comic.setInker(comicDto.getInker());
-        comic.setColorist(comicDto.getColorist());
-        comic.setLetterer(comicDto.getLetterer());
-        comic.setCoverArtist(comicDto.getCoverArtist());
-        comic.setEditor(comicDto.getEditor());
         comic.setImprint(comicDto.getImprint());
         comic.setFormat(comicDto.getFormat());
         comic.setBlackAndWhite(comicDto.getBlackAndWhite() != null ? comicDto.getBlackAndWhite() : Boolean.FALSE);
         comic.setManga(comicDto.getManga() != null ? comicDto.getManga() : Boolean.FALSE);
         comic.setReadingDirection(comicDto.getReadingDirection() != null ? comicDto.getReadingDirection() : "ltr");
-        comic.setCharacters(comicDto.getCharacters());
-        comic.setTeams(comicDto.getTeams());
-        comic.setLocations(comicDto.getLocations());
         comic.setWebLink(comicDto.getWebLink());
         comic.setNotes(comicDto.getNotes());
 
-        // Set on parent - will be saved via cascade in saveConnections()
+        // Set on parent - relationships will be populated in saveConnections()
         bookEntity.getMetadata().setComicMetadata(comic);
+
+        // Store the DTO for later processing in saveConnections
+        bookCreatorService.setComicMetadataDto(bookEntity, comicDto);
     }
 }
 

@@ -391,21 +391,67 @@ public class MetadataChangeDetector {
                 || !Objects.equals(comicDto.getStoryArcNumber(), comicEntity.getStoryArcNumber())
                 || !Objects.equals(normalize(comicDto.getAlternateSeries()), normalize(comicEntity.getAlternateSeries()))
                 || !Objects.equals(normalize(comicDto.getAlternateIssue()), normalize(comicEntity.getAlternateIssue()))
-                || !Objects.equals(normalize(comicDto.getPenciller()), normalize(comicEntity.getPenciller()))
-                || !Objects.equals(normalize(comicDto.getInker()), normalize(comicEntity.getInker()))
-                || !Objects.equals(normalize(comicDto.getColorist()), normalize(comicEntity.getColorist()))
-                || !Objects.equals(normalize(comicDto.getLetterer()), normalize(comicEntity.getLetterer()))
-                || !Objects.equals(normalize(comicDto.getCoverArtist()), normalize(comicEntity.getCoverArtist()))
-                || !Objects.equals(normalize(comicDto.getEditor()), normalize(comicEntity.getEditor()))
                 || !Objects.equals(normalize(comicDto.getImprint()), normalize(comicEntity.getImprint()))
                 || !Objects.equals(normalize(comicDto.getFormat()), normalize(comicEntity.getFormat()))
                 || !Objects.equals(comicDto.getBlackAndWhite(), comicEntity.getBlackAndWhite())
                 || !Objects.equals(comicDto.getManga(), comicEntity.getManga())
                 || !Objects.equals(normalize(comicDto.getReadingDirection()), normalize(comicEntity.getReadingDirection()))
-                || !Objects.equals(normalize(comicDto.getCharacters()), normalize(comicEntity.getCharacters()))
-                || !Objects.equals(normalize(comicDto.getTeams()), normalize(comicEntity.getTeams()))
-                || !Objects.equals(normalize(comicDto.getLocations()), normalize(comicEntity.getLocations()))
                 || !Objects.equals(normalize(comicDto.getWebLink()), normalize(comicEntity.getWebLink()))
-                || !Objects.equals(normalize(comicDto.getNotes()), normalize(comicEntity.getNotes()));
+                || !Objects.equals(normalize(comicDto.getNotes()), normalize(comicEntity.getNotes()))
+                || !stringSetsEqual(comicDto.getCharacters(), extractCharacterNames(comicEntity.getCharacters()))
+                || !stringSetsEqual(comicDto.getTeams(), extractTeamNames(comicEntity.getTeams()))
+                || !stringSetsEqual(comicDto.getLocations(), extractLocationNames(comicEntity.getLocations()))
+                || hasCreatorChanges(comicDto, comicEntity);
+    }
+
+    private static boolean stringSetsEqual(Set<String> set1, Set<String> set2) {
+        if (set1 == null && (set2 == null || set2.isEmpty())) return true;
+        if (set1 == null || set2 == null) return false;
+        if (set1.isEmpty() && set2.isEmpty()) return true;
+        return set1.equals(set2);
+    }
+
+    private static Set<String> extractCharacterNames(Set<ComicCharacterEntity> entities) {
+        if (entities == null) return Collections.emptySet();
+        return entities.stream().map(ComicCharacterEntity::getName).collect(Collectors.toSet());
+    }
+
+    private static Set<String> extractTeamNames(Set<ComicTeamEntity> entities) {
+        if (entities == null) return Collections.emptySet();
+        return entities.stream().map(ComicTeamEntity::getName).collect(Collectors.toSet());
+    }
+
+    private static Set<String> extractLocationNames(Set<ComicLocationEntity> entities) {
+        if (entities == null) return Collections.emptySet();
+        return entities.stream().map(ComicLocationEntity::getName).collect(Collectors.toSet());
+    }
+
+    private static boolean hasCreatorChanges(ComicMetadata dto, ComicMetadataEntity entity) {
+        // For creators, we do a simplified comparison based on whether there are any creators in DTO
+        boolean dtoHasCreators = (dto.getPencillers() != null && !dto.getPencillers().isEmpty())
+                || (dto.getInkers() != null && !dto.getInkers().isEmpty())
+                || (dto.getColorists() != null && !dto.getColorists().isEmpty())
+                || (dto.getLetterers() != null && !dto.getLetterers().isEmpty())
+                || (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty())
+                || (dto.getEditors() != null && !dto.getEditors().isEmpty());
+
+        boolean entityHasCreators = entity.getCreatorMappings() != null && !entity.getCreatorMappings().isEmpty();
+
+        // If both have no creators, no change
+        if (!dtoHasCreators && !entityHasCreators) return false;
+
+        // If one has creators and other doesn't, there's a change
+        if (dtoHasCreators != entityHasCreators) return true;
+
+        // Both have creators - compare counts as a basic check
+        int dtoCount = countNonNull(dto.getPencillers()) + countNonNull(dto.getInkers())
+                + countNonNull(dto.getColorists()) + countNonNull(dto.getLetterers())
+                + countNonNull(dto.getCoverArtists()) + countNonNull(dto.getEditors());
+
+        return dtoCount != entity.getCreatorMappings().size();
+    }
+
+    private static int countNonNull(Set<String> set) {
+        return set == null ? 0 : set.size();
     }
 }

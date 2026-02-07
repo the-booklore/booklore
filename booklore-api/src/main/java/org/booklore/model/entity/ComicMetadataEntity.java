@@ -3,6 +3,11 @@ package org.booklore.model.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -43,24 +48,6 @@ public class ComicMetadataEntity {
     @Column(name = "alternate_issue")
     private String alternateIssue;
 
-    @Column(name = "penciller")
-    private String penciller;
-
-    @Column(name = "inker")
-    private String inker;
-
-    @Column(name = "colorist")
-    private String colorist;
-
-    @Column(name = "letterer")
-    private String letterer;
-
-    @Column(name = "cover_artist")
-    private String coverArtist;
-
-    @Column(name = "editor")
-    private String editor;
-
     @Column(name = "imprint")
     private String imprint;
 
@@ -79,20 +66,44 @@ public class ComicMetadataEntity {
     @Builder.Default
     private String readingDirection = "ltr";
 
-    @Column(name = "characters", columnDefinition = "TEXT")
-    private String characters;
-
-    @Column(name = "teams", columnDefinition = "TEXT")
-    private String teams;
-
-    @Column(name = "locations", columnDefinition = "TEXT")
-    private String locations;
-
     @Column(name = "web_link")
     private String webLink;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // Many-to-many relationships
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "comic_metadata_character_mapping",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "character_id"))
+    @Fetch(FetchMode.SUBSELECT)
+    @Builder.Default
+    private Set<ComicCharacterEntity> characters = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "comic_metadata_team_mapping",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "team_id"))
+    @Fetch(FetchMode.SUBSELECT)
+    @Builder.Default
+    private Set<ComicTeamEntity> teams = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "comic_metadata_location_mapping",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "location_id"))
+    @Fetch(FetchMode.SUBSELECT)
+    @Builder.Default
+    private Set<ComicLocationEntity> locations = new HashSet<>();
+
+    @OneToMany(mappedBy = "comicMetadata", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Fetch(FetchMode.SUBSELECT)
+    @Builder.Default
+    private Set<ComicCreatorMappingEntity> creatorMappings = new HashSet<>();
 
     // Locked fields
     @Column(name = "issue_number_locked")
@@ -111,29 +122,9 @@ public class ComicMetadataEntity {
     @Builder.Default
     private Boolean storyArcLocked = Boolean.FALSE;
 
-    @Column(name = "penciller_locked")
+    @Column(name = "creators_locked")
     @Builder.Default
-    private Boolean pencillerLocked = Boolean.FALSE;
-
-    @Column(name = "inker_locked")
-    @Builder.Default
-    private Boolean inkerLocked = Boolean.FALSE;
-
-    @Column(name = "colorist_locked")
-    @Builder.Default
-    private Boolean coloristLocked = Boolean.FALSE;
-
-    @Column(name = "letterer_locked")
-    @Builder.Default
-    private Boolean lettererLocked = Boolean.FALSE;
-
-    @Column(name = "cover_artist_locked")
-    @Builder.Default
-    private Boolean coverArtistLocked = Boolean.FALSE;
-
-    @Column(name = "editor_locked")
-    @Builder.Default
-    private Boolean editorLocked = Boolean.FALSE;
+    private Boolean creatorsLocked = Boolean.FALSE;
 
     @Column(name = "characters_locked")
     @Builder.Default
@@ -152,12 +143,7 @@ public class ComicMetadataEntity {
         this.volumeNameLocked = lock;
         this.volumeNumberLocked = lock;
         this.storyArcLocked = lock;
-        this.pencillerLocked = lock;
-        this.inkerLocked = lock;
-        this.coloristLocked = lock;
-        this.lettererLocked = lock;
-        this.coverArtistLocked = lock;
-        this.editorLocked = lock;
+        this.creatorsLocked = lock;
         this.charactersLocked = lock;
         this.teamsLocked = lock;
         this.locationsLocked = lock;
@@ -168,12 +154,7 @@ public class ComicMetadataEntity {
                 && Boolean.TRUE.equals(this.volumeNameLocked)
                 && Boolean.TRUE.equals(this.volumeNumberLocked)
                 && Boolean.TRUE.equals(this.storyArcLocked)
-                && Boolean.TRUE.equals(this.pencillerLocked)
-                && Boolean.TRUE.equals(this.inkerLocked)
-                && Boolean.TRUE.equals(this.coloristLocked)
-                && Boolean.TRUE.equals(this.lettererLocked)
-                && Boolean.TRUE.equals(this.coverArtistLocked)
-                && Boolean.TRUE.equals(this.editorLocked)
+                && Boolean.TRUE.equals(this.creatorsLocked)
                 && Boolean.TRUE.equals(this.charactersLocked)
                 && Boolean.TRUE.equals(this.teamsLocked)
                 && Boolean.TRUE.equals(this.locationsLocked);
