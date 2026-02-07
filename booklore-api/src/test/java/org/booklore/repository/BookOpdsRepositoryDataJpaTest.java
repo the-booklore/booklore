@@ -1,16 +1,13 @@
 package org.booklore.repository;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.entity.LibraryPathEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -19,38 +16,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 
-@SpringBootTest
-@Transactional
-@TestPropertySource(properties = {
-        "spring.flyway.enabled=false",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-        "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "app.path-config=build/tmp/test-config",
-        "app.bookdrop-folder=build/tmp/test-bookdrop",
-        "spring.main.allow-bean-definition-overriding=true"
-})
-@org.springframework.context.annotation.Import(BookOpdsRepositoryDataJpaTest.TestConfig.class)
+@DataJpaTest
 class BookOpdsRepositoryDataJpaTest {
 
     @Autowired
     private BookOpdsRepository bookOpdsRepository;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    @org.springframework.boot.test.context.TestConfiguration
-    public static class TestConfig {
-        @org.springframework.context.annotation.Bean("flyway")
-        @org.springframework.context.annotation.Primary
-        public org.flywaydb.core.Flyway flyway() {
-            return org.mockito.Mockito.mock(org.flywaydb.core.Flyway.class);
-        }
-    }
+    @Autowired
+    private TestEntityManager entityManager;
 
     @Test
     void contextLoads() {
@@ -64,15 +37,13 @@ class BookOpdsRepositoryDataJpaTest {
                 .icon("book")
                 .watch(false)
                 .build();
-        entityManager.persist(library);
-        entityManager.flush();
+        entityManager.persistAndFlush(library);
 
         LibraryPathEntity libraryPath = LibraryPathEntity.builder()
                 .library(library)
                 .path("/test/path")
                 .build();
-        entityManager.persist(libraryPath);
-        entityManager.flush();
+        entityManager.persistAndFlush(libraryPath);
 
         BookEntity book = BookEntity.builder()
                 .library(library)
@@ -80,16 +51,14 @@ class BookOpdsRepositoryDataJpaTest {
                 .addedOn(Instant.now())
                 .deleted(false)
                 .build();
-        entityManager.persist(book);
-        entityManager.flush();
+        entityManager.persistAndFlush(book);
 
         BookMetadataEntity metadata = BookMetadataEntity.builder()
                 .book(book)
                 .bookId(book.getId())
                 .title("Test Title")
                 .build();
-        entityManager.persist(metadata);
-        entityManager.flush();
+        entityManager.persistAndFlush(metadata);
 
         List<BookEntity> result = bookOpdsRepository.findAllWithMetadataByIds(List.of(book.getId()));
         assertThat(result).hasSize(1);
