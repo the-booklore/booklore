@@ -65,12 +65,6 @@ class BookOpdsRepositoryDataJpaTest {
         public org.booklore.service.task.TaskCronService taskCronService() {
             return org.mockito.Mockito.mock(org.booklore.service.task.TaskCronService.class);
         }
-        
-        @Bean
-        @Primary
-        public tools.jackson.databind.ObjectMapper objectMapper() {
-            return new tools.jackson.databind.ObjectMapper();
-        }
     }
 
     @Test
