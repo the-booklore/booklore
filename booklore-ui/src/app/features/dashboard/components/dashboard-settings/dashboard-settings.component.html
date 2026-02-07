@@ -152,7 +152,7 @@
         icon="pi pi-plus"
         severity="primary"
         (click)="addScroller()"
-        [disabled]="config.scrollers.length >= 10">
+        [disabled]="config.scrollers.length >= MAX_SCROLLERS">
       </p-button>
       <p-button
         label="Reset to Default"

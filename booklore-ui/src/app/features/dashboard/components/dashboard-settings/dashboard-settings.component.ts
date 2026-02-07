@@ -92,6 +92,7 @@ export class DashboardSettingsComponent implements OnInit {
 
   readonly MIN_ITEMS = MIN_ITEMS;
   readonly MAX_ITEMS = MAX_ITEMS;
+  readonly MAX_SCROLLERS = MAX_SCROLLERS;
 
   ngOnInit(): void {
     this.configService.config$.subscribe(config => {
