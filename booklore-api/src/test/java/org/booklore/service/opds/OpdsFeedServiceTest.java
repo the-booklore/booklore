@@ -1,17 +1,13 @@
 package org.booklore.service.opds;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.config.security.userdetails.OpdsUserDetails;
-import org.booklore.model.dto.Book;
-import org.booklore.model.dto.BookFile;
-import org.booklore.model.dto.BookMetadata;
-import org.booklore.model.dto.Library;
-import org.booklore.model.dto.OpdsUserV2;
+import org.booklore.model.dto.*;
 import org.booklore.model.entity.ShelfEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.OpdsSortOrder;
 import org.booklore.service.MagicShelfService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -475,5 +471,34 @@ class OpdsFeedServiceTest {
         assertThat(xml).contains("Fantasy Book");
         assertThat(xml).contains("</feed>");
         verify(opdsBookService).getBooksPage(TEST_USER_ID, "fantasy", null, Set.of(10L), 0, 50);
+    }
+    @Test
+    void fileMimeType_shouldReturnCorrectMimeTypeForCbz() throws Exception {
+        var method = OpdsFeedService.class.getDeclaredMethod("fileMimeType", BookFile.class);
+        method.setAccessible(true);
+
+        BookFile bookFile = BookFile.builder()
+                .bookType(BookFileType.CBX)
+                .fileName("comic.cbz")
+                .archiveType(org.booklore.util.ArchiveUtils.ArchiveType.UNKNOWN)
+                .build();
+
+        String mimeType = (String) method.invoke(opdsFeedService, bookFile);
+        assertThat(mimeType).isEqualTo("application/vnd.comicbook+zip");
+    }
+
+    @Test
+    void fileMimeType_shouldReturnCorrectMimeTypeForCbr() throws Exception {
+        var method = OpdsFeedService.class.getDeclaredMethod("fileMimeType", BookFile.class);
+        method.setAccessible(true);
+
+        BookFile bookFile = BookFile.builder()
+                .bookType(BookFileType.CBX)
+                .fileName("comic.cbr")
+                .archiveType(org.booklore.util.ArchiveUtils.ArchiveType.UNKNOWN)
+                .build();
+
+        String mimeType = (String) method.invoke(opdsFeedService, bookFile);
+        assertThat(mimeType).isEqualTo("application/vnd.comicbook-rar");
     }
 }

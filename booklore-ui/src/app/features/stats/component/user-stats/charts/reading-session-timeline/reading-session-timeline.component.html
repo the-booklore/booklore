@@ -81,6 +81,7 @@
                      [pTooltip]="getTooltipContent(session)"
                      [escape]="false"
                      tooltipPosition="top"
+                     tooltipStyleClass="session-timeline-tooltip"
                      [appendTo]="'body'">
                   @if (isDurationGreaterThanOneHour(session.duration)) {
                     <div class="session-content">
