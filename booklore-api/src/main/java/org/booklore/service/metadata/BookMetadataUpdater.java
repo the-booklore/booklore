@@ -44,6 +44,7 @@ public class BookMetadataUpdater {
     private final MoodRepository moodRepository;
     private final TagRepository tagRepository;
     private final BookRepository bookRepository;
+    private final ComicMetadataRepository comicMetadataRepository;
     private final FileService fileService;
     private final MetadataMatchService metadataMatchService;
     private final AppSettingService appSettingService;
@@ -418,6 +419,8 @@ public class BookMetadataUpdater {
         if (comicDto.getCharactersLocked() != null) c.setCharactersLocked(comicDto.getCharactersLocked());
         if (comicDto.getTeamsLocked() != null) c.setTeamsLocked(comicDto.getTeamsLocked());
         if (comicDto.getLocationsLocked() != null) c.setLocationsLocked(comicDto.getLocationsLocked());
+
+        comicMetadataRepository.save(c);
     }
 
     private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {

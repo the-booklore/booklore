@@ -24,6 +24,7 @@ public class BookCreatorService {
     private final TagRepository tagRepository;
     private final BookRepository bookRepository;
     private final BookMetadataRepository bookMetadataRepository;
+    private final ComicMetadataRepository comicMetadataRepository;
 
     public BookEntity createShellBook(LibraryFile libraryFile, BookFileType bookFileType) {
         Optional<BookEntity> existingBookOpt = bookRepository.findByLibraryIdAndLibraryPathIdAndFileSubPathAndFileName(
@@ -149,5 +150,11 @@ public class BookCreatorService {
         }
         bookRepository.save(bookEntity);
         bookMetadataRepository.save(bookEntity.getMetadata());
+
+        // Save comic metadata if present (cascade doesn't work due to insertable=false)
+        ComicMetadataEntity comicMetadata = bookEntity.getMetadata().getComicMetadata();
+        if (comicMetadata != null && comicMetadata.getBookId() != null) {
+            comicMetadataRepository.save(comicMetadata);
+        }
     }
 }
