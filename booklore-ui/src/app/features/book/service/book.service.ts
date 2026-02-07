@@ -264,7 +264,7 @@ export class BookService {
       return;
     }
 
-    const effectiveBookType = bookType || book['bookType'];
+    const effectiveBookType = bookType || book.primaryFile?.bookType;
 
     let baseUrl: string | null = null;
     let queryParams: Record<string, any> = {};
@@ -301,7 +301,12 @@ export class BookService {
       return;
     }
 
-    this.router.navigate([`/${baseUrl}/book/${book.id}`]);
+    // Include bookType in query params if it was explicitly provided (for alternative formats)
+    if (bookType && bookType !== book.primaryFile?.bookType) {
+      queryParams['bookType'] = bookType;
+    }
+
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], { queryParams });
     this.updateLastReadTime(book.id);
   }
 
@@ -323,7 +328,8 @@ export class BookService {
 
   downloadFile(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download`;
-    this.fileDownloadService.downloadFile(downloadUrl, book.fileName!);
+    const fileName = book.primaryFile?.fileName ?? book.fileName ?? 'book';
+    this.fileDownloadService.downloadFile(downloadUrl, fileName);
   }
 
   downloadAllFiles(book: Book): void {
