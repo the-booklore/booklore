@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, CreatePhysicalBookRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -326,7 +326,10 @@ export class BookService {
 
   downloadAllFiles(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download-all`;
-    this.fileDownloadService.downloadFile(downloadUrl, `${book.metadata?.title || 'book'}-all-files.zip`);
+    const fileName = book.metadata?.title
+      ? `${book.metadata.title.replace(/[^a-zA-Z0-9\-_]/g, '_')}-all-files.zip`
+      : `book-${book.id}-all-files.zip`;
+    this.fileDownloadService.downloadFile(downloadUrl, fileName);
   }
 
   deleteBookFile(bookId: number, fileId: number, isPrimary: boolean): Observable<void> {
@@ -611,10 +614,10 @@ export class BookService {
   }
 
   generateCustomCoversForBooks(bookIds: number[]): Observable<void> {
-    return this.regenerateCoversForBooks(bookIds);
+    return this.http.post<void>(`${this.url}/bulk-generate-custom-covers`, {bookIds});
   }
 
-  createPhysicalBook(request: unknown): Observable<Book> {
+  createPhysicalBook(request: CreatePhysicalBookRequest): Observable<Book> {
     return this.http.post<Book>(`${this.url}/physical`, request);
   }
 
