@@ -38,7 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -293,11 +293,43 @@ public class LibraryService {
         return counts;
     }
 
+    static final int SCAN_TIMEOUT_SECONDS = 30;
+    static final int SCAN_TIMEOUT_RESULT = -1;
+
     public int scanLibraryPaths(CreateLibraryRequest request) {
-        int count = 0;
         if (request.getPaths() == null || request.getPaths().isEmpty()) {
-            return count;
+            return 0;
         }
+        try {
+            return scanLibraryPathsWithTimeout(request, SCAN_TIMEOUT_SECONDS);
+        } catch (TimeoutException e) {
+            log.warn("Library path scan timed out after {} seconds. Returning {} to signal large/slow library.",
+                    SCAN_TIMEOUT_SECONDS, SCAN_TIMEOUT_RESULT);
+            return SCAN_TIMEOUT_RESULT;
+        }
+    }
+
+    int scanLibraryPathsWithTimeout(CreateLibraryRequest request, int timeoutSeconds) throws TimeoutException {
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            Future<Integer> future = executor.submit(() -> countProcessableFiles(request));
+            try {
+                return future.get(timeoutSeconds, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                future.cancel(true);
+                throw e;
+            } catch (ExecutionException e) {
+                log.error("Error during library path scan", e.getCause());
+                return 0;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Library path scan was interrupted");
+                return 0;
+            }
+        }
+    }
+
+    int countProcessableFiles(CreateLibraryRequest request) {
+        int count = 0;
         Set<BookFileType> allowedFormats = request.getAllowedFormats() != null && !request.getAllowedFormats().isEmpty()
                 ? Set.copyOf(request.getAllowedFormats())
                 : null;
@@ -306,6 +338,10 @@ public class LibraryService {
             if (!Files.exists(path)) {
                 log.warn("Path does not exist: {}", path);
                 continue;
+            }
+            if (Thread.currentThread().isInterrupted()) {
+                log.debug("Scan interrupted, returning partial count: {}", count);
+                return count;
             }
             if (Files.isDirectory(path)) {
                 count += scanDirectory(path, allowedFormats);
@@ -320,6 +356,10 @@ public class LibraryService {
         int count = 0;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
             for (Path entry : stream) {
+                if (Thread.currentThread().isInterrupted()) {
+                    log.debug("Directory scan interrupted at: {}", directory);
+                    return count;
+                }
                 if (Files.isDirectory(entry)) {
                     count += scanDirectory(entry, allowedFormats);
                 } else if (Files.isRegularFile(entry) && isProcessableFile(entry, allowedFormats)) {

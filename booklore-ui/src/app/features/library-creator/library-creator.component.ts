@@ -236,28 +236,40 @@ export class LibraryCreatorComponent implements OnInit {
     } else {
       this.libraryService.scanLibraryPaths(library).pipe(
         switchMap(count => {
-          if (count < 500) {
+          if (count === -1) {
+            console.warn('Library path scan timed out on server. Proceeding with large library mode.');
+            this.libraryService.setLargeLibraryLoading(true, 0);
             return this.libraryService.createLibrary(library).pipe(
-              map(createdLibrary => ({ createdLibrary, count }))
+              map(createdLibrary => ({ createdLibrary, count: -1, timedOut: true }))
             );
-          } else {
+          } else if (count >= 500) {
             console.warn(`Library has ${count} processable files (>500). Will use buffered loading.`);
             this.libraryService.setLargeLibraryLoading(true, count);
             return this.libraryService.createLibrary(library).pipe(
-              map(createdLibrary => ({ createdLibrary, count }))
+              map(createdLibrary => ({ createdLibrary, count, timedOut: false }))
+            );
+          } else {
+            return this.libraryService.createLibrary(library).pipe(
+              map(createdLibrary => ({ createdLibrary, count, timedOut: false }))
             );
           }
         })
       ).subscribe({
-        next: ({ createdLibrary, count }) => {
+        next: ({ createdLibrary, count, timedOut }) => {
           if (createdLibrary) {
             this.router.navigate(['/library', createdLibrary.id, 'books']);
+            let detail: string;
+            if (timedOut) {
+              detail = 'Library created. Scanning in progress — books will appear as they are processed.';
+            } else if (count >= 500) {
+              detail = `Library created with ${count} files. Loading in progress...`;
+            } else {
+              detail = 'The library was created successfully.';
+            }
             this.messageService.add({
               severity: 'success',
               summary: 'Library Created',
-              detail: count >= 500
-                ? `Library created with ${count} files. Loading in progress...`
-                : 'The library was created successfully.'
+              detail
             });
             this.dynamicDialogRef.close();
           }
