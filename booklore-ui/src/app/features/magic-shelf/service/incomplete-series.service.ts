@@ -45,11 +45,11 @@ export class IncompleteSeriesService {
       const minNumber = Math.min(...presentNumbers);
       const maxNumber = Math.max(...presentNumbers);
       
-      // Series must start at exactly 1 (with small tolerance for float comparison)
-      const startsAtOne = Math.abs(minNumber - 1.0) < 0.01;
-      const missingNumbers = this.findMissingNumbers(presentNumbers, maxNumber);
+      // Series can start at 0 or 1 (with small tolerance for float comparison)
+      const startsAtZeroOrOne = Math.abs(minNumber - 0.0) < 0.01 || Math.abs(minNumber - 1.0) < 0.01;
+      const missingNumbers = this.findMissingNumbers(presentNumbers, minNumber, maxNumber);
 
-      if (!startsAtOne || missingNumbers.length > 0) {
+      if (!startsAtZeroOrOne || missingNumbers.length > 0) {
         incompleteSeriesNames.add(seriesKey);
       }
     }
@@ -102,27 +102,29 @@ export class IncompleteSeriesService {
     const minNumber = Math.min(...presentNumbers);
     const maxNumber = Math.max(...presentNumbers);
 
-    // Series must start at exactly 1 (with small tolerance for float comparison)
-    const startsAtOne = Math.abs(minNumber - 1.0) < 0.01;
+    // Series can start at 0 or 1 (with small tolerance for float comparison)
+    const startsAtZeroOrOne = Math.abs(minNumber - 0.0) < 0.01 || Math.abs(minNumber - 1.0) < 0.01;
 
     // Get missing numbers
-    const missingNumbers = this.findMissingNumbers(presentNumbers, maxNumber);
+    const missingNumbers = this.findMissingNumbers(presentNumbers, minNumber, maxNumber);
 
-    // Series is incomplete if it doesn't start at 1 or has missing numbers
-    return !startsAtOne || missingNumbers.length > 0;
+    // Series is incomplete if it doesn't start at 0 or 1, or has missing numbers
+    return !startsAtZeroOrOne || missingNumbers.length > 0;
   }
 
   /**
-   * Finds missing series numbers between 1 and max
-   * Handles both integer series (1, 2, 3) and decimal series (1, 1.5, 2, 2.5)
+   * Finds missing series numbers between min and max
+   * Handles both integer series (0, 1, 2 or 1, 2, 3) and decimal series (0, 0.5, 1, 1.5 or 1, 1.5, 2, 2.5)
    */
-  private findMissingNumbers(presentNumbers: number[], max: number): number[] {
+  private findMissingNumbers(presentNumbers: number[], min: number, max: number): number[] {
     const hasDecimals = presentNumbers.some((n) => n % 1 !== 0);
+    const startInt = Math.ceil(min); // Use ceil to handle min values like 0.5 correctly
+    const endInt = Math.floor(max);
 
     if (!hasDecimals) {
-      // Integer series: check for gaps from 1 to max
+      // Integer series: check for gaps from min to max
       const missing: number[] = [];
-      for (let i = 1; i <= Math.floor(max); i++) {
+      for (let i = startInt; i <= endInt; i++) {
         if (!presentNumbers.includes(i)) {
           missing.push(i);
         }
@@ -132,7 +134,7 @@ export class IncompleteSeriesService {
       // Decimal series: more complex logic
       // For each integer position, check if there's at least one variant (integer or decimal)
       const missing: number[] = [];
-      for (let i = 1; i <= Math.floor(max); i++) {
+      for (let i = startInt; i <= endInt; i++) {
         const hasVariant = presentNumbers.some(
           (n) => Math.floor(n) === i || n === i,
         );
