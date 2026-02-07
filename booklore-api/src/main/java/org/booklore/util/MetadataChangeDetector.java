@@ -3,6 +3,7 @@ package org.booklore.util;
 import lombok.experimental.UtilityClass;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.ComicMetadata;
 import org.booklore.model.entity.*;
 
 import java.util.*;
@@ -245,6 +246,9 @@ public class MetadataChangeDetector {
                 return true;
             }
         }
+        if (hasComicMetadataChanges(newMeta, existingMeta)) {
+            return true;
+        }
         return differsLock(newMeta.getCoverLocked(), existingMeta.getCoverLocked()) || differsLock(newMeta.getAudiobookCoverLocked(), existingMeta.getAudiobookCoverLocked());
     }
 
@@ -258,6 +262,9 @@ public class MetadataChangeDetector {
             if (hasCollectionValueDifference(field, newMeta, existingMeta, clear)) {
                 return true;
             }
+        }
+        if (hasComicMetadataChanges(newMeta, existingMeta)) {
+            return true;
         }
         return false;
     }
@@ -360,5 +367,45 @@ public class MetadataChangeDetector {
                     default -> e.toString();
                 })
                 .collect(Collectors.toSet());
+    }
+
+    private static boolean hasComicMetadataChanges(BookMetadata newMeta, BookMetadataEntity existingMeta) {
+        ComicMetadata comicDto = newMeta.getComicMetadata();
+        ComicMetadataEntity comicEntity = existingMeta.getComicMetadata();
+
+        // No comic metadata in DTO, no changes
+        if (comicDto == null) {
+            return false;
+        }
+
+        // Comic metadata in DTO but not in entity - this is a change
+        if (comicEntity == null) {
+            return true;
+        }
+
+        // Compare individual fields
+        return !Objects.equals(normalize(comicDto.getIssueNumber()), normalize(comicEntity.getIssueNumber()))
+                || !Objects.equals(normalize(comicDto.getVolumeName()), normalize(comicEntity.getVolumeName()))
+                || !Objects.equals(comicDto.getVolumeNumber(), comicEntity.getVolumeNumber())
+                || !Objects.equals(normalize(comicDto.getStoryArc()), normalize(comicEntity.getStoryArc()))
+                || !Objects.equals(comicDto.getStoryArcNumber(), comicEntity.getStoryArcNumber())
+                || !Objects.equals(normalize(comicDto.getAlternateSeries()), normalize(comicEntity.getAlternateSeries()))
+                || !Objects.equals(normalize(comicDto.getAlternateIssue()), normalize(comicEntity.getAlternateIssue()))
+                || !Objects.equals(normalize(comicDto.getPenciller()), normalize(comicEntity.getPenciller()))
+                || !Objects.equals(normalize(comicDto.getInker()), normalize(comicEntity.getInker()))
+                || !Objects.equals(normalize(comicDto.getColorist()), normalize(comicEntity.getColorist()))
+                || !Objects.equals(normalize(comicDto.getLetterer()), normalize(comicEntity.getLetterer()))
+                || !Objects.equals(normalize(comicDto.getCoverArtist()), normalize(comicEntity.getCoverArtist()))
+                || !Objects.equals(normalize(comicDto.getEditor()), normalize(comicEntity.getEditor()))
+                || !Objects.equals(normalize(comicDto.getImprint()), normalize(comicEntity.getImprint()))
+                || !Objects.equals(normalize(comicDto.getFormat()), normalize(comicEntity.getFormat()))
+                || !Objects.equals(comicDto.getBlackAndWhite(), comicEntity.getBlackAndWhite())
+                || !Objects.equals(comicDto.getManga(), comicEntity.getManga())
+                || !Objects.equals(normalize(comicDto.getReadingDirection()), normalize(comicEntity.getReadingDirection()))
+                || !Objects.equals(normalize(comicDto.getCharacters()), normalize(comicEntity.getCharacters()))
+                || !Objects.equals(normalize(comicDto.getTeams()), normalize(comicEntity.getTeams()))
+                || !Objects.equals(normalize(comicDto.getLocations()), normalize(comicEntity.getLocations()))
+                || !Objects.equals(normalize(comicDto.getWebLink()), normalize(comicEntity.getWebLink()))
+                || !Objects.equals(normalize(comicDto.getNotes()), normalize(comicEntity.getNotes()));
     }
 }

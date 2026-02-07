@@ -7,6 +7,7 @@ import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.ComicMetadata;
 import org.booklore.model.dto.FileMoveResult;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.*;
@@ -99,6 +100,7 @@ public class BookMetadataUpdater {
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
         updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
         updateAudiobookMetadataIfNeeded(bookEntity, newMetadata, metadata, clearFlags, replaceMode);
+        updateComicMetadataIfNeeded(newMetadata, metadata, replaceMode);
         updateLocks(newMetadata, metadata);
 
         bookEntity.setMetadataUpdatedAt(Instant.now());
@@ -360,6 +362,62 @@ public class BookMetadataUpdater {
         }
         handleFieldUpdate(e.getNarratorLocked(), clear.isNarrator(), m.getNarrator(), v -> e.setNarrator(nullIfBlank(v)), e::getNarrator, replaceMode);
         handleFieldUpdate(e.getAbridgedLocked(), clear.isAbridged(), m.getAbridged(), e::setAbridged, e::getAbridged, replaceMode);
+    }
+
+    private void updateComicMetadataIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataReplaceMode replaceMode) {
+        ComicMetadata comicDto = m.getComicMetadata();
+        if (comicDto == null) {
+            return;
+        }
+
+        ComicMetadataEntity comic = e.getComicMetadata();
+        if (comic == null) {
+            comic = ComicMetadataEntity.builder()
+                    .bookId(e.getBookId())
+                    .bookMetadata(e)
+                    .build();
+            e.setComicMetadata(comic);
+        }
+
+        ComicMetadataEntity c = comic;
+        handleFieldUpdate(c.getIssueNumberLocked(), false, comicDto.getIssueNumber(), v -> c.setIssueNumber(nullIfBlank(v)), c::getIssueNumber, replaceMode);
+        handleFieldUpdate(c.getVolumeNameLocked(), false, comicDto.getVolumeName(), v -> c.setVolumeName(nullIfBlank(v)), c::getVolumeName, replaceMode);
+        handleFieldUpdate(c.getVolumeNumberLocked(), false, comicDto.getVolumeNumber(), c::setVolumeNumber, c::getVolumeNumber, replaceMode);
+        handleFieldUpdate(c.getStoryArcLocked(), false, comicDto.getStoryArc(), v -> c.setStoryArc(nullIfBlank(v)), c::getStoryArc, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getStoryArcNumber(), c::setStoryArcNumber, c::getStoryArcNumber, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getAlternateSeries(), v -> c.setAlternateSeries(nullIfBlank(v)), c::getAlternateSeries, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getAlternateIssue(), v -> c.setAlternateIssue(nullIfBlank(v)), c::getAlternateIssue, replaceMode);
+        handleFieldUpdate(c.getPencillerLocked(), false, comicDto.getPenciller(), v -> c.setPenciller(nullIfBlank(v)), c::getPenciller, replaceMode);
+        handleFieldUpdate(c.getInkerLocked(), false, comicDto.getInker(), v -> c.setInker(nullIfBlank(v)), c::getInker, replaceMode);
+        handleFieldUpdate(c.getColoristLocked(), false, comicDto.getColorist(), v -> c.setColorist(nullIfBlank(v)), c::getColorist, replaceMode);
+        handleFieldUpdate(c.getLettererLocked(), false, comicDto.getLetterer(), v -> c.setLetterer(nullIfBlank(v)), c::getLetterer, replaceMode);
+        handleFieldUpdate(c.getCoverArtistLocked(), false, comicDto.getCoverArtist(), v -> c.setCoverArtist(nullIfBlank(v)), c::getCoverArtist, replaceMode);
+        handleFieldUpdate(c.getEditorLocked(), false, comicDto.getEditor(), v -> c.setEditor(nullIfBlank(v)), c::getEditor, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getImprint(), v -> c.setImprint(nullIfBlank(v)), c::getImprint, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getFormat(), v -> c.setFormat(nullIfBlank(v)), c::getFormat, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getBlackAndWhite(), c::setBlackAndWhite, c::getBlackAndWhite, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getManga(), c::setManga, c::getManga, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getReadingDirection(), v -> c.setReadingDirection(nullIfBlank(v)), c::getReadingDirection, replaceMode);
+        handleFieldUpdate(c.getCharactersLocked(), false, comicDto.getCharacters(), v -> c.setCharacters(nullIfBlank(v)), c::getCharacters, replaceMode);
+        handleFieldUpdate(c.getTeamsLocked(), false, comicDto.getTeams(), v -> c.setTeams(nullIfBlank(v)), c::getTeams, replaceMode);
+        handleFieldUpdate(c.getLocationsLocked(), false, comicDto.getLocations(), v -> c.setLocations(nullIfBlank(v)), c::getLocations, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getWebLink(), v -> c.setWebLink(nullIfBlank(v)), c::getWebLink, replaceMode);
+        handleFieldUpdate(null, false, comicDto.getNotes(), v -> c.setNotes(nullIfBlank(v)), c::getNotes, replaceMode);
+
+        // Update locks if provided
+        if (comicDto.getIssueNumberLocked() != null) c.setIssueNumberLocked(comicDto.getIssueNumberLocked());
+        if (comicDto.getVolumeNameLocked() != null) c.setVolumeNameLocked(comicDto.getVolumeNameLocked());
+        if (comicDto.getVolumeNumberLocked() != null) c.setVolumeNumberLocked(comicDto.getVolumeNumberLocked());
+        if (comicDto.getStoryArcLocked() != null) c.setStoryArcLocked(comicDto.getStoryArcLocked());
+        if (comicDto.getPencillerLocked() != null) c.setPencillerLocked(comicDto.getPencillerLocked());
+        if (comicDto.getInkerLocked() != null) c.setInkerLocked(comicDto.getInkerLocked());
+        if (comicDto.getColoristLocked() != null) c.setColoristLocked(comicDto.getColoristLocked());
+        if (comicDto.getLettererLocked() != null) c.setLettererLocked(comicDto.getLettererLocked());
+        if (comicDto.getCoverArtistLocked() != null) c.setCoverArtistLocked(comicDto.getCoverArtistLocked());
+        if (comicDto.getEditorLocked() != null) c.setEditorLocked(comicDto.getEditorLocked());
+        if (comicDto.getCharactersLocked() != null) c.setCharactersLocked(comicDto.getCharactersLocked());
+        if (comicDto.getTeamsLocked() != null) c.setTeamsLocked(comicDto.getTeamsLocked());
+        if (comicDto.getLocationsLocked() != null) c.setLocationsLocked(comicDto.getLocationsLocked());
     }
 
     private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {

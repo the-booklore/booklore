@@ -1,6 +1,7 @@
 package org.booklore.service.metadata.extractor;
 
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.ComicMetadata;
 import org.booklore.util.ArchiveUtils;
 import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
@@ -203,6 +204,137 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         categories.addAll(splitValues(getTextContent(document, "Tags")));
         if (!categories.isEmpty()) {
             builder.categories(categories);
+        }
+
+        // Extract comic-specific metadata
+        ComicMetadata.ComicMetadataBuilder comicBuilder = ComicMetadata.builder();
+        boolean hasComicFields = false;
+
+        String issueNumber = getTextContent(document, "Number");
+        if (issueNumber != null && !issueNumber.isBlank()) {
+            comicBuilder.issueNumber(issueNumber);
+            hasComicFields = true;
+        }
+
+        String volume = getTextContent(document, "Volume");
+        if (volume != null && !volume.isBlank()) {
+            comicBuilder.volumeName(getTextContent(document, "Series"));
+            comicBuilder.volumeNumber(parseInteger(volume));
+            hasComicFields = true;
+        }
+
+        String storyArc = getTextContent(document, "StoryArc");
+        if (storyArc != null && !storyArc.isBlank()) {
+            comicBuilder.storyArc(storyArc);
+            comicBuilder.storyArcNumber(parseInteger(getTextContent(document, "StoryArcNumber")));
+            hasComicFields = true;
+        }
+
+        String alternateSeries = getTextContent(document, "AlternateSeries");
+        if (alternateSeries != null && !alternateSeries.isBlank()) {
+            comicBuilder.alternateSeries(alternateSeries);
+            comicBuilder.alternateIssue(getTextContent(document, "AlternateNumber"));
+            hasComicFields = true;
+        }
+
+        String penciller = getTextContent(document, "Penciller");
+        if (penciller != null && !penciller.isBlank()) {
+            comicBuilder.penciller(penciller);
+            hasComicFields = true;
+        }
+
+        String inker = getTextContent(document, "Inker");
+        if (inker != null && !inker.isBlank()) {
+            comicBuilder.inker(inker);
+            hasComicFields = true;
+        }
+
+        String colorist = getTextContent(document, "Colorist");
+        if (colorist != null && !colorist.isBlank()) {
+            comicBuilder.colorist(colorist);
+            hasComicFields = true;
+        }
+
+        String letterer = getTextContent(document, "Letterer");
+        if (letterer != null && !letterer.isBlank()) {
+            comicBuilder.letterer(letterer);
+            hasComicFields = true;
+        }
+
+        String coverArtist = getTextContent(document, "CoverArtist");
+        if (coverArtist != null && !coverArtist.isBlank()) {
+            comicBuilder.coverArtist(coverArtist);
+            hasComicFields = true;
+        }
+
+        String editor = getTextContent(document, "Editor");
+        if (editor != null && !editor.isBlank()) {
+            comicBuilder.editor(editor);
+            hasComicFields = true;
+        }
+
+        String imprint = getTextContent(document, "Imprint");
+        if (imprint != null && !imprint.isBlank()) {
+            comicBuilder.imprint(imprint);
+            hasComicFields = true;
+        }
+
+        String format = getTextContent(document, "Format");
+        if (format != null && !format.isBlank()) {
+            comicBuilder.format(format);
+            hasComicFields = true;
+        }
+
+        String blackAndWhite = getTextContent(document, "BlackAndWhite");
+        if ("yes".equalsIgnoreCase(blackAndWhite) || "true".equalsIgnoreCase(blackAndWhite)) {
+            comicBuilder.blackAndWhite(Boolean.TRUE);
+            hasComicFields = true;
+        }
+
+        String manga = getTextContent(document, "Manga");
+        if (manga != null && !manga.isBlank()) {
+            boolean isManga = "yes".equalsIgnoreCase(manga) || "true".equalsIgnoreCase(manga) || "yesandrighttoleft".equalsIgnoreCase(manga);
+            comicBuilder.manga(isManga);
+            if ("yesandrighttoleft".equalsIgnoreCase(manga)) {
+                comicBuilder.readingDirection("rtl");
+            } else {
+                comicBuilder.readingDirection("ltr");
+            }
+            hasComicFields = true;
+        }
+
+        String characters = getTextContent(document, "Characters");
+        if (characters != null && !characters.isBlank()) {
+            comicBuilder.characters(characters);
+            hasComicFields = true;
+        }
+
+        String teams = getTextContent(document, "Teams");
+        if (teams != null && !teams.isBlank()) {
+            comicBuilder.teams(teams);
+            hasComicFields = true;
+        }
+
+        String locations = getTextContent(document, "Locations");
+        if (locations != null && !locations.isBlank()) {
+            comicBuilder.locations(locations);
+            hasComicFields = true;
+        }
+
+        String web = getTextContent(document, "Web");
+        if (web != null && !web.isBlank()) {
+            comicBuilder.webLink(web);
+            hasComicFields = true;
+        }
+
+        String notes = getTextContent(document, "Notes");
+        if (notes != null && !notes.isBlank()) {
+            comicBuilder.notes(notes);
+            hasComicFields = true;
+        }
+
+        if (hasComicFields) {
+            builder.comicMetadata(comicBuilder.build());
         }
 
         return builder.build();
