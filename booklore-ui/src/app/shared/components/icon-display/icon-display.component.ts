@@ -21,6 +21,10 @@ import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
           [ngStyle]="getSvgStyle()"
         ></div>
       }
+    } @else if (displayEmpty) {
+      <div
+          [ngStyle]="getEmptyIconStyle()"
+      ></div>
     }
   `,
   styles: [`
@@ -50,6 +54,7 @@ export class IconDisplayComponent implements OnInit, OnChanges {
   @Input() iconStyle: Record<string, string> = {};
   @Input() size: string = '16px';
   @Input() alt: string = 'Icon';
+  @Input() displayEmpty: boolean = false;
 
   private iconCache = inject(IconCacheService);
   private iconService = inject(IconService);
@@ -112,6 +117,13 @@ export class IconDisplayComponent implements OnInit, OnChanges {
       width: this.size,
       height: this.size,
       ...this.iconStyle
+    };
+  }
+
+  getEmptyIconStyle(): Record<string, string> {
+    return {
+      width: this.size,
+      height: this.size,
     };
   }
 

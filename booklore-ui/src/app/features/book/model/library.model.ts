@@ -4,8 +4,8 @@ import {BookType} from './book.model';
 export interface Library {
   id?: number;
   name: string;
-  icon: string;
-  iconType?: 'PRIME_NG' | 'CUSTOM_SVG';
+  icon?: string | null;
+  iconType?: 'PRIME_NG' | 'CUSTOM_SVG' | null;
   watch: boolean;
   fileNamingPattern?: string;
   sort?: SortOption;
