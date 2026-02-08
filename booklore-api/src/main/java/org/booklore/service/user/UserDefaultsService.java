@@ -1,13 +1,14 @@
 package org.booklore.service.user;
 
+import tools.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.settings.UserSettingKey;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.model.entity.ShelfEntity;
 import org.booklore.model.entity.UserSettingEntity;
+import org.booklore.model.enums.IconType;
 import org.booklore.repository.ShelfRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -24,6 +25,7 @@ public class UserDefaultsService {
                 .user(user)
                 .name("Favorites")
                 .icon("heart")
+                .iconType(IconType.PRIME_NG)
                 .build();
         shelfRepository.save(shelf);
     }

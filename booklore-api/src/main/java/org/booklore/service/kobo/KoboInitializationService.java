@@ -1,15 +1,15 @@
 package org.booklore.service.kobo;
 
-import org.booklore.model.dto.kobo.KoboResources;
-import org.booklore.util.kobo.KoboUrlBuilder;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.kobo.KoboResources;
+import org.booklore.util.kobo.KoboUrlBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 @Slf4j
 @Service
@@ -20,7 +20,7 @@ public class KoboInitializationService {
     private final KoboResourcesComponent koboResourcesComponent;
     private final KoboUrlBuilder koboUrlBuilder;
 
-    public ResponseEntity<KoboResources> initialize(String token) throws JsonProcessingException {
+    public ResponseEntity<KoboResources> initialize(String token) throws JacksonException {
         JsonNode resources;
 
         JsonNode body = null;

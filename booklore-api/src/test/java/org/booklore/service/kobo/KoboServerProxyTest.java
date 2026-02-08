@@ -3,8 +3,6 @@ package org.booklore.service.kobo;
 import org.booklore.model.dto.BookloreSyncToken;
 import org.booklore.model.dto.kobo.KoboHeaders;
 import org.booklore.util.kobo.BookloreSyncTokenGenerator;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +17,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Field;
 import java.net.http.HttpClient;
@@ -170,7 +170,7 @@ class KoboServerProxyTest {
         ResponseEntity<JsonNode> response = koboServerProxy.proxyCurrentRequest(null, false);
 
         assertThat(response).isNotNull();
-        assertThat(response.getHeaders()).containsKey("X-Kobo-Response");
+        assertThat(response.getHeaders().getFirst("X-Kobo-Response")).isNotNull();
     }
 
     @Test

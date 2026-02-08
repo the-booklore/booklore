@@ -36,9 +36,8 @@ public class ShelfEntity {
     private String icon;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "icon_type", nullable = false)
-    @Builder.Default
-    private IconType iconType = IconType.PRIME_NG;
+    @Column(name = "icon_type")
+    private IconType iconType;
 
     @Column(name = "is_public", nullable = false)
     @Builder.Default

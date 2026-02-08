@@ -1,12 +1,16 @@
 package org.booklore.model;
 
-import org.booklore.model.entity.BookEntity;
-import org.booklore.model.enums.MetadataReplaceMode;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.enums.MetadataReplaceMode;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MetadataUpdateContext {
     private BookEntity bookEntity;
     private MetadataUpdateWrapper metadataUpdateWrapper;

@@ -1,7 +1,8 @@
 {
   "name": "booklore",
   "short_name": "booklore",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "browser"],
   "scope": "./",
   "start_url": "./",
   "icons": [

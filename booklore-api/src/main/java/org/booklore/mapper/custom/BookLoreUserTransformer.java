@@ -1,5 +1,7 @@
 package org.booklore.mapper.custom;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.mapper.LibraryMapper;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.settings.SidebarSortOption;
@@ -7,11 +9,9 @@ import org.booklore.model.dto.settings.UserSettingKey;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.model.entity.UserSettingEntity;
 import org.booklore.model.enums.UserPermission;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Collections;
 import java.util.stream.Collectors;

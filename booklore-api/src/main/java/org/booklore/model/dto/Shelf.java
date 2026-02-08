@@ -1,12 +1,16 @@
 package org.booklore.model.dto;
 
-import org.booklore.model.enums.IconType;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.booklore.model.enums.IconType;
 
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Shelf {
     private Long id;

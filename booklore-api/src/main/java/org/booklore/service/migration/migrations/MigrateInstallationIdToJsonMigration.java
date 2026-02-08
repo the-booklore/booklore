@@ -1,12 +1,12 @@
 package org.booklore.service.migration.migrations;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.entity.AppSettingEntity;
 import org.booklore.repository.AppSettingsRepository;
 import org.booklore.service.migration.Migration;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 
