@@ -158,24 +158,15 @@ export class DashboardSettingsComponent implements OnInit {
   }
 
   onScrollerTypeChange(scroller: ScrollerConfig): void {
-    if (scroller.type === ScrollerType.MAGIC_SHELF) {
-      // Initialize only if not already set, don't overwrite existing values
-      if (scroller.magicShelfId === undefined) {
-        scroller.magicShelfId = undefined;
-      }
-      if (scroller.sortField === undefined) {
-        scroller.sortField = undefined;
-      }
-      if (scroller.sortDirection === undefined) {
-        scroller.sortDirection = undefined;
-      }
-    } else {
+    // Clean up type-specific fields when switching away from that type
+    if (scroller.type !== ScrollerType.MAGIC_SHELF) {
       delete scroller.magicShelfId;
       delete scroller.sortField;
       delete scroller.sortDirection;
     }
 
     if (scroller.type === ScrollerType.UP_NEXT) {
+      // Initialize to default if not already set
       if (scroller.upNextShowFirstUnread === undefined) {
         scroller.upNextShowFirstUnread = false;
       }
@@ -184,6 +175,7 @@ export class DashboardSettingsComponent implements OnInit {
     }
 
     if (scroller.type === ScrollerType.READ_AGAIN) {
+      // Initialize to default if not already set
       if (scroller.readAgainSortByFinished === undefined) {
         scroller.readAgainSortByFinished = false;
       }
