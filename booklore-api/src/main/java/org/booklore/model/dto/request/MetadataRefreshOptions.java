@@ -1,5 +1,7 @@
 package org.booklore.model.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import org.booklore.model.enums.MetadataProvider;
 import org.booklore.model.enums.MetadataReplaceMode;
 import jakarta.validation.constraints.NotNull;
@@ -88,70 +90,72 @@ public class MetadataRefreshOptions {
     @Builder
     public static class EnabledFields {
         // All fields default to true so metadata fetcher updates fields by default
-        // unless explicitly disabled by the user
-        @Builder.Default
+        // unless explicitly disabled by the user.
+        // @JsonSetter(nulls = Nulls.SKIP) ensures that null values in persisted JSON
+        // (e.g. from older versions missing newer fields) are ignored, preserving defaults.
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean title = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean subtitle = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean description = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean authors = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean publisher = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean publishedDate = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean seriesName = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean seriesNumber = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean seriesTotal = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean isbn13 = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean isbn10 = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean language = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean categories = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean cover = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean pageCount = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean asin = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean goodreadsId = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean comicvineId = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean hardcoverId = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean googleId = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean lubimyczytacId = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean amazonRating = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean amazonReviewCount = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean goodreadsRating = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean goodreadsReviewCount = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean hardcoverRating = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean hardcoverReviewCount = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean lubimyczytacRating = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean ranobedbId = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean ranobedbRating = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean moods = true;
-        @Builder.Default
+        @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
         private boolean tags = true;
 
         /**
