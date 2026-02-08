@@ -1,3 +1,4 @@
+-- Create comic_metadata table for storing comic-specific metadata
 CREATE TABLE IF NOT EXISTS comic_metadata
 (
     book_id              BIGINT PRIMARY KEY,
@@ -26,33 +27,39 @@ CREATE TABLE IF NOT EXISTS comic_metadata
     CONSTRAINT fk_comic_metadata_book FOREIGN KEY (book_id) REFERENCES book_metadata (book_id) ON DELETE CASCADE
 );
 
+-- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_comic_metadata_story_arc ON comic_metadata (story_arc);
 CREATE INDEX IF NOT EXISTS idx_comic_metadata_volume_name ON comic_metadata (volume_name);
 
+-- Create comic_character table
 CREATE TABLE IF NOT EXISTS comic_character
 (
     id   BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
+-- Create comic_team table
 CREATE TABLE IF NOT EXISTS comic_team
 (
     id   BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
+-- Create comic_location table
 CREATE TABLE IF NOT EXISTS comic_location
 (
     id   BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
+-- Create comic_creator table
 CREATE TABLE IF NOT EXISTS comic_creator
 (
     id   BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
+-- Create mapping tables
 CREATE TABLE IF NOT EXISTS comic_metadata_character_mapping
 (
     book_id      BIGINT NOT NULL,
@@ -92,39 +99,3 @@ CREATE TABLE IF NOT EXISTS comic_metadata_creator_mapping
 
 CREATE INDEX idx_comic_creator_mapping_role ON comic_metadata_creator_mapping (role);
 CREATE INDEX idx_comic_creator_mapping_book ON comic_metadata_creator_mapping (book_id);
-
-CREATE TRIGGER trg_cleanup_orphaned_comic_character
-    AFTER DELETE
-    ON comic_metadata_character_mapping
-    FOR EACH ROW
-    DELETE
-    FROM comic_character
-    WHERE id = OLD.character_id
-      AND NOT EXISTS (SELECT 1 FROM comic_metadata_character_mapping WHERE character_id = OLD.character_id);
-
-CREATE TRIGGER trg_cleanup_orphaned_comic_team
-    AFTER DELETE
-    ON comic_metadata_team_mapping
-    FOR EACH ROW
-    DELETE
-    FROM comic_team
-    WHERE id = OLD.team_id
-      AND NOT EXISTS (SELECT 1 FROM comic_metadata_team_mapping WHERE team_id = OLD.team_id);
-
-CREATE TRIGGER trg_cleanup_orphaned_comic_location
-    AFTER DELETE
-    ON comic_metadata_location_mapping
-    FOR EACH ROW
-    DELETE
-    FROM comic_location
-    WHERE id = OLD.location_id
-      AND NOT EXISTS (SELECT 1 FROM comic_metadata_location_mapping WHERE location_id = OLD.location_id);
-
-CREATE TRIGGER trg_cleanup_orphaned_comic_creator
-    AFTER DELETE
-    ON comic_metadata_creator_mapping
-    FOR EACH ROW
-    DELETE
-    FROM comic_creator
-    WHERE id = OLD.creator_id
-      AND NOT EXISTS (SELECT 1 FROM comic_metadata_creator_mapping WHERE creator_id = OLD.creator_id);
