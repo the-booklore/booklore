@@ -14,6 +14,7 @@ import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.repository.*;
 import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.file.FileMoveService;
 import org.booklore.service.metadata.writer.MetadataWriterFactory;
 import org.booklore.util.FileService;
@@ -47,6 +48,16 @@ class BookMetadataUpdaterCategoryTest {
     @Mock
     private BookRepository bookRepository;
     @Mock
+    private ComicMetadataRepository comicMetadataRepository;
+    @Mock
+    private ComicCharacterRepository comicCharacterRepository;
+    @Mock
+    private ComicTeamRepository comicTeamRepository;
+    @Mock
+    private ComicLocationRepository comicLocationRepository;
+    @Mock
+    private ComicCreatorRepository comicCreatorRepository;
+    @Mock
     private FileService fileService;
     @Mock
     private MetadataMatchService metadataMatchService;
@@ -58,6 +69,8 @@ class BookMetadataUpdaterCategoryTest {
     private BookReviewUpdateService bookReviewUpdateService;
     @Mock
     private FileMoveService fileMoveService;
+    @Mock
+    private SidecarMetadataWriter sidecarMetadataWriter;
 
     @InjectMocks
     private BookMetadataUpdater bookMetadataUpdater;

@@ -1,12 +1,10 @@
 package org.booklore.service.metadata.extractor;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.booklore.model.dto.AudiobookMetadata;
-import org.booklore.model.dto.BookMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.booklore.model.dto.AudiobookMetadata;
+import org.booklore.model.dto.BookMetadata;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -18,6 +16,8 @@ import org.jaudiotagger.tag.id3.ID3v2ChapterFrames;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyCHAP;
 import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.File;

@@ -1,0 +1,2 @@
+ALTER TABLE library
+    ADD COLUMN metadata_source VARCHAR(20) DEFAULT 'EMBEDDED';

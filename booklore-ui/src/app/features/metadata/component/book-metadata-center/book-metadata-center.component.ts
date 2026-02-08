@@ -13,6 +13,7 @@ import {BookMetadataHostService} from '../../../../shared/service/book-metadata-
 import {MetadataViewerComponent} from './metadata-viewer/metadata-viewer.component';
 import {MetadataEditorComponent} from './metadata-editor/metadata-editor.component';
 import {MetadataSearcherComponent} from './metadata-searcher/metadata-searcher.component';
+import {SidecarViewerComponent} from './sidecar-viewer/sidecar-viewer.component';
 
 @Component({
   selector: 'app-book-metadata-center',
@@ -27,6 +28,7 @@ import {MetadataSearcherComponent} from './metadata-searcher/metadata-searcher.c
     MetadataViewerComponent,
     MetadataEditorComponent,
     MetadataSearcherComponent,
+    SidecarViewerComponent,
     Button
   ],
   styleUrls: ['./book-metadata-center.component.scss'],
@@ -48,7 +50,7 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
 
   private appSettings$ = this.appSettingsService.appSettings$;
   private currentBookId$ = new BehaviorSubject<number | null>(null);
-  private validTabs = ['view', 'edit', 'match'];
+  private validTabs = ['view', 'edit', 'match', 'sidecar'];
 
   get tab(): string {
     return this._tab;

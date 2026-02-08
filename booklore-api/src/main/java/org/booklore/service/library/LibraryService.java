@@ -1,6 +1,5 @@
 package org.booklore.service.library;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +27,9 @@ import org.booklore.service.monitoring.MonitoringService;
 import org.booklore.task.options.RescanLibraryContext;
 import org.booklore.util.FileService;
 import org.booklore.util.SecurityContextVirtualThread;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
+import org.springframework.context.event.EventListener;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
+@DependsOnDatabaseInitialization
 public class LibraryService {
 
     private static final Set<Long> scanningLibraries = ConcurrentHashMap.newKeySet();
@@ -70,7 +73,7 @@ public class LibraryService {
     private final UserRepository userRepository;
 
     @Transactional
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void initializeMonitoring() {
         List<Library> libraries = libraryRepository.findAll().stream().map(libraryMapper::toLibrary).collect(Collectors.toList());
         monitoringService.registerLibraries(libraries);
@@ -87,6 +90,9 @@ public class LibraryService {
         library.setWatch(request.isWatch());
         library.setFormatPriority(request.getFormatPriority());
         library.setAllowedFormats(request.getAllowedFormats());
+        if (request.getMetadataSource() != null) {
+            library.setMetadataSource(request.getMetadataSource());
+        }
 
         Set<String> currentPaths = library.getLibraryPaths().stream()
                 .map(LibraryPathEntity::getPath)
@@ -173,6 +179,7 @@ public class LibraryService {
                 .watch(request.isWatch())
                 .formatPriority(request.getFormatPriority())
                 .allowedFormats(request.getAllowedFormats())
+                .metadataSource(request.getMetadataSource())
                 .users(List.of(user.get()))
                 .build();
 
@@ -251,12 +258,11 @@ public class LibraryService {
         return libraries.stream().map(libraryMapper::toLibrary).toList();
     }
 
+    @Transactional
     public void deleteLibrary(long id) {
-        LibraryEntity library = libraryRepository.findById(id).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(id));
-        library.getLibraryPaths().forEach(libraryPath -> {
-            Path path = Paths.get(libraryPath.getPath());
-            monitoringService.unregisterLibrary(id);
-        });
+        LibraryEntity library = libraryRepository.findById(id)
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(id));
+        monitoringService.unregisterLibrary(id);
         Set<Long> bookIds = library.getBookEntities().stream().map(BookEntity::getId).collect(Collectors.toSet());
         fileService.deleteBookCovers(bookIds);
         libraryRepository.deleteById(id);

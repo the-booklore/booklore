@@ -1,10 +1,10 @@
 package org.booklore.model.dto;
 
-import org.booklore.model.enums.BookFileType;
-import org.booklore.util.ArchiveUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.util.ArchiveUtils;
 
 import java.time.Instant;
 
