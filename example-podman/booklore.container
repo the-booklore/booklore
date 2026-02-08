@@ -20,9 +20,7 @@ Environment=TZ=Etc/UTC
 Secret=booklore_db_pass,type=env,target=DATABASE_PASSWORD
 Environment=DATABASE_URL=jdbc:mariadb://localhost:3306/booklore
 Environment=DATABASE_USERNAME=booklore
-Environment=BOOKLORE_PORT=6060
-
-HealthCmd=wget -q -O - http://localhost:6060/api/v1/healthcheck
+HealthCmd=wget -q -O - http://localhost:8080/api/v1/healthcheck
 HealthInterval=1m
 HealthRetries=5
 HealthStartPeriod=1m

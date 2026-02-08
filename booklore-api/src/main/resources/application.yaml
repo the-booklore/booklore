@@ -20,7 +20,11 @@ app:
 
 server:
   forward-headers-strategy: native
-  port: 8080
+  port: ${BOOKLORE_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml
+    min-response-size: 1024
   tomcat:
     relaxed-query-chars: '[,],%,{,},|'
 

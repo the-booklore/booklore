@@ -69,6 +69,6 @@ books.example.com {
     copy_headers Remote-User Remote-Name Remote-Email Remote-Groups
   }
 
-  reverse_proxy booklore:6060
+  reverse_proxy booklore:8080
 }
 ```
