@@ -260,9 +260,8 @@ public class LibraryService {
 
     @Transactional
     public void deleteLibrary(long id) {
-        if (!libraryRepository.existsById(id)) {
-            throw ApiError.LIBRARY_NOT_FOUND.createException(id);
-        }
+        LibraryEntity library = libraryRepository.findById(id)
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(id));
         monitoringService.unregisterLibrary(id);
         Set<Long> bookIds = library.getBookEntities().stream().map(BookEntity::getId).collect(Collectors.toSet());
         fileService.deleteBookCovers(bookIds);
