@@ -1,8 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.8'
+    id 'org.springframework.boot' version '4.0.2'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.hibernate.orm' version '6.6.36.Final'
+    id 'org.hibernate.orm' version '7.2.0.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
 }
 
@@ -11,7 +11,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -41,7 +41,8 @@ dependencies {
     implementation 'io.projectreactor:reactor-core'
 
     // --- Database & Migration ---
-    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.7'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-mysql:11.19.0'
 
     // --- Security & Authentication ---
@@ -77,7 +78,6 @@ dependencies {
     implementation 'com.github.junrar:junrar:7.5.7'
 
     // --- JSON & Web Scraping ---
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
     implementation 'org.jsoup:jsoup:1.21.2'
 
     // --- Mapping (DTOs & Entities) ---
@@ -93,11 +93,22 @@ dependencies {
     // --- Template Engine ---
     implementation 'org.freemarker:freemarker:2.3.34'
 
+    // --- Jackson 3 ---
+    implementation platform('tools.jackson:jackson-bom:3.0.4')
+    implementation 'tools.jackson.core:jackson-core'
+    implementation 'tools.jackson.core:jackson-databind'
+    implementation 'tools.jackson.module:jackson-module-blackbird'
+
+    // --- Jackson 2 (Compatibility) ---
+    // jackson-annotations version is managed by Jackson 3 BOM (requires 2.20+)
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+
     // --- Caching ---
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.0'
 
     // --- Test Dependencies ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testImplementation 'org.assertj:assertj-core:3.27.6'
     testImplementation "org.mockito:mockito-inline:5.2.0"
     testRuntimeOnly 'com.h2database:h2'
@@ -119,4 +130,8 @@ bootRun {
     if (debug.equals("true")) { 
         jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }
+}
+
+bootJar {
+    mainClass = 'org.booklore.BookloreApplication'
 }

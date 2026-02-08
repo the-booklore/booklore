@@ -45,7 +45,7 @@
 
         <div class="form-field">
           <label>
-            Icon <span class="required">*</span>
+            Icon (Optional)
           </label>
           @if (!selectedIcon) {
             <button class="icon-picker-trigger" (click)="openIconPicker()" type="button">
@@ -111,32 +111,54 @@
       </div>
     </section>
 
-    <section class="form-section collapsible">
+    <section class="form-section">
       <div class="section-header">
         <i class="pi pi-cog"></i>
         <span>Options</span>
       </div>
 
-      <div class="options-grid">
-        <div class="option-item">
+      <div class="options-list">
+        <div class="option-row">
           <div class="option-label">
             <span>Watch folders</span>
             <i
               class="pi pi-question-circle info-icon"
               pTooltip="Automatically detect new books added to folders"
-              tooltipPosition="right"
+              tooltipPosition="top"
             ></i>
           </div>
           <p-toggleswitch [(ngModel)]="watch" />
         </div>
 
-        <div class="option-item format-priority-option">
+        <div class="option-row">
+          <div class="option-label">
+            <span>Metadata source</span>
+            <i
+              class="pi pi-question-circle info-icon"
+              pTooltip="Choose where to read metadata from when scanning books"
+              tooltipPosition="top"
+            ></i>
+          </div>
+          <p-select
+            [(ngModel)]="metadataSource"
+            [options]="metadataSourceOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select source"
+            class="metadata-source-select"
+            appendTo="body"
+          />
+        </div>
+
+        <div class="option-divider"></div>
+
+        <div class="option-row option-row-stacked">
           <div class="option-label">
             <span>Format priority</span>
             <i
               class="pi pi-question-circle info-icon"
-              pTooltip="Drag to set preferred format when a book has multiple files"
-              tooltipPosition="right"
+              pTooltip="Drag to reorder preferred format when a book has multiple files"
+              tooltipPosition="top"
             ></i>
           </div>
           <div
@@ -156,59 +178,56 @@
           </div>
         </div>
 
-        <div class="option-item allowed-formats-option">
+        <div class="option-row">
           <div class="option-label">
             <span>Allowed formats</span>
             <i
               class="pi pi-question-circle info-icon"
-              pTooltip="Select which book formats this library should accept. Files of other formats will be ignored during scans."
-              tooltipPosition="right"
+              pTooltip="Select which book formats to include in scans"
+              tooltipPosition="top"
             ></i>
           </div>
-
-          <div class="allowed-formats-container">
-            <div class="allow-all-toggle">
-              <p-checkbox
-                [(ngModel)]="allowAllFormats"
-                [binary]="true"
-                inputId="allowAll"
-                (onChange)="onAllowAllFormatsChange()"
-              />
-              <label for="allowAll" class="allow-all-label">Allow all formats</label>
-            </div>
-
-            @if (!allowAllFormats) {
-              <div class="format-checkboxes">
-                @for (format of allBookFormats; track format.type) {
-                  <div class="format-checkbox-item" [class.has-warning]="getFormatWarning(format.type)">
-                    <p-checkbox
-                      [ngModel]="isFormatSelected(format.type)"
-                      [binary]="true"
-                      [inputId]="'format-' + format.type"
-                      (onChange)="onFormatCheckboxChange(format.type, $event.checked)"
-                    />
-                    <label [for]="'format-' + format.type" class="format-checkbox-label">
-                      {{ format.label }}
-                    </label>
-                    @if (getFormatWarning(format.type); as warning) {
-                      <i
-                        class="pi pi-exclamation-triangle warning-icon"
-                        [pTooltip]="warning"
-                        tooltipPosition="top"
-                      ></i>
-                    }
-                  </div>
-                }
-              </div>
-              @if (hasAnyFormatWarning()) {
-                <div class="format-warning-message">
-                  <i class="pi pi-info-circle"></i>
-                  <span>Deselected formats with existing books will not be affected, but won't appear in future scans</span>
-                </div>
-              }
-            }
+          <div class="allow-all-toggle">
+            <p-checkbox
+              [(ngModel)]="allowAllFormats"
+              [binary]="true"
+              inputId="allowAll"
+              (onChange)="onAllowAllFormatsChange()"
+            />
+            <label for="allowAll" class="allow-all-label">Allow all</label>
           </div>
         </div>
+
+        @if (!allowAllFormats) {
+          <div class="format-checkboxes">
+            @for (format of allBookFormats; track format.type) {
+              <div class="format-checkbox-item" [class.has-warning]="getFormatWarning(format.type)">
+                <p-checkbox
+                  [ngModel]="isFormatSelected(format.type)"
+                  [binary]="true"
+                  [inputId]="'format-' + format.type"
+                  (onChange)="onFormatCheckboxChange(format.type, $event.checked)"
+                />
+                <label [for]="'format-' + format.type" class="format-checkbox-label">
+                  {{ format.label }}
+                </label>
+                @if (getFormatWarning(format.type); as warning) {
+                  <i
+                    class="pi pi-exclamation-triangle warning-icon"
+                    [pTooltip]="warning"
+                    tooltipPosition="top"
+                  ></i>
+                }
+              </div>
+            }
+          </div>
+          @if (hasAnyFormatWarning()) {
+            <div class="format-warning-message">
+              <i class="pi pi-info-circle"></i>
+              <span>Deselected formats won't appear in future scans</span>
+            </div>
+          }
+        }
       </div>
     </section>
   </div>

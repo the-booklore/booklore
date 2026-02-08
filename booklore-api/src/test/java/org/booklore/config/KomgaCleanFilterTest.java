@@ -2,10 +2,10 @@ package org.booklore.config;
 
 import org.booklore.context.KomgaCleanContext;
 import org.booklore.model.dto.komga.KomgaBookMetadataDto;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ class KomgaCleanFilterTest {
     void setup() {
         // Create ObjectMapper with our custom configuration
         JacksonConfig config = new JacksonConfig();
-        objectMapper = config.komgaCleanObjectMapper(new org.springframework.http.converter.json.Jackson2ObjectMapperBuilder());
+        objectMapper = config.komgaCleanObjectMapper();
     }
 
     @AfterEach

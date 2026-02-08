@@ -19,6 +19,7 @@ import {IconPickerService, IconSelection} from '../../../shared/service/icon-pic
 import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
 import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
+import {Tooltip} from 'primeng/tooltip';
 import {BookService} from '../../book/service/book.service';
 import {ShelfService} from '../../book/service/shelf.service';
 import {Shelf} from '../../book/model/shelf.model';
@@ -167,7 +168,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
     MultiSelect,
     AutoComplete,
     CheckboxModule,
-    IconDisplayComponent
+    IconDisplayComponent,
+    Tooltip
   ]
 })
 export class MagicShelfComponent implements OnInit {
@@ -271,7 +273,7 @@ export class MagicShelfComponent implements OnInit {
 
         this.form = new FormGroup({
           name: new FormControl<string | null>(data?.name ?? null, {nonNullable: true, validators: [Validators.required]}),
-          icon: new FormControl<string | null>(iconValue, {nonNullable: true, validators: [Validators.required]}),
+          icon: new FormControl<string | null>(iconValue),
           isPublic: new FormControl<boolean>(data?.isPublic ?? false),
           group: data?.filterJson ? this.buildGroupFromData(JSON.parse(data.filterJson)) : this.createGroup()
         });
@@ -285,7 +287,7 @@ export class MagicShelfComponent implements OnInit {
     } else {
       this.form = new FormGroup({
         name: new FormControl<string | null>(null, {nonNullable: true, validators: [Validators.required]}),
-        icon: new FormControl<string | null>(null, {nonNullable: true, validators: [Validators.required]}),
+        icon: new FormControl<string | null>(null),
         isPublic: new FormControl<boolean>(false),
         group: this.createGroup()
       });
@@ -475,6 +477,11 @@ export class MagicShelfComponent implements OnInit {
         this.form.get('icon')?.setValue(iconValue);
       }
     });
+  }
+
+  clearSelectedIcon(): void {
+    this.selectedIcon = null;
+    this.form.get('icon')?.setValue(null);
   }
 
   private hasAtLeastOneValidRule(group: GroupFormGroup): boolean {

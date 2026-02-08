@@ -38,10 +38,12 @@ spring:
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:${MYSQL_ROOT_PASSWORD}}
     hikari:
+      pool-name: BookloreHikariPool
       max-lifetime: 580000         # 9.6 minutes (avoid DB-side connection cuts)
       connection-test-query: SELECT 1
-      maximum-pool-size: 10        # Allows bursts
-      minimum-idle: 1              # Shrinks when idle
+      connection-timeout: 30000    # 30s to acquire a connection before timeout
+      maximum-pool-size: 20        # Higher ceiling for virtual-thread bursts
+      minimum-idle: 5              # Keep warm connections ready
       idle-timeout: 300000         # 5 minutes before idle connections are closed
   jpa:
     hibernate:
@@ -50,10 +52,15 @@ spring:
     show-sql: false
     properties:
       hibernate:
+        query:
+          timeout: 30              # 30s max for any HQL/JPQL query
         jdbc:
           batch_size: 500
           order_inserts: true
           order_updates: true
+  threads:
+    virtual:
+      enabled: true
   flyway:
     enabled: true
     locations: classpath:db/migration

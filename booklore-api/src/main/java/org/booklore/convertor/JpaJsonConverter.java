@@ -1,11 +1,11 @@
 package org.booklore.convertor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -23,7 +23,7 @@ public class JpaJsonConverter implements AttributeConverter<Map<String, Object>,
         }
         try {
             return objectMapper.writeValueAsString(attribute);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Error converting map to JSON", e);
             return null;
         }
@@ -36,7 +36,7 @@ public class JpaJsonConverter implements AttributeConverter<Map<String, Object>,
         }
         try {
             return objectMapper.readValue(dbData, MAP_TYPE_REF);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Error converting JSON to map", e);
             return null;
         }

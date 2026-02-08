@@ -1,9 +1,10 @@
 package org.booklore.model.dto;
 
-import org.booklore.model.dto.progress.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
+import org.booklore.model.dto.progress.*;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;

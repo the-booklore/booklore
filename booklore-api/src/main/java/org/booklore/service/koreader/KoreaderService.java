@@ -74,6 +74,8 @@ public class KoreaderService {
         BookLoreUserEntity user = findBookLoreUser(authDetails.getBookLoreUserId());
 
         UserBookProgressEntity userProgress = getOrCreateUserProgress(user, book);
+        Float previousProgressPercent = userProgress.getKoreaderProgressPercent();
+        ReadStatus previousReadStatus = userProgress.getReadStatus();
         updateProgressData(userProgress, koProgress, authDetails.isSyncWithBookloreReader(), book);
 
         progressRepository.save(userProgress);
@@ -83,8 +85,13 @@ public class KoreaderService {
 
         log.info("saveProgress: saved progress='{}' percentage={} for userId={} bookHash={}", koProgress.getProgress(), koProgress.getPercentage(), authDetails.getBookLoreUserId(), bookHash);
 
-        Float progressPercent = normalizeProgressPercent(koProgress.getPercentage());
-        hardcoverSyncService.syncProgressToHardcover(book.getId(), progressPercent, authDetails.getBookLoreUserId());
+        // Sync progress to Hardcover asynchronously (if enabled for this user)
+        // But only if the progress percentage has changed from last time, or the read status has changed
+        if (koProgress.getPercentage() != null && (!koProgress.getPercentage().equals(previousProgressPercent)
+                || userProgress.getReadStatus() != previousReadStatus)) {
+            Float progressPercent = normalizeProgressPercent(koProgress.getPercentage());
+            hardcoverSyncService.syncProgressToHardcover(book.getId(), progressPercent, authDetails.getBookLoreUserId());
+        }
     }
 
     private void saveToFileProgress(BookLoreUserEntity user, BookEntity book, UserBookProgressEntity progress) {

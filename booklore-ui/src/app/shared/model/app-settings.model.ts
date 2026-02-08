@@ -112,10 +112,18 @@ export interface SaveToOriginalFileSettings {
   audiobook: FormatWriteSettings;
 }
 
+export interface SidecarSettings {
+  enabled: boolean;
+  writeOnUpdate: boolean;
+  writeOnScan: boolean;
+  includeCoverFile: boolean;
+}
+
 export interface MetadataPersistenceSettings {
   moveFilesToLibraryPattern: boolean;
   saveToOriginalFile: SaveToOriginalFileSettings;
   convertCbrCb7ToCbz: boolean;
+  sidecarSettings?: SidecarSettings;
 }
 
 export interface ReviewProviderConfig {

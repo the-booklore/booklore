@@ -1,17 +1,17 @@
 package org.booklore.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
 import org.booklore.model.dto.settings.AppSettingKey;
 import org.booklore.model.dto.settings.AppSettings;
 import org.booklore.model.dto.settings.SettingRequest;
 import org.booklore.service.appsettings.AppSettingService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.core.JacksonException;
 
 import java.util.List;
 
@@ -36,7 +36,7 @@ public class AppSettingController {
         @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     @PutMapping
-    public void updateSettings(@Parameter(description = "List of settings to update") @RequestBody List<SettingRequest> settingRequests) throws JsonProcessingException {
+    public void updateSettings(@Parameter(description = "List of settings to update") @RequestBody List<SettingRequest> settingRequests) throws JacksonException {
         for (SettingRequest settingRequest : settingRequests) {
             AppSettingKey key = AppSettingKey.valueOf(settingRequest.getName());
             appSettingService.updateSetting(key, settingRequest.getValue());

@@ -1,5 +1,6 @@
 package org.booklore.service.user;
 
+import lombok.RequiredArgsConstructor;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.custom.BookLoreUserTransformer;
@@ -15,10 +16,9 @@ import org.booklore.model.entity.UserSettingEntity;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.stream.Collectors;

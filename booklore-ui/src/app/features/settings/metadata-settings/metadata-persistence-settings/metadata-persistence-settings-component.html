@@ -169,4 +169,62 @@
       </div>
     }
   </div>
+
+  <div class="section-header sidecar-section-header">
+    <h3 class="section-title">
+      <i class="pi pi-file"></i>
+      Sidecar JSON Files
+    </h3>
+    <p class="section-description">
+      Create external .metadata.json files alongside your books for portable metadata storage and backup.
+    </p>
+  </div>
+
+  <div class="section-body">
+    <div class="setting-item">
+      <div class="setting-header">
+        <p-toggleswitch
+          [ngModel]="metadataPersistence.sidecarSettings?.enabled"
+          (onChange)="onSidecarToggle('enabled')">
+        </p-toggleswitch>
+        <label class="setting-label">Enable Sidecar JSON</label>
+      </div>
+      <p class="setting-description">Enable sidecar JSON metadata files. When enabled, metadata can be written to <code>BookName.metadata.json</code> files alongside your books.</p>
+    </div>
+
+    @if (metadataPersistence.sidecarSettings?.enabled) {
+      <div class="setting-item nested-setting">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.sidecarSettings?.writeOnUpdate"
+            (onChange)="onSidecarToggle('writeOnUpdate')">
+          </p-toggleswitch>
+          <label class="setting-label">Write on Metadata Update</label>
+        </div>
+        <p class="setting-description">Automatically update the sidecar JSON file whenever book metadata is edited.</p>
+      </div>
+
+      <div class="setting-item nested-setting">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.sidecarSettings?.writeOnScan"
+            (onChange)="onSidecarToggle('writeOnScan')">
+          </p-toggleswitch>
+          <label class="setting-label">Write on Initial Scan</label>
+        </div>
+        <p class="setting-description">Create sidecar JSON files when books are first added to the library during scanning.</p>
+      </div>
+
+      <div class="setting-item nested-setting">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.sidecarSettings?.includeCoverFile"
+            (onChange)="onSidecarToggle('includeCoverFile')">
+          </p-toggleswitch>
+          <label class="setting-label">Include Cover Image File</label>
+        </div>
+        <p class="setting-description">Also save the cover image as <code>BookName.cover.jpg</code> alongside the sidecar JSON file.</p>
+      </div>
+    }
+  </div>
 </div>
