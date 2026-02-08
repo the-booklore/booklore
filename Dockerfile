@@ -62,7 +62,7 @@ COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
 
-ARG BOOKLORE_PORT=8080
+ARG BOOKLORE_PORT=6060
 EXPOSE ${BOOKLORE_PORT}
 
 ENTRYPOINT ["entrypoint.sh"]

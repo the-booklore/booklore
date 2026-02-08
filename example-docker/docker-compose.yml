@@ -18,13 +18,13 @@ services:
       mariadb:
         condition: service_healthy
     ports:
-      - "6060:8080" # HostPort:ContainerPort — container port is always 8080 by default
+      - "6060:6060" # HostPort:ContainerPort — container port is 6060 by default (configurable via BOOKLORE_PORT env var)
     volumes:
       - ./data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
       - ./books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
       - ./bookdrop:/bookdrop   # BookDrop folder. Files placed here are automatically detected and prepared for import.
     healthcheck:
-      test: wget -q -O - http://localhost:8080/api/v1/healthcheck
+      test: wget -q -O - http://localhost:6060/api/v1/healthcheck
       interval: 60s
       retries: 5
       start_period: 60s
