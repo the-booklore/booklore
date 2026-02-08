@@ -12,7 +12,7 @@ export class EmailService {
 
   private http = inject(HttpClient);
 
-  emailBook(request: { bookId: number, providerId: number, recipientId: number }): Observable<void> {
+  emailBook(request: { bookId: number, providerId: number, recipientId: number, bookFileId?: number }): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/book`, request);
   }
 
