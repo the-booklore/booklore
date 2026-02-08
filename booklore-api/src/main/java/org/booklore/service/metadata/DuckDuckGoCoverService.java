@@ -1,15 +1,15 @@
 package org.booklore.service.metadata;
 
-import org.booklore.model.dto.CoverImage;
-import org.booklore.model.dto.request.CoverFetchRequest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.CoverImage;
+import org.booklore.model.dto.request.CoverFetchRequest;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.URLEncoder;

@@ -1,17 +1,17 @@
 package org.booklore.service;
 
+import jakarta.persistence.criteria.*;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.GroupRule;
 import org.booklore.model.dto.Rule;
 import org.booklore.model.dto.RuleField;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.UserBookProgressEntity;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.criteria.*;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

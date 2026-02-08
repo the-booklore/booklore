@@ -1,11 +1,15 @@
 package org.booklore.model.dto;
 
-import org.booklore.model.enums.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.booklore.model.enums.*;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NewPdfViewerPreferences {
     private Long bookId;
     private NewPdfPageSpread pageSpread;

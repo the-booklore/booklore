@@ -1,14 +1,14 @@
 package org.booklore.service.kobo;
 
-import org.booklore.model.dto.kobo.KoboAuthentication;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.booklore.model.dto.kobo.KoboAuthentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -42,7 +42,7 @@ public class KoboDeviceAuthService {
     public byte[] toJsonBytes(KoboAuthentication KoboAuthentication) {
         try {
             return objectMapper.writeValueAsString(KoboAuthentication).getBytes(StandardCharsets.UTF_8);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Failed to serialize AuthDto to JSON", e);
             throw new RuntimeException("Failed to serialize AuthDto", e);
         }

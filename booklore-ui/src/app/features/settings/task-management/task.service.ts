@@ -37,6 +37,7 @@ export interface LibraryRescanOptions {
 
 export interface TaskCreateRequest {
   taskType: TaskType;
+  triggeredByCron?: boolean;
   options?: LibraryRescanOptions | MetadataRefreshRequest | null;
 }
 

@@ -11,6 +11,7 @@ import org.booklore.repository.BookRepository;
 import org.booklore.service.book.BookCreatorService;
 import org.booklore.service.metadata.MetadataMatchService;
 import org.booklore.service.metadata.extractor.PdfMetadataExtractor;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.util.BookCoverUtils;
 import org.booklore.util.FileService;
 import org.booklore.util.FileUtils;
@@ -42,8 +43,9 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
                         BookMapper bookMapper,
                         FileService fileService,
                         MetadataMatchService metadataMatchService,
+                        SidecarMetadataWriter sidecarMetadataWriter,
                         PdfMetadataExtractor pdfMetadataExtractor) {
-        super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
+        super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService, sidecarMetadataWriter);
         this.pdfMetadataExtractor = pdfMetadataExtractor;
     }
 

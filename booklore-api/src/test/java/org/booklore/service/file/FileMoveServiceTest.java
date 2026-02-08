@@ -17,6 +17,7 @@ import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.service.NotificationService;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,6 +53,7 @@ class FileMoveServiceTest {
     @Mock private NotificationService notificationService;
     @Mock private EntityManager entityManager;
     @Mock private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
+    @Mock private SidecarMetadataWriter sidecarMetadataWriter;
 
     private FileMoveService service;
     private LibraryEntity library;
@@ -62,9 +64,10 @@ class FileMoveServiceTest {
                                 LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper,
                                 MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper,
                                 BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager,
-                                org.springframework.transaction.support.TransactionTemplate transactionTemplate) {
+                                org.springframework.transaction.support.TransactionTemplate transactionTemplate,
+                                SidecarMetadataWriter sidecarMetadataWriter) {
             super(appProperties, bookRepository, bookFileRepository, libraryRepository, fileMoveHelper,
-                    monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager, transactionTemplate);
+                    monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager, transactionTemplate, sidecarMetadataWriter);
         }
 
         @Override
@@ -85,7 +88,7 @@ class FileMoveServiceTest {
         }).when(transactionTemplate).executeWithoutResult(any());
 
         service = spy(new TestableFileMoveService(appProperties, bookRepository, bookFileRepository, libraryRepository,
-                fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager, transactionTemplate));
+                fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager, transactionTemplate, sidecarMetadataWriter));
 
         library = new LibraryEntity();
         library.setId(1L);
