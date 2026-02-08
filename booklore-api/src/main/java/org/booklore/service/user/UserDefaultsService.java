@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.booklore.model.enums.IconType;
 
 @Slf4j
 @Service
@@ -24,6 +25,7 @@ public class UserDefaultsService {
                 .user(user)
                 .name("Favorites")
                 .icon("heart")
+                .iconType(IconType.PRIME_NG)
                 .build();
         shelfRepository.save(shelf);
     }

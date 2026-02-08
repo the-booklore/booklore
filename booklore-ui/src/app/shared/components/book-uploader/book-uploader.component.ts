@@ -12,17 +12,19 @@ import {LibraryState} from '../../../features/book/model/state/library-state.mod
 import {Observable} from 'rxjs';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {Book} from '../../../features/book/model/book.model';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpEventType, HttpRequest} from '@angular/common/http';
 import {Tooltip} from 'primeng/tooltip';
 import {AppSettingsService} from '../../service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
 import {AppSettings} from '../../model/app-settings.model';
 import {SelectButton} from 'primeng/selectbutton';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import {ProgressBar} from 'primeng/progressbar';
 
 interface UploadingFile {
   file: File;
   status: 'Pending' | 'Uploading' | 'Uploaded' | 'Failed';
+  progress: number;
   errorMessage?: string;
 }
 
@@ -37,7 +39,8 @@ interface UploadingFile {
     Select,
     Badge,
     Tooltip,
-    SelectButton
+    SelectButton,
+    ProgressBar
   ],
   templateUrl: './book-uploader.component.html',
   styleUrl: './book-uploader.component.scss'
@@ -142,6 +145,7 @@ export class BookUploaderComponent implements OnInit {
         this.files.unshift({
           file,
           status: 'Failed',
+          progress: 0,
           errorMessage: errorMsg
         });
         this.messageService.add({
@@ -151,13 +155,20 @@ export class BookUploaderComponent implements OnInit {
           life: 5000
         });
       } else {
-        this.files.unshift({file, status: 'Pending'});
+        this.files.unshift({file, status: 'Pending', progress: 0});
       }
     }
   }
 
-  onRemoveTemplatingFile(_event: any, _file: File, removeFileCallback: (event: any, index: number) => void, index: number): void {
-    removeFileCallback(_event, index);
+  onRemoveTemplatingFile(_event: any, file: File, removeFileCallback: (event: any, index: number) => void, _index: number): void {
+    // Remove from our tracking array
+    this.files = this.files.filter(f => f.file !== file);
+
+    // Find and remove from p-fileupload's internal array (index may differ from ours)
+    const fileUploadIndex = this.fileUpload.files?.findIndex(f => f.name === file.name && f.size === file.size) ?? -1;
+    if (fileUploadIndex >= 0) {
+      removeFileCallback(_event, fileUploadIndex);
+    }
   }
 
   uploadEvent(uploadCallback: () => void): void {
@@ -202,6 +213,7 @@ export class BookUploaderComponent implements OnInit {
 
     for (const uploadFile of batch) {
       uploadFile.status = 'Uploading';
+      uploadFile.progress = 0;
 
       const formData = new FormData();
       const cleanFile = new File([uploadFile.file], uploadFile.file.name, {type: uploadFile.file.type});
@@ -218,19 +230,28 @@ export class BookUploaderComponent implements OnInit {
         uploadUrl = `${API_CONFIG.BASE_URL}/api/v1/files/upload/bookdrop`;
       }
 
-      this.http.post<Book>(uploadUrl, formData).subscribe({
-        next: () => {
-          uploadFile.status = 'Uploaded';
-          if (--pending === 0) {
-            setTimeout(() => {
-              this.uploadBatch(files, startIndex + batchSize, batchSize, destination, libraryId, pathId);
-            }, 1000);
+      const req = new HttpRequest('POST', uploadUrl, formData, {
+        reportProgress: true
+      });
+
+      this.http.request(req).subscribe({
+        next: (event) => {
+          if (event.type === HttpEventType.UploadProgress && event.total) {
+            uploadFile.progress = Math.round((event.loaded / event.total) * 100);
+          } else if (event.type === HttpEventType.Response) {
+            uploadFile.status = 'Uploaded';
+            uploadFile.progress = 100;
+            if (--pending === 0) {
+              setTimeout(() => {
+                this.uploadBatch(files, startIndex + batchSize, batchSize, destination, libraryId, pathId);
+              }, 1000);
+            }
           }
         },
         error: (err) => {
           uploadFile.status = 'Failed';
+          uploadFile.progress = 0;
           uploadFile.errorMessage = err?.error?.message || 'Upload failed due to unknown error.';
-          console.error('Upload failed for', uploadFile.file.name, err);
           if (--pending === 0) {
             setTimeout(() => {
               this.uploadBatch(files, startIndex + batchSize, batchSize, destination, libraryId, pathId);
@@ -307,4 +328,33 @@ export class BookUploaderComponent implements OnInit {
   closeDialog(): void {
     this.ref.close();
   }
+
+  getOverallProgress(): number {
+    if (this.files.length === 0) return 0;
+    const totalProgress = this.files.reduce((sum, f) => sum + f.progress, 0);
+    return Math.round(totalProgress / this.files.length);
+  }
+
+  getUploadedCount(): number {
+    return this.files.filter(f => f.status === 'Uploaded').length;
+  }
+
+  getFailedCount(): number {
+    return this.files.filter(f => f.status === 'Failed').length;
+  }
+
+  getUploadingCount(): number {
+    return this.files.filter(f => f.status === 'Uploading').length;
+  }
+
+  getTotalBytes(): number {
+    return this.files.reduce((sum, f) => sum + f.file.size, 0);
+  }
+
+  getUploadedBytes(): number {
+    return this.files
+      .filter(f => f.status === 'Uploaded')
+      .reduce((sum, f) => sum + f.file.size, 0);
+  }
+
 }

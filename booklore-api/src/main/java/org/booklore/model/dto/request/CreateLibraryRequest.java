@@ -19,10 +19,7 @@ public class CreateLibraryRequest {
     @NotBlank(message = "Library name must not be empty.")
     private String name;
 
-    @NotBlank(message = "Library icon must not be empty.")
     private String icon;
-
-    @NotNull(message = "Library icon type must not be null.")
     private IconType iconType;
 
     @NotEmpty(message = "Library paths must not be empty.")

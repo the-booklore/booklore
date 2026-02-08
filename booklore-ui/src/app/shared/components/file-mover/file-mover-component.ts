@@ -346,7 +346,16 @@ export class FileMoverComponent implements OnDestroy {
 
   formatSeriesIndex(seriesNumber?: number): string {
     if (seriesNumber == null) return '';
-    return this.sanitize(seriesNumber.toString());
+    // Check if it's a whole number
+    if (Number.isInteger(seriesNumber)) {
+      // Format with leading zero for 1-9
+      return this.sanitize(seriesNumber.toString().padStart(2, '0'));
+    } else {
+      // For decimal numbers, format integer part with leading zero
+      const intPart = Math.floor(seriesNumber);
+      const decimalPart = (seriesNumber % 1).toFixed(10).substring(1).replace(/0+$/, '');
+      return this.sanitize(intPart.toString().padStart(2, '0') + decimalPart);
+    }
   }
 
   saveChanges(): void {

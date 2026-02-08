@@ -109,8 +109,8 @@ export class AppMenuComponent implements OnInit {
               menu: this.libraryShelfMenuService.initializeLibraryMenuItems(library),
               label: library.name,
               type: 'Library',
-              icon: library.icon,
-              iconType: (library.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+              icon: library.icon || undefined,
+              iconType: (library.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
             })),
@@ -132,8 +132,8 @@ export class AppMenuComponent implements OnInit {
             items: sortedShelves.map((shelf) => ({
               label: shelf.name,
               type: 'magicShelfItem',
-              icon: shelf.icon || 'pi pi-book',
-              iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+              icon: shelf.icon || undefined,
+              iconType: (shelf.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
               menu: this.libraryShelfMenuService.initializeMagicShelfMenuItems(shelf),
               routerLink: [`/magic-shelf/${shelf.id}/books`],
               bookCount$: this.magicShelfService.getBookCount(shelf.id ?? 0),
@@ -158,8 +158,8 @@ export class AppMenuComponent implements OnInit {
           menu: this.libraryShelfMenuService.initializeShelfMenuItems(shelf),
           label: shelf.name,
           type: 'Shelf',
-          icon: shelf.icon,
-          iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+          icon: shelf.icon || undefined,
+          iconType: (shelf.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
           routerLink: [`/shelf/${shelf.id}/books`],
           bookCount$: this.shelfService.getBookCount(shelf.id ?? 0),
         }));
@@ -173,13 +173,13 @@ export class AppMenuComponent implements OnInit {
           bookCount$: this.shelfService.getUnshelvedBookCount?.() ?? of(0),
         };
 
-        const items = [unshelvedItem];
+        const items: MenuItem[] = [unshelvedItem];
         if (koboShelf) {
           items.push({
             label: koboShelf.name,
             type: 'Shelf',
-            icon: koboShelf.icon,
-            iconType: (koboShelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+            icon: koboShelf.icon || undefined,
+            iconType: (koboShelf.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
             routerLink: [`/shelf/${koboShelf.id}/books`],
             bookCount$: this.shelfService.getBookCount(koboShelf.id ?? 0),
           });
