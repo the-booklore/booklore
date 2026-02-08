@@ -1,56 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { Book } from '../../book/model/book.model';
 import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
-import { IncompleteSeriesService } from './incomplete-series.service';
 
 @Injectable({ providedIn: 'root' })
 export class BookRuleEvaluatorService {
-  private incompleteSeriesService = inject(IncompleteSeriesService);
   private allBooks: Book[] = [];
 
-  // Static map for fast metadata field lookups
-  private static readonly METADATA_FIELD_MAP: Record<string, (book: Book) => unknown> = {
-    // IDs
-    'isbn13': (book) => book.metadata?.isbn13,
-    'isbn10': (book) => book.metadata?.isbn10,
-    'asin': (book) => (book.metadata as Record<string, unknown>)?.['asin'],
-    'goodreadsid': (book) => book.metadata?.goodreadsId,
-    'comicvineid': (book) => book.metadata?.comicvineId,
-    'hardcoverid': (book) => book.metadata?.hardcoverId,
-    'hardcoverbookid': (book) => book.metadata?.hardcoverBookId,
-    'googleid': (book) => book.metadata?.googleId,
-    'lubimyczytacid': (book) => book.metadata?.lubimyczytacId,
-    'ranobedbid': (book) => book.metadata?.ranobedbId,
-    // Ratings
-    'amazonrating': (book) => book.metadata?.amazonRating,
-    'goodreadsrating': (book) => book.metadata?.goodreadsRating,
-    'hardcoverrating': (book) => book.metadata?.hardcoverRating,
-    'lubimyczytacrating': (book) => book.metadata?.lubimyczytacRating,
-    'ranobedbrating': (book) => book.metadata?.ranobedbRating,
-    'personalrating': (book) => book.personalRating,
-    // Review Counts
-    'amazonreviewcount': (book) => book.metadata?.amazonReviewCount,
-    'goodreadsreviewcount': (book) => book.metadata?.goodreadsReviewCount,
-    'hardcoverreviewcount': (book) => book.metadata?.hardcoverReviewCount,
-    // Other Metadata
-    'title': (book) => book.metadata?.title,
-    'subtitle': (book) => book.metadata?.subtitle,
-    'publisher': (book) => book.metadata?.publisher,
-    'publisheddate': (book) => book.metadata?.publishedDate,
-    'description': (book) => book.metadata?.description,
-    'seriesname': (book) => book.metadata?.seriesName,
-    'seriesnumber': (book) => book.metadata?.seriesNumber,
-    'seriestotal': (book) => book.metadata?.seriesTotal,
-    'pagecount': (book) => book.metadata?.pageCount,
-    'language': (book) => book.metadata?.language,
-    'authors': (book) => book.metadata?.authors && book.metadata.authors.length > 0 ? book.metadata.authors : null,
-    'categories': (book) => book.metadata?.categories && book.metadata.categories.length > 0 ? book.metadata.categories : null,
-    'moods': (book) => book.metadata?.moods && book.metadata.moods.length > 0 ? book.metadata.moods : null,
-    'tags': (book) => book.metadata?.tags && book.metadata.tags.length > 0 ? book.metadata.tags : null,
-    'agerating': (book) => book.metadata?.ageRating,
-    'contentrating': (book) => book.metadata?.contentRating,
-  };
-
+ 
   /**
    * Set all books for context-dependent rules like incompleteSeries
    */
@@ -245,7 +201,8 @@ export class BookRuleEvaluatorService {
           fieldValue = metadata?.contentRating;
           break;
         default:
-          fieldValue = null;
+          // Unknown metadata field - treat as no-op to match backend behavior
+          return true;
       }
 
       // HAS/MISSING for metadata fields: simply check if field is not null/undefined
@@ -573,7 +530,7 @@ export class BookRuleEvaluatorService {
         if (!book.addedOn) return null;
         const addedDate = new Date(book.addedOn);
         const today = new Date();
-        const diffTime = Math.abs(today.getTime() - addedDate.getTime());
+        const diffTime = today.getTime() - addedDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         return diffDays;
       case 'seriesName':

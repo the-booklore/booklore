@@ -3,7 +3,6 @@ import {API_CONFIG} from '../../../core/config/api-config';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {catchError, distinctUntilChanged, finalize, map, shareReplay, switchMap, tap} from 'rxjs/operators';
-import {Book} from '../../book/model/book.model';
 import {BookService} from '../../book/service/book.service';
 import {BookRuleEvaluatorService} from './book-rule-evaluator.service';
 import {AuthService} from '../../../shared/service/auth.service';

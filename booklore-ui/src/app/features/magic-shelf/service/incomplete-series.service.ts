@@ -24,7 +24,7 @@ export class IncompleteSeriesService {
         continue;
       }
 
-      const key = seriesName.toLowerCase();
+      const key = seriesName.trim().toLowerCase();
       if (!seriesMap.has(key)) {
         seriesMap.set(key, []);
       }
@@ -56,11 +56,15 @@ export class IncompleteSeriesService {
 
     for (const book of allBooks) {
       const seriesName = book.metadata?.seriesName;
-      if (seriesName) {
+      const seriesNumber = book.metadata?.seriesNumber;
+      if (seriesName && seriesNumber != null) {
         const isIncomplete = incompleteSeriesNames.has(
-          seriesName.toLowerCase(),
+          seriesName.trim().toLowerCase(),
         );
         result.set(book.id, isIncomplete);
+      } else {
+        // Align with backend: books without series name or series number are not considered incomplete
+        result.set(book.id, false);
       }
     }
 
@@ -82,7 +86,7 @@ export class IncompleteSeriesService {
 
     // Get all books in the same series
     const seriesBooks = allBooks.filter(
-      (b) => b.metadata?.seriesName?.toLowerCase() === seriesName.toLowerCase(),
+      (b) => b.metadata?.seriesName?.trim().toLowerCase() === seriesName.trim().toLowerCase(),
     );
 
     if (seriesBooks.length === 0) {

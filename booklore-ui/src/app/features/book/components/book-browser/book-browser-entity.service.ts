@@ -163,7 +163,7 @@ export class BookBrowserEntityService {
     ]).pipe(
       map(([magicShelf, bookState]) => {
         if (!magicShelf || !bookState.books) {
-          return {books: [], loaded: true, error: null};
+          return {...bookState, books: bookState.books ?? []};
         }
 
         try {

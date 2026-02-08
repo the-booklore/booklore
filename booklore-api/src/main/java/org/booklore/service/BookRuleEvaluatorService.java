@@ -97,11 +97,9 @@ public class BookRuleEvaluatorService {
             return cb.disjunction(); // Returns false - matches nothing
         }
 
-        // Special handling for SERIES_STATUS field (not yet implemented server-side)
-        // Return conjunction (always true) as placeholder
+        // Special handling for SERIES_STATUS field
         if (rule.getField() == RuleField.SERIES_STATUS) {
-            log.warn("SERIES_STATUS filter is not yet implemented server-side, returning all results");
-            return cb.conjunction();
+            return buildSeriesStatusPredicate(rule, cb, root, progressJoin);
         }
 
         return switch (rule.getOperator()) {
@@ -298,6 +296,134 @@ public class BookRuleEvaluatorService {
     }
 
 
+
+    /**
+     * Builds a predicate for the SERIES_STATUS field rule.
+     * Series status can be:
+     * - 'reading': Any book in the series has readStatus of READ or READING
+     * - 'completed': seriesNumber equals seriesTotal
+     * - 'ongoing': Has a series name (but not reading or completed)
+     * - '' (empty string): Not in a series
+     *
+     * @param rule The rule containing the status value to match
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @param progressJoin Join to UserBookProgressEntity
+     * @return Predicate for series status check
+     */
+    private Predicate buildSeriesStatusPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+        if (rule.getValue() == null) {
+            log.warn("SERIES_STATUS rule missing status value");
+            return cb.conjunction();
+        }
+
+        String statusValue = rule.getValue().toString().toLowerCase();
+        Expression<String> seriesName = root.get("metadata").get("seriesName");
+        Expression<Double> seriesNumber = root.get("metadata").get("seriesNumber");
+        Expression<Double> seriesTotal = root.get("metadata").get("seriesTotal");
+
+        Predicate result = switch (statusValue) {
+            case "reading" -> {
+                // Book must be in a series
+                Predicate inSeries = cb.and(
+                    cb.isNotNull(seriesName),
+                    cb.notEqual(cb.trim(seriesName), "")
+                );
+
+                // Check if any book in this series is READ or READING
+                Subquery<Long> readingSubquery = cb.createQuery().subquery(Long.class);
+                Root<BookEntity> subRoot = readingSubquery.from(BookEntity.class);
+                Join<BookEntity, UserBookProgressEntity> subProgressJoin = subRoot.join("userBookProgress", JoinType.LEFT);
+
+                Predicate userMatch = cb.or(
+                    cb.isNull(subProgressJoin.get("user").get("id")),
+                    cb.equal(subProgressJoin.get("user").get("id"), progressJoin.get("user").get("id"))
+                );
+
+                Predicate sameSeriesNormalized = cb.equal(
+                    cb.lower(cb.trim(subRoot.get("metadata").get("seriesName"))),
+                    cb.lower(cb.trim(seriesName))
+                );
+
+                Predicate isReading = cb.or(
+                    cb.equal(subProgressJoin.get("readStatus"), "READ"),
+                    cb.equal(subProgressJoin.get("readStatus"), "READING")
+                );
+
+                readingSubquery.select(cb.literal(1L))
+                    .where(cb.and(userMatch, sameSeriesNormalized, isReading));
+
+                yield cb.and(inSeries, cb.exists(readingSubquery));
+            }
+            case "completed" -> {
+                // seriesNumber must equal seriesTotal (both not null)
+                yield cb.and(
+                    cb.isNotNull(seriesNumber),
+                    cb.isNotNull(seriesTotal),
+                    cb.equal(seriesNumber, seriesTotal)
+                );
+            }
+            case "ongoing" -> {
+                // Has series name but not reading or completed
+                Predicate inSeries = cb.and(
+                    cb.isNotNull(seriesName),
+                    cb.notEqual(cb.trim(seriesName), "")
+                );
+
+                // Not completed
+                Predicate notCompleted = cb.or(
+                    cb.isNull(seriesNumber),
+                    cb.isNull(seriesTotal),
+                    cb.notEqual(seriesNumber, seriesTotal)
+                );
+
+                // Not reading (no book in series is READ/READING)
+                Subquery<Long> readingSubquery = cb.createQuery().subquery(Long.class);
+                Root<BookEntity> subRoot = readingSubquery.from(BookEntity.class);
+                Join<BookEntity, UserBookProgressEntity> subProgressJoin = subRoot.join("userBookProgress", JoinType.LEFT);
+
+                Predicate userMatch = cb.or(
+                    cb.isNull(subProgressJoin.get("user").get("id")),
+                    cb.equal(subProgressJoin.get("user").get("id"), progressJoin.get("user").get("id"))
+                );
+
+                Predicate sameSeriesNormalized = cb.equal(
+                    cb.lower(cb.trim(subRoot.get("metadata").get("seriesName"))),
+                    cb.lower(cb.trim(seriesName))
+                );
+
+                Predicate isReading = cb.or(
+                    cb.equal(subProgressJoin.get("readStatus"), "READ"),
+                    cb.equal(subProgressJoin.get("readStatus"), "READING")
+                );
+
+                readingSubquery.select(cb.literal(1L))
+                    .where(cb.and(userMatch, sameSeriesNormalized, isReading));
+
+                Predicate notReading = cb.not(cb.exists(readingSubquery));
+
+                yield cb.and(inSeries, notCompleted, notReading);
+            }
+            case "" -> {
+                // Not in a series (empty or null series name)
+                yield cb.or(
+                    cb.isNull(seriesName),
+                    cb.equal(cb.trim(seriesName), "")
+                );
+            }
+            default -> {
+                log.warn("Invalid SERIES_STATUS value: {}, expected 'reading', 'completed', 'ongoing', or empty string", statusValue);
+                yield cb.conjunction();
+            }
+        };
+
+        // Handle NOT_EQUALS operator
+        if (rule.getOperator() == org.booklore.model.dto.RuleOperator.NOT_EQUALS) {
+            return cb.not(result);
+        }
+
+        return result;
+    }
 
     private Predicate buildEquals(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());

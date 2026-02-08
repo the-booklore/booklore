@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, CreatePhysicalBookRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -110,7 +110,9 @@ export class BookService {
   }
 
   refreshBooks(): void {
-    this.http.get<Book[]>(this.url).pipe(
+    // Include descriptions for magic shelf metadata filtering
+    const params = new HttpParams().set('withDescription', 'true');
+    this.http.get<Book[]>(this.url, { params }).pipe(
       map((books) => this.computeIncompleteSeriesProperty(books)),
       tap(books => {
         this.bookStateService.updateBookState({
@@ -262,7 +264,7 @@ export class BookService {
       return;
     }
 
-    const effectiveBookType = bookType || book['bookType'];
+    const effectiveBookType = bookType || book.primaryFile?.bookType;
 
     let baseUrl: string | null = null;
     let queryParams: Record<string, any> = {};
@@ -299,7 +301,12 @@ export class BookService {
       return;
     }
 
-    this.router.navigate([`/${baseUrl}/book/${book.id}`]);
+    // Include bookType in query params if it was explicitly provided (for alternative formats)
+    if (bookType && bookType !== book.primaryFile?.bookType) {
+      queryParams['bookType'] = bookType;
+    }
+
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], { queryParams });
     this.updateLastReadTime(book.id);
   }
 
@@ -321,12 +328,16 @@ export class BookService {
 
   downloadFile(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download`;
-    this.fileDownloadService.downloadFile(downloadUrl, book.fileName!);
+    const fileName = book.primaryFile?.fileName ?? book.fileName ?? 'book';
+    this.fileDownloadService.downloadFile(downloadUrl, fileName);
   }
 
   downloadAllFiles(book: Book): void {
     const downloadUrl = `${this.url}/${book.id}/download-all`;
-    this.fileDownloadService.downloadFile(downloadUrl, `${book.metadata?.title || 'book'}-all-files.zip`);
+    const fileName = book.metadata?.title
+      ? `${book.metadata.title.replace(/[^a-zA-Z0-9\-_]/g, '_')}-all-files.zip`
+      : `book-${book.id}-all-files.zip`;
+    this.fileDownloadService.downloadFile(downloadUrl, fileName);
   }
 
   deleteBookFile(bookId: number, fileId: number, isPrimary: boolean): Observable<void> {
@@ -611,15 +622,15 @@ export class BookService {
   }
 
   generateCustomCoversForBooks(bookIds: number[]): Observable<void> {
-    return this.regenerateCoversForBooks(bookIds);
+    return this.http.post<void>(`${this.url}/bulk-generate-custom-covers`, {bookIds});
   }
 
-  createPhysicalBook(request: unknown): Observable<Book> {
+  createPhysicalBook(request: CreatePhysicalBookRequest): Observable<Book> {
     return this.http.post<Book>(`${this.url}/physical`, request);
   }
 
-  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<void> {
-    return this.http.post<void>(`${this.url}/${targetBookId}/attach-files`, {
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
+    return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
       sourceBookIds,
       deleteSourceBooks
     });
