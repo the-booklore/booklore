@@ -1,7 +1,7 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {Checkbox} from 'primeng/checkbox';
-import {MessageService, PrimeTemplate} from 'primeng/api';
+import {MessageService} from 'primeng/api';
 import {RadioButton} from 'primeng/radiobutton';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
@@ -17,7 +17,6 @@ import {DialogLauncherService} from '../../../../shared/services/dialog-launcher
   imports: [
     Button,
     Checkbox,
-    PrimeTemplate,
     RadioButton,
     ReactiveFormsModule,
     TableModule,

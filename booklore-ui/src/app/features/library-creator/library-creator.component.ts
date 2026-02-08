@@ -3,26 +3,26 @@ import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
-import {TableModule} from 'primeng/table';
-import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {BookFileType, Library, LibraryScanMode} from '../book/model/library.model';
+import {Library} from '../book/model/library.model';
+import {BookType} from '../book/model/book.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
 import {IconPickerService, IconSelection} from '../../shared/service/icon-picker.service';
-import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
 import {IconDisplayComponent} from '../../shared/components/icon-display/icon-display.component';
 import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
 import {switchMap} from 'rxjs/operators';
-import {map, of} from 'rxjs';
+import {map} from 'rxjs';
+import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
+import {Checkbox} from 'primeng/checkbox';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button, IconDisplayComponent],
+  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -34,19 +34,19 @@ export class LibraryCreatorComponent implements OnInit {
   library!: Library | undefined;
   editModeLibraryName: string = '';
   watch: boolean = false;
-  scanMode: LibraryScanMode = 'FILE_AS_BOOK';
-  defaultBookFormat: BookFileType | undefined = undefined;
+  formatPriority: {type: BookType, label: string}[] = [];
+  allowAllFormats: boolean = true;
+  selectedAllowedFormats: Set<BookType> = new Set();
+  formatCounts: Record<string, number> = {};
 
-  readonly scanModeOptions = [
-    {label: 'Each file is a book (Recommended)', value: 'FILE_AS_BOOK'},
-    {label: 'Each folder is a book with extras (Deprecated)', value: 'FOLDER_AS_BOOK'}
-  ];
-
-  readonly bookFormatOptions = [
-    {label: 'None', value: undefined},
-    {label: 'EPUB', value: 'EPUB'},
-    {label: 'PDF', value: 'PDF'},
-    {label: 'CBX/CBZ/CBR', value: 'CBX'}
+  readonly allBookFormats: {type: BookType, label: string}[] = [
+    {type: 'EPUB', label: 'EPUB'},
+    {type: 'PDF', label: 'PDF'},
+    {type: 'CBX', label: 'CBX (CBZ/CBR/CB7)'},
+    {type: 'MOBI', label: 'MOBI'},
+    {type: 'AZW3', label: 'AZW3'},
+    {type: 'FB2', label: 'FB2'},
+    {type: 'AUDIOBOOK', label: 'Audiobook'}
   ];
 
   private dialogLauncherService = inject(DialogLauncherService);
@@ -58,28 +58,96 @@ export class LibraryCreatorComponent implements OnInit {
   private iconPicker = inject(IconPickerService);
 
   ngOnInit(): void {
+    this.initializeFormatPriority();
+    this.initializeAllowedFormats();
+
     const data = this.dynamicDialogConfig?.data;
     if (data?.mode === 'edit') {
       this.mode = data.mode;
       this.library = this.libraryService.findLibraryById(data.libraryId);
       if (this.library) {
-        const {name, icon, iconType, paths, watch, scanMode, defaultBookFormat} = this.library;
+        const {name, icon, iconType, paths, watch, formatPriority, allowedFormats} = this.library;
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
 
-        if (iconType === 'CUSTOM_SVG') {
-          this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
-        } else {
-          const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
-          this.selectedIcon = {type: 'PRIME_NG', value: value};
+        if (icon != null && iconType) {
+          if (iconType === 'CUSTOM_SVG') {
+            this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
+          } else {
+            const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
+            this.selectedIcon = {type: 'PRIME_NG', value: value};
+          }
         }
 
         this.watch = watch;
-        this.scanMode = scanMode || 'FILE_AS_BOOK';
-        this.defaultBookFormat = defaultBookFormat || undefined;
+        if (formatPriority && formatPriority.length > 0) {
+          this.formatPriority = formatPriority.map(type =>
+            this.allBookFormats.find(f => f.type === type)!
+          ).filter(f => f !== undefined);
+          const existingTypes = new Set(formatPriority);
+          this.allBookFormats.forEach(f => {
+            if (!existingTypes.has(f.type)) {
+              this.formatPriority.push(f);
+            }
+          });
+        }
+
+        if (allowedFormats && allowedFormats.length > 0) {
+          this.allowAllFormats = false;
+          this.selectedAllowedFormats = new Set(allowedFormats);
+        } else {
+          this.allowAllFormats = true;
+          this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+        }
+
+        this.libraryService.getBookCountsByFormat(this.library.id!).subscribe(counts => {
+          this.formatCounts = counts;
+        });
+
         this.folders = paths.map(path => path.path);
       }
     }
+  }
+
+  private initializeFormatPriority(): void {
+    this.formatPriority = [...this.allBookFormats];
+  }
+
+  private initializeAllowedFormats(): void {
+    this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+  }
+
+  onAllowAllFormatsChange(): void {
+    if (this.allowAllFormats) {
+      this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+    }
+  }
+
+  onFormatCheckboxChange(formatType: BookType, checked: boolean): void {
+    if (checked) {
+      this.selectedAllowedFormats.add(formatType);
+    } else {
+      this.selectedAllowedFormats.delete(formatType);
+    }
+    this.allowAllFormats = this.selectedAllowedFormats.size === this.allBookFormats.length;
+  }
+
+  isFormatSelected(formatType: BookType): boolean {
+    return this.selectedAllowedFormats.has(formatType);
+  }
+
+  getFormatWarning(formatType: BookType): string | null {
+    if (this.mode !== 'edit') return null;
+    const count = this.formatCounts[formatType];
+    if (count && count > 0 && !this.selectedAllowedFormats.has(formatType)) {
+      return `${count} existing book${count > 1 ? 's' : ''} will not appear in future scans`;
+    }
+    return null;
+  }
+
+  hasAnyFormatWarning(): boolean {
+    if (this.mode !== 'edit') return false;
+    return this.allBookFormats.some(f => this.getFormatWarning(f.type) !== null);
   }
 
   closeDialog(): void {
@@ -120,16 +188,16 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   isLibraryDetailsValid(): boolean {
-    return !!this.chosenLibraryName.trim() && !!this.selectedIcon;
+    return !!this.chosenLibraryName.trim();
   }
 
   isDirectorySelectionValid(): boolean {
     return this.folders.length > 0;
   }
 
-  validateLibraryNameAndProceed(activateCallback: Function): void {
+  createOrUpdateLibrary(): void {
     const trimmedLibraryName = this.chosenLibraryName.trim();
-    if (trimmedLibraryName && trimmedLibraryName != this.editModeLibraryName) {
+    if (trimmedLibraryName && trimmedLibraryName !== this.editModeLibraryName) {
       const exists = this.libraryService.doesLibraryExistByName(trimmedLibraryName);
       if (exists) {
         this.messageService.add({
@@ -137,17 +205,12 @@ export class LibraryCreatorComponent implements OnInit {
           summary: 'Library Name Exists',
           detail: 'This library name is already taken.',
         });
-      } else {
-        activateCallback(2);
+        return;
       }
-    } else {
-      activateCallback(2);
     }
-  }
 
-  createOrUpdateLibrary(): void {
-    const iconValue = this.selectedIcon?.value || 'heart';
-    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+    const iconValue = this.selectedIcon?.value ?? null;
+    const iconType = this.selectedIcon?.type ?? null;
 
     const library: Library = {
       name: this.chosenLibraryName,
@@ -155,8 +218,8 @@ export class LibraryCreatorComponent implements OnInit {
       iconType: iconType,
       paths: this.folders.map(folder => ({path: folder})),
       watch: this.watch,
-      scanMode: this.scanMode,
-      defaultBookFormat: this.defaultBookFormat
+      formatPriority: this.formatPriority.map(f => f.type),
+      allowedFormats: this.allowAllFormats ? [] : Array.from(this.selectedAllowedFormats)
     };
 
     if (this.mode === 'edit') {
@@ -208,11 +271,7 @@ export class LibraryCreatorComponent implements OnInit {
     }
   }
 
-  getFolderName(path: string): string {
-    if (!path || typeof path !== 'string') {
-      return '';
-    }
-    const parts = path.split('/').filter(p => p);
-    return parts[parts.length - 1] || path;
+  onFormatPriorityDrop(event: CdkDragDrop<{type: BookType, label: string}[]>): void {
+    moveItemInArray(this.formatPriority, event.previousIndex, event.currentIndex);
   }
 }

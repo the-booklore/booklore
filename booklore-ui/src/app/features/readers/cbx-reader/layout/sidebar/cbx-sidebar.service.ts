@@ -27,6 +27,7 @@ export class CbxSidebarService {
 
   private destroy$ = new Subject<void>();
   private bookId!: number;
+  private altBookType?: string;
   private bookType!: BookType;
 
   private _isOpen = new BehaviorSubject<boolean>(false);
@@ -66,9 +67,10 @@ export class CbxSidebarService {
     return this.bookType === 'PDF';
   }
 
-  initialize(bookId: number, book: Book, destroy$: Subject<void>): void {
+  initialize(bookId: number, book: Book, destroy$: Subject<void>, altBookType?: string): void {
     this.bookId = bookId;
-    this.bookType = book.bookType;
+    this.altBookType = altBookType;
+    this.bookType = (altBookType as BookType) ?? book.primaryFile?.bookType!;
     this.destroy$ = destroy$;
 
     this._bookInfo.next({
@@ -85,7 +87,7 @@ export class CbxSidebarService {
 
   private loadPageInfo(): void {
     if (this.bookType === 'PDF') {
-      this.pdfReaderService.getPageInfo(this.bookId)
+      this.pdfReaderService.getPageInfo(this.bookId, this.altBookType)
         .pipe(takeUntil(this.destroy$))
         .subscribe(pdfInfo => {
           this._pdfPageCount.next(pdfInfo.pageCount);
@@ -99,7 +101,7 @@ export class CbxSidebarService {
           }
         });
     } else {
-      this.cbxReaderService.getPageInfo(this.bookId)
+      this.cbxReaderService.getPageInfo(this.bookId, this.altBookType)
         .pipe(takeUntil(this.destroy$))
         .subscribe(pages => this._pages.next(pages));
     }

@@ -12,6 +12,7 @@ import {UserService} from "../../settings/user-management/user.service";
 import {LoadingService} from '../../../core/services/loading.service';
 import {finalize} from 'rxjs';
 import {DialogLauncherService} from '../../../shared/services/dialog-launcher.service';
+import {BookDialogHelperService} from '../components/book-browser/book-dialog-helper.service';
 
 @Injectable({
   providedIn: 'root',
@@ -28,12 +29,23 @@ export class LibraryShelfMenuService {
   private magicShelfService = inject(MagicShelfService);
   private userService = inject(UserService);
   private loadingService = inject(LoadingService);
+  private bookDialogHelperService = inject(BookDialogHelperService);
 
   initializeLibraryMenuItems(entity: Library | Shelf | MagicShelf | null): MenuItem[] {
     return [
       {
         label: 'Options',
         items: [
+          {
+            label: 'Add Physical Book',
+            icon: 'pi pi-book',
+            command: () => {
+              this.bookDialogHelperService.openAddPhysicalBookDialog(entity?.id as number);
+            }
+          },
+          {
+            separator: true
+          },
           {
             label: 'Edit Library',
             icon: 'pi pi-pen-to-square',
@@ -48,12 +60,19 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to refresh library: ${entity?.name}?`,
                 header: 'Confirmation',
+                icon: undefined,
+                acceptLabel: 'Rescan',
+                rejectLabel: 'Cancel',
+                acceptIcon: undefined,
+                rejectIcon: undefined,
+                acceptButtonStyleClass: undefined,
+                rejectButtonStyleClass: undefined,
                 rejectButtonProps: {
                   label: 'Cancel',
                   severity: 'secondary',
                 },
                 acceptButtonProps: {
-                  label: 'Yes',
+                  label: 'Rescan',
                   severity: 'success',
                 },
                 accept: () => {
@@ -100,6 +119,8 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete library: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
                 rejectButtonProps: {
                   label: 'Cancel',
                   severity: 'secondary',
@@ -164,8 +185,15 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete shelf: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
                 acceptButtonProps: {
+                  label: 'Yes',
                   severity: 'danger'
+                },
+                rejectButtonProps: {
+                  label: 'Cancel',
+                  severity: 'secondary'
                 },
                 accept: () => {
                   this.shelfService.deleteShelf(entity?.id!).subscribe({
@@ -218,8 +246,15 @@ export class LibraryShelfMenuService {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete magic shelf: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptLabel: 'Yes',
+                rejectLabel: 'Cancel',
                 acceptButtonProps: {
+                  label: 'Yes',
                   severity: 'danger'
+                },
+                rejectButtonProps: {
+                  label: 'Cancel',
+                  severity: 'secondary'
                 },
                 accept: () => {
                   this.magicShelfService.deleteShelf(entity?.id!).subscribe({

@@ -15,6 +15,8 @@ import {BookMetadataCenterComponent} from '../../../metadata/component/book-meta
 import {CoverSearchComponent} from '../../../metadata/component/cover-search/cover-search.component';
 import {Book} from '../../model/book.model';
 import {AdditionalFileUploaderComponent} from '../additional-file-uploader/additional-file-uploader.component';
+import {BookFileAttacherComponent} from '../book-file-attacher/book-file-attacher.component';
+import {AddPhysicalBookDialogComponent} from '../add-physical-book-dialog/add-physical-book-dialog.component';
 
 @Injectable({providedIn: 'root'})
 export class BookDialogHelperService {
@@ -112,33 +114,23 @@ export class BookDialogHelperService {
     });
   }
 
-  openCustomSendDialog(bookId: number): DynamicDialogRef | null {
+  openCustomSendDialog(book: Book): DynamicDialogRef | null {
     return this.openDialog(BookSenderComponent, {
       showHeader: false,
       styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
       data: {
-        bookId: bookId,
+        book: book,
       },
     });
   }
 
-  openCoverSearchDialog(bookId: number): DynamicDialogRef | null {
+  openCoverSearchDialog(bookId: number, coverType?: 'ebook' | 'audiobook'): DynamicDialogRef | null {
     return this.openDialog(CoverSearchComponent, {
       showHeader: false,
       styleClass: `${DialogSize.FULL} ${DialogStyle.MINIMAL}`,
       data: {
         bookId: bookId,
-      },
-    });
-  }
-
-  openMetadataFetchOptionsDialog(bookId: number): DynamicDialogRef | null {
-    return this.openDialog(MetadataFetchOptionsComponent, {
-      showHeader: false,
-      styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
-      data: {
-        bookIds: [bookId],
-        metadataRefreshType: MetadataRefreshType.BOOKS,
+        coverType: coverType,
       },
     });
   }
@@ -149,6 +141,36 @@ export class BookDialogHelperService {
       styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       data: {
         book: book,
+      },
+    });
+  }
+
+  openBookFileAttacherDialog(sourceBook: Book): DynamicDialogRef | null {
+    return this.openDialog(BookFileAttacherComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
+      data: {
+        sourceBook: sourceBook,
+      },
+    });
+  }
+
+  openBulkBookFileAttacherDialog(sourceBooks: Book[]): DynamicDialogRef | null {
+    return this.openDialog(BookFileAttacherComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
+      data: {
+        sourceBooks: sourceBooks,
+      },
+    });
+  }
+
+  openAddPhysicalBookDialog(libraryId?: number): DynamicDialogRef | null {
+    return this.openDialog(AddPhysicalBookDialogComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
+      data: {
+        libraryId: libraryId,
       },
     });
   }

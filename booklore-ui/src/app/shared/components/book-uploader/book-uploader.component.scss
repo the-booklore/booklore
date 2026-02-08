@@ -178,6 +178,85 @@
     }
   }
 
+  .upload-progress-summary {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 0.5rem;
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+
+      .progress-status {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-weight: 600;
+        color: var(--text-color);
+
+        i {
+          font-size: 0.9rem;
+          color: var(--primary-color);
+        }
+
+        .pi-check-circle {
+          color: #22c55e;
+        }
+      }
+
+      .progress-files {
+        color: var(--text-secondary-color);
+
+        .failed-count {
+          color: #ef4444;
+          font-weight: 500;
+        }
+      }
+
+      .progress-bytes {
+        color: var(--text-secondary-color);
+        margin-left: auto;
+      }
+
+      .progress-percent {
+        font-weight: 700;
+        color: var(--primary-color);
+        min-width: 42px;
+        text-align: right;
+      }
+    }
+
+    ::ng-deep .overall-progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--overlay-background);
+
+      .p-progressbar-value {
+        border-radius: 3px;
+        transition: width 0.3s ease;
+      }
+    }
+
+    @media (max-width: 480px) {
+      padding: 0.5rem 0.75rem;
+
+      .progress-row {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+
+        .progress-bytes {
+          margin-left: 0;
+        }
+      }
+    }
+  }
+
   .files-list {
     display: flex;
     flex-direction: column;
@@ -246,6 +325,15 @@
           font-size: 0.875rem;
           flex-shrink: 0;
         }
+
+        .file-progress-text {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--primary-color);
+          min-width: 40px;
+          text-align: right;
+          flex-shrink: 0;
+        }
       }
 
       .file-actions {
@@ -265,12 +353,9 @@
             color: #22c55e;
           }
 
-          &.warning {
-            color: #f97316;
-          }
-
+          &.warning,
           &.error {
-            color: var(--red-500);
+            color: #f97316;
           }
         }
       }

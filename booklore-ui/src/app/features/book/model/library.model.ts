@@ -1,19 +1,17 @@
 import {SortOption} from './sort.model';
-
-export type LibraryScanMode = 'FILE_AS_BOOK' | 'FOLDER_AS_BOOK';
-export type BookFileType = 'PDF' | 'EPUB' | 'CBX' | 'FB2' | 'MOBI' | 'AZW3';
+import {BookType} from './book.model';
 
 export interface Library {
   id?: number;
   name: string;
-  icon: string;
-  iconType?: 'PRIME_NG' | 'CUSTOM_SVG';
+  icon?: string | null;
+  iconType?: 'PRIME_NG' | 'CUSTOM_SVG' | null;
   watch: boolean;
   fileNamingPattern?: string;
   sort?: SortOption;
   paths: LibraryPath[];
-  scanMode?: LibraryScanMode;
-  defaultBookFormat?: BookFileType;
+  formatPriority?: BookType[];
+  allowedFormats?: BookType[];
 }
 
 export interface LibraryPath {

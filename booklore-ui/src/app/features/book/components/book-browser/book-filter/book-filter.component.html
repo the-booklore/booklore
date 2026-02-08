@@ -14,13 +14,15 @@
 
   <div class="filter-content">
     <p-accordion [value]="expandedPanels" [multiple]="true" (valueChange)="onExpandedPanelsChange($event)">
-      @for (filterType of filterTypes; track trackByFilterType(i, filterType); let i = $index) {
+      @for (filterType of visibleFilterTypes; track trackByFilterType(i, filterType); let i = $index) {
         @if (filterStreams[filterType] | async; as filters) {
           @if (filters.length > 0) {
             <p-accordion-panel [value]="i">
               <p-accordion-header>
             <span class="filter-type-label">
-              {{ filterLabels[filterType] || (filterType | titlecase) }}
+              <span class="filter-label-text">
+                {{ filterLabels[filterType] || (filterType | titlecase) }}
+              </span>
               @if (activeFilters[filterType]?.length) {
                 <span class="active-filter-count">
                   ({{ activeFilters[filterType].length }})
@@ -42,13 +44,13 @@
                     'active': activeFilters[filterType]?.includes(getFilterValueId(filter))
                   }"
                       (click)="handleFilterClick(filterType, getFilterValueId(filter))">
-                      {{ getFilterValueDisplay(filter) }}
+                      <span class="filter-value-text">{{ getFilterValueDisplay(filter) }}</span>
                       <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
                     </div>
                   </cdk-virtual-scroll-viewport>
                   @if (truncatedFilters[filterType]) {
                     <div class="truncation-notice">
-                      Showing first 500 items
+                      Showing first 100 items
                     </div>
                   }
                 }
@@ -60,7 +62,7 @@
     </p-accordion>
 
     <div class="footer-notice">
-      Note: Top 500 items are displayed per filter category
+      Note: Top 100 items are displayed per filter category
     </div>
   </div>
 </div>

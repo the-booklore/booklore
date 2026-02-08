@@ -125,12 +125,48 @@
     <div class="setting-item">
       <div class="setting-header">
         <p-toggleswitch
-          [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
-          (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+          [ngModel]="metadataPersistence.saveToOriginalFile.audiobook.enabled"
+          (onChange)="onSaveToOriginalFileToggle('audiobook')">
         </p-toggleswitch>
-        <label class="setting-label">Auto-Move Files on Metadata Update</label>
+        <label class="setting-label">Write Metadata to Audiobooks</label>
       </div>
-      <p class="setting-description">Automatically move and rename files according to their library's naming pattern when metadata is updated.</p>
+      <p class="setting-description">
+        Write metadata directly into audiobook files (M4B, M4A, MP3, etc.) when editing book information.
+        <span class="setting-note">Supports title, authors, narrator, description, publisher, categories, series, language, and cover art. For folder-based audiobooks, cover is saved as cover.jpg in the folder.</span>
+      </p>
+      @if (metadataPersistence.saveToOriginalFile.audiobook.enabled) {
+        <div class="setting-options">
+          <div class="filesize-input">
+            <label>Max file size:</label>
+            <input
+              type="number"
+              [(ngModel)]="metadataPersistence.saveToOriginalFile.audiobook.maxFileSizeInMb"
+              (change)="onFilesizeChange('audiobook')"
+              min="1"
+              max="2000"
+              class="filesize-field">
+            <span class="filesize-unit">MB</span>
+            <i
+              class="pi pi-info-circle"
+              pTooltip="Only files up to this size will be updated. Larger files are ignored."
+              tooltipPosition="right">
+            </i>
+          </div>
+        </div>
+      }
     </div>
+
+    @if ((appSettings$ | async)?.diskType === 'LOCAL') {
+      <div class="setting-item">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
+            (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+          </p-toggleswitch>
+          <label class="setting-label">Auto-Move Files on Metadata Update</label>
+        </div>
+        <p class="setting-description">Automatically move and rename files according to their library's naming pattern when metadata is updated.</p>
+      </div>
+    }
   </div>
 </div>

@@ -163,24 +163,27 @@
             </p-popover>
           </div>
 
-          <div>
-            <a class="topbar-items topbar-item" (click)="sortMenu.toggle($event)">
+          <div class="sort-button-wrapper">
+            <a class="topbar-items topbar-item" (click)="sortPopover.toggle($event)">
               <i
                 class="pi pi-sort"
                 pTooltip="Select sorting"
                 tooltipPosition="top">
               </i>
+              @if (sortCriteriaCount > 1) {
+                <p-badge [value]="sortCriteriaCount.toString()" class="sort-badge"/>
+              }
             </a>
-            <p-menu #sortMenu [popup]="true" [model]="this.bookSorter.sortOptions" appendTo="body">
-              <ng-template pTemplate="item" let-item>
-                <div class="sort-menu-item" (click)="this.bookSorter.sortBooks(item.field)">
-                  <span>{{ item.label }}</span>
-                  @if (item.icon) {
-                    <i [class]="item.icon"></i>
-                  }
-                </div>
-              </ng-template>
-            </p-menu>
+            <p-popover #sortPopover [dismissable]="true" appendTo="body">
+              <app-multi-sort-popover
+                [sortCriteria]="this.bookSorter.selectedSortCriteria"
+                [availableSortOptions]="this.bookSorter.sortOptions"
+                (addCriterion)="onAddSortCriterion($event)"
+                (removeCriterion)="onRemoveSortCriterion($event)"
+                (toggleDirection)="onToggleSortDirection($event)"
+                (reorder)="onReorderSortCriteria($event)">
+              </app-multi-sort-popover>
+            </p-popover>
           </div>
 
           <a class="topbar-items topbar-item" (click)="toggleTableGrid()">
@@ -299,7 +302,7 @@
                   @for (book of scroll.viewPortItems; let i = $index; track book.id) {
                     <div
                       class="virtual-scroller-item"
-                      [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
+                      [ngStyle]="{width: currentCardSize.width + 'px', height: getCardHeight(book) + 'px'}">
                       <app-book-card
                         [index]="books.indexOf(book)"
                         [book]="book"
@@ -317,14 +320,13 @@
               </virtual-scroller>
             }
           }
-          @if (selectedBooks.size > 0) {
-            @if (userService.userState$ | async; as userState) {
-              <div class="book-browser-footer" [@slideInOut]>
+          @if (userService.userState$ | async; as userState) {
+            <div class="book-browser-footer" [class.footer-hidden]="selectedCount === 0">
                 <div class="footer-content">
                   <div class="footer-left">
                     <div class="selected-count-badge">
                       <i class="pi pi-check-circle"></i>
-                      <span class="selected-count">{{ selectedBooks.size }}</span>
+                      <span class="selected-count">{{ selectedCount }}</span>
                       <span class="selected-label">selected</span>
                     </div>
                   </div>
@@ -370,7 +372,7 @@
                             tooltipPosition="top">
                           </p-button>
                         }
-                        @if (userState.user!.permissions.canMoveOrganizeFiles) {
+                        @if (userState.user!.permissions.canMoveOrganizeFiles && (appSettingsService.appSettings$ | async)?.diskType === 'LOCAL') {
                           <p-button
                             outlined="true"
                             icon="pi pi-arrows-h"
@@ -380,7 +382,18 @@
                             tooltipPosition="top">
                           </p-button>
                         }
-                        @if (hasBulkReadActionsItems) {
+                        @if (userState.user!.permissions.canManageLibrary || userState.user!.permissions.admin) {
+                          <p-button
+                            outlined="true"
+                            icon="pi pi-link"
+                            severity="info"
+                            (click)="attachFilesToBook()"
+                            [disabled]="!canAttachFiles()"
+                            pTooltip="Attach to Another Book"
+                            tooltipPosition="top">
+                          </p-button>
+                        }
+                        @if (hasMoreActionsItems) {
                           <div class="more-actions-wrapper">
                             <p-button
                               (click)="menu.toggle($event)"
@@ -390,7 +403,7 @@
                               severity="info"
                               icon="pi pi-ellipsis-v">
                             </p-button>
-                            <p-tieredMenu #menu [model]="bulkReadActionsMenuItems" [popup]="true" appendTo="body"/>
+                            <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body"/>
                           </div>
                         }
                       </div>
@@ -430,7 +443,6 @@
                 </div>
               </div>
             }
-          }
         </div>
       </div>
     }

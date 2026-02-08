@@ -24,10 +24,17 @@
       <div class="control">
         <label>Scroll Mode</label>
         <div class="control-right">
-          <span class="mode-label">{{ state.scrollMode === CbxScrollMode.PAGINATED ? 'Paginated' : 'Infinite' }}</span>
-          <button class="switch" [class.active]="state.scrollMode === CbxScrollMode.INFINITE" (click)="onScrollModeToggle()">
-            <span class="slider"></span>
-          </button>
+          <div class="button-group text-btns">
+            @for (option of scrollModeOptions; track option.value) {
+              <button
+                class="option-btn text-btn"
+                [class.active]="state.scrollMode === option.value"
+                (click)="onScrollModeSelect(option.value)"
+                [title]="option.label">
+                {{ option.label }}
+              </button>
+            }
+          </div>
         </div>
       </div>
 
@@ -56,6 +63,35 @@
           </div>
         </div>
       }
+
+      <!-- Reading Direction -->
+      <div class="control">
+        <label>Reading Direction</label>
+        <div class="control-right">
+          <span class="mode-label">{{ state.readingDirection === CbxReadingDirection.LTR ? 'Left to Right' : 'Right to Left' }}</span>
+          <button class="switch" [class.active]="state.readingDirection === CbxReadingDirection.RTL" (click)="onReadingDirectionToggle()">
+            <span class="slider"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Slideshow Interval -->
+      <div class="control">
+        <label>Slideshow Interval</label>
+        <div class="control-right">
+          <div class="button-group text-btns">
+            @for (option of slideshowIntervalOptions; track option.value) {
+              <button
+                class="option-btn text-btn small"
+                [class.active]="state.slideshowInterval === option.value"
+                (click)="onSlideshowIntervalSelect(option.value)"
+                [title]="option.label">
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
 
       <!-- Background Color -->
       <div class="control">

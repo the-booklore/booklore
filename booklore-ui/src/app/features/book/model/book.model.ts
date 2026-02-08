@@ -3,7 +3,7 @@ import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrol
 import {BookReview} from '../components/book-reviews/book-review-service';
 import {ZoomType} from 'ngx-extended-pdf-viewer';
 
-export type BookType = "PDF" | "EPUB" | "CBX" | "FB2" | "MOBI" | "AZW3";
+export type BookType = "PDF" | "EPUB" | "CBX" | "FB2" | "MOBI" | "AZW3" | "AUDIOBOOK";
 
 export enum AdditionalFileType {
   ALTERNATIVE_FORMAT = 'ALTERNATIVE_FORMAT',
@@ -17,17 +17,23 @@ export interface FileInfo {
   fileSizeKb?: number;
 }
 
-export interface AdditionalFile extends FileInfo {
+export interface BookFile extends FileInfo {
   id: number;
   bookId: number;
-  additionalFileType: AdditionalFileType;
-  description?: string;
+  bookType?: BookType;
+  folderBased?: boolean;
+  extension?: string;
   addedOn?: string;
+}
+
+export interface AdditionalFile extends BookFile {
+  additionalFileType?: AdditionalFileType;
+  description?: string;
 }
 
 export interface Book extends FileInfo {
   id: number;
-  bookType: BookType;
+  primaryFile?: BookFile;
   libraryId: number;
   libraryName: string;
   metadata?: BookMetadata;
@@ -37,6 +43,7 @@ export interface Book extends FileInfo {
   epubProgress?: EpubProgress;
   pdfProgress?: PdfProgress;
   cbxProgress?: CbxProgress;
+  audiobookProgress?: AudiobookProgress;
   koreaderProgress?: KoReaderProgress;
   koboProgress?: KoboProgress;
   seriesCount?: number | null;
@@ -48,6 +55,7 @@ export interface Book extends FileInfo {
   libraryPath?: { id: number };
   alternativeFormats?: AdditionalFile[];
   supplementaryFiles?: AdditionalFile[];
+  isPhysical?: boolean;
 
   [key: string]: unknown;
 }
@@ -73,6 +81,67 @@ export interface KoReaderProgress {
 
 export interface KoboProgress {
   percentage: number;
+}
+
+export interface AudiobookProgress {
+  positionMs: number;
+  trackIndex?: number;
+  trackPositionMs?: number;
+  percentage: number;
+}
+
+export interface BookFileProgress {
+  bookFileId: number;
+  positionData?: string;
+  positionHref?: string;
+  progressPercent: number;
+}
+
+export interface AudiobookMetadata {
+  narrator?: string;
+  abridged?: boolean | null;
+  durationSeconds?: number;
+  bitrate?: number;
+  sampleRate?: number;
+  channels?: number;
+  codec?: string;
+  chapterCount?: number;
+  narratorLocked?: boolean;
+  abridgedLocked?: boolean;
+}
+
+export interface ComicMetadata {
+  issueNumber?: string;
+  volumeName?: string;
+  volumeNumber?: number;
+  storyArc?: string;
+  storyArcNumber?: number;
+  alternateSeries?: string;
+  alternateIssue?: string;
+  pencillers?: string[];
+  inkers?: string[];
+  colorists?: string[];
+  letterers?: string[];
+  coverArtists?: string[];
+  editors?: string[];
+  imprint?: string;
+  format?: string;
+  blackAndWhite?: boolean;
+  manga?: boolean;
+  readingDirection?: string;
+  characters?: string[];
+  teams?: string[];
+  locations?: string[];
+  webLink?: string;
+  notes?: string;
+  issueNumberLocked?: boolean;
+  volumeNameLocked?: boolean;
+  volumeNumberLocked?: boolean;
+  storyArcLocked?: boolean;
+  creatorsLocked?: boolean;
+  charactersLocked?: boolean;
+  teamsLocked?: boolean;
+  locationsLocked?: boolean;
 }
 
 export interface BookMetadata {
@@ -107,7 +176,17 @@ export interface BookMetadata {
   ranobedbId?: string;
   ranobedbRating?: number | null;
   hardcoverRating?: number | null;
+  audibleId?: string;
+  audibleRating?: number | null;
+  audibleReviewCount?: number | null;
+  narrator?: string;
+  abridged?: boolean | null;
+  narratorLocked?: boolean;
+  abridgedLocked?: boolean;
+  audiobookMetadata?: AudiobookMetadata;
+  comicMetadata?: ComicMetadata;
   coverUpdatedOn?: string;
+  audiobookCoverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
   moods?: string[];
@@ -144,13 +223,21 @@ export interface BookMetadata {
   lubimyczytacRatingLocked?: boolean;
   ranobedbIdLocked?: boolean;
   ranobedbRatingLocked?: boolean;
+  audibleIdLocked?: boolean;
+  audibleRatingLocked?: boolean;
+  audibleReviewCountLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
   moodsLocked?: boolean;
   tagsLocked?: boolean;
   coverLocked?: boolean;
+  audiobookCoverLocked?: boolean;
   reviewsLocked?: boolean;
+  ageRating?: number | null;
+  contentRating?: string | null;
+  ageRatingLocked?: boolean;
+  contentRatingLocked?: boolean;
 
   [key: string]: unknown;
 }
@@ -184,11 +271,19 @@ export interface MetadataClearFlags {
   lubimyczytacRating?: boolean;
   ranobedbId?: boolean;
   ranobedbRating?: boolean;
+  audibleId?: boolean;
+  audibleRating?: boolean;
+  audibleReviewCount?: boolean;
+  narrator?: boolean;
+  abridged?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;
   tags?: boolean;
   cover?: boolean;
+  audiobookCover?: boolean;
+  ageRating?: boolean;
+  contentRating?: boolean;
 }
 
 export interface MetadataUpdateWrapper {
@@ -273,6 +368,10 @@ export interface BulkMetadataUpdateRequest {
   mergeCategories?: boolean;
   mergeMoods?: boolean;
   mergeTags?: boolean;
+  ageRating?: number | null;
+  clearAgeRating?: boolean;
+  contentRating?: string | null;
+  clearContentRating?: boolean;
 }
 
 export interface BookDeletionResponse {
@@ -290,4 +389,17 @@ export enum ReadStatus {
   WONT_READ = 'WONT_READ',
   ABANDONED = 'ABANDONED',
   UNSET = 'UNSET'
+}
+
+export interface CreatePhysicalBookRequest {
+  libraryId: number;
+  isbn?: string;
+  title?: string;
+  authors?: string[];
+  description?: string;
+  publisher?: string;
+  publishedDate?: string;
+  language?: string;
+  pageCount?: number;
+  categories?: string[];
 }

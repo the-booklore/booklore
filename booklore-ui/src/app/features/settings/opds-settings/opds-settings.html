@@ -1,4 +1,4 @@
-<div class="main-container enclosing-container">
+<div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-server"></i>
@@ -12,313 +12,280 @@
   </div>
 
   @if (hasPermission) {
-    <div class="settings-content">
-      <div class="preferences-section">
-        <div class="section-header">
-          <h3 class="section-title">
-            <i class="pi pi-power-off"></i>
-            Server Control
-          </h3>
-        </div>
-
-        <div class="settings-card">
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label-row">
-                <label class="setting-label">OPDS Server Enabled</label>
-                <p-toggleswitch
-                  [(ngModel)]="opdsEnabled"
-                  (onChange)="toggleOpdsServer()">
-                </p-toggleswitch>
-              </div>
-              <p class="setting-description">
-                <i class="pi pi-info-circle"></i>
-                Enable or disable the OPDS server to control access to your book collection through reading apps.
-              </p>
-            </div>
-          </div>
-        </div>
+    <div class="settings-card">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-sliders-h"></i>
+          Server Settings
+        </h3>
+        <p class="section-description">
+          Enable or disable OPDS and Komga API services to control access to your book collection.
+        </p>
       </div>
 
-      <div class="preferences-section">
-        <div class="section-header">
-          <h3 class="section-title">
-            <i class="pi pi-power-off"></i>
-            Komga API
-          </h3>
-        </div>
-
-        <div class="settings-card">
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="setting-label-row">
-                <label class="setting-label">Komga API Enabled</label>
-                <p-toggleswitch
-                  [(ngModel)]="komgaApiEnabled"
-                  (onChange)="toggleKomgaApi()">
-                </p-toggleswitch>
+      <div class="section-body">
+        <div class="toggle-list">
+          <div class="toggle-item" [class.is-active]="opdsEnabled">
+            <div class="toggle-content">
+              <div class="toggle-header">
+                <div class="toggle-icon">
+                  <i class="pi pi-globe"></i>
+                </div>
+                <div class="toggle-info">
+                  <span class="toggle-label">OPDS Server</span>
+                  <span class="toggle-status" [class.active]="opdsEnabled">
+                    {{ opdsEnabled ? 'Enabled' : 'Disabled' }}
+                  </span>
+                </div>
               </div>
-              <p class="setting-description">
-                <i class="pi pi-info-circle"></i>
+              <p class="toggle-description">
+                Enable the OPDS server to access your book collection through OPDS-compatible reading apps like KOReader, Moon+ Reader, etc.
+              </p>
+            </div>
+            <p-toggleswitch
+              [(ngModel)]="opdsEnabled"
+              (onChange)="toggleOpdsServer()">
+            </p-toggleswitch>
+          </div>
+
+          <div class="toggle-item" [class.is-active]="komgaApiEnabled">
+            <div class="toggle-content">
+              <div class="toggle-header">
+                <div class="toggle-icon">
+                  <i class="pi pi-box"></i>
+                </div>
+                <div class="toggle-info">
+                  <span class="toggle-label">Komga API</span>
+                  <span class="toggle-status" [class.active]="komgaApiEnabled">
+                    {{ komgaApiEnabled ? 'Enabled' : 'Disabled' }}
+                  </span>
+                </div>
+              </div>
+              <p class="toggle-description">
                 Enable the Komga-compatible API to use Komga clients (Tachiyomi, Komelia, etc.) with Booklore. Uses the same OPDS user accounts for authentication.
               </p>
             </div>
+            <p-toggleswitch
+              [(ngModel)]="komgaApiEnabled"
+              (onChange)="toggleKomgaApi()">
+            </p-toggleswitch>
           </div>
-          
+
           @if (komgaApiEnabled) {
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="setting-label-row">
-                  <label class="setting-label">Group Unknown Series</label>
-                  <p-toggleswitch
-                    [(ngModel)]="komgaGroupUnknown"
-                    (onChange)="toggleKomgaGroupUnknown()">
-                  </p-toggleswitch>
+            <div class="toggle-item sub-item" [class.is-active]="komgaGroupUnknown">
+              <div class="toggle-content">
+                <div class="toggle-header">
+                  <div class="toggle-icon sub-icon">
+                    <i class="pi pi-folder"></i>
+                  </div>
+                  <div class="toggle-info">
+                    <span class="toggle-label">Group Unknown Series</span>
+                    <span class="toggle-status" [class.active]="komgaGroupUnknown">
+                      {{ komgaGroupUnknown ? 'Grouped' : 'Individual' }}
+                    </span>
+                  </div>
                 </div>
-                <p class="setting-description">
-                  <i class="pi pi-info-circle"></i>
-                  When enabled, books without a series will be grouped under "Unknown Series". When disabled, each book without a series will appear as its own individual series.
+                <p class="toggle-description">
+                  When enabled, books without a series will be grouped under "Unknown Series". When disabled, each book will appear as its own individual series.
                 </p>
               </div>
+              <p-toggleswitch
+                [(ngModel)]="komgaGroupUnknown"
+                (onChange)="toggleKomgaGroupUnknown()">
+              </p-toggleswitch>
             </div>
           }
         </div>
       </div>
+    </div>
 
-      @if (komgaApiEnabled) {
-        <div class="preferences-section">
-          <div class="section-header">
-            <h3 class="section-title">
-              <i class="pi pi-link"></i>
-              Komga API Endpoint
-            </h3>
-          </div>
-
-          <div class="settings-card">
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="setting-label-row">
-                  <label class="setting-label">Komga Base URL</label>
-                  <div class="input-group">
-                    <input
-                      id="komga-endpoint-url"
-                      class="endpoint-input"
-                      fluid
-                      type="text"
-                      pInputText
-                      [value]="komgaEndpoint"
-                      readonly/>
-                    <p-button
-                      icon="pi pi-copy"
-                      severity="info"
-                      outlined
-                      size="small"
-                      (onClick)="copyKomgaEndpoint()">
-                    </p-button>
-                  </div>
-                </div>
-                <p class="setting-description">
-                  <i class="pi pi-info-circle"></i>
-                  Use this URL as the server address in Komga-compatible clients. The API is available at <code>/komga/api/v1/*</code> and uses OPDS user credentials.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
-
-      @if (opdsEnabled) {
-        <div class="preferences-section">
-          <div class="section-header">
-            <h3 class="section-title">
-              <i class="pi pi-link"></i>
-              OPDS Endpoint
-            </h3>
-          </div>
-
-          <div class="settings-card">
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="setting-label-row">
-                  <label class="setting-label">OPDS Catalog URL</label>
-                  <div class="input-group">
-                    <input
-                      id="endpoint-url"
-                      class="endpoint-input"
-                      fluid
-                      type="text"
-                      pInputText
-                      [value]="opdsEndpoint"
-                      readonly/>
-                    <p-button
-                      icon="pi pi-copy"
-                      severity="info"
-                      outlined
-                      size="small"
-                      (onClick)="copyEndpoint()">
-                    </p-button>
-                  </div>
-                </div>
-                <p class="setting-description">
-                  <i class="pi pi-info-circle"></i>
-                  Use this URL to access your book collection through OPDS-compatible reading apps.
-                </p>
-              </div>
-            </div>
-          </div>
+    @if (opdsEnabled || komgaApiEnabled) {
+      <div class="settings-card">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-link"></i>
+            API Endpoints
+          </h3>
+          <p class="section-description">
+            Use these URLs to connect your reading apps to Booklore.
+          </p>
         </div>
 
-        <div class="preferences-section">
-          <div class="section-header">
-            <div class="section-header-content">
+        <div class="section-body">
+          <div class="endpoints-list">
+            @if (opdsEnabled) {
+              <div class="endpoint-item">
+                <div class="endpoint-header">
+                  <div class="endpoint-icon">
+                    <i class="pi pi-globe"></i>
+                  </div>
+                  <div class="endpoint-info">
+                    <span class="endpoint-label">OPDS Catalog URL</span>
+                    <span class="endpoint-hint">For OPDS-compatible apps</span>
+                  </div>
+                </div>
+                <div class="endpoint-url-row">
+                  <input
+                    id="endpoint-url"
+                    class="endpoint-input"
+                    type="text"
+                    pInputText
+                    [value]="opdsEndpoint"
+                    readonly/>
+                  <p-button
+                    icon="pi pi-copy"
+                    severity="info"
+                    [outlined]="true"
+                    size="small"
+                    (onClick)="copyEndpoint()"
+                    pTooltip="Copy URL">
+                  </p-button>
+                </div>
+              </div>
+            }
+
+            @if (komgaApiEnabled) {
+              <div class="endpoint-item">
+                <div class="endpoint-header">
+                  <div class="endpoint-icon">
+                    <i class="pi pi-box"></i>
+                  </div>
+                  <div class="endpoint-info">
+                    <span class="endpoint-label">Komga Base URL</span>
+                    <span class="endpoint-hint">For Tachiyomi, Komelia, etc.</span>
+                  </div>
+                </div>
+                <div class="endpoint-url-row">
+                  <input
+                    id="komga-endpoint-url"
+                    class="endpoint-input"
+                    type="text"
+                    pInputText
+                    [value]="komgaEndpoint"
+                    readonly/>
+                  <p-button
+                    icon="pi pi-copy"
+                    severity="info"
+                    [outlined]="true"
+                    size="small"
+                    (onClick)="copyKomgaEndpoint()"
+                    pTooltip="Copy URL">
+                  </p-button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (opdsEnabled) {
+      <div class="settings-card">
+        <div class="section-header">
+          <div class="section-header-row">
+            <div class="section-header-text">
               <h3 class="section-title">
                 <i class="pi pi-users"></i>
                 OPDS Users
               </h3>
-              <p-button
-                icon="pi pi-plus"
-                label="Add User"
-                severity="success"
-                size="small"
-                (onClick)="showCreateUserDialog = true">
-              </p-button>
+              <p class="section-description">
+                Manage user accounts for OPDS and Komga API access. These are separate from Booklore user accounts.
+              </p>
             </div>
-          </div>
-
-          <div class="table-card">
-            <p-table
-              [value]="users"
-              [paginator]="users.length > 10"
-              [rows]="10"
-              [showCurrentPageReport]="true"
-              currentPageReportTemplate="Showing {first} to {last} of {totalRecords} users">
-              <ng-template pTemplate="header">
-                <tr>
-                  <th>
-                    <div class="header-content">
-                      <i class="pi pi-user"></i>
-                      <span>Username</span>
-                    </div>
-                  </th>
-                  <th>
-                    <div class="header-content">
-                      <i class="pi pi-sort-alt"></i>
-                      <span>Sort Order</span>
-                    </div>
-                  </th>
-                  <th>
-                    <div class="header-content">
-                      <i class="pi pi-key"></i>
-                      <span>Password</span>
-                    </div>
-                  </th>
-                  <th class="actions-header">
-                    <div class="header-content">
-                      <i class="pi pi-cog"></i>
-                      <span>Actions</span>
-                    </div>
-                  </th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-user let-rowIndex="rowIndex">
-                <tr>
-                  <td>
-                    <div class="user-info">
-                      <div class="user-avatar">
-                        {{ user.username.charAt(0).toUpperCase() }}
-                      </div>
-                      <span class="username">{{ user.username }}</span>
-                    </div>
-                  </td>
-                  <td>
-                    @if (editingUserId === user.id) {
-                      <div class="inline-row">
-                        <p-select
-                          [options]="sortOrderOptions"
-                          [(ngModel)]="editingSortOrder"
-                          optionLabel="label"
-                          optionValue="value"
-                          [style]="{width: '180px'}"
-                          size="small"
-                          [appendTo]="'body'">
-                        </p-select>
-                        <p-button
-                          icon="pi pi-check"
-                          severity="success"
-                          size="small"
-                          [text]="true"
-                          (onClick)="saveSortOrder(user)">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-times"
-                          severity="secondary"
-                          size="small"
-                          [text]="true"
-                          (onClick)="cancelEdit()">
-                        </p-button>
-                      </div>
-                    } @else {
-                      <div class="inline-row">
-                        <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
-                        <p-button
-                          icon="pi pi-pencil"
-                          severity="info"
-                          size="small"
-                          [text]="true"
-                          (onClick)="startEdit(user)"
-                          pTooltip="Edit sort order">
-                        </p-button>
-                      </div>
-                    }
-                  </td>
-                  <td>
-                    <div class="inline-row">
-                      <p-password
-                        fluid
-                        styleClass="password-input"
-                        [(ngModel)]="dummyPassword"
-                        [feedback]="false"
-                        size="small"
-                        [disabled]="true"
-                        [toggleMask]="false">
-                      </p-password>
-                      <i
-                        class="pi pi-info-circle info-icon"
-                        pTooltip="Passwords are hidden for security reasons. To change, delete the user and create a new one with a new password."
-                        tooltipPosition="right"
-                        style="cursor: pointer;">
-                      </i>
-                    </div>
-                  </td>
-                  <td class="actions-cell">
-                    <p-button
-                      icon="pi pi-trash"
-                      severity="danger"
-                      size="small"
-                      [outlined]="true"
-                      [rounded]="true"
-                      (onClick)="confirmDelete(user)"
-                      pTooltip="Delete user">
-                    </p-button>
-                  </td>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="emptymessage">
-                <tr>
-                  <td colspan="4">
-                    <div class="empty-message">
-                      <i class="pi pi-users"></i>
-                      <p class="empty-title">No users found</p>
-                      <p class="empty-subtitle">Create your first OPDS user to get started</p>
-                    </div>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
+            <p-button
+              icon="pi pi-plus"
+              label="Add User"
+              severity="success"
+              size="small"
+              [outlined]="true"
+              (onClick)="showCreateUserDialog = true">
+            </p-button>
           </div>
         </div>
-      }
-    </div>
+
+        <div class="section-body">
+          @if (users.length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-users"></i>
+              <p class="empty-title">No users found</p>
+              <p class="empty-subtitle">Create your first OPDS user to get started</p>
+            </div>
+          } @else {
+            <div class="users-list">
+              @for (user of users; track user.id) {
+                <div class="user-item">
+                  <div class="user-info">
+                    <div class="user-avatar">
+                      {{ user.username.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-details">
+                      <span class="username">{{ user.username }}</span>
+                      <div class="user-meta">
+                        <i class="pi pi-sort-alt"></i>
+                        @if (editingUserId === user.id) {
+                          <p-select
+                            [options]="sortOrderOptions"
+                            [(ngModel)]="editingSortOrder"
+                            optionLabel="label"
+                            optionValue="value"
+                            [style]="{width: '160px'}"
+                            size="small"
+                            [appendTo]="'body'">
+                          </p-select>
+                        } @else {
+                          <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <div class="user-actions">
+                    @if (editingUserId === user.id) {
+                      <p-button
+                        icon="pi pi-check"
+                        severity="success"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="saveSortOrder(user)"
+                        pTooltip="Save">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-times"
+                        severity="secondary"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="cancelEdit()"
+                        pTooltip="Cancel">
+                      </p-button>
+                    } @else {
+                      <p-button
+                        icon="pi pi-pencil"
+                        severity="info"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="startEdit(user)"
+                        pTooltip="Edit sort order">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-trash"
+                        severity="danger"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="confirmDelete(user)"
+                        pTooltip="Delete user">
+                      </p-button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
 
     <p-dialog
       header="Create OPDS User"
@@ -383,17 +350,15 @@
 
     <p-confirmDialog></p-confirmDialog>
   } @else {
-    <div class="settings-content">
-      <div class="access-denied-card">
-        <i class="pi pi-lock"></i>
-        <div class="access-denied-content">
-          <h3>Access Restricted</h3>
-          <p>
-            Access to OPDS is restricted.
-            <br>
-            Please contact your administrator to request permission.
-          </p>
-        </div>
+    <div class="access-denied-card">
+      <i class="pi pi-lock"></i>
+      <div class="access-denied-content">
+        <h3>Access Restricted</h3>
+        <p>
+          Access to OPDS is restricted.
+          <br>
+          Please contact your administrator to request permission.
+        </p>
       </div>
     </div>
   }

@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild} from '@angular/core';
 import {TooltipModule} from "primeng/tooltip";
-import {AdditionalFile, Book, ReadStatus} from '../../../model/book.model';
+import {AdditionalFile, Book, BookType, ReadStatus} from '../../../model/book.model';
 import {Button} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
@@ -15,21 +15,23 @@ import {filter, Subject} from 'rxjs';
 import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Router} from '@angular/router';
+import {RouterLink} from '@angular/router';
 import {ProgressBar} from 'primeng/progressbar';
 import {take, takeUntil} from 'rxjs/operators';
-import {readStatusLabels} from '../book-filter/book-filter.component';
+import {readStatusLabels} from '../book-filter/book-filter.config';
 import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../book-dialog-helper.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookNavigationService} from '../../../service/book-navigation.service';
 import {BookCardOverlayPreferenceService} from '../book-card-overlay-preference.service';
+import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 @Component({
   selector: 'app-book-card',
   templateUrl: './book-card.component.html',
   styleUrls: ['./book-card.component.scss'],
-  imports: [Button, MenuModule, CheckboxModule, FormsModule, NgClass, TieredMenu, ProgressBar, TooltipModule],
+  imports: [Button, MenuModule, CheckboxModule, FormsModule, NgClass, TieredMenu, ProgressBar, TooltipModule, RouterLink],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -47,6 +49,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
   @Input() overlayPreferenceService?: BookCardOverlayPreferenceService;
+  @Input() forceEbookMode: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
@@ -66,6 +69,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private bookDialogHelperService = inject(BookDialogHelperService);
   private bookNavigationService = inject(BookNavigationService);
   private cdr = inject(ChangeDetectorRef);
+  private appSettingsService = inject(AppSettingsService);
 
   protected _progressPercentage: number | null = null;
   protected _koProgressPercentage: number | null = null;
@@ -80,11 +84,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected _seriesCountTooltip: string = '';
   protected _titleTooltip: string = '';
   protected _hasProgress: boolean = false;
+  protected _isAudiobook: boolean = false;
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
   protected readStatusHelper = inject(ReadStatusHelper);
   private user: User | null = null;
+  private diskType: string = 'LOCAL';
   private menuInitialized = false;
 
   showBookTypePill = true;
@@ -104,6 +110,16 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         this.metadataCenterViewMode = userState.user?.userSettings?.metadataCenterViewMode ?? 'route';
       });
 
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => !!settings),
+        take(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(settings => {
+        this.diskType = settings?.diskType ?? 'LOCAL';
+      });
+
     if (this.overlayPreferenceService) {
       this.overlayPrefSub = this.overlayPreferenceService.showBookTypePill$.subscribe(val => {
         this.showBookTypePill = val;
@@ -113,9 +129,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['book']) {
+    if (changes['book'] || changes['forceEbookMode']) {
       this.computeAllMemoizedValues();
-      if (!changes['book'].firstChange && this.menuInitialized) {
+      if (changes['book'] && !changes['book'].firstChange && this.menuInitialized) {
         this.additionalFilesLoaded = false;
         this.initMenu();
       }
@@ -143,7 +159,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this._displayTitle = (this.isSeriesCollapsed && this.book.metadata?.seriesName)
       ? this.book.metadata?.seriesName
       : this.book.metadata?.title;
-    this._coverImageUrl = this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
+    this._isAudiobook = this.book.primaryFile?.bookType === 'AUDIOBOOK' && !this.forceEbookMode;
+    this._coverImageUrl = this._isAudiobook
+      ? this.urlHelper.getAudiobookThumbnailUrl(this.book.id, this.book.metadata?.audiobookCoverUpdatedOn)
+      : this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
 
     this._readStatusIcon = this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
     this._readStatusClass = this.readStatusHelper.getReadStatusClass(this.book.readStatus);
@@ -184,7 +203,24 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   readBook(book: Book): void {
+    if (this.forceEbookMode && book.primaryFile?.bookType === 'AUDIOBOOK') {
+      const ebookType = this.getEbookType(book);
+      if (ebookType) {
+        this.bookService.readBook(book.id, undefined, ebookType);
+        return;
+      }
+    }
     this.bookService.readBook(book.id);
+  }
+
+  private getEbookType(book: Book): BookType | undefined {
+    if (book.epubProgress) return 'EPUB';
+    if (book.pdfProgress) return 'PDF';
+    if (book.cbxProgress) return 'CBX';
+    const alternativeFormat = book.alternativeFormats?.find(f =>
+      f.bookType && ['EPUB', 'PDF', 'CBX', 'FB2', 'MOBI', 'AZW3'].includes(f.bookType)
+    );
+    return alternativeFormat?.bookType;
   }
 
   onMenuShow(): void {
@@ -359,7 +395,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
               label: 'Custom Send',
               icon: 'pi pi-envelope',
               command: () => {
-                this.bookDialogHelperService.openCustomSendDialog(this.book.id);
+                this.bookDialogHelperService.openCustomSendDialog(this.book);
               }
             }
           ]
@@ -409,10 +445,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
                   summary: 'Success',
                   detail: 'Cover regeneration started'
                 }),
-                error: () => this.messageService.add({
+                error: (err) => this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'Failed to regenerate cover'
+                  detail: err?.error?.message || 'Failed to regenerate cover'
                 })
               });
             }
@@ -427,10 +463,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
                   summary: 'Success',
                   detail: 'Cover generated successfully'
                 }),
-                error: () => this.messageService.add({
+                error: (err) => this.messageService.add({
                   severity: 'error',
                   summary: 'Error',
-                  detail: 'Failed to generate cover'
+                  detail: err?.error?.message || 'Failed to generate cover'
                 })
               });
             }
@@ -446,7 +482,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     const items: MenuItem[] = [];
     const moreActions: MenuItem[] = [];
 
-    if (this.user?.permissions.canMoveOrganizeFiles) {
+    if (this.user?.permissions.canMoveOrganizeFiles && this.diskType === 'LOCAL') {
       moreActions.push({
         label: 'Organize File',
         icon: 'pi pi-arrows-h',
@@ -713,11 +749,32 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  private getFileExtension(filePath?: string): string | null {
+  getFileExtension(filePath?: string): string | null {
     if (!filePath) return null;
     const parts = filePath.split('.');
     if (parts.length < 2) return null;
     return parts.pop()?.toUpperCase() || null;
+  }
+
+  getDisplayFormat(): string | null {
+    if (!this.book?.primaryFile) {
+      return 'PHYSICAL';
+    }
+    if (this.forceEbookMode && this.book.primaryFile?.bookType === 'AUDIOBOOK') {
+      const ebookType = this.getEbookType(this.book);
+      if (ebookType) {
+        return ebookType;
+      }
+    }
+    const ext = this.book?.primaryFile?.extension;
+    if (ext) {
+      return ext.toUpperCase();
+    }
+    return this.getFileExtension(this.book?.primaryFile?.filePath);
+  }
+
+  hasDigitalFile(): boolean {
+    return !!this.book?.primaryFile;
   }
 
   private getFileIcon(fileType: string | null): string {
@@ -734,6 +791,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       case 'cbr':
       case 'cbx':
         return 'pi pi-image';
+      case 'audiobook':
+      case 'm4b':
+      case 'm4a':
+      case 'mp3':
+        return 'pi pi-headphones';
       default:
         return 'pi pi-file';
     }

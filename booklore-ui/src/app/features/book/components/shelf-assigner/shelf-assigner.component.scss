@@ -153,12 +153,15 @@
     cursor: pointer;
     min-width: 0;
 
+    .shelf-icon-wrapper, .shelf-icon-wrapper-empty {
+      width: 34px;
+      height: 34px;
+    }
+
     .shelf-icon-wrapper {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 34px;
-      height: 34px;
       background: var(--overlay-background);
       border-radius: 8px;
       flex-shrink: 0;
@@ -187,7 +190,7 @@
     .shelf-label {
       gap: 0.5rem;
 
-      .shelf-icon-wrapper {
+      .shelf-icon-wrapper, .shelf-icon-wrapper-empty {
         width: 32px;
         height: 32px;
 
