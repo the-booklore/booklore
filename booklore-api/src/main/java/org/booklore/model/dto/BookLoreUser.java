@@ -237,6 +237,8 @@ public class BookLoreUser {
             private Long magicShelfId;
             private String sortField;
             private String sortDirection;
+            private Boolean upNextShowFirstUnread;
+            private Boolean readAgainSortByFinished;
         }
     }
 }

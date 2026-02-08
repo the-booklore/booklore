@@ -2,7 +2,7 @@ import {Component, inject, OnInit} from '@angular/core';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {LibraryService} from '../../../book/service/library.service';
 import {forkJoin, Observable, of} from 'rxjs';
-import {map, shareReplay, switchMap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, map, shareReplay, switchMap} from 'rxjs/operators';
 import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
 import {DashboardScrollerComponent} from '../dashboard-scroller/dashboard-scroller.component';
@@ -157,7 +157,7 @@ export class MainDashboardComponent implements OnInit {
         const seriesMap = new Map<string, Book[]>();
         books.forEach(book => {
           if (book.metadata?.seriesName && book.metadata?.seriesNumber != null) {
-            const seriesName = book.metadata.seriesName;
+            const seriesName = book.metadata.seriesName.toLowerCase().trim();
             if (!seriesMap.has(seriesName)) {
               seriesMap.set(seriesName, []);
             }
@@ -168,40 +168,40 @@ export class MainDashboardComponent implements OnInit {
         const upNextBooks: Array<{book: Book, lastReadTime: number}> = [];
 
         // For each series, find the next unread book
-        seriesMap.forEach((seriesBooks, seriesName) => {
-        // Check if any book in the series has been read or started
-        const hasReadBooks = seriesBooks.some(book =>
-          book.readStatus === ReadStatus.READ ||
-          book.readStatus === ReadStatus.READING ||
-          book.readStatus === ReadStatus.RE_READING ||
-          book.readStatus === ReadStatus.PAUSED ||
-          book.readStatus === ReadStatus.PARTIALLY_READ
-        );
-
-        if (!hasReadBooks) {
-          return; // Skip series with no read books
-        }
-
-        // Sort by series number
-        const sortedBooks = [...seriesBooks].sort((a, b) => {
-          const aNum = a.metadata?.seriesNumber ?? 0;
-          const bNum = b.metadata?.seriesNumber ?? 0;
-          return aNum - bNum;
-        });
-
-        // Find the highest series number that has been read or is currently being read
-        const highestReadNumber = sortedBooks
-          .filter(book =>
+        seriesMap.forEach((seriesBooks) => {
+          // Check if any book in the series has been read or started
+          const hasReadBooks = seriesBooks.some(book =>
             book.readStatus === ReadStatus.READ ||
             book.readStatus === ReadStatus.READING ||
             book.readStatus === ReadStatus.RE_READING ||
             book.readStatus === ReadStatus.PAUSED ||
             book.readStatus === ReadStatus.PARTIALLY_READ
-          )
-          .reduce((max, book) => {
-            const num = book.metadata?.seriesNumber ?? 0;
-            return num > max ? num : max;
-          }, 0);
+          );
+
+          if (!hasReadBooks) {
+            return; // Skip series with no read books
+          }
+
+          // Sort by series number
+          const sortedBooks = [...seriesBooks].sort((a, b) => {
+            const aNum = a.metadata?.seriesNumber ?? 0;
+            const bNum = b.metadata?.seriesNumber ?? 0;
+            return aNum - bNum;
+          });
+
+          // Find the highest series number that has been read or is currently being read
+          const highestReadNumber = sortedBooks
+            .filter(book =>
+              book.readStatus === ReadStatus.READ ||
+              book.readStatus === ReadStatus.READING ||
+              book.readStatus === ReadStatus.RE_READING ||
+              book.readStatus === ReadStatus.PAUSED ||
+              book.readStatus === ReadStatus.PARTIALLY_READ
+            )
+            .reduce((max, book) => {
+              const num = book.metadata?.seriesNumber ?? 0;
+              return num > max ? num : max;
+            }, 0);
 
           // Find the next unread book based on mode
           const nextBook = showFirstUnread
@@ -289,12 +289,20 @@ export class MainDashboardComponent implements OnInit {
     );
   }
 
+
   private getRecommendationsBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
-      switchMap((state: BookState) => {
-        const allBooks = state.books || [];
-        const readBooks = allBooks.filter(book => book.readStatus === ReadStatus.READ);
-
+      // Only recompute when read books actually change to avoid spamming the backend
+      map((state: BookState) => {
+        const readBooks = (state.books || []).filter(book => book.readStatus === ReadStatus.READ);
+        // Create a stable key based on read book IDs to detect meaningful changes
+        return {
+          readBooks,
+          readBookIds: readBooks.map(b => b.id).sort().join(',')
+        };
+      }),
+      distinctUntilChanged((prev, curr) => prev.readBookIds === curr.readBookIds),
+      switchMap(({readBooks}) => {
         if (readBooks.length === 0) {
           return of([]);
         }
@@ -318,7 +326,13 @@ export class MainDashboardComponent implements OnInit {
         const sampledBooks = this.shuffleBooks(recentReadBooks, Math.min(5, recentReadBooks.length));
 
         const recommendationCalls = sampledBooks.map(book =>
-          this.bookService.getBookRecommendations(book.id, 10)
+          this.bookService.getBookRecommendations(book.id, 10).pipe(
+            // Handle individual call failures gracefully
+            catchError(error => {
+              console.warn(`Failed to get recommendations for book ${book.id}:`, error);
+              return of([]);
+            })
+          )
         );
 
         return forkJoin(recommendationCalls).pipe(
@@ -349,6 +363,11 @@ export class MainDashboardComponent implements OnInit {
 
             const allRecommendations = Array.from(recommendationMap.values());
             return this.shuffleBooks(allRecommendations, maxItems);
+          }),
+          // Handle overall operation failure
+          catchError(error => {
+            console.error('Failed to get book recommendations:', error);
+            return of([]);
           })
         );
       })
@@ -427,3 +446,6 @@ export class MainDashboardComponent implements OnInit {
     this.dialogLauncher.openLibraryCreateDialog();
   }
 }
+
+
+
