@@ -47,10 +47,12 @@ export class ShelfEditDialogComponent implements OnInit {
     if (this.shelf) {
       this.shelfName = this.shelf.name;
       this.isPublic = this.shelf.publicShelf ?? false;
-      if (this.shelf.iconType === 'PRIME_NG') {
-        this.selectedIcon = {type: 'PRIME_NG', value: `pi pi-${this.shelf.icon}`};
-      } else {
-        this.selectedIcon = {type: 'CUSTOM_SVG', value: this.shelf.icon};
+      if (this.shelf.iconType && this.shelf.icon) {
+        if (this.shelf.iconType === 'PRIME_NG') {
+          this.selectedIcon = {type: 'PRIME_NG', value: `pi pi-${this.shelf.icon}`};
+        } else {
+          this.selectedIcon = {type: 'CUSTOM_SVG', value: this.shelf.icon};
+        }
       }
     }
   }
@@ -68,8 +70,8 @@ export class ShelfEditDialogComponent implements OnInit {
   }
 
   save() {
-    const iconValue = this.selectedIcon?.value || 'bookmark';
-    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+    const iconValue = this.selectedIcon?.value ?? null;
+    const iconType = this.selectedIcon?.type ?? null;
 
     const shelf: Shelf = {
       name: this.shelfName,

@@ -1,13 +1,12 @@
 package org.booklore.convertor;
 
-import org.booklore.model.dto.BookRecommendationLite;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.BookRecommendationLite;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Set;
 
@@ -18,10 +17,6 @@ public class BookRecommendationIdsListConverter implements AttributeConverter<Se
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final TypeReference<Set<BookRecommendationLite>> SET_TYPE_REF = new TypeReference<>() {};
 
-    static {
-        objectMapper.registerModule(new JavaTimeModule());
-    }
-
     @Override
     public String convertToDatabaseColumn(Set<BookRecommendationLite> recommendations) {
         if (recommendations == null) {
@@ -29,7 +24,7 @@ public class BookRecommendationIdsListConverter implements AttributeConverter<Se
         }
         try {
             return objectMapper.writeValueAsString(recommendations);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Failed to convert BookRecommendation set to JSON string: {}", recommendations, e);
             throw new RuntimeException("Error converting BookRecommendation list to JSON", e);
         }

@@ -103,9 +103,16 @@ public class PathPatternResolver {
         String seriesIndex = "";
         if (metadata != null && metadata.getSeriesNumber() != null) {
             Float seriesNumber = metadata.getSeriesNumber();
-            seriesIndex = (seriesNumber % 1 == 0)
-                    ? String.valueOf(seriesNumber.intValue())
-                    : seriesNumber.toString();
+            if (seriesNumber % 1 == 0) {
+                // Whole number - format with leading zero for 1-9
+                seriesIndex = String.format("%02d", seriesNumber.intValue());
+            } else {
+                // Decimal number - format integer part with leading zero
+                int intPart = seriesNumber.intValue();
+                String formatted = seriesNumber.toString();
+                String decimalPart = formatted.substring(formatted.indexOf('.'));
+                seriesIndex = String.format("%02d", intPart) + decimalPart;
+            }
             seriesIndex = sanitize(seriesIndex);
         }
         String language = sanitize(metadata != null ? metadata.getLanguage() : "");

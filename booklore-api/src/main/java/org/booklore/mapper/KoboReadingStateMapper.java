@@ -2,11 +2,11 @@ package org.booklore.mapper;
 
 import org.booklore.model.dto.kobo.KoboReadingState;
 import org.booklore.model.entity.KoboReadingStateEntity;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.regex.Pattern;
 
@@ -38,7 +38,7 @@ public interface KoboReadingStateMapper {
     default String toJson(Object value) {
         try {
             return value == null ? null : objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Failed to serialize JSON", e);
         }
     }
@@ -46,7 +46,7 @@ public interface KoboReadingStateMapper {
     default <T> T fromJson(String json, Class<T> clazz) {
         try {
             return json == null ? null : objectMapper.readValue(json, clazz);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Failed to deserialize JSON", e);
         }
     }

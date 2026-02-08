@@ -1,6 +1,7 @@
 package org.booklore.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import org.booklore.config.security.userdetails.KoreaderUserDetails;
@@ -9,6 +10,7 @@ import org.booklore.model.dto.progress.KoreaderProgress;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.model.entity.UserBookProgressEntity;
+import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.UserBookProgressRepository;
 import org.booklore.repository.UserRepository;
@@ -228,6 +230,31 @@ class KoreaderServiceTest {
         verify(progressRepo).save(existing);
         assertEquals("y", existing.getKoreaderProgress());
         assertEquals(0.4F, existing.getKoreaderProgressPercent());
+    }
+
+    @Test
+    void saveProgress_updatesExistingNoProgressChange_noHardcoverUpdate() {
+        when(details.isSyncEnabled()).thenReturn(true);
+        var book = new BookEntity();
+        book.setId(8L);
+        when(bookRepo.findByCurrentHash("h")).thenReturn(Optional.of(book));
+        var user = new BookLoreUserEntity();
+        user.setId(42L);
+        when(userRepo.findById(42L)).thenReturn(Optional.of(user));
+        var existing = new UserBookProgressEntity();
+        existing.setKoreaderProgressPercent(0.4F);
+        existing.setReadStatus(ReadStatus.READING);
+        when(progressRepo.findByUserIdAndBookId(42L, 8L))
+                .thenReturn(Optional.of(existing));
+
+        var dto = KoreaderProgress.builder()
+                .document("h").progress("y").percentage(0.4F).device("d").device_id("id").build();
+        service.saveProgress("h", dto);
+
+        verify(progressRepo).save(existing);
+        assertEquals("y", existing.getKoreaderProgress());
+        assertEquals(0.4F, existing.getKoreaderProgressPercent());
+        verify(hardcoverSyncService, never()).syncProgressToHardcover(any(), any(), any());
     }
 
     @Test

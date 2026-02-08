@@ -2,8 +2,8 @@ package org.booklore.service;
 
 import org.booklore.mapper.AdditionalFileMapper;
 import org.booklore.model.dto.BookFile;
-import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.LibraryPathEntity;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.service.file.AdditionalFileService;
@@ -264,7 +264,7 @@ class AdditionalFileServiceTest {
 
             assertEquals(HttpStatus.OK, result.getStatusCode());
             assertNotNull(result.getBody());
-            assertTrue(result.getHeaders().containsKey(HttpHeaders.CONTENT_DISPOSITION));
+            assertNotNull(result.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
             assertTrue(result.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).contains("test-file.pdf"));
             assertEquals(MediaType.APPLICATION_OCTET_STREAM, result.getHeaders().getContentType());
 

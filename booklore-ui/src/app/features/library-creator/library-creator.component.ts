@@ -5,7 +5,7 @@ import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {Library} from '../book/model/library.model';
+import {Library, MetadataSource} from '../book/model/library.model';
 import {BookType} from '../book/model/book.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
@@ -17,12 +17,13 @@ import {switchMap} from 'rxjs/operators';
 import {map} from 'rxjs';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Checkbox} from 'primeng/checkbox';
+import {Select} from 'primeng/select';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox],
+  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox, Select],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -38,6 +39,15 @@ export class LibraryCreatorComponent implements OnInit {
   allowAllFormats: boolean = true;
   selectedAllowedFormats: Set<BookType> = new Set();
   formatCounts: Record<string, number> = {};
+  metadataSource: MetadataSource = 'EMBEDDED';
+
+  readonly metadataSourceOptions = [
+    {label: 'Embedded Only', value: 'EMBEDDED', description: 'Use only embedded file metadata'},
+    {label: 'Sidecar Only', value: 'SIDECAR', description: 'Use only sidecar JSON files'},
+    {label: 'Prefer Sidecar', value: 'PREFER_SIDECAR', description: 'Use sidecar if available, fallback to embedded'},
+    {label: 'Prefer Embedded', value: 'PREFER_EMBEDDED', description: 'Use embedded if available, fallback to sidecar'},
+    {label: 'None', value: 'NONE', description: 'Don\'t read metadata from files'}
+  ];
 
   readonly allBookFormats: {type: BookType, label: string}[] = [
     {type: 'EPUB', label: 'EPUB'},
@@ -70,11 +80,13 @@ export class LibraryCreatorComponent implements OnInit {
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
 
-        if (iconType === 'CUSTOM_SVG') {
-          this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
-        } else {
-          const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
-          this.selectedIcon = {type: 'PRIME_NG', value: value};
+        if (icon != null && iconType) {
+          if (iconType === 'CUSTOM_SVG') {
+            this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
+          } else {
+            const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
+            this.selectedIcon = {type: 'PRIME_NG', value: value};
+          }
         }
 
         this.watch = watch;
@@ -96,6 +108,10 @@ export class LibraryCreatorComponent implements OnInit {
         } else {
           this.allowAllFormats = true;
           this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+        }
+
+        if (this.library.metadataSource) {
+          this.metadataSource = this.library.metadataSource;
         }
 
         this.libraryService.getBookCountsByFormat(this.library.id!).subscribe(counts => {
@@ -186,7 +202,7 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   isLibraryDetailsValid(): boolean {
-    return !!this.chosenLibraryName.trim() && !!this.selectedIcon;
+    return !!this.chosenLibraryName.trim();
   }
 
   isDirectorySelectionValid(): boolean {
@@ -207,8 +223,8 @@ export class LibraryCreatorComponent implements OnInit {
       }
     }
 
-    const iconValue = this.selectedIcon?.value || 'heart';
-    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+    const iconValue = this.selectedIcon?.value ?? null;
+    const iconType = this.selectedIcon?.type ?? null;
 
     const library: Library = {
       name: this.chosenLibraryName,
@@ -217,7 +233,8 @@ export class LibraryCreatorComponent implements OnInit {
       paths: this.folders.map(folder => ({path: folder})),
       watch: this.watch,
       formatPriority: this.formatPriority.map(f => f.type),
-      allowedFormats: this.allowAllFormats ? [] : Array.from(this.selectedAllowedFormats)
+      allowedFormats: this.allowAllFormats ? [] : Array.from(this.selectedAllowedFormats),
+      metadataSource: this.metadataSource
     };
 
     if (this.mode === 'edit') {

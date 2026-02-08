@@ -114,12 +114,12 @@ export class BookDialogHelperService {
     });
   }
 
-  openCustomSendDialog(bookId: number): DynamicDialogRef | null {
+  openCustomSendDialog(book: Book): DynamicDialogRef | null {
     return this.openDialog(BookSenderComponent, {
       showHeader: false,
       styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
       data: {
-        bookId: bookId,
+        book: book,
       },
     });
   }

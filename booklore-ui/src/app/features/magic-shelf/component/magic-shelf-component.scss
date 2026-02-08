@@ -74,6 +74,12 @@
       font-size: 0.9rem;
     }
 
+    .selected-icon-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .icon-display-container {
       display: flex;
       align-items: center;
@@ -87,6 +93,11 @@
 
       &:hover {
         border-color: var(--primary-color);
+      }
+
+      &:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .selected-icon {

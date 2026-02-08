@@ -1,13 +1,17 @@
 package org.booklore.model.dto.settings;
 
-import org.booklore.model.enums.MetadataProvider;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.booklore.model.enums.MetadataProvider;
 
 import java.util.Set;
 
 @Builder
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class MetadataPublicReviewsSettings {
 
     private boolean downloadEnabled;
@@ -16,6 +20,8 @@ public class MetadataPublicReviewsSettings {
 
     @Builder
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class ReviewProviderConfig {
         private MetadataProvider provider;
         private boolean enabled;

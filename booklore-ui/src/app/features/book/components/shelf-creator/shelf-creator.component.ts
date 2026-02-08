@@ -55,8 +55,8 @@ export class ShelfCreatorComponent {
   }
 
   createShelf(): void {
-    const iconValue = this.selectedIcon?.value || 'bookmark';
-    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+    const iconValue = this.selectedIcon?.value ?? null;
+    const iconType = this.selectedIcon?.type ?? null;
 
     const newShelf: Partial<Shelf> = {
       name: this.shelfName,

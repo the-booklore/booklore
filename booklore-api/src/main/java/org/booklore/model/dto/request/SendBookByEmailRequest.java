@@ -20,4 +20,6 @@ public class SendBookByEmailRequest {
 
     @NotNull(message = "Recipient ID cannot be null")
     private Long recipientId;
+
+    private Long bookFileId;  // Optional: if null, uses primary file
 }
