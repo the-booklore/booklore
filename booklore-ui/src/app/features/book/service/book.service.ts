@@ -342,7 +342,60 @@ export class BookService {
 
   deleteBookFile(bookId: number, fileId: number, isPrimary: boolean): Observable<void> {
     const params = new HttpParams().set('isPrimary', isPrimary.toString());
-    return this.http.delete<void>(`${this.url}/${bookId}/files/${fileId}`, { params });
+    return this.http.delete<void>(`${this.url}/${bookId}/files/${fileId}`, { params }).pipe(
+      tap(() => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(book => {
+          if (book.id !== bookId) {
+            return book;
+          }
+          // Deleting the primary file vs an alternative format
+          if (isPrimary) {
+            // Remove the deleted file from alternativeFormats if present
+            const remainingAlternatives = (book.alternativeFormats || []).filter(file => file.id !== fileId);
+            // If the current primary is the deleted file, promote first alternative (if any)
+            const isDeletingCurrentPrimary = book.primaryFile && book.primaryFile.id === fileId;
+            if (isDeletingCurrentPrimary) {
+              const newPrimary = remainingAlternatives.length > 0 ? remainingAlternatives[0] : undefined;
+              const newAlternativeFormats = newPrimary ? remainingAlternatives.slice(1) : remainingAlternatives;
+              return {
+                ...book,
+                primaryFile: newPrimary,
+                alternativeFormats: newAlternativeFormats
+              };
+            }
+            // If the primaryFile is different, just update alternatives
+            return {
+              ...book,
+              alternativeFormats: remainingAlternatives
+            };
+          } else {
+            // Deleting a non-primary alternative format
+            return {
+              ...book,
+              alternativeFormats: (book.alternativeFormats || []).filter(file => file.id !== fileId)
+            };
+          }
+        });
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'File Deleted',
+          detail: 'Book file deleted successfully.'
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while deleting the book file.'
+        });
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteAdditionalFile(bookId: number, fileId: number): Observable<void> {
@@ -626,14 +679,62 @@ export class BookService {
   }
 
   createPhysicalBook(request: CreatePhysicalBookRequest): Observable<Book> {
-    return this.http.post<Book>(`${this.url}/physical`, request);
+    return this.http.post<Book>(`${this.url}/physical`, request).pipe(
+      tap(book => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = currentState.books ? [...currentState.books, book] : [book];
+        this.bookStateService.updateBookState({...currentState, books: updatedBooks});
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Creation Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while creating the physical book.'
+        });
+        return throwError(() => error);
+      })
+    );
   }
 
   attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
     return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
       sourceBookIds,
       deleteSourceBooks
-    });
+    }).pipe(
+      tap(updatedTargetBook => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        let updatedBooks = (currentState.books || []).map(book =>
+          book.id === targetBookId ? updatedTargetBook : book
+        );
+
+        // Remove source books from state if they were deleted
+        if (deleteSourceBooks) {
+          const sourceIdSet = new Set(sourceBookIds);
+          updatedBooks = updatedBooks.filter(book => !sourceIdSet.has(book.id));
+        }
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Files Attached',
+          detail: deleteSourceBooks
+            ? `Files attached successfully and ${sourceBookIds.length} source book(s) deleted.`
+            : 'Files attached successfully.'
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Attachment Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while attaching files.'
+        });
+        return throwError(() => error);
+      })
+    );
   }
 
   uploadAudiobookCoverFromUrl(bookId: number, url: string): Observable<BookMetadata> {

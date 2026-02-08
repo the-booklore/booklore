@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Book } from '../../book/model/book.model';
 import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
 
