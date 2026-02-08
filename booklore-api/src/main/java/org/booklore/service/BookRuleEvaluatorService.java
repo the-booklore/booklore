@@ -319,8 +319,7 @@ public class BookRuleEvaluatorService {
         Predicate result;
         if (wantIncomplete) {
             // Return books with valid series that are incomplete
-            // Use optimized table-based lookup for better performance
-            result = cb.and(hasValidSeries, isSeriesIncompleteOptimized(cb, root, seriesName));
+            result = cb.and(hasValidSeries, isSeriesIncompleteSubquery(cb, root, seriesName));
         } else {
             // Return books that are either:
             // 1. Not in a series (seriesName is null or empty), or
@@ -330,7 +329,7 @@ public class BookRuleEvaluatorService {
                 cb.equal(cb.trim(seriesName), "")
             );
             
-            result = cb.or(notInSeries, cb.and(hasValidSeries, cb.not(isSeriesIncompleteOptimized(cb, root, seriesName))));
+            result = cb.or(notInSeries, cb.and(hasValidSeries, cb.not(isSeriesIncompleteSubquery(cb, root, seriesName))));
         }
 
         // Handle NOT_EQUALS operator
@@ -342,44 +341,7 @@ public class BookRuleEvaluatorService {
     }
 
     /**
-     * Optimized version that uses the series_completeness table for fast lookups.
-     * Falls back to the subquery method if table lookup fails.
-     *
-     * @param cb CriteriaBuilder for creating predicates
-     * @param root Root entity for BookEntity
-     * @param seriesName Expression for the series name to check
-     * @return Predicate that is true if series is incomplete
-     */
-    private Predicate isSeriesIncompleteOptimized(CriteriaBuilder cb, Root<BookEntity> root, Expression<String> seriesName) {
-        try {
-            // Use JOIN with series_completeness table for optimal performance
-            // This is much faster than the subquery approach
-            Subquery<Long> completenessSubquery = cb.createQuery().subquery(Long.class);
-            Root<org.booklore.model.entity.SeriesCompletenessEntity> scRoot = completenessSubquery.from(org.booklore.model.entity.SeriesCompletenessEntity.class);
-            
-            completenessSubquery.select(cb.literal(1L))
-                .where(
-                    cb.and(
-                        cb.equal(scRoot.get("libraryId"), root.get("library").get("id")),
-                        cb.equal(scRoot.get("seriesNameNormalized"), 
-                                cb.lower(cb.trim(seriesName))),
-                        cb.isTrue(scRoot.get("isIncomplete"))
-                    )
-                );
-            
-            // Return true if the series is found in the table and marked as incomplete
-            return cb.exists(completenessSubquery);
-            
-        } catch (Exception e) {
-            // If series_completeness table is unavailable or has issues, fall back to subquery
-            log.warn("Failed to use series_completeness table, falling back to subquery method: {}", e.getMessage());
-            return isSeriesIncompleteSubquery(cb, root, seriesName);
-        }
-    }
-
-    /**
-     * Original subquery-based method for checking if a series is incomplete.
-     * This is kept as a fallback if the series_completeness table is unavailable.
+     * Subquery-based method for checking if a series is incomplete.
      * Checks if a book's series appears to be incomplete based on series number gaps.
      * Uses the approximation algorithm: (max - min + 1) != count
      * 
