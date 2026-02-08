@@ -24,7 +24,10 @@ public class MagicShelfService {
     }
 
     public List<MagicShelf> getUserShelvesForOpds(Long userId) {
-        return getShelvesForUser(userId);
+        // Filter out shelves that use INCOMPLETE_SERIES as it's too heavy for OPDS
+        return getShelvesForUser(userId).stream()
+                .filter(shelf -> !shelf.getFilterJson().contains("INCOMPLETE_SERIES"))
+                .collect(Collectors.toList());
     }
 
     private List<MagicShelf> getShelvesForUser(Long userId) {

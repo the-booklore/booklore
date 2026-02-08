@@ -49,7 +49,6 @@ public class BookMetadataUpdater {
     private final MetadataWriterFactory metadataWriterFactory;
     private final BookReviewUpdateService bookReviewUpdateService;
     private final FileMoveService fileMoveService;
-    private final org.booklore.service.SeriesCompletenessService seriesCompletenessService;
 
     @Transactional
     public void setBookMetadata(MetadataUpdateContext context) {
@@ -111,14 +110,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        // Update series completeness if series information changed
-        try {
-            if (hasSeriesInformationChanged(newMetadata, metadata, clearFlags)) {
-                seriesCompletenessService.updateSeriesForBook(bookId);
-            }
-        } catch (Exception e) {
-            log.warn("Failed to update series completeness for book ID {}: {}", bookId, e.getMessage());
-        }
+
 
         if (primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
