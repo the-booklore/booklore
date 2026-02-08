@@ -501,7 +501,7 @@ export class BookRuleEvaluatorService {
       case 'fileType':
         return this.getBookTypeAsFileType(book);
       case 'fileSize':
-        return book.fileSizeKb;
+        return book.primaryFile?.fileSizeKb;
       case 'metadataScore':
         return book.metadataMatchScore;
       case 'personalRating':
