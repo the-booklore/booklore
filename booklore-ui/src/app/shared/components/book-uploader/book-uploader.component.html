@@ -126,6 +126,33 @@
           </ng-template>
           <ng-template #content let-files let-removeFileCallback="removeFileCallback">
             @if (files?.length > 0) {
+              @if (isUploading || uploadCompleted) {
+                <div class="upload-progress-summary">
+                  <div class="progress-row">
+                    <span class="progress-status">
+                      @if (isUploading) {
+                        <i class="pi pi-spin pi-spinner"></i>
+                        Uploading...
+                      } @else {
+                        <i class="pi pi-check-circle"></i>
+                        Complete
+                      }
+                    </span>
+                    <span class="progress-files">
+                      {{ getUploadedCount() }}/{{ this.files.length }} files
+                      @if (getFailedCount() > 0) {
+                        <span class="failed-count">({{ getFailedCount() }} failed)</span>
+                      }
+                    </span>
+                    <span class="progress-bytes">{{ formatSize(getUploadedBytes()) }} / {{ formatSize(getTotalBytes()) }}</span>
+                    <span class="progress-percent">{{ getOverallProgress() }}%</span>
+                  </div>
+                  <p-progressbar
+                    [value]="getOverallProgress()"
+                    [showValue]="false"
+                    styleClass="overall-progress-bar"/>
+                </div>
+              }
               <div class="files-list">
                 @for (uploadFile of this.files; track uploadFile; let i = $index) {
                   <div class="file-item">
@@ -133,8 +160,11 @@
                       <p-badge
                         [value]="getFileStatusLabel(uploadFile)"
                         [severity]="getBadgeSeverity(uploadFile.status)"/>
-                      <span class="file-name">{{ uploadFile.file.name }}</span>
+                      <span class="file-name" [pTooltip]="uploadFile.file.name" tooltipPosition="top">{{ uploadFile.file.name }}</span>
                       <span class="file-size">{{ formatSize(uploadFile.file.size) }}</span>
+                      @if (uploadFile.status === 'Uploading') {
+                        <span class="file-progress-text">{{ uploadFile.progress }}%</span>
+                      }
                     </div>
                     <div class="file-actions">
                       @switch (uploadFile.status) {

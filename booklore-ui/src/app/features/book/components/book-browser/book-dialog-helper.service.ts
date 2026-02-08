@@ -114,12 +114,12 @@ export class BookDialogHelperService {
     });
   }
 
-  openCustomSendDialog(bookId: number): DynamicDialogRef | null {
+  openCustomSendDialog(book: Book): DynamicDialogRef | null {
     return this.openDialog(BookSenderComponent, {
       showHeader: false,
       styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
       data: {
-        bookId: bookId,
+        book: book,
       },
     });
   }
@@ -131,17 +131,6 @@ export class BookDialogHelperService {
       data: {
         bookId: bookId,
         coverType: coverType,
-      },
-    });
-  }
-
-  openMetadataFetchOptionsDialog(bookId: number): DynamicDialogRef | null {
-    return this.openDialog(MetadataFetchOptionsComponent, {
-      showHeader: false,
-      styleClass: `${DialogSize.SM} ${DialogStyle.MINIMAL}`,
-      data: {
-        bookIds: [bookId],
-        metadataRefreshType: MetadataRefreshType.BOOKS,
       },
     });
   }

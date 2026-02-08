@@ -1,5 +1,8 @@
 package org.booklore.service.opds;
 
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.config.security.userdetails.OpdsUserDetails;
 import org.booklore.model.dto.Book;
@@ -8,9 +11,6 @@ import org.booklore.model.dto.Library;
 import org.booklore.model.enums.OpdsSortOrder;
 import org.booklore.service.MagicShelfService;
 import org.booklore.util.ArchiveUtils;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -658,30 +658,35 @@ public class OpdsFeedService {
             case AZW3 -> "application/vnd.amazon.ebook";
             case CBX -> {
                 if (bookFile.getArchiveType() != null) {
-                    yield switch (bookFile.getArchiveType()) {
-                        case RAR -> "application/vnd.comicbook-rar";
-                        case ZIP -> "application/vnd.comicbook+zip";
-                        case SEVEN_ZIP -> "application/x-7z-compressed";
-                        default -> "application/vnd.comicbook+zip";
-                    };
+                    if (bookFile.getArchiveType() == ArchiveUtils.ArchiveType.RAR) {
+                        yield "application/vnd.comicbook-rar";
+                    }
+                    if (bookFile.getArchiveType() == ArchiveUtils.ArchiveType.ZIP) {
+                        yield "application/vnd.comicbook+zip";
+                    }
+                    if (bookFile.getArchiveType() == ArchiveUtils.ArchiveType.SEVEN_ZIP) {
+                        yield "application/x-7z-compressed";
+                    }
                 }
 
                 if (hasValidFilePath(bookFile)) {
                     ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(bookFile.getFilePath()));
-                    yield switch (type) {
-                        case RAR -> "application/vnd.comicbook-rar";
-                        case ZIP -> "application/vnd.comicbook+zip";
-                        case SEVEN_ZIP -> "application/x-7z-compressed";
-                        default -> {
-                            String lower = bookFile.getFileName().toLowerCase();
-                            if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
-                            if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
-                            if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
-                            if (lower.endsWith(".cbt")) yield "application/x-tar";
-                            yield "application/vnd.comicbook+zip";
-                        }
-                    };
+                    // We only trust detection if it found something definite (not UNKNOWN)
+                    if (type != ArchiveUtils.ArchiveType.UNKNOWN) {
+                        yield switch (type) {
+                            case RAR -> "application/vnd.comicbook-rar";
+                            case ZIP -> "application/vnd.comicbook+zip";
+                            case SEVEN_ZIP -> "application/x-7z-compressed";
+                            default -> "application/vnd.comicbook+zip"; // Should not happen given the if check
+                        };
+                    }
                 }
+
+                String lower = bookFile.getFileName().toLowerCase();
+                if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
+                if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
+                if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
+                if (lower.endsWith(".cbt")) yield "application/x-tar";
                 yield "application/vnd.comicbook+zip";
             }
             case AUDIOBOOK -> {

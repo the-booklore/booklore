@@ -178,7 +178,10 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
 
     while (currentDate <= endDate || weekIndex === 0) {
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-        const dateStr = currentDate.toISOString().split('T')[0];
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
         if (currentDate >= startDate && currentDate <= endDate) {
           const count = sessionMap.get(dateStr) || 0;

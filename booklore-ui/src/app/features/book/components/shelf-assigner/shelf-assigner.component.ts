@@ -123,10 +123,10 @@ export class ShelfAssignerComponent implements OnInit {
   }
 
   getShelfIcon(shelf: Shelf): IconSelection {
-    if (shelf.iconType === 'PRIME_NG') {
-      return {type: 'PRIME_NG', value: `pi pi-${shelf.icon}`};
+    if (shelf.iconType === 'CUSTOM_SVG') {
+      return {type: 'CUSTOM_SVG', value: shelf.icon ?? ""};
     } else {
-      return {type: 'CUSTOM_SVG', value: shelf.icon};
+      return {type: 'PRIME_NG', value: `pi pi-${shelf.icon}`};
     }
   }
 }

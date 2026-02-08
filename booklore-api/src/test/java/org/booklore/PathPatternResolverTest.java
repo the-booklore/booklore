@@ -80,7 +80,7 @@ class PathPatternResolverTest {
         var book = createBook("Title", List.of("Author"), LocalDate.of(2020, 1, 1),
                 "Series", 1f, null, null, null, null, "f.epub");
         String p = "<{series}/><{seriesIndex}. ><{language}/>{title}";
-        assertThat(PathPatternResolver.resolvePattern(book, p)).isEqualTo("Series/1. Title.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, p)).isEqualTo("Series/01. Title.epub");
     }
 
     @Test void placeholdersOutsideOptional_replacedWithEmpty() {
@@ -93,8 +93,8 @@ class PathPatternResolverTest {
         var book1 = createBook("Title", List.of("Author"), LocalDate.now(), "Series", 3.5f, null, null, null, null, "f.epub");
         var book2 = createBook("Title", List.of("Author"), LocalDate.now(), "Series", 3f, null, null, null, null, "f.epub");
         String p = "<{series}/><{seriesIndex}. >{title}";
-        assertThat(PathPatternResolver.resolvePattern(book1, p)).isEqualTo("Series/3.5. Title.epub");
-        assertThat(PathPatternResolver.resolvePattern(book2, p)).isEqualTo("Series/3. Title.epub");
+        assertThat(PathPatternResolver.resolvePattern(book1, p)).isEqualTo("Series/03.5. Title.epub");
+        assertThat(PathPatternResolver.resolvePattern(book2, p)).isEqualTo("Series/03. Title.epub");
     }
 
     @Test void sanitizes_illegalCharsAndWhitespace() {
@@ -145,8 +145,8 @@ class PathPatternResolverTest {
         var b1 = createBook("T", List.of("A"), null, "S", 1f, null, null, null, null, "f.epub");
         var b2 = createBook("T", List.of("A"), null, "S", 1.5f, null, null, null, null, "f.epub");
         String p = "<{series}/><{seriesIndex}. >{title}";
-        assertThat(PathPatternResolver.resolvePattern(b1, p)).isEqualTo("S/1. T.epub");
-        assertThat(PathPatternResolver.resolvePattern(b2, p)).isEqualTo("S/1.5. T.epub");
+        assertThat(PathPatternResolver.resolvePattern(b1, p)).isEqualTo("S/01. T.epub");
+        assertThat(PathPatternResolver.resolvePattern(b2, p)).isEqualTo("S/01.5. T.epub");
     }
 
     @Test void sanitize_removesIllegalCharacters() {
@@ -217,7 +217,7 @@ class PathPatternResolverTest {
     @Test void patternEndsWithSlash_slashIsPreserved() {
         var book = createBook("T", List.of("A"), null, "S", 1f, null, null, null, null, "b.pdf");
         String pattern = "<{series}/><{seriesIndex}/>{title}/";
-        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("S/1/T/.pdf");
+        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("S/01/T/.pdf");
     }
 
     @Test void extensionDotEscaped_doubleDotsNotAdded() {

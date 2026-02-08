@@ -3,11 +3,7 @@ package org.booklore.util;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 @Slf4j
 @UtilityClass
@@ -21,7 +17,11 @@ public class ArchiveUtils {
     }
 
     private static final byte[] ZIP_MAGIC = {0x50, 0x4B, 0x03, 0x04};
-    private static final byte[] RAR_MAGIC = {0x52, 0x61, 0x72, 0x21, 0x1A, 0x07};
+    // RAR 5.0 signature: 0x52 0x61 0x72 0x21 0x1A 0x07 0x01 0x00
+    private static final byte[] RAR_MAGIC_V5 = {0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x01, 0x00};
+    // RAR 4.x signature: 0x52 0x61 0x72 0x21 0x1A 0x07 0x00
+    private static final byte[] RAR_MAGIC_V4 = {0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00};
+    // Generic RAR signature (first 4 bytes): 0x52 0x61 0x72 0x21
     private static final byte[] SEVEN_ZIP_MAGIC = {0x37, 0x7A, (byte) 0xBC, (byte) 0xAF, 0x27, 0x1C};
 
     public static ArchiveType detectArchiveType(File file) {
@@ -39,7 +39,10 @@ public class ArchiveUtils {
             if (startsWith(buffer, ZIP_MAGIC)) {
                 return ArchiveType.ZIP;
             }
-            if (startsWith(buffer, RAR_MAGIC)) {
+            if (startsWith(buffer, RAR_MAGIC_V5)) {
+                return ArchiveType.RAR;
+            }
+            if (startsWith(buffer, RAR_MAGIC_V4)) {
                 return ArchiveType.RAR;
             }
             if (startsWith(buffer, SEVEN_ZIP_MAGIC)) {
