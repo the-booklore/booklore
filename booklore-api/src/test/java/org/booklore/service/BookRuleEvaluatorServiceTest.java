@@ -1,6 +1,6 @@
 package org.booklore.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.booklore.model.dto.*;
 import org.booklore.model.entity.BookEntity;
 import org.springframework.data.jpa.domain.Specification;
