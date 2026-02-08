@@ -1,5 +1,7 @@
 package org.booklore.service.metadata.parser;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.BookReview;
@@ -7,10 +9,6 @@ import org.booklore.model.dto.request.FetchMetadataRequest;
 import org.booklore.model.enums.MetadataProvider;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.util.BookUtils;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -19,6 +17,8 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.Instant;

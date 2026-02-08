@@ -1,6 +1,5 @@
 package org.booklore.service.library;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +27,9 @@ import org.booklore.service.monitoring.MonitoringService;
 import org.booklore.task.options.RescanLibraryContext;
 import org.booklore.util.FileService;
 import org.booklore.util.SecurityContextVirtualThread;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
+import org.springframework.context.event.EventListener;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
+@DependsOnDatabaseInitialization
 public class LibraryService {
 
     private static final Set<Long> scanningLibraries = ConcurrentHashMap.newKeySet();
@@ -70,7 +73,7 @@ public class LibraryService {
     private final UserRepository userRepository;
 
     @Transactional
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void initializeMonitoring() {
         List<Library> libraries = libraryRepository.findAll().stream().map(libraryMapper::toLibrary).collect(Collectors.toList());
         monitoringService.registerLibraries(libraries);
@@ -257,11 +260,10 @@ public class LibraryService {
 
     @Transactional
     public void deleteLibrary(long id) {
-        if (!libraryRepository.existsById(id)) {
-            throw ApiError.LIBRARY_NOT_FOUND.createException(id);
-        }
+        LibraryEntity library = libraryRepository.findById(id)
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(id));
         monitoringService.unregisterLibrary(id);
-        Set<Long> bookIds = bookRepository.findBookIdsByLibraryId(id);
+        Set<Long> bookIds = library.getBookEntities().stream().map(BookEntity::getId).collect(Collectors.toSet());
         fileService.deleteBookCovers(bookIds);
         libraryRepository.deleteById(id);
         log.info("Library deleted successfully: {}", id);

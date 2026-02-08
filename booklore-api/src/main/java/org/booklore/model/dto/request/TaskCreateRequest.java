@@ -1,14 +1,16 @@
 package org.booklore.model.dto.request;
 
-import org.booklore.model.enums.TaskType;
-import org.booklore.task.options.LibraryRescanOptions;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.Nulls;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.booklore.model.enums.TaskType;
+import org.booklore.task.options.LibraryRescanOptions;
+import tools.jackson.databind.ObjectMapper;
 
 @Data
 @Builder
@@ -18,6 +20,7 @@ public class TaskCreateRequest {
     private String taskId;
     private TaskType taskType;
     @Builder.Default
+    @JsonSetter(nulls = Nulls.SKIP)
     private boolean triggeredByCron = false;
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "taskType", include = JsonTypeInfo.As.EXTERNAL_PROPERTY)

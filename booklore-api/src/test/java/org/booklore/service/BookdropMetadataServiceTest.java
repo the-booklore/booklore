@@ -16,14 +16,14 @@ import org.booklore.service.metadata.extractor.EpubMetadataExtractor;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.service.metadata.extractor.PdfMetadataExtractor;
 import org.booklore.util.FileService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.time.Instant;
@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.booklore.model.entity.BookdropFileEntity.Status.PENDING_REVIEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.booklore.model.entity.BookdropFileEntity.Status.PENDING_REVIEW;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -172,10 +172,10 @@ class BookdropMetadataServiceTest {
         when(bookdropFileRepository.findById(1L)).thenReturn(Optional.of(sampleFile));
         when(appSettingService.getAppSettings()).thenReturn(new AppSettings());
         when(objectMapper.readValue(anyString(), eq(BookMetadata.class)))
-                .thenThrow(new JsonProcessingException("Invalid JSON") {
+                .thenThrow(new JacksonException("Invalid JSON") {
                 });
 
         assertThatThrownBy(() -> bookdropMetadataService.attachFetchedMetadata(1L))
-                .isInstanceOf(JsonProcessingException.class);
+                .isInstanceOf(JacksonException.class);
     }
 }
