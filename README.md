@@ -255,13 +255,13 @@ services:
       mariadb:
         condition: service_healthy
     ports:
-      - "6060:8080"
+      - "6060:6060"
     volumes:
       - ./data:/app/data
       - ./books:/books
       - ./bookdrop:/bookdrop
     healthcheck:
-      test: wget -q -O - http://localhost:8080/api/v1/healthcheck
+      test: wget -q -O - http://localhost:6060/api/v1/healthcheck
       interval: 60s
       retries: 5
       start_period: 60s

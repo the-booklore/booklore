@@ -4,4 +4,4 @@ After=network-online.target
 
 [Pod]
 PodName=booklore
-PublishPort=6060:8080
+PublishPort=6060:6060
