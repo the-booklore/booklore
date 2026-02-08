@@ -15,6 +15,7 @@ public class MetadataPersistenceSettings {
     private SaveToOriginalFile saveToOriginalFile;
     private boolean convertCbrCb7ToCbz;
     private boolean moveFilesToLibraryPattern;
+    private SidecarSettings sidecarSettings;
 
     @Data
     @Builder

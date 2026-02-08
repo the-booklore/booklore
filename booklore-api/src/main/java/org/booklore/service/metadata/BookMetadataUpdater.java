@@ -18,6 +18,7 @@ import org.booklore.repository.*;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.file.FileMoveService;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.metadata.writer.MetadataWriterFactory;
 import org.booklore.util.BookCoverUtils;
 import org.booklore.util.FileService;
@@ -56,6 +57,7 @@ public class BookMetadataUpdater {
     private final MetadataWriterFactory metadataWriterFactory;
     private final BookReviewUpdateService bookReviewUpdateService;
     private final FileMoveService fileMoveService;
+    private final SidecarMetadataWriter sidecarMetadataWriter;
 
     @Transactional
     public void setBookMetadata(MetadataUpdateContext context) {
@@ -136,6 +138,14 @@ public class BookMetadataUpdater {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }
             });
+        }
+
+        if (sidecarMetadataWriter.isWriteOnUpdateEnabled()) {
+            try {
+                sidecarMetadataWriter.writeSidecarMetadata(bookEntity);
+            } catch (Exception e) {
+                log.warn("Failed to write sidecar metadata for book ID {}: {}", bookId, e.getMessage());
+            }
         }
 
         boolean moveFilesToLibraryPattern = settings.isMoveFilesToLibraryPattern();

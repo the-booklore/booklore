@@ -100,7 +100,7 @@ public class ComicMetadataEntity {
     @Builder.Default
     private Set<ComicLocationEntity> locations = new HashSet<>();
 
-    @OneToMany(mappedBy = "comicMetadata", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "comicMetadata", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private Set<ComicCreatorMappingEntity> creatorMappings = new HashSet<>();

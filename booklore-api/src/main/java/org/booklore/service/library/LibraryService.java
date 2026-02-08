@@ -90,6 +90,9 @@ public class LibraryService {
         library.setWatch(request.isWatch());
         library.setFormatPriority(request.getFormatPriority());
         library.setAllowedFormats(request.getAllowedFormats());
+        if (request.getMetadataSource() != null) {
+            library.setMetadataSource(request.getMetadataSource());
+        }
 
         Set<String> currentPaths = library.getLibraryPaths().stream()
                 .map(LibraryPathEntity::getPath)
@@ -176,6 +179,7 @@ public class LibraryService {
                 .watch(request.isWatch())
                 .formatPriority(request.getFormatPriority())
                 .allowedFormats(request.getAllowedFormats())
+                .metadataSource(request.getMetadataSource())
                 .users(List.of(user.get()))
                 .build();
 
@@ -254,11 +258,12 @@ public class LibraryService {
         return libraries.stream().map(libraryMapper::toLibrary).toList();
     }
 
+    @Transactional
     public void deleteLibrary(long id) {
-        LibraryEntity library = libraryRepository.findById(id).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(id));
-        library.getLibraryPaths().forEach(libraryPath -> {
-            monitoringService.unregisterLibrary(id);
-        });
+        if (!libraryRepository.existsById(id)) {
+            throw ApiError.LIBRARY_NOT_FOUND.createException(id);
+        }
+        monitoringService.unregisterLibrary(id);
         Set<Long> bookIds = library.getBookEntities().stream().map(BookEntity::getId).collect(Collectors.toSet());
         fileService.deleteBookCovers(bookIds);
         libraryRepository.deleteById(id);
