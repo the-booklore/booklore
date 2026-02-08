@@ -185,7 +185,8 @@ class BookServiceTest {
         when(bookRepository.findByCurrentHash(hash)).thenReturn(Optional.of(entity));
         when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(entity));
         when(userBookProgressRepository.findByUserIdAndBookId(anyLong(), eq(10L))).thenReturn(Optional.of(new UserBookProgressEntity()));
-        Book mappedBook = Book.builder().id(10L).bookType(BookFileType.PDF).metadata(BookMetadata.builder().build()).shelves(Set.of()).build();
+        BookFile primaryBookFile = BookFile.builder().bookType(BookFileType.PDF).build();
+        Book mappedBook = Book.builder().id(10L).primaryFile(primaryBookFile).metadata(BookMetadata.builder().build()).shelves(Set.of()).build();
         when(bookMapper.toBook(entity)).thenReturn(mappedBook);
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         
