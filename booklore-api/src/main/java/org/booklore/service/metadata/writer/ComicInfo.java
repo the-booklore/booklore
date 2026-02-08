@@ -32,6 +32,7 @@ import lombok.NoArgsConstructor;
         "publisher",
         "imprint",
         "genre",
+        "tags",
         "web",
         "pageCount",
         "languageISO",
@@ -43,6 +44,7 @@ import lombok.NoArgsConstructor;
         "locations",
         "scanInformation",
         "storyArc",
+        "storyArcNumber",
         "seriesGroup",
         "ageRating",
         "pages",
@@ -121,6 +123,9 @@ public class ComicInfo {
     @XmlElement(name = "Genre")
     private String genre;
 
+    @XmlElement(name = "Tags")
+    private String tags;
+
     @XmlElement(name = "Web")
     private String web;
 
@@ -153,6 +158,9 @@ public class ComicInfo {
 
     @XmlElement(name = "StoryArc")
     private String storyArc;
+
+    @XmlElement(name = "StoryArcNumber")
+    private String storyArcNumber;
 
     @XmlElement(name = "SeriesGroup")
     private String seriesGroup;

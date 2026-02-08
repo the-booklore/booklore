@@ -5,6 +5,7 @@ import org.booklore.model.dto.settings.AppSettings;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
+import org.booklore.model.enums.ComicCreatorRole;
 import org.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -203,8 +204,10 @@ class CbxMetadataWriterTest {
             assertTrue(notesVal.contains("Fantasy"));
             assertTrue(notesVal.contains("Epic"));
 
+            // Tags now written as dedicated element per Anansi v2.1
             String tagsVal = text(doc, "Tags");
-            assertNull(tagsVal, "Tags should not be a standalone element in strict ComicInfo");
+            assertNotNull(tagsVal, "Tags should be written as standalone element per Anansi v2.1");
+            assertTrue(tagsVal.contains("Fantasy") || tagsVal.contains("Epic"), "Tags should contain Fantasy or Epic");
 
             String rating = text(doc, "CommunityRating");
             assertNotNull(rating);
@@ -267,6 +270,129 @@ class CbxMetadataWriterTest {
             Document doc = parseXml(zip.getInputStream(ci));
             assertEquals("Mismatched Title", text(doc, "Title"));
             assertNotNull(zip.getEntry("page1.jpg"));
+        }
+    }
+
+    @Test
+    void saveMetadataToFile_cbz_writesComicSpecificMetadata() throws Exception {
+        File cbz = createCbz(tempDir.resolve("comic_meta.cbz"), new String[]{"page1.jpg"});
+
+        // Create metadata with ComicMetadataEntity
+        BookMetadataEntity meta = new BookMetadataEntity();
+        meta.setTitle("Spider-Man #1");
+        meta.setSeriesName("Spider-Man");
+        meta.setSeriesNumber(1.0f);
+        meta.setAgeRating(13); // Teen rating
+
+        // Create ComicMetadataEntity with all comic-specific fields
+        ComicMetadataEntity comic = ComicMetadataEntity.builder()
+                .volumeNumber(2023)
+                .alternateSeries("Amazing Spider-Man")
+                .alternateIssue("700.1")
+                .storyArc("Superior")
+                .format("Single Issue")
+                .imprint("Marvel Knights")
+                .blackAndWhite(false)
+                .manga(true)
+                .readingDirection("RTL")
+                .build();
+
+        // Characters
+        ComicCharacterEntity char1 = new ComicCharacterEntity();
+        char1.setId(1L);
+        char1.setName("Peter Parker");
+        ComicCharacterEntity char2 = new ComicCharacterEntity();
+        char2.setId(2L);
+        char2.setName("Mary Jane");
+        Set<ComicCharacterEntity> characters = new HashSet<>();
+        characters.add(char1);
+        characters.add(char2);
+        comic.setCharacters(characters);
+
+        // Teams
+        ComicTeamEntity team1 = new ComicTeamEntity();
+        team1.setId(1L);
+        team1.setName("Avengers");
+        Set<ComicTeamEntity> teams = new HashSet<>();
+        teams.add(team1);
+        comic.setTeams(teams);
+
+        // Locations
+        ComicLocationEntity loc1 = new ComicLocationEntity();
+        loc1.setId(1L);
+        loc1.setName("New York City");
+        Set<ComicLocationEntity> locations = new HashSet<>();
+        locations.add(loc1);
+        comic.setLocations(locations);
+
+        // Creators
+        ComicCreatorEntity penciller = new ComicCreatorEntity();
+        penciller.setId(1L);
+        penciller.setName("John Romita Jr.");
+        ComicCreatorEntity inker = new ComicCreatorEntity();
+        inker.setId(2L);
+        inker.setName("Klaus Janson");
+        ComicCreatorMappingEntity pencillerMapping = ComicCreatorMappingEntity.builder()
+                .creator(penciller)
+                .role(ComicCreatorRole.PENCILLER)
+                .comicMetadata(comic)
+                .build();
+        ComicCreatorMappingEntity inkerMapping = ComicCreatorMappingEntity.builder()
+                .creator(inker)
+                .role(ComicCreatorRole.INKER)
+                .comicMetadata(comic)
+                .build();
+        Set<ComicCreatorMappingEntity> creatorMappings = new HashSet<>();
+        creatorMappings.add(pencillerMapping);
+        creatorMappings.add(inkerMapping);
+        comic.setCreatorMappings(creatorMappings);
+
+        meta.setComicMetadata(comic);
+
+        writer.saveMetadataToFile(cbz, meta, null, new MetadataClearFlags());
+
+        try (ZipFile zip = new ZipFile(cbz)) {
+            ZipEntry ci = zip.getEntry("ComicInfo.xml");
+            assertNotNull(ci, "ComicInfo.xml should be present");
+            Document doc = parseXml(zip.getInputStream(ci));
+
+            // Basic metadata
+            assertEquals("Spider-Man #1", text(doc, "Title"));
+            assertEquals("Spider-Man", text(doc, "Series"));
+
+            // Comic-specific fields
+            assertEquals("2023", text(doc, "Volume"));
+            assertEquals("Amazing Spider-Man", text(doc, "AlternateSeries"));
+            assertEquals("700.1", text(doc, "AlternateNumber"));
+            assertEquals("Superior", text(doc, "StoryArc"));
+            assertEquals("Single Issue", text(doc, "Format"));
+            assertEquals("Marvel Knights", text(doc, "Imprint"));
+            assertEquals("No", text(doc, "BlackAndWhite"));
+            assertEquals("YesAndRightToLeft", text(doc, "Manga"));
+            assertEquals("Teen", text(doc, "AgeRating"));
+
+            // Characters, Teams, Locations
+            String characters_str = text(doc, "Characters");
+            assertNotNull(characters_str);
+            assertTrue(characters_str.contains("Peter Parker"));
+            assertTrue(characters_str.contains("Mary Jane"));
+
+            String teams_str = text(doc, "Teams");
+            assertNotNull(teams_str);
+            assertTrue(teams_str.contains("Avengers"));
+
+            String locations_str = text(doc, "Locations");
+            assertNotNull(locations_str);
+            assertTrue(locations_str.contains("New York City"));
+
+            // Creators
+            String penciller_str = text(doc, "Penciller");
+            assertNotNull(penciller_str);
+            assertTrue(penciller_str.contains("John Romita Jr."));
+
+            String inker_str = text(doc, "Inker");
+            assertNotNull(inker_str);
+            assertTrue(inker_str.contains("Klaus Janson"));
         }
     }
 

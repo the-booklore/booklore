@@ -11,10 +11,9 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
-import org.booklore.model.entity.BookMetadataEntity;
-import org.booklore.model.entity.MoodEntity;
-import org.booklore.model.entity.TagEntity;
+import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
+import org.booklore.model.enums.ComicCreatorRole;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.util.ArchiveUtils;
 import org.jsoup.Jsoup;
@@ -253,6 +252,11 @@ public class CbxMetadataWriter implements MetadataWriter {
         helper.copyCategories(clearFlags != null && clearFlags.isCategories(), set -> {
             info.setGenre(joinStrings(set));
         });
+        
+        // Tags - separate from Genre per Anansi v2.1
+        if (metadata.getTags() != null && !metadata.getTags().isEmpty()) {
+            info.setTags(joinStrings(metadata.getTags().stream().map(TagEntity::getName).collect(Collectors.toSet())));
+        }
 
         // CommunityRating - normalized to 0-5 scale
         helper.copyRating(false, rating -> {
@@ -320,7 +324,126 @@ public class CbxMetadataWriter implements MetadataWriter {
         appendBookLoreTag(notesBuilder, "ASIN", metadata.getAsin());
         appendBookLoreTag(notesBuilder, "ComicvineId", metadata.getComicvineId());
         
+        // Comic-specific metadata from ComicMetadataEntity
+        ComicMetadataEntity comic = metadata.getComicMetadata();
+        if (comic != null) {
+            // Volume
+            if (comic.getVolumeNumber() != null) {
+                info.setVolume(comic.getVolumeNumber());
+            }
+            
+            // Alternate Series
+            if (comic.getAlternateSeries() != null && !comic.getAlternateSeries().isBlank()) {
+                info.setAlternateSeries(comic.getAlternateSeries());
+            }
+            if (comic.getAlternateIssue() != null && !comic.getAlternateIssue().isBlank()) {
+                info.setAlternateNumber(comic.getAlternateIssue());
+            }
+            
+            // Story Arc
+            if (comic.getStoryArc() != null && !comic.getStoryArc().isBlank()) {
+                info.setStoryArc(comic.getStoryArc());
+            }
+            
+            // Format
+            if (comic.getFormat() != null && !comic.getFormat().isBlank()) {
+                info.setFormat(comic.getFormat());
+            }
+            
+            // Imprint
+            if (comic.getImprint() != null && !comic.getImprint().isBlank()) {
+                info.setImprint(comic.getImprint());
+            }
+            
+            // BlackAndWhite (Yes/No)
+            if (comic.getBlackAndWhite() != null) {
+                info.setBlackAndWhite(comic.getBlackAndWhite() ? "Yes" : "No");
+            }
+            
+            // Manga / Reading Direction
+            if (comic.getManga() != null && comic.getManga()) {
+                if (comic.getReadingDirection() != null && "RTL".equalsIgnoreCase(comic.getReadingDirection())) {
+                    info.setManga("YesAndRightToLeft");
+                } else {
+                    info.setManga("Yes");
+                }
+            } else if (comic.getManga() != null) {
+                info.setManga("No");
+            }
+            
+            // Characters (comma-separated)
+            if (comic.getCharacters() != null && !comic.getCharacters().isEmpty()) {
+                String chars = comic.getCharacters().stream()
+                        .map(ComicCharacterEntity::getName)
+                        .collect(Collectors.joining(", "));
+                info.setCharacters(chars);
+            }
+            
+            // Teams (comma-separated)
+            if (comic.getTeams() != null && !comic.getTeams().isEmpty()) {
+                String teams = comic.getTeams().stream()
+                        .map(ComicTeamEntity::getName)
+                        .collect(Collectors.joining(", "));
+                info.setTeams(teams);
+            }
+            
+            // Locations (comma-separated)
+            if (comic.getLocations() != null && !comic.getLocations().isEmpty()) {
+                String locs = comic.getLocations().stream()
+                        .map(ComicLocationEntity::getName)
+                        .collect(Collectors.joining(", "));
+                info.setLocations(locs);
+            }
+            
+            // Creators by role (overrides the author-based writer if present)
+            if (comic.getCreatorMappings() != null && !comic.getCreatorMappings().isEmpty()) {
+                String pencillers = getCreatorsByRole(comic, ComicCreatorRole.PENCILLER);
+                String inkers = getCreatorsByRole(comic, ComicCreatorRole.INKER);
+                String colorists = getCreatorsByRole(comic, ComicCreatorRole.COLORIST);
+                String letterers = getCreatorsByRole(comic, ComicCreatorRole.LETTERER);
+                String coverArtists = getCreatorsByRole(comic, ComicCreatorRole.COVER_ARTIST);
+                String editors = getCreatorsByRole(comic, ComicCreatorRole.EDITOR);
+                
+                if (!pencillers.isEmpty()) info.setPenciller(pencillers);
+                if (!inkers.isEmpty()) info.setInker(inkers);
+                if (!colorists.isEmpty()) info.setColorist(colorists);
+                if (!letterers.isEmpty()) info.setLetterer(letterers);
+                if (!coverArtists.isEmpty()) info.setCoverArtist(coverArtists);
+                if (!editors.isEmpty()) info.setEditor(editors);
+            }
+            
+            // Store comic-specific metadata in notes as well
+            appendBookLoreTag(notesBuilder, "VolumeName", comic.getVolumeName());
+            appendBookLoreTag(notesBuilder, "StoryArcNumber", comic.getStoryArcNumber());
+            appendBookLoreTag(notesBuilder, "IssueNumber", comic.getIssueNumber());
+        }
+        
+        // Age Rating (from BookMetadataEntity - mapped to ComicInfo AgeRating format)
+        if (metadata.getAgeRating() != null) {
+            info.setAgeRating(mapAgeRatingToComicInfo(metadata.getAgeRating()));
+        }
+        
         info.setNotes(notesBuilder.length() > 0 ? notesBuilder.toString() : null);
+    }
+    
+    private String getCreatorsByRole(ComicMetadataEntity comic, ComicCreatorRole role) {
+        if (comic.getCreatorMappings() == null) return "";
+        return comic.getCreatorMappings().stream()
+                .filter(m -> m.getRole() == role)
+                .map(m -> m.getCreator().getName())
+                .collect(Collectors.joining(", "));
+    }
+    
+    private String mapAgeRatingToComicInfo(Integer ageRating) {
+        // Map numeric age rating to ComicInfo AgeRating string values
+        if (ageRating == null) return null;
+        if (ageRating >= 18) return "Adults Only 18+";
+        if (ageRating >= 17) return "Mature 17+";
+        if (ageRating >= 15) return "MA15+";
+        if (ageRating >= 13) return "Teen";
+        if (ageRating >= 10) return "Everyone 10+";
+        if (ageRating >= 6) return "Everyone";
+        return "Early Childhood";
     }
 
     private ComicInfo parseComicInfo(InputStream xmlStream) throws Exception {

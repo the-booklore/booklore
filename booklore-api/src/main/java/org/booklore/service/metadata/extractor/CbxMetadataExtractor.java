@@ -350,7 +350,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         if (web != null && !web.isBlank()) {
             comicBuilder.webLink(web);
             hasComicFields = true;
-        } else if (web != null && !web.isBlank()) {
+            // Also parse the web field for IDs (goodreads, comicvine, etc.)
             parseWebField(web, builder);
         }
 

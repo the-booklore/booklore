@@ -23,6 +23,9 @@ public class BookMetadataMapperTest {
     
     @Mock
     private TagMapper tagMapper;
+    
+    @Mock
+    private ComicMetadataMapper comicMetadataMapper;
 
     private BookMetadataMapperImpl bookMetadataMapper;
 
@@ -33,6 +36,7 @@ public class BookMetadataMapperTest {
         org.springframework.test.util.ReflectionTestUtils.setField(bookMetadataMapper, "categoryMapper", categoryMapper);
         org.springframework.test.util.ReflectionTestUtils.setField(bookMetadataMapper, "moodMapper", moodMapper);
         org.springframework.test.util.ReflectionTestUtils.setField(bookMetadataMapper, "tagMapper", tagMapper);
+        org.springframework.test.util.ReflectionTestUtils.setField(bookMetadataMapper, "comicMetadataMapper", comicMetadataMapper);
     }
 
     @Test
