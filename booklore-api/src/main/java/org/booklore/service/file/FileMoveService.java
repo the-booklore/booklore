@@ -17,6 +17,7 @@ import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.service.NotificationService;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -44,6 +45,7 @@ public class FileMoveService {
     private final NotificationService notificationService;
     private final EntityManager entityManager;
     private final TransactionTemplate transactionTemplate;
+    private final SidecarMetadataWriter sidecarMetadataWriter;
 
 
     public void bulkMoveFiles(FileMoveRequest request) {
@@ -220,6 +222,12 @@ public class FileMoveService {
                 fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(sourceParent, libraryRoots);
             }
 
+            try {
+                sidecarMetadataWriter.moveSidecarFiles(currentPrimaryFilePath, newFilePath);
+            } catch (Exception e) {
+                log.warn("Failed to move sidecar files for book ID {}: {}", bookId, e.getMessage());
+            }
+
             entityManager.clear();
 
             BookEntity fresh = bookRepository.findById(bookId).orElseThrow();
@@ -371,6 +379,12 @@ public class FileMoveService {
             
             for (Path sourceParent : sourceParentsToCleanup) {
                 fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(sourceParent, libraryRoots);
+            }
+
+            try {
+                sidecarMetadataWriter.moveSidecarFiles(currentPrimaryFilePath, expectedPrimaryFilePath);
+            } catch (Exception e) {
+                log.warn("Failed to move sidecar files for book ID {}: {}", bookEntity.getId(), e.getMessage());
             }
 
             if (isLibraryMonitoredWhenCalled) {

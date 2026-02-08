@@ -15,6 +15,7 @@ import org.booklore.model.entity.UserBookProgressEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.*;
 import org.booklore.repository.BookFileRepository;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.progress.ReadingProgressService;
 import org.booklore.util.FileService;
@@ -62,6 +63,7 @@ public class BookService {
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final BookUpdateService bookUpdateService;
     private final EbookViewerPreferenceRepository ebookViewerPreferencesRepository;
+    private final SidecarMetadataWriter sidecarMetadataWriter;
 
 
     public List<Book> getBookDTOs(boolean includeDescription) {
@@ -346,6 +348,12 @@ public class BookService {
                                 .collect(Collectors.toSet());
 
                         deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
+
+                        try {
+                            sidecarMetadataWriter.deleteSidecarFiles(fullFilePath);
+                        } catch (Exception e) {
+                            log.warn("Failed to delete sidecar files for: {}", fullFilePath, e);
+                        }
                     }
                 } catch (IOException e) {
                     log.warn("Failed to delete book file: {}", fullFilePath, e);
