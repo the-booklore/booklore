@@ -50,6 +50,7 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: false
+    open-in-view: false
     properties:
       hibernate:
         query:
