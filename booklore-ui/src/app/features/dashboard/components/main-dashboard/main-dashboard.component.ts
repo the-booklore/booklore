@@ -446,6 +446,3 @@ export class MainDashboardComponent implements OnInit {
     this.dialogLauncher.openLibraryCreateDialog();
   }
 }
-
-
-
