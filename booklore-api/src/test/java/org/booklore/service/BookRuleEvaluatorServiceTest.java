@@ -23,14 +23,11 @@ class BookRuleEvaluatorServiceTest {
 
     private BookRuleEvaluatorService service;
     private ObjectMapper objectMapper;
-    
-    @Mock
-    private SeriesCompletenessService seriesCompletenessService;
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        service = new BookRuleEvaluatorService(objectMapper, seriesCompletenessService);
+        service = new BookRuleEvaluatorService(objectMapper);
     }
 
     // ============================================

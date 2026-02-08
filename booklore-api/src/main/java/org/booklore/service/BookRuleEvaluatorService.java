@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 public class BookRuleEvaluatorService {
 
     private final ObjectMapper objectMapper;
-    private final SeriesCompletenessService seriesCompletenessService;
 
     public Specification<BookEntity> toSpecification(GroupRule groupRule, Long userId) {
         return (root, query, cb) -> {
@@ -91,9 +90,11 @@ public class BookRuleEvaluatorService {
             return buildMetadataPredicate(rule, cb, root, progressJoin);
         }
 
-        // Special handling for INCOMPLETE_SERIES field
+        // INCOMPLETE_SERIES is disabled for OPDS due to performance concerns
+        // Return conjunction (matches no results) to effectively disable this filter
         if (rule.getField() == RuleField.INCOMPLETE_SERIES) {
-            return buildIncompleteSeriesPredicate(rule, cb, root);
+            log.warn("INCOMPLETE_SERIES filter is disabled for OPDS, returning no results");
+            return cb.disjunction(); // Returns false - matches nothing
         }
 
         // Special handling for SERIES_STATUS field (not yet implemented server-side)
@@ -296,164 +297,7 @@ public class BookRuleEvaluatorService {
         return hasOperator ? cb.exists(subquery) : cb.not(cb.exists(subquery));
     }
 
-    /**
-     * Builds a predicate for the INCOMPLETE_SERIES field rule.
-     * Checks if a book belongs to a series that appears incomplete.
-     *
-     * @param rule The rule containing the boolean value (true/false)
-     * @param cb CriteriaBuilder for creating predicates
-     * @param root Root entity for BookEntity
-     * @return Predicate for incomplete series check
-     */
-    private Predicate buildIncompleteSeriesPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root) {
-        if (rule.getValue() == null) {
-            log.warn("INCOMPLETE_SERIES rule missing boolean value");
-            return cb.conjunction();
-        }
 
-        boolean wantIncomplete = Boolean.parseBoolean(rule.getValue().toString());
-        
-        // Books with series name but null series number are excluded from both groups
-        Expression<String> seriesName = root.get("metadata").get("seriesName");
-        Expression<Double> seriesNumber = root.get("metadata").get("seriesNumber");
-        
-        Predicate hasValidSeries = cb.and(
-            cb.isNotNull(seriesName),
-            cb.notEqual(cb.trim(seriesName), ""),
-            cb.isNotNull(seriesNumber)
-        );
-
-        if (wantIncomplete) {
-            // Return books with valid series that are incomplete
-            // Use optimized table-based lookup for better performance
-            return cb.and(hasValidSeries, isSeriesIncompleteOptimized(cb, root, seriesName));
-        } else {
-            // Return books that are either:
-            // 1. Not in a series (seriesName is null or empty), or
-            // 2. In a complete series
-            Predicate notInSeries = cb.or(
-                cb.isNull(seriesName),
-                cb.equal(cb.trim(seriesName), "")
-            );
-            
-            return cb.or(notInSeries, cb.and(hasValidSeries, cb.not(isSeriesIncompleteOptimized(cb, root, seriesName))));
-        }
-    }
-
-    /**
-     * Optimized version that uses the series_completeness table for fast lookups.
-     * Falls back to the subquery method if table lookup fails.
-     *
-     * @param cb CriteriaBuilder for creating predicates
-     * @param root Root entity for BookEntity
-     * @param seriesName Expression for the series name to check
-     * @return Predicate that is true if series is incomplete
-     */
-    private Predicate isSeriesIncompleteOptimized(CriteriaBuilder cb, Root<BookEntity> root, Expression<String> seriesName) {
-        try {
-            // Use JOIN with series_completeness table for optimal performance
-            // This is much faster than the subquery approach
-            Subquery<Long> completenessSubquery = cb.createQuery().subquery(Long.class);
-            Root<org.booklore.model.entity.SeriesCompletenessEntity> scRoot = completenessSubquery.from(org.booklore.model.entity.SeriesCompletenessEntity.class);
-            
-            completenessSubquery.select(cb.literal(1L))
-                .where(
-                    cb.and(
-                        cb.equal(scRoot.get("libraryId"), root.get("library").get("id")),
-                        cb.equal(scRoot.get("seriesNameNormalized"), 
-                                cb.lower(cb.trim(seriesName))),
-                        cb.isTrue(scRoot.get("isIncomplete"))
-                    )
-                );
-            
-            // Return true if the series is found in the table and marked as incomplete
-            return cb.exists(completenessSubquery);
-            
-        } catch (Exception e) {
-            // If series_completeness table is unavailable or has issues, fall back to subquery
-            log.warn("Failed to use series_completeness table, falling back to subquery method: {}", e.getMessage());
-            return isSeriesIncompleteSubquery(cb, root, seriesName);
-        }
-    }
-
-    /**
-     * Original subquery-based method for checking if a series is incomplete.
-     * This is kept as a fallback if the series_completeness table is unavailable.
-     * Checks if a book's series appears to be incomplete based on series number gaps.
-     * Uses the approximation algorithm: (max - min + 1) != count
-     * 
-     * Performance: This query has a 5-second timeout with warning logging.
-     *
-     * @param cb CriteriaBuilder for creating predicates
-     * @param root Root entity for BookEntity
-     * @param seriesName Expression for the series name to check
-     * @return Predicate that is true if series appears incomplete
-     */
-    private Predicate isSeriesIncompleteSubquery(CriteriaBuilder cb, Root<BookEntity> root, Expression<String> seriesName) {
-        long startTime = System.currentTimeMillis();
-        
-        try {
-            // Subquery to count books in the series
-            Subquery<Long> countSubquery = cb.createQuery().subquery(Long.class);
-            Root<BookEntity> countRoot = countSubquery.from(BookEntity.class);
-            countSubquery.select(cb.count(countRoot.get("id")))
-                .where(
-                    cb.and(
-                        cb.equal(cb.lower(cb.trim(countRoot.get("metadata").get("seriesName"))), 
-                                cb.lower(cb.trim(seriesName))),
-                        cb.isNotNull(countRoot.get("metadata").get("seriesNumber"))
-                    )
-                );
-
-            // Subquery to find minimum series number
-            Subquery<Double> minSubquery = cb.createQuery().subquery(Double.class);
-            Root<BookEntity> minRoot = minSubquery.from(BookEntity.class);
-            Expression<Double> minSeriesNumber = minRoot.get("metadata").get("seriesNumber");
-            minSubquery.select(cb.least(minSeriesNumber))
-                .where(
-                    cb.and(
-                        cb.equal(cb.lower(cb.trim(minRoot.get("metadata").get("seriesName"))), 
-                                cb.lower(cb.trim(seriesName))),
-                        cb.isNotNull(minRoot.get("metadata").get("seriesNumber"))
-                    )
-                );
-
-            // Subquery to find maximum series number
-            Subquery<Double> maxSubquery = cb.createQuery().subquery(Double.class);
-            Root<BookEntity> maxRoot = maxSubquery.from(BookEntity.class);
-            Expression<Double> maxSeriesNumber = maxRoot.get("metadata").get("seriesNumber");
-            maxSubquery.select(cb.greatest(maxSeriesNumber))
-                .where(
-                    cb.and(
-                        cb.equal(cb.lower(cb.trim(maxRoot.get("metadata").get("seriesName"))), 
-                                cb.lower(cb.trim(seriesName))),
-                        cb.isNotNull(maxRoot.get("metadata").get("seriesNumber"))
-                    )
-                );
-
-            // Algorithm: series is incomplete if (max - min + 1) != count
-            // This works for fractional series numbers (1.0, 1.5, 2.0) as well
-            Expression<Double> expectedCount = cb.sum(cb.diff(maxSubquery, minSubquery), cb.literal(1.0));
-            Expression<Long> actualCount = countSubquery;
-            
-            long elapsed = System.currentTimeMillis() - startTime;
-            if (elapsed > 5000) {
-                log.warn("INCOMPLETE_SERIES query took {}ms (exceeds 5s timeout threshold)", elapsed);
-                throw new RuntimeException("Incomplete series query timed out after " + elapsed + "ms");
-            }
-            
-            if (elapsed > 1000) {
-                log.info("INCOMPLETE_SERIES query took {}ms", elapsed);
-            }
-
-            return cb.notEqual(actualCount.as(Double.class), expectedCount);
-            
-        } catch (Exception e) {
-            long elapsed = System.currentTimeMillis() - startTime;
-            log.error("Error evaluating incomplete series predicate after {}ms: {}", elapsed, e.getMessage(), e);
-            throw e;
-        }
-    }
 
     private Predicate buildEquals(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());

@@ -41,6 +41,12 @@ public class MagicShelfBookService {
 
     public Page<Book> getBooksByMagicShelfId(Long userId, Long magicShelfId, int page, int size) {
         MagicShelfEntity shelf = validateMagicShelfAccess(userId, magicShelfId);
+        
+        // Check if shelf contains INCOMPLETE_SERIES filter - not supported in OPDS
+        if (shelf.getFilterJson() != null && shelf.getFilterJson().contains("INCOMPLETE_SERIES")) {
+            throw ApiError.INCOMPLETE_SERIES_NOT_SUPPORTED_IN_OPDS.createException();
+        }
+        
         try {
             GroupRule groupRule = objectMapper.readValue(shelf.getFilterJson(), GroupRule.class);
             Specification<BookEntity> specification = ruleEvaluatorService.toSpecification(groupRule, userId);
