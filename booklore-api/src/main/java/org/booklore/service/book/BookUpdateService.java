@@ -363,6 +363,10 @@ public class BookUpdateService {
 
     @Transactional
     public void updatePurchaseDate(List<Long> bookIds, Instant purchaseDate) {
+        if (purchaseDate != null && purchaseDate.isAfter(Instant.now())) {
+            throw ApiError.INVALID_INPUT.createException("Purchase date cannot be in the future.");
+        }
+
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         if (user == null) {
             throw ApiError.FORBIDDEN.createException("You are not authorized to update purchase dates.");

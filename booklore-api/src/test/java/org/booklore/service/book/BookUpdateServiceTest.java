@@ -127,6 +127,19 @@ class BookUpdateServiceTest {
     }
 
     @Test
+    void updatePurchaseDate_shouldThrowWhenDateIsInFuture() {
+        mockUser(true, Set.of());
+        Instant futureDate = Instant.now().plusSeconds(3600); // 1 hour in the future
+
+        APIException ex = assertThrows(APIException.class,
+                () -> bookUpdateService.updatePurchaseDate(List.of(1L), futureDate));
+        
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertTrue(ex.getMessage().contains("future"));
+        verify(bookRepository, never()).saveAll(any());
+    }
+
+    @Test
     void updatePurchaseDate_shouldFallbackToAddedOnWhenNull() {
         mockUser(true, Set.of());
         Instant addedOn = Instant.parse("2023-11-01T00:00:00Z");

@@ -445,7 +445,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['recommendedBooks']) {
       this.originalRecommendedBooks = [...this.recommendedBooks];
-      this.withCurrentBook(book => this.filterRecommendations(book));
+      this.filterRecommendations();
     }
   }
 
