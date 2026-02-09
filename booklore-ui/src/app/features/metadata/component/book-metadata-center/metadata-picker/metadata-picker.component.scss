@@ -128,6 +128,35 @@
       font-size: 0.9rem;
       color: var(--primary-color);
     }
+
+    &.collapsible-header {
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--text-color);
+      }
+
+      .section-toggle {
+        margin-left: auto;
+        font-size: 0.75rem;
+        color: var(--text-secondary-color);
+      }
+    }
+
+    .section-empty-badge {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: normal;
+      color: var(--text-secondary-color);
+      background: var(--surface-ground);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.125rem 0.5rem;
+      opacity: 0.8;
+    }
   }
 
   .section-content {

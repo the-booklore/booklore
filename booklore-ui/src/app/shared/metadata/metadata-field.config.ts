@@ -55,6 +55,75 @@ export const AUDIOBOOK_METADATA_FIELDS: MetadataFieldConfig[] = [
   {label: 'Abridged', controlName: 'abridged', lockedKey: 'abridgedLocked', fetchedKey: 'abridged', type: 'boolean'}
 ];
 
+// Comic book metadata fields - stored nested under BookMetadata.comicMetadata
+export const COMIC_TEXT_METADATA_FIELDS: MetadataFieldConfig[] = [
+  {label: 'Issue #', controlName: 'comicIssueNumber', lockedKey: 'comicIssueNumberLocked', fetchedKey: 'issueNumber', type: 'string'},
+  {label: 'Volume', controlName: 'comicVolumeName', lockedKey: 'comicVolumeNameLocked', fetchedKey: 'volumeName', type: 'string'},
+  {label: 'Volume #', controlName: 'comicVolumeNumber', lockedKey: 'comicVolumeNumberLocked', fetchedKey: 'volumeNumber', type: 'number'},
+  {label: 'Story Arc', controlName: 'comicStoryArc', lockedKey: 'comicStoryArcLocked', fetchedKey: 'storyArc', type: 'string'},
+  {label: 'Arc #', controlName: 'comicStoryArcNumber', lockedKey: 'comicStoryArcNumberLocked', fetchedKey: 'storyArcNumber', type: 'number'},
+  {label: 'Alt. Series', controlName: 'comicAlternateSeries', lockedKey: 'comicAlternateSeriesLocked', fetchedKey: 'alternateSeries', type: 'string'},
+  {label: 'Alt. Issue', controlName: 'comicAlternateIssue', lockedKey: 'comicAlternateIssueLocked', fetchedKey: 'alternateIssue', type: 'string'},
+  {label: 'Imprint', controlName: 'comicImprint', lockedKey: 'comicImprintLocked', fetchedKey: 'imprint', type: 'string'},
+  {label: 'Format', controlName: 'comicFormat', lockedKey: 'comicFormatLocked', fetchedKey: 'format', type: 'string'},
+  {label: 'Reading Dir.', controlName: 'comicReadingDirection', lockedKey: 'comicReadingDirectionLocked', fetchedKey: 'readingDirection', type: 'string'},
+  {label: 'Web Link', controlName: 'comicWebLink', lockedKey: 'comicWebLinkLocked', fetchedKey: 'webLink', type: 'string'},
+  {label: 'B&W', controlName: 'comicBlackAndWhite', lockedKey: 'comicBlackAndWhiteLocked', fetchedKey: 'blackAndWhite', type: 'boolean'},
+  {label: 'Manga', controlName: 'comicManga', lockedKey: 'comicMangaLocked', fetchedKey: 'manga', type: 'boolean'},
+];
+
+export const COMIC_ARRAY_METADATA_FIELDS: MetadataFieldConfig[] = [
+  {label: 'Pencillers', controlName: 'comicPencillers', lockedKey: 'comicPencillersLocked', fetchedKey: 'pencillers', type: 'array'},
+  {label: 'Inkers', controlName: 'comicInkers', lockedKey: 'comicInkersLocked', fetchedKey: 'inkers', type: 'array'},
+  {label: 'Colorists', controlName: 'comicColorists', lockedKey: 'comicColoristsLocked', fetchedKey: 'colorists', type: 'array'},
+  {label: 'Letterers', controlName: 'comicLetterers', lockedKey: 'comicLetterersLocked', fetchedKey: 'letterers', type: 'array'},
+  {label: 'Cover Artists', controlName: 'comicCoverArtists', lockedKey: 'comicCoverArtistsLocked', fetchedKey: 'coverArtists', type: 'array'},
+  {label: 'Editors', controlName: 'comicEditors', lockedKey: 'comicEditorsLocked', fetchedKey: 'editors', type: 'array'},
+  {label: 'Characters', controlName: 'comicCharacters', lockedKey: 'comicCharactersLocked', fetchedKey: 'characters', type: 'array'},
+  {label: 'Teams', controlName: 'comicTeams', lockedKey: 'comicTeamsLocked', fetchedKey: 'teams', type: 'array'},
+  {label: 'Locations', controlName: 'comicLocations', lockedKey: 'comicLocationsLocked', fetchedKey: 'locations', type: 'array'},
+];
+
+export const COMIC_TEXTAREA_METADATA_FIELDS: MetadataFieldConfig[] = [
+  {label: 'Notes', controlName: 'comicNotes', lockedKey: 'comicNotesLocked', fetchedKey: 'notes', type: 'textarea'},
+];
+
+export const ALL_COMIC_METADATA_FIELDS: MetadataFieldConfig[] = [
+  ...COMIC_TEXT_METADATA_FIELDS,
+  ...COMIC_ARRAY_METADATA_FIELDS,
+  ...COMIC_TEXTAREA_METADATA_FIELDS,
+];
+
+// Maps form lockedKey → ComicMetadata lock property name.
+// The backend has 8 grouped lock fields, so multiple form fields share a single backend lock.
+// Groups: issueNumber (issue details), volumeName, volumeNumber, storyArc (arc+alt),
+//         creators (all creator roles), characters, teams, locations.
+export const COMIC_FORM_TO_MODEL_LOCK: Record<string, string> = {
+  'comicIssueNumberLocked': 'issueNumberLocked',
+  'comicImprintLocked': 'issueNumberLocked',
+  'comicFormatLocked': 'issueNumberLocked',
+  'comicReadingDirectionLocked': 'issueNumberLocked',
+  'comicBlackAndWhiteLocked': 'issueNumberLocked',
+  'comicMangaLocked': 'issueNumberLocked',
+  'comicWebLinkLocked': 'issueNumberLocked',
+  'comicNotesLocked': 'issueNumberLocked',
+  'comicVolumeNameLocked': 'volumeNameLocked',
+  'comicVolumeNumberLocked': 'volumeNumberLocked',
+  'comicStoryArcLocked': 'storyArcLocked',
+  'comicStoryArcNumberLocked': 'storyArcLocked',
+  'comicAlternateSeriesLocked': 'storyArcLocked',
+  'comicAlternateIssueLocked': 'storyArcLocked',
+  'comicPencillersLocked': 'creatorsLocked',
+  'comicInkersLocked': 'creatorsLocked',
+  'comicColoristsLocked': 'creatorsLocked',
+  'comicLetterersLocked': 'creatorsLocked',
+  'comicCoverArtistsLocked': 'creatorsLocked',
+  'comicEditorsLocked': 'creatorsLocked',
+  'comicCharactersLocked': 'charactersLocked',
+  'comicTeamsLocked': 'teamsLocked',
+  'comicLocationsLocked': 'locationsLocked',
+};
+
 export const TOP_FIELD_NAMES = ['title', 'subtitle', 'publisher', 'publishedDate'];
 export const ARRAY_FIELD_NAMES = ['authors', 'categories', 'moods', 'tags'];
 export const TEXTAREA_FIELD_NAMES = ['description'];

@@ -267,7 +267,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     if (metadata.comicvineId) return 'comicvine';
     if (metadata.ranobedbId) return 'ranobedb';
     if (metadata.audibleId) return 'audible';
-    return null;
+    return metadata.provider?.toLowerCase() || null;
   }
 
   getProviderClass(metadata: BookMetadata): string {
@@ -371,16 +371,17 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     } else if (metadata['lubimyczytacId']) {
       return `<a href="https://lubimyczytac.pl/ksiazka/${metadata['lubimyczytacId']}/ksiazka" target="_blank">Lubimyczytac</a>`;
     } else if (metadata.comicvineId) {
-      if (metadata.comicvineId.startsWith('4000')) {
-        const name = metadata.seriesName ? metadata.seriesName.replace(/ /g, '-').toLowerCase() + "-" + metadata.seriesNumber : '';
-        return `<a href="https://comicvine.gamespot.com/${name}/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+      if (metadata.externalUrl) {
+        return `<a href="${metadata.externalUrl}" target="_blank">Comicvine</a>`;
       }
-      const name = metadata.seriesName;
-      return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+      return `<a href="https://comicvine.gamespot.com/4050-${metadata.comicvineId}/" target="_blank">Comicvine</a>`;
     } else if (metadata.ranobedbId) {
       return `<a href="https://ranobedb.org/book/${metadata.ranobedbId}" target="_blank">RanobeDB</a>`;
     } else if (metadata.audibleId) {
       return `<a href="https://www.audible.com/pd/${metadata.audibleId}" target="_blank">Audible</a>`;
+    } else if (metadata.externalUrl) {
+      const providerName = metadata.provider || 'Link';
+      return `<a href="${metadata.externalUrl}" target="_blank">${providerName}</a>`;
     }
     throw new Error("No provider ID found in metadata.");
   }
