@@ -285,7 +285,7 @@ export class BookService {
     const isAlternativeFormat = explicitBookType && explicitBookType !== book.primaryFile?.bookType;
 
     let baseUrl: string | null = null;
-    let queryParams: Record<string, any> = {};
+    const queryParams: Record<string, any> = {};
 
     switch (bookType) {
       case 'PDF':
@@ -551,6 +551,10 @@ export class BookService {
 
   updateDateFinished(bookId: number, dateFinished: string | null): Observable<void> {
     return this.bookPatchService.updateDateFinished(bookId, dateFinished);
+  }
+
+  updatePurchaseDate(bookIds: number | number[], purchaseDate: string | null): Observable<void> {
+    return this.bookPatchService.updatePurchaseDate(bookIds, purchaseDate);
   }
 
   resetProgress(bookIds: number | number[], type: ResetProgressType): Observable<BookStatusUpdateResponse[]> {

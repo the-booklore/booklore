@@ -101,6 +101,7 @@ export class SortService {
         .every((key) => book.metadata?.[key] === true),
     lastReadTime: (book) => book.lastReadTime ? new Date(book.lastReadTime).getTime() : null,
     addedOn: (book) => book.addedOn ? new Date(book.addedOn).getTime() : null,
+    purchaseDate: (book) => book.purchaseDate ? new Date(book.purchaseDate).getTime() : null,
     fileSizeKb: (book) => book.fileSizeKb || null,
     fileName: (book) => book.fileName,
     filePath: (book) => book.filePath,
@@ -135,7 +136,7 @@ export class SortService {
     const aValue = extractor(a);
     const bValue = extractor(b);
 
-    let result = this.compareValues(aValue, bValue);
+    const result = this.compareValues(aValue, bValue);
 
     return criterion.direction === SortDirection.ASCENDING ? result : -result;
   }

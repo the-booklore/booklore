@@ -246,6 +246,29 @@ export class BookPatchService {
     );
   }
 
+  updatePurchaseDate(bookIds: number | number[], purchaseDate: string | null): Observable<void> {
+    const ids = Array.isArray(bookIds) ? bookIds : [bookIds];
+    return this.http.put<void>(`${this.url}/purchase-date`, {bookIds: ids, purchaseDate}).pipe(
+      tap(() => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        if (currentState.books) {
+          const idSet = new Set(ids);
+          const updatedBooks = currentState.books.map(book => {
+            if (idSet.has(book.id)) {
+              const effectivePurchaseDate = purchaseDate ?? book.addedOn;
+              return {...book, purchaseDate: effectivePurchaseDate || undefined};
+            }
+            return book;
+          });
+          this.bookStateService.updateBookState({
+            ...currentState,
+            books: updatedBooks
+          });
+        }
+      })
+    );
+  }
+
   updateLastReadTime(bookId: number): void {
     const timestamp = new Date().toISOString();
     const currentState = this.bookStateService.getCurrentBookState();

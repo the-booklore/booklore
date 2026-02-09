@@ -40,6 +40,7 @@ export interface Book extends FileInfo {
   shelves?: Shelf[];
   lastReadTime?: string;
   addedOn?: string;
+  purchaseDate?: string;
   epubProgress?: EpubProgress;
   pdfProgress?: PdfProgress;
   cbxProgress?: CbxProgress;
