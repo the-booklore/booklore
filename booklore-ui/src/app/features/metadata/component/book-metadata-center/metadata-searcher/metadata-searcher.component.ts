@@ -341,6 +341,29 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
 
   onBookClick(fetchedMetadata: BookMetadata) {
     this.selectedFetchedMetadata$.next(fetchedMetadata);
+
+    const needsEnrichment = fetchedMetadata.provider?.toLowerCase() === 'comicvine'
+      && fetchedMetadata.comicvineId
+      && (!fetchedMetadata.comicMetadata
+        || (!fetchedMetadata.comicMetadata.pencillers?.length
+          && !fetchedMetadata.comicMetadata.inkers?.length
+          && !fetchedMetadata.comicMetadata.colorists?.length
+          && !fetchedMetadata.comicMetadata.letterers?.length
+          && !fetchedMetadata.comicMetadata.editors?.length
+          && !fetchedMetadata.comicMetadata.characters?.length));
+
+    if (needsEnrichment) {
+      this.bookMetadataService.fetchMetadataDetail('Comicvine', fetchedMetadata.comicvineId!)
+        .pipe(takeUntil(this.cancelRequest$))
+        .subscribe({
+          next: (enriched) => {
+            if (this.selectedFetchedMetadata$.value?.comicvineId === fetchedMetadata.comicvineId) {
+              this.selectedFetchedMetadata$.next(enriched);
+            }
+          },
+          error: (err) => console.error('Error fetching detailed metadata:', err)
+        });
+    }
   }
 
   onGoBack() {

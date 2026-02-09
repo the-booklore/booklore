@@ -396,6 +396,10 @@ public class ComicvineBookParser implements BookParser {
     }
 
 
+    public BookMetadata fetchDetailedIssue(String comicvineId) {
+        return fetchIssueDetails(Integer.parseInt(comicvineId), null);
+    }
+
     private BookMetadata fetchIssueDetails(int issueId, Comic volumeContext) {
         String apiToken = getApiToken();
         if (apiToken == null) return null;
@@ -434,16 +438,6 @@ public class ComicvineBookParser implements BookParser {
         if (response != null && response.getResults() != null) {
             List<BookMetadata> results = new ArrayList<>();
             for (Comic comic : response.getResults()) {
-                // For issue results without credits, fetch details to get full credit data
-                if (!"volume".equalsIgnoreCase(comic.getResourceType())
-                        && !hasAnyCredits(comic.getPersonCredits(), comic.getCharacterCredits(),
-                                comic.getTeamCredits(), comic.getStoryArcCredits(), comic.getLocationCredits())) {
-                    BookMetadata detailed = fetchIssueDetails(comic.getId(), null);
-                    if (detailed != null) {
-                        results.add(detailed);
-                        continue;
-                    }
-                }
                 results.add(convertToBookMetadata(comic, null));
             }
             return results;
