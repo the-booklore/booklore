@@ -97,5 +97,5 @@ CREATE TABLE IF NOT EXISTS comic_metadata_creator_mapping
     CONSTRAINT fk_comic_creator_mapping_creator FOREIGN KEY (creator_id) REFERENCES comic_creator (id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_comic_creator_mapping_role ON comic_metadata_creator_mapping (role);
-CREATE INDEX idx_comic_creator_mapping_book ON comic_metadata_creator_mapping (book_id);
+CREATE INDEX IF NOT EXISTS idx_comic_creator_mapping_role ON comic_metadata_creator_mapping (role);
+CREATE INDEX IF NOT EXISTS idx_comic_creator_mapping_book ON comic_metadata_creator_mapping (book_id);

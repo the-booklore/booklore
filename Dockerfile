@@ -26,6 +26,9 @@ RUN --mount=type=cache,target=/home/gradle/.gradle \
 
 COPY ./booklore-api/src /springboot-app/src
 
+# Copy Angular dist into Spring Boot static resources so it's embedded in the JAR
+COPY --from=angular-build /angular-app/dist/booklore/browser /springboot-app/src/main/resources/static
+
 # Inject version into application.yaml using yq
 ARG APP_VERSION
 RUN apk add --no-cache yq && \
@@ -53,14 +56,14 @@ LABEL org.opencontainers.image.title="BookLore" \
 
 ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
-RUN apk update && apk add nginx gettext su-exec
+RUN apk update && apk add --no-cache su-exec
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
 
-EXPOSE 8080 80
+ARG BOOKLORE_PORT=6060
+EXPOSE ${BOOKLORE_PORT}
 
-CMD ["/start.sh"]
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["java", "-jar", "/app/app.jar"]

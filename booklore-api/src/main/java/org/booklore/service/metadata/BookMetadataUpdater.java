@@ -438,6 +438,11 @@ public class BookMetadataUpdater {
         if (comicDto.getLocationsLocked() != null) c.setLocationsLocked(comicDto.getLocationsLocked());
 
         comicMetadataRepository.save(c);
+
+        comicCharacterRepository.deleteOrphaned();
+        comicTeamRepository.deleteOrphaned();
+        comicLocationRepository.deleteOrphaned();
+        comicCreatorRepository.deleteOrphaned();
     }
 
     private void updateComicCharacters(ComicMetadataEntity c, Set<String> characters, MetadataReplaceMode mode) {
