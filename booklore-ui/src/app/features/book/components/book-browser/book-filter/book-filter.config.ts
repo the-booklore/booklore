@@ -243,6 +243,10 @@ export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, 
     const comic = book.metadata?.comicMetadata;
     if (!comic) return [];
     const creators: FilterValue[] = [];
+    const roleLabels: Record<string, string> = {
+      penciller: 'Penciller', inker: 'Inker', colorist: 'Colorist',
+      letterer: 'Letterer', coverArtist: 'Cover Artist', editor: 'Editor'
+    };
     const roles: [string[] | undefined, string][] = [
       [comic.pencillers, 'penciller'],
       [comic.inkers, 'inker'],
@@ -254,7 +258,7 @@ export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, 
     for (const [names, role] of roles) {
       if (names) {
         for (const name of names) {
-          creators.push({id: `${name}:${role}`, name: `${name} (${role})`});
+          creators.push({id: `${name}:${role}`, name: `${name} (${roleLabels[role]})`});
         }
       }
     }
