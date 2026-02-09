@@ -62,8 +62,6 @@ spec:
               containerPort: {{ .Values.service.port }}
               #protocol: TCP
           env:
-            - name: BOOKLORE_PORT
-              value: "6060"
             - name: DATABASE_URL
               value: jdbc:mariadb://{{ .Release.Name }}-mariadb:{{ .Values.mariadb.primary.service.ports.mysql }}/{{ .Values.mariadb.auth.database }}
             - name: DATABASE_USERNAME
