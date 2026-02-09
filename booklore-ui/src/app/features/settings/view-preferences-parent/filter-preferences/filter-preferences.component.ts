@@ -1,15 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Select} from 'primeng/select';
-import {
-  ALL_FILTER_OPTIONS,
-  BookFilterMode,
-  DEFAULT_VISIBLE_FILTERS,
-  User,
-  UserService,
-  UserSettings,
-  UserState,
-  VisibleFilterType
-} from '../../user-management/user.service';
+import {ALL_FILTER_OPTIONS, BookFilterMode, DEFAULT_VISIBLE_FILTERS, User, UserService, UserSettings, UserState, VisibleFilterType} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
@@ -17,7 +8,7 @@ import {filter, takeUntil} from 'rxjs/operators';
 import {MultiSelect} from 'primeng/multiselect';
 
 const MIN_VISIBLE_FILTERS = 5;
-const MAX_VISIBLE_FILTERS = 15;
+const MAX_VISIBLE_FILTERS = 20;
 
 @Component({
   selector: 'app-filter-preferences',
