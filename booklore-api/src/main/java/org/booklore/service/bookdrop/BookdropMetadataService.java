@@ -1,5 +1,7 @@
 package org.booklore.service.bookdrop;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookFile;
@@ -14,12 +16,10 @@ import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.metadata.MetadataRefreshService;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.util.FileService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +43,7 @@ public class BookdropMetadataService {
     private final FileService fileService;
 
     @Transactional
-    public BookdropFileEntity attachInitialMetadata(Long bookdropFileId) throws JsonProcessingException {
+    public BookdropFileEntity attachInitialMetadata(Long bookdropFileId) throws JacksonException {
         BookdropFileEntity entity = getOrThrow(bookdropFileId);
         BookMetadata initial = extractInitialMetadata(entity);
         extractAndSaveCover(entity);
@@ -54,7 +54,7 @@ public class BookdropMetadataService {
     }
 
     @Transactional
-    public BookdropFileEntity attachFetchedMetadata(Long bookdropFileId) throws JsonProcessingException {
+    public BookdropFileEntity attachFetchedMetadata(Long bookdropFileId) throws JacksonException {
         BookdropFileEntity entity = getOrThrow(bookdropFileId);
 
         AppSettings appSettings = appSettingService.getAppSettings();

@@ -1,9 +1,9 @@
 package org.booklore.config;
 
 import org.booklore.context.KomgaCleanContext;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.BeanPropertyWriter;
 
 import java.util.Collection;
 
@@ -21,7 +21,7 @@ public class KomgaCleanBeanPropertyWriter extends BeanPropertyWriter {
     }
 
     @Override
-    public void serializeAsField(Object bean, JsonGenerator gen, SerializerProvider prov) throws Exception {
+    public void serializeAsProperty(Object bean, JsonGenerator gen, SerializationContext prov) throws Exception {
         if (KomgaCleanContext.isCleanMode()) {
             String propertyName = getName();
             
@@ -43,6 +43,6 @@ public class KomgaCleanBeanPropertyWriter extends BeanPropertyWriter {
         }
         
         // Default behavior
-        super.serializeAsField(bean, gen, prov);
+        super.serializeAsProperty(bean, gen, prov);
     }
 }

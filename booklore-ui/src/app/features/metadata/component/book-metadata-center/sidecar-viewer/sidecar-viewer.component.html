@@ -1,0 +1,89 @@
+<div class="sidecar-viewer">
+  <div class="sidecar-header">
+    <div class="header-info">
+      <h3>Sidecar Metadata</h3>
+      <p class="header-description">
+        View and manage the .metadata.json file stored alongside your book file.
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-tag
+        [value]="getSyncStatusLabel()"
+        [severity]="getSyncStatusSeverity()"
+        styleClass="sync-status-tag"
+      />
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Loading sidecar data...</span>
+    </div>
+  } @else {
+    <div class="sidecar-actions">
+      <p-button
+        label="Export to Sidecar"
+        icon="pi pi-upload"
+        [loading]="exporting"
+        (onClick)="exportToSidecar()"
+        severity="primary"
+        size="small"
+        pTooltip="Create or update the sidecar JSON file with current database metadata"
+        tooltipPosition="top"
+      />
+      <p-button
+        label="Import from Sidecar"
+        icon="pi pi-download"
+        [loading]="importing"
+        [disabled]="syncStatus === 'MISSING'"
+        (onClick)="importFromSidecar()"
+        severity="secondary"
+        size="small"
+        pTooltip="Import metadata from the sidecar JSON file into the database"
+        tooltipPosition="top"
+      />
+    </div>
+
+    @if (syncStatus === 'MISSING') {
+      <div class="empty-state">
+        <i class="pi pi-file"></i>
+        <h4>No Sidecar File Found</h4>
+        <p>
+          No .metadata.json file exists for this book yet.
+          Click "Export to Sidecar" to create one with the current metadata.
+        </p>
+      </div>
+    } @else if (sidecarContent) {
+      <div class="sidecar-content">
+        <div class="content-header">
+          <div class="content-meta">
+            <span class="meta-item">
+              <i class="pi pi-clock"></i>
+              Generated: {{ sidecarContent.generatedAt | date:'medium' }}
+            </span>
+            <span class="meta-item">
+              <i class="pi pi-tag"></i>
+              Version: {{ sidecarContent.version }}
+            </span>
+            <span class="meta-item">
+              <i class="pi pi-cog"></i>
+              By: {{ sidecarContent.generatedBy }}
+            </span>
+          </div>
+        </div>
+
+        <div class="json-viewer">
+          <pre class="json-content">{{ sidecarContent | json }}</pre>
+        </div>
+
+        @if (sidecarContent.cover) {
+          <div class="cover-info">
+            <i class="pi pi-image"></i>
+            <span>Cover file: {{ sidecarContent.cover.path }}</span>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

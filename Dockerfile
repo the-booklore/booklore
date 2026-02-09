@@ -13,7 +13,7 @@ COPY ./booklore-ui /angular-app/
 RUN npm run build --configuration=production
 
 # Stage 2: Build the Spring Boot app with Gradle
-FROM gradle:8.14.3-jdk21-alpine AS springboot-build
+FROM gradle:9.3.1-jdk25-alpine AS springboot-build
 
 WORKDIR /springboot-app
 
@@ -26,6 +26,9 @@ RUN --mount=type=cache,target=/home/gradle/.gradle \
 
 COPY ./booklore-api/src /springboot-app/src
 
+# Copy Angular dist into Spring Boot static resources so it's embedded in the JAR
+COPY --from=angular-build /angular-app/dist/booklore/browser /springboot-app/src/main/resources/static
+
 # Inject version into application.yaml using yq
 ARG APP_VERSION
 RUN apk add --no-cache yq && \
@@ -35,7 +38,7 @@ RUN --mount=type=cache,target=/home/gradle/.gradle \
     gradle clean build -x test --no-daemon --parallel
 
 # Stage 3: Final image
-FROM eclipse-temurin:21.0.9_10-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 ARG APP_VERSION
 ARG APP_REVISION
@@ -49,16 +52,18 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.version=$APP_VERSION \
       org.opencontainers.image.revision=$APP_REVISION \
       org.opencontainers.image.licenses="GPL-3.0" \
-      org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
+      org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:25-jre-alpine"
 
-RUN apk update && apk add nginx gettext su-exec
+ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
+RUN apk update && apk add --no-cache su-exec
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
 
-EXPOSE 8080 80
+ARG BOOKLORE_PORT=6060
+EXPOSE ${BOOKLORE_PORT}
 
-CMD ["/start.sh"]
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["java", "-jar", "/app/app.jar"]

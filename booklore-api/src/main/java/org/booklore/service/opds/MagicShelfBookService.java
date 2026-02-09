@@ -1,5 +1,7 @@
 package org.booklore.service.opds;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMapper;
 import org.booklore.mapper.custom.BookLoreUserTransformer;
@@ -14,14 +16,12 @@ import org.booklore.repository.BookRepository;
 import org.booklore.repository.MagicShelfRepository;
 import org.booklore.repository.UserRepository;
 import org.booklore.service.BookRuleEvaluatorService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Set;
 import java.util.stream.Collectors;
