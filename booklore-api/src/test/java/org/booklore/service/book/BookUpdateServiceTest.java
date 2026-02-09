@@ -4,6 +4,7 @@ import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.APIException;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.*;
+import org.booklore.model.dto.Library;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
 import org.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import org.booklore.model.entity.*;
@@ -11,12 +12,15 @@ import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.*;
 import org.booklore.service.progress.ReadingProgressService;
+import org.booklore.service.restriction.ContentRestrictionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 
+import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,6 +52,8 @@ class BookUpdateServiceTest {
     private ReadingProgressService readingProgressService;
     @Mock
     private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
+    @Mock
+    private ContentRestrictionService contentRestrictionService;
 
     @InjectMocks
     private BookUpdateService bookUpdateService;
@@ -67,8 +73,80 @@ class BookUpdateServiceTest {
                 authenticationService,
                 bookQueryService,
                 readingProgressService,
-                ebookViewerPreferenceRepository
+                ebookViewerPreferenceRepository,
+                contentRestrictionService
         );
+    }
+
+    private BookLoreUser mockUser(boolean admin, Set<Long> libraries) {
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(perms.isAdmin()).thenReturn(admin);
+        when(user.getPermissions()).thenReturn(perms);
+        List<Library> assigned = libraries.stream().map(id -> Library.builder().id(id).build()).toList();
+        when(user.getAssignedLibraries()).thenReturn(assigned);
+        when(user.getId()).thenReturn(99L);
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        return user;
+    }
+
+    private BookEntity buildBook(long id, long libraryId, Instant addedOn) {
+        BookEntity entity = new BookEntity();
+        entity.setId(id);
+        LibraryEntity library = new LibraryEntity();
+        library.setId(libraryId);
+        entity.setLibrary(library);
+        entity.setAddedOn(addedOn);
+        return entity;
+    }
+
+    @Test
+    void updatePurchaseDate_shouldUpdatePurchaseDateForAuthorizedUser() {
+        mockUser(false, Set.of(10L));
+        BookEntity book = buildBook(1L, 10L, Instant.parse("2024-01-01T00:00:00Z"));
+        when(bookRepository.findAllById(List.of(1L))).thenReturn(List.of(book));
+        when(contentRestrictionService.applyRestrictions(anyList(), eq(99L))).thenAnswer(inv -> inv.getArgument(0));
+
+        Instant newDate = Instant.parse("2024-02-01T00:00:00Z");
+        bookUpdateService.updatePurchaseDate(List.of(1L), newDate);
+
+        assertEquals(newDate, book.getPurchaseDate());
+        verify(bookRepository).saveAll(List.of(book));
+    }
+
+    @Test
+    void updatePurchaseDate_shouldThrowWhenBookInUnauthorizedLibrary() {
+        mockUser(false, Set.of(1L));
+        BookEntity book = buildBook(1L, 2L, Instant.now());
+        when(bookRepository.findAllById(List.of(1L))).thenReturn(List.of(book));
+
+        APIException ex = assertThrows(APIException.class,
+                () -> bookUpdateService.updatePurchaseDate(List.of(1L), Instant.now()));
+        assertTrue(ex.getMessage().toLowerCase().contains("not authorized"));
+        verify(bookRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updatePurchaseDate_shouldFallbackToAddedOnWhenNull() {
+        mockUser(true, Set.of());
+        Instant addedOn = Instant.parse("2023-11-01T00:00:00Z");
+        BookEntity book = buildBook(42L, 5L, addedOn);
+        when(bookRepository.findAllById(List.of(42L))).thenReturn(List.of(book));
+
+        bookUpdateService.updatePurchaseDate(List.of(42L), null);
+
+        assertEquals(addedOn, book.getPurchaseDate());
+        verify(bookRepository).saveAll(List.of(book));
+    }
+
+    @Test
+    void updatePurchaseDate_shouldThrowNotFoundWhenMissingBook() {
+        mockUser(true, Set.of());
+        when(bookRepository.findAllById(List.of(999L))).thenReturn(Collections.emptyList());
+
+        APIException ex = assertThrows(APIException.class,
+                () -> bookUpdateService.updatePurchaseDate(List.of(999L), Instant.now()));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
     }
 
     @Test
