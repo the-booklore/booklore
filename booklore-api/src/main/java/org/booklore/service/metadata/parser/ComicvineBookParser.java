@@ -106,7 +106,16 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
         List<BookMetadata> metadataList = fetchMetadata(book, fetchMetadataRequest);
-        return metadataList.isEmpty() ? null : metadataList.getFirst();
+        if (metadataList.isEmpty()) return null;
+
+        BookMetadata top = metadataList.getFirst();
+        if (top.getComicvineId() != null && (top.getComicMetadata() == null || !hasComicDetails(top.getComicMetadata()))) {
+            BookMetadata detailed = fetchDetailedMetadata(top.getComicvineId());
+            if (detailed != null && detailed.getComicMetadata() != null) {
+                top.setComicMetadata(detailed.getComicMetadata());
+            }
+        }
+        return top;
     }
 
     public List<BookMetadata> getMetadataListByTerm(String term) {
@@ -720,6 +729,22 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
         }
 
         return metadata;
+    }
+
+    private boolean hasComicDetails(ComicMetadata comic) {
+        return hasNonEmptySet(comic.getCharacters())
+                || hasNonEmptySet(comic.getTeams())
+                || hasNonEmptySet(comic.getLocations())
+                || hasNonEmptySet(comic.getPencillers())
+                || hasNonEmptySet(comic.getInkers())
+                || hasNonEmptySet(comic.getColorists())
+                || hasNonEmptySet(comic.getLetterers())
+                || hasNonEmptySet(comic.getCoverArtists())
+                || hasNonEmptySet(comic.getEditors());
+    }
+
+    private boolean hasNonEmptySet(Set<?> set) {
+        return set != null && !set.isEmpty();
     }
 
     private boolean hasAnyCredits(List<?>... creditLists) {

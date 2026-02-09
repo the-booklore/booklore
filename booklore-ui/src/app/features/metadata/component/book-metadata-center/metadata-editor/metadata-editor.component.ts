@@ -113,7 +113,7 @@ export class MetadataEditorComponent implements OnInit {
     {label: 'No', value: false},
   ];
 
-  comicSectionExpanded = false;
+  comicSectionExpanded = true;
   audiobookSectionExpanded = true;
   providerSectionExpanded = true;
 
