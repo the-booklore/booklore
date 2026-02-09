@@ -50,12 +50,6 @@ export function doesBookMatchReadStatus(book: Book, selected: unknown[]): boolea
   return selected.includes(status);
 }
 
-export function isAgeRatingMatch(ageRating: number | undefined | null, rangeId: string | number): boolean {
-  if (ageRating == null) return false;
-  const numericId = typeof rangeId === 'string' ? Number(rangeId) : rangeId;
-  return ageRating === numericId;
-}
-
 export function doesBookMatchFilter(
   book: Book,
   filterType: string,
@@ -127,10 +121,6 @@ export function doesBookMatchFilter(
       return mode === 'or'
         ? filterValues.some(val => book.metadata?.moods?.includes(val as string))
         : filterValues.every(val => book.metadata?.moods?.includes(val as string));
-    case 'ageRating':
-      return filterValues.some(val => isAgeRatingMatch(book.metadata?.ageRating, val as string | number));
-    case 'contentRating':
-      return filterValues.includes(book.metadata?.contentRating);
     default:
       return false;
   }
