@@ -43,7 +43,10 @@ public class HardcoverMoodFilter {
             return Collections.emptySet();
         }
 
-        List<HardcoverBookDetails.CachedTag> moodTags = cachedTags.get("Mood");
+        return filterMoodsWithCounts(cachedTags.get("Mood"));
+    }
+
+    public static Set<String> filterMoodsWithCounts(List<HardcoverBookDetails.CachedTag> moodTags) {
         if (moodTags == null || moodTags.isEmpty()) {
             return Collections.emptySet();
         }
@@ -82,7 +85,10 @@ public class HardcoverMoodFilter {
             return Collections.emptySet();
         }
 
-        List<HardcoverBookDetails.CachedTag> genreTags = cachedTags.get("Genre");
+        return filterGenresWithCounts(cachedTags.get("Genre"));
+    }
+
+    public static Set<String> filterGenresWithCounts(List<HardcoverBookDetails.CachedTag> genreTags) {
         if (genreTags == null || genreTags.isEmpty()) {
             return Collections.emptySet();
         }
@@ -102,7 +108,10 @@ public class HardcoverMoodFilter {
             return Collections.emptySet();
         }
 
-        List<HardcoverBookDetails.CachedTag> tagList = cachedTags.get("Tag");
+        return filterTagsWithCounts(cachedTags.get("Tag"));
+    }
+
+    public static Set<String> filterTagsWithCounts(List<HardcoverBookDetails.CachedTag> tagList) {
         if (tagList == null || tagList.isEmpty()) {
             return Collections.emptySet();
         }

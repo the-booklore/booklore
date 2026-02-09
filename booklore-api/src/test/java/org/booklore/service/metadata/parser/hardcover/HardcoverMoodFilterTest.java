@@ -86,7 +86,7 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterMoodsWithCounts should return empty set for null cached_tags")
     void filterMoodsWithCounts_nullCachedTags_returnsEmptySet() {
-        Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(null);
+        Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts((Map<String, List<HardcoverBookDetails.CachedTag>>) null);
         assertThat(result).isEmpty();
     }
 
