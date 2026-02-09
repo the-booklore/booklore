@@ -100,32 +100,94 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
             if (!matcher.find()) continue;
 
             String asin = matcher.group(1);
-            if (!seenAsins.add(asin)) continue;
+            if (seenAsins.contains(asin)) continue;
 
             String title = link.text().trim();
             if (title.isEmpty()) continue;
 
-            String thumbnailUrl = null;
-            Element img = link.selectFirst("img");
-            if (img == null) {
-                Element parent = link.parent();
-                if (parent != null) {
-                    img = parent.selectFirst("img");
-                }
-            }
-            if (img != null) {
-                thumbnailUrl = img.attr("src");
-                if (thumbnailUrl.isBlank()) thumbnailUrl = null;
-            }
+            seenAsins.add(asin);
 
-            previews.add(BookMetadata.builder()
+            Element container = findProductContainer(link);
+
+            String thumbnailUrl = extractPreviewThumbnail(container, link);
+            Set<String> authors = extractPreviewAuthors(container);
+            String narrator = extractPreviewNarrator(container);
+
+            BookMetadata.BookMetadataBuilder builder = BookMetadata.builder()
                     .audibleId(asin)
                     .title(title)
                     .thumbnailUrl(thumbnailUrl)
-                    .provider(MetadataProvider.Audible)
-                    .build());
+                    .provider(MetadataProvider.Audible);
+
+            if (!authors.isEmpty()) {
+                builder.authors(authors);
+            }
+            if (narrator != null) {
+                builder.narrator(narrator);
+            }
+
+            previews.add(builder.build());
         }
         return previews;
+    }
+
+    private Element findProductContainer(Element titleLink) {
+        Element current = titleLink.parent();
+        for (int i = 0; i < 8 && current != null; i++) {
+            if (current.selectFirst("img[src*='images/I/']") != null) {
+                return current;
+            }
+            current = current.parent();
+        }
+        return null;
+    }
+
+    private String extractPreviewThumbnail(Element container, Element titleLink) {
+        if (container != null) {
+            Element img = container.selectFirst("img[src*='images/I/']");
+            if (img != null) {
+                String src = img.attr("src");
+                if (!src.isBlank()) return src;
+            }
+        }
+        Element img = titleLink.selectFirst("img");
+        if (img == null && titleLink.parent() != null) {
+            img = titleLink.parent().selectFirst("img");
+        }
+        if (img != null) {
+            String src = img.attr("src");
+            if (!src.isBlank()) return src;
+        }
+        return null;
+    }
+
+    private Set<String> extractPreviewAuthors(Element container) {
+        Set<String> authors = new LinkedHashSet<>();
+        if (container == null) return authors;
+
+        for (Element authorLink : container.select("a[href*='/author/']")) {
+            String name = authorLink.text().trim();
+            if (!name.isEmpty()) {
+                authors.add(name);
+            }
+        }
+        return authors;
+    }
+
+    private String extractPreviewNarrator(Element container) {
+        if (container == null) return null;
+
+        for (Element el : container.getElementsContainingOwnText("Narrated by:")) {
+            Element parent = el.parent();
+            if (parent == null) continue;
+            String text = parent.text();
+            int idx = text.indexOf("Narrated by:");
+            if (idx >= 0) {
+                String narrator = text.substring(idx + "Narrated by:".length()).trim();
+                if (!narrator.isEmpty()) return narrator;
+            }
+        }
+        return null;
     }
 
     @Override

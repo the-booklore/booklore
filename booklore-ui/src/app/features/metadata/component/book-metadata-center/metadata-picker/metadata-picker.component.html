@@ -608,54 +608,6 @@
         </section>
       }
 
-      <!-- Provider Metadata Section -->
-      @if (metadataProviderFields.length > 0) {
-        <section class="form-section">
-          <div class="section-header">
-            <i class="pi pi-cloud"></i>
-            <span>Provider Metadata</span>
-          </div>
-
-          <div class="section-content">
-            @for (field of metadataProviderFields; track field) {
-              <div class="field-row">
-                <label class="field-label">{{ field.label }}</label>
-                <div class="field-content">
-                  <div class="field-side current">
-                    <button
-                      type="button"
-                      class="lock-btn"
-                      [class.locked]="metadataForm.get(field.lockedKey)?.value"
-                      (click)="toggleLock(field.controlName)"
-                    >
-                      <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
-                    </button>
-                    <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="transfer-btn"
-                    [class.saved]="isValueSaved(field.controlName)"
-                    [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
-                    [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
-                    (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                    (mouseenter)="onMouseEnter(field.controlName)"
-                    (mouseleave)="onMouseLeave(field.controlName)"
-                  >
-                    <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
-                  </button>
-
-                  <div class="field-side fetched">
-                    <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </section>
-      }
-
       <!-- Audiobook Details Section -->
       @if (currentBook && hasAudiobookFormat(currentBook)) {
         <section class="form-section">
@@ -714,6 +666,54 @@
                     } @else {
                       <input pInputText [value]="getFetchedAudiobookValue(field.fetchedKey) ?? ''" class="field-input" readonly/>
                     }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Provider Metadata Section -->
+      @if (metadataProviderFields.length > 0) {
+        <section class="form-section">
+          <div class="section-header">
+            <i class="pi pi-cloud"></i>
+            <span>Provider Metadata</span>
+          </div>
+
+          <div class="section-content">
+            @for (field of metadataProviderFields; track field) {
+              <div class="field-row">
+                <label class="field-label">{{ field.label }}</label>
+                <div class="field-content">
+                  <div class="field-side current">
+                    <button
+                      type="button"
+                      class="lock-btn"
+                      [class.locked]="metadataForm.get(field.lockedKey)?.value"
+                      (click)="toggleLock(field.controlName)"
+                    >
+                      <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
+                    </button>
+                    <input pInputText formControlName="{{field.controlName}}" class="field-input"/>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="transfer-btn"
+                    [class.saved]="isValueSaved(field.controlName)"
+                    [class.copied]="isValueCopied(field.controlName) && !hoveredFields[field.controlName]"
+                    [class.reset]="isValueCopied(field.controlName) && hoveredFields[field.controlName]"
+                    (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+                    (mouseenter)="onMouseEnter(field.controlName)"
+                    (mouseleave)="onMouseLeave(field.controlName)"
+                  >
+                    <i [class]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"></i>
+                  </button>
+
+                  <div class="field-side fetched">
+                    <input pInputText [value]="fetchedMetadata[field.fetchedKey] ?? ''" class="field-input" readonly/>
                   </div>
                 </div>
               </div>
