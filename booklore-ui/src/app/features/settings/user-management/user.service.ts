@@ -193,7 +193,8 @@ export type VisibleFilterType =
   | 'personalRating' | 'publisher' | 'matchScore' | 'library' | 'shelf'
   | 'shelfStatus' | 'tag' | 'publishedDate' | 'fileSize' | 'amazonRating'
   | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood'
-  | 'ageRating' | 'contentRating';
+  | 'ageRating' | 'contentRating'
+  | 'comicCharacter' | 'comicTeam' | 'comicLocation' | 'comicCreator';
 
 export const DEFAULT_VISIBLE_FILTERS: VisibleFilterType[] = [
   'author', 'category', 'series', 'bookType', 'readStatus',
@@ -223,7 +224,11 @@ export const ALL_FILTER_OPTIONS: { label: string; value: VisibleFilterType }[] =
   {label: 'Mood', value: 'mood'},
   {label: 'Amazon Rating', value: 'amazonRating'},
   {label: 'Goodreads Rating', value: 'goodreadsRating'},
-  {label: 'Hardcover Rating', value: 'hardcoverRating'}
+  {label: 'Hardcover Rating', value: 'hardcoverRating'},
+  {label: 'Comic Character', value: 'comicCharacter'},
+  {label: 'Comic Team', value: 'comicTeam'},
+  {label: 'Comic Location', value: 'comicLocation'},
+  {label: 'Comic Creator', value: 'comicCreator'}
 ];
 
 export interface UserSettings {

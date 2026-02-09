@@ -59,6 +59,8 @@ public class BookLoreUserTransformer {
                         case TABLE_COLUMN_PREFERENCE -> userSettings.setTableColumnPreference(objectMapper.readValue(value, new TypeReference<>() {
                         }));
                         case DASHBOARD_CONFIG -> userSettings.setDashboardConfig(objectMapper.readValue(value, BookLoreUser.UserSettings.DashboardConfig.class));
+                        case VISIBLE_FILTERS -> userSettings.setVisibleFilters(objectMapper.readValue(value, new TypeReference<>() {
+                        }));
                     }
                 } else {
                     switch (settingKey) {
