@@ -235,7 +235,7 @@ export class ReadingBacklogChartComponent implements OnInit, OnDestroy {
   }
 
   private getBooksWithAddedDate(books: Book[]): Book[] {
-    return books.filter(book => book.addedOn);
+    return books.filter(book => book.purchaseDate || book.addedOn);
   }
 
   private calculateBacklogBuckets(books: Book[]): BacklogBucket[] {
@@ -259,7 +259,11 @@ export class ReadingBacklogChartComponent implements OnInit, OnDestroy {
       let completedCount = 0;
 
       books.forEach(book => {
-        const addedDate = new Date(book.addedOn!);
+        const acquisitionDate = book.purchaseDate || book.addedOn;
+        if (!acquisitionDate) {
+          return;
+        }
+        const addedDate = new Date(acquisitionDate);
         const daysInLibrary = Math.floor((now.getTime() - addedDate.getTime()) / (1000 * 60 * 60 * 24));
 
         if (daysInLibrary >= def.minDays && daysInLibrary < def.maxDays) {
@@ -333,7 +337,11 @@ export class ReadingBacklogChartComponent implements OnInit, OnDestroy {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     books.forEach(book => {
-      const addedDate = new Date(book.addedOn!);
+      const acquisitionDate = book.purchaseDate || book.addedOn;
+      if (!acquisitionDate) {
+        return;
+      }
+      const addedDate = new Date(acquisitionDate);
       const daysInLibrary = Math.floor((now.getTime() - addedDate.getTime()) / (1000 * 60 * 60 * 24));
       totalDaysInLibrary += daysInLibrary;
 

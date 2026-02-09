@@ -260,8 +260,9 @@ export class ReadingJourneyChartComponent implements OnInit, OnDestroy {
 
     for (const book of books) {
       // Track added dates
-      if (book.addedOn) {
-        const monthKey = this.getMonthKey(book.addedOn);
+      const acquisitionDate = book.purchaseDate || book.addedOn;
+      if (acquisitionDate) {
+        const monthKey = this.getMonthKey(acquisitionDate);
         if (monthKey) {
           monthlyAdded.set(monthKey, (monthlyAdded.get(monthKey) || 0) + 1);
         }
@@ -351,7 +352,7 @@ export class ReadingJourneyChartComponent implements OnInit, OnDestroy {
   }
 
   private calculateInsights(books: Book[], monthlyData: MonthlyData[]): JourneyInsights {
-    const booksWithAddedDate = books.filter(b => b.addedOn);
+    const booksWithAddedDate = books.filter(b => b.purchaseDate || b.addedOn);
     const booksFinished = books.filter(b => b.dateFinished && b.readStatus === ReadStatus.READ);
 
     const totalAdded = booksWithAddedDate.length;
@@ -364,8 +365,9 @@ export class ReadingJourneyChartComponent implements OnInit, OnDestroy {
     let finishedWithBothDates = 0;
 
     for (const book of booksFinished) {
-      if (book.addedOn && book.dateFinished) {
-        const addedDate = new Date(book.addedOn);
+      const acquisitionDate = book.purchaseDate || book.addedOn;
+      if (acquisitionDate && book.dateFinished) {
+        const addedDate = new Date(acquisitionDate);
         const finishedDate = new Date(book.dateFinished);
         if (!isNaN(addedDate.getTime()) && !isNaN(finishedDate.getTime())) {
           const days = Math.floor((finishedDate.getTime() - addedDate.getTime()) / (1000 * 60 * 60 * 24));

@@ -327,6 +327,34 @@
             </div>
 
             <div class="metadata-item">
+              <span class="metadata-key">Purchased On:</span>
+              @if ((book?.purchaseDate || book?.addedOn) && !isEditingPurchaseDate) {
+                <span class="metadata-value-group">
+                  <span class="metadata-value">{{ formatDate(book.purchaseDate || book.addedOn) }}</span>
+                  @if (canEditMetadata || isAdmin) {
+                    <i class="pi pi-pencil edit-icon" (click)="togglePurchaseDateEdit(book)"></i>
+                  }
+                </span>
+              } @else if ((book?.purchaseDate || book?.addedOn) && isEditingPurchaseDate) {
+                <span class="metadata-value-group">
+                  <p-datepicker
+                    [(ngModel)]="editPurchaseDate"
+                    dateFormat="dd-M-yy"
+                    size="small"
+                    [showIcon]="true"
+                    iconDisplay="input"
+                    appendTo="body"
+                    [style]="{ 'width': '125px', 'font-size': '12px' }">
+                  </p-datepicker>
+                  <p-button rounded icon="pi pi-check" size="small" severity="success" text (onClick)="savePurchaseDate(book)" pTooltip="Save date"></p-button>
+                  <p-button rounded icon="pi pi-times" size="small" severity="danger" text (onClick)="cancelPurchaseDateEdit()" pTooltip="Cancel"></p-button>
+                </span>
+              } @else {
+                <span class="metadata-value">-</span>
+              }
+            </div>
+
+            <div class="metadata-item">
               <span class="metadata-key">Publisher:</span>
               @if (book?.metadata?.publisher) {
                 <span class="metadata-value metadata-link" (click)="goToPublisher(book?.metadata?.publisher!)">

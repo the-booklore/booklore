@@ -63,6 +63,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'publishedDate', header: 'Published'},
     {field: 'lastReadTime', header: 'Last Read'},
     {field: 'addedOn', header: 'Added'},
+    {field: 'purchaseDate', header: 'Purchased'},
     {field: 'fileSizeKb', header: 'File Size'},
     {field: 'language', header: 'Language'},
     {field: 'isbn', header: 'ISBN'},
@@ -283,6 +284,9 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
       case 'addedOn':
         return book.addedOn ? this.datePipe.transform(book.addedOn, 'dd-MMM-yyyy') ?? '' : '';
+
+      case 'purchaseDate':
+        return book.purchaseDate ? this.datePipe.transform(book.purchaseDate, 'dd-MMM-yyyy') ?? '' : '';
 
       case 'fileSizeKb':
         return this.formatFileSize(book.fileSizeKb);
