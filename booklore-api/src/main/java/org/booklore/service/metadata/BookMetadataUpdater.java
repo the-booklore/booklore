@@ -107,7 +107,7 @@ public class BookMetadataUpdater {
         updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
-        updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
+        updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail, bookType);
         updateAudiobookMetadataIfNeeded(bookEntity, newMetadata, metadata, clearFlags, replaceMode);
         updateComicMetadataIfNeeded(newMetadata, metadata, replaceMode);
         updateLocks(newMetadata, metadata);
@@ -131,7 +131,9 @@ public class BookMetadataUpdater {
                     }
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.saveMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
-                    String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                    String newHash = file.isDirectory()
+                            ? FileFingerprint.generateFolderHash(bookEntity.getFullFilePath())
+                            : FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
                     primaryFile.setCurrentHash(newHash);
                     bookRepository.save(bookEntity);
@@ -637,16 +639,22 @@ public class BookMetadataUpdater {
         }
     }
 
-    private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {
+    private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set, BookFileType bookType) {
         if (Boolean.TRUE.equals(e.getCoverLocked())) {
             return;
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
         try {
-            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+            if (bookType == BookFileType.AUDIOBOOK) {
+                if (Boolean.TRUE.equals(e.getAudiobookCoverLocked())) return;
+                fileService.createAudiobookThumbnailFromUrl(bookId, m.getThumbnailUrl());
+                bookEntity.getMetadata().setAudiobookCoverUpdatedOn(Instant.now());
+            } else {
+                fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+                bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+            }
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
-            bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
         } catch (Exception ex) {
             log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
         }
