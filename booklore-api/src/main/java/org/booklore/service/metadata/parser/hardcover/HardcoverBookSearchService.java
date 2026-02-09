@@ -35,6 +35,77 @@ public class HardcoverBookSearchService {
                 .build();
     }
 
+    public List<GraphQLResponse.BookWithEditions> searchBookByIsbn(String isbn) {
+        String apiToken = getApiToken();
+        if (apiToken == null) {
+            return Collections.emptyList();
+        }
+        
+        GraphQLRequest body = new GraphQLRequest();
+        body.setQuery("""
+            query BookSearchByIsbn($isbn: String!) {
+                books(
+                    where: {editions: {_or: [{isbn_13: {_eq: $isbn}}, {isbn_10: {_eq: $isbn}}]}}
+                ) {
+                    id
+                    slug
+                    title
+                    subtitle
+                    description
+                    cached_contributors
+                    featured_book_series {
+                      series {
+                        name
+                        books_count
+                      }
+                      position
+                    }
+                    rating
+                    ratings_count
+                    reviews_count
+                    pages
+                    release_date
+                    release_year
+                    image {
+                      url
+                    }
+                    cached_tags
+                    editions(where: {_or: [{isbn_13: {_eq: $isbn}}, {isbn_10: {_eq: $isbn}}]}) {
+                      id
+                      title
+                      subtitle
+                      cached_contributors
+                      pages
+                      release_date
+                      release_year
+                      image {
+                        url
+                      }
+                      cached_tags
+                      publisher {
+                        name
+                      }
+                      isbn_10
+                      isbn_13
+                      language {
+                        code2
+                      }
+                    }
+                  }
+                }""");
+        body.setVariables(java.util.Map.of("isbn", isbn));
+
+        GraphQLResponse response = executeRequest(body, GraphQLResponse.class, apiToken);
+        if (response == null || response.getData() == null ||
+                response.getData().getBooks() == null ||
+                response.getData().getBooks().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<GraphQLResponse.BookWithEditions> books = response.getData().getBooks();
+        return books != null ? books : Collections.emptyList();
+    }
+
     public List<GraphQLResponse.Hit> searchBooks(String query) {
         return searchBooks(query, DEFAULT_PER_PAGE);
     }
