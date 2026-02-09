@@ -78,6 +78,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   isEditingPurchaseDate = false;
   editPurchaseDate: Date | null = null;
+  maxDate = new Date();
 
   readStatusOptions: { value: ReadStatus, label: string }[] = [
     {value: ReadStatus.UNREAD, label: 'Unread'},
