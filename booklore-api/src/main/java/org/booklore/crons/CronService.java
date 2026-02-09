@@ -1,14 +1,15 @@
 package org.booklore.crons;
 
+import jakarta.annotation.PostConstruct;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.AppProperties;
 import org.booklore.model.dto.BookloreTelemetry;
 import org.booklore.model.dto.InstallationPing;
 import org.booklore.model.dto.settings.AppSettings;
 import org.booklore.service.TelemetryService;
 import org.booklore.service.appsettings.AppSettingService;
-import jakarta.annotation.PostConstruct;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @AllArgsConstructor
+@DependsOnDatabaseInitialization
 @Slf4j
 public class CronService {
 

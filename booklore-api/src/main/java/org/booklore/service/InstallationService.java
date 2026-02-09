@@ -1,13 +1,12 @@
 package org.booklore.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.Installation;
 import org.booklore.model.entity.AppSettingEntity;
 import org.booklore.repository.AppSettingsRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -26,9 +25,9 @@ public class InstallationService {
 
     public InstallationService(AppSettingsRepository appSettingsRepository, ObjectMapper objectMapper) {
         this.appSettingsRepository = appSettingsRepository;
-        this.objectMapper = objectMapper.copy();
-        this.objectMapper.registerModule(new JavaTimeModule());
-        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.objectMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .build();
     }
 
     public Installation getOrCreateInstallation() {

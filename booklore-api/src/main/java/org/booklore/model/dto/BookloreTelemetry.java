@@ -1,8 +1,6 @@
 package org.booklore.model.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +8,8 @@ import java.util.Map;
 @Builder
 @Setter
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class BookloreTelemetry {
     private int telemetryVersion;
     private String installationId;
@@ -39,6 +39,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class UserStatistics {
         private int totalUsers;
         private int totalLocalUsers;
@@ -48,6 +50,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class MetadataStatistics {
         private String[] enabledMetadataProviders;
         private String[] enabledReviewMetadataProviders;
@@ -60,6 +64,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class OpdsStatistics {
         private boolean opdsEnabled;
         private int totalOpdsUsers;
@@ -67,6 +73,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class KoboStatistics {
         private int totalKoboUsers;
         private int totalHardcoverSyncEnabled;
@@ -76,6 +84,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class EmailStatistics {
         private int totalEmailProviders;
         private int totalEmailRecipients;
@@ -83,6 +93,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class BookStatistics {
         private long totalBooks;
         private Map<String, Long> bookCountByType;
@@ -90,6 +102,8 @@ public class BookloreTelemetry {
 
     @Builder
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class LibraryStatistics {
         private long bookCount;
         private int totalLibraryPaths;

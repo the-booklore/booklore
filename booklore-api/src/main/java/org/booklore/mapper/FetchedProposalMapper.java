@@ -1,15 +1,15 @@
 package org.booklore.mapper;
 
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.FetchedProposal;
 import org.booklore.model.entity.MetadataFetchProposalEntity;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.springframework.beans.factory.annotation.Autowired;
+import tools.jackson.databind.ObjectMapper;
 
 @Mapper(componentModel = "spring")
 @Slf4j

@@ -9,8 +9,8 @@ import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.model.entity.KoboReadingStateEntity;
 import org.booklore.model.entity.UserBookProgressEntity;
-import org.booklore.model.enums.ReadStatus;
 import org.booklore.model.enums.KoboReadStatus;
+import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.KoboReadingStateRepository;
 import org.booklore.repository.UserBookProgressRepository;
@@ -29,8 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;

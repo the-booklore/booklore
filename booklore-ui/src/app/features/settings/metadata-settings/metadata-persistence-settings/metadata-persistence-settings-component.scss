@@ -61,3 +61,23 @@
 .filesize-input {
   @include settings.settings-filesize-input;
 }
+
+.sidecar-section-header {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.nested-setting {
+  margin-left: 1.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--surface-border);
+}
+
+code {
+  background: var(--surface-ground);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.875rem;
+}

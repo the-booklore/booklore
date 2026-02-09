@@ -1,13 +1,13 @@
 package org.booklore.util.kobo;
 
 
-import org.booklore.model.dto.kobo.KoboHeaders;
-import org.booklore.model.dto.BookloreSyncToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.dto.BookloreSyncToken;
+import org.booklore.model.dto.kobo.KoboHeaders;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Base64;
 
