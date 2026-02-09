@@ -100,6 +100,16 @@ public class BookRuleEvaluatorService {
             return buildSeriesStatusPredicate(rule, cb, root, progressJoin);
         }
 
+        // Special handling for FILE_TYPE field
+        if (rule.getField() == RuleField.FILE_TYPE) {
+            return buildFileTypePredicate(rule, cb, root, progressJoin);
+        }
+
+        // Special handling for FILE_SIZE field
+        if (rule.getField() == RuleField.FILE_SIZE) {
+            return buildFileSizePredicate(rule, cb, root, progressJoin);
+        }
+
         return switch (rule.getOperator()) {
             case EQUALS -> buildEquals(rule, cb, root, progressJoin);
             case NOT_EQUALS -> buildNotEquals(rule, cb, root, progressJoin);
@@ -338,6 +348,126 @@ public class BookRuleEvaluatorService {
         }
 
         return result;
+    }
+
+    /**
+     * Builds a predicate for the FILE_TYPE field rule.
+     * Uses a subquery to check the primary book file's type.
+     *
+     * @param rule The rule containing the file type value and operator
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @param progressJoin Join to UserBookProgressEntity (unused)
+     * @return Predicate for file type check
+     */
+    private Predicate buildFileTypePredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+        // Create a subquery to check if a matching book file exists
+        Subquery<Long> subquery = cb.createQuery().subquery(Long.class);
+        Root<org.booklore.model.entity.BookFileEntity> fileRoot = subquery.from(org.booklore.model.entity.BookFileEntity.class);
+        
+        // Get the file extension from the fileName
+        Expression<String> fileExtension = cb.function("SUBSTRING_INDEX", String.class,
+                fileRoot.get("fileName"), cb.literal("."), cb.literal(-1));
+        
+        // Build predicate based on operator
+        Predicate valuePredicate = switch (rule.getOperator()) {
+            case EQUALS -> {
+                if (rule.getValue() instanceof List) {
+                    List<?> values = (List<?>) rule.getValue();
+                    List<Predicate> predicates = values.stream()
+                            .map(v -> cb.equal(cb.lower(fileExtension), v.toString().toLowerCase()))
+                            .collect(Collectors.toList());
+                    yield cb.or(predicates.toArray(new Predicate[0]));
+                } else {
+                    yield cb.equal(cb.lower(fileExtension), rule.getValue().toString().toLowerCase());
+                }
+            }
+            case NOT_EQUALS -> {
+                if (rule.getValue() instanceof List) {
+                    List<?> values = (List<?>) rule.getValue();
+                    List<Predicate> predicates = values.stream()
+                            .map(v -> cb.notEqual(cb.lower(fileExtension), v.toString().toLowerCase()))
+                            .collect(Collectors.toList());
+                    yield cb.and(predicates.toArray(new Predicate[0]));
+                } else {
+                    yield cb.notEqual(cb.lower(fileExtension), rule.getValue().toString().toLowerCase());
+                }
+            }
+            case INCLUDES_ANY -> {
+                List<?> values = (List<?>) rule.getValue();
+                List<Predicate> predicates = values.stream()
+                        .map(v -> cb.equal(cb.lower(fileExtension), v.toString().toLowerCase()))
+                        .collect(Collectors.toList());
+                yield cb.or(predicates.toArray(new Predicate[0]));
+            }
+            case EXCLUDES_ALL -> {
+                List<?> values = (List<?>) rule.getValue();
+                List<Predicate> predicates = values.stream()
+                        .map(v -> cb.notEqual(cb.lower(fileExtension), v.toString().toLowerCase()))
+                        .collect(Collectors.toList());
+                yield cb.and(predicates.toArray(new Predicate[0]));
+            }
+            case IS_EMPTY -> cb.isNull(fileExtension);
+            case IS_NOT_EMPTY -> cb.isNotNull(fileExtension);
+            default -> cb.conjunction();
+        };
+        
+        subquery.select(cb.literal(1L))
+                .where(cb.and(
+                        cb.equal(fileRoot.get("book").get("id"), root.get("id")),
+                        cb.isTrue(fileRoot.get("isBookFormat")),
+                        valuePredicate
+                ));
+        
+        return cb.exists(subquery);
+    }
+
+    /**
+     * Builds a predicate for the FILE_SIZE field rule.
+     * Uses a subquery to check the primary book file's size.
+     *
+     * @param rule The rule containing the file size value and operator
+     * @param cb CriteriaBuilder for creating predicates
+     * @param root Root entity for BookEntity
+     * @param progressJoin Join to UserBookProgressEntity (unused)
+     * @return Predicate for file size check
+     */
+    private Predicate buildFileSizePredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+        // Create a subquery to check if a matching book file exists
+        Subquery<Long> subquery = cb.createQuery().subquery(Long.class);
+        Root<org.booklore.model.entity.BookFileEntity> fileRoot = subquery.from(org.booklore.model.entity.BookFileEntity.class);
+        
+        Expression<Long> fileSizeKb = fileRoot.get("fileSizeKb");
+        
+        // Build predicate based on operator
+        Predicate valuePredicate = switch (rule.getOperator()) {
+            case EQUALS -> cb.equal(fileSizeKb, Long.parseLong(rule.getValue().toString()));
+            case NOT_EQUALS -> cb.notEqual(fileSizeKb, Long.parseLong(rule.getValue().toString()));
+            case GREATER_THAN -> cb.greaterThan(fileSizeKb, Long.parseLong(rule.getValue().toString()));
+            case GREATER_THAN_EQUAL_TO -> cb.greaterThanOrEqualTo(fileSizeKb, Long.parseLong(rule.getValue().toString()));
+            case LESS_THAN -> cb.lessThan(fileSizeKb, Long.parseLong(rule.getValue().toString()));
+            case LESS_THAN_EQUAL_TO -> cb.lessThanOrEqualTo(fileSizeKb, Long.parseLong(rule.getValue().toString()));
+            case IN_BETWEEN -> {
+                long start = Long.parseLong(rule.getValueStart().toString());
+                long end = Long.parseLong(rule.getValueEnd().toString());
+                yield cb.and(
+                        cb.greaterThanOrEqualTo(fileSizeKb, start),
+                        cb.lessThanOrEqualTo(fileSizeKb, end)
+                );
+            }
+            case IS_EMPTY -> cb.isNull(fileSizeKb);
+            case IS_NOT_EMPTY -> cb.isNotNull(fileSizeKb);
+            default -> cb.conjunction();
+        };
+        
+        subquery.select(cb.literal(1L))
+                .where(cb.and(
+                        cb.equal(fileRoot.get("book").get("id"), root.get("id")),
+                        cb.isTrue(fileRoot.get("isBookFormat")),
+                        valuePredicate
+                ));
+        
+        return cb.exists(subquery);
     }
 
     /**
@@ -761,7 +891,7 @@ public class BookRuleEvaluatorService {
             case DATE_FINISHED -> progressJoin.get("dateFinished");
             case LAST_READ_TIME -> progressJoin.get("lastReadTime");
             case PERSONAL_RATING -> progressJoin.get("personalRating");
-            case FILE_SIZE -> root.get("fileSizeKb");
+            case FILE_SIZE -> null; // Handled specially in buildRulePredicate
             case METADATA_SCORE -> root.get("metadataMatchScore");
             case TITLE -> root.get("metadata").get("title");
             case SUBTITLE -> root.get("metadata").get("subtitle");
@@ -792,8 +922,7 @@ public class BookRuleEvaluatorService {
             case LUBIMYCZYTAC_RATING -> root.get("metadata").get("lubimyczytacRating");
             case AGE_RATING -> root.get("metadata").get("ageRating");
             case CONTENT_RATING -> root.get("metadata").get("contentRating");
-            case FILE_TYPE -> cb.function("SUBSTRING_INDEX", String.class,
-                    root.get("fileName"), cb.literal("."), cb.literal(-1));
+            case FILE_TYPE -> null; // Handled specially in buildRulePredicate
             case ADDED_ON -> cb.function("DATEDIFF", Integer.class,
                     cb.currentDate(),
                     cb.function("DATE", LocalDate.class, root.get("addedOn"))).as(Double.class);
