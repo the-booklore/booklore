@@ -58,6 +58,7 @@ export class MetadataPickerComponent implements OnInit {
   @Input() reviewMode!: boolean;
   @Input() fetchedMetadata!: BookMetadata;
   @Input() book$!: Observable<Book | null>;
+  @Input() detailLoading = false;
   @Output() goBack = new EventEmitter<boolean>();
 
   currentBook: Book | null = null;

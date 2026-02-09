@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ComicvineBookParser implements BookParser {
+public class ComicvineBookParser implements BookParser, DetailedMetadataProvider {
 
     private static final String COMICVINE_URL = "https://comicvine.gamespot.com/api/";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -396,7 +396,8 @@ public class ComicvineBookParser implements BookParser {
     }
 
 
-    public BookMetadata fetchDetailedIssue(String comicvineId) {
+    @Override
+    public BookMetadata fetchDetailedMetadata(String comicvineId) {
         return fetchIssueDetails(Integer.parseInt(comicvineId), null);
     }
 

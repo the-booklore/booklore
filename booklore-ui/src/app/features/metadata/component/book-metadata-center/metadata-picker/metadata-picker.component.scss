@@ -25,6 +25,26 @@
 }
 
 
+// Detail loading banner
+.detail-loading-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  color: var(--p-green-400);
+  font-size: 0.875rem;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease-in;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
 // Body
 .dialog-body {
   flex: 1;

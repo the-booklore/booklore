@@ -44,6 +44,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   @Input() book$!: Observable<Book | null>;
 
   selectedFetchedMetadata$ = new BehaviorSubject<BookMetadata | null>(null);
+  detailLoading = false;
 
   private formBuilder = inject(FormBuilder);
   private bookMetadataService = inject(BookMetadataService);
@@ -342,31 +343,63 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   onBookClick(fetchedMetadata: BookMetadata) {
     this.selectedFetchedMetadata$.next(fetchedMetadata);
 
-    const needsEnrichment = fetchedMetadata.provider?.toLowerCase() === 'comicvine'
-      && fetchedMetadata.comicvineId
-      && (!fetchedMetadata.comicMetadata
-        || (!fetchedMetadata.comicMetadata.pencillers?.length
-          && !fetchedMetadata.comicMetadata.inkers?.length
-          && !fetchedMetadata.comicMetadata.colorists?.length
-          && !fetchedMetadata.comicMetadata.letterers?.length
-          && !fetchedMetadata.comicMetadata.editors?.length
-          && !fetchedMetadata.comicMetadata.characters?.length));
+    const enrichment = this.getDetailEnrichmentInfo(fetchedMetadata);
 
-    if (needsEnrichment) {
-      this.bookMetadataService.fetchMetadataDetail('Comicvine', fetchedMetadata.comicvineId!)
+    if (enrichment) {
+      this.detailLoading = true;
+      this.bookMetadataService.fetchMetadataDetail(enrichment.provider, enrichment.id)
         .pipe(takeUntil(this.cancelRequest$))
         .subscribe({
           next: (enriched) => {
-            if (this.selectedFetchedMetadata$.value?.comicvineId === fetchedMetadata.comicvineId) {
+            const current = this.selectedFetchedMetadata$.value;
+            const currentId = current && this.getProviderItemId(current, enrichment.provider);
+            if (currentId === enrichment.id) {
               this.selectedFetchedMetadata$.next(enriched);
             }
+            this.detailLoading = false;
           },
-          error: (err) => console.error('Error fetching detailed metadata:', err)
+          error: (err) => {
+            console.error('Error fetching detailed metadata:', err);
+            this.detailLoading = false;
+          }
         });
     }
   }
 
+  private getDetailEnrichmentInfo(metadata: BookMetadata): { provider: string; id: string } | null {
+    if (metadata.comicvineId && (!metadata.comicMetadata
+      || (!metadata.comicMetadata.pencillers?.length
+        && !metadata.comicMetadata.inkers?.length
+        && !metadata.comicMetadata.colorists?.length
+        && !metadata.comicMetadata.letterers?.length
+        && !metadata.comicMetadata.editors?.length
+        && !metadata.comicMetadata.characters?.length))) {
+      return {provider: 'Comicvine', id: metadata.comicvineId};
+    }
+    if (metadata.goodreadsId && !metadata.description) {
+      return {provider: 'GoodReads', id: metadata.goodreadsId};
+    }
+    if (metadata.asin && !metadata.description) {
+      return {provider: 'Amazon', id: metadata.asin};
+    }
+    if (metadata.audibleId && !metadata.description) {
+      return {provider: 'Audible', id: metadata.audibleId};
+    }
+    return null;
+  }
+
+  private getProviderItemId(metadata: BookMetadata, provider: string): string | undefined {
+    switch (provider) {
+      case 'Comicvine': return metadata.comicvineId;
+      case 'GoodReads': return metadata.goodreadsId;
+      case 'Amazon': return metadata.asin;
+      case 'Audible': return metadata.audibleId;
+      default: return undefined;
+    }
+  }
+
   onGoBack() {
+    this.detailLoading = false;
     this.selectedFetchedMetadata$.next(null);
   }
 

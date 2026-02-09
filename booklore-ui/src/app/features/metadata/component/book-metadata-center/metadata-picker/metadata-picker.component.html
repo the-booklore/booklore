@@ -1,6 +1,13 @@
 @if (book$ | async; as book) {
   <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="metadata-picker">
     <div class="dialog-body">
+      @if (detailLoading) {
+        <div class="detail-loading-banner">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Loading complete metadata...</span>
+        </div>
+      }
+
       <!-- Column Headers (Desktop) -->
       <div class="column-headers desktop-only">
         <div class="column-label current">
