@@ -388,9 +388,11 @@ public class BookMetadataUpdater {
 
         ComicMetadataEntity comic = e.getComicMetadata();
         if (comic == null) {
+            if (!hasComicData(comicDto)) {
+                return;
+            }
             comic = ComicMetadataEntity.builder()
                     .bookId(e.getBookId())
-                    .bookMetadata(e)
                     .build();
             e.setComicMetadata(comic);
         }
@@ -437,12 +439,38 @@ public class BookMetadataUpdater {
         if (comicDto.getTeamsLocked() != null) c.setTeamsLocked(comicDto.getTeamsLocked());
         if (comicDto.getLocationsLocked() != null) c.setLocationsLocked(comicDto.getLocationsLocked());
 
-        comicMetadataRepository.save(c);
+        e.setComicMetadata(comicMetadataRepository.save(c));
 
         comicCharacterRepository.deleteOrphaned();
         comicTeamRepository.deleteOrphaned();
         comicLocationRepository.deleteOrphaned();
         comicCreatorRepository.deleteOrphaned();
+    }
+
+    private boolean hasComicData(ComicMetadata dto) {
+        return StringUtils.hasText(dto.getIssueNumber())
+                || StringUtils.hasText(dto.getVolumeName())
+                || dto.getVolumeNumber() != null
+                || StringUtils.hasText(dto.getStoryArc())
+                || dto.getStoryArcNumber() != null
+                || StringUtils.hasText(dto.getAlternateSeries())
+                || StringUtils.hasText(dto.getAlternateIssue())
+                || StringUtils.hasText(dto.getImprint())
+                || StringUtils.hasText(dto.getFormat())
+                || dto.getBlackAndWhite() != null
+                || dto.getManga() != null
+                || StringUtils.hasText(dto.getReadingDirection())
+                || StringUtils.hasText(dto.getWebLink())
+                || StringUtils.hasText(dto.getNotes())
+                || (dto.getCharacters() != null && !dto.getCharacters().isEmpty())
+                || (dto.getTeams() != null && !dto.getTeams().isEmpty())
+                || (dto.getLocations() != null && !dto.getLocations().isEmpty())
+                || (dto.getPencillers() != null && !dto.getPencillers().isEmpty())
+                || (dto.getInkers() != null && !dto.getInkers().isEmpty())
+                || (dto.getColorists() != null && !dto.getColorists().isEmpty())
+                || (dto.getLetterers() != null && !dto.getLetterers().isEmpty())
+                || (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty())
+                || (dto.getEditors() != null && !dto.getEditors().isEmpty());
     }
 
     private void updateComicCharacters(ComicMetadataEntity c, Set<String> characters, MetadataReplaceMode mode) {
