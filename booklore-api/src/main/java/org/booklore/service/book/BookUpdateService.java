@@ -11,6 +11,7 @@ import org.booklore.model.enums.ReadStatus;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.*;
 import org.booklore.service.progress.ReadingProgressService;
+import org.booklore.service.restriction.ContentRestrictionService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
@@ -39,6 +40,7 @@ public class BookUpdateService {
     private final BookQueryService bookQueryService;
     private final ReadingProgressService readingProgressService;
     private final EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
+    private final ContentRestrictionService contentRestrictionService;
 
     public void updateBookViewerSetting(long bookId, BookViewerSettings bookViewerSettings) {
         BookEntity book = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
@@ -357,6 +359,41 @@ public class BookUpdateService {
                         .personalRating(rating)
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updatePurchaseDate(List<Long> bookIds, Instant purchaseDate) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        if (user == null) {
+            throw ApiError.FORBIDDEN.createException("You are not authorized to update purchase dates.");
+        }
+        List<BookEntity> books = bookRepository.findAllById(bookIds);
+        if (books.size() != bookIds.size()) {
+            if (bookIds != null && bookIds.size() == 1) {
+                throw ApiError.BOOK_NOT_FOUND.createException(bookIds.getFirst());
+            }
+            throw ApiError.GENERIC_NOT_FOUND.createException("One or more books not found");
+        }
+
+        boolean isAdmin = user != null && user.getPermissions() != null && user.getPermissions().isAdmin();
+        if (!isAdmin) {
+            Set<Long> allowedLibraryIds = user.getAssignedLibraries().stream().map(Library::getId).collect(Collectors.toSet());
+            boolean hasAnyForbiddenLibrary = books.stream().anyMatch(b -> b.getLibrary() == null || !allowedLibraryIds.contains(b.getLibrary().getId()));
+            if (hasAnyForbiddenLibrary) {
+                throw ApiError.FORBIDDEN.createException("You are not authorized to access one or more books.");
+            }
+
+            List<BookEntity> filteredBooks = contentRestrictionService.applyRestrictions(books, user.getId());
+            if (filteredBooks.size() != books.size()) {
+                throw ApiError.FORBIDDEN.createException("You are not authorized to access one or more books.");
+            }
+        }
+
+        for (BookEntity book : books) {
+            Instant effectivePurchaseDate = purchaseDate != null ? purchaseDate : book.getAddedOn();
+            book.setPurchaseDate(effectivePurchaseDate);
+        }
+        bookRepository.saveAll(books);
     }
 
     private Set<Shelf> filterShelvesByUserId(Set<Shelf> shelves, Long userId) {

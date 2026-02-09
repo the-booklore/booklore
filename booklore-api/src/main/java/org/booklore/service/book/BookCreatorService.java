@@ -86,10 +86,12 @@ public class BookCreatorService {
                 ? FileFingerprint.generateFolderHash(libraryFile.getFullPath())
                 : FileFingerprint.generateHash(libraryFile.getFullPath());
 
+        Instant now = Instant.now();
         BookEntity bookEntity = BookEntity.builder()
                 .library(libraryFile.getLibraryEntity())
                 .libraryPath(libraryFile.getLibraryPathEntity())
-                .addedOn(Instant.now())
+                .addedOn(now)
+                .purchaseDate(now)
                 .bookFiles(new ArrayList<>())
                 .build();
 
