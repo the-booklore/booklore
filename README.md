@@ -214,10 +214,9 @@ Create a `.env` file in your project directory:
 
 ```ini
 # 🎯 BookLore Application Settings
-APP_USER_ID=0
-APP_GROUP_ID=0
+APP_USER_ID=1000
+APP_GROUP_ID=1000
 TZ=Etc/UTC
-BOOKLORE_PORT=6060
 
 # 🗄️ Database Connection (BookLore)
 DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
@@ -252,18 +251,17 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_USERNAME=${DB_USER}
       - DATABASE_PASSWORD=${DB_PASSWORD}
-      - BOOKLORE_PORT=${BOOKLORE_PORT}
     depends_on:
       mariadb:
         condition: service_healthy
     ports:
-      - "${BOOKLORE_PORT}:${BOOKLORE_PORT}"
+      - "6060:6060"
     volumes:
       - ./data:/app/data
       - ./books:/books
       - ./bookdrop:/bookdrop
     healthcheck:
-      test: wget -q -O - http://localhost:${BOOKLORE_PORT}/api/v1/healthcheck
+      test: wget -q -O - http://localhost:6060/api/v1/healthcheck
       interval: 60s
       retries: 5
       start_period: 60s

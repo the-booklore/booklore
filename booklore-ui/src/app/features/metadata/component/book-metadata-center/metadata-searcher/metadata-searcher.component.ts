@@ -44,6 +44,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   @Input() book$!: Observable<Book | null>;
 
   selectedFetchedMetadata$ = new BehaviorSubject<BookMetadata | null>(null);
+  detailLoading = false;
 
   private formBuilder = inject(FormBuilder);
   private bookMetadataService = inject(BookMetadataService);
@@ -267,7 +268,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     if (metadata.comicvineId) return 'comicvine';
     if (metadata.ranobedbId) return 'ranobedb';
     if (metadata.audibleId) return 'audible';
-    return null;
+    return metadata.provider?.toLowerCase() || null;
   }
 
   getProviderClass(metadata: BookMetadata): string {
@@ -341,9 +342,64 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
 
   onBookClick(fetchedMetadata: BookMetadata) {
     this.selectedFetchedMetadata$.next(fetchedMetadata);
+
+    const enrichment = this.getDetailEnrichmentInfo(fetchedMetadata);
+
+    if (enrichment) {
+      this.detailLoading = true;
+      this.bookMetadataService.fetchMetadataDetail(enrichment.provider, enrichment.id)
+        .pipe(takeUntil(this.cancelRequest$))
+        .subscribe({
+          next: (enriched) => {
+            const current = this.selectedFetchedMetadata$.value;
+            const currentId = current && this.getProviderItemId(current, enrichment.provider);
+            if (currentId === enrichment.id) {
+              this.selectedFetchedMetadata$.next(enriched);
+            }
+            this.detailLoading = false;
+          },
+          error: (err) => {
+            console.error('Error fetching detailed metadata:', err);
+            this.detailLoading = false;
+          }
+        });
+    }
+  }
+
+  private getDetailEnrichmentInfo(metadata: BookMetadata): { provider: string; id: string } | null {
+    if (metadata.comicvineId && (!metadata.comicMetadata
+      || (!metadata.comicMetadata.pencillers?.length
+        && !metadata.comicMetadata.inkers?.length
+        && !metadata.comicMetadata.colorists?.length
+        && !metadata.comicMetadata.letterers?.length
+        && !metadata.comicMetadata.editors?.length
+        && !metadata.comicMetadata.characters?.length))) {
+      return {provider: 'Comicvine', id: metadata.comicvineId};
+    }
+    if (metadata.goodreadsId && !metadata.description) {
+      return {provider: 'GoodReads', id: metadata.goodreadsId};
+    }
+    if (metadata.asin && !metadata.description) {
+      return {provider: 'Amazon', id: metadata.asin};
+    }
+    if (metadata.audibleId && !metadata.description) {
+      return {provider: 'Audible', id: metadata.audibleId};
+    }
+    return null;
+  }
+
+  private getProviderItemId(metadata: BookMetadata, provider: string): string | undefined {
+    switch (provider) {
+      case 'Comicvine': return metadata.comicvineId;
+      case 'GoodReads': return metadata.goodreadsId;
+      case 'Amazon': return metadata.asin;
+      case 'Audible': return metadata.audibleId;
+      default: return undefined;
+    }
   }
 
   onGoBack() {
+    this.detailLoading = false;
     this.selectedFetchedMetadata$.next(null);
   }
 
@@ -371,16 +427,17 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     } else if (metadata['lubimyczytacId']) {
       return `<a href="https://lubimyczytac.pl/ksiazka/${metadata['lubimyczytacId']}/ksiazka" target="_blank">Lubimyczytac</a>`;
     } else if (metadata.comicvineId) {
-      if (metadata.comicvineId.startsWith('4000')) {
-        const name = metadata.seriesName ? metadata.seriesName.replace(/ /g, '-').toLowerCase() + "-" + metadata.seriesNumber : '';
-        return `<a href="https://comicvine.gamespot.com/${name}/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+      if (metadata.externalUrl) {
+        return `<a href="${metadata.externalUrl}" target="_blank">Comicvine</a>`;
       }
-      const name = metadata.seriesName;
-      return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+      return `<a href="https://comicvine.gamespot.com/4050-${metadata.comicvineId}/" target="_blank">Comicvine</a>`;
     } else if (metadata.ranobedbId) {
       return `<a href="https://ranobedb.org/book/${metadata.ranobedbId}" target="_blank">RanobeDB</a>`;
     } else if (metadata.audibleId) {
       return `<a href="https://www.audible.com/pd/${metadata.audibleId}" target="_blank">Audible</a>`;
+    } else if (metadata.externalUrl) {
+      const providerName = metadata.provider || 'Link';
+      return `<a href="${metadata.externalUrl}" target="_blank">${providerName}</a>`;
     }
     throw new Error("No provider ID found in metadata.");
   }

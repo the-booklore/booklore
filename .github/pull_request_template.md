@@ -18,26 +18,33 @@
 
 ## 🧪 Testing
 
-<!-- What did you test? What edge cases did you cover? What could still break? -->
+<!-- MANDATORY. PRs without this filled out will be closed.
+     - What exact steps did you follow to verify the fix or feature works?
+     - How did you manually regression test existing functionality?
+     - What edge cases did you cover?
+-->
 
-## 📸 Screenshots _(if applicable)_
+## 📸 Screenshots / Video (MANDATORY)
 
-<!-- Attach screenshots or videos for UI changes -->
+> Due to an increase in untested, AI-generated PRs, we have made this section mandatory for all submissions. Please include screenshots or a screen recording that demonstrates your change working end-to-end (e.g., the bug fix in action, the new feature working, API responses, or test output for backend changes). **PRs that do not include this will be closed without review.** Thank you for helping us keep the project stable.
+
+<!-- Attach screenshots or screen recordings here -->
 
 ---
 
 ## ✅ Pre-Submission Checklist
 
-> **All boxes must be checked before requesting review.** Incomplete PRs will be closed without review, no exceptions.
+> **All boxes must be checked before requesting review.** Incomplete PRs will be closed without review. No exceptions.
 
 - [ ] Code follows project style guidelines and conventions
 - [ ] Branch is up to date with `develop` (merge conflicts resolved)
 - [ ] Automated tests added or updated to cover changes (backend **and** frontend)
 - [ ] All tests pass locally (`./gradlew test` for backend, `ng test` for frontend)
 - [ ] Changes manually verified in local dev environment (including related features)
+- [ ] Screenshots or video proving the change works are attached above **(MANDATORY)**
 - [ ] Flyway migration versioning is correct _(if schema was modified)_
 - [ ] Documentation PR submitted to [booklore-docs](https://github.com/booklore-app/booklore-docs) _(if user-facing changes)_
-- [ ] PR is reasonably scoped (PRs over 500+ changed lines will be closed, split into smaller PRs)
+- [ ] PR is reasonably scoped (PRs over 1000+ changed lines will be closed, split into smaller PRs)
 
 ### 🤖 AI-Assisted Contributions
 
