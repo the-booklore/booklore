@@ -193,6 +193,7 @@ export interface BookMetadata {
   tags?: string[];
   provider?: string;
   providerBookId?: string;
+  externalUrl?: string;
   thumbnailUrl?: string | null;
   reviews?: BookReview[];
   titleLocked?: boolean;

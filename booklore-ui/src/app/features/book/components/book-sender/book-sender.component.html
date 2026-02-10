@@ -13,7 +13,7 @@
       [text]="true"
       severity="secondary"
       (click)="dynamicDialogRef.close()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -27,7 +27,7 @@
           placeholder="Select Email Provider"
           [(ngModel)]="selectedProvider"
           appendTo="body"
-          styleClass="full-width">
+          class="full-width">
         </p-select>
       </div>
 
@@ -40,7 +40,7 @@
           [(ngModel)]="selectedRecipient"
           [disabled]="!selectedProvider"
           appendTo="body"
-          styleClass="full-width">
+          class="full-width">
         </p-select>
       </div>
 
