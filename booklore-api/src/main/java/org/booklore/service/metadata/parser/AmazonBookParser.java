@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class AmazonBookParser implements BookParser {
+public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
 
     private static final Pattern TRAILING_BR_TAGS_PATTERN = Pattern.compile("(\\s*<br\\s*/?>\\s*)+$");
     private static final Pattern LEADING_BR_TAGS_PATTERN = Pattern.compile("^(\\s*<br\\s*/?>\\s*)+");
@@ -104,32 +104,70 @@ public class AmazonBookParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-        LinkedList<String> amazonBookIds = Optional.ofNullable(getAmazonBookIds(book, fetchMetadataRequest))
-                .map(list -> list.stream()
-                        .limit(COUNT_DETAILED_METADATA_TO_GET)
-                        .collect(Collectors.toCollection(LinkedList::new)))
-                .orElse(new LinkedList<>());
-        if (amazonBookIds.isEmpty()) {
-            return null;
+        String queryUrl = buildQueryUrl(fetchMetadataRequest, book);
+        if (queryUrl == null) {
+            log.error("Query URL is null, cannot proceed.");
+            return Collections.emptyList();
         }
-        List<BookMetadata> fetchedBookMetadata = new ArrayList<>();
-        for (String amazonBookId : amazonBookIds) {
-            if (amazonBookId == null || amazonBookId.isBlank()) {
-                log.debug("Skipping null or blank Amazon book ID.");
-                continue;
-            }
-            BookMetadata metadata = getBookMetadata(amazonBookId);
-            if (metadata == null) {
-                log.debug("Skipping null metadata for ID: {}", amazonBookId);
-                continue;
-            }
-            if (metadata.getTitle() == null || metadata.getTitle().isBlank() || metadata.getAuthors() == null || metadata.getAuthors().isEmpty()) {
-                log.debug("Skipping metadata with missing title or author for ID: {}", amazonBookId);
-                continue;
-            }
-            fetchedBookMetadata.add(metadata);
+        try {
+            Document doc = fetchDocument(queryUrl);
+            return extractSearchPreviews(doc);
+        } catch (AmazonAntiScrapingException e) {
+            log.debug("Aborting Amazon search due to anti-scraping (503).");
+            return Collections.emptyList();
+        } catch (Exception e) {
+            log.error("Failed to fetch Amazon search results: {}", e.getMessage(), e);
+            return Collections.emptyList();
         }
-        return fetchedBookMetadata;
+    }
+
+    private List<BookMetadata> extractSearchPreviews(Document doc) {
+        Element searchResults = doc.select("span[data-component-type=s-search-results]").first();
+        if (searchResults == null) {
+            return Collections.emptyList();
+        }
+        Elements items = searchResults.select("div[role=listitem][data-index]");
+        List<BookMetadata> previews = new ArrayList<>();
+        for (Element item : items) {
+            if (previews.size() >= COUNT_DETAILED_METADATA_TO_GET) break;
+
+            if (item.text().contains("Collects books from")) continue;
+
+            Element titleDiv = item.selectFirst("div[data-cy=title-recipe]");
+            if (titleDiv == null) continue;
+
+            String titleText = titleDiv.text().trim();
+            if (titleText.isEmpty()) continue;
+
+            String lowerTitle = titleText.toLowerCase();
+            if (lowerTitle.contains("books set") || lowerTitle.contains("box set")
+                    || lowerTitle.contains("collection set") || lowerTitle.contains("summary & study guide")) {
+                continue;
+            }
+
+            String asin = extractAmazonBookId(item);
+            if (asin == null || asin.isBlank()) continue;
+
+            String thumbnailUrl = null;
+            Element img = item.selectFirst("img.s-image");
+            if (img != null) {
+                thumbnailUrl = img.attr("src");
+                if (thumbnailUrl.isBlank()) thumbnailUrl = null;
+            }
+
+            previews.add(BookMetadata.builder()
+                    .asin(asin)
+                    .title(titleText)
+                    .thumbnailUrl(thumbnailUrl)
+                    .provider(MetadataProvider.Amazon)
+                    .build());
+        }
+        return previews;
+    }
+
+    @Override
+    public BookMetadata fetchDetailedMetadata(String asin) {
+        return getBookMetadata(asin);
     }
 
     private LinkedList<String> getAmazonBookIds(Book book, FetchMetadataRequest request) {

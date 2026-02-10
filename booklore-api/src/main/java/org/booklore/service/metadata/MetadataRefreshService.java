@@ -614,6 +614,10 @@ public class MetadataRefreshService {
             metadata.setComicvineId(existingMetadata.getComicvineId());
         }
 
+        if (metadataMap.containsKey(Comicvine) && metadataMap.get(Comicvine).getComicMetadata() != null) {
+            metadata.setComicMetadata(metadataMap.get(Comicvine).getComicMetadata());
+        }
+
         if (enabledFields.isLubimyczytacId()) {
             if (metadataMap.containsKey(Lubimyczytac)) {
                 metadata.setLubimyczytacId(metadataMap.get(Lubimyczytac).getLubimyczytacId());

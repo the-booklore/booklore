@@ -1,30 +1,25 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, inject, OnDestroy, OnInit, viewChild} from '@angular/core';
 import {Select} from 'primeng/select';
-import {
-  ALL_FILTER_OPTIONS,
-  BookFilterMode,
-  DEFAULT_VISIBLE_FILTERS,
-  User,
-  UserService,
-  UserSettings,
-  UserState,
-  VisibleFilterType
-} from '../../user-management/user.service';
+import {ALL_FILTER_OPTIONS, BookFilterMode, DEFAULT_VISIBLE_FILTERS, User, UserService, UserSettings, UserState, VisibleFilterType} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
-import {MultiSelect} from 'primeng/multiselect';
+import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from '@angular/cdk/drag-drop';
+import {Tooltip} from 'primeng/tooltip';
 
 const MIN_VISIBLE_FILTERS = 5;
-const MAX_VISIBLE_FILTERS = 15;
+const MAX_VISIBLE_FILTERS = 20;
 
 @Component({
   selector: 'app-filter-preferences',
   imports: [
     Select,
     FormsModule,
-    MultiSelect
+    CdkDropList,
+    CdkDrag,
+    CdkDragHandle,
+    Tooltip
   ],
   templateUrl: './filter-preferences.component.html',
   styleUrl: './filter-preferences.component.scss'
@@ -43,6 +38,8 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   selectedFilterMode: BookFilterMode = 'and';
   selectedVisibleFilters: VisibleFilterType[] = [...DEFAULT_VISIBLE_FILTERS];
+
+  private readonly filterList = viewChild<ElementRef<HTMLElement>>('filterList');
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
@@ -95,25 +92,43 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     this.updatePreference(['filterMode'], this.selectedFilterMode);
   }
 
-  onVisibleFiltersChange(): void {
-    if (this.selectedVisibleFilters.length < MIN_VISIBLE_FILTERS) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Minimum Filters Required',
-        detail: `Please select at least ${MIN_VISIBLE_FILTERS} filters.`,
-        life: 2000
+  selectedAddFilter: string | null = null;
+
+  get availableFilters(): {label: string; value: string}[] {
+    const used = new Set(this.selectedVisibleFilters);
+    return this.allFilterOptions.filter(opt => !used.has(opt.value));
+  }
+
+  getFilterLabel(value: string): string {
+    return this.allFilterOptions.find(opt => opt.value === value)?.label ?? value;
+  }
+
+  onDrop(event: CdkDragDrop<VisibleFilterType[]>): void {
+    moveItemInArray(this.selectedVisibleFilters, event.previousIndex, event.currentIndex);
+    this.updatePreference(['visibleFilters'], this.selectedVisibleFilters);
+  }
+
+  addFilter(): void {
+    if (this.selectedAddFilter) {
+      this.selectedVisibleFilters.push(this.selectedAddFilter as VisibleFilterType);
+      this.selectedAddFilter = null;
+      this.updatePreference(['visibleFilters'], this.selectedVisibleFilters);
+      requestAnimationFrame(() => {
+        const el = this.filterList()?.nativeElement;
+        if (el) el.scrollTop = el.scrollHeight;
       });
-      return;
     }
-    if (this.selectedVisibleFilters.length > MAX_VISIBLE_FILTERS) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Maximum Filters Exceeded',
-        detail: `Please select at most ${MAX_VISIBLE_FILTERS} filters.`,
-        life: 2000
-      });
-      return;
+  }
+
+  removeFilter(index: number): void {
+    if (this.selectedVisibleFilters.length > MIN_VISIBLE_FILTERS) {
+      this.selectedVisibleFilters.splice(index, 1);
+      this.updatePreference(['visibleFilters'], this.selectedVisibleFilters);
     }
+  }
+
+  resetToDefaults(): void {
+    this.selectedVisibleFilters = [...DEFAULT_VISIBLE_FILTERS];
     this.updatePreference(['visibleFilters'], this.selectedVisibleFilters);
   }
 

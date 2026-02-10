@@ -254,10 +254,10 @@
                 </a>
               }
 
-              @if (book?.metadata?.comicvineId) {
+              @if (book?.metadata?.comicMetadata?.webLink) {
                 <a
                   class="rating-link"
-                  [href]="'https://comicvine.gamespot.com/' + book.metadata!.comicvineId"
+                  [href]="book.metadata!.comicMetadata!.webLink"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
