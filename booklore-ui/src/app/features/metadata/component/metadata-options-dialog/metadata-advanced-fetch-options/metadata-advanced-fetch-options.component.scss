@@ -109,14 +109,21 @@
 .options-group {
   display: flex;
   flex-direction: row;
-  gap: 2.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 2.5rem;
 }
 
 .option-item {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+
+  p {
+    margin: 0;
+    white-space: nowrap;
+  }
 }
 
 .action-buttons {

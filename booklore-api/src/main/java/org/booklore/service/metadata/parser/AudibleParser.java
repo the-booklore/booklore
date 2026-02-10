@@ -33,10 +33,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class AudibleParser implements BookParser {
+public class AudibleParser implements BookParser, DetailedMetadataProvider {
 
     private static final long MIN_REQUEST_INTERVAL_MS = 1500;
-    private static final int MAX_DETAILED_RESULTS = 3;
     private static final String DEFAULT_DOMAIN = "com";
 
     private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^\\p{L}\\p{M}0-9]");
@@ -75,34 +74,125 @@ public class AudibleParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-        List<String> audibleIds = Optional.ofNullable(getAudibleIds(book, fetchMetadataRequest))
-                .map(list -> list.stream()
-                        .limit(MAX_DETAILED_RESULTS)
-                        .collect(Collectors.toList()))
-                .orElse(new ArrayList<>());
-
-        if (audibleIds.isEmpty()) {
-            return null;
+        String queryUrl = buildQueryUrl(fetchMetadataRequest, book);
+        if (queryUrl == null) {
+            log.error("Query URL is null, cannot proceed with Audible search.");
+            return Collections.emptyList();
         }
-
-        List<BookMetadata> fetchedMetadata = new ArrayList<>();
-        for (String audibleId : audibleIds) {
-            if (audibleId == null || audibleId.isBlank()) {
-                log.debug("Skipping null or blank Audible ID.");
-                continue;
-            }
-            BookMetadata metadata = getBookMetadata(audibleId);
-            if (metadata == null) {
-                log.debug("Skipping null metadata for Audible ID: {}", audibleId);
-                continue;
-            }
-            if (metadata.getTitle() == null || metadata.getTitle().isBlank()) {
-                log.debug("Skipping metadata with missing title for Audible ID: {}", audibleId);
-                continue;
-            }
-            fetchedMetadata.add(metadata);
+        try {
+            enforceRateLimit();
+            Document doc = fetchDocument(queryUrl);
+            return extractSearchPreviews(doc);
+        } catch (Exception e) {
+            log.error("Failed to fetch Audible search results: {}", e.getMessage(), e);
+            return Collections.emptyList();
         }
-        return fetchedMetadata;
+    }
+
+    private List<BookMetadata> extractSearchPreviews(Document doc) {
+        Elements allLinks = doc.select("a[href*='/pd/']");
+        List<BookMetadata> previews = new ArrayList<>();
+        Set<String> seenAsins = new HashSet<>();
+
+        for (Element link : allLinks) {
+            String href = link.attr("href");
+            Matcher matcher = ASIN_PATTERN.matcher(href);
+            if (!matcher.find()) continue;
+
+            String asin = matcher.group(1);
+            if (seenAsins.contains(asin)) continue;
+
+            String title = link.text().trim();
+            if (title.isEmpty()) continue;
+
+            seenAsins.add(asin);
+
+            Element container = findProductContainer(link);
+
+            String thumbnailUrl = extractPreviewThumbnail(container, link);
+            Set<String> authors = extractPreviewAuthors(container);
+            String narrator = extractPreviewNarrator(container);
+
+            BookMetadata.BookMetadataBuilder builder = BookMetadata.builder()
+                    .audibleId(asin)
+                    .title(title)
+                    .thumbnailUrl(thumbnailUrl)
+                    .provider(MetadataProvider.Audible);
+
+            if (!authors.isEmpty()) {
+                builder.authors(authors);
+            }
+            if (narrator != null) {
+                builder.narrator(narrator);
+            }
+
+            previews.add(builder.build());
+        }
+        return previews;
+    }
+
+    private Element findProductContainer(Element titleLink) {
+        Element current = titleLink.parent();
+        for (int i = 0; i < 8 && current != null; i++) {
+            if (current.selectFirst("img[src*='images/I/']") != null) {
+                return current;
+            }
+            current = current.parent();
+        }
+        return null;
+    }
+
+    private String extractPreviewThumbnail(Element container, Element titleLink) {
+        if (container != null) {
+            Element img = container.selectFirst("img[src*='images/I/']");
+            if (img != null) {
+                String src = img.attr("src");
+                if (!src.isBlank()) return src;
+            }
+        }
+        Element img = titleLink.selectFirst("img");
+        if (img == null && titleLink.parent() != null) {
+            img = titleLink.parent().selectFirst("img");
+        }
+        if (img != null) {
+            String src = img.attr("src");
+            if (!src.isBlank()) return src;
+        }
+        return null;
+    }
+
+    private Set<String> extractPreviewAuthors(Element container) {
+        Set<String> authors = new LinkedHashSet<>();
+        if (container == null) return authors;
+
+        for (Element authorLink : container.select("a[href*='/author/']")) {
+            String name = authorLink.text().trim();
+            if (!name.isEmpty()) {
+                authors.add(name);
+            }
+        }
+        return authors;
+    }
+
+    private String extractPreviewNarrator(Element container) {
+        if (container == null) return null;
+
+        for (Element el : container.getElementsContainingOwnText("Narrated by:")) {
+            Element parent = el.parent();
+            if (parent == null) continue;
+            String text = parent.text();
+            int idx = text.indexOf("Narrated by:");
+            if (idx >= 0) {
+                String narrator = text.substring(idx + "Narrated by:".length()).trim();
+                if (!narrator.isEmpty()) return narrator;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public BookMetadata fetchDetailedMetadata(String audibleId) {
+        return getBookMetadata(audibleId);
     }
 
     private List<String> getAudibleIds(Book book, FetchMetadataRequest request) {
