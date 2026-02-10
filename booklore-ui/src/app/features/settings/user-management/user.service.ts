@@ -231,6 +231,13 @@ export const ALL_FILTER_OPTIONS: { label: string; value: VisibleFilterType }[] =
   {label: 'Comic Creator', value: 'comicCreator'}
 ];
 
+export const DEFAULT_VISIBLE_SORT_FIELDS: string[] = [
+  'title', 'titleSeries', 'fileName', 'filePath',
+  'author', 'authorSurnameVorname', 'authorSeries',
+  'lastReadTime', 'personalRating', 'addedOn',
+  'fileSizeKb', 'locked', 'publisher', 'publishedDate', 'pageCount', 'random'
+];
+
 export interface UserSettings {
   perBookSetting: PerBookSetting;
   pdfReaderSetting: PdfReaderSetting;
@@ -243,6 +250,7 @@ export interface UserSettings {
   sidebarMagicShelfSorting: SidebarMagicShelfSorting;
   filterMode: BookFilterMode;
   visibleFilters?: VisibleFilterType[];
+  visibleSortFields?: string[];
   metadataCenterViewMode: 'route' | 'dialog';
   enableSeriesView: boolean;
   entityViewPreferences: EntityViewPreferences;

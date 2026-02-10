@@ -1,5 +1,5 @@
 import {Component, ElementRef, HostBinding, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {NavigationEnd, Router, RouterLink, RouterLinkActive} from '@angular/router';
+import {NavigationEnd, Router, RouterLink} from '@angular/router';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
@@ -21,7 +21,6 @@ import {IconSelection} from '../../../service/icon-picker.service';
   styleUrls: ['./app.menuitem.component.scss'],
   imports: [
     RouterLink,
-    RouterLinkActive,
     NgClass,
     Ripple,
     AsyncPipe,
@@ -55,8 +54,15 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   canManipulateLibrary: boolean = false;
   admin: boolean = false;
   expandedItems = new Set<string>();
+
+  get isRouteActive(): boolean {
+    if (!this.item?.routerLink?.[0]) return false;
+    return this.router.url.split('?')[0] === this.item.routerLink[0];
+  }
+
   menuSourceSubscription: Subscription;
   menuResetSubscription: Subscription;
+  private routerSubscription: Subscription;
 
   constructor(
     public router: Router,
@@ -88,7 +94,7 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
       this.active = false;
     });
 
-    this.router.events.pipe(filter(event => event instanceof NavigationEnd))
+    this.routerSubscription = this.router.events.pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
         if (this.item.routerLink) {
           this.updateActiveStateFromRoute();
@@ -111,6 +117,9 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     }
     if (this.menuResetSubscription) {
       this.menuResetSubscription.unsubscribe();
+    }
+    if (this.routerSubscription) {
+      this.routerSubscription.unsubscribe();
     }
   }
 
@@ -181,8 +190,4 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     };
   }
 
-  @HostBinding('class.active-menuitem')
-  get activeClass() {
-    return this.active && !this.root;
-  }
 }

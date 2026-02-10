@@ -177,11 +177,10 @@
             <p-popover #sortPopover [dismissable]="true" appendTo="body">
               <app-multi-sort-popover
                 [sortCriteria]="this.bookSorter.selectedSortCriteria"
-                [availableSortOptions]="this.bookSorter.sortOptions"
-                (addCriterion)="onAddSortCriterion($event)"
-                (removeCriterion)="onRemoveSortCriterion($event)"
-                (toggleDirection)="onToggleSortDirection($event)"
-                (reorder)="onReorderSortCriteria($event)">
+                [availableSortOptions]="visibleSortOptions"
+                [showSaveButton]="canSaveSort"
+                (criteriaChange)="onSortCriteriaChange($event)"
+                (saveSortConfig)="onSaveSortConfig($event)">
               </app-multi-sort-popover>
             </p-popover>
           </div>

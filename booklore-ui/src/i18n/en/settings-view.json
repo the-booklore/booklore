@@ -53,7 +53,16 @@
     "entityShelf": "Shelf",
     "entityMagicShelf": "Magic Shelf",
     "viewGrid": "Grid",
-    "viewTable": "Table"
+    "viewTable": "Table",
+    "saveSortDefault": "Save as Default",
+    "sortSaved": "Sort Saved",
+    "sortSavedDetail": "Sort configuration saved for this {{entityType}}.",
+    "editSort": "Edit Sort",
+    "tableSortConfig": "Sort Config",
+    "visibleSortFields": "Visible Sort Fields",
+    "visibleSortFieldsDesc": "Choose which sort fields appear in the book browser's sort dropdown and drag to reorder.",
+    "sortFieldCount": "{{count}} of {{total}} selected",
+    "resetToDefaults": "Reset to defaults"
   },
   "filter": {
     "sectionTitle": "Filter Preferences",

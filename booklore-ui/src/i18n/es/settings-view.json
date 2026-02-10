@@ -53,7 +53,16 @@
     "entityShelf": "Estante",
     "entityMagicShelf": "Estante mágico",
     "viewGrid": "Cuadrícula",
-    "viewTable": "Tabla"
+    "viewTable": "Tabla",
+    "saveSortDefault": "Guardar como predeterminado",
+    "sortSaved": "Orden guardado",
+    "sortSavedDetail": "Configuración de orden guardada para este/a {{entityType}}.",
+    "editSort": "Editar orden",
+    "tableSortConfig": "Configuración de orden",
+    "visibleSortFields": "Campos de orden visibles",
+    "visibleSortFieldsDesc": "Elige qué campos de orden aparecen en el menú de orden del navegador de libros y arrastra para reordenar.",
+    "sortFieldCount": "{{count}} de {{total}} seleccionados",
+    "resetToDefaults": "Restablecer valores predeterminados"
   },
   "filter": {
     "sectionTitle": "Preferencias de filtros",
