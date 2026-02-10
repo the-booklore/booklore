@@ -16,7 +16,7 @@
       [rounded]="true"
       severity="secondary"
       (onClick)="closeDialog()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -134,7 +134,7 @@
             id="confirmNewPassword"
             formControlName="confirmNewPassword"
             [feedback]="false"
-            styleClass="field-input"
+            class="field-input"
             [inputStyle]="{'width': '100%'}">
           </p-password>
           @if (changePasswordForm.get('confirmNewPassword')?.invalid &&

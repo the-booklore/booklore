@@ -13,7 +13,7 @@
       [text]="true"
       severity="secondary"
       (click)="closeDialog()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -50,7 +50,7 @@
         [dropdown]="true"
         [showClear]="true"
         placeholder="Search for a book in the same library..."
-        styleClass="full-width"
+        class="full-width"
         [disabled]="isAttaching">
         <ng-template let-book pTemplate="item">
           <div class="book-suggestion">

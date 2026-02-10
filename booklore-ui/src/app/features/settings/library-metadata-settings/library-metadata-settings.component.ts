@@ -39,11 +39,13 @@ export class LibraryMetadataSettingsComponent implements OnInit {
   activePanel: number | null = null;
   sidecarExporting: Record<number, boolean> = {};
   sidecarImporting: Record<number, boolean> = {};
+  private cachedDefaultOptions: Record<number, MetadataRefreshOptions> = {};
 
   ngOnInit() {
     this.appSettingsService.appSettings$.subscribe(appSettings => {
       if (appSettings) {
         this.defaultMetadataOptions = appSettings.defaultMetadataRefreshOptions;
+        this.cachedDefaultOptions = {};
         this.initializeLibraryOptions(appSettings);
         this.updateLibraryOptionsFromSettings(appSettings);
       }
@@ -80,7 +82,13 @@ export class LibraryMetadataSettingsComponent implements OnInit {
   }
 
   getLibraryOptions(libraryId: number): MetadataRefreshOptions {
-    return this.libraryMetadataOptions[libraryId] || {...this.defaultMetadataOptions, libraryId};
+    if (this.libraryMetadataOptions[libraryId]) {
+      return this.libraryMetadataOptions[libraryId];
+    }
+    if (!this.cachedDefaultOptions[libraryId]) {
+      this.cachedDefaultOptions[libraryId] = {...this.defaultMetadataOptions, libraryId};
+    }
+    return this.cachedDefaultOptions[libraryId];
   }
 
   trackByLibrary(index: number, library: Library): number | undefined {

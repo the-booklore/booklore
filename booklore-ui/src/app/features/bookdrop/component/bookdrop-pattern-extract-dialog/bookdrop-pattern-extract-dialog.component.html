@@ -40,7 +40,7 @@
           [label]="getPlaceholderLabel(placeholder.name)"
           [pTooltip]="getPlaceholderTooltip(placeholder)"
           tooltipPosition="top"
-          styleClass="placeholder-chip"
+          class="placeholder-chip"
           (click)="insertPlaceholder(placeholder.name)">
         </p-chip>
       }
@@ -71,7 +71,7 @@
         @for (preview of previewResults; track preview.fileName) {
           <div class="preview-item" [ngClass]="getPreviewClass(preview)">
             <div class="preview-filename">
-              <i class="pi" 
+              <i class="pi"
                  [ngClass]="getPreviewIconClass(preview)"
                  [pTooltip]="getErrorTooltip(preview)"
                  tooltipPosition="top"

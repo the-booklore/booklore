@@ -6,8 +6,9 @@ import {FormControl, FormGroup, FormsModule, ReactiveFormsModule,} from "@angula
 import {Observable, sample} from "rxjs";
 import {AsyncPipe} from "@angular/common";
 import {MessageService} from "primeng/api";
-import {Book, BookMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
+import {Book, BookMetadata, ComicMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
 import {UrlHelperService} from "../../../../../shared/service/url-helper.service";
+import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, MetadataFieldConfig} from '../../../../../shared/metadata';
 import {FileUpload, FileUploadErrorEvent, FileUploadEvent,} from "primeng/fileupload";
 import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
@@ -106,6 +107,20 @@ export class MetadataEditorComponent implements OnInit {
 
   contentRatingOptions: {label: string, value: string}[] = [];
   ageRatingOptions: {label: string, value: number}[] = [];
+  booleanOptions: {label: string, value: boolean | null}[] = [
+    {label: 'Unknown', value: null},
+    {label: 'Yes', value: true},
+    {label: 'No', value: false},
+  ];
+
+  comicSectionExpanded = true;
+  audiobookSectionExpanded = true;
+  providerSectionExpanded = true;
+
+  comicTextFields = COMIC_TEXT_METADATA_FIELDS;
+  comicArrayFields = COMIC_ARRAY_METADATA_FIELDS;
+  comicTextareaFields = COMIC_TEXTAREA_METADATA_FIELDS;
+  audiobookMetadataFields = AUDIOBOOK_METADATA_FIELDS;
 
   providerSpecificFields: MetadataProviderSpecificFields = {
     asin: true,
@@ -274,6 +289,20 @@ export class MetadataEditorComponent implements OnInit {
       {label: '18+', value: 18},
       {label: '21+', value: 21}
     ];
+
+    // Add audiobook metadata form controls
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      const defaultValue = field.type === 'boolean' ? null : '';
+      this.metadataForm.addControl(field.controlName, new FormControl(defaultValue));
+      this.metadataForm.addControl(field.lockedKey, new FormControl(false));
+    }
+
+    // Add comic metadata form controls
+    for (const field of ALL_COMIC_METADATA_FIELDS) {
+      const defaultValue = field.type === 'array' ? [] : (field.type === 'number' || field.type === 'boolean') ? null : '';
+      this.metadataForm.addControl(field.controlName, new FormControl(defaultValue));
+      this.metadataForm.addControl(field.lockedKey, new FormControl(false));
+    }
   }
 
   ngOnInit(): void {
@@ -434,6 +463,33 @@ export class MetadataEditorComponent implements OnInit {
       contentRatingLocked: metadata.contentRatingLocked ?? false,
     });
 
+    // Patch audiobook metadata
+    const audiobookPatch: Record<string, unknown> = {};
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      const key = field.controlName as keyof BookMetadata;
+      const lockedKey = field.lockedKey as keyof BookMetadata;
+      audiobookPatch[field.controlName] = metadata[key] ?? (field.type === 'boolean' ? null : '');
+      audiobookPatch[field.lockedKey] = metadata[lockedKey] ?? false;
+    }
+    this.metadataForm.patchValue(audiobookPatch);
+
+    // Patch comic metadata
+    const comicMeta = metadata.comicMetadata;
+    const comicPatch: Record<string, unknown> = {};
+    for (const field of ALL_COMIC_METADATA_FIELDS) {
+      const value = comicMeta?.[field.fetchedKey as keyof ComicMetadata];
+      if (field.type === 'array') {
+        comicPatch[field.controlName] = [...(value as string[] ?? [])].sort();
+      } else if (field.type === 'boolean' || field.type === 'number') {
+        comicPatch[field.controlName] = value ?? null;
+      } else {
+        comicPatch[field.controlName] = value ?? '';
+      }
+      const modelLockKey = COMIC_FORM_TO_MODEL_LOCK[field.lockedKey];
+      comicPatch[field.lockedKey] = comicMeta?.[modelLockKey as keyof ComicMetadata] ?? false;
+    }
+    this.metadataForm.patchValue(comicPatch);
+
     const lockableFields: { key: keyof BookMetadata; control: string }[] = [
       {key: "titleLocked", control: "title"},
       {key: "subtitleLocked", control: "subtitle"},
@@ -481,6 +537,24 @@ export class MetadataEditorComponent implements OnInit {
     for (const {key, control} of lockableFields) {
       const isLocked = metadata[key] === true;
       const formControl = this.metadataForm.get(control);
+      if (formControl) {
+        isLocked ? formControl.disable() : formControl.enable();
+      }
+    }
+
+    // Apply audiobook lock states
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      const isLocked = this.metadataForm.get(field.lockedKey)?.value === true;
+      const formControl = this.metadataForm.get(field.controlName);
+      if (formControl) {
+        isLocked ? formControl.disable() : formControl.enable();
+      }
+    }
+
+    // Apply comic lock states
+    for (const field of ALL_COMIC_METADATA_FIELDS) {
+      const isLocked = this.metadataForm.get(field.lockedKey)?.value === true;
+      const formControl = this.metadataForm.get(field.controlName);
       if (formControl) {
         isLocked ? formControl.disable() : formControl.enable();
       }
@@ -628,6 +702,12 @@ export class MetadataEditorComponent implements OnInit {
       thumbnailUrl: form.get("thumbnailUrl")?.value,
       audiobookCover: form.get("audiobookCover")?.value,
 
+      // Audiobook metadata
+      narrator: form.get("narrator")?.value,
+      abridged: form.get("abridged")?.value,
+      narratorLocked: form.get("narratorLocked")?.value,
+      abridgedLocked: form.get("abridgedLocked")?.value,
+
       // Locks
       titleLocked: form.get("titleLocked")?.value,
       subtitleLocked: form.get("subtitleLocked")?.value,
@@ -677,6 +757,35 @@ export class MetadataEditorComponent implements OnInit {
       }),
     };
 
+    // Build comic metadata from form controls
+    const comicMetadata: Record<string, unknown> = {};
+    for (const field of ALL_COMIC_METADATA_FIELDS) {
+      const value = form.get(field.controlName)?.value;
+      if (field.type === 'array') {
+        comicMetadata[field.fetchedKey] = Array.isArray(value) ? value : [];
+      } else if (field.type === 'number') {
+        comicMetadata[field.fetchedKey] = value !== '' && value !== null ? Number(value) : null;
+      } else if (field.type === 'boolean') {
+        comicMetadata[field.fetchedKey] = value ?? null;
+      } else {
+        comicMetadata[field.fetchedKey] = value ?? '';
+      }
+    }
+    // Consolidate comic lock states to model lock keys
+    const lockGroups: Record<string, boolean> = {};
+    for (const [formKey, modelKey] of Object.entries(COMIC_FORM_TO_MODEL_LOCK)) {
+      const value = form.get(formKey)?.value ?? false;
+      if (value) {
+        lockGroups[modelKey] = true;
+      } else if (!(modelKey in lockGroups)) {
+        lockGroups[modelKey] = false;
+      }
+    }
+    for (const [modelKey, value] of Object.entries(lockGroups)) {
+      comicMetadata[modelKey] = value;
+    }
+    metadata.comicMetadata = comicMetadata as ComicMetadata;
+
     const original = this.originalMetadata;
 
     const wasCleared = (key: keyof BookMetadata): boolean => {
@@ -725,6 +834,8 @@ export class MetadataEditorComponent implements OnInit {
       seriesName: wasCleared("seriesName"),
       seriesNumber: wasCleared("seriesNumber"),
       seriesTotal: wasCleared("seriesTotal"),
+      narrator: wasCleared("narrator"),
+      abridged: wasCleared("abridged"),
       audiobookCover: wasCleared("audiobookCover"),
       cover: false,
       ageRating: wasCleared("ageRating"),
@@ -1049,6 +1160,14 @@ export class MetadataEditorComponent implements OnInit {
 
   supportsDualCovers(book: Book): boolean {
     return this.bookService.supportsDualCovers(book);
+  }
+
+  isCBX(book: Book): boolean {
+    return book.primaryFile?.bookType === 'CBX';
+  }
+
+  isAudiobook(book: Book): boolean {
+    return book.primaryFile?.bookType === 'AUDIOBOOK';
   }
 
   getUploadAudiobookCoverUrl(): string {

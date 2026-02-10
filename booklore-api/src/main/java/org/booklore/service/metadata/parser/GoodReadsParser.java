@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class GoodReadsParser implements BookParser {
+public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
 
     private static final String BASE_SEARCH_URL = "https://www.goodreads.com/search?q=";
     private static final String BASE_BOOK_URL = "https://www.goodreads.com/book/show/";
@@ -111,10 +111,9 @@ public class GoodReadsParser implements BookParser {
             }
         }
 
-        List<BookMetadata> previews = fetchMetadataPreviews(book, fetchMetadataRequest).stream()
+        return fetchMetadataPreviews(book, fetchMetadataRequest).stream()
                 .limit(COUNT_DETAILED_METADATA_TO_GET)
                 .toList();
-        return fetchMetadataUsingPreviews(previews);
     }
 
     private List<BookMetadata> fetchMetadataUsingPreviews(List<BookMetadata> previews) {
@@ -481,6 +480,8 @@ public class GoodReadsParser implements BookParser {
                         .goodreadsId(String.valueOf(extractGoodReadsIdPreview(previewBook)))
                         .title(extractTitlePreview(previewBook))
                         .authors(authors)
+                        .provider(MetadataProvider.GoodReads)
+                        .thumbnailUrl(extractThumbnailPreview(previewBook))
                         .build();
                 metadataPreviews.add(previewMetadata);
             }
@@ -543,6 +544,33 @@ public class GoodReadsParser implements BookParser {
             return link != null ? link.attr("title") : null;
         } catch (Exception e) {
             log.warn("Error extracting title: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractThumbnailPreview(Element book) {
+        try {
+            Element img = book.selectFirst("img");
+            if (img != null) {
+                String src = img.attr("src");
+                if (!src.isBlank()) {
+                    return src;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error extracting thumbnail: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public BookMetadata fetchDetailedMetadata(String goodreadsId) {
+        log.info("GoodReads: Fetching detailed metadata for ID: {}", goodreadsId);
+        try {
+            Document document = fetchDoc(BASE_BOOK_URL + goodreadsId);
+            return parseBookDetails(document, goodreadsId);
+        } catch (Exception e) {
+            log.error("Error fetching detailed metadata for GoodReads ID: {}", goodreadsId, e);
             return null;
         }
     }

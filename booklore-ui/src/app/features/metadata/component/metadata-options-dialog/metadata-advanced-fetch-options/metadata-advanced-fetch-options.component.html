@@ -36,28 +36,28 @@
         <p-select [options]="providersWithClear" [(ngModel)]="bulkP1"
                   (ngModelChange)="setBulkProvider('p1', $event)"
                   placeholder="Set all P1" appendTo="body"
-                  styleClass="select-full-width" size="small">
+                  class="select-full-width" size="small">
         </p-select>
       </td>
       <td class="table-cell">
         <p-select [options]="providersWithClear" [(ngModel)]="bulkP2"
                   (ngModelChange)="setBulkProvider('p2', $event)"
                   placeholder="Set all P2" appendTo="body"
-                  styleClass="select-full-width" size="small">
+                  class="select-full-width" size="small">
         </p-select>
       </td>
       <td class="table-cell">
         <p-select [options]="providersWithClear" [(ngModel)]="bulkP3"
                   (ngModelChange)="setBulkProvider('p3', $event)"
                   placeholder="Set all P3" appendTo="body"
-                  styleClass="select-full-width" size="small">
+                  class="select-full-width" size="small">
         </p-select>
       </td>
       <td class="table-cell">
         <p-select [options]="providersWithClear" [(ngModel)]="bulkP4"
                   (ngModelChange)="setBulkProvider('p4', $event)"
                   placeholder="Set all P4" appendTo="body"
-                  styleClass="select-full-width" size="small">
+                  class="select-full-width" size="small">
         </p-select>
       </td>
     </tr>
@@ -75,28 +75,28 @@
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p1"
                       [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
-                      styleClass="select-full-width" size="small">
+                      class="select-full-width" size="small">
             </p-select>
           </td>
           <td class="table-cell-sm">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p2"
                       [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
-                      styleClass="select-full-width" size="small">
+                      class="select-full-width" size="small">
             </p-select>
           </td>
           <td class="table-cell-sm">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p3"
                       [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
-                      styleClass="select-full-width" size="small">
+                      class="select-full-width" size="small">
             </p-select>
           </td>
           <td class="table-cell-sm">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p4"
                       [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
-                      styleClass="select-full-width" size="small">
+                      class="select-full-width" size="small">
             </p-select>
           </td>
         </tr>
@@ -125,7 +125,7 @@
       <div class="option-item">
         <p pTooltip="Controls how fetched metadata replaces existing values. 'Replace Missing Only' only fills empty fields, 'Replace All Fields' overwrites existing values." tooltipPosition="top">Replace Mode:</p>
         <p-select [options]="replaceModeOptions" [(ngModel)]="replaceMode" optionLabel="label" optionValue="value"
-                  appendTo="body" size="small" styleClass="select-mode">
+                  appendTo="body" size="small" class="select-mode">
         </p-select>
       </div>
       <div class="option-item">

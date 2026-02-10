@@ -465,6 +465,30 @@ class EpubMetadataExtractorTest {
             assertTrue(cover.length > 0);
             assertArrayEquals(pngImage, cover);
         }
+
+        @Test
+        @DisplayName("Should extract cover using manifest heuristic fallback (href containing 'cover')")
+        void extractCover_manifestHeuristic_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            File epubFile = createEpubWithHeuristicManifestCover(pngImage, "some-id", "some-cover-file.png");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via manifest heuristic");
+            assertArrayEquals(pngImage, cover);
+        }
+
+        @Test
+        @DisplayName("Should extract cover using ZIP heuristic fallback (ZIP entry containing 'cover')")
+        void extractCover_zipHeuristic_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            File epubFile = createEpubWithHeuristicZipCover(pngImage, "OEBPS/my-cool-cover.jpg");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via ZIP heuristic");
+            assertArrayEquals(pngImage, cover);
+        }
     }
 
     @Nested
@@ -864,6 +888,93 @@ class EpubMetadataExtractorTest {
 
             String decodedPath = java.net.URLDecoder.decode(encodedHref, java.nio.charset.StandardCharsets.UTF_8);
             zos.putNextEntry(new ZipEntry("OEBPS/" + decodedPath));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
+    }
+
+    private File createEpubWithHeuristicManifestCover(byte[] coverImageData, String id, String href) throws IOException {
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Heuristic Manifest Cover</dc:title>
+                </metadata>
+                <manifest>
+                    <item id="%s" href="%s" media-type="image/png"/>
+                </manifest>
+            </package>
+            """, id, href);
+
+        File epubFile = tempDir.resolve("test-heuristic-manifest-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/" + href));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
+    }
+
+    private File createEpubWithHeuristicZipCover(byte[] coverImageData, String path) throws IOException {
+        File epubFile = tempDir.resolve("test-heuristic-zip-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        String opfContent = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Heuristic ZIP Cover</dc:title>
+                </metadata>
+            </package>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry(path));
             zos.write(coverImageData);
             zos.closeEntry();
         }
