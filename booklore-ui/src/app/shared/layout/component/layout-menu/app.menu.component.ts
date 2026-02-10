@@ -3,7 +3,7 @@ import {AppMenuitemComponent} from './app.menuitem.component';
 import {AsyncPipe} from '@angular/common';
 import {MenuModule} from 'primeng/menu';
 import {LibraryService} from '../../../../features/book/service/library.service';
-import {Observable, of} from 'rxjs';
+import {combineLatest, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {ShelfService} from '../../../../features/book/service/shelf.service';
 import {BookService} from '../../../../features/book/service/book.service';
@@ -73,8 +73,8 @@ export class AppMenuComponent implements OnInit {
         this.initMenus();
       });
 
-    this.homeMenu$ = this.bookService.bookState$.pipe(
-      map((bookState) => [
+    this.homeMenu$ = combineLatest([this.bookService.bookState$, this.t.langChanges$]).pipe(
+      map(([bookState]) => [
         {
           label: this.t.translate('layout.menu.home'),
           items: [
@@ -97,8 +97,8 @@ export class AppMenuComponent implements OnInit {
   }
 
   private initMenus(): void {
-    this.libraryMenu$ = this.libraryService.libraryState$.pipe(
-      map((state) => {
+    this.libraryMenu$ = combineLatest([this.libraryService.libraryState$, this.t.langChanges$]).pipe(
+      map(([state]) => {
         const libraries = state.libraries ?? [];
         const sortedLibraries = this.sortArray(libraries, this.librarySortField, this.librarySortOrder);
         return [
@@ -121,8 +121,8 @@ export class AppMenuComponent implements OnInit {
       })
     );
 
-    this.magicShelfMenu$ = this.magicShelfService.shelvesState$.pipe(
-      map((state: MagicShelfState) => {
+    this.magicShelfMenu$ = combineLatest([this.magicShelfService.shelvesState$, this.t.langChanges$]).pipe(
+      map(([state]: [MagicShelfState, string]) => {
         const shelves = state.shelves ?? [];
         const sortedShelves = this.sortArray(shelves, this.magicShelfSortField, this.magicShelfSortOrder);
         return [
@@ -145,8 +145,8 @@ export class AppMenuComponent implements OnInit {
       })
     );
 
-    this.shelfMenu$ = this.shelfService.shelfState$.pipe(
-      map((state) => {
+    this.shelfMenu$ = combineLatest([this.shelfService.shelfState$, this.t.langChanges$]).pipe(
+      map(([state]) => {
         const shelves = state.shelves ?? [];
         const sortedShelves = this.sortArray(shelves, this.shelfSortField, this.shelfSortOrder);
 
