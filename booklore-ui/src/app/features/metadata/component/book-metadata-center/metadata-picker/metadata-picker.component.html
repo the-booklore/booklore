@@ -1,10 +1,10 @@
 @if (book$ | async; as book) {
-  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="metadata-picker">
+  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="metadata-picker" *transloco="let t; prefix: 'metadata.picker'">
     <div class="dialog-body">
       @if (detailLoading) {
         <div class="detail-loading-banner">
           <i class="pi pi-spin pi-spinner"></i>
-          <span>Loading complete metadata...</span>
+          <span>{{ t('loadingMetadata') }}</span>
         </div>
       }
 
@@ -12,7 +12,7 @@
       <div class="column-headers desktop-only">
         <div class="column-label current">
           <i class="pi pi-file-edit"></i>
-          <span>Current</span>
+          <span>{{ t('columnCurrent') }}</span>
         </div>
         <div class="column-actions">
           <p-button
@@ -20,7 +20,7 @@
             [rounded]="true"
             [outlined]="true"
             severity="secondary"
-            pTooltip="Copy missing fields"
+            [pTooltip]="t('copyMissingTooltip')"
             tooltipPosition="bottom"
             (onClick)="copyMissing()"
           />
@@ -29,14 +29,14 @@
             [rounded]="true"
             [outlined]="true"
             severity="primary"
-            pTooltip="Copy all fields"
+            [pTooltip]="t('copyAllTooltip')"
             tooltipPosition="bottom"
             (onClick)="copyAll()"
           />
         </div>
         <div class="column-label fetched">
           <i class="pi pi-cloud-download"></i>
-          <span>Fetched</span>
+          <span>{{ t('columnFetched') }}</span>
         </div>
       </div>
 
@@ -44,7 +44,7 @@
       <section class="form-section">
         <div class="section-header">
           <i class="pi pi-image"></i>
-          <span>Cover Image</span>
+          <span>{{ t('sectionCoverImage') }}</span>
         </div>
 
         <div class="section-content" [class.dual-covers-section]="currentBook && supportsDualCovers(currentBook)">
@@ -53,19 +53,19 @@
             <div class="field-row cover-field-row">
               <label class="field-label">
                 @if (currentBook && supportsDualCovers(currentBook)) {
-                  <i class="pi pi-book cover-type-icon"></i> Ebook
+                  <i class="pi pi-book cover-type-icon"></i> {{ t('coverLabelEbook') }}
                 } @else {
-                  Cover
+                  {{ t('coverLabel') }}
                 }
               </label>
               <div class="field-content">
                 <div class="field-side current cover-side">
-                  <span class="cover-label mobile-only">Current</span>
+                  <span class="cover-label mobile-only">{{ t('mobileCurrentLabel') }}</span>
                   <div class="cover-wrapper">
                     <p-image
                       class="cover-image"
                       [src]="metadataForm.get('thumbnailUrl')?.value"
-                      alt="Current cover"
+                      [alt]="t('currentCoverAlt')"
                       appendTo="body"
                       lazyLoad
                       [preview]="true"
@@ -75,7 +75,7 @@
                       class="lock-badge"
                       [class.locked]="metadataForm.get('coverLocked')?.value"
                       (click)="toggleLock('thumbnailUrl')"
-                      [pTooltip]="metadataForm.get('coverLocked')?.value ? 'Unlock cover' : 'Lock cover'"
+                      [pTooltip]="metadataForm.get('coverLocked')?.value ? t('unlockCoverTooltip') : t('lockCoverTooltip')"
                       tooltipPosition="top"
                     >
                       <i [class]="metadataForm.get('coverLocked')?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
@@ -97,12 +97,12 @@
                 </button>
 
                 <div class="field-side fetched cover-side">
-                  <span class="cover-label mobile-only">Fetched</span>
+                  <span class="cover-label mobile-only">{{ t('mobileFetchedLabel') }}</span>
                   <div class="cover-wrapper">
                     <p-image
                       class="cover-image"
                       [src]="fetchedMetadata.thumbnailUrl!"
-                      alt="Fetched cover"
+                      [alt]="t('fetchedCoverAlt')"
                       appendTo="body"
                       lazyLoad
                       [preview]="true"
@@ -117,16 +117,16 @@
           @if (currentBook && hasAudiobookFormat(currentBook)) {
             <div class="field-row cover-field-row audiobook-cover-row">
               <label class="field-label">
-                <i class="pi pi-headphones cover-type-icon"></i> Audiobook
+                <i class="pi pi-headphones cover-type-icon"></i> {{ t('coverLabelAudiobook') }}
               </label>
               <div class="field-content">
                 <div class="field-side current cover-side">
-                  <span class="cover-label mobile-only">Current</span>
+                  <span class="cover-label mobile-only">{{ t('mobileCurrentLabel') }}</span>
                   <div class="cover-wrapper">
                     <p-image
                       class="cover-image square-cover"
                       [src]="metadataForm.get('audiobookThumbnailUrl')?.value"
-                      alt="Current audiobook cover"
+                      [alt]="t('currentAudiobookCoverAlt')"
                       appendTo="body"
                       lazyLoad
                       [preview]="true"
@@ -136,7 +136,7 @@
                       class="lock-badge"
                       [class.locked]="metadataForm.get('audiobookCoverLocked')?.value"
                       (click)="toggleLock('audiobookThumbnailUrl')"
-                      [pTooltip]="metadataForm.get('audiobookCoverLocked')?.value ? 'Unlock cover' : 'Lock cover'"
+                      [pTooltip]="metadataForm.get('audiobookCoverLocked')?.value ? t('unlockCoverTooltip') : t('lockCoverTooltip')"
                       tooltipPosition="top"
                     >
                       <i [class]="metadataForm.get('audiobookCoverLocked')?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
@@ -162,13 +162,13 @@
                 }
 
                 <div class="field-side fetched cover-side">
-                  <span class="cover-label mobile-only">Fetched</span>
+                  <span class="cover-label mobile-only">{{ t('mobileFetchedLabel') }}</span>
                   <div class="cover-wrapper">
                     @if (isAudibleProvider()) {
                       <p-image
                         class="cover-image square-cover"
                         [src]="fetchedMetadata.thumbnailUrl!"
-                        alt="Fetched audiobook cover"
+                        [alt]="t('fetchedAudiobookCoverAlt')"
                         appendTo="body"
                         lazyLoad
                         [preview]="true"
@@ -176,7 +176,7 @@
                     } @else {
                       <div class="no-cover-placeholder">
                         <i class="pi pi-image"></i>
-                        <span>N/A</span>
+                        <span>{{ t('na') }}</span>
                       </div>
                     }
                   </div>
@@ -191,7 +191,7 @@
       <section class="form-section">
         <div class="section-header">
           <i class="pi pi-info-circle"></i>
-          <span>Basic Information</span>
+          <span>{{ t('sectionBasicInfo') }}</span>
         </div>
 
         <div class="section-content">
@@ -241,7 +241,7 @@
       <section class="form-section">
         <div class="section-header">
           <i class="pi pi-tags"></i>
-          <span>Tags & Categories</span>
+          <span>{{ t('sectionTagsCategories') }}</span>
         </div>
 
         <div class="section-content">
@@ -307,7 +307,7 @@
       <section class="form-section">
         <div class="section-header">
           <i class="pi pi-align-left"></i>
-          <span>Description</span>
+          <span>{{ t('sectionDescription') }}</span>
         </div>
 
         <div class="section-content">
@@ -353,7 +353,7 @@
       <section class="form-section">
         <div class="section-header">
           <i class="pi pi-book"></i>
-          <span>Series Information</span>
+          <span>{{ t('sectionSeriesInfo') }}</span>
         </div>
 
         <div class="section-content">
@@ -399,7 +399,7 @@
       <section class="form-section">
         <div class="section-header">
           <i class="pi pi-id-card"></i>
-          <span>Book Details</span>
+          <span>{{ t('sectionBookDetails') }}</span>
         </div>
 
         <div class="section-content">
@@ -446,9 +446,9 @@
         <section class="form-section">
           <div class="section-header collapsible-header" (click)="comicSectionExpanded = !comicSectionExpanded">
             <i class="pi pi-bolt"></i>
-            <span>Comic Book Details</span>
+            <span>{{ t('sectionComicDetails') }}</span>
             @if (!hasAnyFetchedComicData() && !hasAnyCurrentComicData()) {
-              <span class="section-empty-badge">none present</span>
+              <span class="section-empty-badge">{{ t('nonePresent') }}</span>
             }
             <i [class]="comicSectionExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="section-toggle"></i>
           </div>
@@ -613,7 +613,7 @@
         <section class="form-section">
           <div class="section-header">
             <i class="pi pi-headphones"></i>
-            <span>Audiobook Details</span>
+            <span>{{ t('sectionAudiobookDetails') }}</span>
           </div>
 
           <div class="section-content">
@@ -679,7 +679,7 @@
         <section class="form-section">
           <div class="section-header">
             <i class="pi pi-cloud"></i>
-            <span>Provider Metadata</span>
+            <span>{{ t('sectionProviderMetadata') }}</span>
           </div>
 
           <div class="section-content">
@@ -727,7 +727,7 @@
       <footer class="dialog-footer">
         <div class="footer-left">
           <p-button
-            label="Back to List"
+            [label]="t('backToListBtn')"
             icon="pi pi-arrow-left"
             severity="info"
             [outlined]="true"
@@ -739,7 +739,7 @@
             icon="pi pi-lock-open"
             severity="success"
             [outlined]="true"
-            pTooltip="Unlock all fields"
+            [pTooltip]="t('unlockAllTooltip')"
             tooltipPosition="top"
             (onClick)="unlockAll()"
           />
@@ -747,13 +747,13 @@
             icon="pi pi-lock"
             severity="warn"
             [outlined]="true"
-            pTooltip="Lock all fields"
+            [pTooltip]="t('lockAllTooltip')"
             tooltipPosition="top"
             (onClick)="lockAll()"
           />
           <div class="footer-divider"></div>
           <p-button
-            label="Save Changes"
+            [label]="t('saveChangesBtn')"
             [icon]="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
             [loading]="isSaving"
             [disabled]="isSaving"

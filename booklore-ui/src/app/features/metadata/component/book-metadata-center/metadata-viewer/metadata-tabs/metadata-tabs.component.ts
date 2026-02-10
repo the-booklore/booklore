@@ -12,6 +12,7 @@ import {Tooltip} from 'primeng/tooltip';
 import {Image} from 'primeng/image';
 import {UrlHelperService} from '../../../../../../shared/service/url-helper.service';
 import {BookService} from '../../../../../book/service/book.service';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 export interface ReadEvent {
   bookId: number;
@@ -63,7 +64,8 @@ export interface DeleteSupplementaryFileEvent {
     Button,
     Tooltip,
     UpperCasePipe,
-    Image
+    Image,
+    TranslocoDirective
   ],
   templateUrl: './metadata-tabs.component.html',
   styleUrl: './metadata-tabs.component.scss'

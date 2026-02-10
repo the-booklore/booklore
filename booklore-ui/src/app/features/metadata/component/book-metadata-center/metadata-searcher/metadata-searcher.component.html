@@ -8,20 +8,20 @@
     </app-metadata-picker>
   </div>
 } @else {
-  <div class="searcher-container">
+  <div class="searcher-container" *transloco="let t; prefix: 'metadata.searcher'">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="search-card">
       <div class="search-grid">
         <div class="search-field search-field-provider">
           <label>
             <i class="pi pi-globe"></i>
-            Providers
+            {{ t('providers') }}
           </label>
           <p-multiselect
             [filter]="false"
             showToggleAll="false"
             [options]="providers"
             formControlName="provider"
-            placeholder="Select providers"
+            [placeholder]="t('selectProviders')"
             class="'custom-multiselect'">
           </p-multiselect>
         </div>
@@ -29,10 +29,10 @@
         <div class="search-field">
           <label>
             <i class="pi pi-barcode"></i>
-            ISBN
+            {{ t('isbn') }}
             <i
               class="pi pi-info-circle"
-              pTooltip="ISBN takes priority. Without ISBN, search uses Title and Author."
+              [pTooltip]="t('isbnTooltip')"
               tooltipPosition="right"
               style="margin-left: 0.25rem; color: var(--primary-color); cursor: pointer;"
             ></i>
@@ -40,37 +40,37 @@
           <input
             pInputText
             formControlName="isbn"
-            placeholder="ISBN-10 or ISBN-13"
+            [placeholder]="t('isbnPlaceholder')"
             class="custom-input"/>
         </div>
 
         <div class="search-field">
           <label>
             <i class="pi pi-book"></i>
-            Title
+            {{ t('title') }}
           </label>
           <input
             pInputText
             formControlName="title"
-            placeholder="Book title"
+            [placeholder]="t('titlePlaceholder')"
             class="custom-input"/>
         </div>
 
         <div class="search-field">
           <label>
             <i class="pi pi-user"></i>
-            Author
+            {{ t('author') }}
           </label>
           <input
             pInputText
             formControlName="author"
-            placeholder="Author name"
+            [placeholder]="t('authorPlaceholder')"
             class="custom-input"/>
         </div>
 
         <div class="search-field search-button-field">
           <p-button
-            label="Search"
+            [label]="t('search')"
             type="submit"
             [disabled]="!isSearchEnabled || loading"
             icon="pi pi-search"
@@ -86,14 +86,14 @@
           <div class="results-info">
             <h3>
               <i class="pi pi-list"></i>
-              Search Results
+              {{ t('searchResults') }}
             </h3>
-            <span class="results-count">{{ filteredMetadata.length }} books found</span>
+            <span class="results-count">{{ t('booksFound', { count: filteredMetadata.length }) }}</span>
           </div>
           @if (loading) {
             <span class="fetching-badge">
               <i class="pi pi-spin pi-spinner"></i>
-              Fetching...
+              {{ t('fetching') }}
             </span>
           }
         </div>
@@ -127,8 +127,8 @@
         <div class="empty-icon">
           <i class="pi pi-search"></i>
         </div>
-        <h3>Ready to Search</h3>
-        <p>Enter your search criteria above and click Search to find metadata</p>
+        <h3>{{ t('readyToSearch') }}</h3>
+        <p>{{ t('readyToSearchDescription') }}</p>
       </div>
     }
 
@@ -137,8 +137,8 @@
         <div class="empty-icon no-results">
           <i class="pi pi-inbox"></i>
         </div>
-        <h3>No Results Found</h3>
-        <p>Try adjusting your search criteria or selecting different providers</p>
+        <h3>{{ t('noResultsFound') }}</h3>
+        <p>{{ t('noResultsDescription') }}</p>
       </div>
     }
 
@@ -154,7 +154,7 @@
                   loading="lazy"/>
                 <div class="card-overlay">
                   <i class="pi pi-eye"></i>
-                  <span>Select</span>
+                  <span>{{ t('select') }}</span>
                 </div>
               </div>
 

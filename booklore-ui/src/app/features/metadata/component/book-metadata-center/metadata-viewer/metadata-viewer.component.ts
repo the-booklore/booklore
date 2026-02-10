@@ -33,6 +33,7 @@ import {BookNavigationService} from '../../../../book/service/book-navigation.se
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 
 @Component({
@@ -40,7 +41,7 @@ import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFil
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges {
   @Input() book$!: Observable<Book | null>;
@@ -48,6 +49,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   @ViewChild(Editor) quillEditor!: Editor;
   private originalRecommendedBooks: BookRecommendation[] = [];
 
+  private readonly t = inject(TranslocoService);
   private bookDialogHelperService = inject(BookDialogHelperService)
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
@@ -103,13 +105,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         const primaryType = book.primaryFile?.bookType;
         if (primaryType === 'PDF') {
           items.push({
-            label: 'Streaming Reader',
+            label: this.t.translate('metadata.viewer.streamingReader'),
             icon: 'pi pi-play',
             command: () => this.read(book.id, 'pdf-streaming')
           });
         } else if (primaryType === 'EPUB') {
           items.push({
-            label: 'Streaming Reader',
+            label: this.t.translate('metadata.viewer.streamingReader'),
             icon: 'pi pi-play',
             command: () => this.read(book.id, 'epub-streaming')
           });
@@ -136,12 +138,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 icon: this.getFileIcon(formatType),
                 items: [
                   {
-                    label: 'Standard Reader',
+                    label: this.t.translate('metadata.viewer.standardReader'),
                     icon: 'pi pi-book',
                     command: () => this.read(book.id, undefined, formatType)
                   },
                   {
-                    label: 'Streaming Reader',
+                    label: this.t.translate('metadata.viewer.streamingReader'),
                     icon: 'pi pi-play',
                     command: () => this.read(book.id, formatType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', formatType)
                   }
@@ -214,7 +216,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             const items: MenuItem[] = [];
 
             items.push({
-              label: 'Shelf',
+              label: this.t.translate('metadata.viewer.shelf'),
               icon: 'pi pi-folder',
               command: () => this.assignShelf(book.id)
             });
@@ -223,7 +225,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
             if (userState?.user?.permissions.canUpload || userState?.user?.permissions.admin) {
               items.push({
-                label: 'Upload File',
+                label: this.t.translate('metadata.viewer.uploadFile'),
                 icon: 'pi pi-upload',
                 command: () => {
                   this.bookDialogHelperService.openAdditionalFileUploaderDialog(book);
@@ -235,7 +237,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
             if (hasFiles && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) && appSettings?.diskType === 'LOCAL') {
               items.push({
-                label: 'Organize Files',
+                label: this.t.translate('metadata.viewer.organizeFiles'),
                 icon: 'pi pi-arrows-h',
                 command: () => {
                   this.openFileMoverDialog(book.id);
@@ -245,16 +247,16 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
             if (hasFiles && (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin)) {
               items.push({
-                label: 'Send Book',
+                label: this.t.translate('metadata.viewer.sendBook'),
                 icon: 'pi pi-send',
                 items: [
                   {
-                    label: 'Quick Send',
+                    label: this.t.translate('metadata.viewer.quickSend'),
                     icon: 'pi pi-bolt',
                     command: () => this.quickSend(book.id)
                   },
                   {
-                    label: 'Custom Send',
+                    label: this.t.translate('metadata.viewer.customSend'),
                     icon: 'pi pi-cog',
                     command: () => {
                       this.bookDialogHelperService.openCustomSendDialog(book);
@@ -268,7 +270,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             const isSingleFileBook = hasFiles && !book.alternativeFormats?.length;
             if (isSingleFileBook && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin)) {
               items.push({
-                label: 'Attach to Another Book',
+                label: this.t.translate('metadata.viewer.attachToAnotherBook'),
                 icon: 'pi pi-link',
                 command: () => {
                   this.bookDialogHelperService.openBookFileAttacherDialog(book);
@@ -310,7 +312,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
               if (deleteFormatItems.length > 0) {
                 items.push({
-                  label: 'Delete File Formats',
+                  label: this.t.translate('metadata.viewer.deleteFileFormats'),
                   icon: 'pi pi-file',
                   items: deleteFormatItems
                 });
@@ -331,7 +333,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 });
 
                 items.push({
-                  label: 'Delete Supplementary Files',
+                  label: this.t.translate('metadata.viewer.deleteSupplementaryFiles'),
                   icon: 'pi pi-paperclip',
                   items: deleteSupplementaryItems
                 });
@@ -354,11 +356,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 ? `\n\nThe following files will be permanently deleted:\n• ${allFormats.join('\n• ')}`
                 : '';
 
-              const deleteLabel = isPhysical ? 'Delete Book' : 'Delete Book & All Files';
+              const deleteLabel = isPhysical ? this.t.translate('metadata.viewer.deleteBook') : this.t.translate('metadata.viewer.deleteBookAndAllFiles');
               const deleteMessage = isPhysical
-                ? `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record from your library.\n\nThis action cannot be undone.`
-                : `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book record AND all associated files from your filesystem.${fileListMessage}\n\nThis action cannot be undone.`;
-              const deleteAcceptLabel = isPhysical ? 'Delete' : 'Delete Everything';
+                ? this.t.translate('metadata.viewer.confirm.deleteBookMessage', { title: book.metadata?.title })
+                : this.t.translate('metadata.viewer.confirm.deleteBookAndFilesMessage', { title: book.metadata?.title, fileList: fileListMessage });
+              const deleteAcceptLabel = isPhysical ? this.t.translate('common.delete') : this.t.translate('metadata.viewer.deleteEverything');
 
               items.push({
                 label: deleteLabel,
@@ -371,7 +373,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                     acceptIcon: 'pi pi-trash',
                     rejectIcon: 'pi pi-times',
                     acceptLabel: deleteAcceptLabel,
-                    rejectLabel: 'Cancel',
+                    rejectLabel: this.t.translate('common.cancel'),
                     acceptButtonStyleClass: 'p-button-danger',
                     rejectButtonStyleClass: 'p-button-outlined',
                     accept: () => {
@@ -478,9 +480,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   getReadButtonLabel(book: Book): string {
     const isAudiobook = book.primaryFile?.bookType === 'AUDIOBOOK';
     if (this.isInProgressStatus()) {
-      return isAudiobook ? 'Continue' : 'Continue Reading';
+      return isAudiobook ? this.t.translate('metadata.viewer.continue') : this.t.translate('metadata.viewer.continueReading');
     }
-    return isAudiobook ? 'Play' : 'Read';
+    return isAudiobook ? this.t.translate('metadata.viewer.playAction') : this.t.translate('metadata.viewer.readAction');
   }
 
   getReadButtonIcon(book: Book): string {
@@ -523,8 +525,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the supplementary file "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`,
-      header: 'Delete Supplementary File',
+      message: this.t.translate('metadata.viewer.confirm.deleteSupplementaryMessage', { fileName }),
+      header: this.t.translate('metadata.viewer.confirm.deleteSupplementaryHeader'),
       icon: 'pi pi-exclamation-triangle',
       acceptIcon: 'pi pi-trash',
       rejectIcon: 'pi pi-times',
@@ -535,15 +537,15 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Success',
-              detail: `Supplementary file "${fileName}" deleted successfully`
+              summary: this.t.translate('metadata.viewer.toast.deleteSupplementarySuccessSummary'),
+              detail: this.t.translate('metadata.viewer.toast.deleteSupplementarySuccessDetail', { fileName })
             });
           },
           error: (error) => {
             this.messageService.add({
               severity: 'error',
-              summary: 'Error',
-              detail: `Failed to delete supplementary file: ${error.message || 'Unknown error'}`
+              summary: this.t.translate('metadata.viewer.toast.deleteSupplementaryErrorSummary'),
+              detail: this.t.translate('metadata.viewer.toast.deleteSupplementaryErrorDetail', { error: error.message || 'Unknown error' })
             });
           }
         });
@@ -556,17 +558,14 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     let header: string;
 
     if (isOnlyFormat) {
-      // This is the only book format file - warn user strongly
-      message = `Are you sure you want to delete "${fileName}"?\n\nThis is the ONLY book format file for this book. After deletion, the book will have no readable content.\n\nConsider using "Delete Book & All Files" instead to completely remove the book.\n\nThis file will be permanently removed from your filesystem.`;
-      header = 'Delete Only Book Format';
+      message = this.t.translate('metadata.viewer.confirm.deleteOnlyFormatMessage', { fileName });
+      header = this.t.translate('metadata.viewer.confirm.deleteOnlyFormatHeader');
     } else if (isPrimary) {
-      // This is the primary format but there are alternatives
-      message = `Are you sure you want to delete "${fileName}"?\n\nThis is currently the PRIMARY format for this book. After deletion, an alternative format will become the new primary.\n\nThis file will be permanently removed from your filesystem.`;
-      header = 'Delete Primary Format';
+      message = this.t.translate('metadata.viewer.confirm.deletePrimaryFormatMessage', { fileName });
+      header = this.t.translate('metadata.viewer.confirm.deletePrimaryFormatHeader');
     } else {
-      // This is an alternative format
-      message = `Are you sure you want to delete "${fileName}"?\n\nThis file will be permanently removed from your filesystem.`;
-      header = 'Delete Book Format';
+      message = this.t.translate('metadata.viewer.confirm.deleteAlternativeFormatMessage', { fileName });
+      header = this.t.translate('metadata.viewer.confirm.deleteAlternativeFormatHeader');
     }
 
     this.confirmationService.confirm({
@@ -575,8 +574,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       icon: 'pi pi-exclamation-triangle',
       acceptIcon: 'pi pi-trash',
       rejectIcon: 'pi pi-times',
-      acceptLabel: 'Delete File',
-      rejectLabel: 'Cancel',
+      acceptLabel: this.t.translate('metadata.viewer.confirm.deleteFile'),
+      rejectLabel: this.t.translate('common.cancel'),
       rejectButtonStyleClass: 'p-button-secondary',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
@@ -584,15 +583,15 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Success',
-              detail: `Book format "${fileName}" deleted successfully`
+              summary: this.t.translate('metadata.viewer.toast.deleteFormatSuccessSummary'),
+              detail: this.t.translate('metadata.viewer.toast.deleteFormatSuccessDetail', { fileName })
             });
           },
           error: (error) => {
             this.messageService.add({
               severity: 'error',
-              summary: 'Error',
-              detail: `Failed to delete book format: ${error.message || 'Unknown error'}`
+              summary: this.t.translate('metadata.viewer.toast.deleteFormatErrorSummary'),
+              detail: this.t.translate('metadata.viewer.toast.deleteFormatErrorDetail', { error: error.message || 'Unknown error' })
             });
           }
         });
@@ -617,13 +616,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.emailService.emailBookQuick(bookId).subscribe({
       next: () => this.messageService.add({
         severity: 'info',
-        summary: 'Success',
-        detail: 'The book sending has been scheduled.',
+        summary: this.t.translate('metadata.viewer.toast.quickSendSuccessSummary'),
+        detail: this.t.translate('metadata.viewer.toast.quickSendSuccessDetail'),
       }),
       error: (err) => this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: err?.error?.message || 'An error occurred while sending the book.',
+        summary: this.t.translate('metadata.viewer.toast.quickSendErrorSummary'),
+        detail: err?.error?.message || this.t.translate('metadata.viewer.toast.quickSendErrorDetailFallback'),
       })
     });
   }
@@ -647,8 +646,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           this.selectedReadStatus = status;
           this.messageService.add({
             severity: 'success',
-            summary: 'Read Status Updated',
-            detail: `Marked as "${this.getStatusLabel(status)}"`,
+            summary: this.t.translate('metadata.viewer.toast.readStatusUpdatedSummary'),
+            detail: this.t.translate('metadata.viewer.toast.readStatusUpdatedDetail', { status: this.getStatusLabel(status) }),
             life: 2000
           });
         },
@@ -656,8 +655,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           console.error('Failed to update read status:', err);
           this.messageService.add({
             severity: 'error',
-            summary: 'Update Failed',
-            detail: 'Could not update read status.',
+            summary: this.t.translate('metadata.viewer.toast.readStatusFailedSummary'),
+            detail: this.t.translate('metadata.viewer.toast.readStatusFailedDetail'),
             life: 3000
           });
         }
@@ -667,27 +666,27 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   resetProgress(book: Book, type: ResetProgressType): void {
     this.confirmationService.confirm({
-      message: `Reset reading progress for "${book.metadata?.title}"?`,
-      header: 'Confirm Reset',
+      message: this.t.translate('metadata.viewer.confirm.resetProgressMessage', { title: book.metadata?.title }),
+      header: this.t.translate('metadata.viewer.confirm.resetProgressHeader'),
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Yes',
-      rejectLabel: 'Cancel',
+      acceptLabel: this.t.translate('common.yes'),
+      rejectLabel: this.t.translate('common.cancel'),
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         this.bookService.resetProgress(book.id, type).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Progress Reset',
-              detail: 'Reading progress has been reset.',
+              summary: this.t.translate('metadata.viewer.toast.progressResetSummary'),
+              detail: this.t.translate('metadata.viewer.toast.progressResetDetail'),
               life: 1500
             });
           },
           error: () => {
             this.messageService.add({
               severity: 'error',
-              summary: 'Failed',
-              detail: 'Could not reset progress.',
+              summary: this.t.translate('metadata.viewer.toast.progressResetFailedSummary'),
+              detail: this.t.translate('metadata.viewer.toast.progressResetFailedDetail'),
               life: 1500
             });
           }
@@ -701,16 +700,16 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Rating Saved',
-          detail: 'Personal rating updated successfully'
+          summary: this.t.translate('metadata.viewer.toast.ratingSavedSummary'),
+          detail: this.t.translate('metadata.viewer.toast.ratingSavedDetail')
         });
       },
       error: err => {
         console.error('Failed to update personal rating:', err);
         this.messageService.add({
           severity: 'error',
-          summary: 'Update Failed',
-          detail: 'Could not update personal rating'
+          summary: this.t.translate('metadata.viewer.toast.ratingFailedSummary'),
+          detail: this.t.translate('metadata.viewer.toast.ratingFailedDetail')
         });
       }
     });
@@ -721,16 +720,16 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       next: () => {
         this.messageService.add({
           severity: 'info',
-          summary: 'Rating Reset',
-          detail: 'Personal rating has been cleared.'
+          summary: this.t.translate('metadata.viewer.toast.ratingResetSummary'),
+          detail: this.t.translate('metadata.viewer.toast.ratingResetDetail')
         });
       },
       error: err => {
         console.error('Failed to reset personal rating:', err);
         this.messageService.add({
           severity: 'error',
-          summary: 'Reset Failed',
-          detail: 'Could not reset personal rating'
+          summary: this.t.translate('metadata.viewer.toast.ratingResetFailedSummary'),
+          detail: this.t.translate('metadata.viewer.toast.ratingResetFailedDetail')
         });
       }
     });
@@ -1161,8 +1160,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Date Updated',
-          detail: 'Book finish date has been updated.',
+          summary: this.t.translate('metadata.viewer.toast.dateUpdatedSummary'),
+          detail: this.t.translate('metadata.viewer.toast.dateUpdatedDetail'),
           life: 1500
         });
         this.isEditingDateFinished = false;
@@ -1171,8 +1170,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Update Failed',
-          detail: 'Could not update book finish date.',
+          summary: this.t.translate('metadata.viewer.toast.dateFailedSummary'),
+          detail: this.t.translate('metadata.viewer.toast.dateFailedDetail'),
           life: 3000
         });
       }
@@ -1226,7 +1225,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   getNavigationPosition(): string {
     const position = this.bookNavigationService.getCurrentPosition();
-    return position ? `${position.current} of ${position.total}` : '';
+    return position ? this.t.translate('metadata.viewer.navigationOf', { current: position.current, total: position.total }) : '';
   }
 
   hasDigitalFile(book: Book): boolean {

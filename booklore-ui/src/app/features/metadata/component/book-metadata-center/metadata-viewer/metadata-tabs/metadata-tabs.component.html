@@ -1,29 +1,30 @@
+<ng-container *transloco="let t; prefix: 'metadata.tabs'">
 <p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
   <p-tablist>
     @if (bookInSeries.length > 1) {
       <p-tab value="series">
-        <i class="pi pi-ethereum"></i> More in Series
+        <i class="pi pi-ethereum"></i> {{ t('moreInSeries') }}
       </p-tab>
     }
     <p-tab value="similar">
-      <i class="pi pi-bookmark"></i> Similar Books
+      <i class="pi pi-bookmark"></i> {{ t('similarBooks') }}
     </p-tab>
     @if (supportsDualCovers()) {
       <p-tab value="covers">
-        <i class="pi pi-images"></i> Covers
+        <i class="pi pi-images"></i> {{ t('covers') }}
       </p-tab>
     }
     <p-tab value="files">
-      <i class="pi pi-folder-open"></i> Files
+      <i class="pi pi-folder-open"></i> {{ t('files') }}
     </p-tab>
     <p-tab value="notes">
-      <i class="pi pi-pen-to-square"></i> Notes
+      <i class="pi pi-pen-to-square"></i> {{ t('notes') }}
     </p-tab>
     <p-tab value="sessions">
-      <i class="pi pi-clock"></i> Reading Sessions
+      <i class="pi pi-clock"></i> {{ t('readingSessions') }}
     </p-tab>
     <p-tab value="reviews">
-      <i class="pi pi-comments"></i> Reviews
+      <i class="pi pi-comments"></i> {{ t('reviews') }}
     </p-tab>
   </p-tablist>
   <p-tabpanels>
@@ -65,11 +66,11 @@
           <div class="covers-grid">
             <div class="cover-item">
               <div class="cover-label">
-                <i class="pi pi-book"></i> Ebook Cover
+                <i class="pi pi-book"></i> {{ t('ebookCover') }}
               </div>
               <p-image
                 [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
-                alt="Ebook Cover"
+                [alt]="t('ebookCover')"
                 width="200"
                 appendTo="body"
                 [preview]="true">
@@ -77,11 +78,11 @@
             </div>
             <div class="cover-item">
               <div class="cover-label audiobook">
-                <i class="pi pi-headphones"></i> Audiobook Cover
+                <i class="pi pi-headphones"></i> {{ t('audiobookCover') }}
               </div>
               <p-image
                 [src]="urlHelper.getAudiobookCoverUrl(book.id, book.metadata?.audiobookCoverUpdatedOn)"
-                alt="Audiobook Cover"
+                [alt]="t('audiobookCover')"
                 width="200"
                 appendTo="body"
                 [preview]="true"
@@ -113,27 +114,27 @@
           @if (isPhysicalBook()) {
             <div class="empty-state">
               <i class="pi pi-book empty-state-icon"></i>
-              <h4 class="empty-state-title">Physical Book</h4>
-              <p class="empty-state-message">This is a physical book. No digital files are associated with this book.</p>
-              <p class="empty-state-hint">You can upload a digital version using the "Upload File" option in the menu.</p>
+              <h4 class="empty-state-title">{{ t('physicalBook') }}</h4>
+              <p class="empty-state-message">{{ t('physicalBookMessage') }}</p>
+              <p class="empty-state-hint">{{ t('physicalBookHint') }}</p>
             </div>
           } @else {
             @if (hasMultipleFiles(book)) {
               <div class="files-section download-all-section">
                 <p-button
-                  label="Download All ({{ getTotalFileCount(book) }} files)"
+                  [label]="t('downloadAll', { count: getTotalFileCount(book) })"
                   icon="pi pi-download"
                   severity="info"
                   outlined
                   (onClick)="downloadAll(book)"
-                  pTooltip="Download all files as a ZIP archive"
+                  [pTooltip]="t('downloadAllTooltip')"
                   tooltipPosition="top">
                 </p-button>
               </div>
             }
             @if (book.primaryFile) {
               <div class="files-section">
-                <h4 class="files-section-title">Primary File</h4>
+                <h4 class="files-section-title">{{ t('primaryFile') }}</h4>
                 <div class="files-list">
                   <div class="file-item primary-file">
                     <div class="file-info">
@@ -150,7 +151,7 @@
                           size="small"
                           text
                           severity="primary"
-                          pTooltip="Read"
+                          [pTooltip]="t('read')"
                           tooltipPosition="top"
                           (onClick)="read(book.id)">
                         </p-button>
@@ -159,7 +160,7 @@
                           size="small"
                           text
                           severity="info"
-                          pTooltip="Streaming Reader"
+                          [pTooltip]="t('streamingReader')"
                           tooltipPosition="top"
                           (onClick)="read(book.id, 'pdf-streaming')">
                         </p-button>
@@ -169,7 +170,7 @@
                           size="small"
                           text
                           severity="primary"
-                          pTooltip="Read"
+                          [pTooltip]="t('read')"
                           tooltipPosition="top"
                           (onClick)="read(book.id)">
                         </p-button>
@@ -178,7 +179,7 @@
                           size="small"
                           text
                           severity="info"
-                          pTooltip="Streaming Reader"
+                          [pTooltip]="t('streamingReader')"
                           tooltipPosition="top"
                           (onClick)="read(book.id, 'epub-streaming')">
                         </p-button>
@@ -188,7 +189,7 @@
                           size="small"
                           text
                           severity="primary"
-                          pTooltip="Read"
+                          [pTooltip]="t('read')"
                           tooltipPosition="top"
                           (onClick)="read(book.id)">
                         </p-button>
@@ -198,7 +199,7 @@
                           size="small"
                           text
                           severity="primary"
-                          pTooltip="Play"
+                          [pTooltip]="t('play')"
                           tooltipPosition="top"
                           (onClick)="read(book.id)">
                         </p-button>
@@ -208,7 +209,7 @@
                         size="small"
                         text
                         severity="success"
-                        pTooltip="Download"
+                        [pTooltip]="t('download')"
                         tooltipPosition="top"
                         (onClick)="download(book)">
                       </p-button>
@@ -217,7 +218,7 @@
                         size="small"
                         text
                         severity="danger"
-                        pTooltip="Delete"
+                        [pTooltip]="t('delete')"
                         tooltipPosition="top"
                         (onClick)="deleteFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file', true)">
                       </p-button>
@@ -228,7 +229,7 @@
             }
             @if (book.alternativeFormats && book.alternativeFormats.length > 0) {
               <div class="files-section">
-                <h4 class="files-section-title">Alternative Formats</h4>
+                <h4 class="files-section-title">{{ t('alternativeFormats') }}</h4>
                 <div class="files-list">
                   @for (format of book.alternativeFormats; track format.id) {
                     <div class="file-item">
@@ -246,7 +247,7 @@
                             size="small"
                             text
                             severity="primary"
-                            pTooltip="Read"
+                            [pTooltip]="t('read')"
                             tooltipPosition="top"
                             (onClick)="read(book.id, undefined, format.bookType)">
                           </p-button>
@@ -255,7 +256,7 @@
                             size="small"
                             text
                             severity="info"
-                            pTooltip="Streaming Reader"
+                            [pTooltip]="t('streamingReader')"
                             tooltipPosition="top"
                             (onClick)="read(book.id, format.bookType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', format.bookType)">
                           </p-button>
@@ -265,7 +266,7 @@
                             size="small"
                             text
                             severity="primary"
-                            pTooltip="Read"
+                            [pTooltip]="t('read')"
                             tooltipPosition="top"
                             (onClick)="read(book.id, undefined, format.bookType)">
                           </p-button>
@@ -275,7 +276,7 @@
                             size="small"
                             text
                             severity="primary"
-                            pTooltip="Play"
+                            [pTooltip]="t('play')"
                             tooltipPosition="top"
                             (onClick)="read(book.id, undefined, format.bookType)">
                           </p-button>
@@ -285,7 +286,7 @@
                           size="small"
                           text
                           severity="success"
-                          pTooltip="Download"
+                          [pTooltip]="t('download')"
                           tooltipPosition="top"
                           (onClick)="downloadAdditionalFile(book, format.id)">
                         </p-button>
@@ -294,7 +295,7 @@
                           size="small"
                           text
                           severity="danger"
-                          pTooltip="Delete"
+                          [pTooltip]="t('delete')"
                           tooltipPosition="top"
                           (onClick)="deleteFile(book, format.id, format.fileName || 'file', false)">
                         </p-button>
@@ -306,7 +307,7 @@
             }
             @if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
               <div class="files-section">
-                <h4 class="files-section-title">Supplementary Files</h4>
+                <h4 class="files-section-title">{{ t('supplementaryFiles') }}</h4>
                 <div class="files-list">
                   @for (file of book.supplementaryFiles; track file.id) {
                     <div class="file-item">
@@ -321,7 +322,7 @@
                           size="small"
                           text
                           severity="success"
-                          pTooltip="Download"
+                          [pTooltip]="t('download')"
                           tooltipPosition="top"
                           (onClick)="downloadAdditionalFile(book, file.id)">
                         </p-button>
@@ -330,7 +331,7 @@
                           size="small"
                           text
                           severity="danger"
-                          pTooltip="Delete"
+                          [pTooltip]="t('delete')"
                           tooltipPosition="top"
                           (onClick)="deleteSupplementary(book.id, file.id, file.fileName || 'file')">
                         </p-button>
@@ -346,3 +347,4 @@
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
+</ng-container>

@@ -21,8 +21,10 @@ import app from './app.json';
 import shared from './shared.json';
 import layout from './layout.json';
 import libraryCreator from './library-creator.json';
+import bookdrop from './bookdrop.json';
+import metadata from './metadata.json';
 
 // To add a new domain: create the JSON file and add it here.
 // Settings tabs each get their own file: settings-email, settings-reader, settings-view, etc.
-const translations: Translation = {common, auth, nav, dashboard, settings, settingsEmail, settingsReader, settingsView, settingsMeta, settingsLibMeta, settingsApp, settingsUsers, settingsNaming, settingsOpds, settingsTasks, settingsAuth, settingsDevice, settingsProfile, app, shared, layout, libraryCreator};
+const translations: Translation = {common, auth, nav, dashboard, settings, settingsEmail, settingsReader, settingsView, settingsMeta, settingsLibMeta, settingsApp, settingsUsers, settingsNaming, settingsOpds, settingsTasks, settingsAuth, settingsDevice, settingsProfile, app, shared, layout, libraryCreator, bookdrop, metadata};
 export default translations;
