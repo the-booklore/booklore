@@ -1,15 +1,16 @@
+<ng-container *transloco="let t; prefix: 'metadata.manager'">
 <div class="main-container enclosing-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-sitemap"></i>
-      Metadata Manager
+      {{ t('title') }}
       <app-external-doc-link docType="metadataManager"></app-external-doc-link>
     </h2>
     <p class="settings-description">
-      Organize, merge, split, rename, and standardize authors, genres, moods, and tags across your library.
+      {{ t('description') }}
       <i
         class="pi pi-exclamation-triangle info-icon"
-        pTooltip="Important: If 'Write to file' is enabled in settings, operations will modify all relevant files. For libraries with thousands of books, disable 'Write to file' before using this feature to prevent performance issues and potential data corruption."
+        [pTooltip]="t('writeToFileWarning')"
         tooltipPosition="right"
         [escape]="false"></i>
     </p>
@@ -20,7 +21,7 @@
       <p-tablist>
         @for (tab of tabConfigs; track tab.type) {
           <p-tab [value]="tab.type">
-            <i class="pi {{ tab.icon }}"></i> {{ tab.label.endsWith('s') ? tab.label : tab.label + 's' }} ({{ getMetadataItems(tab.type).length }})
+            <i class="pi {{ tab.icon }}"></i> {{ t(tab.labelKey).endsWith('s') ? t(tab.labelKey) : t(tab.labelKey) + 's' }} ({{ getMetadataItems(tab.type).length }})
           </p-tab>
         }
       </p-tablist>
@@ -35,11 +36,11 @@
                   type="text"
                   #tableFilter
                   (input)="filterGlobal($event, dataTable)"
-                  [placeholder]="tab.placeholder"/>
+                  [placeholder]="t(tab.placeholderKey)"/>
               </p-iconfield>
               <div class="actions">
                 <p-button
-                  label="Clear Selection"
+                  [label]="t('clearSelection')"
                   icon="pi pi-times"
                   [disabled]="getSelectedItems(tab.type).length === 0"
                   (onClick)="clearSelection(tab.type)"
@@ -47,7 +48,7 @@
                   size="small"
                   outlined></p-button>
                 <p-button
-                  label="Delete Selected"
+                  [label]="t('deleteSelected')"
                   icon="pi pi-trash"
                   [disabled]="getSelectedItems(tab.type).length === 0"
                   (onClick)="openDeleteDialog(tab.type)"
@@ -55,7 +56,7 @@
                   size="small"
                   outlined></p-button>
                 <p-button
-                  label="Merge/Split Selected"
+                  [label]="t('mergeSplitSelected')"
                   icon="pi pi-sitemap"
                   [disabled]="getSelectedItems(tab.type).length < 2"
                   (onClick)="openMergeDialog(tab.type)"
@@ -89,21 +90,21 @@
                     <th pSortableColumn="value">
                       <div class="header-content">
                         <i class="pi {{ tab.icon }}"></i>
-                        <span>{{ tab.label }}</span>
+                        <span>{{ t(tab.labelKey) }}</span>
                         <p-sortIcon field="value"></p-sortIcon>
                       </div>
                     </th>
                     <th pSortableColumn="count">
                       <div class="header-content">
                         <i class="pi pi-book"></i>
-                        <span>Books</span>
+                        <span>{{ t('booksColumn') }}</span>
                         <p-sortIcon field="count"></p-sortIcon>
                       </div>
                     </th>
                     <th class="actions-header">
                       <div class="header-content">
                         <i class="pi pi-cog"></i>
-                        <span>Actions</span>
+                        <span>{{ t('actionsColumn') }}</span>
                       </div>
                     </th>
                   </tr>
@@ -129,7 +130,7 @@
                         size="small"
                         [outlined]="true"
                         [rounded]="true"
-                        pTooltip="Select similar"
+                        [pTooltip]="t('selectSimilarTooltip')"
                         (onClick)="selectSimilar(tab.type, item.value)"></p-button>
                       <p-button
                         icon="pi pi-pencil"
@@ -137,7 +138,7 @@
                         size="small"
                         [outlined]="true"
                         [rounded]="true"
-                        pTooltip="Rename/Split"
+                        [pTooltip]="t('renameSplitTooltip')"
                         (onClick)="openRenameDialog(tab.type, item)"></p-button>
                       <p-button
                         icon="pi pi-trash"
@@ -145,7 +146,7 @@
                         size="small"
                         [outlined]="true"
                         [rounded]="true"
-                        pTooltip="Delete"
+                        [pTooltip]="t('deleteTooltip')"
                         (onClick)="openDeleteDialog(tab.type, item)"></p-button>
                     </td>
                   </tr>
@@ -159,57 +160,40 @@
   </div>
 
   <p-dialog
-    header="Merge/Split {{ currentMergeType | titlecase }}"
+    [header]="t('mergeSplitDialogTitle', { type: currentMergeType | titlecase })"
     [(visible)]="showMergeDialog"
     [modal]="true"
     class="user-dialog"
     [style]="{width: '50rem'}">
     <div class="dialog-form">
-      <p>You are merging/splitting {{ getSelectedItems(currentMergeType).length }} {{ currentMergeType }}:</p>
+      <p>{{ t('mergeSplitDescription', { count: getSelectedItems(currentMergeType).length, type: currentMergeType }) }}</p>
       <ul class="selected-items">
         @for (item of getSelectedItems(currentMergeType); track item.value) {
           <li>
-            • {{ item.value }} <span class="count">({{ item.count }} books)</span>
+            &#8226; {{ item.value }} <span class="count">{{ t('booksCount', { count: item.count }) }}</span>
           </li>
         }
       </ul>
 
       <div class="form-field">
-        <label for="mergeTarget">Target Value{{ isSingleValueField(currentMergeType) ? '' : '(s)' }}:</label>
+        <label for="mergeTarget">{{ isSingleValueField(currentMergeType) ? t('targetValueLabel') : t('targetValuesLabel') }}</label>
         <input
           id="mergeTarget"
           type="text"
           pInputText
           [(ngModel)]="mergeTarget"
           class="full-width-input"
-          [placeholder]="isSingleValueField(currentMergeType) ? 'e.g., English' : 'e.g., Fiction, Mystery, Thriller'"/>
+          [placeholder]="isSingleValueField(currentMergeType) ? t('singleValuePlaceholder') : t('multiValuePlaceholder')"/>
         @if (isSingleValueField(currentMergeType)) {
-          <small class="help-text">
-            <strong>How it works:</strong><br/>
-            • Enter the standardized value you want all selected items to merge into<br/>
-            • All books with any of the selected {{ currentMergeType }} will be updated to use this single value<br/>
-            <br/>
-            <strong>Example:</strong> When merging "En", "English", "en-US"<br/>
-            • Enter "English" → All books will have their {{ currentMergeType.slice(0, -1) }} merged to "English"<br/>
-            <br/>
-            <strong>Note:</strong> Each book can only have one {{ currentMergeType.slice(0, -1) }}, so only enter one target value.
-          </small>
+          <small class="help-text" [innerHTML]="t('singleMergeHowItWorks', { type: currentMergeType, singular: currentMergeType.slice(0, -1) })"></small>
         } @else {
-          <small class="help-text">
-            <strong>How it works:</strong><br/>
-            • Enter a single value to merge all selected {{ currentMergeType }} into one<br/>
-            • Enter multiple values separated by commas to split into multiple {{ currentMergeType }}<br/>
-            <br/>
-            <strong>Example:</strong> When merging/splitting "Sci-Fi", "SciFi", "Science Fiction"<br/>
-            • Merge: Enter "Science Fiction" → All books get one standardized tag<br/>
-            • Split: Enter "Science Fiction, Sci-Fi" → All books get both the formal name and common abbreviation
-          </small>
+          <small class="help-text" [innerHTML]="t('multiMergeHowItWorks', { type: currentMergeType })"></small>
         }
       </div>
       @if (mergingInProgress) {
         <div class="processing-note">
           <i class="pi pi-info-circle"></i>
-          <span>This process may take longer if "Write to file" is enabled in the settings.</span>
+          <span>{{ t('processingNote') }}</span>
         </div>
       }
     </div>
@@ -217,14 +201,14 @@
     <ng-template pTemplate="footer">
       <div class="dialog-actions">
         <p-button
-          label="Cancel"
+          [label]="'common.cancel' | transloco"
           icon="pi pi-times"
           (onClick)="showMergeDialog = false"
           [disabled]="mergingInProgress"
           severity="secondary"
           outlined></p-button>
         <p-button
-          [label]="mergingInProgress ? 'Processing...' : 'Confirm'"
+          [label]="mergingInProgress ? t('processing') : ('common.confirm' | transloco)"
           [icon]="mergingInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
           [loading]="mergingInProgress"
           [disabled]="mergingInProgress"
@@ -235,51 +219,38 @@
   </p-dialog>
 
   <p-dialog
-    header="Rename/Split {{ currentMergeType | titlecase }}"
+    [header]="t('renameSplitDialogTitle', { type: currentMergeType | titlecase })"
     [(visible)]="showRenameDialog"
     [modal]="true"
     class="user-dialog"
     [style]="{width: '40rem'}">
     <div class="dialog-form">
-      <p>You are renaming/splitting:</p>
+      <p>{{ t('renameSplitDescription') }}</p>
       <div class="current-value">
         <strong>{{ currentRenameItem?.value }}</strong>
-        <span class="count">({{ currentRenameItem?.count }} books)</span>
+        <span class="count">{{ t('booksCount', { count: currentRenameItem?.count }) }}</span>
       </div>
 
       <div class="form-field">
-        <label for="renameTarget">New Name(s):</label>
+        <label for="renameTarget">{{ t('newNamesLabel') }}</label>
         <input
           id="renameTarget"
           type="text"
           pInputText
           [(ngModel)]="renameTarget"
           class="full-width-input"
-          [placeholder]="isSingleValueField(currentMergeType) ? 'e.g., Mystery' : 'e.g., Mystery, Detective'"
+          [placeholder]="isSingleValueField(currentMergeType) ? t('singleRenamePlaceholder') : t('multiRenamePlaceholder')"
           (keyup.enter)="confirmRename()"/>
         @if (isSingleValueField(currentMergeType)) {
-          <small class="help-text">
-            <strong>How it works:</strong><br/>
-            • Enter a new value to rename this {{ currentMergeType.slice(0, -1) }}<br/>
-            <br/>
-            <strong>Note:</strong> Each book can only have one {{ currentMergeType.slice(0, -1) }}, so splitting into multiple values is not allowed.
-          </small>
+          <small class="help-text" [innerHTML]="t('singleRenameHowItWorks', { singular: currentMergeType.slice(0, -1) })"></small>
         } @else {
-          <small class="help-text">
-            <strong>How it works:</strong><br/>
-            • Enter a single value to rename the {{ currentMergeType.slice(0, -1) }}<br/>
-            • Enter multiple values separated by commas to split into multiple {{ currentMergeType }}<br/>
-            <br/>
-            <strong>Example:</strong> When renaming/splitting "Mystery & Detective"<br/>
-            • Rename: Enter "Mystery" → Renames to just "Mystery"<br/>
-            • Split: Enter "Mystery, Detective" → Splits into two separate {{ currentMergeType }}
-          </small>
+          <small class="help-text" [innerHTML]="t('multiRenameHowItWorks', { singular: currentMergeType.slice(0, -1), type: currentMergeType })"></small>
         }
       </div>
       @if (mergingInProgress) {
         <div class="processing-note">
           <i class="pi pi-info-circle"></i>
-          <span>This process may take some time if "Write to file" is enabled in settings.</span>
+          <span>{{ t('renameProcessingNote') }}</span>
         </div>
       }
     </div>
@@ -287,14 +258,14 @@
     <ng-template pTemplate="footer">
       <div class="dialog-actions">
         <p-button
-          label="Cancel"
+          [label]="'common.cancel' | transloco"
           icon="pi pi-times"
           (onClick)="showRenameDialog = false"
           [disabled]="mergingInProgress"
           severity="secondary"
           outlined></p-button>
         <p-button
-          [label]="mergingInProgress ? 'Processing...' : 'Confirm'"
+          [label]="mergingInProgress ? t('processing') : ('common.confirm' | transloco)"
           [icon]="mergingInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
           [loading]="mergingInProgress"
           [disabled]="mergingInProgress"
@@ -305,7 +276,7 @@
   </p-dialog>
 
   <p-dialog
-    header="Delete {{ currentMergeType | titlecase }}"
+    [header]="t('deleteDialogTitle', { type: currentMergeType | titlecase })"
     [(visible)]="showDeleteDialog"
     [modal]="true"
     class="user-dialog"
@@ -313,36 +284,36 @@
     <div class="dialog-form">
       <div class="warning-message">
         <i class="pi pi-exclamation-triangle"></i>
-        <p>You are about to delete {{ currentDeleteItem ? '1' : getSelectedItems(currentMergeType).length }} {{ currentMergeType }}:</p>
+        <p>{{ t('deleteWarning', { count: currentDeleteItem ? 1 : getSelectedItems(currentMergeType).length, type: currentMergeType }) }}</p>
       </div>
 
       @if (currentDeleteItem) {
         <div class="current-value">
           <strong>{{ currentDeleteItem.value }}</strong>
-          <span class="count">({{ currentDeleteItem.count }} books)</span>
+          <span class="count">{{ t('booksCount', { count: currentDeleteItem.count }) }}</span>
         </div>
       } @else {
         <ul class="selected-items">
           @for (item of getSelectedItems(currentMergeType); track item.value) {
             <li>
-              • {{ item.value }} <span class="count">({{ item.count }} books)</span>
+              &#8226; {{ item.value }} <span class="count">{{ t('booksCount', { count: item.count }) }}</span>
             </li>
           }
         </ul>
       }
 
       <div class="delete-info">
-        <p><strong>What will happen:</strong></p>
+        <p><strong>{{ t('whatWillHappen') }}</strong></p>
         <ul>
-          <li>The {{ currentMergeType.slice(0, -1) }} will be removed from all affected books</li>
-          <li>This action cannot be undone</li>
-          <li>Total books affected: <strong>{{ currentDeleteItem ? currentDeleteItem.count : getTotalAffectedBooks(getSelectedItems(currentMergeType)) }}</strong></li>
+          <li>{{ t('deleteItemRemoved', { singular: currentMergeType.slice(0, -1) }) }}</li>
+          <li>{{ t('deleteCannotUndo') }}</li>
+          <li>{{ t('totalBooksAffected') }} <strong>{{ currentDeleteItem ? currentDeleteItem.count : getTotalAffectedBooks(getSelectedItems(currentMergeType)) }}</strong></li>
         </ul>
       </div>
       @if (deletingInProgress) {
         <div class="processing-note">
           <i class="pi pi-info-circle"></i>
-          <span>This process may take some time if "Write to file" is enabled in settings.</span>
+          <span>{{ t('renameProcessingNote') }}</span>
         </div>
       }
     </div>
@@ -350,14 +321,14 @@
     <ng-template pTemplate="footer">
       <div class="dialog-actions">
         <p-button
-          label="Cancel"
+          [label]="'common.cancel' | transloco"
           icon="pi pi-times"
           (onClick)="showDeleteDialog = false"
           [disabled]="deletingInProgress"
           severity="secondary"
           outlined></p-button>
         <p-button
-          [label]="deletingInProgress ? 'Deleting...' : 'Delete'"
+          [label]="deletingInProgress ? t('deleting') : ('common.delete' | transloco)"
           [icon]="deletingInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"
           [loading]="deletingInProgress"
           [disabled]="deletingInProgress"
@@ -367,3 +338,4 @@
     </ng-template>
   </p-dialog>
 </div>
+</ng-container>

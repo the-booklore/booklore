@@ -7,6 +7,7 @@ import {AccordionModule} from 'primeng/accordion';
 import {MessageService} from 'primeng/api';
 import {Button} from 'primeng/button';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 import {Library} from '../../book/model/library.model';
 import {LibraryService} from '../../book/service/library.service';
@@ -20,7 +21,7 @@ import {SidecarService} from '../../metadata/service/sidecar.service';
 @Component({
   selector: 'app-library-metadata-settings-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule, ExternalDocLinkComponent, Button, Tooltip],
+  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule, ExternalDocLinkComponent, Button, Tooltip, TranslocoDirective],
   templateUrl: './library-metadata-settings.component.html',
   styleUrls: ['./library-metadata-settings.component.scss']
 })
@@ -29,6 +30,7 @@ export class LibraryMetadataSettingsComponent implements OnInit {
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
   private sidecarService = inject(SidecarService);
+  private t = inject(TranslocoService);
 
   libraries$: Observable<Library[]> = this.libraryService.libraryState$.pipe(
     map(state => state.libraries || [])
@@ -105,12 +107,12 @@ export class LibraryMetadataSettingsComponent implements OnInit {
 
     this.appSettingsService.saveSettings(settingsToSave).subscribe({
       next: () => {
-        this.showMessage('success', 'Settings Saved', 'Default metadata options have been saved successfully.');
+        this.showMessage('success', this.t.translate('common.success'), this.t.translate('settingsLibMeta.defaultSettings.saveSuccess'));
         this.updateLibrariesUsingDefaults();
       },
       error: (error) => {
         console.error('Error saving default metadata options:', error);
-        this.showMessage('error', 'Save Failed', 'Failed to save default metadata options. Please try again.');
+        this.showMessage('error', this.t.translate('settingsLibMeta.defaultSettings.saveFailed'), this.t.translate('settingsLibMeta.defaultSettings.saveError'));
       }
     });
   }
@@ -129,11 +131,11 @@ export class LibraryMetadataSettingsComponent implements OnInit {
 
     this.appSettingsService.saveSettings(settingsToSave).subscribe({
       next: () => {
-        this.showMessage('success', 'Settings Saved', 'Library metadata options have been saved successfully.');
+        this.showMessage('success', this.t.translate('common.success'), this.t.translate('settingsLibMeta.libraryOverrides.saveSuccess'));
       },
       error: (error) => {
         console.error('Error saving library metadata options:', error);
-        this.showMessage('error', 'Save Failed', 'Failed to save library metadata options. Please try again.');
+        this.showMessage('error', this.t.translate('settingsLibMeta.libraryOverrides.saveFailed'), this.t.translate('settingsLibMeta.libraryOverrides.saveError'));
       }
     });
   }
@@ -254,12 +256,12 @@ export class LibraryMetadataSettingsComponent implements OnInit {
     this.sidecarService.bulkExport(libraryId).subscribe({
       next: (response) => {
         this.sidecarExporting[libraryId] = false;
-        this.showMessage('success', 'Export Complete', `Exported sidecar files for ${response.exported} books.`);
+        this.showMessage('success', this.t.translate('settingsLibMeta.libraryOverrides.exportComplete'), this.t.translate('settingsLibMeta.libraryOverrides.exportSuccess', {count: response.exported}));
       },
       error: (error) => {
         this.sidecarExporting[libraryId] = false;
         console.error('Bulk sidecar export failed:', error);
-        this.showMessage('error', 'Export Failed', 'Failed to export sidecar files. Please try again.');
+        this.showMessage('error', this.t.translate('settingsLibMeta.libraryOverrides.exportFailed'), this.t.translate('settingsLibMeta.libraryOverrides.exportError'));
       }
     });
   }
@@ -271,12 +273,12 @@ export class LibraryMetadataSettingsComponent implements OnInit {
     this.sidecarService.bulkImport(libraryId).subscribe({
       next: (response) => {
         this.sidecarImporting[libraryId] = false;
-        this.showMessage('success', 'Import Complete', `Imported metadata from ${response.imported} sidecar files.`);
+        this.showMessage('success', this.t.translate('settingsLibMeta.libraryOverrides.importComplete'), this.t.translate('settingsLibMeta.libraryOverrides.importSuccess', {count: response.imported}));
       },
       error: (error) => {
         this.sidecarImporting[libraryId] = false;
         console.error('Bulk sidecar import failed:', error);
-        this.showMessage('error', 'Import Failed', 'Failed to import from sidecar files. Please try again.');
+        this.showMessage('error', this.t.translate('settingsLibMeta.libraryOverrides.importFailed'), this.t.translate('settingsLibMeta.libraryOverrides.importError'));
       }
     });
   }

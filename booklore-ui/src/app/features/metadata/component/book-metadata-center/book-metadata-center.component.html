@@ -1,12 +1,12 @@
-<div class="book-metadata-center-container">
+<div class="book-metadata-center-container" *transloco="let t; prefix: 'metadata.center'">
   @if (config) {
     <div class="panel-header">
       <div class="header-icon-wrapper">
         <i class="pi pi-book header-icon"></i>
       </div>
       <div class="header-text">
-        <h2 class="panel-title">Book Details</h2>
-        <p class="panel-description">View and edit book metadata</p>
+        <h2 class="panel-title">{{ t('title') }}</h2>
+        <p class="panel-description">{{ t('description') }}</p>
       </div>
       <p-button
         icon="pi pi-times"
@@ -23,24 +23,24 @@
     <p-tablist>
       <p-tab value="view">
         <i [class]="'pi pi-book'"></i>
-        Book Details
+        {{ t('tabView') }}
       </p-tab>
       @if (admin || canEditMetadata) {
         <p-tab value="edit">
           <i [class]="'pi pi-pencil'"></i>
-          Edit Metadata
+          {{ t('tabEdit') }}
         </p-tab>
       }
       @if (admin || canEditMetadata) {
         <p-tab value="match">
           <i [class]="'pi pi-search'"></i>
-          Search Metadata
+          {{ t('tabSearch') }}
         </p-tab>
       }
       @if (admin || canEditMetadata) {
         <p-tab value="sidecar">
           <i [class]="'pi pi-file'"></i>
-          Sidecar
+          {{ t('tabSidecar') }}
         </p-tab>
       }
     </p-tablist>

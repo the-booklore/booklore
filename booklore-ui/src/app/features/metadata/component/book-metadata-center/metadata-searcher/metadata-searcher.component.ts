@@ -16,6 +16,7 @@ import {AsyncPipe} from '@angular/common';
 import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.component';
 import {BookMetadataService} from '../../../../book/service/book-metadata.service';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-searcher',
@@ -29,7 +30,8 @@ import {Tooltip} from 'primeng/tooltip';
     MetadataPickerComponent,
     MultiSelect,
     AsyncPipe,
-    Tooltip
+    Tooltip,
+    TranslocoDirective
   ],
   standalone: true
 })

@@ -1,39 +1,37 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.patternExtract'">
 <div class="pattern-extract-container">
   <div class="info-banner">
     <i class="pi pi-info-circle"></i>
-    <span>
-      Enter a pattern to extract metadata from filenames of <strong>{{ fileCount }}</strong> selected file(s).
-      Use placeholders like <code>{{ '{' }}SeriesName{{ '}' }}</code> to capture values.
-    </span>
+    <span [innerHTML]="t('infoBanner', { fileCount: fileCount })"></span>
   </div>
 
   <p-divider></p-divider>
 
   <div class="pattern-section">
-    <h4>Pattern</h4>
+    <h4>{{ t('patternTitle') }}</h4>
     <div class="pattern-input-row">
       <input
         #patternInput
         pInputText
         [formControl]="patternControl"
-        [placeholder]="patternPlaceholderText"
+        [placeholder]="t('patternPlaceholder')"
         id="pattern-input"
-        aria-label="Filename pattern for metadata extraction"
+        [attr.aria-label]="t('patternAriaLabel')"
         class="pattern-input"
         (input)="previewPattern()"/>
       <p-button
         icon="pi pi-eye"
-        label="Preview"
+        [label]="t('preview')"
         severity="secondary"
         [disabled]="!hasValidPattern"
-        [ariaLabel]="'Preview pattern extraction on sample files'"
+        [ariaLabel]="t('previewAriaLabel')"
         (click)="previewPattern()">
       </p-button>
     </div>
   </div>
 
   <div class="placeholders-section">
-    <h4>Available Placeholders</h4>
+    <h4>{{ t('availablePlaceholdersTitle') }}</h4>
     <div class="placeholder-chips">
       @for (placeholder of availablePlaceholders; track placeholder.name) {
         <p-chip
@@ -48,11 +46,11 @@
   </div>
 
   <div class="common-patterns-section">
-    <h4>Common Patterns</h4>
+    <h4>{{ t('commonPatternsTitle') }}</h4>
     <div class="common-pattern-buttons">
       @for (commonPattern of commonPatterns; track commonPattern.pattern) {
         <p-button
-          [label]="commonPattern.label"
+          [label]="getCommonPatternLabel(commonPattern.labelKey)"
           severity="secondary"
           size="small"
           outlined
@@ -66,7 +64,7 @@
 
   @if (previewResults.length > 0) {
     <div class="preview-section">
-      <h4>Preview (Sample Files)</h4>
+      <h4>{{ t('previewTitle') }}</h4>
       <div class="preview-list">
         @for (preview of previewResults; track preview.fileName) {
           <div class="preview-item" [ngClass]="getPreviewClass(preview)">
@@ -102,18 +100,18 @@
     @if (isExtracting) {
       <div class="extracting-indicator">
         <p-progressSpinner strokeWidth="4" [style]="spinnerStyle"></p-progressSpinner>
-        <span>Extracting metadata...</span>
+        <span>{{ t('extractingMessage') }}</span>
       </div>
     }
     <p-button
-      label="Cancel"
+      [label]="'common.cancel' | transloco"
       icon="pi pi-times"
       severity="secondary"
       [disabled]="isExtracting"
       (click)="cancel()">
     </p-button>
     <p-button
-      label="Extract and Apply"
+      [label]="t('extractAndApply')"
       icon="pi pi-check"
       severity="success"
       [disabled]="!hasValidPattern || isExtracting"
@@ -121,3 +119,4 @@
     </p-button>
   </div>
 </div>
+</ng-container>

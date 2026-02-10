@@ -1,12 +1,13 @@
+<ng-container *transloco="let t; prefix: 'settingsReader.fonts.upload'">
 <div class="font-upload-dialog">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-upload header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Add New Font</h2>
+      <h2 class="panel-title">{{ t('title') }}</h2>
       <p class="panel-description">
-        Upload a custom font for your EPUB reader
+        {{ t('description') }}
       </p>
     </div>
     <p-button
@@ -24,7 +25,7 @@
       <div class="section-header">
         <span class="section-title">
           <i class="pi pi-file"></i>
-          Select Font File
+          {{ t('selectFile') }}
         </span>
       </div>
 
@@ -47,12 +48,9 @@
             <div class="empty-icon-wrapper">
               <i class="pi pi-cloud-upload empty-icon"></i>
             </div>
-            <h3 class="empty-title">Drag and Drop Font File</h3>
-            <p class="empty-description">
-              Supported formats: <strong>TTF</strong>, <strong>OTF</strong>, <strong>WOFF</strong>, <strong>WOFF2</strong>
-              <br/>
-              Maximum file size: 5 MB
-            </p>
+            <h3 class="empty-title">{{ t('dragDrop') }}</h3>
+            <p class="empty-description" [innerHTML]="t('supportedFormats')"></p>
+            <p class="empty-description">{{ t('maxSize') }}</p>
           </div>
         </div>
       } @else {
@@ -69,7 +67,7 @@
           <div class="preview-section">
             <label class="preview-label">
               <i class="pi pi-eye"></i>
-              Font Preview
+              {{ t('fontPreview') }}
             </label>
             <div class="font-preview" [style.font-family]="previewFontFamily">
               <p class="preview-paragraph">
@@ -91,9 +89,9 @@
 
         <div class="setting-item">
           <div class="setting-info">
-            <label for="fontName" class="setting-label">Font Display Name</label>
+            <label for="fontName" class="setting-label">{{ t('displayName') }}</label>
             <p class="setting-description">
-              This name will appear in the font selector when reading EPUB books.
+              {{ t('displayNameDesc') }}
             </p>
           </div>
           <div class="setting-control">
@@ -101,7 +99,7 @@
               pInputText
               id="fontName"
               [(ngModel)]="uploadedFontName"
-              placeholder="e.g., Bookerly, Open Sans, Merriweather"
+              [placeholder]="t('displayNamePlaceholder')"
               [disabled]="isUploading"
               class="font-name-input"
             />
@@ -110,10 +108,11 @@
       </div>
     }
   </div>
+  </div>
 
   <div class="dialog-footer">
     <p-button
-      label="Cancel"
+      [label]="'common.cancel' | transloco"
       icon="pi pi-times"
       severity="secondary"
       [outlined]="true"
@@ -121,7 +120,7 @@
       [disabled]="isUploading"
     ></p-button>
     <p-button
-      label="Upload Font"
+      [label]="t('uploadBtn')"
       icon="pi pi-upload"
       (click)="uploadFont()"
       [disabled]="isUploading || !selectedFile || !uploadedFontName.trim()"
@@ -129,3 +128,4 @@
     ></p-button>
   </div>
 </div>
+</ng-container>

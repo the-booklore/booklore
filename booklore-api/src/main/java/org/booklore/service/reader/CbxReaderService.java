@@ -1,12 +1,5 @@
 package org.booklore.service.reader;
 
-import org.booklore.exception.ApiError;
-import org.booklore.model.dto.response.CbxPageInfo;
-import org.booklore.model.entity.BookEntity;
-import org.booklore.model.entity.BookFileEntity;
-import org.booklore.model.enums.BookFileType;
-import org.booklore.repository.BookRepository;
-import org.booklore.util.FileUtils;
 import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +8,13 @@ import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.pdfbox.io.IOUtils;
+import org.booklore.exception.ApiError;
+import org.booklore.model.dto.response.CbxPageInfo;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.repository.BookRepository;
+import org.booklore.util.FileUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
@@ -61,12 +61,14 @@ public class CbxReaderService {
         final List<String> imageEntries;
         final long lastModified;
         final Charset successfulEncoding;
+        final boolean useUnicodeExtraFields;
         volatile long lastAccessed;
 
-        CachedArchiveMetadata(List<String> imageEntries, long lastModified, Charset successfulEncoding) {
+        CachedArchiveMetadata(List<String> imageEntries, long lastModified, Charset successfulEncoding, boolean useUnicodeExtraFields) {
             this.imageEntries = List.copyOf(imageEntries);
             this.lastModified = lastModified;
             this.successfulEncoding = successfulEncoding;
+            this.useUnicodeExtraFields = useUnicodeExtraFields;
             this.lastAccessed = System.currentTimeMillis();
         }
     }
@@ -130,7 +132,7 @@ public class CbxReaderService {
         CachedArchiveMetadata metadata = getCachedMetadata(cbxPath);
         validatePageRequest(bookId, page, metadata.imageEntries);
         String entryName = metadata.imageEntries.get(page - 1);
-        streamEntryFromArchive(cbxPath, entryName, outputStream, metadata.successfulEncoding);
+        streamEntryFromArchive(cbxPath, entryName, outputStream, metadata);
     }
 
     private Path getBookPath(Long bookId, String bookType) {
@@ -198,23 +200,10 @@ public class CbxReaderService {
             return scanZipMetadata(cbxPath, lastModified);
         } else if (filename.endsWith(CB7_EXTENSION)) {
             List<String> entries = getImageEntriesFrom7z(cbxPath);
-            return new CachedArchiveMetadata(entries, lastModified, null);
+            return new CachedArchiveMetadata(entries, lastModified, null, false);
         } else if (filename.endsWith(CBR_EXTENSION)) {
             List<String> entries = getImageEntriesFromRar(cbxPath);
-            return new CachedArchiveMetadata(entries, lastModified, null);
-        } else {
-            throw new IOException("Unsupported archive format: " + cbxPath.getFileName());
-        }
-    }
-
-    private void streamEntryFromArchive(Path cbxPath, String entryName, OutputStream outputStream, Charset cachedEncoding) throws IOException {
-        String filename = cbxPath.getFileName().toString().toLowerCase();
-        if (filename.endsWith(CBZ_EXTENSION)) {
-            streamEntryFromZip(cbxPath, entryName, outputStream, cachedEncoding);
-        } else if (filename.endsWith(CB7_EXTENSION)) {
-            streamEntryFrom7z(cbxPath, entryName, outputStream);
-        } else if (filename.endsWith(CBR_EXTENSION)) {
-            streamEntryFromRar(cbxPath, entryName, outputStream);
+            return new CachedArchiveMetadata(entries, lastModified, null, false);
         } else {
             throw new IOException("Unsupported archive format: " + cbxPath.getFileName());
         }
@@ -225,35 +214,57 @@ public class CbxReaderService {
         CachedArchiveMetadata oldCache = archiveCache.get(cacheKey);
         if (oldCache != null && oldCache.successfulEncoding != null) {
             try {
-                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, oldCache.successfulEncoding, true);
-                return new CachedArchiveMetadata(entries, lastModified, oldCache.successfulEncoding);
+                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, oldCache.successfulEncoding, true, oldCache.useUnicodeExtraFields);
+                return new CachedArchiveMetadata(entries, lastModified, oldCache.successfulEncoding, oldCache.useUnicodeExtraFields);
             } catch (Exception e) {
-                log.debug("Cached encoding {} failed, trying others", oldCache.successfulEncoding);
+                log.debug("Cached encoding {} with useUnicode={} failed, trying others", oldCache.successfulEncoding, oldCache.useUnicodeExtraFields);
             }
         }
+
+        // Try combinations per encoding
         for (Charset encoding : ENCODINGS_TO_TRY) {
+            // Priority 1: Fast path, Unicode Enabled
             try {
-                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, encoding, true);
-                return new CachedArchiveMetadata(entries, lastModified, encoding);
+                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, encoding, true, true);
+                return new CachedArchiveMetadata(entries, lastModified, encoding, true);
             } catch (Exception e) {
-                log.debug("ZIP fast path failed for encoding {}: {}", encoding, e.getMessage());
+                log.trace("ZIP strategy failed (Fast, Unicode, {}): {}", encoding, e.getMessage());
             }
+            
+            // Priority 2: Slow path, Unicode Enabled
             try {
-                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, encoding, false);
-                return new CachedArchiveMetadata(entries, lastModified, encoding);
+                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, encoding, false, true);
+                return new CachedArchiveMetadata(entries, lastModified, encoding, true);
             } catch (Exception e) {
-                log.debug("ZIP slow path failed for encoding {}: {}", encoding, e.getMessage());
+                log.trace("ZIP strategy failed (Slow, Unicode, {}): {}", encoding, e.getMessage());
+            }
+
+            // Priority 3: Fast path, Unicode Disabled (Fallback)
+            try {
+                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, encoding, true, false);
+                return new CachedArchiveMetadata(entries, lastModified, encoding, false);
+            } catch (Exception e) {
+                log.trace("ZIP strategy failed (Fast, No-Unicode, {}): {}", encoding, e.getMessage());
+            }
+
+            // Priority 4: Slow path, Unicode Disabled (Fallback)
+            try {
+                List<String> entries = getImageEntriesFromZipWithEncoding(cbxPath, encoding, false, false);
+                return new CachedArchiveMetadata(entries, lastModified, encoding, false);
+            } catch (Exception e) {
+                log.trace("ZIP strategy failed (Slow, No-Unicode, {}): {}", encoding, e.getMessage());
             }
         }
+
         throw new IOException("Unable to read ZIP archive with any supported encoding");
     }
 
-    private List<String> getImageEntriesFromZipWithEncoding(Path cbxPath, Charset charset, boolean useFastPath) throws IOException {
+    private List<String> getImageEntriesFromZipWithEncoding(Path cbxPath, Charset charset, boolean useFastPath, boolean useUnicodeExtraFields) throws IOException {
         try (org.apache.commons.compress.archivers.zip.ZipFile zipFile =
                      org.apache.commons.compress.archivers.zip.ZipFile.builder()
                              .setPath(cbxPath)
                              .setCharset(charset)
-                             .setUseUnicodeExtraFields(true)
+                             .setUseUnicodeExtraFields(useUnicodeExtraFields)
                              .setIgnoreLocalFileHeader(useFastPath)
                              .get()) {
             List<String> entries = new ArrayList<>();
@@ -269,41 +280,59 @@ public class CbxReaderService {
         }
     }
 
-    private void streamEntryFromZip(Path cbxPath, String entryName, OutputStream outputStream, Charset cachedEncoding) throws IOException {
-        if (cachedEncoding != null) {
-            if (streamEntryFromZipWithEncoding(cbxPath, entryName, outputStream, cachedEncoding, true)) {
-                return;
-            }
-            if (streamEntryFromZipWithEncoding(cbxPath, entryName, outputStream, cachedEncoding, false)) {
-                return;
-            }
+    private void streamEntryFromZip(Path cbxPath, String entryName, OutputStream outputStream, CachedArchiveMetadata metadata) throws IOException {
+        Charset encoding = metadata != null ? metadata.successfulEncoding : null;
+        boolean useUnicode = metadata != null && metadata.useUnicodeExtraFields;
+
+        if (encoding != null) {
+            if (tryStreamEntry(cbxPath, entryName, outputStream, encoding, true, useUnicode)) return;
+            if (tryStreamEntry(cbxPath, entryName, outputStream, encoding, false, useUnicode)) return;
+                    }
+        
+        for (Charset charset : ENCODINGS_TO_TRY) {
+            if (charset.equals(encoding)) continue; // Skip failed cached encoding if we want, or retry it with different flags? 
+            
+            if (tryStreamEntry(cbxPath, entryName, outputStream, charset, true, true)) return;
+            if (tryStreamEntry(cbxPath, entryName, outputStream, charset, false, true)) return;
+            if (tryStreamEntry(cbxPath, entryName, outputStream, charset, true, false)) return;
+            if (tryStreamEntry(cbxPath, entryName, outputStream, charset, false, false)) return;
         }
-        for (Charset encoding : ENCODINGS_TO_TRY) {
-            if (encoding.equals(cachedEncoding)) continue;
-            try {
-                if (streamEntryFromZipWithEncoding(cbxPath, entryName, outputStream, encoding, true)) {
-                    return;
-                }
-            } catch (Exception e) {
-                log.debug("ZIP stream fast path failed for encoding {}: {}", encoding, e.getMessage());
-            }
-            try {
-                if (streamEntryFromZipWithEncoding(cbxPath, entryName, outputStream, encoding, false)) {
-                    return;
-                }
-            } catch (Exception e) {
-                log.debug("ZIP stream slow path failed for encoding {}: {}", encoding, e.getMessage());
-            }
-        }
+
         throw new IOException("Unable to find entry in ZIP archive: " + entryName);
     }
+    
+    private boolean tryStreamEntry(Path cbxPath, String entryName, OutputStream outputStream, Charset charset, boolean useFastPath, boolean useUnicode) {
+        try {
+            if (streamEntryFromZipWithEncoding(cbxPath, entryName, outputStream, charset, useFastPath, useUnicode)) {
+                return true;
+            }
+        } catch (Exception e) {
+             log.trace("Stream strategy failed ({}, Fast={}, Unicode={}): {}", charset, useFastPath, useUnicode, e.getMessage());
+        }
+        return false;
+    }
+    
 
-    private boolean streamEntryFromZipWithEncoding(Path cbxPath, String entryName, OutputStream outputStream, Charset charset, boolean useFastPath) throws IOException {
+
+    private void streamEntryFromArchive(Path cbxPath, String entryName, OutputStream outputStream, CachedArchiveMetadata metadata) throws IOException {
+        String filename = cbxPath.getFileName().toString().toLowerCase();
+        if (filename.endsWith(CBZ_EXTENSION)) {
+            streamEntryFromZip(cbxPath, entryName, outputStream, metadata);
+        } else if (filename.endsWith(CB7_EXTENSION)) {
+            streamEntryFrom7z(cbxPath, entryName, outputStream);
+        } else if (filename.endsWith(CBR_EXTENSION)) {
+            streamEntryFromRar(cbxPath, entryName, outputStream);
+        } else {
+            throw new IOException("Unsupported archive format: " + cbxPath.getFileName());
+        }
+    }
+
+    private boolean streamEntryFromZipWithEncoding(Path cbxPath, String entryName, OutputStream outputStream, Charset charset, boolean useFastPath, boolean useUnicodeExtraFields) throws IOException {
         try (org.apache.commons.compress.archivers.zip.ZipFile zipFile =
                      org.apache.commons.compress.archivers.zip.ZipFile.builder()
                              .setPath(cbxPath)
                              .setCharset(charset)
-                             .setUseUnicodeExtraFields(true)
+                             .setUseUnicodeExtraFields(useUnicodeExtraFields)
                              .setIgnoreLocalFileHeader(useFastPath)
                              .get()) {
             ZipArchiveEntry entry = zipFile.getEntry(entryName);

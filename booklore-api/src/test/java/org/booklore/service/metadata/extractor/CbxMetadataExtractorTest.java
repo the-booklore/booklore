@@ -56,7 +56,7 @@ class CbxMetadataExtractorTest {
                 "  <LanguageISO>en</LanguageISO>" +
                 "  <Writer>Alice</Writer>" +
                 "  <Penciller>Bob</Penciller>" +
-                "  <Tags>action;adventure</Tags>" +
+                "  <Genre>action;adventure</Genre>" +
                 "</ComicInfo>";
 
         File cbz = createCbz("with_meta.cbz", new LinkedHashMap<>() {{
@@ -94,7 +94,7 @@ class CbxMetadataExtractorTest {
                 "  <LanguageISO>en</LanguageISO>" +
                 "  <Writer>Alice</Writer>" +
                 "  <Penciller>Bob</Penciller>" +
-                "  <Tags>action;adventure</Tags>" +
+                "  <Genre>action;adventure</Genre>" +
                 "</ComicInfo>";
 
         File cbz = createCbz("with_meta.cbz", new LinkedHashMap<>() {{
@@ -279,6 +279,59 @@ class CbxMetadataExtractorTest {
         BookMetadata md = extractor.extractMetadata(cbz);
         assertEquals("Series Name", md.getSeriesName());
         assertEquals(10f, md.getSeriesNumber());
+    }
+
+    @Test
+    void extractMetadata_fromCbz_withBookloreNotes_populatesFields() throws Exception {
+        String xml = "<ComicInfo>" +
+                "  <Title>BookLore Comic</Title>" +
+                "  <Notes>" +
+                "Some random notes here.\n" +
+                "[BookLore:Subtitle] The Subtitle\n" +
+                "[BookLore:Moods] Dark, Mystery\n" +
+                "[BookLore:Tags] Fiction, Thriller\n" +
+                "[BookLore:ISBN13] 9781234567890\n" +
+                "[BookLore:AmazonRating] 4.5\n" +
+                "[BookLore:GoodreadsRating] 3.8\n" +
+                "  </Notes>" +
+                "</ComicInfo>";
+
+        File cbz = createCbz("booklore_notes.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
+        }});
+
+        BookMetadata md = extractor.extractMetadata(cbz);
+        
+        assertEquals("BookLore Comic", md.getTitle());
+        assertEquals("The Subtitle", md.getSubtitle());
+        assertEquals("Some random notes here.", md.getDescription()); // Notes extracted as description if summary missing
+        assertEquals("9781234567890", md.getIsbn13());
+        assertEquals(4.5, md.getAmazonRating());
+        assertEquals(3.8, md.getGoodreadsRating());
+        assertTrue(md.getMoods().contains("Dark"));
+        assertTrue(md.getMoods().contains("Mystery"));
+        assertTrue(md.getTags().contains("Fiction"));
+        assertTrue(md.getTags().contains("Thriller"));
+    }
+
+    @Test
+    void extractMetadata_fromCbz_withWebField_populatesIds() throws Exception {
+        String xml = "<ComicInfo>" +
+                "  <Title>Web Links Comic</Title>" +
+                "  <Web>https://www.goodreads.com/book/show/12345, https://www.amazon.com/dp/B001234567, https://comicvine.gamespot.com/issue/9999, https://hardcover.app/books/hc-id</Web>" +
+                "</ComicInfo>";
+
+        File cbz = createCbz("web_links.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
+        }});
+
+        BookMetadata md = extractor.extractMetadata(cbz);
+        
+        assertEquals("Web Links Comic", md.getTitle());
+        assertEquals("12345", md.getGoodreadsId());
+        assertEquals("B001234567", md.getAsin());
+        assertEquals("9999", md.getComicvineId());
+        assertEquals("hc-id", md.getHardcoverId());
     }
 
     // ---------- helpers ----------

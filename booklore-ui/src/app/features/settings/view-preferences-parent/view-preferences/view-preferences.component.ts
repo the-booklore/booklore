@@ -15,6 +15,7 @@ import {Tooltip} from 'primeng/tooltip';
 import {filter, take, takeUntil} from 'rxjs/operators';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from '@angular/cdk/drag-drop';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-view-preferences',
@@ -29,52 +30,55 @@ import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from 
     ToggleSwitch,
     CdkDropList,
     CdkDrag,
-    CdkDragHandle
+    CdkDragHandle,
+    TranslocoDirective
   ],
   templateUrl: './view-preferences.component.html',
   styleUrl: './view-preferences.component.scss'
 })
 export class ViewPreferencesComponent implements OnInit, OnDestroy {
-  sortOptions = [
-    {label: 'Title', field: 'title'},
-    {label: 'Title + Series', field: 'titleSeries'},
-    {label: 'File Name', field: 'fileName'},
-    {label: 'File Path', field: 'filePath'},
-    {label: 'Author', field: 'author'},
-    {label: 'Author (Surname)', field: 'authorSurnameVorname'},
-    {label: 'Author + Series', field: 'authorSeries'},
-    {label: 'Last Read', field: 'lastReadTime'},
-    {label: 'Personal Rating', field: 'personalRating'},
-    {label: 'Added On', field: 'addedOn'},
-    {label: 'File Size', field: 'fileSizeKb'},
-    {label: 'Locked', field: 'locked'},
-    {label: 'Publisher', field: 'publisher'},
-    {label: 'Published Date', field: 'publishedDate'},
-    {label: 'Amazon Rating', field: 'amazonRating'},
-    {label: 'Amazon #', field: 'amazonReviewCount'},
-    {label: 'Goodreads Rating', field: 'goodreadsRating'},
-    {label: 'Goodreads #', field: 'goodreadsReviewCount'},
-    {label: 'Hardcover Rating', field: 'hardcoverRating'},
-    {label: 'Hardcover #', field: 'hardcoverReviewCount'},
-    {label: 'Ranobedb Rating', field: 'ranobedbRating'},
-    {label: 'Pages', field: 'pageCount'},
-    {label: 'Random', field: 'random'},
+  private t = inject(TranslocoService);
+
+  sortOptions: {label: string; field: string; translationKey: string}[] = [
+    {label: 'Title', field: 'title', translationKey: 'sortTitle'},
+    {label: 'Title + Series', field: 'titleSeries', translationKey: 'sortTitleSeries'},
+    {label: 'File Name', field: 'fileName', translationKey: 'sortFileName'},
+    {label: 'File Path', field: 'filePath', translationKey: 'sortFilePath'},
+    {label: 'Author', field: 'author', translationKey: 'sortAuthor'},
+    {label: 'Author (Surname)', field: 'authorSurnameVorname', translationKey: 'sortAuthorSurname'},
+    {label: 'Author + Series', field: 'authorSeries', translationKey: 'sortAuthorSeries'},
+    {label: 'Last Read', field: 'lastReadTime', translationKey: 'sortLastRead'},
+    {label: 'Personal Rating', field: 'personalRating', translationKey: 'sortPersonalRating'},
+    {label: 'Added On', field: 'addedOn', translationKey: 'sortAddedOn'},
+    {label: 'File Size', field: 'fileSizeKb', translationKey: 'sortFileSize'},
+    {label: 'Locked', field: 'locked', translationKey: 'sortLocked'},
+    {label: 'Publisher', field: 'publisher', translationKey: 'sortPublisher'},
+    {label: 'Published Date', field: 'publishedDate', translationKey: 'sortPublishedDate'},
+    {label: 'Amazon Rating', field: 'amazonRating', translationKey: 'sortAmazonRating'},
+    {label: 'Amazon #', field: 'amazonReviewCount', translationKey: 'sortAmazonCount'},
+    {label: 'Goodreads Rating', field: 'goodreadsRating', translationKey: 'sortGoodreadsRating'},
+    {label: 'Goodreads #', field: 'goodreadsReviewCount', translationKey: 'sortGoodreadsCount'},
+    {label: 'Hardcover Rating', field: 'hardcoverRating', translationKey: 'sortHardcoverRating'},
+    {label: 'Hardcover #', field: 'hardcoverReviewCount', translationKey: 'sortHardcoverCount'},
+    {label: 'Ranobedb Rating', field: 'ranobedbRating', translationKey: 'sortRanobedbRating'},
+    {label: 'Pages', field: 'pageCount', translationKey: 'sortPages'},
+    {label: 'Random', field: 'random', translationKey: 'sortRandom'},
   ];
 
-  entityTypeOptions = [
-    {label: 'Library', value: 'LIBRARY'},
-    {label: 'Shelf', value: 'SHELF'},
-    {label: 'Magic Shelf', value: 'MAGIC_SHELF'}
+  entityTypeOptions: {label: string; value: string; translationKey: string}[] = [
+    {label: 'Library', value: 'LIBRARY', translationKey: 'entityLibrary'},
+    {label: 'Shelf', value: 'SHELF', translationKey: 'entityShelf'},
+    {label: 'Magic Shelf', value: 'MAGIC_SHELF', translationKey: 'entityMagicShelf'}
   ];
 
-  sortDirectionOptions = [
-    {label: 'Ascending', value: 'ASC'},
-    {label: 'Descending', value: 'DESC'}
+  sortDirectionOptions: {label: string; value: string; translationKey: string}[] = [
+    {label: 'Ascending', value: 'ASC', translationKey: 'ascending'},
+    {label: 'Descending', value: 'DESC', translationKey: 'descending'}
   ];
 
-  viewModeOptions = [
-    {label: 'Grid', value: 'GRID'},
-    {label: 'Table', value: 'TABLE'}
+  viewModeOptions: {label: string; value: string; translationKey: string}[] = [
+    {label: 'Grid', value: 'GRID', translationKey: 'viewGrid'},
+    {label: 'Table', value: 'TABLE', translationKey: 'viewTable'}
   ];
 
   libraryOptions: { label: string; value: number }[] = [];
@@ -209,13 +213,14 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
   }
 
   // Multi-sort criteria methods
-  get availableSortFields(): {label: string; field: string}[] {
+  get availableSortFields(): {label: string; field: string; translationKey: string}[] {
     const usedFields = new Set(this.sortCriteria.map(c => c.field));
     return this.sortOptions.filter(opt => !usedFields.has(opt.field));
   }
 
   getSortLabel(field: string): string {
-    return this.sortOptions.find(opt => opt.field === field)?.label ?? field;
+    const key = this.sortOptions.find(opt => opt.field === field)?.translationKey;
+    return key ? this.t.translate('settingsView.librarySort.' + key) : field;
   }
 
   addSortCriterion(): void {
@@ -289,8 +294,8 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Saved',
-      detail: 'Your sorting and view preferences were saved successfully.'
+      summary: this.t.translate('settingsView.librarySort.saveSuccess'),
+      detail: this.t.translate('settingsView.librarySort.saveSuccessDetail')
     });
   }
 }

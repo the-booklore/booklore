@@ -1,25 +1,22 @@
+<ng-container *transloco="let t; prefix: 'settingsTasks'">
 <div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-list-check"></i>
-      System Task Manager
+      {{ t('title') }}
       <app-external-doc-link docType="taskManagement"></app-external-doc-link>
     </h2>
-    <p class="settings-description">
-      Manage automated system tasks for library maintenance, metadata refreshing, and cache cleanup.
-      Schedule recurring operations using
-      <a href="https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions" target="_blank" rel="noopener noreferrer" class="cron-link">Spring cron expressions</a>.
-    </p>
+    <p class="settings-description" [innerHTML]="t('description')"></p>
   </div>
 
   <div class="settings-card">
     <div class="section-header">
       <h3 class="section-title">
         <i class="pi pi-cog"></i>
-        System Tasks
+        {{ t('systemTasks.sectionTitle') }}
       </h3>
       <p class="section-description">
-        Execute tasks manually, monitor progress in real-time, and configure scheduled automation.
+        {{ t('systemTasks.sectionDesc') }}
       </p>
     </div>
 
@@ -27,14 +24,14 @@
       @if (loading && taskInfos.length === 0) {
         <div class="loading-state">
           <i class="pi pi-spin pi-spinner"></i>
-          <span>Loading tasks...</span>
+          <span>{{ t('loading') }}</span>
         </div>
       }
 
       @if (!loading && taskInfos.length === 0) {
         <div class="empty-state">
           <i class="pi pi-check-circle"></i>
-          <p class="empty-title">No tasks available</p>
+          <p class="empty-title">{{ t('emptyTitle') }}</p>
         </div>
       }
 
@@ -52,12 +49,12 @@
                     @if (isTaskRunning(taskInfo.taskType)) {
                       <span class="status-badge running">
                         <i class="pi pi-spin pi-spinner"></i>
-                        Running
+                        {{ t('status.running') }}
                       </span>
                     } @else if (isTaskStale(getTaskHistory(taskInfo.taskType))) {
                       <span class="status-badge stale">
                         <i class="pi pi-exclamation-triangle"></i>
-                        Stale
+                        {{ t('status.stale') }}
                       </span>
                     } @else if (getTaskHistory(taskInfo.taskType)?.id) {
                       <span class="status-badge" [ngClass]="getLastRunInfoClass(taskInfo.taskType)">
@@ -79,7 +76,7 @@
                         @if (getCronConfig(taskInfo.taskType)?.cronExpression) {
                           <code class="cron-value">{{ getCronConfig(taskInfo.taskType)!.cronExpression }}</code>
                         } @else {
-                          <span class="cron-empty">No schedule</span>
+                          <span class="cron-empty">{{ t('cron.noSchedule') }}</span>
                         }
                         <p-button
                           icon="pi pi-pencil"
@@ -88,7 +85,7 @@
                           [rounded]="true"
                           severity="info"
                           [disabled]="cronUpdating"
-                          pTooltip="Edit"
+                          [pTooltip]="t('cron.edit')"
                           (onClick)="startEditingCron(taskInfo.taskType)">
                         </p-button>
                       } @else {
@@ -99,7 +96,7 @@
                             [class.has-error]="!!cronValidationError"
                             [(ngModel)]="editingCronExpression"
                             (ngModelChange)="onCronExpressionChange()"
-                            placeholder="e.g., 0 2 * * *"
+                            [placeholder]="t('cron.placeholder')"
                             (keyup.enter)="saveCronExpression(taskInfo.taskType)"
                             (keyup.escape)="cancelEditingCron()">
                           <p-button
@@ -147,7 +144,7 @@
                   }
                   @if (canCancelTask(getTaskHistory(taskInfo.taskType)) && !isTaskStale(getTaskHistory(taskInfo.taskType))) {
                     <p-button
-                      label="Cancel"
+                      [label]="'common.cancel' | transloco"
                       [icon]="getCancelButtonIcon(taskInfo.taskType)"
                       severity="danger"
                       [outlined]="true"
@@ -169,15 +166,20 @@
 
               @if (!isTaskRunning(taskInfo.taskType) && taskInfo.taskType === TaskType.REFRESH_LIBRARY_METADATA) {
                 <div class="task-options">
-                  <label class="option-label">Metadata Replace Mode:</label>
+                  <label class="option-label">{{ t('metadataReplace.label') }}</label>
                   <p-select
                     [options]="metadataReplaceOptions"
                     [(ngModel)]="selectedMetadataReplaceMode"
                     size="small"
-                    optionLabel="label"
                     optionValue="value"
-                    placeholder="Select mode"
+                    [placeholder]="t('metadataReplace.selectMode')"
                     class="mode-select">
+                    <ng-template let-option pTemplate="item">
+                      {{ option.translationKey | transloco }}
+                    </ng-template>
+                    <ng-template let-option pTemplate="selectedItem">
+                      {{ option.translationKey | transloco }}
+                    </ng-template>
                   </p-select>
                   <span class="option-hint">{{ getMetadataReplaceDescription(selectedMetadataReplaceMode) }}</span>
                 </div>
@@ -188,18 +190,18 @@
                   @if (isTaskStale(getTaskHistory(taskInfo.taskType))) {
                     <div class="stale-warning">
                       <i class="pi pi-exclamation-triangle"></i>
-                      <span>This task appears stuck. No updates received for over 5 minutes.</span>
+                      <span>{{ t('progress.staleWarning') }}</span>
                     </div>
                   }
                   @if (getTaskHistory(taskInfo.taskType)?.message) {
                     <div class="progress-row">
-                      <span class="progress-label">Status:</span>
+                      <span class="progress-label">{{ t('progress.statusLabel') }}</span>
                       <span class="progress-value">{{ getTaskStatusMessage(taskInfo.taskType) }}</span>
                     </div>
                   }
                   @if (getTaskProgressPercentage(taskInfo.taskType) !== null) {
                     <div class="progress-row">
-                      <span class="progress-label">Progress:</span>
+                      <span class="progress-label">{{ t('progress.progressLabel') }}</span>
                       <div class="progress-bar-container">
                         <p-progressbar [value]="getTaskProgressPercentage(taskInfo.taskType)!"></p-progressbar>
                         <span class="progress-percent">{{ getTaskProgressPercentage(taskInfo.taskType) }}%</span>
@@ -208,7 +210,7 @@
                   }
                   @if (getTaskUpdatedAt(taskInfo.taskType)) {
                     <div class="progress-row">
-                      <span class="progress-label">Started:</span>
+                      <span class="progress-label">{{ t('progress.startedLabel') }}</span>
                       <span class="progress-value">{{ formatDate(getTaskUpdatedAt(taskInfo.taskType)!) }}</span>
                     </div>
                   }
@@ -221,3 +223,4 @@
     </div>
   </div>
 </div>
+</ng-container>

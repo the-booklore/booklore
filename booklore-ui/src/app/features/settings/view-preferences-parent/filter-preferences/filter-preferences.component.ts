@@ -7,6 +7,7 @@ import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
 import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 const MIN_VISIBLE_FILTERS = 5;
 const MAX_VISIBLE_FILTERS = 20;
@@ -19,7 +20,9 @@ const MAX_VISIBLE_FILTERS = 20;
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
-    Tooltip
+    Tooltip,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './filter-preferences.component.html',
   styleUrl: './filter-preferences.component.scss'
@@ -43,6 +46,7 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   userData$: Observable<UserState> = this.userService.userState$;
@@ -82,8 +86,8 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     this.userService.updateUserSetting(this.currentUser.id, rootKey, updatedValue);
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Updated',
-      detail: 'Your preferences have been saved successfully.',
+      summary: this.t.translate('settingsView.sidebarSort.prefsUpdated'),
+      detail: this.t.translate('settingsView.sidebarSort.prefsUpdatedDetail'),
       life: 1500
     });
   }
@@ -133,6 +137,6 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
   }
 
   get selectionCountText(): string {
-    return `${this.selectedVisibleFilters.length} of ${this.allFilterOptions.length} selected`;
+    return this.t.translate('settingsView.filter.selectionCount', {count: this.selectedVisibleFilters.length, total: this.allFilterOptions.length});
   }
 }

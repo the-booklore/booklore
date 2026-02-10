@@ -1,3 +1,4 @@
+<ng-container *transloco="let t; prefix: 'layout.topbar'">
 <div class="layout-topbar">
 
   <a class="layout-topbar-logo topbar-logo" routerLink="">
@@ -32,21 +33,21 @@
         @if (userService.userState$ | async; as userState) {
           @if (userState.user?.permissions?.canAccessBookdrop || userState.user?.permissions?.admin) {
             <li>
-              <a class="topbar-item" (click)="navigateToBookdrop()" pTooltip="Bookdrop" tooltipPosition="bottom">
+              <a class="topbar-item" (click)="navigateToBookdrop()" [pTooltip]="t('bookdrop')" tooltipPosition="bottom">
                 <i class="pi pi-inbox topbar-icon"></i>
               </a>
             </li>
           }
           @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
             <li>
-              <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
+              <a class="topbar-item" (click)="openLibraryCreatorDialog()" [pTooltip]="t('createNewLibrary')" tooltipPosition="bottom">
                 <i class="pi pi-plus-circle topbar-icon"></i>
               </a>
             </li>
           }
           @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
             <li>
-              <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
+              <a class="topbar-item" (click)="openFileUploadDialog()" [pTooltip]="t('uploadBook')" tooltipPosition="bottom">
                 <i class="pi pi-upload topbar-icon"></i>
               </a>
             </li>
@@ -74,14 +75,14 @@
         @if (userService.userState$ | async; as userState) {
           @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
             <li>
-              <a class="topbar-item" (click)="navigateToMetadataManager()" pTooltip="Metadata Manager" tooltipPosition="bottom">
+              <a class="topbar-item" (click)="navigateToMetadataManager()" [pTooltip]="t('metadataManager')" tooltipPosition="bottom">
                 <i class="pi pi-sparkles topbar-icon"></i>
               </a>
             </li>
           }
         }
         <li>
-          <a class="topbar-item" (click)="navigateToSettings()" pTooltip="Settings" tooltipPosition="bottom">
+          <a class="topbar-item" (click)="navigateToSettings()" [pTooltip]="t('settings')" tooltipPosition="bottom">
             <i class="pi pi-cog topbar-icon"></i>
           </a>
         </li>
@@ -125,6 +126,17 @@
           <i class="pi pi-heart heart-icon"></i>
         </li>
         <li class="topbar-item-relative">
+          <button
+            type="button"
+            class="topbar-item"
+            (click)="langMenu.toggle($event)"
+            [pTooltip]="t('language')"
+            tooltipPosition="bottom">
+            <i class="pi pi-language topbar-icon"></i>
+          </button>
+          <p-menu #langMenu [model]="langMenuItems" [popup]="true" appendTo="body"/>
+        </li>
+        <li class="topbar-item-relative">
           <button type="button"
                   class="topbar-item config-item"
                   enterActiveClass="animate-scalein"
@@ -144,7 +156,7 @@
              href="https://booklore.org/docs/getting-started"
              target="_blank"
              rel="noopener noreferrer"
-             pTooltip="Documentation"
+             [pTooltip]="t('documentation')"
              tooltipPosition="bottom">
             <i class="pi pi-info-circle topbar-icon"></i>
           </a>
@@ -154,7 +166,7 @@
         @if (userService.userState$ | async; as userState) {
           @if (!userState.user?.permissions?.demoUser) {
             <li>
-              <button class="topbar-item" (click)="openUserProfileDialog()" pTooltip="Profile" tooltipPosition="bottom">
+              <button class="topbar-item" (click)="openUserProfileDialog()" [pTooltip]="t('profile')" tooltipPosition="bottom">
                 <i class="pi pi-user topbar-icon"></i>
               </button>
             </li>
@@ -162,7 +174,7 @@
         }
 
         <li>
-          <button class="topbar-item" (click)="logout()" pTooltip="Logout" tooltipPosition="left">
+          <button class="topbar-item" (click)="logout()" [pTooltip]="t('logout')" tooltipPosition="left">
             <i class="pi pi-sign-out topbar-icon"></i>
           </button>
         </li>
@@ -185,7 +197,7 @@
                   (click)="navigateToBookdrop(); mobileMenu.hide()"
                 >
                   <i class="pi pi-inbox topbar-icon"></i>
-                  Bookdrop
+                  {{ t('bookdrop') }}
                 </button>
               </li>
             }
@@ -196,7 +208,7 @@
                   (click)="openLibraryCreatorDialog(); mobileMenu.hide()"
                 >
                   <i class="pi pi-plus-circle topbar-icon"></i>
-                  Create Library
+                  {{ t('createLibrary') }}
                 </button>
               </li>
             }
@@ -207,7 +219,7 @@
                   (click)="openFileUploadDialog(); mobileMenu.hide()"
                 >
                   <i class="pi pi-upload topbar-icon"></i>
-                  Upload Book
+                  {{ t('uploadBook') }}
                 </button>
               </li>
             }
@@ -224,7 +236,7 @@
                   <rect x="9" y="6" width="2.5" height="13" rx="0.5" fill="#10b981"/>
                   <rect x="13" y="8" width="2.5" height="11" rx="0.5" fill="#3b82f6"/>
                 </svg>
-                Charts
+                {{ t('charts') }}
               </button>
               @if (shouldShowStatsMenu) {
                 <p-menu #statsMenuMobile [model]="statsMenuItems" [popup]="true"/>
@@ -239,7 +251,7 @@
                   (click)="navigateToMetadataManager(); mobileMenu.hide()"
                 >
                   <i class="pi pi-sparkles topbar-icon"></i>
-                  Metadata Manager
+                  {{ t('metadataManager') }}
                 </button>
               </li>
             }
@@ -250,7 +262,7 @@
               (click)="navigateToSettings(); mobileMenu.hide()"
             >
               <i class="pi pi-cog topbar-icon"></i>
-              Settings
+              {{ t('settings') }}
             </button>
           </li>
           <li>
@@ -260,8 +272,18 @@
               target="_blank"
               rel="noopener noreferrer">
               <i class="pi pi-info-circle topbar-icon"></i>
-              Documentation
+              {{ t('documentation') }}
             </a>
+          </li>
+          <li>
+            <button
+              class="mobile-menu-item"
+              (click)="langMenuMobile.toggle($event)"
+            >
+              <i class="pi pi-language topbar-icon"></i>
+              {{ t('language') }}
+            </button>
+            <p-menu #langMenuMobile [model]="langMenuItems" [popup]="true"/>
           </li>
           <li>
             <button
@@ -269,7 +291,7 @@
               (click)="openGithubSupportDialog(); mobileMenu.hide()"
             >
               <i class="pi pi-thumbs-up topbar-icon"></i>
-              Support BookLore
+              {{ t('supportBookLore') }}
             </button>
           </li>
 
@@ -281,7 +303,7 @@
                   (click)="openUserProfileDialog(); mobileMenu.hide()"
                 >
                   <i class="pi pi-user topbar-icon"></i>
-                  Profile
+                  {{ t('profile') }}
                 </button>
               </li>
             }
@@ -293,7 +315,7 @@
               (click)="logout(); mobileMenu.hide()"
             >
               <i class="pi pi-sign-out topbar-icon"></i>
-              Logout
+              {{ t('logout') }}
             </button>
           </li>
         </ul>
@@ -301,3 +323,4 @@
     </div>
   </div>
 </div>
+</ng-container>

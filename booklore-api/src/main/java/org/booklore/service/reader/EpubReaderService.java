@@ -1,5 +1,10 @@
 package org.booklore.service.reader;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.pdfbox.io.IOUtils;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.response.EpubBookInfo;
 import org.booklore.model.dto.response.EpubManifestItem;
@@ -10,18 +15,13 @@ import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookRepository;
 import org.booklore.util.FileUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
-import org.apache.pdfbox.io.IOUtils;
+import org.booklore.util.SecureXmlUtils;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -583,13 +583,7 @@ public class EpubReaderService {
             throw new FileNotFoundException("Entry not found: " + entryPath);
         }
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
         try (InputStream is = zipFile.getInputStream(entry)) {
             return builder.parse(is);
         }

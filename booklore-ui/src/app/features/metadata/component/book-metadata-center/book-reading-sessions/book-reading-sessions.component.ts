@@ -3,10 +3,11 @@ import {CommonModule} from '@angular/common';
 import {ReadingSessionApiService, ReadingSessionResponse} from '../../../../../shared/service/reading-session-api.service';
 import {TableModule} from 'primeng/table';
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 @Component({
   selector: 'app-book-reading-sessions',
   standalone: true,
-  imports: [CommonModule, TableModule, ProgressSpinnerModule],
+  imports: [CommonModule, TableModule, ProgressSpinnerModule, TranslocoDirective],
   templateUrl: './book-reading-sessions.component.html',
   styleUrls: ['./book-reading-sessions.component.scss']
 })
@@ -14,6 +15,7 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
   @Input() bookId!: number;
 
   private readonly readingSessionService = inject(ReadingSessionApiService);
+  private readonly t = inject(TranslocoService);
 
   sessions: ReadingSessionResponse[] = [];
   totalRecords = 0;
@@ -121,7 +123,7 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
   }
 
   formatBookType(bookType: string): string {
-    if (bookType === 'AUDIOBOOK') return 'Audio';
+    if (bookType === 'AUDIOBOOK') return this.t.translate('metadata.readingSessions.audio');
     return bookType;
   }
 
@@ -159,7 +161,7 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
     }
 
     if (this.isPageNumber(start)) {
-      return `Page ${start} → ${end}`;
+      return `${this.t.translate('metadata.readingSessions.page')} ${start} → ${end}`;
     }
 
     return '-';

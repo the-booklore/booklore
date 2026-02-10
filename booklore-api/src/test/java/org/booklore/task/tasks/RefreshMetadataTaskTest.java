@@ -19,13 +19,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshMetadataTaskTest {
@@ -48,7 +43,7 @@ class RefreshMetadataTaskTest {
         taskCreateRequest = mock(TaskCreateRequest.class);
         metadataRefreshRequest = MetadataRefreshRequest.builder().build();
         
-        when(taskCreateRequest.getOptions(MetadataRefreshRequest.class)).thenReturn(metadataRefreshRequest);
+        when(taskCreateRequest.getOptionsAs(MetadataRefreshRequest.class)).thenReturn(metadataRefreshRequest);
     }
 
     @Test

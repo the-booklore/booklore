@@ -1,16 +1,17 @@
 package org.booklore.service.metadata.writer;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.ZipParameters;
+import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.service.appsettings.AppSettingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.ZipParameters;
-import org.apache.commons.lang3.StringUtils;
+import org.booklore.util.SecureXmlUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
@@ -20,7 +21,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -78,9 +78,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 return;
             }
 
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
             Document opfDoc = builder.parse(opfFile);
 
             NodeList metadataList = opfDoc.getElementsByTagNameNS(OPF_NS, "metadata");
@@ -369,9 +367,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 return;
             }
 
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
             Document opfDoc = builder.parse(opfFile);
 
             applyCoverImageToEpub(tempDir, opfDoc, coverData);
@@ -490,7 +486,8 @@ public class EpubMetadataWriter implements MetadataWriter {
             throw new IOException("container.xml not found at expected location: " + containerXml);
         }
 
-        Document containerDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(containerXml.toFile());
+        DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(false);
+        Document containerDoc = builder.parse(containerXml.toFile());
         Node rootfile = containerDoc.getElementsByTagName("rootfile").item(0);
         if (rootfile == null) {
             throw new IOException("No <rootfile> found in container.xml");
@@ -757,7 +754,11 @@ public class EpubMetadataWriter implements MetadataWriter {
                 positionMeta.setPrefix("opf");
                 positionMeta.setAttribute("property", "group-position");
                 positionMeta.setAttribute("refines", "#" + collectionId);
-                positionMeta.setTextContent(String.format("%.0f", seriesNumber));
+                if (seriesNumber % 1.0f == 0) {
+                    positionMeta.setTextContent(String.format("%.0f", seriesNumber));
+                } else {
+                    positionMeta.setTextContent(String.valueOf(seriesNumber));
+                }
                 metadataElement.appendChild(positionMeta);
             }
             

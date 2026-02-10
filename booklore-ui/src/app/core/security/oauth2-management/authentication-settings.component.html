@@ -1,12 +1,12 @@
+<ng-container *transloco="let t; prefix: 'settingsAuth'">
 <div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-lock"></i>
-      Authentication Settings
+      {{ t('title') }}
     </h2>
     <p class="settings-description">
-      Configure authentication methods for your Booklore instance. Internal authentication is always enabled,
-      and you can optionally enable OIDC for external authentication providers.
+      {{ t('description') }}
     </p>
   </div>
 
@@ -14,10 +14,10 @@
     <div class="section-header">
       <h3 class="section-title">
         <i class="pi pi-shield"></i>
-        Authentication Methods
+        {{ t('methods.sectionTitle') }}
       </h3>
       <p class="section-description">
-        Choose which authentication methods are available for users to sign in.
+        {{ t('methods.sectionDesc') }}
       </p>
     </div>
 
@@ -30,12 +30,12 @@
                 <i class="pi pi-user"></i>
               </div>
               <div class="auth-method-info">
-                <span class="auth-method-label">Internal Authentication</span>
-                <span class="auth-method-status active">Always Enabled</span>
+                <span class="auth-method-label">{{ t('internal.label') }}</span>
+                <span class="auth-method-status active">{{ t('internal.status') }}</span>
               </div>
             </div>
             <p class="auth-method-description">
-              Built-in username and password authentication. This is the default method and cannot be disabled.
+              {{ t('internal.description') }}
             </p>
           </div>
           <p-checkbox
@@ -53,19 +53,19 @@
               </div>
               <div class="auth-method-info">
                 <span class="auth-method-label">
-                  OIDC Authentication
-                  <span class="experimental-badge">Experimental</span>
+                  {{ t('oidc.label') }}
+                  <span class="experimental-badge">{{ t('oidc.experimental') }}</span>
                 </span>
                 <span class="auth-method-status" [class.active]="oidcEnabled">
-                  {{ oidcEnabled ? 'Enabled' : 'Disabled' }}
+                  {{ oidcEnabled ? t('oidc.enabled') : t('oidc.disabled') }}
                 </span>
               </div>
             </div>
             <p class="auth-method-description">
-              OpenID Connect for single sign-on with external providers (Authentik, Keycloak, etc.).
+              {{ t('oidc.description') }}
               <app-external-doc-link docType="authentication"></app-external-doc-link>
               @if (!isOidcFormComplete() && !oidcEnabled) {
-                <span class="config-hint">Configure settings below to enable.</span>
+                <span class="config-hint">{{ t('oidc.configHint') }}</span>
               }
             </p>
           </div>
@@ -85,15 +85,15 @@
         <div class="section-header-text">
           <h3 class="section-title">
             <i class="pi pi-cog"></i>
-            OIDC Provider Configuration
+            {{ t('providerConfig.sectionTitle') }}
           </h3>
           <p class="section-description">
-            Configure your OIDC provider settings. All fields are required to enable OIDC authentication.
+            {{ t('providerConfig.sectionDesc') }}
           </p>
         </div>
         <p-button
           [outlined]="true"
-          label="Save"
+          [label]="'common.save' | transloco"
           icon="pi pi-save"
           severity="success"
           size="small"
@@ -106,73 +106,73 @@
     <div class="section-body">
       <div class="config-grid">
         <div class="config-item">
-          <label for="providerName">Provider Name</label>
+          <label for="providerName">{{ t('providerConfig.providerName') }}</label>
           <input
             pInputText
             id="providerName"
             [(ngModel)]="oidcProvider.providerName"
-            placeholder="e.g. Authentik, Keycloak"/>
+            [placeholder]="t('providerConfig.providerPlaceholder')"/>
         </div>
 
         <div class="config-item">
-          <label for="clientId">Client ID</label>
+          <label for="clientId">{{ t('providerConfig.clientId') }}</label>
           <input
             pInputText
             id="clientId"
             [(ngModel)]="oidcProvider.clientId"
-            placeholder="Your OIDC client ID"/>
+            [placeholder]="t('providerConfig.clientIdPlaceholder')"/>
         </div>
 
         <div class="config-item full-width">
-          <label for="issuerUri">Issuer URI</label>
+          <label for="issuerUri">{{ t('providerConfig.issuerUri') }}</label>
           <input
             pInputText
             id="issuerUri"
             [(ngModel)]="oidcProvider.issuerUri"
-            placeholder="e.g. https://auth.example.com/realms/booklore"/>
+            [placeholder]="t('providerConfig.issuerPlaceholder')"/>
         </div>
 
         <div class="config-item full-width">
-          <label for="scope">Scope</label>
+          <label for="scope">{{ t('providerConfig.scope') }}</label>
           <input
             pInputText
             id="scope"
             [readonly]="true"
             disabled="disabled"
             value="openid profile email offline_access"/>
-          <span class="field-hint">Required scopes for OIDC login. Must be supported by your provider.</span>
+          <span class="field-hint">{{ t('providerConfig.scopeHint') }}</span>
         </div>
       </div>
 
       <div class="claims-section">
-        <h4 class="subsection-title">Claim Mappings</h4>
+        <h4 class="subsection-title">{{ t('providerConfig.claimMappings') }}</h4>
         <p class="subsection-description">
-          Map OIDC token claims to Booklore user fields. These must match your provider's token claims.
+          {{ t('providerConfig.claimDesc') }}
         </p>
         <div class="claims-grid">
           <div class="config-item">
-            <label for="claimUsername">Username Claim</label>
+            <label for="claimUsername">{{ t('providerConfig.usernameClaim') }}</label>
             <input
               pInputText
               id="claimUsername"
               [(ngModel)]="oidcProvider.claimMapping.username"
-              placeholder="e.g. preferred_username"/>
+              [placeholder]="t('providerConfig.usernamePlaceholder')"/>
           </div>
           <div class="config-item">
-            <label for="claimEmail">Email Claim</label>
+            <label for="claimEmail">{{ t('providerConfig.emailClaim') }}</label>
             <input
               pInputText
               id="claimEmail"
               [(ngModel)]="oidcProvider.claimMapping.email"
-              placeholder="e.g. email"/>
+              [placeholder]="t('providerConfig.emailPlaceholder')"/>
           </div>
           <div class="config-item">
-            <label for="claimName">Display Name Claim</label>
+            <label for="claimName">{{ t('providerConfig.nameClaim') }}</label>
             <input
               pInputText
               id="claimName"
               [(ngModel)]="oidcProvider.claimMapping.name"
-              placeholder="e.g. name"/>
+              [placeholder]="t('providerConfig.namePlaceholder')"/>
           </div>
         </div>
       </div>
@@ -186,15 +186,15 @@
           <div class="section-header-text">
             <h3 class="section-title">
               <i class="pi pi-users"></i>
-              User Provisioning
+              {{ t('provisioning.sectionTitle') }}
             </h3>
             <p class="section-description">
-              Configure how new OIDC users are created and what permissions they receive.
+              {{ t('provisioning.sectionDesc') }}
             </p>
           </div>
           <p-button
             icon="pi pi-save"
-            label="Save"
+            [label]="'common.save' | transloco"
             [outlined]="true"
             severity="success"
             size="small"
@@ -207,14 +207,13 @@
         <div class="provisioning-toggle">
           <div class="toggle-content">
             <div class="toggle-info">
-              <span class="toggle-label">Automatic User Provisioning</span>
+              <span class="toggle-label">{{ t('provisioning.autoLabel') }}</span>
               <span class="toggle-status" [class.active]="autoUserProvisioningEnabled">
-                {{ autoUserProvisioningEnabled ? 'Enabled' : 'Disabled' }}
+                {{ autoUserProvisioningEnabled ? t('provisioning.autoEnabled') : t('provisioning.autoDisabled') }}
               </span>
             </div>
             <p class="toggle-description">
-              When enabled, new users are automatically created on first OIDC login with the permissions below.
-              When disabled, users must be manually created in Booklore before they can log in via OIDC.
+              {{ t('provisioning.autoDesc') }}
             </p>
           </div>
           <p-toggleswitch
@@ -227,7 +226,7 @@
         @if (autoUserProvisioningEnabled) {
           <div class="default-settings">
             <div class="permissions-group">
-              <h4 class="group-title">Default Permissions</h4>
+              <h4 class="group-title">{{ t('provisioning.defaultPerms') }}</h4>
               <div class="permissions-grid">
                 <div class="permission-item">
                   <p-checkbox
@@ -236,7 +235,7 @@
                     [ngModel]="true"
                     inputId="permissionRead">
                   </p-checkbox>
-                  <label for="permissionRead">Read Books</label>
+                  <label for="permissionRead">{{ t('provisioning.readBooks') }}</label>
                 </div>
                 @for (perm of availablePermissions; track perm) {
                   <div class="permission-item">
@@ -245,20 +244,20 @@
                       [binary]="true"
                       [inputId]="perm.value">
                     </p-checkbox>
-                    <label [for]="perm.value">{{ perm.label }}</label>
+                    <label [for]="perm.value">{{ t(perm.translationKey) }}</label>
                   </div>
                 }
               </div>
             </div>
 
             <div class="libraries-group">
-              <h4 class="group-title">Default Library Access</h4>
+              <h4 class="group-title">{{ t('provisioning.defaultLibraryAccess') }}</h4>
               <p-multiSelect
                 [options]="allLibraries"
                 optionLabel="name"
                 optionValue="id"
                 [(ngModel)]="editingLibraryIds"
-                placeholder="Select libraries new users can access"
+                [placeholder]="t('provisioning.selectLibraries')"
                 appendTo="body"
                 class="libraries-select">
               </p-multiSelect>
@@ -269,3 +268,4 @@
     </div>
   }
 </div>
+</ng-container>

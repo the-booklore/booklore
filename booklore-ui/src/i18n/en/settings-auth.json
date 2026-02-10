@@ -1,0 +1,73 @@
+{
+  "title": "Authentication Settings",
+  "description": "Configure authentication methods for your Booklore instance. Internal authentication is always enabled, and you can optionally enable OIDC for external authentication providers.",
+  "methods": {
+    "sectionTitle": "Authentication Methods",
+    "sectionDesc": "Choose which authentication methods are available for users to sign in."
+  },
+  "internal": {
+    "label": "Internal Authentication",
+    "status": "Always Enabled",
+    "description": "Built-in username and password authentication. This is the default method and cannot be disabled."
+  },
+  "oidc": {
+    "label": "OIDC Authentication",
+    "experimental": "Experimental",
+    "description": "OpenID Connect for single sign-on with external providers (Authentik, Keycloak, etc.).",
+    "configHint": "Configure settings below to enable.",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "providerConfig": {
+    "sectionTitle": "OIDC Provider Configuration",
+    "sectionDesc": "Configure your OIDC provider settings. All fields are required to enable OIDC authentication.",
+    "providerName": "Provider Name",
+    "providerPlaceholder": "e.g. Authentik, Keycloak",
+    "clientId": "Client ID",
+    "clientIdPlaceholder": "Your OIDC client ID",
+    "issuerUri": "Issuer URI",
+    "issuerPlaceholder": "e.g. https://auth.example.com/realms/booklore",
+    "scope": "Scope",
+    "scopeHint": "Required scopes for OIDC login. Must be supported by your provider.",
+    "claimMappings": "Claim Mappings",
+    "claimDesc": "Map OIDC token claims to Booklore user fields. These must match your provider's token claims.",
+    "usernameClaim": "Username Claim",
+    "usernamePlaceholder": "e.g. preferred_username",
+    "emailClaim": "Email Claim",
+    "emailPlaceholder": "e.g. email",
+    "nameClaim": "Display Name Claim",
+    "namePlaceholder": "e.g. name"
+  },
+  "provisioning": {
+    "sectionTitle": "User Provisioning",
+    "sectionDesc": "Configure how new OIDC users are created and what permissions they receive.",
+    "autoLabel": "Automatic User Provisioning",
+    "autoEnabled": "Enabled",
+    "autoDisabled": "Disabled",
+    "autoDesc": "When enabled, new users are automatically created on first OIDC login with the permissions below. When disabled, users must be manually created in Booklore before they can log in via OIDC.",
+    "defaultPerms": "Default Permissions",
+    "readBooks": "Read Books",
+    "defaultLibraryAccess": "Default Library Access",
+    "selectLibraries": "Select libraries new users can access"
+  },
+  "perms": {
+    "uploadBooks": "Upload Books",
+    "downloadBooks": "Download Books",
+    "editMetadata": "Edit Book Metadata",
+    "manageLibrary": "Manage Library",
+    "emailBook": "Email Book",
+    "deleteBook": "Delete Book",
+    "koreaderSync": "KOReader Sync",
+    "koboSync": "Kobo Sync",
+    "accessOpds": "Access OPDS"
+  },
+  "toast": {
+    "saved": "Saved",
+    "oidcUpdated": "OIDC setting updated.",
+    "oidcError": "Failed to update OIDC setting.",
+    "providerSaved": "OIDC provider settings saved.",
+    "providerError": "Failed to save OIDC provider settings.",
+    "provisionSaved": "OIDC auto-provisioning settings saved.",
+    "provisionError": "Failed to save OIDC auto-provisioning settings."
+  }
+}

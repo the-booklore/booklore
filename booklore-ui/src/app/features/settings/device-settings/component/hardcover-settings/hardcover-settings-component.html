@@ -1,14 +1,15 @@
+<ng-container *transloco="let t; prefix: 'settingsDevice'">
 <p-toast position="top-right"></p-toast>
 
 <div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-book"></i>
-      Hardcover Integration
+      {{ t('hardcover.title') }}
       <app-external-doc-link docType="hardcover"></app-external-doc-link>
     </h2>
     <p class="settings-description">
-      Sync your reading progress from Booklore to your Hardcover account.
+      {{ t('hardcover.description') }}
     </p>
   </div>
 
@@ -18,10 +19,10 @@
         <div class="section-header">
           <h3 class="section-title">
             <i class="pi pi-sync"></i>
-            Sync Configuration
+            {{ t('hardcover.syncConfig') }}
           </h3>
           <p class="section-description">
-            Enable and configure synchronization between Booklore and Hardcover.
+            {{ t('hardcover.syncConfigDesc') }}
           </p>
         </div>
 
@@ -30,7 +31,7 @@
             <div class="setting-info">
               <div class="setting-label-row">
                 <label class="setting-label">
-                  Sync KOReader Reading Progress to Hardcover</label>
+                  {{ t('hardcover.syncLabel') }}</label>
                 <p-toggle-switch
                   id="hardcoverSyncEnabled"
                   name="hardcoverSyncEnabled"
@@ -39,7 +40,7 @@
                 </p-toggle-switch>
               </div>
               <p class="setting-description">
-                When enabled, your KOReader reading progress will be automatically synced to your Hardcover account.
+                {{ t('hardcover.syncDesc') }}
               </p>
             </div>
           </div>
@@ -48,7 +49,7 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">Hardcover API Key</label>
+                  <label class="setting-label">{{ t('hardcover.apiKey') }}</label>
                   <div class="token-input-group">
                     <input
                       pInputText
@@ -57,7 +58,7 @@
                       [type]="showHardcoverApiKey ? 'text' : 'password'"
                       name="hardcoverApiKey"
                       class="token-input"
-                      placeholder="Enter your Hardcover API key"
+                      [placeholder]="t('hardcover.apiKeyPlaceholder')"
                       (blur)="onHardcoverApiKeyChange()"
                     />
                     <p-button
@@ -77,10 +78,7 @@
                     </p-button>
                   </div>
                 </div>
-                <p class="setting-description">
-                  Your personal Hardcover API key. Get it from
-                  <a href="https://hardcover.app/account/api" target="_blank" rel="noopener">hardcover.app/account/api</a>.
-                  This key is used only for syncing your reading progress and is not shared with other users.
+                <p class="setting-description" [innerHTML]="t('hardcover.apiKeyDesc')">
                 </p>
               </div>
             </div>
@@ -93,14 +91,15 @@
       <div class="access-denied-card">
         <i class="pi pi-lock"></i>
         <div class="access-denied-content">
-          <h3>Access Restricted</h3>
+          <h3>{{ t('accessRestricted') }}</h3>
           <p>
-            Access to Hardcover sync is restricted.
+            {{ t('hardcover.accessDenied') }}
             <br>
-            Please contact your administrator to request permission.
+            {{ t('contactAdmin') }}
           </p>
         </div>
       </div>
     </div>
   }
 </div>
+</ng-container>

@@ -641,6 +641,69 @@ class EpubMetadataExtractorTest {
         return createEpubWithOpf(opfContent, "test-booklore-series-" + System.nanoTime() + ".epub");
     }
 
+    @Nested
+    @DisplayName("BookLore Metadata Tests")
+    class BookLoreMetadataTests {
+
+        @Test
+        @DisplayName("Should extract BookLore custom properties from EPUB metadata")
+        void extractMetadata_withBookloreProperties_returnsExtendedMetadata() throws IOException {
+            File epubFile = createEpubWithBookloreMetadata();
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("A Subtitle", result.getSubtitle()),
+                () -> assertEquals(10, result.getSeriesTotal()),
+                () -> assertEquals(4.5, result.getAmazonRating()),
+                () -> assertEquals(4.0, result.getGoodreadsRating()),
+                () -> assertEquals(5.0, result.getHardcoverRating()),
+                () -> assertEquals(3.5, result.getLubimyczytacRating()),
+                () -> assertEquals(2.0, result.getRanobedbRating()),
+                () -> assertEquals("B001", result.getAsin()),
+                () -> assertEquals("1001", result.getGoodreadsId()),
+                () -> assertEquals("2002", result.getComicvineId()),
+                () -> assertEquals("3003", result.getHardcoverId()),
+                () -> assertEquals("4004", result.getRanobedbId()),
+                () -> assertEquals("5005", result.getGoogleId()),
+                () -> assertEquals("6006", result.getLubimyczytacId()),
+                () -> assertTrue(result.getMoods().contains("Dark")),
+                () -> assertTrue(result.getMoods().contains("Mystery")),
+                () -> assertTrue(result.getTags().contains("Fiction")),
+                () -> assertTrue(result.getTags().contains("Thriller"))
+            );
+        }
+    }
+
+    private File createEpubWithBookloreMetadata() throws IOException {
+        String opfContent = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" xmlns:booklore="http://booklore.org/metadata" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>BookLore Test</dc:title>
+                    <meta property="booklore:subtitle">A Subtitle</meta>
+                    <meta property="booklore:series_total">10</meta>
+                    <meta property="booklore:amazon_rating">4.5</meta>
+                    <meta property="booklore:goodreads_rating">4.0</meta>
+                    <meta property="booklore:hardcover_rating">5.0</meta>
+                    <meta property="booklore:lubimyczytac_rating">3.5</meta>
+                    <meta property="booklore:ranobedb_rating">2.0</meta>
+                    <meta property="booklore:asin">B001</meta>
+                    <meta property="booklore:goodreads_id">1001</meta>
+                    <meta property="booklore:comicvine_id">2002</meta>
+                    <meta property="booklore:hardcover_id">3003</meta>
+                    <meta property="booklore:ranobedb_id">4004</meta>
+                    <meta property="booklore:google_books_id">5005</meta>
+                    <meta property="booklore:lubimyczytac_id">6006</meta>
+                    <meta property="booklore:moods">Dark, Mystery</meta>
+                    <meta property="booklore:tags">Fiction, Thriller</meta>
+                </metadata>
+            </package>
+            """;
+        return createEpubWithOpf(opfContent, "test-booklore-" + System.nanoTime() + ".epub");
+    }
+
     private File createEpubWithIsbn(String isbn13, String isbn10) throws IOException {
         StringBuilder identifiers = new StringBuilder();
         if (isbn13 != null) {

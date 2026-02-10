@@ -25,6 +25,9 @@ import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {UnifiedNotificationBoxComponent} from '../../../components/unified-notification-popover/unified-notification-popover-component';
 import {Severity, LogNotification} from '../../../websocket/model/log-notification.model';
 import {Menu} from 'primeng/menu';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {AVAILABLE_LANGS, LANG_LABELS} from '../../../../core/config/transloco-loader';
+import {LANG_STORAGE_KEY} from '../../../../core/config/language-initializer';
 
 @Component({
   selector: 'app-topbar',
@@ -47,6 +50,7 @@ import {Menu} from 'primeng/menu';
     UnifiedNotificationBoxComponent,
     NgStyle,
     Menu,
+    TranslocoDirective,
   ],
 })
 export class AppTopBarComponent implements OnDestroy {
@@ -75,6 +79,11 @@ export class AppTopBarComponent implements OnDestroy {
   private latestHasPendingFiles = false;
   private latestNotificationSeverity?: Severity;
 
+  activeLang = '';
+  langMenuItems: MenuItem[] = [];
+
+  private translocoService: TranslocoService;
+
   constructor(
     public layoutService: LayoutService,
     private notificationService: NotificationEventService,
@@ -83,8 +92,16 @@ export class AppTopBarComponent implements OnDestroy {
     protected userService: UserService,
     private metadataProgressService: MetadataProgressService,
     private bookdropFileService: BookdropFileService,
-    private dialogLauncher: DialogLauncherService
+    private dialogLauncher: DialogLauncherService,
+    translocoService: TranslocoService
   ) {
+    this.translocoService = translocoService;
+    this.activeLang = translocoService.getActiveLang();
+    this.langMenuItems = AVAILABLE_LANGS.map(lang => ({
+      label: LANG_LABELS[lang] || lang,
+      icon: lang === this.activeLang ? 'pi pi-check' : undefined,
+      command: () => this.switchLanguage(lang),
+    }));
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
 
@@ -161,6 +178,20 @@ export class AppTopBarComponent implements OnDestroy {
     this.router.navigate(['/reading-stats']);
   }
 
+  switchLanguage(lang: string) {
+    if (lang === this.activeLang) return;
+    this.translocoService.load(lang).subscribe(() => {
+      this.translocoService.setActiveLang(lang);
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+      this.activeLang = lang;
+      this.langMenuItems = AVAILABLE_LANGS.map(l => ({
+        label: LANG_LABELS[l] || l,
+        icon: l === lang ? 'pi pi-check' : undefined,
+        command: () => this.switchLanguage(l),
+      }));
+    });
+  }
+
   logout() {
     this.authService.logout();
   }
@@ -224,7 +255,7 @@ export class AppTopBarComponent implements OnDestroy {
 
     if (user?.permissions?.canAccessLibraryStats || user?.permissions?.admin) {
       this.statsMenuItems.push({
-        label: 'Library Stats',
+        label: this.translocoService.translate('layout.topbar.libraryStats'),
         icon: 'pi pi-chart-line',
         command: () => this.navigateToStats()
       });
@@ -232,7 +263,7 @@ export class AppTopBarComponent implements OnDestroy {
 
     if (user?.permissions?.canAccessUserStats || user?.permissions?.admin) {
       this.statsMenuItems.push({
-        label: 'Reading Stats',
+        label: this.translocoService.translate('layout.topbar.readingStats'),
         icon: 'pi pi-users',
         command: () => this.navigateToUserStats()
       });
@@ -249,12 +280,12 @@ export class AppTopBarComponent implements OnDestroy {
 
   get statsTooltip(): string {
     if (this.statsMenuItems.length === 0) {
-      return 'Stats';
+      return this.translocoService.translate('layout.topbar.stats');
     }
     if (this.statsMenuItems.length === 1) {
-      return this.statsMenuItems[0].label || 'Stats';
+      return this.statsMenuItems[0].label || this.translocoService.translate('layout.topbar.stats');
     }
-    return 'Stats';
+    return this.translocoService.translate('layout.topbar.stats');
   }
 
   get iconClass(): string {

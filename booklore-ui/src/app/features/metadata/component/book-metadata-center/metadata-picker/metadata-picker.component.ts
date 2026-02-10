@@ -19,6 +19,7 @@ import {LazyLoadImageModule} from 'ng-lazyload-image';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-settings.model';
 import {ALL_COMIC_METADATA_FIELDS, ALL_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, getArrayFields, getBookDetailsFields, getBottomFields, getProviderFields, getSeriesFields, getTextareaFields, getTopFields, MetadataFieldConfig, MetadataFormBuilder, MetadataUtilsService} from '../../../../../shared/metadata';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-picker',
@@ -36,7 +37,8 @@ import {ALL_COMIC_METADATA_FIELDS, ALL_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELD
     AutoComplete,
     Image,
     LazyLoadImageModule,
-    Checkbox
+    Checkbox,
+    TranslocoDirective
   ]
 })
 export class MetadataPickerComponent implements OnInit {
@@ -81,6 +83,7 @@ export class MetadataPickerComponent implements OnInit {
   private appSettingsService = inject(AppSettingsService);
   private formBuilder = inject(MetadataFormBuilder);
   private metadataUtils = inject(MetadataUtilsService);
+  private readonly t = inject(TranslocoService);
 
   private enabledProviderFields: MetadataProviderSpecificFields | null = null;
 
@@ -303,11 +306,11 @@ export class MetadataPickerComponent implements OnInit {
             this.savedFields[field] = true;
           }
         }
-        this.messageService.add({severity: 'info', summary: 'Success', detail: 'Book metadata updated'});
+        this.messageService.add({severity: 'info', summary: this.t.translate('metadata.picker.toast.successSummary'), detail: this.t.translate('metadata.picker.toast.metadataUpdated')});
       },
       error: () => {
         this.isSaving = false;
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update book metadata'});
+        this.messageService.add({severity: 'error', summary: this.t.translate('metadata.picker.toast.errorSummary'), detail: this.t.translate('metadata.picker.toast.metadataUpdateFailed')});
       }
     });
   }
@@ -517,18 +520,18 @@ export class MetadataPickerComponent implements OnInit {
         if (shouldLockAllFields !== undefined) {
           this.messageService.add({
             severity: 'success',
-            summary: shouldLockAllFields ? 'Metadata Locked' : 'Metadata Unlocked',
+            summary: shouldLockAllFields ? this.t.translate('metadata.picker.toast.metadataLocked') : this.t.translate('metadata.picker.toast.metadataUnlocked'),
             detail: shouldLockAllFields
-              ? 'All fields have been successfully locked.'
-              : 'All fields have been successfully unlocked.',
+              ? this.t.translate('metadata.picker.toast.allFieldsLocked')
+              : this.t.translate('metadata.picker.toast.allFieldsUnlocked'),
           });
         }
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to update lock state',
+          summary: this.t.translate('metadata.picker.toast.errorSummary'),
+          detail: this.t.translate('metadata.picker.toast.lockStateFailed'),
         });
       }
     });
@@ -603,8 +606,8 @@ export class MetadataPickerComponent implements OnInit {
       if (isLocked) {
         this.messageService.add({
           severity: 'warn',
-          summary: 'Action Blocked',
-          detail: `${comicConfig.label} is locked and cannot be updated.`
+          summary: this.t.translate('metadata.picker.toast.actionBlockedSummary'),
+          detail: this.t.translate('metadata.picker.toast.fieldLockedDetail', {field: comicConfig.label})
         });
         return;
       }
@@ -627,8 +630,8 @@ export class MetadataPickerComponent implements OnInit {
     if (isLocked) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Action Blocked',
-        detail: `${lockField} is locked and cannot be updated.`
+        summary: this.t.translate('metadata.picker.toast.actionBlockedSummary'),
+        detail: this.t.translate('metadata.picker.toast.fieldLockedDetail', {field: lockField})
       });
       return;
     }
