@@ -1,3 +1,4 @@
+<ng-container *transloco="let t; prefix: 'layout.menu'">
 <div class="menu-container">
   <div>
     <ul class="layout-menu">
@@ -63,10 +64,11 @@
             (click)="openChangelogDialog()"
             class="update-link"
             >
-            (Update)
+            {{ t('update') }}
           </a>
         </div>
       }
     </div>
   }
 </div>
+</ng-container>

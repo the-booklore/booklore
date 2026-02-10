@@ -1,13 +1,14 @@
 @if ((libraryState$ | async)?.libraries; as libraries) {
+  <ng-container *transloco="let t; prefix: 'shared.bookUploader'">
   <div class="book-uploader">
     <div class="panel-header">
       <div class="header-icon-wrapper">
         <i class="pi pi-cloud-upload header-icon"></i>
       </div>
       <div class="header-text">
-        <h2 class="panel-title">Upload Books</h2>
+        <h2 class="panel-title">{{ t('title') }}</h2>
         <p class="panel-description">
-          Upload your books to library or bookdrop folder
+          {{ t('description') }}
         </p>
       </div>
       <p-button
@@ -24,7 +25,7 @@
         <div class="section-header">
           <span class="section-title">
             <i class="pi pi-map-marker"></i>
-            Upload Destination
+            {{ t('uploadDestination') }}
           </span>
         </div>
         <div class="destination-selector">
@@ -44,28 +45,28 @@
           <div class="section-header">
             <span class="section-title">
               <i class="pi pi-building"></i>
-              Library Selection
+              {{ t('librarySelection') }}
             </span>
           </div>
           <div class="selection-fields">
             <div class="field-group">
-              <label for="library-select" class="field-label">Library</label>
+              <label for="library-select" class="field-label">{{ t('libraryLabel') }}</label>
               <p-select
                 inputId="library-select"
                 [options]="libraries"
                 optionLabel="name"
-                placeholder="Select Library"
+                [placeholder]="t('selectLibrary')"
                 [(ngModel)]="selectedLibrary"
                 class="full-width">
               </p-select>
             </div>
             <div class="field-group">
-              <label for="subpath-select" class="field-label">Subpath</label>
+              <label for="subpath-select" class="field-label">{{ t('subpathLabel') }}</label>
               <p-select
                 inputId="subpath-select"
                 [options]="selectedLibrary?.paths"
                 optionLabel="path"
-                placeholder="Select Subpath"
+                [placeholder]="t('selectSubpath')"
                 [(ngModel)]="selectedPath"
                 [disabled]="!selectedLibrary"
                 class="full-width">
@@ -81,7 +82,7 @@
         <div class="section-header">
           <span class="section-title">
             <i class="pi pi-file"></i>
-            Select Files
+            {{ t('selectFiles') }}
           </span>
         </div>
         <p-fileupload
@@ -98,30 +99,30 @@
                   severity="info"
                   (onClick)="choose($event, chooseCallback)"
                   icon="pi pi-images"
-                  label="Choose"
+                  [label]="t('chooseBtn')"
                   [outlined]="true"
                   [disabled]="isChooseDisabled()"
-                  pTooltip="Choose files to upload"
+                  [pTooltip]="t('chooseTooltip')"
                   tooltipPosition="top"/>
                 <p-button
                   (onClick)="uploadEvent(uploadCallback)"
                   icon="pi pi-cloud-upload"
-                  label="Upload"
+                  [label]="t('uploadBtn')"
                   severity="success"
                   [disabled]="isUploadDisabled()"
-                  pTooltip="Start uploading selected files"
+                  [pTooltip]="t('uploadTooltip')"
                   tooltipPosition="top"/>
                 <p-button
                   (onClick)="onClear(clearCallback)"
                   icon="pi pi-times"
-                  label="Clear"
+                  [label]="t('clearBtn')"
                   severity="danger"
                   [outlined]="true"
                   [disabled]="!filesPresent() || isUploading"
-                  pTooltip="Clear selected files"
+                  [pTooltip]="t('clearTooltip')"
                   tooltipPosition="top"/>
               </div>
-              <small class="upload-hint">Click "Choose" to select files or drag and drop them below</small>
+              <small class="upload-hint">{{ t('uploadHint') }}</small>
             </div>
           </ng-template>
           <ng-template #content let-files let-removeFileCallback="removeFileCallback">
@@ -132,16 +133,16 @@
                     <span class="progress-status">
                       @if (isUploading) {
                         <i class="pi pi-spin pi-spinner"></i>
-                        Uploading...
+                        {{ t('uploading') }}
                       } @else {
                         <i class="pi pi-check-circle"></i>
-                        Complete
+                        {{ t('complete') }}
                       }
                     </span>
                     <span class="progress-files">
-                      {{ getUploadedCount() }}/{{ this.files.length }} files
+                      {{ t('filesCount', { uploaded: getUploadedCount(), total: this.files.length }) }}
                       @if (getFailedCount() > 0) {
-                        <span class="failed-count">({{ getFailedCount() }} failed)</span>
+                        <span class="failed-count">{{ t('failedCount', { count: getFailedCount() }) }}</span>
                       }
                     </span>
                     <span class="progress-bytes">{{ formatSize(getUploadedBytes()) }} / {{ formatSize(getTotalBytes()) }}</span>
@@ -187,7 +188,7 @@
                             @if (hasUploadCompleted()) {
                               <i
                                 class="pi pi-exclamation-triangle status-icon warning"
-                                [pTooltip]="uploadFile.errorMessage || 'File too large'"
+                                [pTooltip]="uploadFile.errorMessage || t('fileTooLargeTooltip')"
                                 tooltipPosition="top">
                               </i>
                             } @else {
@@ -201,7 +202,7 @@
                           } @else {
                             <i
                               class="pi pi-exclamation-triangle status-icon error"
-                              [pTooltip]="uploadFile.errorMessage || 'Upload failed'"
+                              [pTooltip]="uploadFile.errorMessage || t('uploadFailedTooltip')"
                               tooltipPosition="top">
                             </i>
                           }
@@ -219,11 +220,11 @@
               <div class="empty-icon-wrapper">
                 <i class="pi pi-cloud-upload empty-icon" [class.active]="isUploadZoneActive()"></i>
               </div>
-              <h3 class="empty-title">Drag and Drop Files</h3>
+              <h3 class="empty-title">{{ t('dragDropTitle') }}</h3>
               <p class="empty-description">
-                Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>
+                <span [innerHTML]="t('supportedFormats')"></span>
                 <br/>
-                Maximum file size: {{ maxFileSizeDisplay }} per file
+                {{ t('maxFileSize', { size: maxFileSizeDisplay }) }}
               </p>
             </div>
           </ng-template>
@@ -231,4 +232,5 @@
       </div>
     </div>
   </div>
+  </ng-container>
 }

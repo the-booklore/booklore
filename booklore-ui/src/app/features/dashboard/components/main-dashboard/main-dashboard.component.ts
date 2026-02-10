@@ -12,6 +12,7 @@ import {Book, ReadStatus} from '../../../book/model/book.model';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TooltipModule} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {ScrollerConfig, ScrollerType} from '../../models/dashboard-config.model';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
@@ -33,7 +34,8 @@ const DEFAULT_MAX_ITEMS = 20;
     DashboardScrollerComponent,
     AsyncPipe,
     ProgressSpinner,
-    TooltipModule
+    TooltipModule,
+    TranslocoDirective
   ],
   standalone: true
 })
@@ -47,6 +49,7 @@ export class MainDashboardComponent implements OnInit {
   private ruleEvaluatorService = inject(BookRuleEvaluatorService);
   private sortService = inject(SortService);
   private pageTitle = inject(PageTitleService);
+  private readonly t = inject(TranslocoService);
 
   bookState$ = this.bookService.bookState$;
   dashboardConfig$ = this.dashboardConfigService.config$;
@@ -60,7 +63,7 @@ export class MainDashboardComponent implements OnInit {
   ScrollerType = ScrollerType;
 
   ngOnInit(): void {
-    this.pageTitle.setPageTitle('Dashboard');
+    this.pageTitle.setPageTitle(this.t.translate('dashboard.main.pageTitle'));
 
     this.dashboardConfig$.subscribe(() => {
       this.scrollerBooksCache.clear();

@@ -1,4 +1,16 @@
 {
+  "main": {
+    "pageTitle": "Panel",
+    "welcomeTitle": "Bienvenido a BookLore!",
+    "welcomeSubtitle": "Vamos a crear tu primera biblioteca",
+    "welcomeDescription": "Una biblioteca es donde viven todos tus libros. Comienza a construir tu coleccion digital hoy!",
+    "createLibrary": "Crear tu biblioteca",
+    "customizeDashboard": "Personalizar panel"
+  },
+  "scroller": {
+    "noBooksFound": "No se encontraron libros para este carrusel.",
+    "loadError": "Error al cargar los libros. Por favor, intenta actualizar la pagina."
+  },
   "settings": {
     "title": "Configuración del panel",
     "description": "Añade hasta 5 carruseles de diferentes colecciones de libros y personaliza su comportamiento",

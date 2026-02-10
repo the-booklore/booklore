@@ -145,6 +145,32 @@
     "deleteError": "Failed to delete font",
     "loadError": "Failed to load custom fonts",
     "quotaExceeded": "Quota Exceeded",
-    "quotaExceededDetail": "Maximum {{max}} fonts allowed per user"
+    "quotaExceededDetail": "Maximum {{max}} fonts allowed per user",
+    "upload": {
+      "title": "Add New Font",
+      "description": "Upload a custom font for your EPUB reader",
+      "selectFile": "Select Font File",
+      "dragDrop": "Drag and Drop Font File",
+      "supportedFormats": "Supported formats: <strong>TTF</strong>, <strong>OTF</strong>, <strong>WOFF</strong>, <strong>WOFF2</strong>",
+      "maxSize": "Maximum file size: 5 MB",
+      "fontPreview": "Font Preview",
+      "displayName": "Font Display Name",
+      "displayNameDesc": "This name will appear in the font selector when reading EPUB books.",
+      "displayNamePlaceholder": "e.g., Bookerly, Open Sans, Merriweather",
+      "uploadBtn": "Upload Font",
+      "previewFailed": "Preview Failed",
+      "previewFailedDetail": "Unable to preview font, but you can still upload it",
+      "noFileSelected": "No File Selected",
+      "noFileSelectedDetail": "Please select a font file to upload",
+      "success": "Success",
+      "successDetail": "Font \"{{name}}\" uploaded successfully",
+      "uploadFailed": "Upload Failed",
+      "uploadFailedDefault": "Failed to upload font",
+      "uploadFailedInvalid": "Invalid file format or quota exceeded",
+      "invalidFileType": "Invalid File Type",
+      "invalidFileTypeDetail": "Please upload a TTF, OTF, WOFF, or WOFF2 font file",
+      "fileTooLarge": "File Too Large",
+      "fileTooLargeDetail": "File size must not exceed {{size}}"
+    }
   }
 }

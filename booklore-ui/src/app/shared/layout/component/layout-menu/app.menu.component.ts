@@ -14,11 +14,12 @@ import {UserService} from '../../../../features/settings/user-management/user.se
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
 import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [AppMenuitemComponent, MenuModule, AsyncPipe],
+  imports: [AppMenuitemComponent, MenuModule, AsyncPipe, TranslocoDirective],
   templateUrl: './app.menu.component.html',
   styleUrl: './app.menu.component.scss',
 })
@@ -39,6 +40,7 @@ export class AppMenuComponent implements OnInit {
   private dialogLauncherService = inject(DialogLauncherService);
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
+  private t = inject(TranslocoService);
 
   librarySortField: 'name' | 'id' = 'name';
   librarySortOrder: 'asc' | 'desc' = 'desc';
@@ -74,15 +76,15 @@ export class AppMenuComponent implements OnInit {
     this.homeMenu$ = this.bookService.bookState$.pipe(
       map((bookState) => [
         {
-          label: 'Home',
+          label: this.t.translate('layout.menu.home'),
           items: [
             {
-              label: 'Dashboard',
+              label: this.t.translate('layout.menu.dashboard'),
               icon: 'pi pi-fw pi-home',
               routerLink: ['/dashboard'],
             },
             {
-              label: 'All Books',
+              label: this.t.translate('layout.menu.allBooks'),
               type: 'All Books',
               icon: 'pi pi-fw pi-book',
               routerLink: ['/all-books'],
@@ -101,7 +103,7 @@ export class AppMenuComponent implements OnInit {
         const sortedLibraries = this.sortArray(libraries, this.librarySortField, this.librarySortOrder);
         return [
           {
-            label: 'Libraries',
+            label: this.t.translate('layout.menu.libraries'),
             type: 'library',
             hasDropDown: true,
             hasCreate: true,
@@ -125,7 +127,7 @@ export class AppMenuComponent implements OnInit {
         const sortedShelves = this.sortArray(shelves, this.magicShelfSortField, this.magicShelfSortOrder);
         return [
           {
-            label: 'Magic Shelves',
+            label: this.t.translate('layout.menu.magicShelves'),
             type: 'magicShelf',
             hasDropDown: true,
             hasCreate: true,
@@ -165,7 +167,7 @@ export class AppMenuComponent implements OnInit {
         }));
 
         const unshelvedItem = {
-          label: 'Unshelved',
+          label: this.t.translate('layout.menu.unshelved'),
           type: 'Shelf',
           icon: 'pi pi-inbox',
           iconType: 'PRIME_NG' as 'PRIME_NG' | 'CUSTOM_SVG',
@@ -189,7 +191,7 @@ export class AppMenuComponent implements OnInit {
         return [
           {
             type: 'shelf',
-            label: 'Shelves',
+            label: this.t.translate('layout.menu.shelves'),
             hasDropDown: true,
             hasCreate: true,
             items,

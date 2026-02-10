@@ -145,6 +145,32 @@
     "deleteError": "Error al eliminar la fuente",
     "loadError": "Error al cargar las fuentes personalizadas",
     "quotaExceeded": "Cuota excedida",
-    "quotaExceededDetail": "Máximo {{max}} fuentes permitidas por usuario"
+    "quotaExceededDetail": "Máximo {{max}} fuentes permitidas por usuario",
+    "upload": {
+      "title": "Añadir nueva fuente",
+      "description": "Sube una fuente personalizada para tu lector de EPUB",
+      "selectFile": "Seleccionar archivo de fuente",
+      "dragDrop": "Arrastra y suelta el archivo de fuente",
+      "supportedFormats": "Formatos compatibles: <strong>TTF</strong>, <strong>OTF</strong>, <strong>WOFF</strong>, <strong>WOFF2</strong>",
+      "maxSize": "Tamaño máximo del archivo: 5 MB",
+      "fontPreview": "Vista previa de la fuente",
+      "displayName": "Nombre de la fuente",
+      "displayNameDesc": "Este nombre aparecerá en el selector de fuentes al leer libros EPUB.",
+      "displayNamePlaceholder": "ej., Bookerly, Open Sans, Merriweather",
+      "uploadBtn": "Subir fuente",
+      "previewFailed": "Error en la vista previa",
+      "previewFailedDetail": "No se pudo previsualizar la fuente, pero aún puedes subirla",
+      "noFileSelected": "Ningún archivo seleccionado",
+      "noFileSelectedDetail": "Por favor, selecciona un archivo de fuente para subir",
+      "success": "Éxito",
+      "successDetail": "Fuente \"{{name}}\" subida correctamente",
+      "uploadFailed": "Error al subir",
+      "uploadFailedDefault": "Error al subir la fuente",
+      "uploadFailedInvalid": "Formato de archivo no válido o cuota excedida",
+      "invalidFileType": "Tipo de archivo no válido",
+      "invalidFileTypeDetail": "Por favor, sube un archivo de fuente TTF, OTF, WOFF o WOFF2",
+      "fileTooLarge": "Archivo demasiado grande",
+      "fileTooLargeDetail": "El tamaño del archivo no debe exceder {{size}}"
+    }
   }
 }

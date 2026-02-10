@@ -8,6 +8,7 @@ import {MessageService} from 'primeng/api';
 import {Subject} from 'rxjs';
 import {filter, takeUntil} from 'rxjs/operators';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
   const newPassword = control.get('newPassword');
@@ -27,7 +28,9 @@ export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): V
     FormsModule,
     ReactiveFormsModule,
     InputText,
-    Password
+    Password,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './user-profile-dialog.component.html',
   styleUrls: ['./user-profile-dialog.component.scss']
@@ -45,6 +48,7 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
   private readonly messageService = inject(MessageService);
   private readonly fb = inject(FormBuilder);
   private readonly dialogRef = inject(DynamicDialogRef);
+  private readonly t = inject(TranslocoService);
 
   constructor() {
     this.changePasswordForm = this.fb.group(
@@ -93,14 +97,14 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
     if (!this.currentUser) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'User data not available.',
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsProfile.toast.errorNoUser'),
       });
       return;
     }
 
     if (this.editUserData.name === this.currentUser.name && this.editUserData.email === this.currentUser.email) {
-      this.messageService.add({severity: 'info', summary: 'Info', detail: 'No changes detected.'});
+      this.messageService.add({severity: 'info', summary: 'Info', detail: this.t.translate('settingsProfile.toast.noChanges')});
       this.isEditing = false;
       return;
     }
@@ -111,14 +115,14 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
     };
     this.userService.updateUser(this.currentUser.id, updateRequest).subscribe({
       next: () => {
-        this.messageService.add({severity: 'success', summary: 'Success', detail: 'Profile updated successfully'});
+        this.messageService.add({severity: 'success', summary: this.t.translate('common.success'), detail: this.t.translate('settingsProfile.toast.profileUpdated')});
         this.isEditing = false;
       },
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'Failed to update profile',
+          summary: this.t.translate('common.error'),
+          detail: err.error?.message || this.t.translate('settingsProfile.toast.profileUpdateFailed'),
         });
       },
     });
@@ -134,14 +138,14 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
 
     this.userService.changePassword(currentPassword, newPassword).subscribe({
       next: () => {
-        this.messageService.add({severity: 'success', summary: 'Success', detail: 'Password changed successfully'});
+        this.messageService.add({severity: 'success', summary: this.t.translate('common.success'), detail: this.t.translate('settingsProfile.toast.passwordChanged')});
         this.resetPasswordForm();
       },
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err?.message || 'Failed to change password',
+          summary: this.t.translate('common.error'),
+          detail: err?.message || this.t.translate('settingsProfile.toast.passwordChangeFailed'),
         });
       }
     });

@@ -1,4 +1,16 @@
 {
+  "main": {
+    "pageTitle": "Dashboard",
+    "welcomeTitle": "Welcome to BookLore!",
+    "welcomeSubtitle": "Let's create your first library",
+    "welcomeDescription": "A library is where all your books live. Start building your digital collection today!",
+    "createLibrary": "Create Your Library",
+    "customizeDashboard": "Customize Dashboard"
+  },
+  "scroller": {
+    "noBooksFound": "No books found for this scroller.",
+    "loadError": "Failed to load books! Please try refreshing the page."
+  },
   "settings": {
     "title": "Dashboard Configuration",
     "description": "Add up to 5 scrollers from different book collections and customize their behavior",
