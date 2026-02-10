@@ -236,7 +236,7 @@ public class BookLoreUser {
             private String title;
             private boolean enabled;
             private int order;
-            private int maxItems;
+            private Integer maxItems;
             private Long magicShelfId;
             private String sortField;
             private String sortDirection;
