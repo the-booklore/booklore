@@ -22,6 +22,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
@@ -63,12 +64,11 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             } catch (Exception e) {
                 log.debug("epub4j failed to parse EPUB for cover extraction (will try fallbacks) in {}: {}", epubFile.getName(), e.getMessage());
             }
-            }
 
             // We fall back to reading the image based on the cover-image property.
             String coverHref = findCoverImageHrefInOpf(epubFile);
             if (coverHref != null) {
-                image = extractFileFromZip(epubFile, coverHref);
+                byte[] image = extractFileFromZip(epubFile, coverHref);
                 if (image != null) {
                     return image;
                 }
@@ -113,10 +113,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private String findManifestCoverByHeuristic(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
 
             FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
             if (containerHdr == null) return null;
@@ -537,7 +534,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private String findCoverImageHrefInOpf(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
-            DocumentBuilder builder = org.booklore.util.SecureXmlUtils.createSecureDocumentBuilder(true);
+            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
 
             FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
             if (containerHdr == null) return null;
