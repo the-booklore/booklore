@@ -22,7 +22,8 @@ public enum UserSettingKey {
     ENABLE_SERIES_VIEW("enableSeriesView", false),
     HARDCOVER_API_KEY("hardcoverApiKey", false),
     HARDCOVER_SYNC_ENABLED("hardcoverSyncEnabled", false),
-    AUTO_SAVE_METADATA("autoSaveMetadata", false);
+    AUTO_SAVE_METADATA("autoSaveMetadata", false),
+    VISIBLE_FILTERS("visibleFilters", true);
 
 
     private final String dbKey;

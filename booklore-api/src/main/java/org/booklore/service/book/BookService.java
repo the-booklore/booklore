@@ -23,8 +23,8 @@ import org.booklore.util.FileUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
@@ -34,7 +34,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -293,11 +292,11 @@ public class BookService {
         bookDownloadService.downloadAllBookFiles(bookId, response);
     }
 
-    public ResponseEntity<ByteArrayResource> getBookContent(long bookId) throws IOException {
+    public ResponseEntity<Resource> getBookContent(long bookId) {
         return getBookContent(bookId, null);
     }
 
-    public ResponseEntity<ByteArrayResource> getBookContent(long bookId, String bookType) throws IOException {
+    public ResponseEntity<Resource> getBookContent(long bookId, String bookType) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         String filePath;
         if (bookType != null) {
@@ -310,11 +309,15 @@ public class BookService {
         } else {
             filePath = FileUtils.getBookFullPath(bookEntity);
         }
-        try (FileInputStream inputStream = new FileInputStream(filePath)) {
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(new ByteArrayResource(inputStream.readAllBytes()));
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw ApiError.FILE_NOT_FOUND.createException(filePath);
         }
+        Resource resource = new FileSystemResource(file);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(file.length())
+                .body(resource);
     }
 
     @Transactional

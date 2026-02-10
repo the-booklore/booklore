@@ -88,7 +88,8 @@ public class BookMetadataUpdater {
             return;
         }
 
-        if (metadata.areAllFieldsLocked() && hasValueChanges) {
+        boolean hasLockChanges = MetadataChangeDetector.hasLockChanges(newMetadata, metadata);
+        if (metadata.areAllFieldsLocked() && hasValueChanges && !hasLockChanges) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);
             return;
         }
@@ -106,7 +107,7 @@ public class BookMetadataUpdater {
         updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
-        updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
+        updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail, bookType);
         updateAudiobookMetadataIfNeeded(bookEntity, newMetadata, metadata, clearFlags, replaceMode);
         updateComicMetadataIfNeeded(newMetadata, metadata, replaceMode);
         updateLocks(newMetadata, metadata);
@@ -130,7 +131,9 @@ public class BookMetadataUpdater {
                     }
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.saveMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
-                    String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                    String newHash = file.isDirectory()
+                            ? FileFingerprint.generateFolderHash(bookEntity.getFullFilePath())
+                            : FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
                     primaryFile.setCurrentHash(newHash);
                     bookRepository.save(bookEntity);
@@ -388,9 +391,11 @@ public class BookMetadataUpdater {
 
         ComicMetadataEntity comic = e.getComicMetadata();
         if (comic == null) {
+            if (!hasComicData(comicDto) && !hasComicLocks(comicDto)) {
+                return;
+            }
             comic = ComicMetadataEntity.builder()
                     .bookId(e.getBookId())
-                    .bookMetadata(e)
                     .build();
             e.setComicMetadata(comic);
         }
@@ -402,16 +407,16 @@ public class BookMetadataUpdater {
         handleFieldUpdate(c.getVolumeNameLocked(), false, comicDto.getVolumeName(), v -> c.setVolumeName(nullIfBlank(v)), c::getVolumeName, replaceMode);
         handleFieldUpdate(c.getVolumeNumberLocked(), false, comicDto.getVolumeNumber(), c::setVolumeNumber, c::getVolumeNumber, replaceMode);
         handleFieldUpdate(c.getStoryArcLocked(), false, comicDto.getStoryArc(), v -> c.setStoryArc(nullIfBlank(v)), c::getStoryArc, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getStoryArcNumber(), c::setStoryArcNumber, c::getStoryArcNumber, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getAlternateSeries(), v -> c.setAlternateSeries(nullIfBlank(v)), c::getAlternateSeries, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getAlternateIssue(), v -> c.setAlternateIssue(nullIfBlank(v)), c::getAlternateIssue, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getImprint(), v -> c.setImprint(nullIfBlank(v)), c::getImprint, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getFormat(), v -> c.setFormat(nullIfBlank(v)), c::getFormat, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getBlackAndWhite(), c::setBlackAndWhite, c::getBlackAndWhite, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getManga(), c::setManga, c::getManga, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getReadingDirection(), v -> c.setReadingDirection(nullIfBlank(v)), c::getReadingDirection, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getWebLink(), v -> c.setWebLink(nullIfBlank(v)), c::getWebLink, replaceMode);
-        handleFieldUpdate(null, false, comicDto.getNotes(), v -> c.setNotes(nullIfBlank(v)), c::getNotes, replaceMode);
+        handleFieldUpdate(c.getStoryArcNumberLocked(), false, comicDto.getStoryArcNumber(), c::setStoryArcNumber, c::getStoryArcNumber, replaceMode);
+        handleFieldUpdate(c.getAlternateSeriesLocked(), false, comicDto.getAlternateSeries(), v -> c.setAlternateSeries(nullIfBlank(v)), c::getAlternateSeries, replaceMode);
+        handleFieldUpdate(c.getAlternateIssueLocked(), false, comicDto.getAlternateIssue(), v -> c.setAlternateIssue(nullIfBlank(v)), c::getAlternateIssue, replaceMode);
+        handleFieldUpdate(c.getImprintLocked(), false, comicDto.getImprint(), v -> c.setImprint(nullIfBlank(v)), c::getImprint, replaceMode);
+        handleFieldUpdate(c.getFormatLocked(), false, comicDto.getFormat(), v -> c.setFormat(nullIfBlank(v)), c::getFormat, replaceMode);
+        handleFieldUpdate(c.getBlackAndWhiteLocked(), false, comicDto.getBlackAndWhite(), c::setBlackAndWhite, c::getBlackAndWhite, replaceMode);
+        handleFieldUpdate(c.getMangaLocked(), false, comicDto.getManga(), c::setManga, c::getManga, replaceMode);
+        handleFieldUpdate(c.getReadingDirectionLocked(), false, comicDto.getReadingDirection(), v -> c.setReadingDirection(nullIfBlank(v)), c::getReadingDirection, replaceMode);
+        handleFieldUpdate(c.getWebLinkLocked(), false, comicDto.getWebLink(), v -> c.setWebLink(nullIfBlank(v)), c::getWebLink, replaceMode);
+        handleFieldUpdate(c.getNotesLocked(), false, comicDto.getNotes(), v -> c.setNotes(nullIfBlank(v)), c::getNotes, replaceMode);
 
         // Update relationships if not locked
         if (!Boolean.TRUE.equals(c.getCharactersLocked())) {
@@ -423,26 +428,93 @@ public class BookMetadataUpdater {
         if (!Boolean.TRUE.equals(c.getLocationsLocked())) {
             updateComicLocations(c, comicDto.getLocations(), replaceMode);
         }
-        if (!Boolean.TRUE.equals(c.getCreatorsLocked())) {
-            updateComicCreators(c, comicDto, replaceMode);
-        }
+        updateComicCreatorsPerRole(c, comicDto, replaceMode);
 
         // Update locks if provided
         if (comicDto.getIssueNumberLocked() != null) c.setIssueNumberLocked(comicDto.getIssueNumberLocked());
         if (comicDto.getVolumeNameLocked() != null) c.setVolumeNameLocked(comicDto.getVolumeNameLocked());
         if (comicDto.getVolumeNumberLocked() != null) c.setVolumeNumberLocked(comicDto.getVolumeNumberLocked());
         if (comicDto.getStoryArcLocked() != null) c.setStoryArcLocked(comicDto.getStoryArcLocked());
+        if (comicDto.getStoryArcNumberLocked() != null) c.setStoryArcNumberLocked(comicDto.getStoryArcNumberLocked());
+        if (comicDto.getAlternateSeriesLocked() != null) c.setAlternateSeriesLocked(comicDto.getAlternateSeriesLocked());
+        if (comicDto.getAlternateIssueLocked() != null) c.setAlternateIssueLocked(comicDto.getAlternateIssueLocked());
+        if (comicDto.getImprintLocked() != null) c.setImprintLocked(comicDto.getImprintLocked());
+        if (comicDto.getFormatLocked() != null) c.setFormatLocked(comicDto.getFormatLocked());
+        if (comicDto.getBlackAndWhiteLocked() != null) c.setBlackAndWhiteLocked(comicDto.getBlackAndWhiteLocked());
+        if (comicDto.getMangaLocked() != null) c.setMangaLocked(comicDto.getMangaLocked());
+        if (comicDto.getReadingDirectionLocked() != null) c.setReadingDirectionLocked(comicDto.getReadingDirectionLocked());
+        if (comicDto.getWebLinkLocked() != null) c.setWebLinkLocked(comicDto.getWebLinkLocked());
+        if (comicDto.getNotesLocked() != null) c.setNotesLocked(comicDto.getNotesLocked());
         if (comicDto.getCreatorsLocked() != null) c.setCreatorsLocked(comicDto.getCreatorsLocked());
+        if (comicDto.getPencillersLocked() != null) c.setPencillersLocked(comicDto.getPencillersLocked());
+        if (comicDto.getInkersLocked() != null) c.setInkersLocked(comicDto.getInkersLocked());
+        if (comicDto.getColoristsLocked() != null) c.setColoristsLocked(comicDto.getColoristsLocked());
+        if (comicDto.getLetterersLocked() != null) c.setLetterersLocked(comicDto.getLetterersLocked());
+        if (comicDto.getCoverArtistsLocked() != null) c.setCoverArtistsLocked(comicDto.getCoverArtistsLocked());
+        if (comicDto.getEditorsLocked() != null) c.setEditorsLocked(comicDto.getEditorsLocked());
         if (comicDto.getCharactersLocked() != null) c.setCharactersLocked(comicDto.getCharactersLocked());
         if (comicDto.getTeamsLocked() != null) c.setTeamsLocked(comicDto.getTeamsLocked());
         if (comicDto.getLocationsLocked() != null) c.setLocationsLocked(comicDto.getLocationsLocked());
 
-        comicMetadataRepository.save(c);
+        e.setComicMetadata(comicMetadataRepository.save(c));
 
         comicCharacterRepository.deleteOrphaned();
         comicTeamRepository.deleteOrphaned();
         comicLocationRepository.deleteOrphaned();
         comicCreatorRepository.deleteOrphaned();
+    }
+
+    private boolean hasComicData(ComicMetadata dto) {
+        return StringUtils.hasText(dto.getIssueNumber())
+                || StringUtils.hasText(dto.getVolumeName())
+                || dto.getVolumeNumber() != null
+                || StringUtils.hasText(dto.getStoryArc())
+                || dto.getStoryArcNumber() != null
+                || StringUtils.hasText(dto.getAlternateSeries())
+                || StringUtils.hasText(dto.getAlternateIssue())
+                || StringUtils.hasText(dto.getImprint())
+                || StringUtils.hasText(dto.getFormat())
+                || dto.getBlackAndWhite() != null
+                || dto.getManga() != null
+                || StringUtils.hasText(dto.getReadingDirection())
+                || StringUtils.hasText(dto.getWebLink())
+                || StringUtils.hasText(dto.getNotes())
+                || (dto.getCharacters() != null && !dto.getCharacters().isEmpty())
+                || (dto.getTeams() != null && !dto.getTeams().isEmpty())
+                || (dto.getLocations() != null && !dto.getLocations().isEmpty())
+                || (dto.getPencillers() != null && !dto.getPencillers().isEmpty())
+                || (dto.getInkers() != null && !dto.getInkers().isEmpty())
+                || (dto.getColorists() != null && !dto.getColorists().isEmpty())
+                || (dto.getLetterers() != null && !dto.getLetterers().isEmpty())
+                || (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty())
+                || (dto.getEditors() != null && !dto.getEditors().isEmpty());
+    }
+
+    private boolean hasComicLocks(ComicMetadata dto) {
+        return Boolean.TRUE.equals(dto.getIssueNumberLocked())
+                || Boolean.TRUE.equals(dto.getVolumeNameLocked())
+                || Boolean.TRUE.equals(dto.getVolumeNumberLocked())
+                || Boolean.TRUE.equals(dto.getStoryArcLocked())
+                || Boolean.TRUE.equals(dto.getStoryArcNumberLocked())
+                || Boolean.TRUE.equals(dto.getAlternateSeriesLocked())
+                || Boolean.TRUE.equals(dto.getAlternateIssueLocked())
+                || Boolean.TRUE.equals(dto.getImprintLocked())
+                || Boolean.TRUE.equals(dto.getFormatLocked())
+                || Boolean.TRUE.equals(dto.getBlackAndWhiteLocked())
+                || Boolean.TRUE.equals(dto.getMangaLocked())
+                || Boolean.TRUE.equals(dto.getReadingDirectionLocked())
+                || Boolean.TRUE.equals(dto.getWebLinkLocked())
+                || Boolean.TRUE.equals(dto.getNotesLocked())
+                || Boolean.TRUE.equals(dto.getCreatorsLocked())
+                || Boolean.TRUE.equals(dto.getPencillersLocked())
+                || Boolean.TRUE.equals(dto.getInkersLocked())
+                || Boolean.TRUE.equals(dto.getColoristsLocked())
+                || Boolean.TRUE.equals(dto.getLetterersLocked())
+                || Boolean.TRUE.equals(dto.getCoverArtistsLocked())
+                || Boolean.TRUE.equals(dto.getEditorsLocked())
+                || Boolean.TRUE.equals(dto.getCharactersLocked())
+                || Boolean.TRUE.equals(dto.getTeamsLocked())
+                || Boolean.TRUE.equals(dto.getLocationsLocked());
     }
 
     private void updateComicCharacters(ComicMetadataEntity c, Set<String> characters, MetadataReplaceMode mode) {
@@ -511,38 +583,43 @@ public class BookMetadataUpdater {
                 .forEach(entity -> c.getLocations().add(entity));
     }
 
-    private void updateComicCreators(ComicMetadataEntity c, ComicMetadata dto, MetadataReplaceMode mode) {
+    private void updateComicCreatorsPerRole(ComicMetadataEntity c, ComicMetadata dto, MetadataReplaceMode mode) {
         if (c.getCreatorMappings() == null) {
             c.setCreatorMappings(new HashSet<>());
         }
 
-        boolean hasNewCreators = (dto.getPencillers() != null && !dto.getPencillers().isEmpty()) ||
-                (dto.getInkers() != null && !dto.getInkers().isEmpty()) ||
-                (dto.getColorists() != null && !dto.getColorists().isEmpty()) ||
-                (dto.getLetterers() != null && !dto.getLetterers().isEmpty()) ||
-                (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty()) ||
-                (dto.getEditors() != null && !dto.getEditors().isEmpty());
+        updateCreatorRole(c, dto.getPencillers(), ComicCreatorRole.PENCILLER, c.getPencillersLocked(), mode);
+        updateCreatorRole(c, dto.getInkers(), ComicCreatorRole.INKER, c.getInkersLocked(), mode);
+        updateCreatorRole(c, dto.getColorists(), ComicCreatorRole.COLORIST, c.getColoristsLocked(), mode);
+        updateCreatorRole(c, dto.getLetterers(), ComicCreatorRole.LETTERER, c.getLetterersLocked(), mode);
+        updateCreatorRole(c, dto.getCoverArtists(), ComicCreatorRole.COVER_ARTIST, c.getCoverArtistsLocked(), mode);
+        updateCreatorRole(c, dto.getEditors(), ComicCreatorRole.EDITOR, c.getEditorsLocked(), mode);
+    }
 
-        if (!hasNewCreators) {
+    private void updateCreatorRole(ComicMetadataEntity c, Set<String> names, ComicCreatorRole role, Boolean locked, MetadataReplaceMode mode) {
+        if (Boolean.TRUE.equals(locked)) return;
+
+        boolean hasNewNames = names != null && !names.isEmpty();
+        Set<ComicCreatorMappingEntity> existingForRole = c.getCreatorMappings().stream()
+                .filter(m -> m.getRole() == role)
+                .collect(Collectors.toSet());
+
+        if (!hasNewNames) {
             if (mode == MetadataReplaceMode.REPLACE_ALL) {
-                c.getCreatorMappings().clear();
+                c.getCreatorMappings().removeAll(existingForRole);
             }
             return;
         }
 
-        if (mode == MetadataReplaceMode.REPLACE_ALL || mode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
-            c.getCreatorMappings().clear();
-        }
-        if (mode == MetadataReplaceMode.REPLACE_MISSING && !c.getCreatorMappings().isEmpty()) {
+        if (mode == MetadataReplaceMode.REPLACE_MISSING && !existingForRole.isEmpty()) {
             return;
         }
 
-        addCreatorsWithRole(c, dto.getPencillers(), ComicCreatorRole.PENCILLER);
-        addCreatorsWithRole(c, dto.getInkers(), ComicCreatorRole.INKER);
-        addCreatorsWithRole(c, dto.getColorists(), ComicCreatorRole.COLORIST);
-        addCreatorsWithRole(c, dto.getLetterers(), ComicCreatorRole.LETTERER);
-        addCreatorsWithRole(c, dto.getCoverArtists(), ComicCreatorRole.COVER_ARTIST);
-        addCreatorsWithRole(c, dto.getEditors(), ComicCreatorRole.EDITOR);
+        if (mode == MetadataReplaceMode.REPLACE_ALL || mode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED || mode == null) {
+            c.getCreatorMappings().removeAll(existingForRole);
+        }
+
+        addCreatorsWithRole(c, names, role);
     }
 
     private void addCreatorsWithRole(ComicMetadataEntity comic, Set<String> names, ComicCreatorRole role) {
@@ -562,16 +639,22 @@ public class BookMetadataUpdater {
         }
     }
 
-    private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {
+    private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set, BookFileType bookType) {
         if (Boolean.TRUE.equals(e.getCoverLocked())) {
             return;
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
         try {
-            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+            if (bookType == BookFileType.AUDIOBOOK) {
+                if (Boolean.TRUE.equals(e.getAudiobookCoverLocked())) return;
+                fileService.createAudiobookThumbnailFromUrl(bookId, m.getThumbnailUrl());
+                bookEntity.getMetadata().setAudiobookCoverUpdatedOn(Instant.now());
+            } else {
+                fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+                bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+            }
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
-            bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
         } catch (Exception ex) {
             log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
         }

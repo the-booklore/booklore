@@ -77,6 +77,7 @@ public class BookLoreUser {
         public boolean koReaderEnabled;
         public boolean enableSeriesView;
         public boolean autoSaveMetadata;
+        public List<String> visibleFilters;
         public DashboardConfig dashboardConfig;
 
         @Data
