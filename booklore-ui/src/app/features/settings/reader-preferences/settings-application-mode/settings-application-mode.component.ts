@@ -1,4 +1,5 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
+import {TranslocoDirective} from '@jsverse/transloco';
 import {ReaderPreferencesService} from '../reader-preferences.service';
 import {UserSettings} from '../../user-management/user.service';
 
@@ -6,7 +7,8 @@ import {UserSettings} from '../../user-management/user.service';
   selector: 'app-settings-application-mode',
   templateUrl: './settings-application-mode.component.html',
   standalone: true,
-  styleUrls: ['./settings-application-mode.component.scss']
+  styleUrls: ['./settings-application-mode.component.scss'],
+  imports: [TranslocoDirective]
 })
 export class SettingsApplicationModeComponent implements OnInit {
   @Input() userSettings!: UserSettings;

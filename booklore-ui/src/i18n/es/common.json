@@ -1,0 +1,20 @@
+{
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "close": "Cerrar",
+  "confirm": "Confirmar",
+  "search": "Buscar",
+  "loading": "Cargando...",
+  "error": "Error",
+  "success": "Correcto",
+  "yes": "Sí",
+  "no": "No",
+  "ok": "Aceptar",
+  "retry": "Reintentar",
+  "back": "Atrás",
+  "next": "Siguiente",
+  "submit": "Enviar",
+  "remove": "Eliminar",
+  "edit": "Editar"
+}

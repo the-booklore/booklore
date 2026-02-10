@@ -25,6 +25,9 @@ import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {UnifiedNotificationBoxComponent} from '../../../components/unified-notification-popover/unified-notification-popover-component';
 import {Severity, LogNotification} from '../../../websocket/model/log-notification.model';
 import {Menu} from 'primeng/menu';
+import {TranslocoService} from '@jsverse/transloco';
+import {AVAILABLE_LANGS, LANG_LABELS} from '../../../../core/config/transloco-loader';
+import {LANG_STORAGE_KEY} from '../../../../core/config/language-initializer';
 
 @Component({
   selector: 'app-topbar',
@@ -75,6 +78,11 @@ export class AppTopBarComponent implements OnDestroy {
   private latestHasPendingFiles = false;
   private latestNotificationSeverity?: Severity;
 
+  activeLang = '';
+  langMenuItems: MenuItem[] = [];
+
+  private translocoService: TranslocoService;
+
   constructor(
     public layoutService: LayoutService,
     private notificationService: NotificationEventService,
@@ -83,8 +91,16 @@ export class AppTopBarComponent implements OnDestroy {
     protected userService: UserService,
     private metadataProgressService: MetadataProgressService,
     private bookdropFileService: BookdropFileService,
-    private dialogLauncher: DialogLauncherService
+    private dialogLauncher: DialogLauncherService,
+    translocoService: TranslocoService
   ) {
+    this.translocoService = translocoService;
+    this.activeLang = translocoService.getActiveLang();
+    this.langMenuItems = AVAILABLE_LANGS.map(lang => ({
+      label: LANG_LABELS[lang] || lang,
+      icon: lang === this.activeLang ? 'pi pi-check' : undefined,
+      command: () => this.switchLanguage(lang),
+    }));
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
 
@@ -159,6 +175,20 @@ export class AppTopBarComponent implements OnDestroy {
 
   navigateToUserStats() {
     this.router.navigate(['/reading-stats']);
+  }
+
+  switchLanguage(lang: string) {
+    if (lang === this.activeLang) return;
+    this.translocoService.load(lang).subscribe(() => {
+      this.translocoService.setActiveLang(lang);
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+      this.activeLang = lang;
+      this.langMenuItems = AVAILABLE_LANGS.map(l => ({
+        label: LANG_LABELS[l] || l,
+        icon: l === lang ? 'pi pi-check' : undefined,
+        command: () => this.switchLanguage(l),
+      }));
+    });
   }
 
   logout() {

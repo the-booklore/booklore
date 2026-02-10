@@ -23,6 +23,7 @@
     "@angular/router": "^21.1.2",
     "@angular/service-worker": "^21.1.2",
     "@iharbeck/ngx-virtual-scroller": "^19.0.1",
+    "@jsverse/transloco": "^8.2.1",
     "@primeng/themes": "^21.0.3",
     "@stomp/rx-stomp": "^2.3.0",
     "@stomp/stompjs": "^7.2.1",

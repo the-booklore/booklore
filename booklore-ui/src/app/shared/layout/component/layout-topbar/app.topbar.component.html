@@ -125,6 +125,17 @@
           <i class="pi pi-heart heart-icon"></i>
         </li>
         <li class="topbar-item-relative">
+          <button
+            type="button"
+            class="topbar-item"
+            (click)="langMenu.toggle($event)"
+            pTooltip="Language"
+            tooltipPosition="bottom">
+            <i class="pi pi-language topbar-icon"></i>
+          </button>
+          <p-menu #langMenu [model]="langMenuItems" [popup]="true" appendTo="body"/>
+        </li>
+        <li class="topbar-item-relative">
           <button type="button"
                   class="topbar-item config-item"
                   enterActiveClass="animate-scalein"
@@ -262,6 +273,16 @@
               <i class="pi pi-info-circle topbar-icon"></i>
               Documentation
             </a>
+          </li>
+          <li>
+            <button
+              class="mobile-menu-item"
+              (click)="langMenuMobile.toggle($event)"
+            >
+              <i class="pi pi-language topbar-icon"></i>
+              Language
+            </button>
+            <p-menu #langMenuMobile [model]="langMenuItems" [popup]="true"/>
           </li>
           <li>
             <button

@@ -1,4 +1,5 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -11,6 +12,7 @@ import {DashboardConfig, ScrollerConfig, ScrollerType} from '../../models/dashbo
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {map} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 export const MAX_SCROLLERS = 5;
 export const DEFAULT_MAX_ITEMS = 20;
@@ -27,7 +29,9 @@ export const MAX_ITEMS = 20;
     CheckboxModule,
     InputTextModule,
     SelectModule,
-    InputNumberModule
+    InputNumberModule,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './dashboard-settings.component.html',
   styleUrls: ['./dashboard-settings.component.scss']
@@ -36,16 +40,14 @@ export class DashboardSettingsComponent implements OnInit {
   private configService = inject(DashboardConfigService);
   private dialogRef = inject(DynamicDialogRef);
   private magicShelfService = inject(MagicShelfService);
+  private translocoService = inject(TranslocoService);
+  private destroyRef = inject(DestroyRef);
 
   config!: DashboardConfig;
 
-  availableScrollerTypes = [
-    {label: 'Continue Reading', value: ScrollerType.LAST_READ},
-    {label: 'Continue Listening', value: ScrollerType.LAST_LISTENED},
-    {label: 'Recently Added', value: ScrollerType.LATEST_ADDED},
-    {label: 'Discover Something New', value: ScrollerType.RANDOM},
-    {label: 'Magic Shelf', value: ScrollerType.MAGIC_SHELF}
-  ];
+  availableScrollerTypes: {label: string; value: ScrollerType}[] = [];
+  sortFieldOptions: {label: string; value: string}[] = [];
+  sortDirectionOptions: {label: string; value: string}[] = [];
 
   magicShelves$ = this.magicShelfService.shelvesState$.pipe(
     map(state => (state.shelves || []).map(shelf => ({
@@ -54,33 +56,16 @@ export class DashboardSettingsComponent implements OnInit {
     })))
   );
 
-  sortFieldOptions = [
-    {label: 'Title', value: 'title'},
-    {label: 'Title + Series', value: 'titleSeries'},
-    {label: 'File Name', value: 'fileName'},
-    {label: 'File Path', value: 'filePath'},
-    {label: 'Date Added', value: 'addedOn'},
-    {label: 'Author', value: 'author'},
-    {label: 'Author (Surname)', value: 'authorSurnameVorname'},
-    {label: 'Author + Series', value: 'authorSeries'},
-    {label: 'Personal Rating', value: 'personalRating'},
-    {label: 'Publisher', value: 'publisher'},
-    {label: 'Published Date', value: 'publishedDate'},
-    {label: 'Last Read', value: 'lastReadTime'},
-    {label: 'Pages', value: 'pageCount'}
-  ];
-
-  sortDirectionOptions = [
-    {label: 'Ascending', value: 'asc'},
-    {label: 'Descending', value: 'desc'}
-  ];
-
   private magicShelvesMap = new Map<number, string>();
 
   readonly MIN_ITEMS = MIN_ITEMS;
   readonly MAX_ITEMS = MAX_ITEMS;
 
   ngOnInit(): void {
+    this.translocoService.langChanges$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.buildTranslatedOptions());
+
     this.configService.config$.subscribe(config => {
       this.config = JSON.parse(JSON.stringify(config));
     });
@@ -95,22 +80,57 @@ export class DashboardSettingsComponent implements OnInit {
     });
   }
 
+  private buildTranslatedOptions(): void {
+    const t = (key: string) => this.translocoService.translate(`dashboard.settings.${key}`);
+
+    this.availableScrollerTypes = [
+      {label: t('scrollerTypes.lastRead'), value: ScrollerType.LAST_READ},
+      {label: t('scrollerTypes.lastListened'), value: ScrollerType.LAST_LISTENED},
+      {label: t('scrollerTypes.latestAdded'), value: ScrollerType.LATEST_ADDED},
+      {label: t('scrollerTypes.random'), value: ScrollerType.RANDOM},
+      {label: t('scrollerTypes.magicShelf'), value: ScrollerType.MAGIC_SHELF}
+    ];
+
+    this.sortFieldOptions = [
+      {label: t('sortFields.title'), value: 'title'},
+      {label: t('sortFields.titleSeries'), value: 'titleSeries'},
+      {label: t('sortFields.fileName'), value: 'fileName'},
+      {label: t('sortFields.filePath'), value: 'filePath'},
+      {label: t('sortFields.addedOn'), value: 'addedOn'},
+      {label: t('sortFields.author'), value: 'author'},
+      {label: t('sortFields.authorSurnameVorname'), value: 'authorSurnameVorname'},
+      {label: t('sortFields.authorSeries'), value: 'authorSeries'},
+      {label: t('sortFields.personalRating'), value: 'personalRating'},
+      {label: t('sortFields.publisher'), value: 'publisher'},
+      {label: t('sortFields.publishedDate'), value: 'publishedDate'},
+      {label: t('sortFields.lastReadTime'), value: 'lastReadTime'},
+      {label: t('sortFields.pageCount'), value: 'pageCount'}
+    ];
+
+    this.sortDirectionOptions = [
+      {label: t('sortDirections.asc'), value: 'asc'},
+      {label: t('sortDirections.desc'), value: 'desc'}
+    ];
+  }
+
   getScrollerTitle(scroller: ScrollerConfig): string {
+    const t = (key: string) => this.translocoService.translate(`dashboard.settings.scrollerTypes.${key}`);
+
     if (scroller.type === ScrollerType.MAGIC_SHELF && scroller.magicShelfId) {
-      return this.magicShelvesMap.get(scroller.magicShelfId) || 'Magic Shelf';
+      return this.magicShelvesMap.get(scroller.magicShelfId) || t('magicShelf');
     }
 
     switch (scroller.type) {
       case ScrollerType.LAST_READ:
-        return 'Continue Reading';
+        return t('lastRead');
       case ScrollerType.LAST_LISTENED:
-        return 'Continue Listening';
+        return t('lastListened');
       case ScrollerType.LATEST_ADDED:
-        return 'Recently Added';
+        return t('latestAdded');
       case ScrollerType.RANDOM:
-        return 'Discover Something New';
+        return t('random');
       default:
-        return 'Scroller';
+        return t('default');
     }
   }
 

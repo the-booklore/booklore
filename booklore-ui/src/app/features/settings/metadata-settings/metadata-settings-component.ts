@@ -12,6 +12,7 @@ import {MetadataMatchWeightsComponent} from '../global-preferences/metadata-matc
 import {MetadataPersistenceSettingsComponent} from './metadata-persistence-settings/metadata-persistence-settings-component';
 import {PublicReviewsSettingsComponent} from './public-reviews-settings/public-reviews-settings-component';
 import {MetadataProviderFieldSelectorComponent} from '../../metadata/component/metadata-provider-field-selector/metadata-provider-field-selector.component';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-settings-component',
@@ -24,7 +25,8 @@ import {MetadataProviderFieldSelectorComponent} from '../../metadata/component/m
     ToggleSwitch,
     MetadataPersistenceSettingsComponent,
     PublicReviewsSettingsComponent,
-    MetadataProviderFieldSelectorComponent
+    MetadataProviderFieldSelectorComponent,
+    TranslocoDirective
   ],
   templateUrl: './metadata-settings-component.html',
   styleUrl: './metadata-settings-component.scss'
@@ -36,6 +38,7 @@ export class MetadataSettingsComponent implements OnInit {
 
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly settingsHelper = inject(SettingsHelperService);
+  private t = inject(TranslocoService);
 
   readonly appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
 
@@ -61,7 +64,7 @@ export class MetadataSettingsComponent implements OnInit {
       next: (settings) => this.initializeSettings(settings),
       error: (error) => {
         console.error('Failed to load settings:', error);
-        this.settingsHelper.showMessage('error', 'Error', 'Failed to load settings.');
+        this.settingsHelper.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsMeta.autoDownload.loadError'));
       }
     });
   }

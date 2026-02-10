@@ -1,0 +1,44 @@
+{
+  "settings": {
+    "title": "Dashboard Configuration",
+    "description": "Add up to 5 scrollers from different book collections and customize their behavior",
+    "type": "Type",
+    "selectType": "Select type",
+    "magicShelf": "Magic Shelf",
+    "selectMagicShelf": "Select magic shelf",
+    "sortField": "Sort Field",
+    "selectField": "Select field",
+    "direction": "Direction",
+    "selectDirection": "Select direction",
+    "maxItems": "Max Items",
+    "addScroller": "Add Scroller",
+    "resetToDefault": "Reset to Default",
+    "scrollerTypes": {
+      "lastRead": "Continue Reading",
+      "lastListened": "Continue Listening",
+      "latestAdded": "Recently Added",
+      "random": "Discover Something New",
+      "magicShelf": "Magic Shelf",
+      "default": "Scroller"
+    },
+    "sortFields": {
+      "title": "Title",
+      "titleSeries": "Title + Series",
+      "fileName": "File Name",
+      "filePath": "File Path",
+      "addedOn": "Date Added",
+      "author": "Author",
+      "authorSurnameVorname": "Author (Surname)",
+      "authorSeries": "Author + Series",
+      "personalRating": "Personal Rating",
+      "publisher": "Publisher",
+      "publishedDate": "Published Date",
+      "lastReadTime": "Last Read",
+      "pageCount": "Pages"
+    },
+    "sortDirections": {
+      "asc": "Ascending",
+      "desc": "Descending"
+    }
+  }
+}
