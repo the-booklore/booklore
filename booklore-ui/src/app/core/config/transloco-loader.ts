@@ -31,6 +31,19 @@ export const LANG_LABELS: Record<string, string> = {
   ru: 'Русский',
 };
 
+function deepMerge(base: Record<string, any>, override: Record<string, any>): Record<string, any> {
+  const result = {...base};
+  for (const key of Object.keys(override)) {
+    if (override[key] && typeof override[key] === 'object' && !Array.isArray(override[key])
+      && base[key] && typeof base[key] === 'object' && !Array.isArray(base[key])) {
+      result[key] = deepMerge(base[key], override[key]);
+    } else {
+      result[key] = override[key];
+    }
+  }
+  return result;
+}
+
 @Injectable({providedIn: 'root'})
 export class TranslocoInlineLoader implements TranslocoLoader {
   getTranslation(lang: string): Observable<Translation> {
@@ -39,7 +52,7 @@ export class TranslocoInlineLoader implements TranslocoLoader {
     }
     const loader = LAZY_LANG_LOADERS[lang];
     if (loader) {
-      return from(loader().then(m => m.default));
+      return from(loader().then(m => deepMerge(EN_TRANSLATIONS, m.default)));
     }
     return of(EN_TRANSLATIONS);
   }
