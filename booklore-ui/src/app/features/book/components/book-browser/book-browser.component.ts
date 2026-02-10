@@ -1,4 +1,4 @@
-import {AfterViewInit, ApplicationRef, ChangeDetectorRef, Component, HostListener, inject, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
@@ -105,8 +105,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   protected appSettingsService = inject(AppSettingsService);
 
   private cdr = inject(ChangeDetectorRef);
-  private ngZone = inject(NgZone);
-  private appRef = inject(ApplicationRef);
   private activatedRoute = inject(ActivatedRoute);
   private router = inject(Router);
   private messageService = inject(MessageService);
@@ -477,11 +475,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     this.bookSelectionService.selectedBooks$
       .pipe(takeUntil(this.destroy$))
       .subscribe(selectedBooks => {
-        this.ngZone.run(() => {
-          this.selectedCount = selectedBooks.size;
-          this.cdr.detectChanges();
-          this.appRef.tick();
-        });
+        this.selectedCount = selectedBooks.size;
+        this.cdr.detectChanges();
       });
   }
 

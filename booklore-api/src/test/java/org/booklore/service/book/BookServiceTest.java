@@ -21,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -318,7 +317,7 @@ class BookServiceTest {
     }
 
     @Test
-    void getBookContent_returnsByteArrayResource() throws Exception {
+    void getBookContent_returnsResource() throws Exception {
         BookEntity entity = new BookEntity();
         entity.setId(10L);
         when(bookRepository.findById(10L)).thenReturn(Optional.of(entity));
@@ -326,9 +325,9 @@ class BookServiceTest {
         Files.write(path, "hello".getBytes());
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
             fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(path.toString());
-            ResponseEntity<ByteArrayResource> response = bookService.getBookContent(10L);
+            ResponseEntity<Resource> response = bookService.getBookContent(10L);
             assertEquals(HttpStatus.OK, response.getStatusCode());
-            assertArrayEquals("hello".getBytes(), response.getBody().getByteArray());
+            assertArrayEquals("hello".getBytes(), response.getBody().getInputStream().readAllBytes());
         } finally {
             Files.deleteIfExists(path);
         }
@@ -341,13 +340,13 @@ class BookServiceTest {
     }
 
     @Test
-    void getBookContent_fileIoError_throwsIOException() throws Exception {
+    void getBookContent_fileNotFound_throwsException() {
         BookEntity entity = new BookEntity();
         entity.setId(12L);
         when(bookRepository.findById(12L)).thenReturn(Optional.of(entity));
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
             fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/nonexistentfile.txt");
-            assertThrows(java.io.FileNotFoundException.class, () -> bookService.getBookContent(12L));
+            assertThrows(APIException.class, () -> bookService.getBookContent(12L));
         }
     }
 

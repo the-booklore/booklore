@@ -162,7 +162,7 @@
     header="Merge/Split {{ currentMergeType | titlecase }}"
     [(visible)]="showMergeDialog"
     [modal]="true"
-    styleClass="user-dialog"
+    class="user-dialog"
     [style]="{width: '50rem'}">
     <div class="dialog-form">
       <p>You are merging/splitting {{ getSelectedItems(currentMergeType).length }} {{ currentMergeType }}:</p>
@@ -238,7 +238,7 @@
     header="Rename/Split {{ currentMergeType | titlecase }}"
     [(visible)]="showRenameDialog"
     [modal]="true"
-    styleClass="user-dialog"
+    class="user-dialog"
     [style]="{width: '40rem'}">
     <div class="dialog-form">
       <p>You are renaming/splitting:</p>
@@ -308,7 +308,7 @@
     header="Delete {{ currentMergeType | titlecase }}"
     [(visible)]="showDeleteDialog"
     [modal]="true"
-    styleClass="user-dialog"
+    class="user-dialog"
     [style]="{width: '40rem'}">
     <div class="dialog-form">
       <div class="warning-message">

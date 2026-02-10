@@ -24,6 +24,7 @@ import org.booklore.service.NotificationService;
 import org.booklore.service.book.BookQueryService;
 import org.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import org.booklore.service.metadata.parser.BookParser;
+import org.booklore.service.metadata.parser.DetailedMetadataProvider;
 import org.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +82,14 @@ public class BookMetadataService {
         return getParser(provider).fetchMetadata(book, request);
     }
 
+
+    public BookMetadata getDetailedProviderMetadata(MetadataProvider provider, String providerItemId) {
+        BookParser parser = getParser(provider);
+        if (parser instanceof DetailedMetadataProvider detailedProvider) {
+            return detailedProvider.fetchDetailedMetadata(providerItemId);
+        }
+        return null;
+    }
 
     private BookParser getParser(MetadataProvider provider) {
         BookParser parser = parserMap.get(provider);
