@@ -46,12 +46,12 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
 
   sortOptions: {label: string; field: string; translationKey: string}[] = [
     {label: 'Title', field: 'title', translationKey: 'sortTitle'},
-    {label: 'Title + Series', field: 'titleSeries', translationKey: 'sortTitleSeries'},
     {label: 'File Name', field: 'fileName', translationKey: 'sortFileName'},
     {label: 'File Path', field: 'filePath', translationKey: 'sortFilePath'},
     {label: 'Author', field: 'author', translationKey: 'sortAuthor'},
     {label: 'Author (Surname)', field: 'authorSurnameVorname', translationKey: 'sortAuthorSurname'},
-    {label: 'Author + Series', field: 'authorSeries', translationKey: 'sortAuthorSeries'},
+    {label: 'Series Name', field: 'seriesName', translationKey: 'sortSeriesName'},
+    {label: 'Series Number', field: 'seriesNumber', translationKey: 'sortSeriesNumber'},
     {label: 'Last Read', field: 'lastReadTime', translationKey: 'sortLastRead'},
     {label: 'Personal Rating', field: 'personalRating', translationKey: 'sortPersonalRating'},
     {label: 'Added On', field: 'addedOn', translationKey: 'sortAddedOn'},
@@ -59,6 +59,10 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Locked', field: 'locked', translationKey: 'sortLocked'},
     {label: 'Publisher', field: 'publisher', translationKey: 'sortPublisher'},
     {label: 'Published Date', field: 'publishedDate', translationKey: 'sortPublishedDate'},
+    {label: 'Read Status', field: 'readStatus', translationKey: 'sortReadStatus'},
+    {label: 'Date Finished', field: 'dateFinished', translationKey: 'sortDateFinished'},
+    {label: 'Reading Progress', field: 'readingProgress', translationKey: 'sortReadingProgress'},
+    {label: 'Book Type', field: 'bookType', translationKey: 'sortBookType'},
     {label: 'Amazon Rating', field: 'amazonRating', translationKey: 'sortAmazonRating'},
     {label: 'Amazon #', field: 'amazonReviewCount', translationKey: 'sortAmazonCount'},
     {label: 'Goodreads Rating', field: 'goodreadsRating', translationKey: 'sortGoodreadsRating'},
@@ -99,7 +103,7 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
   visibleSortFields: string[] = [];
   selectedAddSortField: string | null = null;
   readonly minSortFields = 3;
-  readonly maxSortFields = 23;
+  readonly maxSortFields = 27;
 
   private readonly sortFieldList = viewChild<ElementRef<HTMLElement>>('sortFieldList');
 
