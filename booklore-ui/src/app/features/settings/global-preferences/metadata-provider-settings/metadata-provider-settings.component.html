@@ -182,6 +182,70 @@
           </div>
         </div>
 
+        <div class="custom-providers-section">
+          <h4 class="provider-group-title">{{ t('custom.title') }}</h4>
+          <p class="config-description">{{ t('custom.description') }}</p>
+
+          @if (customProviders.length > 0) {
+            <div class="custom-providers-list">
+              @for (provider of customProviders; track provider.id) {
+                <div class="setting-item custom-provider-item">
+                  <div class="setting-header">
+                    <p-toggleswitch [ngModel]="provider.enabled" (ngModelChange)="toggleCustomProvider(provider)"></p-toggleswitch>
+                    <label class="setting-label">{{ provider.name }}</label>
+                    <span class="custom-provider-url">{{ provider.baseUrl }}</span>
+                  </div>
+                  <div class="custom-provider-actions">
+                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="secondary" (click)="startEditCustomProvider(provider)"></p-button>
+                    <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (click)="removeCustomProvider($event, provider)"></p-button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (showCustomProviderForm) {
+            <div class="custom-provider-form">
+              <div class="config-field">
+                <label class="config-label">{{ t('custom.baseUrl') }}</label>
+                <input
+                  type="text"
+                  pInputText
+                  [placeholder]="t('custom.baseUrlPlaceholder')"
+                  [(ngModel)]="customProviderForm.baseUrl"
+                  class="config-input"/>
+              </div>
+              <div class="config-field">
+                <label class="config-label">{{ t('custom.displayName') }}</label>
+                <input
+                  type="text"
+                  pInputText
+                  [placeholder]="t('custom.displayNamePlaceholder')"
+                  [(ngModel)]="customProviderForm.name"
+                  class="config-input"/>
+              </div>
+              <div class="config-field">
+                <label class="config-label">{{ t('custom.bearerToken') }}</label>
+                <input
+                  type="password"
+                  pInputText
+                  [placeholder]="t('custom.bearerTokenPlaceholder')"
+                  [(ngModel)]="customProviderForm.bearerToken"
+                  class="config-input"/>
+              </div>
+              <div class="custom-provider-form-actions">
+                <p-button [label]="t('custom.testConnection')" icon="pi pi-bolt" severity="info" [outlined]="true" [loading]="validatingProvider" [disabled]="!customProviderForm.baseUrl.trim()" (click)="testCustomProvider()"></p-button>
+                <p-button [label]="t('custom.save')" icon="pi pi-check" severity="success" [outlined]="true" [disabled]="!customProviderForm.baseUrl.trim()" (click)="saveCustomProvider()"></p-button>
+                <p-button [label]="t('custom.cancel')" icon="pi pi-times" severity="secondary" [outlined]="true" (click)="cancelCustomProviderForm()"></p-button>
+              </div>
+            </div>
+          } @else {
+            <p-button [label]="t('custom.addProvider')" icon="pi pi-plus" severity="secondary" [outlined]="true" (click)="startAddCustomProvider()"></p-button>
+          }
+        </div>
+
+        <p-confirmDialog></p-confirmDialog>
+
         <div class="setting-actions">
           <p-button [label]="t('saveConfigurations')" icon="pi pi-save" severity="success" [outlined]="true" (click)="saveSettings()"></p-button>
         </div>
