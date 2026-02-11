@@ -18,8 +18,10 @@ import org.booklore.repository.BookFileRepository;
 import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.progress.ReadingProgressService;
+import org.booklore.service.FileStreamingService;
 import org.booklore.util.FileService;
 import org.booklore.util.FileUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +65,7 @@ public class BookService {
     private final BookUpdateService bookUpdateService;
     private final EbookViewerPreferenceRepository ebookViewerPreferencesRepository;
     private final SidecarMetadataWriter sidecarMetadataWriter;
+    private final FileStreamingService fileStreamingService;
 
 
     public List<Book> getBookDTOs(boolean includeDescription) {
@@ -318,6 +321,36 @@ public class BookService {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .contentLength(file.length())
                 .body(resource);
+    }
+
+    public void streamBookContent(long bookId, String bookType, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        String filePath;
+        if (bookType != null) {
+            BookFileType requestedType = BookFileType.valueOf(bookType.toUpperCase());
+            BookFileEntity bookFile = bookEntity.getBookFiles().stream()
+                    .filter(bf -> bf.getBookType() == requestedType)
+                    .findFirst()
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("No file of type " + bookType + " found for book"));
+            filePath = bookFile.getFullFilePath().toString();
+        } else {
+            filePath = FileUtils.getBookFullPath(bookEntity);
+        }
+
+        Path path = Paths.get(filePath);
+        String fileName = path.getFileName().toString();
+        String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1) : "";
+        String contentType = switch (extension.toLowerCase()) {
+            case "pdf" -> "application/pdf";
+            case "epub" -> "application/epub+zip";
+            case "mobi", "azw3" -> "application/x-mobipocket-ebook";
+            case "cbz" -> "application/vnd.comicbook+zip";
+            case "cbr" -> "application/vnd.comicbook-rar";
+            case "fb2" -> "application/x-fictionbook+xml";
+            default -> "application/octet-stream";
+        };
+
+        fileStreamingService.streamWithRangeSupport(path, contentType, request, response);
     }
 
     @Transactional

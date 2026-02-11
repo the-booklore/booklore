@@ -7,6 +7,7 @@
 @if (!isLoading) {
   <ngx-extended-pdf-viewer
     [src]="bookData"
+    [authorization]="authorization"
     [textLayer]="true"
     [showHandToolButton]="true"
     [height]="'auto'"
@@ -19,7 +20,8 @@
     (pagesLoaded)="onPdfPagesLoaded($event)"
     (pageChange)="onPageChange($event)"
     (zoomChange)="onZoomChange($event)"
-    (spreadChange)="onSpreadChange($event)">
+    (spreadChange)="onSpreadChange($event)"
+    (annotationEditorEvent)="onAnnotationEditorEvent()">
   </ngx-extended-pdf-viewer>
 
   <ng-template #additionalButtons>
@@ -46,6 +48,10 @@
         <pdf-book-mode></pdf-book-mode>
         <div class="verticalToolbarSeparator hiddenSmallView"></div>
         <pdf-toggle-secondary-toolbar></pdf-toggle-secondary-toolbar>
+        <div class="verticalToolbarSeparator"></div>
+        <pdf-highlight-editor></pdf-highlight-editor>
+        <pdf-text-editor></pdf-text-editor>
+        <pdf-draw-editor></pdf-draw-editor>
         <div class="verticalToolbarSeparator"></div>
         <button class="toolbar-btn" [title]="isDarkTheme ? 'Switch to Light Mode' : 'Switch to Dark Mode'" (click)="isDarkTheme = !isDarkTheme">
           @if (isDarkTheme) {
