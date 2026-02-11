@@ -45,7 +45,7 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
         }
     }
 
-    private static final int COUNT_DETAILED_METADATA_TO_GET = 4;
+    private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
     private static final String BASE_BOOK_URL_SUFFIX = "/dp/";
     private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^\\d]");
     private static final Pattern SERIES_FORMAT_PATTERN = Pattern.compile("Book (\\d+(?:\\.\\d+)?) of (\\d+)");

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class AudibleParser implements BookParser, DetailedMetadataProvider {
 
-    private static final int COUNT_DETAILED_METADATA_TO_GET = 4;
+    private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
     private static final long MIN_REQUEST_INTERVAL_MS = 1500;
     private static final String DEFAULT_DOMAIN = "com";
 
