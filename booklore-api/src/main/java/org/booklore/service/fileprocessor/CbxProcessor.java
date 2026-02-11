@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.booklore.util.FileService.truncate;
 
@@ -224,7 +225,10 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             }
 
             BookMetadataEntity metadata = bookEntity.getMetadata();
+            
+            // Basic fields
             metadata.setTitle(truncate(extracted.getTitle(), 1000));
+            metadata.setSubtitle(truncate(extracted.getSubtitle(), 1000));
             metadata.setDescription(truncate(extracted.getDescription(), 5000));
             metadata.setPublisher(truncate(extracted.getPublisher(), 1000));
             metadata.setPublishedDate(extracted.getPublishedDate());
@@ -233,12 +237,58 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             metadata.setSeriesTotal(extracted.getSeriesTotal());
             metadata.setPageCount(extracted.getPageCount());
             metadata.setLanguage(truncate(extracted.getLanguage(), 1000));
+            
+            // ISBN fields
+            metadata.setIsbn13(truncate(extracted.getIsbn13(), 64));
+            metadata.setIsbn10(truncate(extracted.getIsbn10(), 64));
+            
+            // External IDs
+            metadata.setAsin(truncate(extracted.getAsin(), 20));
+            metadata.setGoodreadsId(truncate(extracted.getGoodreadsId(), 100));
+            metadata.setHardcoverId(truncate(extracted.getHardcoverId(), 100));
+            metadata.setHardcoverBookId(truncate(extracted.getHardcoverBookId(), 100));
+            metadata.setGoogleId(truncate(extracted.getGoogleId(), 100));
+            metadata.setComicvineId(truncate(extracted.getComicvineId(), 100));
+            metadata.setLubimyczytacId(truncate(extracted.getLubimyczytacId(), 100));
+            metadata.setRanobedbId(truncate(extracted.getRanobedbId(), 100));
+            
+            // Ratings
+            metadata.setAmazonRating(extracted.getAmazonRating());
+            metadata.setAmazonReviewCount(extracted.getAmazonReviewCount());
+            metadata.setGoodreadsRating(extracted.getGoodreadsRating());
+            metadata.setGoodreadsReviewCount(extracted.getGoodreadsReviewCount());
+            metadata.setHardcoverRating(extracted.getHardcoverRating());
+            metadata.setHardcoverReviewCount(extracted.getHardcoverReviewCount());
+            metadata.setLubimyczytacRating(extracted.getLubimyczytacRating());
+            metadata.setRanobedbRating(extracted.getRanobedbRating());
 
+            // Authors
             if (extracted.getAuthors() != null) {
                 bookCreatorService.addAuthorsToBook(extracted.getAuthors(), bookEntity);
             }
+            
+            // Categories
             if (extracted.getCategories() != null) {
-                bookCreatorService.addCategoriesToBook(extracted.getCategories(), bookEntity);
+                Set<String> validCategories = extracted.getCategories().stream()
+                        .filter(s -> s != null && !s.isBlank() && s.length() <= 100 && !s.contains("\n") && !s.contains("\r") && !s.contains("  "))
+                        .collect(Collectors.toSet());
+                bookCreatorService.addCategoriesToBook(validCategories, bookEntity);
+            }
+            
+            // Moods
+            if (extracted.getMoods() != null && !extracted.getMoods().isEmpty()) {
+                Set<String> validMoods = extracted.getMoods().stream()
+                        .filter(s -> s != null && !s.isBlank() && s.length() <= 255)
+                        .collect(Collectors.toSet());
+                bookCreatorService.addMoodsToBook(validMoods, bookEntity);
+            }
+            
+            // Tags
+            if (extracted.getTags() != null && !extracted.getTags().isEmpty()) {
+                Set<String> validTags = extracted.getTags().stream()
+                        .filter(s -> s != null && !s.isBlank() && s.length() <= 255)
+                        .collect(Collectors.toSet());
+                bookCreatorService.addTagsToBook(validTags, bookEntity);
             }
             if (extracted.getComicMetadata() != null) {
                 saveComicMetadata(bookEntity, extracted.getComicMetadata());

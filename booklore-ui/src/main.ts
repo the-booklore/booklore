@@ -20,6 +20,9 @@ import {StartupService} from './app/shared/service/startup.service';
 import {provideCharts, withDefaultRegisterables} from 'ng2-charts';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import {provideServiceWorker} from '@angular/service-worker';
+import {provideTransloco} from '@jsverse/transloco';
+import {AVAILABLE_LANGS, TranslocoInlineLoader} from './app/core/config/transloco-loader';
+import {initializeLanguage} from './app/core/config/language-initializer';
 
 export function storageFactory(): OAuthStorage {
   return localStorage;
@@ -57,6 +60,17 @@ bootstrapApplication(AppComponent, {
       provide: RouteReuseStrategy,
       useClass: CustomReuseStrategy
     },
+    ...provideTransloco({
+      config: {
+        availableLangs: AVAILABLE_LANGS,
+        defaultLang: 'en',
+        fallbackLang: 'en',
+        reRenderOnLangChange: true,
+        prodMode: !isDevMode(),
+      },
+      loader: TranslocoInlineLoader,
+    }),
+    provideAppInitializer(initializeLanguage()),
     provideAnimationsAsync(),
     providePrimeNG({
       theme: {

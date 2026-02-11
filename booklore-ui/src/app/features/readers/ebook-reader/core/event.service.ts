@@ -451,11 +451,13 @@ export class ReaderEventService {
     const leftThreshold = width * this.LEFT_ZONE_PERCENT;
     const rightThreshold = width * this.RIGHT_ZONE_PERCENT;
 
-    if (x < leftThreshold) {
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (x < leftThreshold && !isMobile) {
       this.isNavigating = true;
       this.viewCallbacks?.prev();
       setTimeout(() => this.isNavigating = false, 300);
-    } else if (x > rightThreshold) {
+    } else if (x > rightThreshold && !isMobile) {
       this.isNavigating = true;
       this.viewCallbacks?.next();
       setTimeout(() => this.isNavigating = false, 300);

@@ -1,31 +1,28 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.fileReview'">
 <div class="main-card">
   <div class="header">
     <div class="header-content">
       <h2>
-        Review Bookdrop Files
+        {{ t('title') }}
         <a href="https://booklore.org/docs/bookdrop" target="_blank" rel="noopener noreferrer">
           <i
             class="pi pi-external-link external-link-icon"
-            pTooltip="View documentation"
+            [pTooltip]="t('viewDocumentationTooltip')"
             tooltipPosition="top"></i>
         </a>
       </h2>
-      <p>
-        These files were uploaded to the
-        <strong>Bookdrop Folder</strong>.
-        Review their fetched metadata, assign a library and subpath, and finalize where they belong in your collection.
-      </p>
+      <p [innerHTML]="t('description')"></p>
     </div>
 
     <div class="header-actions">
       <p-button
-        label="Rescan"
+        [label]="t('rescan')"
         size="small"
         icon="pi pi-refresh"
         severity="primary"
         outlined
         (click)="rescanBookdrop()"
-        pTooltip="Manually trigger a rescan of the Bookdrop folder"
+        [pTooltip]="t('rescanTooltip')"
         tooltipPosition="top">
       </p-button>
     </div>
@@ -36,7 +33,7 @@
     <div class="loading-overlay">
       <div class="loading-content">
         <p-progressSpinner strokeWidth="4"/>
-        <span>Loading Bookdrop files. Please wait...</span>
+        <span>{{ t('loadingMessage') }}</span>
       </div>
     </div>
 
@@ -48,7 +45,7 @@
           <p-progressSpinner strokeWidth="4"/>
           <div class="saving-message">
           <span>
-            Organizing and moving files to their designated libraries. Please wait...
+            {{ t('savingMessage') }}
           </span>
           </div>
         </div>
@@ -62,14 +59,14 @@
                 size="small"
                 outlined
                 severity="info"
-                label="Import&nbsp;Metadata"
+                [label]="t('importMetadata')"
                 icon="pi pi-copy"
                 [disabled]="!hasSelectedFiles"
                 (click)="copyMetadata()"
-                pTooltip="Import fetched metadata for selected files"
+                [pTooltip]="t('importMetadataTooltip')"
                 tooltipPosition="top">
               </p-button>
-              <p-inputgroup-addon pTooltip="Include book covers when importing fetched metadata" tooltipPosition="top">
+              <p-inputgroup-addon [pTooltip]="t('includeCoversTooltip')" tooltipPosition="top">
                 <p-checkbox
                   inputId="includecovers"
                   [disabled]="!hasSelectedFiles"
@@ -85,11 +82,11 @@
               class="bulkedit"
               outlined
               severity="help"
-              label="Bulk&nbsp;Edit"
+              [label]="t('bulkEdit')"
               icon="pi pi-pencil"
               [disabled]="!hasSelectedFiles"
               (click)="openBulkEditDialog()"
-              pTooltip="Edit metadata fields in bulk for selected files"
+              [pTooltip]="t('bulkEditTooltip')"
               tooltipPosition="top">
             </p-button>
 
@@ -98,18 +95,18 @@
               class="extractpattern"
               outlined
               severity="warn"
-              label="Extract&nbsp;Pattern"
+              [label]="t('extractPattern')"
               icon="pi pi-sliders-h"
               [disabled]="!hasSelectedFiles"
               (click)="openPatternExtractDialog()"
-              pTooltip="Extract metadata from selected filenames using a pattern"
+              [pTooltip]="t('extractPatternTooltip')"
               tooltipPosition="top">
             </p-button>
           </div>
 
           <div class="default-controls">
             <i class="pi pi-book"
-              pTooltip="Specify library and subpath for selected files"
+              [pTooltip]="t('specifyLibraryTooltip')"
               tooltipPosition="left"></i>
 
             <p-select
@@ -117,7 +114,7 @@
               [options]="libraryOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="Library"
+              [placeholder]="t('libraryPlaceholder')"
               appendTo="body"
               [(ngModel)]="defaultLibraryId">
             </p-select>
@@ -127,7 +124,7 @@
               [options]="selectedLibraryPaths"
               optionLabel="label"
               optionValue="value"
-              placeholder="Subpath"
+              [placeholder]="t('subpathPlaceholder')"
               appendTo="body"
               [(ngModel)]="defaultPathId">
             </p-select>
@@ -138,7 +135,7 @@
               severity="info"
               [disabled]="!canApplyDefaults"
               (click)="applyLibraryDefaults()"
-              pTooltip="Apply library and subpath to selected files"
+              [pTooltip]="t('applyLibraryTooltip')"
               tooltipPosition="top">
             </p-button>
           </div>
@@ -149,7 +146,7 @@
     <div class="content-area">
       @if (bookdropFileUis.length === 0) {
         <div class="empty-state">
-          No bookdrop files to review.
+          {{ t('emptyState') }}
         </div>
       } @else {
         @for (file of bookdropFileUis; track file) {
@@ -166,22 +163,22 @@
                 <img
                   [src]="file.metadataForm.get('thumbnailUrl')?.value"
                   alt="Cover"
-                  title="Original cover"
+                  [title]="t('originalCoverTitle')"
                   class="cover-image"
                   (click)="file.showDetails = !file.showDetails"/>
               } @else {
-                <div title="No cover found" class="cover-image cover-placeholder">?</div>
+                <div [title]="t('noCoverFoundTitle')" class="cover-image cover-placeholder">?</div>
               }
 
               @if (file.file.fetchedMetadata?.thumbnailUrl) {
                 <img
                   [src]="file.file.fetchedMetadata?.thumbnailUrl"
                   alt="Fetched Cover"
-                  title="Fetched cover"
+                  [title]="t('fetchedCoverTitle')"
                   class="cover-image"
                   (click)="file.showDetails = !file.showDetails"/>
               } @else {
-                <div title="No cover fetched" class="cover-image cover-placeholder">?</div>
+                <div [title]="t('noCoverFetchedTitle')" class="cover-image cover-placeholder">?</div>
               }
 
               <div class="file-name" (click)="file.showDetails = !file.showDetails">
@@ -197,10 +194,10 @@
                     'pi-exclamation-triangle not-applied': file.file.fetchedMetadata && !copiedFlags[file.file.id]
                   }"
                   [pTooltip]="copiedFlags[file.file.id]
-                    ? 'Fetched metadata has been applied.'
+                    ? t('metadataAppliedTooltip')
                     : (!file.file.fetchedMetadata || !file.file.fetchedMetadata.title)
-                      ? 'No fetched metadata available. Original metadata will be used.'
-                      : 'Fetched metadata hasn’t been applied yet. Open metadata picker to review.'"
+                      ? t('noMetadataTooltip')
+                      : t('metadataNotAppliedTooltip')"
                   tooltipPosition="top">
                 </i>
 
@@ -209,7 +206,7 @@
                   [options]="libraryOptions"
                   optionLabel="label"
                   optionValue="value"
-                  placeholder="Library"
+                  [placeholder]="t('libraryPlaceholder')"
                   class="library-select"
                   appendTo="body"
                   [(ngModel)]="file.selectedLibraryId"
@@ -221,7 +218,7 @@
                   [options]="file.availablePaths"
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Subpath"
+                  [placeholder]="t('subpathPlaceholder')"
                   class="path-select"
                   appendTo="body"
                   [(ngModel)]="file.selectedPathId">
@@ -233,10 +230,10 @@
                   [icon]="file.showDetails ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
                   (click)="file.showDetails = !file.showDetails"
                   [pTooltip]="file.showDetails
-                    ? 'Hide metadata'
+                    ? t('hideMetadataTooltip')
                     : file.file.fetchedMetadata?.title
-                      ? 'Review and copy fetched metadata'
-                      : 'Show file metadata (no fetched metadata)'"
+                      ? t('reviewMetadataTooltip')
+                      : t('showMetadataTooltip')"
                   tooltipPosition="left">
                 </p-button>
               </div>
@@ -270,27 +267,27 @@
         @if (bookdropFileUis.length > 0) {
           <p-inputgroup class="selectall">
             <p-inputgroup-addon>
-              <label class="selected-count-label" pTooltip="Number of files selected" tooltipPosition="top">{{ selectedCount }}</label>
+              <label class="selected-count-label" [pTooltip]="t('selectedCountTooltip')" tooltipPosition="top">{{ selectedCount }}</label>
             </p-inputgroup-addon>
             <p-button
-              label="Select&nbsp;All"
+              [label]="t('selectAll')"
               icon="pi pi-check-square"
               severity="info"
               (click)="selectAll(true)"
               outlined
-              pTooltip="Select all files across all pages"
+              [pTooltip]="t('selectAllTooltip')"
               tooltipPosition="top">
             </p-button>
           </p-inputgroup>
 
           <p-button
-            label="Clear"
+            [label]="t('clear')"
             icon="pi pi-times-circle"
             severity="warn"
             [disabled]="!hasSelectedFiles"
             (click)="selectAll(false)"
             outlined
-            pTooltip="Deselect all files across all pages"
+            [pTooltip]="t('clearTooltip')"
             tooltipPosition="top">
           </p-button>
         } @else {
@@ -315,33 +312,33 @@
 
       <div class="footer-right">
         <p-button
-          label="Reset"
+          [label]="t('reset')"
           icon="pi pi-refresh"
           severity="warn"
           [disabled]="!hasSelectedFiles"
           outlined
           (click)="confirmReset()"
-          pTooltip="Discard all changes made to metadata of selected files"
+          [pTooltip]="t('resetTooltip')"
           tooltipPosition="top">
         </p-button>
         <p-button
-          label="Delete"
+          [label]="t('delete')"
           icon="pi pi-times"
           severity="danger"
           [disabled]="!hasSelectedFiles"
           outlined
           (click)="confirmDelete()"
-          pTooltip="Permanently delete selected Bookdrop files and discard any changes"
+          [pTooltip]="t('deleteTooltip')"
           tooltipPosition="top">
         </p-button>
         <p-button
-          label="Finalize"
+          [label]="t('finalize')"
           [icon]="saving ? 'pi pi-spin pi-spinner' : 'pi pi-save'"
           severity="success"
           outlined
           [disabled]="!canFinalize || saving"
           (click)="confirmFinalize()"
-          pTooltip="Move selected files into the chosen library and subpath"
+          [pTooltip]="t('finalizeTooltip')"
           tooltipPosition="top">
         </p-button>
       </div>
@@ -349,3 +346,4 @@
     </div>
   }
 </div>
+</ng-container>

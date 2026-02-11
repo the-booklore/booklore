@@ -6,6 +6,7 @@ import {AppSettingsService} from '../../../../shared/service/app-settings.servic
 import {SettingsHelperService} from '../../../../shared/service/settings-helper.service';
 import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 const DEFAULT_PROVIDERS: readonly ReviewProviderConfig[] = [
   {provider: 'Amazon', enabled: true, maxReviews: 5},
@@ -17,7 +18,7 @@ const REQUIRED_PROVIDERS = ['Amazon', 'GoodReads', 'Douban'] as const;
 
 @Component({
   selector: 'app-public-reviews-settings-component',
-  imports: [FormsModule, ToggleSwitch],
+  imports: [FormsModule, ToggleSwitch, TranslocoDirective],
   templateUrl: './public-reviews-settings-component.html',
   styleUrl: './public-reviews-settings-component.scss'
 })
@@ -31,6 +32,7 @@ export class PublicReviewsSettingsComponent implements OnInit {
 
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly settingsHelper = inject(SettingsHelperService);
+  private t = inject(TranslocoService);
 
   readonly appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
 
@@ -64,7 +66,7 @@ export class PublicReviewsSettingsComponent implements OnInit {
       next: (settings) => this.initializeSettings(settings),
       error: (error) => {
         console.error('Failed to load settings:', error);
-        this.settingsHelper.showMessage('error', 'Error', 'Failed to load settings.');
+        this.settingsHelper.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsMeta.publicReviews.loadError'));
       }
     });
   }

@@ -6,13 +6,15 @@ import showdown from 'showdown';
 import {DatePipe} from '@angular/common';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Button} from 'primeng/button';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-version-changelog-dialog',
   standalone: true,
   imports: [
     DatePipe,
-    Button
+    Button,
+    TranslocoDirective
   ],
   templateUrl: './version-changelog-dialog.component.html',
   styleUrl: './version-changelog-dialog.component.scss'

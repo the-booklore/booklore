@@ -4,11 +4,12 @@ import {FormsModule} from '@angular/forms';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {AppSettingKey, MetadataProviderSpecificFields} from '../../../../shared/model/app-settings.model';
 import {filter, take} from 'rxjs/operators';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-provider-field-selector',
   standalone: true,
-  imports: [ToggleSwitchModule, FormsModule],
+  imports: [ToggleSwitchModule, FormsModule, TranslocoDirective],
   templateUrl: './metadata-provider-field-selector.component.html',
   styleUrl: './metadata-provider-field-selector.component.scss'
 })

@@ -23,6 +23,7 @@ import {finalize, forkJoin, Subscription} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-task-management',
@@ -35,7 +36,9 @@ import {Tooltip} from 'primeng/tooltip';
     FormsModule,
     ExternalDocLinkComponent,
     ToggleSwitch,
-    Tooltip
+    Tooltip,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './task-management.component.html',
   styleUrl: './task-management.component.scss'
@@ -44,6 +47,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   // Services
   private messageService = inject(MessageService);
   private taskService = inject(TaskService);
+  private t = inject(TranslocoService);
 
   // State
   taskInfos: TaskInfo[] = [];
@@ -56,11 +60,15 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   metadataReplaceOptions = [
     {
       label: 'Update Missing Metadata Only (Recommended)',
-      value: MetadataReplaceMode.REPLACE_MISSING
+      value: MetadataReplaceMode.REPLACE_MISSING,
+      translationKey: 'settingsTasks.metadataReplace.replaceMissing',
+      descriptionKey: 'settingsTasks.metadataReplace.replaceMissingDesc'
     },
     {
       label: 'Replace All Metadata (Overwrite Existing)',
-      value: MetadataReplaceMode.REPLACE_ALL
+      value: MetadataReplaceMode.REPLACE_ALL,
+      translationKey: 'settingsTasks.metadataReplace.replaceAll',
+      descriptionKey: 'settingsTasks.metadataReplace.replaceAllDesc'
     }
   ];
   selectedMetadataReplaceMode: MetadataReplaceMode = MetadataReplaceMode.REPLACE_MISSING;
@@ -110,7 +118,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error loading tasks:', error);
-          this.showMessage('error', 'Error', 'Failed to load tasks');
+          this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsTasks.toast.loadError'));
         }
       });
   }
@@ -170,7 +178,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   runTask(type: string): void {
     const history = this.taskHistories.get(type);
     if (!this.canRunTask(history) && !this.isTaskStale(history)) {
-      this.showMessage('warn', 'Task Already Running', 'This task is already in progress or pending.');
+      this.showMessage('warn', this.t.translate('settingsTasks.toast.alreadyRunning'), this.t.translate('settingsTasks.toast.alreadyRunningDetail'));
       return;
     }
 
@@ -199,22 +207,23 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => this.executingTasks.delete(type)))
       .subscribe({
         next: (response) => {
+          const name = this.getTaskDisplayName(type);
           if (isAsync) {
-            this.showMessage('info', 'Task Queued', `${this.getTaskDisplayName(type)} has been queued and will run in the background.`);
+            this.showMessage('info', this.t.translate('settingsTasks.toast.taskQueued'), this.t.translate('settingsTasks.toast.taskQueuedDetail', {name}));
           } else {
             if (response.status === TaskStatus.COMPLETED) {
-              this.showMessage('success', 'Task Completed', `${this.getTaskDisplayName(type)} has been completed successfully.`);
+              this.showMessage('success', this.t.translate('settingsTasks.toast.taskCompleted'), this.t.translate('settingsTasks.toast.taskCompletedDetail', {name}));
             } else if (response.status === TaskStatus.FAILED) {
-              this.showMessage('error', 'Task Failed', response.message || `${this.getTaskDisplayName(type)} failed to complete.`);
+              this.showMessage('error', this.t.translate('settingsTasks.toast.taskFailed'), response.message || this.t.translate('settingsTasks.toast.taskFailedDetail', {name}));
             } else {
-              this.showMessage('success', 'Task Started', `${this.getTaskDisplayName(type)} has been started successfully.`);
+              this.showMessage('success', this.t.translate('settingsTasks.toast.taskStarted'), this.t.translate('settingsTasks.toast.taskStartedDetail', {name}));
             }
           }
           this.loadTasks();
         },
         error: (error) => {
           console.error('Error starting task:', error);
-          this.showMessage('error', 'Error', `Failed to start ${this.getTaskDisplayName(type)}.`);
+          this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsTasks.toast.startError', {name: this.getTaskDisplayName(type)}));
         }
       });
   }
@@ -222,7 +231,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   cancelTask(taskType: string): void {
     const history = this.taskHistories.get(taskType);
     if (!history?.id) {
-      this.showMessage('error', 'Error', 'Cannot cancel task without ID.');
+      this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsTasks.toast.cancelNoId'));
       return;
     }
 
@@ -232,15 +241,15 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           if (response.cancelled) {
-            this.showMessage('success', 'Task Cancelled', response.message || 'Task has been cancelled successfully.');
+            this.showMessage('success', this.t.translate('settingsTasks.toast.taskCancelled'), response.message || this.t.translate('settingsTasks.toast.cancelledDetail'));
             this.loadTasks();
           } else {
-            this.showMessage('error', 'Cancellation Failed', response.message || 'Failed to cancel the task.');
+            this.showMessage('error', this.t.translate('settingsTasks.toast.cancelFailed'), response.message || this.t.translate('settingsTasks.toast.cancelError'));
           }
         },
         error: (error) => {
           console.error('Error cancelling task:', error);
-          this.showMessage('error', 'Error', 'Failed to cancel the task. The task may already be completed or failed.');
+          this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsTasks.toast.cancelError'));
           this.loadTasks();
         }
       });
@@ -357,11 +366,11 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
           if (taskInfoIndex !== -1) {
             this.taskInfos[taskInfoIndex].cronConfig = updatedConfig;
           }
-          this.showMessage('success', 'Cron Updated', 'Scheduled task configuration has been updated successfully.');
+          this.showMessage('success', this.t.translate('common.success'), this.t.translate('settingsTasks.cron.updateSuccess'));
         },
         error: (error) => {
           console.error('Error updating cron config:', error);
-          this.showMessage('error', 'Error', 'Failed to update scheduled task configuration.');
+          this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsTasks.cron.updateError'));
         }
       });
   }
@@ -380,7 +389,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     const parts = trimmed.split(/\s+/);
 
     if (parts.length !== 6) {
-      this.cronValidationError = 'Cron expression must have exactly 6 fields (seconds, minutes, hours, day, month, weekday)';
+      this.cronValidationError = this.t.translate('settingsTasks.cron.validationPrefix');
       return;
     }
 
@@ -395,7 +404,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
     for (const validation of validations) {
       if (!this.isValidCronField(validation.field, validation.range[0], validation.range[1])) {
-        this.cronValidationError = `Invalid ${validation.name} field: ${validation.field}`;
+        this.cronValidationError = this.t.translate('settingsTasks.cron.invalidField', {name: validation.name, value: validation.field});
         return;
       }
     }
@@ -507,19 +516,19 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   getTaskStatusMessage(taskType: string): string {
     const history = this.taskHistories.get(taskType);
     if (this.isTaskStale(history)) {
-      return 'Task appears to be stuck (no updates received)';
+      return this.t.translate('settingsTasks.progress.stuckMessage');
     }
-    return history?.message || 'Processing...';
+    return history?.message || this.t.translate('settingsTasks.progress.processing');
   }
 
   getLastRunMessage(taskType: string): string {
     const history = this.taskHistories.get(taskType);
     if (!history?.completedAt && !history?.updatedAt) {
-      return 'Never run';
+      return this.t.translate('settingsTasks.status.neverRun');
     }
 
     const dateStr = history.completedAt || history.updatedAt;
-    if (!dateStr) return 'Never run';
+    if (!dateStr) return this.t.translate('settingsTasks.status.neverRun');
 
     const date = new Date(dateStr);
     const now = new Date();
@@ -528,7 +537,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return this.t.translate('settingsTasks.status.justNow');
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -566,9 +575,9 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   getTaskButtonLabel(taskType: string): string {
     const history = this.taskHistories.get(taskType);
     if (this.isTaskStale(history)) {
-      return 'Re-run';
+      return this.t.translate('settingsTasks.buttons.rerun');
     }
-    return 'Run';
+    return this.t.translate('settingsTasks.buttons.run');
   }
 
   getCancelButtonIcon(taskType: string): string {
@@ -585,9 +594,9 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   getMetadataReplaceDescription(mode: MetadataReplaceMode): string {
     switch (mode) {
       case MetadataReplaceMode.REPLACE_MISSING:
-        return 'Only update books that are missing metadata information. Existing metadata will be preserved.';
+        return this.t.translate('settingsTasks.metadataReplace.replaceMissingDesc');
       case MetadataReplaceMode.REPLACE_ALL:
-        return 'Replace all metadata for all books, even if they already have metadata. Use with caution as this will overwrite existing data.';
+        return this.t.translate('settingsTasks.metadataReplace.replaceAllDesc');
       default:
         return '';
     }

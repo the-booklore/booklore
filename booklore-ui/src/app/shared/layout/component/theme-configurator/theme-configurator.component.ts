@@ -8,6 +8,7 @@ import {ToggleSwitchModule} from 'primeng/toggleswitch';
 import Aura from '../theme-palette-extend';
 
 import {AppConfigService} from '../../../service/app-config.service';
+import {TranslocoDirective} from '@jsverse/transloco';
 import {FaviconService} from './favicon-service';
 
 type ColorPalette = Record<string, string>;
@@ -29,7 +30,8 @@ interface Palette {
     FormsModule,
     ButtonModule,
     RadioButtonModule,
-    ToggleSwitchModule
+    ToggleSwitchModule,
+    TranslocoDirective
   ]
 })
 export class ThemeConfiguratorComponent {

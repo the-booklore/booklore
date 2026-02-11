@@ -11,6 +11,7 @@ import {Observable, Subject} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 import {getOidcErrorCount, isOidcBypassed, resetOidcBypass} from '../../../core/security/auth-initializer';
 import {AppSettingsService, PublicAppSettings} from '../../service/app-settings.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +20,8 @@ import {AppSettingsService, PublicAppSettings} from '../../service/app-settings.
     Password,
     Button,
     Message,
-    InputText
+    InputText,
+    TranslocoDirective
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
@@ -39,6 +41,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private oAuthService = inject(OAuthService);
   private appSettingsService = inject(AppSettingsService);
   private router = inject(Router);
+  private translocoService = inject(TranslocoService);
 
   publicAppSettings$: Observable<PublicAppSettings | null> = this.appSettingsService.publicAppSettings$;
 
@@ -65,11 +68,11 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.showOidcBypassInfo = true;
 
       if (this.isOidcBypassed && errorCount >= 3) {
-        this.oidcBypassMessage = `${this.oidcName} authentication has been automatically disabled after ${errorCount} consecutive failures (including timeouts). You can retry or continue with local login.`;
+        this.oidcBypassMessage = this.translocoService.translate('auth.login.oidcAutoDisabled', {provider: this.oidcName, count: errorCount});
       } else if (this.isOidcBypassed) {
-        this.oidcBypassMessage = `${this.oidcName} authentication has been manually disabled. You can re-enable it or continue with local login.`;
+        this.oidcBypassMessage = this.translocoService.translate('auth.login.oidcManuallyDisabled', {provider: this.oidcName});
       } else if (errorCount > 0) {
-        this.oidcBypassMessage = `${this.oidcName} authentication encountered ${errorCount} error(s), possibly due to timeouts or server issues.`;
+        this.oidcBypassMessage = this.translocoService.translate('auth.login.oidcErrors', {provider: this.oidcName, count: errorCount});
       }
     }
   }
@@ -85,9 +88,9 @@ export class LoginComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         if (error.status === 0) {
-          this.errorMessage = 'Cannot connect to the server. Please check your connection and try again.';
+          this.errorMessage = this.translocoService.translate('auth.login.connectionError');
         } else {
-          this.errorMessage = error?.error?.message || 'An unexpected error occurred. Please try again.';
+          this.errorMessage = error?.error?.message || this.translocoService.translate('auth.login.unexpectedError');
         }
       }
     });
@@ -108,7 +111,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.oAuthService.initCodeFlow();
     } catch (error) {
       console.error('OIDC login initiation failed:', error);
-      this.errorMessage = 'Failed to initiate OIDC login. Please try again or use local login.';
+      this.errorMessage = this.translocoService.translate('auth.login.oidcInitError');
       this.isOidcLoginInProgress = false;
     }
   }

@@ -20,7 +20,9 @@ export type FilterType =
   | 'personalRating' | 'publisher' | 'matchScore' | 'library' | 'shelf'
   | 'shelfStatus' | 'tag' | 'publishedDate' | 'fileSize' | 'amazonRating'
   | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood'
-  | 'ageRating' | 'contentRating';
+  | 'ageRating' | 'contentRating'
+  | 'narrator'
+  | 'comicCharacter' | 'comicTeam' | 'comicLocation' | 'comicCreator';
 
 export type SortMode = 'count' | 'sortIndex';
 
@@ -156,7 +158,12 @@ export const FILTER_LABELS: Readonly<Record<FilterType, string>> = {
   pageCount: 'Page Count',
   mood: 'Mood',
   ageRating: 'Age Rating',
-  contentRating: 'Content Rating'
+  contentRating: 'Content Rating',
+  narrator: 'Narrator',
+  comicCharacter: 'Comic Character',
+  comicTeam: 'Comic Team',
+  comicLocation: 'Comic Location',
+  comicCreator: 'Comic Creator'
 };
 
 // ============================================================================
@@ -230,6 +237,35 @@ export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, 
     if (!rating) return [];
     const label = CONTENT_RATING_LABELS[rating] ?? rating;
     return [{id: rating, name: label}];
+  },
+  narrator: (book) => extractSingleString(book.metadata?.narrator),
+  comicCharacter: (book) => extractStringsAsFilters(book.metadata?.comicMetadata?.characters),
+  comicTeam: (book) => extractStringsAsFilters(book.metadata?.comicMetadata?.teams),
+  comicLocation: (book) => extractStringsAsFilters(book.metadata?.comicMetadata?.locations),
+  comicCreator: (book) => {
+    const comic = book.metadata?.comicMetadata;
+    if (!comic) return [];
+    const creators: FilterValue[] = [];
+    const roleLabels: Record<string, string> = {
+      penciller: 'Penciller', inker: 'Inker', colorist: 'Colorist',
+      letterer: 'Letterer', coverArtist: 'Cover Artist', editor: 'Editor'
+    };
+    const roles: [string[] | undefined, string][] = [
+      [comic.pencillers, 'penciller'],
+      [comic.inkers, 'inker'],
+      [comic.colorists, 'colorist'],
+      [comic.letterers, 'letterer'],
+      [comic.coverArtists, 'coverArtist'],
+      [comic.editors, 'editor']
+    ];
+    for (const [names, role] of roles) {
+      if (names) {
+        for (const name of names) {
+          creators.push({id: `${name}:${role}`, name: `${name} (${roleLabels[role]})`});
+        }
+      }
+    }
+    return creators;
   }
 };
 
@@ -254,5 +290,10 @@ export const FILTER_CONFIGS: Readonly<Record<Exclude<FilterType, 'library'>, Omi
   pageCount: {label: 'Page Count', sortMode: 'sortIndex', isNumericId: true},
   mood: {label: 'Mood', sortMode: 'count'},
   ageRating: {label: 'Age Rating', sortMode: 'sortIndex', isNumericId: true},
-  contentRating: {label: 'Content Rating', sortMode: 'count'}
+  contentRating: {label: 'Content Rating', sortMode: 'count'},
+  narrator: {label: 'Narrator', sortMode: 'count'},
+  comicCharacter: {label: 'Comic Character', sortMode: 'count'},
+  comicTeam: {label: 'Comic Team', sortMode: 'count'},
+  comicLocation: {label: 'Comic Location', sortMode: 'count'},
+  comicCreator: {label: 'Comic Creator', sortMode: 'count'}
 };
