@@ -12,6 +12,7 @@ include:
     inputs:
       image: "docker.io/library/gradle:jdk25-corretto"
       sbom-disabled: true
+      project-dir: booklore-api
   # semantic-release template
   - component: "$CI_SERVER_FQDN/to-be-continuous/semantic-release/gitlab-ci-semrel@4.0"
     inputs:
