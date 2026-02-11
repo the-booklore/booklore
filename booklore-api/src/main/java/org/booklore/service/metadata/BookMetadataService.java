@@ -26,6 +26,8 @@ import org.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.service.metadata.parser.BookParser;
 import org.booklore.service.metadata.parser.DetailedMetadataProvider;
+import org.booklore.service.metadata.parser.custom.CustomBookParser;
+import org.booklore.service.metadata.parser.custom.CustomProviderRegistry;
 import org.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,13 +64,14 @@ public class BookMetadataService {
     private final MetadataExtractorFactory metadataExtractorFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
     private final PlatformTransactionManager transactionManager;
+    private final CustomProviderRegistry customProviderRegistry;
 
 
     public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         Book book = bookMapper.toBook(bookEntity);
 
-        return Flux.fromIterable(request.getProviders())
+        Flux<BookMetadata> builtInFlux = Flux.fromIterable(request.getProviders())
                 .flatMap(provider ->
                     Mono.fromCallable(() -> fetchMetadataListFromAProvider(provider, book, request))
                             .subscribeOn(Schedulers.boundedElastic())
@@ -78,12 +81,38 @@ public class BookMetadataService {
                                 return Flux.empty();
                             })
                 );
+
+        List<String> customIds = request.getCustomProviderIds();
+        if (customIds == null || customIds.isEmpty()) {
+            return builtInFlux;
+        }
+
+        Flux<BookMetadata> customFlux = Flux.fromIterable(customIds)
+                .flatMap(customProviderId ->
+                    Mono.fromCallable(() -> fetchMetadataFromCustomProvider(customProviderId, book, request))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .flatMapMany(Flux::fromIterable)
+                            .onErrorResume(e -> {
+                                log.error("Error fetching metadata from custom provider: {}", customProviderId, e);
+                                return Flux.empty();
+                            })
+                );
+
+        return Flux.merge(builtInFlux, customFlux);
     }
 
     public List<BookMetadata> fetchMetadataListFromAProvider(MetadataProvider provider, Book book, FetchMetadataRequest request) {
         return getParser(provider).fetchMetadata(book, request);
     }
 
+    public List<BookMetadata> fetchMetadataFromCustomProvider(String customProviderId, Book book, FetchMetadataRequest request) {
+        CustomBookParser parser = customProviderRegistry.getParser(customProviderId);
+        if (parser == null) {
+            log.warn("Custom provider not found: {}", customProviderId);
+            return List.of();
+        }
+        return parser.fetchMetadata(book, request);
+    }
 
     public BookMetadata getDetailedProviderMetadata(MetadataProvider provider, String providerItemId) {
         BookParser parser = getParser(provider);
@@ -91,6 +120,15 @@ public class BookMetadataService {
             return detailedProvider.fetchDetailedMetadata(providerItemId);
         }
         return null;
+    }
+
+    public BookMetadata getDetailedCustomProviderMetadata(String customProviderId, String providerItemId) {
+        CustomBookParser parser = customProviderRegistry.getParser(customProviderId);
+        if (parser == null) {
+            log.warn("Custom provider not found for detailed metadata: {}", customProviderId);
+            return null;
+        }
+        return parser.fetchDetailedMetadata(providerItemId);
     }
 
     private BookParser getParser(MetadataProvider provider) {
