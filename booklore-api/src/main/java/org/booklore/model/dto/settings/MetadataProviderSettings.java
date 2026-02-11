@@ -3,6 +3,9 @@ package org.booklore.model.dto.settings;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 public class MetadataProviderSettings {
     private Amazon amazon;
@@ -15,6 +18,7 @@ public class MetadataProviderSettings {
     @JsonProperty("lubimyczytac")
     private Lubimyczytac lubimyczytac;
     private Audible audible;
+    private List<CustomMetadataProviderConfig> customProviders = new ArrayList<>();
 
     @Data
     public static class Amazon {
