@@ -1,3 +1,28 @@
+include:
+  # Docker template
+  - component: "$CI_SERVER_FQDN/to-be-continuous/docker/gitlab-ci-docker@8.0"
+    inputs:
+      hadolint-disabled: true
+      trivy-disabled: true
+      sbom-disabled: true
+  # GitLab Butler template
+  - component: "$CI_SERVER_FQDN/to-be-continuous/gitlab-butler/gitlab-ci-butler@1.4"
+  # Gradle template
+  - component: "$CI_SERVER_FQDN/to-be-continuous/gradle/gitlab-ci-gradle@2.12"
+    inputs:
+      image: "docker.io/library/gradle:jdk25-corretto"
+      sbom-disabled: true
+  # semantic-release template
+  - component: "$CI_SERVER_FQDN/to-be-continuous/semantic-release/gitlab-ci-semrel@4.0"
+    inputs:
+      changelog-enabled: true
+
+# secret variables
+# (define the variables below in your GitLab group/project variables)
+# BUTLER_TOKEN: A GitLab access token to allow GitLab Butler crawl your projects
+# GITLAB_TOKEN: A GitLab 'project access token' or 'personal access token' with `api`, `read_repository` and `write repository` scopes.
+# SEMREL_GPG_SIGNKEY: Path to the GPG signkey exported with `gpg --armor --export-secret-key`.
+
 mirror_from_github:
   stage: mirror
   image: alpine:latest
@@ -23,5 +48,12 @@ mirror_from_github:
 stages:
   - build
   - test
+  - package-build
+  - package-test
+  - infra
   - deploy
+  - acceptance
+  - publish
+  - infra-prod
+  - production
   - mirror
