@@ -18,3 +18,10 @@ mirror_from_github:
 
     # Push tags
     - git push --force gitlab --tags
+
+
+stages:
+  - build
+  - test
+  - deploy
+  - mirror
