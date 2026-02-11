@@ -59,7 +59,25 @@
     "googleApiPlaceholder": "Enter Google Books API key",
     "apiToken": "API Token",
     "hardcoverPlaceholder": "Enter Hardcover API token",
-    "comicvinePlaceholder": "Enter Comic Vine API token"
+    "comicvinePlaceholder": "Enter Comic Vine API token",
+    "custom": {
+      "title": "Custom External Providers",
+      "description": "Add external metadata provider servers that implement the Book Metadata Provider API. Each provider runs as a separate server and can be configured with its own URL and authentication.",
+      "addProvider": "Add Custom Provider",
+      "baseUrl": "Base URL",
+      "baseUrlPlaceholder": "https://my-provider.example.com/v1",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Auto-detected from provider",
+      "bearerToken": "Bearer Token (Optional)",
+      "bearerTokenPlaceholder": "Enter bearer token if required",
+      "testConnection": "Test Connection",
+      "testSuccess": "Successfully connected to {{name}}.",
+      "testError": "Failed to connect to the provider. Please check the URL and token.",
+      "save": "Confirm",
+      "cancel": "Cancel",
+      "removeConfirm": "Remove custom provider \"{{name}}\"?",
+      "noProviders": "No custom providers configured."
+    }
   },
   "fieldSelector": {
     "sectionTitle": "Enabled Fields in Metadata Editor & Picker",

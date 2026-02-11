@@ -6,7 +6,7 @@ import {MultiSelect} from 'primeng/multiselect';
 
 import {FetchMetadataRequest} from '../../../model/request/fetch-metadata-request.model';
 import {Book, BookMetadata} from '../../../../book/model/book.model';
-import {AppSettings} from '../../../../../shared/model/app-settings.model';
+import {AppSettings, CustomMetadataProviderConfig} from '../../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 import {BehaviorSubject, combineLatest, Observable, Subject, Subscription, takeUntil} from 'rxjs';
@@ -64,6 +64,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   filteredMetadata: BookMetadata[] = [];
   providerFilterOptions: Array<{ label: string; value: string }> = [];
 
+  /** Maps custom provider display names (as they appear in the provider multiselect) to their config IDs */
+  private customProviderIdMap: Map<string, string> = new Map();
   private metadataByProvider: Map<string, BookMetadata[]> = new Map();
   private providerCompletionStatus: Map<string, boolean> = new Map();
 
@@ -82,9 +84,24 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
         .pipe(filter(settings => !!settings))
         .subscribe(settings => {
           const providerSettings = settings!.metadataProviderSettings ?? {};
-          this.providers = Object.entries(providerSettings)
-            .filter(([_, value]) => !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
+
+          // Built-in providers
+          const builtIn = Object.entries(providerSettings)
+            .filter(([key, value]) => key !== 'customProviders' && !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
             .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
+
+          // Custom providers
+          this.customProviderIdMap.clear();
+          const customProviderNames: string[] = [];
+          const customProviders: CustomMetadataProviderConfig[] = providerSettings.customProviders ?? [];
+          for (const cp of customProviders) {
+            if (cp.enabled && cp.id && cp.name) {
+              customProviderNames.push(cp.name);
+              this.customProviderIdMap.set(cp.name, cp.id);
+            }
+          }
+
+          this.providers = [...builtIn, ...customProviderNames];
 
           const currentProviders = this.form.get('provider')?.value || [];
           const validProviders = currentProviders.filter((p: string) => this.providers.includes(p));
@@ -160,9 +177,22 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       const providerKeys = this.form.get('provider')?.value;
       if (!providerKeys) return;
 
+      // Separate built-in provider names from custom provider IDs
+      const builtInProviders: string[] = [];
+      const customProviderIds: string[] = [];
+      for (const key of providerKeys) {
+        const customId = this.customProviderIdMap.get(key);
+        if (customId) {
+          customProviderIds.push(customId);
+        } else {
+          builtInProviders.push(key);
+        }
+      }
+
       const fetchRequest: FetchMetadataRequest = {
         bookId: this.bookId,
-        providers: providerKeys,
+        providers: builtInProviders,
+        customProviderIds: customProviderIds.length > 0 ? customProviderIds : undefined,
         title: this.form.get('title')?.value,
         author: this.form.get('author')?.value,
         isbn: this.form.get('isbn')?.value

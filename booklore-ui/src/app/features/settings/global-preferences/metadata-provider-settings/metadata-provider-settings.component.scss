@@ -151,6 +151,58 @@
   }
 }
 
+.custom-providers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.custom-providers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.custom-provider-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .setting-header {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.custom-provider-url {
+  color: var(--p-text-muted-color);
+  font-size: settings.$settings-description-size;
+  margin-left: 0.25rem;
+}
+
+.custom-provider-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.custom-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
+  background: var(--p-surface-ground);
+}
+
+.custom-provider-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
 .setting-actions {
   display: flex;
   justify-content: flex-end;
