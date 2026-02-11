@@ -244,13 +244,13 @@ public class ReadingSessionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReadingSessionResponse> getReadingSessionsForBook(Long bookId, int page) {
+    public Page<ReadingSessionResponse> getReadingSessionsForBook(Long bookId, int page, int size) {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
         bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
-        Pageable pageable = PageRequest.of(page, 5);
+        Pageable pageable = PageRequest.of(page, size);
         Page<ReadingSessionEntity> sessions = readingSessionRepository.findByUserIdAndBookId(userId, bookId, pageable);
 
         return sessions.map(session -> ReadingSessionResponse.builder()
