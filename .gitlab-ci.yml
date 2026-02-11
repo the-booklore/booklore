@@ -40,7 +40,7 @@ mirror_from_github:
     - git remote add gitlab https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.theprivateserver.de/WorldTeacher/wt-booklore.git
 
     # Push develop -> main (force to keep it in sync)
-    - git push --force gitlab develop:main
+    - git push --force gitlab 
 
     # Push tags
     - git push --force gitlab --tags
