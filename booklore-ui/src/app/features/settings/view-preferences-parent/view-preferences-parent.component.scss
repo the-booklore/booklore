@@ -1,0 +1,18 @@
+@use '../../../shared/styles/settings-shared' as settings;
+
+.preferences-container {
+  @include settings.settings-page-container;
+}
+
+@include settings.settings-page-header;
+
+.settings-title {
+  @include settings.settings-page-title;
+  margin-bottom: 0.75rem;
+}
+
+.settings-description {
+  @include settings.settings-page-description;
+}
+
+@include settings.settings-section-divider;

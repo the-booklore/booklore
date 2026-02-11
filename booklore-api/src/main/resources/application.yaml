@@ -1,0 +1,89 @@
+app:
+  path-config: '/app/data'
+  bookdrop-folder: '/bookdrop'
+  version: 'development'
+  swagger:
+    enabled: ${SWAGGER_ENABLED:false}
+  remote-auth:
+    enabled: ${REMOTE_AUTH_ENABLED:false}
+    create-new-users: ${REMOTE_AUTH_CREATE_NEW_USERS:true}
+    header-name: ${REMOTE_AUTH_HEADER_NAME:Remote-Name}
+    header-user: ${REMOTE_AUTH_HEADER_USER:Remote-User}
+    header-email: ${REMOTE_AUTH_HEADER_EMAIL:Remote-Email}
+    header-groups: ${REMOTE_AUTH_HEADER_GROUPS:Remote-Groups}
+    admin-group: ${REMOTE_AUTH_ADMIN_GROUP}
+    groups-delimiter: ${REMOTE_AUTH_GROUPS_DELIMITER:\\s+}
+  force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
+  telemetry:
+    base-url: ${TELEMETRY_BASE_URL:https://telemetry.booklore.org}
+  disk-type: ${DISK_TYPE:LOCAL}
+
+server:
+  forward-headers-strategy: native
+  port: ${BOOKLORE_PORT:6060}
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml,application/xml,application/atom+xml
+    min-response-size: 1024
+  tomcat:
+    relaxed-query-chars: '[,],%,{,},|'
+
+spring:
+  servlet:
+    multipart:
+      enabled: false
+  mvc:
+    async:
+      request-timeout: 600000
+  application:
+    name: booklore-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:mariadb://${DATABASE_HOST:${DB_HOST:mariadb}}:${DATABASE_PORT:3306}/${DATABASE_NAME:booklore}?createDatabaseIfNotExist=true}
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:${MYSQL_ROOT_PASSWORD}}
+    hikari:
+      pool-name: BookloreHikariPool
+      max-lifetime: 580000         # 9.6 minutes (avoid DB-side connection cuts)
+      connection-test-query: SELECT 1
+      connection-timeout: 30000    # 30s to acquire a connection before timeout
+      maximum-pool-size: 20        # Higher ceiling for virtual-thread bursts
+      minimum-idle: 5              # Keep warm connections ready
+      idle-timeout: 300000         # 5 minutes before idle connections are closed
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        query:
+          timeout: 30              # 30s max for any HQL/JPQL query
+        jdbc:
+          batch_size: 500
+          order_inserts: true
+          order_updates: true
+  threads:
+    virtual:
+      enabled: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+springdoc:
+  swagger-ui:
+    path: /api/v1/swagger-ui.html
+    persist-authorization: true
+  api-docs:
+    path: /api/v1/api-docs
+
+logging:
+  level:
+    root: ${ROOT_LOG_LEVEL:INFO}
+    org.booklore: ${LOG_LEVEL:INFO}
+    org.apache.fontbox: ERROR
+    org.apache.pdfbox: ERROR
+    org.quartz.core.QuartzScheduler: WARN
+    org.quartz.simpl.SimpleThreadPool: WARN
+    org.quartz.simpl.RAMJobStore: WARN
+    org.hibernate.orm.connections.pooling: WARN
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR

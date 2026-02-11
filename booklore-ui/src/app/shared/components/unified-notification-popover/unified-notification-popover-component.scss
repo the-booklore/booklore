@@ -1,0 +1,14 @@
+.metadata-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 25rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  border-radius: 0.5rem;
+}
+
+::ng-deep .p-divider-horizontal {
+  margin: 0 !important;
+  padding: 0 !important;
+}

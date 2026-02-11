@@ -1,0 +1,21 @@
+<ng-container *transloco="let t; prefix: 'settingsView'">
+  <div class="preferences-container">
+    <div class="settings-header">
+      <h2 class="settings-title">
+        <i class="pi pi-eye"></i>
+        {{ t('title') }}
+      </h2>
+      <p class="settings-description">
+        {{ t('description') }}
+      </p>
+    </div>
+
+    <app-view-preferences></app-view-preferences>
+    <div class="section-divider"><hr></div>
+    <app-filter-preferences></app-filter-preferences>
+    <div class="section-divider"><hr></div>
+    <app-sidebar-sorting-preferences></app-sidebar-sorting-preferences>
+    <div class="section-divider"><hr></div>
+    <app-meta-center-view-mode-component></app-meta-center-view-mode-component>
+  </div>
+</ng-container>

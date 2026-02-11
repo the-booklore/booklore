@@ -1,0 +1,69 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.finalizeResult'">
+<div class="import-result-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-file-import header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">{{ t('panelTitle') }}</h2>
+      <p class="panel-description">{{ t('panelDescription') }}</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="ref.close()"
+      class="close-button">
+    </p-button>
+  </div>
+
+  <div class="dialog-content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value total">{{ result.totalFiles }}</div>
+        <div class="stat-label">{{ t('totalFiles') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value success">{{ result.successfullyImported }}</div>
+        <div class="stat-label">{{ t('successfullyImported') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value failed">{{ result.failed }}</div>
+        <div class="stat-label">{{ t('failed') }}</div>
+      </div>
+    </div>
+
+    <div class="processed-info">
+      <div class="processed-label">{{ t('processedAt') }}</div>
+      <div class="processed-time">{{ result.processedAt | date:'medium' }}</div>
+    </div>
+
+    <div class="results-list">
+      <ul class="file-list">
+        @for (r of result.results; track r) {
+          <li
+            class="file-item"
+            [ngClass]="{
+              'success': r.success,
+              'error': !r.success
+            }">
+            <i
+              class="pi status-icon"
+              [ngClass]="{
+                'pi-check-circle': r.success,
+                'pi-times-circle': !r.success
+              }">
+            </i>
+
+            <div class="file-details">
+              <span class="file-name">{{ r.fileName }}</span>
+              <span class="file-message">{{ r.message }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+</div>
+</ng-container>

@@ -1,0 +1,123 @@
+<ng-container *transloco="let t; prefix: 'settingsEmail.recipient.create'">
+<div class="email-recipient-creator">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-user header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      (click)="closeDialog()"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      class="close-button"
+      [pTooltip]="'common.close' | transloco"
+      tooltipPosition="left"/>
+  </div>
+
+  <form [formGroup]="emailRecipientForm" (ngSubmit)="createEmailRecipient()">
+    <div class="form-container">
+      <div class="form-group highlight-group">
+        <label for="recipientName" class="form-label">
+          <i class="pi pi-user label-icon"></i>
+          {{ t('recipientName') }}
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="recipientName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="input-full"
+            [placeholder]="t('recipientNamePlaceholder')"
+            [class.filled]="emailRecipientForm.get('name')?.value"
+
+          />
+          @if (emailRecipientForm.get('name')?.value && emailRecipientForm.get('name')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailRecipientForm.get('name')?.invalid && (emailRecipientForm.get('name')?.dirty || emailRecipientForm.get('name')?.touched)) {
+          <small class="field-error">{{ t('recipientNameRequired') }}</small>
+        }
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group">
+        <label for="email" class="form-label">
+          <i class="pi pi-at label-icon"></i>
+          {{ t('emailAddress') }}
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="email"
+            type="email"
+            pInputText
+            formControlName="email"
+            class="input-full"
+            [placeholder]="t('emailAddressPlaceholder')"
+            [class.filled]="emailRecipientForm.get('email')?.value"
+          />
+          @if (emailRecipientForm.get('email')?.value && emailRecipientForm.get('email')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailRecipientForm.get('email')?.invalid && (emailRecipientForm.get('email')?.dirty || emailRecipientForm.get('email')?.touched)) {
+          <small class="field-error">{{ t('emailRequired') }}</small>
+        }
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group checkbox-group">
+        <div class="checkbox-row">
+          <p-checkbox formControlName="defaultRecipient" [binary]="true" inputId="defaultRecipient"></p-checkbox>
+          <label for="defaultRecipient" class="checkbox-label">
+            <span class="checkbox-title">{{ t('defaultRecipient') }}</span>
+            <span class="checkbox-description">{{ t('defaultRecipientDesc') }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <div class="validation-status">
+        @if (emailRecipientForm.invalid) {
+          <div class="validation-message error">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>{{ t('requiredFieldsError') }}</span>
+          </div>
+        } @else {
+          <div class="validation-message success">
+            <i class="pi pi-check-circle"></i>
+            <span>{{ t('readyToAdd') }}</span>
+          </div>
+        }
+      </div>
+      <div class="footer-actions">
+        <p-button
+          [label]="'common.cancel' | transloco"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="closeDialog()"
+          type="button"
+        />
+        <p-button
+          [label]="t('addBtn')"
+          icon="pi pi-plus"
+          severity="success"
+          type="submit"
+          [disabled]="emailRecipientForm.invalid"
+        />
+      </div>
+    </div>
+  </form>
+</div>
+</ng-container>

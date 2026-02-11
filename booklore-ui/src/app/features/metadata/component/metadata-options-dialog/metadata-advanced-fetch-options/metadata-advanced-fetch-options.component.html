@@ -1,0 +1,153 @@
+<ng-container *transloco="let t; prefix: 'metadata.advancedFetchOptions'">
+<div class="options-container">
+  <table class="custom-table">
+    <thead>
+    <tr>
+      <th class="table-header" style="max-width: 70px; width: 70px;">{{ t('enabledHeader') }}</th>
+      <th class="table-header" style="max-width: 127px; width: 127px;">{{ t('fieldHeader') }}</th>
+      <th class="table-header">
+        {{ t('firstPriority') }}
+        <i class="pi pi-question-circle help-icon"
+           [pTooltip]="t('firstPriorityTooltip')"
+           tooltipPosition="top"></i>
+      </th>
+      <th class="table-header">
+        {{ t('secondPriority') }}
+        <i class="pi pi-question-circle help-icon"
+           [pTooltip]="t('secondPriorityTooltip')"
+           tooltipPosition="top"></i>
+      </th>
+      <th class="table-header">
+        {{ t('thirdPriority') }}
+        <i class="pi pi-question-circle help-icon"
+           [pTooltip]="t('thirdPriorityTooltip')"
+           tooltipPosition="top"></i>
+      </th>
+      <th class="table-header">
+        {{ t('fourthPriority') }}
+        <i class="pi pi-question-circle help-icon"
+           [pTooltip]="t('fourthPriorityTooltip')"
+           tooltipPosition="top"></i>
+      </th>
+    </tr>
+    <tr>
+      <td class="table-cell" style="max-width: 70px; width: 70px;"></td>
+      <td class="table-cell set-all-label" style="max-width: 127px; width: 127px;">{{ t('setAll') }}</td>
+      <td class="table-cell">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP1"
+                  (ngModelChange)="setBulkProvider('p1', $event)"
+                  [placeholder]="t('setAllP1')" appendTo="body"
+                  class="select-full-width" size="small">
+        </p-select>
+      </td>
+      <td class="table-cell">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP2"
+                  (ngModelChange)="setBulkProvider('p2', $event)"
+                  [placeholder]="t('setAllP2')" appendTo="body"
+                  class="select-full-width" size="small">
+        </p-select>
+      </td>
+      <td class="table-cell">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP3"
+                  (ngModelChange)="setBulkProvider('p3', $event)"
+                  [placeholder]="t('setAllP3')" appendTo="body"
+                  class="select-full-width" size="small">
+        </p-select>
+      </td>
+      <td class="table-cell">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP4"
+                  (ngModelChange)="setBulkProvider('p4', $event)"
+                  [placeholder]="t('setAllP4')" appendTo="body"
+                  class="select-full-width" size="small">
+        </p-select>
+      </td>
+    </tr>
+    </thead>
+    <tbody>
+      @for (field of nonProviderSpecificFields; track field) {
+        <tr [hidden]="field === 'cover' && !refreshCovers" [class.row-disabled]="!enabledFields[field]">
+          <td class="table-cell-sm" style="max-width: 70px; width: 70px;">
+            <p-checkbox [(ngModel)]="enabledFields[field]" [binary]="true"
+                        [pTooltip]="t('enableFieldTooltip')"
+                        tooltipPosition="top"></p-checkbox>
+          </td>
+          <td class="table-cell-sm field-label" style="max-width: 127px; width: 127px;">{{ formatLabel(field) }}</td>
+          <td class="table-cell-sm">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p1"
+                      [disabled]="!enabledFields[field]"
+                      [placeholder]="t('unset')" appendTo="body"
+                      class="select-full-width" size="small">
+            </p-select>
+          </td>
+          <td class="table-cell-sm">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p2"
+                      [disabled]="!enabledFields[field]"
+                      [placeholder]="t('unset')" appendTo="body"
+                      class="select-full-width" size="small">
+            </p-select>
+          </td>
+          <td class="table-cell-sm">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p3"
+                      [disabled]="!enabledFields[field]"
+                      [placeholder]="t('unset')" appendTo="body"
+                      class="select-full-width" size="small">
+            </p-select>
+          </td>
+          <td class="table-cell-sm">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p4"
+                      [disabled]="!enabledFields[field]"
+                      [placeholder]="t('unset')" appendTo="body"
+                      class="select-full-width" size="small">
+            </p-select>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <div class="provider-specific-section">
+    <h3 class="section-title">{{ t('providerSpecificFields') }}</h3>
+    <p class="section-description">{{ t('providerSpecificDescription') }}</p>
+    <div class="fields-grid">
+      @for (field of providerSpecificFields; track field) {
+        <div class="field-card">
+          <p-checkbox [(ngModel)]="enabledFields[field]" [binary]="true"
+                      [pTooltip]="t('enableFieldTooltip')"
+                      tooltipPosition="top"></p-checkbox>
+          <span class="field-card-label">{{ formatLabel(field) }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="footer-row">
+
+    <div class="options-group">
+      <div class="option-item">
+        <p [pTooltip]="t('replaceModeTooltip')" tooltipPosition="top">{{ t('replaceModeLabel') }}</p>
+        <p-select [options]="replaceModeOptions" [(ngModel)]="replaceMode" optionLabel="label" optionValue="value"
+                  appendTo="body" size="small" class="select-mode">
+        </p-select>
+      </div>
+      <div class="option-item">
+        <p [pTooltip]="t('updateCoversTooltip')" tooltipPosition="top">{{ t('updateCoversLabel') }}</p>
+        <p-checkbox [(ngModel)]="refreshCovers" [binary]="true"></p-checkbox>
+      </div>
+      <div class="option-item">
+        <p [pTooltip]="t('mergeGenresTooltip')" tooltipPosition="top">{{ t('mergeGenresLabel') }}</p>
+        <p-checkbox [(ngModel)]="mergeCategories" [binary]="true"></p-checkbox>
+      </div>
+      <div class="option-item">
+        <p [pTooltip]="t('manualReviewTooltip')" tooltipPosition="top">{{ t('manualReviewLabel') }}</p>
+        <p-checkbox [(ngModel)]="reviewBeforeApply" [binary]="true"></p-checkbox>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <p-button severity="warn" outlined="true" [label]="t('resetForm')" (onClick)="reset()"></p-button>
+      <p-button [label]="submitButtonLabel" severity="success" icon="pi pi-save" outlined="true" (onClick)="submit()"></p-button>
+    </div>
+  </div>
+
+</div>
+</ng-container>

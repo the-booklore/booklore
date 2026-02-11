@@ -1,0 +1,82 @@
+<div class="book-sender-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-envelope header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Send Book</h2>
+      <p class="panel-description">Email this book to a recipient</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dynamicDialogRef.close()"
+      class="close-button">
+    </p-button>
+  </div>
+
+  <div class="dialog-content">
+    <div class="form-fields">
+      <div class="form-field">
+        <label class="field-label">Email Provider</label>
+        <p-select
+          [options]="emailProviders"
+          optionLabel="label"
+          placeholder="Select Email Provider"
+          [(ngModel)]="selectedProvider"
+          appendTo="body"
+          class="full-width">
+        </p-select>
+      </div>
+
+      <div class="form-field">
+        <label class="field-label">Recipient</label>
+        <p-select
+          [options]="emailRecipients"
+          optionLabel="label"
+          placeholder="Select Book Recipient"
+          [(ngModel)]="selectedRecipient"
+          [disabled]="!selectedProvider"
+          appendTo="body"
+          class="full-width">
+        </p-select>
+      </div>
+
+      @if (emailableFiles.length > 0) {
+        <div class="form-field">
+          <label class="field-label">File Format</label>
+          <div class="format-options">
+            @for (file of emailableFiles; track file.id) {
+              <div class="format-option" [class.selected]="selectedFileId === file.id">
+                <p-radioButton name="fileFormat" [value]="file.id" [(ngModel)]="selectedFileId"/>
+                <div class="format-info">
+                  <span class="format-type">{{ file.bookType || 'Unknown' }}</span>
+                  @if (file.isPrimary) { <span class="primary-badge">Primary</span> }
+                  <span class="file-size">{{ formatFileSize(file.fileSizeKb) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (showLargeFileWarning) {
+        <div class="warning-banner">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>This file exceeds 25MB. Some email providers may reject large attachments.</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="dialog-footer">
+    <p-button
+      icon="pi pi-envelope"
+      label="Send Book"
+      [disabled]="!selectedProvider || !selectedRecipient"
+      (onClick)="sendBook()">
+    </p-button>
+  </div>
+</div>

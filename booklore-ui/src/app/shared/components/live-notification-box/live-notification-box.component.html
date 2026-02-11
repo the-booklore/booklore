@@ -1,0 +1,11 @@
+<div class="notification-container live-border">
+  <div class="notification-header">
+    @if (latestNotification.severity) {
+      <app-tag [color]="getSeverityColor(latestNotification.severity)" size="3xs" class="tag-centered">
+        {{ latestNotification.severity }}
+      </app-tag>
+    }
+    <span class="notification-timestamp">{{ latestNotification.timestamp }}</span>
+  </div>
+  <p class="notification-message">{{ latestNotification.message }}</p>
+</div>

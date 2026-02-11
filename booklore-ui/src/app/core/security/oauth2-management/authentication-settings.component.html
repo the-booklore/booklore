@@ -1,0 +1,271 @@
+<ng-container *transloco="let t; prefix: 'settingsAuth'">
+<div class="main-container">
+  <div class="settings-header">
+    <h2 class="settings-title">
+      <i class="pi pi-lock"></i>
+      {{ t('title') }}
+    </h2>
+    <p class="settings-description">
+      {{ t('description') }}
+    </p>
+  </div>
+
+  <div class="settings-card">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="pi pi-shield"></i>
+        {{ t('methods.sectionTitle') }}
+      </h3>
+      <p class="section-description">
+        {{ t('methods.sectionDesc') }}
+      </p>
+    </div>
+
+    <div class="section-body">
+      <div class="auth-methods-list">
+        <div class="auth-method-item is-active is-locked">
+          <div class="auth-method-content">
+            <div class="auth-method-header">
+              <div class="auth-method-icon">
+                <i class="pi pi-user"></i>
+              </div>
+              <div class="auth-method-info">
+                <span class="auth-method-label">{{ t('internal.label') }}</span>
+                <span class="auth-method-status active">{{ t('internal.status') }}</span>
+              </div>
+            </div>
+            <p class="auth-method-description">
+              {{ t('internal.description') }}
+            </p>
+          </div>
+          <p-checkbox
+            [(ngModel)]="internalAuthEnabled"
+            [binary]="true"
+            [disabled]="true">
+          </p-checkbox>
+        </div>
+
+        <div class="auth-method-item" [class.is-active]="oidcEnabled">
+          <div class="auth-method-content">
+            <div class="auth-method-header">
+              <div class="auth-method-icon oidc">
+                <i class="pi pi-key"></i>
+              </div>
+              <div class="auth-method-info">
+                <span class="auth-method-label">
+                  {{ t('oidc.label') }}
+                  <span class="experimental-badge">{{ t('oidc.experimental') }}</span>
+                </span>
+                <span class="auth-method-status" [class.active]="oidcEnabled">
+                  {{ oidcEnabled ? t('oidc.enabled') : t('oidc.disabled') }}
+                </span>
+              </div>
+            </div>
+            <p class="auth-method-description">
+              {{ t('oidc.description') }}
+              <app-external-doc-link docType="authentication"></app-external-doc-link>
+              @if (!isOidcFormComplete() && !oidcEnabled) {
+                <span class="config-hint">{{ t('oidc.configHint') }}</span>
+              }
+            </p>
+          </div>
+          <p-toggleswitch
+            [(ngModel)]="oidcEnabled"
+            [disabled]="!isOidcFormComplete()"
+            (onChange)="toggleOidcEnabled()">
+          </p-toggleswitch>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <div class="section-header">
+      <div class="section-header-row">
+        <div class="section-header-text">
+          <h3 class="section-title">
+            <i class="pi pi-cog"></i>
+            {{ t('providerConfig.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('providerConfig.sectionDesc') }}
+          </p>
+        </div>
+        <p-button
+          [outlined]="true"
+          [label]="'common.save' | transloco"
+          icon="pi pi-save"
+          severity="success"
+          size="small"
+          (click)="saveOidcProvider()"
+          [disabled]="!isOidcFormComplete()">
+        </p-button>
+      </div>
+    </div>
+
+    <div class="section-body">
+      <div class="config-grid">
+        <div class="config-item">
+          <label for="providerName">{{ t('providerConfig.providerName') }}</label>
+          <input
+            pInputText
+            id="providerName"
+            [(ngModel)]="oidcProvider.providerName"
+            [placeholder]="t('providerConfig.providerPlaceholder')"/>
+        </div>
+
+        <div class="config-item">
+          <label for="clientId">{{ t('providerConfig.clientId') }}</label>
+          <input
+            pInputText
+            id="clientId"
+            [(ngModel)]="oidcProvider.clientId"
+            [placeholder]="t('providerConfig.clientIdPlaceholder')"/>
+        </div>
+
+        <div class="config-item full-width">
+          <label for="issuerUri">{{ t('providerConfig.issuerUri') }}</label>
+          <input
+            pInputText
+            id="issuerUri"
+            [(ngModel)]="oidcProvider.issuerUri"
+            [placeholder]="t('providerConfig.issuerPlaceholder')"/>
+        </div>
+
+        <div class="config-item full-width">
+          <label for="scope">{{ t('providerConfig.scope') }}</label>
+          <input
+            pInputText
+            id="scope"
+            [readonly]="true"
+            disabled="disabled"
+            value="openid profile email offline_access"/>
+          <span class="field-hint">{{ t('providerConfig.scopeHint') }}</span>
+        </div>
+      </div>
+
+      <div class="claims-section">
+        <h4 class="subsection-title">{{ t('providerConfig.claimMappings') }}</h4>
+        <p class="subsection-description">
+          {{ t('providerConfig.claimDesc') }}
+        </p>
+        <div class="claims-grid">
+          <div class="config-item">
+            <label for="claimUsername">{{ t('providerConfig.usernameClaim') }}</label>
+            <input
+              pInputText
+              id="claimUsername"
+              [(ngModel)]="oidcProvider.claimMapping.username"
+              [placeholder]="t('providerConfig.usernamePlaceholder')"/>
+          </div>
+          <div class="config-item">
+            <label for="claimEmail">{{ t('providerConfig.emailClaim') }}</label>
+            <input
+              pInputText
+              id="claimEmail"
+              [(ngModel)]="oidcProvider.claimMapping.email"
+              [placeholder]="t('providerConfig.emailPlaceholder')"/>
+          </div>
+          <div class="config-item">
+            <label for="claimName">{{ t('providerConfig.nameClaim') }}</label>
+            <input
+              pInputText
+              id="claimName"
+              [(ngModel)]="oidcProvider.claimMapping.name"
+              [placeholder]="t('providerConfig.namePlaceholder')"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (oidcEnabled) {
+    <div class="settings-card">
+      <div class="section-header">
+        <div class="section-header-row">
+          <div class="section-header-text">
+            <h3 class="section-title">
+              <i class="pi pi-users"></i>
+              {{ t('provisioning.sectionTitle') }}
+            </h3>
+            <p class="section-description">
+              {{ t('provisioning.sectionDesc') }}
+            </p>
+          </div>
+          <p-button
+            icon="pi pi-save"
+            [label]="'common.save' | transloco"
+            [outlined]="true"
+            severity="success"
+            size="small"
+            (click)="saveOidcAutoProvisionSettings()">
+          </p-button>
+        </div>
+      </div>
+
+      <div class="section-body">
+        <div class="provisioning-toggle">
+          <div class="toggle-content">
+            <div class="toggle-info">
+              <span class="toggle-label">{{ t('provisioning.autoLabel') }}</span>
+              <span class="toggle-status" [class.active]="autoUserProvisioningEnabled">
+                {{ autoUserProvisioningEnabled ? t('provisioning.autoEnabled') : t('provisioning.autoDisabled') }}
+              </span>
+            </div>
+            <p class="toggle-description">
+              {{ t('provisioning.autoDesc') }}
+            </p>
+          </div>
+          <p-toggleswitch
+            [(ngModel)]="autoUserProvisioningEnabled"
+            inputId="autoProvision"
+            (onChange)="saveOidcAutoProvisionSettings()">
+          </p-toggleswitch>
+        </div>
+
+        @if (autoUserProvisioningEnabled) {
+          <div class="default-settings">
+            <div class="permissions-group">
+              <h4 class="group-title">{{ t('provisioning.defaultPerms') }}</h4>
+              <div class="permissions-grid">
+                <div class="permission-item">
+                  <p-checkbox
+                    [binary]="true"
+                    [disabled]="true"
+                    [ngModel]="true"
+                    inputId="permissionRead">
+                  </p-checkbox>
+                  <label for="permissionRead">{{ t('provisioning.readBooks') }}</label>
+                </div>
+                @for (perm of availablePermissions; track perm) {
+                  <div class="permission-item">
+                    <p-checkbox
+                      [(ngModel)]="perm.selected"
+                      [binary]="true"
+                      [inputId]="perm.value">
+                    </p-checkbox>
+                    <label [for]="perm.value">{{ t(perm.translationKey) }}</label>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="libraries-group">
+              <h4 class="group-title">{{ t('provisioning.defaultLibraryAccess') }}</h4>
+              <p-multiSelect
+                [options]="allLibraries"
+                optionLabel="name"
+                optionValue="id"
+                [(ngModel)]="editingLibraryIds"
+                [placeholder]="t('provisioning.selectLibraries')"
+                appendTo="body"
+                class="libraries-select">
+              </p-multiSelect>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+</ng-container>

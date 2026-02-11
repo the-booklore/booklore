@@ -1,0 +1,40 @@
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.version-info {
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.version-text {
+  color: #e5e7eb;
+}
+
+.version-link {
+  font-size: 0.875rem;
+
+  &:hover {
+    text-decoration: underline;
+    color: #f3f4f6;
+  }
+}
+
+.version-label {
+  font-size: 0.875rem;
+}
+
+.update-link {
+  cursor: pointer;
+  color: #fb923c;
+  font-size: 0.75rem;
+
+  &:hover {
+    text-decoration: underline;
+    color: #fdba74;
+  }
+}

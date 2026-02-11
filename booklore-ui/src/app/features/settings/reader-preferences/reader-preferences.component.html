@@ -1,0 +1,106 @@
+<ng-container *transloco="let t; prefix: 'settingsReader'">
+  <div class="main-container">
+    <div class="settings-header">
+      <h2 class="settings-title">
+        <i class="pi pi-book"></i>
+        {{ t('title') }}
+      </h2>
+      <p class="settings-description">
+        {{ t('description') }}
+      </p>
+    </div>
+
+    <div class="settings-content">
+      <app-settings-application-mode [userSettings]="userSettings"></app-settings-application-mode>
+
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-book"></i>
+            {{ t('ebook.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('ebook.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="settings-card">
+          <app-epub-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-epub-reader-preferences-component>
+        </div>
+      </div>
+
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-file-pdf"></i>
+            {{ t('pdf.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('pdf.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="settings-card">
+          <app-pdf-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-pdf-reader-preferences-component>
+        </div>
+      </div>
+
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-images"></i>
+            {{ t('cbx.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('cbx.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="settings-card">
+          <app-cbx-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-cbx-reader-preferences-component>
+        </div>
+      </div>
+
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-file-pdf"></i>
+            {{ t('streamingPdf.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('streamingPdf.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="settings-card">
+          <app-new-pdf-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-new-pdf-reader-preferences-component>
+        </div>
+      </div>
+
+      @if (hasFontManagementPermission) {
+        <div class="preferences-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="pi pi-palette"></i>
+              {{ t('fonts.sectionTitle') }}
+            </h3>
+            <p class="section-description">
+              {{ t('fonts.sectionDesc') }}
+            </p>
+          </div>
+          <div class="settings-card">
+            <app-custom-fonts></app-custom-fonts>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</ng-container>

@@ -1,0 +1,50 @@
+<ng-container *transloco="let t; prefix: 'layout.changelog'">
+<div class="changelog-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-sparkles header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dialogRef.close()"
+      class="close-button">
+    </p-button>
+  </div>
+
+  <div class="dialog-content">
+    @if (loading) {
+      <div class="loading-state">
+        {{ t('loading') }}
+      </div>
+    }
+
+    @if (!loading && changelog.length === 0) {
+      <div class="empty-state">
+        {{ t('empty') }}
+      </div>
+    }
+
+    @if (!loading && changelog.length > 0) {
+      <div class="changelog-list">
+        @for (release of changelog; track release) {
+          <div class="release-item">
+            <p class="release-title">
+              <a [href]="release.url" target="_blank" rel="noopener noreferrer" class="release-link">
+                {{ release.name }} ({{ release.publishedAt | date: 'mediumDate' }})
+              </a>
+            </p>
+            <div [innerHTML]="markdownToHtml(release.changelog)" class="release-content"></div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+</ng-container>

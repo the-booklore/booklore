@@ -1,0 +1,153 @@
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
+import {NgxExtendedPdfViewerModule, ZoomType} from 'ngx-extended-pdf-viewer';
+import {PageTitleService} from "../../../shared/service/page-title.service";
+import {BookService} from '../../book/service/book.service';
+import {forkJoin, Subscription} from 'rxjs';
+import {map, switchMap} from 'rxjs/operators';
+import {BookSetting} from '../../book/model/book.model';
+import {UserService} from '../../settings/user-management/user.service';
+
+import {ProgressSpinner} from 'primeng/progressspinner';
+import {MessageService} from 'primeng/api';
+import {ReadingSessionService} from '../../../shared/service/reading-session.service';
+import {Location} from '@angular/common';
+
+@Component({
+  selector: 'app-pdf-reader',
+  standalone: true,
+  imports: [NgxExtendedPdfViewerModule, ProgressSpinner],
+  templateUrl: './pdf-reader.component.html',
+  styleUrl: './pdf-reader.component.scss',
+})
+export class PdfReaderComponent implements OnInit, OnDestroy {
+  isLoading = true;
+  totalPages: number = 0;
+
+  rotation: 0 | 90 | 180 | 270 = 0;
+
+  page!: number;
+  spread!: 'off' | 'even' | 'odd';
+  zoom!: ZoomType;
+
+  bookData!: string | Blob;
+  bookId!: number;
+  bookFileId?: number;
+  private appSettingsSubscription!: Subscription;
+
+  private bookService = inject(BookService);
+  private userService = inject(UserService);
+  private messageService = inject(MessageService);
+  private route = inject(ActivatedRoute);
+  private pageTitle = inject(PageTitleService);
+  private readingSessionService = inject(ReadingSessionService);
+  private location = inject(Location);
+
+  ngOnInit(): void {
+    this.route.paramMap.subscribe((params) => {
+      this.isLoading = true;
+      this.bookId = +params.get('bookId')!;
+
+      this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
+        switchMap((book) => {
+          // Set the book file ID for progress tracking
+          this.bookFileId = book.primaryFile?.id;
+
+          return forkJoin([
+            this.bookService.getBookSetting(this.bookId, this.bookFileId!),
+            this.bookService.getFileContent(this.bookId),
+            this.userService.getMyself()
+          ]).pipe(map(([bookSetting, pdfData, myself]) => ({ book, bookSetting, pdfData, myself })));
+        })
+      ).subscribe({
+        next: ({ book, bookSetting, pdfData, myself }) => {
+          const pdfMeta = book;
+          const pdfPrefs = bookSetting;
+
+          this.pageTitle.setBookPageTitle(pdfMeta);
+
+          const globalOrIndividual = myself.userSettings.perBookSetting.pdf;
+          if (globalOrIndividual === 'Global') {
+            this.zoom = myself.userSettings.pdfReaderSetting.pageZoom || 'page-fit';
+            this.spread = myself.userSettings.pdfReaderSetting.pageSpread || 'odd';
+          } else {
+            this.zoom = pdfPrefs.pdfSettings?.zoom || myself.userSettings.pdfReaderSetting.pageZoom || 'page-fit';
+            this.spread = pdfPrefs.pdfSettings?.spread || myself.userSettings.pdfReaderSetting.pageSpread || 'odd';
+          }
+          this.page = pdfMeta.pdfProgress?.page || 1;
+          this.bookData = pdfData;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load the book'});
+          this.isLoading = false;
+        }
+      });
+    });
+  }
+
+  onPageChange(page: number): void {
+    if (page !== this.page) {
+      this.page = page;
+      this.updateProgress();
+      const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+      this.readingSessionService.updateProgress(this.page.toString(), percentage);
+    }
+  }
+
+  onZoomChange(zoom: ZoomType): void {
+    if (zoom !== this.zoom) {
+      this.zoom = zoom;
+      this.updateViewerSetting();
+    }
+  }
+
+  onSpreadChange(spread: 'off' | 'even' | 'odd'): void {
+    if (spread !== this.spread) {
+      this.spread = spread;
+      this.updateViewerSetting();
+    }
+  }
+
+  private updateViewerSetting(): void {
+    const bookSetting: BookSetting = {
+      pdfSettings: {
+        spread: this.spread,
+        zoom: this.zoom,
+      }
+    }
+    this.bookService.updateViewerSetting(bookSetting, this.bookId).subscribe();
+  }
+
+  updateProgress(): void {
+    const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+    this.bookService.savePdfProgress(this.bookId, this.page, percentage, this.bookFileId).subscribe();
+  }
+
+  onPdfPagesLoaded(event: { pagesCount: number }): void {
+    this.totalPages = event.pagesCount;
+    const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+    this.readingSessionService.startSession(this.bookId, "PDF", this.page.toString(), percentage);
+    this.readingSessionService.updateProgress(this.page.toString(), percentage);
+  }
+
+  ngOnDestroy(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+      this.readingSessionService.endSession(this.page.toString(), percentage);
+    }
+
+    if (this.appSettingsSubscription) {
+      this.appSettingsSubscription.unsubscribe();
+    }
+    this.updateProgress();
+  }
+
+  closeReader = (): void => {
+    if (this.readingSessionService.isSessionActive()) {
+      const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+      this.readingSessionService.endSession(this.page.toString(), percentage);
+    }
+    this.location.back();
+  }
+}

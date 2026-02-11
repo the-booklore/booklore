@@ -1,0 +1,35 @@
+<div class="multi-book-fetch-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-sync header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Metadata Refresh Options</h2>
+      <p class="panel-description">{{ booksToShow.length }} books selected</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dialogRef.close()"
+      class="close-button">
+    </p-button>
+  </div>
+
+  <div class="dialog-content">
+    <div class="book-list-section">
+      <div class="book-list-container">
+        <ul class="book-list">
+          @for (book of booksToShow; track book.id) {
+            <li>
+              <span class="book-id">#{{ book.id }}</span>: {{ book.metadata?.title || 'Untitled' }}
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <app-metadata-fetch-options></app-metadata-fetch-options>
+  </div>
+</div>

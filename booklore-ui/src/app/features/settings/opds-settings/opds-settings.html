@@ -1,0 +1,378 @@
+<ng-container *transloco="let t; prefix: 'settingsOpds'">
+<div class="main-container">
+  <div class="settings-header">
+    <h2 class="settings-title">
+      <i class="pi pi-server"></i>
+      {{ t('title') }}
+      <app-external-doc-link docType="opds"></app-external-doc-link>
+    </h2>
+    <p class="settings-description">
+      {{ t('description') }}
+    </p>
+  </div>
+
+  @if (hasPermission) {
+    <div class="settings-card">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-sliders-h"></i>
+          {{ t('server.sectionTitle') }}
+        </h3>
+        <p class="section-description">
+          {{ t('server.sectionDesc') }}
+        </p>
+      </div>
+
+      <div class="section-body">
+        <div class="toggle-list">
+          <div class="toggle-item" [class.is-active]="opdsEnabled">
+            <div class="toggle-content">
+              <div class="toggle-header">
+                <div class="toggle-icon">
+                  <i class="pi pi-globe"></i>
+                </div>
+                <div class="toggle-info">
+                  <span class="toggle-label">{{ t('server.opdsLabel') }}</span>
+                  <span class="toggle-status" [class.active]="opdsEnabled">
+                    {{ opdsEnabled ? t('server.enabled') : t('server.disabled') }}
+                  </span>
+                </div>
+              </div>
+              <p class="toggle-description">
+                {{ t('server.opdsDesc') }}
+              </p>
+            </div>
+            <p-toggleswitch
+              [(ngModel)]="opdsEnabled"
+              (onChange)="toggleOpdsServer()">
+            </p-toggleswitch>
+          </div>
+
+          <div class="toggle-item" [class.is-active]="komgaApiEnabled">
+            <div class="toggle-content">
+              <div class="toggle-header">
+                <div class="toggle-icon">
+                  <i class="pi pi-box"></i>
+                </div>
+                <div class="toggle-info">
+                  <span class="toggle-label">{{ t('server.komgaLabel') }}</span>
+                  <span class="toggle-status" [class.active]="komgaApiEnabled">
+                    {{ komgaApiEnabled ? t('server.enabled') : t('server.disabled') }}
+                  </span>
+                </div>
+              </div>
+              <p class="toggle-description">
+                {{ t('server.komgaDesc') }}
+              </p>
+            </div>
+            <p-toggleswitch
+              [(ngModel)]="komgaApiEnabled"
+              (onChange)="toggleKomgaApi()">
+            </p-toggleswitch>
+          </div>
+
+          @if (komgaApiEnabled) {
+            <div class="toggle-item sub-item" [class.is-active]="komgaGroupUnknown">
+              <div class="toggle-content">
+                <div class="toggle-header">
+                  <div class="toggle-icon sub-icon">
+                    <i class="pi pi-folder"></i>
+                  </div>
+                  <div class="toggle-info">
+                    <span class="toggle-label">{{ t('server.groupUnknownLabel') }}</span>
+                    <span class="toggle-status" [class.active]="komgaGroupUnknown">
+                      {{ komgaGroupUnknown ? t('server.grouped') : t('server.individual') }}
+                    </span>
+                  </div>
+                </div>
+                <p class="toggle-description">
+                  {{ t('server.groupUnknownDesc') }}
+                </p>
+              </div>
+              <p-toggleswitch
+                [(ngModel)]="komgaGroupUnknown"
+                (onChange)="toggleKomgaGroupUnknown()">
+              </p-toggleswitch>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (opdsEnabled || komgaApiEnabled) {
+      <div class="settings-card">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-link"></i>
+            {{ t('endpoints.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('endpoints.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="section-body">
+          <div class="endpoints-list">
+            @if (opdsEnabled) {
+              <div class="endpoint-item">
+                <div class="endpoint-header">
+                  <div class="endpoint-icon">
+                    <i class="pi pi-globe"></i>
+                  </div>
+                  <div class="endpoint-info">
+                    <span class="endpoint-label">{{ t('endpoints.opdsCatalog') }}</span>
+                    <span class="endpoint-hint">{{ t('endpoints.opdsHint') }}</span>
+                  </div>
+                </div>
+                <div class="endpoint-url-row">
+                  <input
+                    id="endpoint-url"
+                    class="endpoint-input"
+                    type="text"
+                    pInputText
+                    [value]="opdsEndpoint"
+                    readonly/>
+                  <p-button
+                    icon="pi pi-copy"
+                    severity="info"
+                    [outlined]="true"
+                    size="small"
+                    (onClick)="copyEndpoint()"
+                    [pTooltip]="t('endpoints.copyUrl')">
+                  </p-button>
+                </div>
+              </div>
+            }
+
+            @if (komgaApiEnabled) {
+              <div class="endpoint-item">
+                <div class="endpoint-header">
+                  <div class="endpoint-icon">
+                    <i class="pi pi-box"></i>
+                  </div>
+                  <div class="endpoint-info">
+                    <span class="endpoint-label">{{ t('endpoints.komgaBase') }}</span>
+                    <span class="endpoint-hint">{{ t('endpoints.komgaHint') }}</span>
+                  </div>
+                </div>
+                <div class="endpoint-url-row">
+                  <input
+                    id="komga-endpoint-url"
+                    class="endpoint-input"
+                    type="text"
+                    pInputText
+                    [value]="komgaEndpoint"
+                    readonly/>
+                  <p-button
+                    icon="pi pi-copy"
+                    severity="info"
+                    [outlined]="true"
+                    size="small"
+                    (onClick)="copyKomgaEndpoint()"
+                    [pTooltip]="t('endpoints.copyUrl')">
+                  </p-button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (opdsEnabled) {
+      <div class="settings-card">
+        <div class="section-header">
+          <div class="section-header-row">
+            <div class="section-header-text">
+              <h3 class="section-title">
+                <i class="pi pi-users"></i>
+                {{ t('users.sectionTitle') }}
+              </h3>
+              <p class="section-description">
+                {{ t('users.sectionDesc') }}
+              </p>
+            </div>
+            <p-button
+              icon="pi pi-plus"
+              [label]="t('users.addUser')"
+              severity="success"
+              size="small"
+              [outlined]="true"
+              (onClick)="showCreateUserDialog = true">
+            </p-button>
+          </div>
+        </div>
+
+        <div class="section-body">
+          @if (users.length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-users"></i>
+              <p class="empty-title">{{ t('users.emptyTitle') }}</p>
+              <p class="empty-subtitle">{{ t('users.emptySubtitle') }}</p>
+            </div>
+          } @else {
+            <div class="users-list">
+              @for (user of users; track user.id) {
+                <div class="user-item">
+                  <div class="user-info">
+                    <div class="user-avatar">
+                      {{ user.username.charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="user-details">
+                      <span class="username">{{ user.username }}</span>
+                      <div class="user-meta">
+                        <i class="pi pi-sort-alt"></i>
+                        @if (editingUserId === user.id) {
+                          <p-select
+                            [options]="sortOrderOptions"
+                            [(ngModel)]="editingSortOrder"
+                            optionLabel="label"
+                            optionValue="value"
+                            [style]="{width: '160px'}"
+                            size="small"
+                            [appendTo]="'body'">
+                            <ng-template pTemplate="selectedItem" let-selected>
+                              {{ selected.translationKey | transloco }}
+                            </ng-template>
+                            <ng-template pTemplate="item" let-option>
+                              {{ option.translationKey | transloco }}
+                            </ng-template>
+                          </p-select>
+                        } @else {
+                          <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <div class="user-actions">
+                    @if (editingUserId === user.id) {
+                      <p-button
+                        icon="pi pi-check"
+                        severity="success"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="saveSortOrder(user)"
+                        [pTooltip]="'common.save' | transloco">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-times"
+                        severity="secondary"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="cancelEdit()"
+                        [pTooltip]="'common.cancel' | transloco">
+                      </p-button>
+                    } @else {
+                      <p-button
+                        icon="pi pi-pencil"
+                        severity="info"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="startEdit(user)"
+                        [pTooltip]="t('users.editSortOrder')">
+                      </p-button>
+                      <p-button
+                        icon="pi pi-trash"
+                        severity="danger"
+                        size="small"
+                        [outlined]="true"
+                        [rounded]="true"
+                        (onClick)="confirmDelete(user)"
+                        [pTooltip]="t('users.deleteUser')">
+                      </p-button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <p-dialog
+      [header]="t('createDialog.title')"
+      [(visible)]="showCreateUserDialog"
+      [modal]="true"
+      class="user-dialog"
+      [style]="{width: '400px'}">
+      <div class="dialog-form">
+        <div class="form-field">
+          <label for="username">{{ t('createDialog.username') }}</label>
+          <input
+            id="username"
+            type="text"
+            pInputText
+            [(ngModel)]="newUser.username"
+            [placeholder]="t('createDialog.enterUsername')"/>
+        </div>
+        <div class="form-field">
+          <label for="password">{{ t('createDialog.password') }}</label>
+          <input
+            id="password"
+            type="password"
+            pInputText
+            [(ngModel)]="newUser.password"
+            [placeholder]="t('createDialog.enterPassword')"/>
+        </div>
+        <div class="form-field">
+          <label for="sortOrder">{{ t('createDialog.sortOrder') }}</label>
+          <p-select
+            id="sortOrder"
+            [options]="sortOrderOptions"
+            [(ngModel)]="newUser.sortOrder"
+            optionLabel="label"
+            optionValue="value"
+            [style]="{width: '100%'}"
+            [placeholder]="t('createDialog.selectSortOrder')"
+            [appendTo]="'body'">
+            <ng-template pTemplate="selectedItem" let-selected>
+              {{ selected.translationKey | transloco }}
+            </ng-template>
+            <ng-template pTemplate="item" let-option>
+              {{ option.translationKey | transloco }}
+            </ng-template>
+          </p-select>
+          <small class="form-hint">
+            <i class="pi pi-info-circle"></i>
+            {{ t('createDialog.sortHint') }}
+          </small>
+        </div>
+      </div>
+      <ng-template pTemplate="footer">
+        <div class="dialog-actions">
+          <p-button
+            [label]="'common.cancel' | transloco"
+            severity="secondary"
+            outlined="true"
+            (onClick)="cancelCreateUser()">
+          </p-button>
+          <p-button
+            [label]="t('createDialog.create')"
+            severity="success"
+            [disabled]="!newUser.username || !newUser.password"
+            (onClick)="createUser()">
+          </p-button>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <p-confirmDialog></p-confirmDialog>
+  } @else {
+    <div class="access-denied-card">
+      <i class="pi pi-lock"></i>
+      <div class="access-denied-content">
+        <h3>{{ t('accessRestricted') }}</h3>
+        <p>
+          {{ t('accessDenied') }}
+          <br>
+          {{ t('contactAdmin') }}
+        </p>
+      </div>
+    </div>
+  }
+</div>
+</ng-container>

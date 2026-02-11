@@ -1,0 +1,204 @@
+<ng-container *transloco="let t; prefix: 'settingsEmail.provider.create'">
+<div class="email-provider-creator">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-envelope header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      (click)="closeDialog()"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      class="close-button"
+      />
+  </div>
+
+  <form [formGroup]="emailProviderForm" (ngSubmit)="createEmailProvider()">
+    <div class="form-container">
+      <div class="form-group highlight-group">
+        <label for="providerName" class="form-label">
+          <i class="pi pi-tag label-icon"></i>
+          {{ t('providerName') }}
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="providerName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="input-full"
+            [placeholder]="t('providerNamePlaceholder')"
+            [class.filled]="emailProviderForm.get('name')?.value"
+
+          />
+          @if (emailProviderForm.get('name')?.value && emailProviderForm.get('name')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailProviderForm.get('name')?.invalid && (emailProviderForm.get('name')?.dirty || emailProviderForm.get('name')?.touched)) {
+          <small class="field-error">{{ t('providerNameRequired') }}</small>
+        }
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group">
+        <label for="host" class="form-label">
+          <i class="pi pi-server label-icon"></i>
+          {{ t('host') }}
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="host"
+            type="text"
+            pInputText
+            formControlName="host"
+            class="input-full"
+            [placeholder]="t('hostPlaceholder')"
+            [class.filled]="emailProviderForm.get('host')?.value"
+          />
+          @if (emailProviderForm.get('host')?.value && emailProviderForm.get('host')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailProviderForm.get('host')?.invalid && (emailProviderForm.get('host')?.dirty || emailProviderForm.get('host')?.touched)) {
+          <small class="field-error">{{ t('hostRequired') }}</small>
+        }
+      </div>
+
+      <div class="form-group highlight-group">
+        <label for="port" class="form-label">
+          <i class="pi pi-hashtag label-icon"></i>
+          {{ t('port') }}
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="port"
+            type="number"
+            pInputText
+            formControlName="port"
+            class="input-full"
+            [placeholder]="t('portPlaceholder')"
+            [class.filled]="emailProviderForm.get('port')?.value"
+          />
+          @if (emailProviderForm.get('port')?.value && emailProviderForm.get('port')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailProviderForm.get('port')?.invalid && (emailProviderForm.get('port')?.dirty || emailProviderForm.get('port')?.touched)) {
+          <small class="field-error">{{ t('portRequired') }}</small>
+        }
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group">
+        <label for="username" class="form-label">
+          <i class="pi pi-user label-icon"></i>
+          {{ t('username') }}
+        </label>
+        <input
+          id="username"
+          type="text"
+          pInputText
+          formControlName="username"
+          class="input-full"
+          [placeholder]="t('usernamePlaceholder')"
+        />
+      </div>
+
+      <div class="form-group highlight-group">
+        <label for="password" class="form-label">
+          <i class="pi pi-lock label-icon"></i>
+          {{ t('password') }}
+        </label>
+        <input
+          id="password"
+          type="password"
+          pInputText
+          formControlName="password"
+          class="input-full"
+          [placeholder]="t('passwordPlaceholder')"
+        />
+      </div>
+
+      <div class="form-group highlight-group">
+        <label for="fromAddress" class="form-label">
+          <i class="pi pi-at label-icon"></i>
+          {{ t('fromAddress') }}
+        </label>
+        <input
+          id="fromAddress"
+          type="text"
+          pInputText
+          formControlName="fromAddress"
+          class="input-full"
+          [placeholder]="t('fromAddressPlaceholder')"
+        />
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group checkbox-group">
+        <div class="checkbox-row">
+          <p-checkbox formControlName="auth" [binary]="true" inputId="auth"></p-checkbox>
+          <label for="auth" class="checkbox-label">
+            <span class="checkbox-title">{{ t('enableAuth') }}</span>
+            <span class="checkbox-description">{{ t('enableAuthDesc') }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group highlight-group checkbox-group">
+        <div class="checkbox-row">
+          <p-checkbox formControlName="startTls" [binary]="true" inputId="startTls"></p-checkbox>
+          <label for="startTls" class="checkbox-label">
+            <span class="checkbox-title">{{ t('enableStartTls') }}</span>
+            <span class="checkbox-description">{{ t('enableStartTlsDesc') }}</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <div class="validation-status">
+        @if (emailProviderForm.invalid) {
+          <div class="validation-message error">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>{{ t('requiredFieldsError') }}</span>
+          </div>
+        } @else {
+          <div class="validation-message success">
+            <i class="pi pi-check-circle"></i>
+            <span>{{ t('readyToCreate') }}</span>
+          </div>
+        }
+      </div>
+      <div class="footer-actions">
+        <p-button
+          [label]="'common.cancel' | transloco"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="closeDialog()"
+          type="button"
+        />
+        <p-button
+          [label]="t('createBtn')"
+          icon="pi pi-plus"
+          severity="success"
+          type="submit"
+          [disabled]="emailProviderForm.invalid"
+        />
+      </div>
+    </div>
+  </form>
+</div>
+</ng-container>

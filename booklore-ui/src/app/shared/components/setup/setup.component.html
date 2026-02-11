@@ -1,0 +1,170 @@
+<ng-container *transloco="let t; prefix: 'shared.setup'">
+<div class="setup-container">
+  <div class="setup-card-wrapper">
+    <div class="setup-card-border">
+      <div class="setup-card">
+        <div class="setup-header">
+          <div class="logo-wrapper">
+            <svg class="logo-icon" viewBox="0 0 126 126" fill="var(--primary-color)" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M59 4.79297C71.5051 11.5557 80 24.7854 80 40C80 40.5959 79.987 41.1888 79.9609 41.7783C79.8609 44.0406 81.7355 46 84 46C106.091 46 124 63.9086 124 86C124 108.091 106.091 126 84 126H10C4.47715 126 0 121.523 0 116V39.0068L0.0126953 38.9941C0.357624 25.0252 7.86506 12.8347 19 5.95215V63.832C19 64.8345 20.0676 65.4391 20.9121 64.9902L21.0771 64.8867L38.2227 52.3428C38.6819 52.0068 39.3064 52.0068 39.7656 52.3428L56.9229 64.8945L57.0879 64.998C57.9324 65.447 59 64.8423 59 63.8398V4.79297Z"/>
+              <path
+                d="M40 0C43.8745 0 47.6199 0.552381 51.1631 1.58008V50.9697L44.3926 46.0176L44.0879 45.8037C40.9061 43.6679 36.7098 43.7393 33.5957 46.0176L26.8369 50.9619V2.21875C30.9593 0.782634 35.3881 0 40 0Z"
+                fill="white"/>
+            </svg>
+          </div>
+          <h1 class="setup-title">{{ t('title') }}</h1>
+          <p class="setup-subtitle">{{ t('subtitle') }}</p>
+        </div>
+
+        <form class="setup-form" [formGroup]="setupForm" (ngSubmit)="onSubmit()">
+          <div class="form-field">
+            <label for="username" class="form-label">
+              <i class="pi pi-user"></i>
+              <span>{{ t('usernameLabel') }}</span>
+            </label>
+            <input
+              pInputText
+              id="username"
+              name="username"
+              required
+              formControlName="username"
+              [placeholder]="t('usernamePlaceholder')"
+              class="form-input"
+              autocomplete="username"
+            />
+            @if (setupForm.get('username')?.invalid && setupForm.get('username')?.touched) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ t('validation.usernameRequired') }}
+              </small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="name" class="form-label">
+              <i class="pi pi-id-card"></i>
+              <span>{{ t('fullNameLabel') }}</span>
+            </label>
+            <input
+              pInputText
+              id="name"
+              name="name"
+              required
+              formControlName="name"
+              [placeholder]="t('fullNamePlaceholder')"
+              class="form-input"
+              autocomplete="name"
+            />
+            @if (setupForm.get('name')?.invalid && setupForm.get('name')?.touched) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ t('validation.nameRequired') }}
+              </small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="email" class="form-label">
+              <i class="pi pi-envelope"></i>
+              <span>{{ t('emailLabel') }}</span>
+            </label>
+            <input
+              pInputText
+              id="email"
+              name="email"
+              type="email"
+              required
+              formControlName="email"
+              [placeholder]="t('emailPlaceholder')"
+              class="form-input"
+              autocomplete="email"
+            />
+            @if (setupForm.get('email')?.invalid && setupForm.get('email')?.touched) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ t('validation.emailRequired') }}
+              </small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="password" class="form-label">
+              <i class="pi pi-lock"></i>
+              <span>{{ t('passwordLabel') }}</span>
+            </label>
+            <input
+              pInputText
+              id="password"
+              name="password"
+              type="password"
+              required
+              formControlName="password"
+              [placeholder]="t('passwordPlaceholder')"
+              class="form-input"
+              autocomplete="new-password"
+            />
+            @if (setupForm.get('password')?.invalid && setupForm.get('password')?.touched) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ t('validation.passwordMinLength') }}
+              </small>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="confirmPassword" class="form-label">
+              <i class="pi pi-lock"></i>
+              <span>{{ t('confirmPasswordLabel') }}</span>
+            </label>
+            <input
+              pInputText
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              formControlName="confirmPassword"
+              [placeholder]="t('confirmPasswordPlaceholder')"
+              class="form-input"
+              autocomplete="new-password"
+            />
+            @if (setupForm.get('confirmPassword')?.invalid && setupForm.get('confirmPassword')?.touched) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ t('validation.confirmPasswordRequired') }}
+              </small>
+            }
+            @if (setupForm.get('confirmPassword')?.touched && setupForm.hasError('passwordMismatch')) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                {{ t('validation.passwordsMismatch') }}
+              </small>
+            }
+          </div>
+
+          <p-button
+            fluid
+            type="submit"
+            [label]="loading ? t('creatingAccountBtn') : t('createAccountBtn')"
+            [icon]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-user-plus'"
+            [disabled]="loading || setupForm.invalid"
+            class="setup-button"
+          />
+
+          @if (error) {
+            <div class="message-container error-message">
+              <p-message severity="error">{{ error }}</p-message>
+            </div>
+          }
+
+          @if (success) {
+            <div class="message-container success-message">
+              <p-message severity="success">{{ t('successMessage') }}</p-message>
+            </div>
+          }
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</ng-container>

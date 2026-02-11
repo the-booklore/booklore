@@ -1,0 +1,120 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.bulkEdit'">
+<div class="bulk-edit-container">
+  <div class="info-banner">
+    <i class="pi pi-info-circle"></i>
+    <span [innerHTML]="t('infoBanner', { fileCount: fileCount })"></span>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="fields-section">
+    <h4>{{ t('textFieldsTitle') }}</h4>
+    <div class="field-grid">
+      @for (field of textFields; track field.name) {
+        <div class="field-row">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="isFieldEnabled(field.name)"
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="t('enableField', { label: field.label })">
+          </p-checkbox>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+          <input
+            pInputText
+            [formControl]="getControl(field.controlName)"
+            [attr.id]="field.controlName"
+            [attr.aria-label]="field.label"
+            class="field-input"/>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="fields-section">
+    <h4>{{ t('numberFieldsTitle') }}</h4>
+    <div class="field-grid">
+      @for (field of numberFields; track field.name) {
+        <div class="field-row">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="isFieldEnabled(field.name)"
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="t('enableField', { label: field.label })">
+          </p-checkbox>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+          <input
+            pInputText
+            type="number"
+            [formControl]="getControl(field.controlName)"
+            [attr.id]="field.controlName"
+            [attr.aria-label]="field.label"
+            class="field-input field-input-small"/>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="fields-section">
+    <div class="section-header">
+      <h4>{{ t('arrayFieldsTitle') }}</h4>
+      <div class="merge-toggle">
+        <span class="merge-label" id="merge-mode-label">{{ t('modeLabel') }}</span>
+        <p-selectButton
+          [options]="mergeOptions"
+          [(ngModel)]="mergeArrays"
+          optionLabel="label"
+          optionValue="value"
+          ariaLabelledBy="merge-mode-label">
+        </p-selectButton>
+      </div>
+    </div>
+    <p class="helper-text"><i class="pi pi-info-circle"></i> {{ t('helperText') }}</p>
+    <div class="field-grid">
+      @for (field of chipFields; track field.name) {
+        <div class="field-row">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="isFieldEnabled(field.name)"
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="t('enableField', { label: field.label })">
+          </p-checkbox>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+          <p-autoComplete
+            [formControl]="getControl(field.controlName)"
+            [multiple]="true"
+            [suggestions]="[]"
+            [forceSelection]="false"
+            [typeahead]="false"
+            [dropdown]="false"
+            [ariaLabel]="field.label"
+            (onBlur)="onAutoCompleteBlur(field.name, $event)"
+            class="field-input">
+          </p-autoComplete>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="dialog-footer">
+    <p-button
+      [label]="'common.cancel' | transloco"
+      icon="pi pi-times"
+      severity="secondary"
+      (click)="cancel()">
+    </p-button>
+    <p-button
+      [label]="t('applyToSelected')"
+      icon="pi pi-check"
+      severity="success"
+      [disabled]="!hasEnabledFields"
+      (click)="apply()">
+    </p-button>
+  </div>
+</div>
+</ng-container>

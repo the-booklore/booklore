@@ -1,0 +1,90 @@
+<ng-container *transloco="let t; prefix: 'metadata.sidecar'">
+<div class="sidecar-viewer">
+  <div class="sidecar-header">
+    <div class="header-info">
+      <h3>{{ t('title') }}</h3>
+      <p class="header-description">
+        {{ t('description') }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <p-tag
+        [value]="getSyncStatusLabel()"
+        [severity]="getSyncStatusSeverity()"
+        class="sync-status-tag"
+      />
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>{{ t('loading') }}</span>
+    </div>
+  } @else {
+    <div class="sidecar-actions">
+      <p-button
+        [label]="t('exportBtn')"
+        icon="pi pi-upload"
+        [loading]="exporting"
+        (onClick)="exportToSidecar()"
+        severity="primary"
+        size="small"
+        [pTooltip]="t('exportTooltip')"
+        tooltipPosition="top"
+      />
+      <p-button
+        [label]="t('importBtn')"
+        icon="pi pi-download"
+        [loading]="importing"
+        [disabled]="syncStatus === 'MISSING'"
+        (onClick)="importFromSidecar()"
+        severity="secondary"
+        size="small"
+        [pTooltip]="t('importTooltip')"
+        tooltipPosition="top"
+      />
+    </div>
+
+    @if (syncStatus === 'MISSING') {
+      <div class="empty-state">
+        <i class="pi pi-file"></i>
+        <h4>{{ t('noSidecarTitle') }}</h4>
+        <p>
+          {{ t('noSidecarDescription') }}
+        </p>
+      </div>
+    } @else if (sidecarContent) {
+      <div class="sidecar-content">
+        <div class="content-header">
+          <div class="content-meta">
+            <span class="meta-item">
+              <i class="pi pi-clock"></i>
+              {{ t('generatedLabel') }} {{ sidecarContent.generatedAt | date:'medium' }}
+            </span>
+            <span class="meta-item">
+              <i class="pi pi-tag"></i>
+              {{ t('versionLabel') }} {{ sidecarContent.version }}
+            </span>
+            <span class="meta-item">
+              <i class="pi pi-cog"></i>
+              {{ t('byLabel') }} {{ sidecarContent.generatedBy }}
+            </span>
+          </div>
+        </div>
+
+        <div class="json-viewer">
+          <pre class="json-content">{{ sidecarContent | json }}</pre>
+        </div>
+
+        @if (sidecarContent.cover) {
+          <div class="cover-info">
+            <i class="pi pi-image"></i>
+            <span>{{ t('coverFileLabel') }} {{ sidecarContent.cover.path }}</span>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>
+</ng-container>
