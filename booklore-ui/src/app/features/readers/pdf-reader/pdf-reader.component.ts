@@ -23,6 +23,7 @@ import {Location} from '@angular/common';
 export class PdfReaderComponent implements OnInit, OnDestroy {
   isLoading = true;
   totalPages: number = 0;
+  isDarkTheme = true;
 
   rotation: 0 | 90 | 180 | 270 = 0;
 
