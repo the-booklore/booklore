@@ -559,6 +559,17 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
             return buildVolumeMetadata(comic);
         }
 
+        // For issue search/list responses ComicVine often omits creator credits (including writers).
+        // If we don't have any author information here, fall back to the issue detail endpoint
+        // to obtain full credits before building the metadata object.
+        if ("issue".equalsIgnoreCase(comic.getResourceType())
+                && (comic.getPersonCredits() == null || comic.getPersonCredits().isEmpty())) {
+            BookMetadata detailed = fetchIssueDetails(comic.getId(), volumeContext);
+            if (detailed != null && detailed.getAuthors() != null && !detailed.getAuthors().isEmpty()) {
+                return detailed;
+            }
+        }
+
         String publisher = null;
         Integer seriesTotal = null;
         if (volumeContext != null) {
