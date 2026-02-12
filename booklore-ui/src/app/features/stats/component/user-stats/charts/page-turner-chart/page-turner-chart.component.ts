@@ -1,6 +1,7 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
+import {Tooltip} from 'primeng/tooltip';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
@@ -11,7 +12,7 @@ type PageTurnerChartData = ChartData<'bar', number[], string>;
 @Component({
   selector: 'app-page-turner-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './page-turner-chart.component.html',
   styleUrls: ['./page-turner-chart.component.scss']
 })
