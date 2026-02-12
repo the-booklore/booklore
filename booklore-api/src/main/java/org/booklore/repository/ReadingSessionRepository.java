@@ -2,7 +2,7 @@ package org.booklore.repository;
 
 import org.booklore.model.dto.*;
 import org.booklore.model.dto.PageTurnerSessionDto;
-import org.booklore.model.dto.ReadingHeartbeatDto;
+
 import org.booklore.model.entity.ReadingSessionEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -138,29 +138,6 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             @Param("userId") Long userId,
             @Param("bookId") Long bookId,
             Pageable pageable);
-
-    @Query("""
-            SELECT
-                b.id as bookId,
-                COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
-                b.metadata.pageCount as pageCount,
-                COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) as dateFinished,
-                MIN(rs.startTime) as firstSessionDate,
-                COUNT(rs) as totalSessions,
-                COALESCE(SUM(rs.durationSeconds), 0) as totalDurationSeconds
-            FROM ReadingSessionEntity rs
-            JOIN rs.book b
-            JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
-            WHERE rs.user.id = :userId
-            AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
-            AND COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) IS NOT NULL
-            AND YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) = :year
-            GROUP BY b.id, b.metadata.title, b.metadata.pageCount, COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)
-            ORDER BY COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) ASC
-            """)
-    List<ReadingHeartbeatDto> findReadingHeartbeatByUserAndYear(
-            @Param("userId") Long userId,
-            @Param("year") int year);
 
     @Query("""
             SELECT

@@ -11,7 +11,7 @@ import org.booklore.model.dto.response.FavoriteReadingDaysResponse;
 import org.booklore.model.dto.response.GenreStatisticsResponse;
 import org.booklore.model.dto.response.PageTurnerScoreResponse;
 import org.booklore.model.dto.response.PeakReadingHoursResponse;
-import org.booklore.model.dto.response.ReadingHeartbeatResponse;
+
 import org.booklore.model.dto.response.ReadingSessionHeatmapResponse;
 import org.booklore.model.dto.response.ReadingSessionResponse;
 import org.booklore.model.dto.response.ReadingSessionTimelineResponse;
@@ -288,57 +288,6 @@ public class ReadingSessionService {
                         .month(dto.getMonth())
                         .count(dto.getCount())
                         .build())
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ReadingHeartbeatResponse> getReadingHeartbeat(int year) {
-        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
-        Long userId = authenticatedUser.getId();
-
-        var heartbeatData = readingSessionRepository.findReadingHeartbeatByUserAndYear(userId, year);
-
-        Set<Long> bookIds = heartbeatData.stream()
-                .map(dto -> dto.getBookId())
-                .collect(Collectors.toSet());
-
-        Map<Long, List<String>> bookCategories = new HashMap<>();
-        if (!bookIds.isEmpty()) {
-            bookRepository.findAllWithMetadataByIds(bookIds).forEach(book -> {
-                List<String> categories = book.getMetadata() != null && book.getMetadata().getCategories() != null
-                        ? book.getMetadata().getCategories().stream()
-                        .map(CategoryEntity::getName)
-                        .sorted()
-                        .collect(Collectors.toList())
-                        : List.of();
-                bookCategories.put(book.getId(), categories);
-            });
-        }
-
-        return heartbeatData.stream()
-                .map(dto -> {
-                    long daysToRead = 1;
-                    if (dto.getFirstSessionDate() != null && dto.getDateFinished() != null) {
-                        daysToRead = Math.max(1, ChronoUnit.DAYS.between(
-                                dto.getFirstSessionDate().atZone(ZoneId.systemDefault()).toLocalDate(),
-                                dto.getDateFinished().atZone(ZoneId.systemDefault()).toLocalDate()) + 1);
-                    }
-
-                    int pageCount = dto.getPageCount() != null ? dto.getPageCount() : 0;
-                    double pagesPerDay = pageCount > 0 ? (double) pageCount / daysToRead : 0.0;
-
-                    return ReadingHeartbeatResponse.builder()
-                            .bookId(dto.getBookId())
-                            .bookTitle(dto.getBookTitle())
-                            .pageCount(dto.getPageCount())
-                            .dateFinished(dto.getDateFinished())
-                            .categories(bookCategories.getOrDefault(dto.getBookId(), List.of()))
-                            .totalSessions(dto.getTotalSessions())
-                            .totalDurationSeconds(dto.getTotalDurationSeconds())
-                            .daysToRead(daysToRead)
-                            .pagesPerDay(Math.round(pagesPerDay * 100.0) / 100.0)
-                            .build();
-                })
                 .collect(Collectors.toList());
     }
 

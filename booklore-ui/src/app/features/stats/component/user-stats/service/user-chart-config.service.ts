@@ -15,11 +15,7 @@ import {SeriesProgressChartComponent} from '../charts/series-progress-chart/seri
 import {ReadingDNAChartComponent} from '../charts/reading-dna-chart/reading-dna-chart.component';
 import {ReadingHabitsChartComponent} from '../charts/reading-habits-chart/reading-habits-chart.component';
 import {ReadingBacklogChartComponent} from '../charts/reading-backlog-chart/reading-backlog-chart.component';
-import {ReadingHeartbeatChartComponent} from '../charts/reading-heartbeat-chart/reading-heartbeat-chart.component';
-import {GenreFlowChartComponent} from '../charts/genre-flow-chart/genre-flow-chart.component';
 import {PageTurnerChartComponent} from '../charts/page-turner-chart/page-turner-chart.component';
-import {ReadingSeasonsChartComponent} from '../charts/reading-seasons-chart/reading-seasons-chart.component';
-import {AbandonmentAutopsyChartComponent} from '../charts/abandonment-autopsy-chart/abandonment-autopsy-chart.component';
 
 export interface UserChartConfig {
   id: string;
@@ -52,11 +48,7 @@ export class UserChartConfigService {
     {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 12},
     {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 13},
     {id: 'reading-backlog', title: 'Reading Backlog Analysis', component: ReadingBacklogChartComponent, enabled: true, sizeClass: 'chart-full', order: 14},
-    {id: 'reading-heartbeat', title: 'Reading Heartbeat', component: ReadingHeartbeatChartComponent, enabled: true, sizeClass: 'chart-full', order: 15},
-    {id: 'genre-flow', title: 'Genre Flow', component: GenreFlowChartComponent, enabled: true, sizeClass: 'chart-medium', order: 16},
-    {id: 'page-turner', title: 'Page Turner Score', component: PageTurnerChartComponent, enabled: true, sizeClass: 'chart-medium', order: 17},
-    {id: 'reading-seasons', title: 'Reading Seasons', component: ReadingSeasonsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 18},
-    {id: 'abandonment-autopsy', title: 'Abandonment Autopsy', component: AbandonmentAutopsyChartComponent, enabled: true, sizeClass: 'chart-full', order: 19},
+    {id: 'page-turner', title: 'Page Turner Score', component: PageTurnerChartComponent, enabled: true, sizeClass: 'chart-medium', order: 15},
   ];
 
   private chartsSubject = new BehaviorSubject<UserChartConfig[]>(this.loadChartConfig());

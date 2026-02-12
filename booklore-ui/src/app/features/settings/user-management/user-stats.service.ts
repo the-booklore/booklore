@@ -49,18 +49,6 @@ export interface PeakHoursResponse {
   totalDurationSeconds: number;
 }
 
-export interface ReadingHeartbeatResponse {
-  bookId: number;
-  bookTitle: string;
-  pageCount: number;
-  dateFinished: string;
-  categories: string[];
-  totalSessions: number;
-  totalDurationSeconds: number;
-  daysToRead: number;
-  pagesPerDay: number;
-}
-
 export interface PageTurnerScoreResponse {
   bookId: number;
   bookTitle: string;
@@ -136,13 +124,6 @@ export class UserStatsService {
     return this.http.get<PeakHoursResponse[]>(
       `${this.readingSessionsUrl}/peak-hours`,
       {params}
-    );
-  }
-
-  getReadingHeartbeat(year: number): Observable<ReadingHeartbeatResponse[]> {
-    return this.http.get<ReadingHeartbeatResponse[]>(
-      `${this.readingSessionsUrl}/reading-heartbeat`,
-      {params: {year: year.toString()}}
     );
   }
 
