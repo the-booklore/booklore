@@ -4,6 +4,11 @@
       <h3>
         <i class="pi pi-calendar heatmap-title-icon"></i>
         Reading Session Activity
+        <i class="pi pi-question-circle chart-info-icon"
+           pTooltip="A daily heatmap of your reading sessions for the selected year. Darker cells mean more sessions that day. Streak stats track consecutive reading days across all time. Milestones unlock as you hit streak or total-day thresholds."
+           tooltipPosition="bottom"
+           tooltipStyleClass="chart-info-tooltip"
+           [appendTo]="'body'"></i>
       </h3>
       <p class="chart-description">Daily overview of your reading sessions across the year</p>
     </div>
@@ -24,6 +29,7 @@
     </div>
     <div class="header-spacer"></div>
   </div>
+
   <div class="chart-wrapper">
     <canvas baseChart
             [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
@@ -31,4 +37,33 @@
             [type]="chartType">
     </canvas>
   </div>
+
+  @if (hasStreakData) {
+    <div class="chart-footer">
+      <div class="streak-stats">
+        <span class="streak-item current">
+          <span class="streak-value">{{ currentStreak }}</span> current streak
+        </span>
+        <span class="streak-item longest">
+          <span class="streak-value">{{ longestStreak }}</span> longest streak
+        </span>
+        <span class="streak-item total">
+          <span class="streak-value">{{ totalReadingDays }}</span> total days
+        </span>
+        <span class="streak-item consistency">
+          <span class="streak-value">{{ consistencyPercent }}%</span> consistency
+        </span>
+      </div>
+      @if (milestones.length > 0) {
+        <div class="milestones">
+          @for (milestone of milestones; track milestone.label) {
+            <span class="milestone" [class.unlocked]="milestone.unlocked" [class.locked]="!milestone.unlocked">
+              <span class="milestone-icon">{{ milestone.icon }}</span>
+              <span class="milestone-label">{{ milestone.label }}</span>
+            </span>
+          }
+        </div>
+      }
+    </div>
+  }
 </div>

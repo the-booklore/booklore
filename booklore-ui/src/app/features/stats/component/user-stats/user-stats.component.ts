@@ -20,10 +20,8 @@ import {ReadingProgressChartComponent} from './charts/reading-progress-chart/rea
 import {ReadStatusChartComponent} from './charts/read-status-chart/read-status-chart.component';
 import {RatingTasteChartComponent} from './charts/rating-taste-chart/rating-taste-chart.component';
 import {SeriesProgressChartComponent} from './charts/series-progress-chart/series-progress-chart.component';
-import {ReadingBacklogChartComponent} from './charts/reading-backlog-chart/reading-backlog-chart.component';
 import {PageTurnerChartComponent} from './charts/page-turner-chart/page-turner-chart.component';
 import {CompletionRaceChartComponent} from './charts/completion-race-chart/completion-race-chart.component';
-import {ReadingStreaksChartComponent} from './charts/reading-streaks-chart/reading-streaks-chart.component';
 import {ReadingSurvivalChartComponent} from './charts/reading-survival-chart/reading-survival-chart.component';
 import {ReadingClockChartComponent} from './charts/reading-clock-chart/reading-clock-chart.component';
 import {BookLengthChartComponent} from './charts/book-length-chart/book-length-chart.component';
@@ -50,11 +48,9 @@ import {UserChartConfig, UserChartConfigService} from './service/user-chart-conf
     ReadingProgressChartComponent,
     ReadStatusChartComponent,
     RatingTasteChartComponent,
-    ReadingBacklogChartComponent,
     SeriesProgressChartComponent,
     PageTurnerChartComponent,
     CompletionRaceChartComponent,
-    ReadingStreaksChartComponent,
     ReadingSurvivalChartComponent,
     ReadingClockChartComponent,
     BookLengthChartComponent
