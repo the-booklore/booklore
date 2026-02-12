@@ -4,6 +4,11 @@
       <h3>
         <i class="pi pi-chart-scatter rating-taste-icon"></i>
         Rating Taste Comparison
+        <i class="pi pi-question-circle chart-info-icon"
+           pTooltip="Each dot is a book plotted by its external rating (X-axis, e.g. Goodreads/Amazon) versus your personal rating (Y-axis). Books on the diagonal mean you agree with the crowd. Above the line means you rated higher; below means you rated lower. Quadrants show your taste patterns."
+           tooltipPosition="bottom"
+           tooltipStyleClass="chart-info-tooltip"
+           [appendTo]="'body'"></i>
       </h3>
       <p class="chart-description">Compare your personal ratings against external ratings (Goodreads, Amazon, etc.)</p>
     </div>
@@ -68,14 +73,6 @@
           </div>
         }
       </div>
-    </div>
-  }
-
-  @if (totalRatedBooks === 0) {
-    <div class="no-data-message">
-      <i class="pi pi-info-circle"></i>
-      <p>No books with both personal and external ratings found.</p>
-      <small>Rate your books and ensure they have external ratings from Goodreads, Amazon, etc.</small>
     </div>
   }
 </div>

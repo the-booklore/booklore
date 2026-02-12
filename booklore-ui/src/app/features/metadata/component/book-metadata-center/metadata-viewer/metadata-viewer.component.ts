@@ -26,6 +26,7 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
+import {LibraryService} from '../../../../book/service/library.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS, fileSizeRanges, matchScoreRanges, pageCountRanges} from '../../../../book/components/book-browser/book-filter/book-filter.config';
@@ -50,6 +51,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private originalRecommendedBooks: BookRecommendation[] = [];
 
   private readonly t = inject(TranslocoService);
+  private libraryService = inject(LibraryService);
   private bookDialogHelperService = inject(BookDialogHelperService)
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
@@ -103,13 +105,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       map((book): MenuItem[] => {
         const items: MenuItem[] = [];
         const primaryType = book.primaryFile?.bookType;
-        if (primaryType === 'PDF') {
-          items.push({
-            label: this.t.translate('metadata.viewer.menuStreamingReader'),
-            icon: 'pi pi-play',
-            command: () => this.read(book.id, 'pdf-streaming')
-          });
-        } else if (primaryType === 'EPUB') {
+        if (primaryType === 'EPUB') {
           items.push({
             label: this.t.translate('metadata.viewer.menuStreamingReader'),
             icon: 'pi pi-play',
@@ -131,8 +127,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           }
 
           uniqueAltTypes.forEach(formatType => {
-            if (formatType === 'PDF' || formatType === 'EPUB') {
-              // For PDF/EPUB, offer both standard and streaming readers
+            if (formatType === 'EPUB') {
+              // For EPUB, offer both standard and streaming readers
               items.push({
                 label: formatType,
                 icon: this.getFileIcon(formatType),
@@ -145,7 +141,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   {
                     label: this.t.translate('metadata.viewer.menuStreamingReader'),
                     icon: 'pi pi-play',
-                    command: () => this.read(book.id, formatType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', formatType)
+                    command: () => this.read(book.id, 'epub-streaming', formatType)
                   }
                 ]
               });
@@ -267,8 +263,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             }
 
             // Show "Attach to Another Book" for single-file books (detached books) - not for physical books
+            // Hide in single-format libraries where attaching provides no cross-format benefit
             const isSingleFileBook = hasFiles && !book.alternativeFormats?.length;
-            if (isSingleFileBook && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin)) {
+            const library = this.libraryService.findLibraryById(book.libraryId);
+            const isMultiFormatLibrary = !library?.allowedFormats?.length || library.allowedFormats.length > 1;
+            if (isSingleFileBook && isMultiFormatLibrary && (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin)) {
               items.push({
                 label: this.t.translate('metadata.viewer.menuAttachToAnotherBook'),
                 icon: 'pi pi-link',
@@ -469,7 +468,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.isExpanded = !this.isExpanded;
   }
 
-  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming", bookType?: BookType): void {
+  read(bookId: number | undefined, reader?: "epub-streaming", bookType?: BookType): void {
     if (bookId) this.bookService.readBook(bookId, reader, bookType);
   }
 

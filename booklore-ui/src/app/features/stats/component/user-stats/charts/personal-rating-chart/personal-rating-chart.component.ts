@@ -4,6 +4,7 @@ import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
+import {Tooltip} from 'primeng/tooltip';
 import {BookService} from '../../../../../book/service/book.service';
 import {BookState} from '../../../../../book/model/state/book-state.model';
 import {Book} from '../../../../../book/model/book.model';
@@ -52,7 +53,7 @@ type RatingChartData = ChartData<'bar', number[], string>;
 @Component({
   selector: 'app-personal-rating-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './personal-rating-chart.component.html',
   styleUrls: ['./personal-rating-chart.component.scss']
 })

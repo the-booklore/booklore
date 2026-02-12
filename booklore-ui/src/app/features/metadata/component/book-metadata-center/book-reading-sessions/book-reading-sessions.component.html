@@ -12,17 +12,13 @@
   } @else {
     <p-table
       [value]="sessions"
-      [lazy]="true"
       [paginator]="true"
       [rows]="rows"
-      [totalRecords]="totalRecords"
       [loading]="loading"
-      [first]="first"
-      (onLazyLoad)="onPageChange($event)"
       [showCurrentPageReport]="true"
-      [currentPageReportTemplate]="t('pageReport')"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} sessions"
       class="p-datatable-sm">
-      <ng-template #header>
+      <ng-template pTemplate="header">
         <tr>
           <th>{{ t('headerSession') }}</th>
           <th>{{ t('headerType') }}</th>
@@ -32,7 +28,7 @@
           <th>{{ t('headerLocation') }}</th>
         </tr>
       </ng-template>
-      <ng-template #body let-session>
+      <ng-template pTemplate="body" let-session>
         <tr>
           <td>
             <div class="session-time">

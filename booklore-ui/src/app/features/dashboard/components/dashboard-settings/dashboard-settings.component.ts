@@ -93,17 +93,21 @@ export class DashboardSettingsComponent implements OnInit {
 
     this.sortFieldOptions = [
       {label: t('sortFields.title'), value: 'title'},
-      {label: t('sortFields.titleSeries'), value: 'titleSeries'},
       {label: t('sortFields.fileName'), value: 'fileName'},
       {label: t('sortFields.filePath'), value: 'filePath'},
       {label: t('sortFields.addedOn'), value: 'addedOn'},
       {label: t('sortFields.author'), value: 'author'},
       {label: t('sortFields.authorSurnameVorname'), value: 'authorSurnameVorname'},
-      {label: t('sortFields.authorSeries'), value: 'authorSeries'},
+      {label: t('sortFields.seriesName'), value: 'seriesName'},
+      {label: t('sortFields.seriesNumber'), value: 'seriesNumber'},
       {label: t('sortFields.personalRating'), value: 'personalRating'},
       {label: t('sortFields.publisher'), value: 'publisher'},
       {label: t('sortFields.publishedDate'), value: 'publishedDate'},
       {label: t('sortFields.lastReadTime'), value: 'lastReadTime'},
+      {label: t('sortFields.readStatus'), value: 'readStatus'},
+      {label: t('sortFields.dateFinished'), value: 'dateFinished'},
+      {label: t('sortFields.readingProgress'), value: 'readingProgress'},
+      {label: t('sortFields.bookType'), value: 'bookType'},
       {label: t('sortFields.pageCount'), value: 'pageCount'}
     ];
 

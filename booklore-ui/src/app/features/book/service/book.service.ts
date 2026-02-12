@@ -270,7 +270,7 @@ export class BookService {
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming', explicitBookType?: BookType): void {
+  readBook(bookId: number, reader?: 'epub-streaming', explicitBookType?: BookType): void {
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -289,7 +289,7 @@ export class BookService {
 
     switch (bookType) {
       case 'PDF':
-        baseUrl = reader === 'pdf-streaming' ? 'cbx-reader' : 'pdf-reader';
+        baseUrl = 'pdf-reader';
         break;
 
       case 'EPUB':

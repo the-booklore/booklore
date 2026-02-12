@@ -9,9 +9,7 @@ import {
   CbxPageSpread,
   CbxBackgroundColor,
   CbxReadingDirection,
-  CbxSlideshowInterval,
-  PdfPageViewMode,
-  PdfPageSpread
+  CbxSlideshowInterval
 } from '../../../../settings/user-management/user.service';
 import {ReaderIconComponent, ReaderIconName} from '../../../ebook-reader/shared/icon.component';
 import {CbxQuickSettingsService, CbxQuickSettingsState} from './cbx-quick-settings.service';
@@ -85,7 +83,7 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
   }
 
   get isTwoPageView(): boolean {
-    return this.state.pageViewMode === CbxPageViewMode.TWO_PAGE || this.state.pageViewMode === PdfPageViewMode.TWO_PAGE;
+    return this.state.pageViewMode === CbxPageViewMode.TWO_PAGE;
   }
 
   get isPaginated(): boolean {

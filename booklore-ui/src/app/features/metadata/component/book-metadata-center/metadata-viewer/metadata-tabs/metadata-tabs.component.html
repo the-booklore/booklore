@@ -145,26 +145,7 @@
                       <span class="file-size">{{ getFileSizeInMB(book.primaryFile) }}</span>
                     </div>
                     <div class="file-actions">
-                      @if (book.primaryFile.bookType === 'PDF') {
-                        <p-button
-                          icon="pi pi-book"
-                          size="small"
-                          text
-                          severity="primary"
-                          [pTooltip]="t('readTooltip')"
-                          tooltipPosition="top"
-                          (onClick)="read(book.id)">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-play"
-                          size="small"
-                          text
-                          severity="info"
-                          [pTooltip]="t('streamingReaderTooltip')"
-                          tooltipPosition="top"
-                          (onClick)="read(book.id, 'pdf-streaming')">
-                        </p-button>
-                      } @else if (book.primaryFile.bookType === 'EPUB') {
+                      @if (book.primaryFile.bookType === 'EPUB') {
                         <p-button
                           icon="pi pi-book"
                           size="small"
@@ -183,7 +164,7 @@
                           tooltipPosition="top"
                           (onClick)="read(book.id, 'epub-streaming')">
                         </p-button>
-                      } @else if (book.primaryFile.bookType && ['FB2', 'MOBI', 'AZW3', 'CBX'].includes(book.primaryFile.bookType)) {
+                      } @else if (book.primaryFile.bookType && ['PDF', 'FB2', 'MOBI', 'AZW3', 'CBX'].includes(book.primaryFile.bookType)) {
                         <p-button
                           icon="pi pi-book"
                           size="small"
@@ -241,7 +222,7 @@
                         <span class="file-size">{{ getFileSizeInMB(format) }}</span>
                       </div>
                       <div class="file-actions">
-                        @if (format.bookType === 'PDF' || format.bookType === 'EPUB') {
+                        @if (format.bookType === 'EPUB') {
                           <p-button
                             icon="pi pi-book"
                             size="small"
@@ -258,9 +239,9 @@
                             severity="info"
                             [pTooltip]="t('streamingReaderTooltip')"
                             tooltipPosition="top"
-                            (onClick)="read(book.id, format.bookType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', format.bookType)">
+                            (onClick)="read(book.id, 'epub-streaming', format.bookType)">
                           </p-button>
-                        } @else if (format.bookType && ['FB2', 'MOBI', 'AZW3', 'CBX'].includes(format.bookType)) {
+                        } @else if (format.bookType && ['PDF', 'FB2', 'MOBI', 'AZW3', 'CBX'].includes(format.bookType)) {
                           <p-button
                             icon="pi pi-book"
                             size="small"

@@ -41,17 +41,21 @@
     },
     "sortFields": {
       "title": "Title",
-      "titleSeries": "Title + Series",
       "fileName": "File Name",
       "filePath": "File Path",
       "addedOn": "Date Added",
       "author": "Author",
       "authorSurnameVorname": "Author (Surname)",
-      "authorSeries": "Author + Series",
+      "seriesName": "Series Name",
+      "seriesNumber": "Series Number",
       "personalRating": "Personal Rating",
       "publisher": "Publisher",
       "publishedDate": "Published Date",
       "lastReadTime": "Last Read",
+      "readStatus": "Read Status",
+      "dateFinished": "Date Finished",
+      "readingProgress": "Reading Progress",
+      "bookType": "Book Type",
       "pageCount": "Pages"
     },
     "sortDirections": {

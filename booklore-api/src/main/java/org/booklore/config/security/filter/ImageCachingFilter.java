@@ -18,7 +18,7 @@ public class ImageCachingFilter extends OncePerRequestFilter {
         String uri = request.getRequestURI();
         if (uri.startsWith("/api/v1/media/book/") &&
             (uri.contains("/cover") || uri.contains("/thumbnail") || uri.contains("/backup-cover") ||
-             uri.contains("/pdf/pages/") || uri.contains("/cbx/pages/"))) {
+             uri.contains("/cbx/pages/"))) {
             response.setHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=3600");
             response.setHeader(HttpHeaders.EXPIRES, String.valueOf(System.currentTimeMillis() + 3600_000));
         }

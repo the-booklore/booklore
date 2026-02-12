@@ -21,6 +21,7 @@ export type FilterType =
   | 'shelfStatus' | 'tag' | 'publishedDate' | 'fileSize' | 'amazonRating'
   | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood'
   | 'ageRating' | 'contentRating'
+  | 'narrator'
   | 'comicCharacter' | 'comicTeam' | 'comicLocation' | 'comicCreator';
 
 export type SortMode = 'count' | 'sortIndex';
@@ -158,6 +159,7 @@ export const FILTER_LABELS: Readonly<Record<FilterType, string>> = {
   mood: 'Mood',
   ageRating: 'Age Rating',
   contentRating: 'Content Rating',
+  narrator: 'Narrator',
   comicCharacter: 'Comic Character',
   comicTeam: 'Comic Team',
   comicLocation: 'Comic Location',
@@ -236,6 +238,7 @@ export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, 
     const label = CONTENT_RATING_LABELS[rating] ?? rating;
     return [{id: rating, name: label}];
   },
+  narrator: (book) => extractSingleString(book.metadata?.narrator),
   comicCharacter: (book) => extractStringsAsFilters(book.metadata?.comicMetadata?.characters),
   comicTeam: (book) => extractStringsAsFilters(book.metadata?.comicMetadata?.teams),
   comicLocation: (book) => extractStringsAsFilters(book.metadata?.comicMetadata?.locations),
@@ -288,6 +291,7 @@ export const FILTER_CONFIGS: Readonly<Record<Exclude<FilterType, 'library'>, Omi
   mood: {label: 'Mood', sortMode: 'count'},
   ageRating: {label: 'Age Rating', sortMode: 'sortIndex', isNumericId: true},
   contentRating: {label: 'Content Rating', sortMode: 'count'},
+  narrator: {label: 'Narrator', sortMode: 'count'},
   comicCharacter: {label: 'Comic Character', sortMode: 'count'},
   comicTeam: {label: 'Comic Team', sortMode: 'count'},
   comicLocation: {label: 'Comic Location', sortMode: 'count'},

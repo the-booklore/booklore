@@ -1,0 +1,43 @@
+<div class="book-length-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-book book-length-icon"></i>
+        Book Length Sweet Spot
+        <i class="pi pi-question-circle chart-info-icon"
+           pTooltip="Each dot is a book you've rated, plotted by its page count (X-axis) and your personal rating (Y-axis). Colors indicate read status: green = read, blue = reading, red = abandoned. The trend line shows whether you tend to rate longer or shorter books higher. The 'sweet spot' is the page-count range where your average rating is highest."
+           tooltipPosition="bottom"
+           tooltipStyleClass="chart-info-tooltip"
+           [appendTo]="'body'"></i>
+      </h3>
+      <p class="chart-description">How book length relates to your personal ratings</p>
+    </div>
+    @if (totalRatedBooks > 0) {
+      <div class="stats-badge">
+        <span class="badge-value">{{ totalRatedBooks }}</span>
+        <span class="badge-label">books analyzed</span>
+      </div>
+    }
+  </div>
+
+  @if (totalRatedBooks > 0) {
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-value-sm">{{ sweetSpot }}</span>
+        <span class="stat-label">Sweet Spot</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value-sm">{{ highestRatedLength }}</span>
+        <span class="stat-label">Highest Rated</span>
+      </div>
+    </div>
+  }
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>
