@@ -474,5 +474,54 @@ public class BookService {
                 .collect(Collectors.toSet());
     }
 
+    public List<org.booklore.model.dto.response.BookSearchResult> fuzzySearchByTitle(String searchTitle) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        boolean isAdmin = user.getPermissions().isAdmin();
+
+        List<BookEntity> allBooks = isAdmin
+                ? bookRepository.findAllWithMetadata()
+                : bookRepository.findAllWithMetadataByLibraryIds(
+                user.getAssignedLibraries().stream()
+                        .map(Library::getId)
+                        .collect(Collectors.toList())
+        );
+
+        org.apache.commons.text.similarity.FuzzyScore fuzzyScore = 
+                new org.apache.commons.text.similarity.FuzzyScore(java.util.Locale.ENGLISH);
+
+        return allBooks.stream()
+                .map(book -> {
+                    String bookTitle = book.getMetadata() != null && book.getMetadata().getTitle() != null
+                            ? book.getMetadata().getTitle()
+                            : (book.getPrimaryBookFile() != null ? book.getPrimaryBookFile().getFileName() : "");
+                    
+                    int score = fuzzyScore.fuzzyScore(bookTitle.toLowerCase(), searchTitle.toLowerCase());
+                    int maxScore = Math.max(
+                            fuzzyScore.fuzzyScore(bookTitle, bookTitle),
+                            fuzzyScore.fuzzyScore(searchTitle, searchTitle)
+                    );
+                    
+                    double normalizedScore = maxScore > 0 ? (double) score / maxScore : 0.0;
+                    
+                    String hash = book.getPrimaryBookFile() != null 
+                            ? book.getPrimaryBookFile().getCurrentHash() 
+                            : null;
+                    
+                    String coverHash = book.getBookCoverHash();
+                    
+                    return org.booklore.model.dto.response.BookSearchResult.builder()
+                            .id(book.getId())
+                            .title(bookTitle)
+                            .hash(hash)
+                            .coverHash(coverHash)
+                            .matchScore(normalizedScore)
+                            .build();
+                })
+                .filter(result -> result.getMatchScore() > 0.0)
+                .sorted((a, b) -> Double.compare(b.getMatchScore(), a.getMatchScore()))
+                .limit(50)
+                .collect(Collectors.toList());
+    }
+
 }
 

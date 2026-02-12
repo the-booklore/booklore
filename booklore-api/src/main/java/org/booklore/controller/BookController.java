@@ -275,4 +275,12 @@ public class BookController {
             @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
         return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
     }
+
+    @Operation(summary = "Search books by title", description = "Search for books using fuzzy title matching. Returns matching books with cover, title, and hash.")
+    @ApiResponse(responseCode = "200", description = "Search results returned successfully")
+    @GetMapping("/search")
+    public ResponseEntity<List<org.booklore.model.dto.response.BookSearchResult>> searchBooksByTitle(
+            @Parameter(description = "Title to search for") @RequestParam String title) {
+        return ResponseEntity.ok(bookService.fuzzySearchByTitle(title));
+    }
 }
