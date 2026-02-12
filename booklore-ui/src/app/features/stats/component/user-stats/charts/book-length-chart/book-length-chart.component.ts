@@ -1,6 +1,7 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
+import {Tooltip} from 'primeng/tooltip';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData, ScatterDataPoint} from 'chart.js';
@@ -34,7 +35,7 @@ const PAGE_RANGES = [
 @Component({
   selector: 'app-book-length-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './book-length-chart.component.html',
   styleUrls: ['./book-length-chart.component.scss']
 })

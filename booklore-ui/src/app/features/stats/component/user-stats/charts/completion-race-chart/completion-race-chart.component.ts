@@ -1,6 +1,7 @@
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
+import {Tooltip} from 'primeng/tooltip';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
@@ -24,7 +25,7 @@ const LINE_COLORS = [
 @Component({
   selector: 'app-completion-race-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './completion-race-chart.component.html',
   styleUrls: ['./completion-race-chart.component.scss']
 })

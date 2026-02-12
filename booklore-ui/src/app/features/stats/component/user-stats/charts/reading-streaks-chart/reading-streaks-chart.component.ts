@@ -1,5 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {Tooltip} from 'primeng/tooltip';
 import {EMPTY, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {ReadingSessionHeatmapResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
@@ -21,7 +22,7 @@ interface Milestone {
 @Component({
   selector: 'app-reading-streaks-chart',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, Tooltip],
   templateUrl: './reading-streaks-chart.component.html',
   styleUrls: ['./reading-streaks-chart.component.scss']
 })
