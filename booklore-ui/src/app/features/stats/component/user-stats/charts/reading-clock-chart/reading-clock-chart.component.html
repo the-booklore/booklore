@@ -1,0 +1,44 @@
+<div class="reading-clock-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-clock reading-clock-icon"></i>
+        Reading Clock
+      </h3>
+      <p class="chart-description">When do you read throughout the day</p>
+    </div>
+  </div>
+
+  @if (hasData) {
+    <div class="stats-row">
+      <div class="stat-card peak">
+        <span class="stat-value">{{ peakHour }}</span>
+        <span class="stat-label">Peak Hour</span>
+      </div>
+      <div class="stat-card total">
+        <span class="stat-value">{{ totalHoursRead }}h</span>
+        <span class="stat-label">Total Read</span>
+      </div>
+      <div class="stat-card type">
+        <span class="stat-value-sm">{{ readerType }}</span>
+        <span class="stat-label">Reader Type</span>
+      </div>
+    </div>
+  }
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+
+  @if (!hasData) {
+    <div class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <p>No reading session data found.</p>
+      <small>Track your reading sessions to see your reading clock.</small>
+    </div>
+  }
+</div>

@@ -6,6 +6,7 @@ import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.ReadingSessionRequest;
 import org.booklore.model.dto.PageTurnerSessionDto;
 import org.booklore.model.dto.response.BookCompletionHeatmapResponse;
+import org.booklore.model.dto.response.CompletionRaceResponse;
 import org.booklore.model.dto.response.CompletionTimelineResponse;
 import org.booklore.model.dto.response.FavoriteReadingDaysResponse;
 import org.booklore.model.dto.response.GenreStatisticsResponse;
@@ -370,6 +371,36 @@ public class ReadingSessionService {
                             .build();
                 })
                 .sorted(Comparator.comparingInt(PageTurnerScoreResponse::getGripScore).reversed())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CompletionRaceResponse> getCompletionRace(int year) {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        return readingSessionRepository.findCompletionRaceSessionsByUserAndYear(userId, year)
+                .stream()
+                .map(dto -> CompletionRaceResponse.builder()
+                        .bookId(dto.getBookId())
+                        .bookTitle(dto.getBookTitle())
+                        .sessionDate(dto.getSessionDate())
+                        .endProgress(dto.getEndProgress())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReadingSessionHeatmapResponse> getReadingDates() {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        return readingSessionRepository.findAllSessionCountsByUser(userId)
+                .stream()
+                .map(dto -> ReadingSessionHeatmapResponse.builder()
+                        .date(dto.getDate())
+                        .count(dto.getCount())
+                        .build())
                 .collect(Collectors.toList());
     }
 

@@ -116,6 +116,21 @@
           @case ('page-turner') {
             <app-page-turner-chart></app-page-turner-chart>
           }
+          @case ('completion-race') {
+            <app-completion-race-chart [initialYear]="currentYear"></app-completion-race-chart>
+          }
+          @case ('reading-streaks') {
+            <app-reading-streaks-chart></app-reading-streaks-chart>
+          }
+          @case ('reading-survival') {
+            <app-reading-survival-chart></app-reading-survival-chart>
+          }
+          @case ('reading-clock') {
+            <app-reading-clock-chart></app-reading-clock-chart>
+          }
+          @case ('book-length') {
+            <app-book-length-chart></app-book-length-chart>
+          }
         }
       </div>
     }

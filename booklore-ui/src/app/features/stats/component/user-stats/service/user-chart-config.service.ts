@@ -16,6 +16,11 @@ import {ReadingDNAChartComponent} from '../charts/reading-dna-chart/reading-dna-
 import {ReadingHabitsChartComponent} from '../charts/reading-habits-chart/reading-habits-chart.component';
 import {ReadingBacklogChartComponent} from '../charts/reading-backlog-chart/reading-backlog-chart.component';
 import {PageTurnerChartComponent} from '../charts/page-turner-chart/page-turner-chart.component';
+import {CompletionRaceChartComponent} from '../charts/completion-race-chart/completion-race-chart.component';
+import {ReadingStreaksChartComponent} from '../charts/reading-streaks-chart/reading-streaks-chart.component';
+import {ReadingSurvivalChartComponent} from '../charts/reading-survival-chart/reading-survival-chart.component';
+import {ReadingClockChartComponent} from '../charts/reading-clock-chart/reading-clock-chart.component';
+import {BookLengthChartComponent} from '../charts/book-length-chart/book-length-chart.component';
 
 export interface UserChartConfig {
   id: string;
@@ -49,6 +54,11 @@ export class UserChartConfigService {
     {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 13},
     {id: 'reading-backlog', title: 'Reading Backlog Analysis', component: ReadingBacklogChartComponent, enabled: true, sizeClass: 'chart-full', order: 14},
     {id: 'page-turner', title: 'Page Turner Score', component: PageTurnerChartComponent, enabled: true, sizeClass: 'chart-medium', order: 15},
+    {id: 'completion-race', title: 'Reading Completion Race', component: CompletionRaceChartComponent, enabled: true, sizeClass: 'chart-full', order: 16},
+    {id: 'reading-streaks', title: 'Reading Streaks', component: ReadingStreaksChartComponent, enabled: true, sizeClass: 'chart-full', order: 17},
+    {id: 'reading-survival', title: 'Reading Survival Curve', component: ReadingSurvivalChartComponent, enabled: true, sizeClass: 'chart-medium', order: 18},
+    {id: 'reading-clock', title: 'Reading Clock', component: ReadingClockChartComponent, enabled: true, sizeClass: 'chart-medium', order: 19},
+    {id: 'book-length', title: 'Book Length Sweet Spot', component: BookLengthChartComponent, enabled: true, sizeClass: 'chart-medium', order: 20},
   ];
 
   private chartsSubject = new BehaviorSubject<UserChartConfig[]>(this.loadChartConfig());

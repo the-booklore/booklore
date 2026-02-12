@@ -63,6 +63,13 @@ export interface PageTurnerScoreResponse {
   finishBurst: boolean;
 }
 
+export interface CompletionRaceResponse {
+  bookId: number;
+  bookTitle: string;
+  sessionDate: string;
+  endProgress: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -130,6 +137,19 @@ export class UserStatsService {
   getPageTurnerScores(): Observable<PageTurnerScoreResponse[]> {
     return this.http.get<PageTurnerScoreResponse[]>(
       `${this.readingSessionsUrl}/page-turner-scores`
+    );
+  }
+
+  getCompletionRace(year: number): Observable<CompletionRaceResponse[]> {
+    return this.http.get<CompletionRaceResponse[]>(
+      `${this.readingSessionsUrl}/completion-race`,
+      {params: {year: year.toString()}}
+    );
+  }
+
+  getReadingDates(): Observable<ReadingSessionHeatmapResponse[]> {
+    return this.http.get<ReadingSessionHeatmapResponse[]>(
+      `${this.readingSessionsUrl}/reading-dates`
     );
   }
 }

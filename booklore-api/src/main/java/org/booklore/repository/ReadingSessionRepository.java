@@ -1,6 +1,7 @@
 package org.booklore.repository;
 
 import org.booklore.model.dto.*;
+import org.booklore.model.dto.CompletionRaceSessionDto;
 import org.booklore.model.dto.PageTurnerSessionDto;
 
 import org.booklore.model.entity.ReadingSessionEntity;
@@ -158,4 +159,32 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             ORDER BY b.id, rs.startTime ASC
             """)
     List<PageTurnerSessionDto> findPageTurnerSessionsByUser(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT
+                b.id as bookId,
+                COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
+                rs.startTime as sessionDate,
+                rs.endProgress as endProgress
+            FROM ReadingSessionEntity rs
+            JOIN rs.book b
+            JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
+            WHERE rs.user.id = :userId
+            AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
+            AND YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) = :year
+            AND rs.endProgress IS NOT NULL
+            ORDER BY b.id, rs.startTime ASC
+            """)
+    List<CompletionRaceSessionDto> findCompletionRaceSessionsByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year);
+
+    @Query("""
+            SELECT CAST(rs.startTime AS LocalDate) as date, COUNT(rs) as count
+            FROM ReadingSessionEntity rs
+            WHERE rs.user.id = :userId
+            GROUP BY CAST(rs.startTime AS LocalDate)
+            ORDER BY date
+            """)
+    List<ReadingSessionCountDto> findAllSessionCountsByUser(@Param("userId") Long userId);
 }
