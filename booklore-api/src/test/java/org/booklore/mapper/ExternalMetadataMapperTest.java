@@ -188,6 +188,88 @@ class ExternalMetadataMapperTest {
     }
 
     @Nested
+    @DisplayName("Rating Normalization (0-1 external → 0-5 internal)")
+    class RatingNormalizationTests {
+
+        @Test
+        @DisplayName("0.0 maps to 0.0")
+        void rating_zero_mapsToZero() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(0.0).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isEqualTo(0.0);
+        }
+
+        @Test
+        @DisplayName("1.0 maps to 5.0")
+        void rating_one_mapsToFive() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(1.0).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isEqualTo(5.0);
+        }
+
+        @Test
+        @DisplayName("0.5 maps to 2.5")
+        void rating_half_mapsToTwoPointFive() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(0.5).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isEqualTo(2.5);
+        }
+
+        @Test
+        @DisplayName("0.93 maps to 4.65")
+        void rating_fractional_roundsToTwoDecimalPlaces() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(0.93).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isEqualTo(4.65);
+        }
+
+        @Test
+        @DisplayName("Values above 1.0 are clamped to 5.0")
+        void rating_aboveOne_clampedToFive() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(1.5).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isEqualTo(5.0);
+        }
+
+        @Test
+        @DisplayName("Negative values are clamped to 0.0")
+        void rating_negative_clampedToZero() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(-0.3).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isEqualTo(0.0);
+        }
+
+        @Test
+        @DisplayName("Null rating stays null")
+        void rating_null_staysNull() {
+            ExternalBookMetadata external = ExternalBookMetadata.builder()
+                    .title("Test").rating(null).build();
+
+            BookMetadata result = mapper.toBookMetadata(external, null);
+
+            assertThat(result.getRating()).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("Metadata Field Mapping")
     class MetadataFieldMappingTests {
 
@@ -206,7 +288,7 @@ class ExternalMetadataMapperTest {
                     .isbn10("0441172717")
                     .asin("B00B7NPRY8")
                     .coverUrl("https://example.com/cover.jpg")
-                    .rating(4.5)
+                    .rating(0.9)
                     .authors(List.of("Frank Herbert"))
                     .categories(List.of("Science Fiction", "Fantasy"))
                     .moods(List.of("Epic", "Atmospheric"))
@@ -224,7 +306,7 @@ class ExternalMetadataMapperTest {
             assertThat(result.getIsbn10()).isEqualTo("0441172717");
             assertThat(result.getAsin()).isEqualTo("B00B7NPRY8");
             assertThat(result.getThumbnailUrl()).isEqualTo("https://example.com/cover.jpg");
-            assertThat(result.getRating()).isEqualTo(4.5);
+            assertThat(result.getRating()).isEqualTo(4.5); // 0.9 * 5 = 4.5
             assertThat(result.getAuthors()).containsExactly("Frank Herbert");
             assertThat(result.getCategories()).containsExactlyInAnyOrder("Science Fiction", "Fantasy");
             assertThat(result.getMoods()).containsExactlyInAnyOrder("Epic", "Atmospheric");

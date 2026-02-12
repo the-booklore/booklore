@@ -44,7 +44,7 @@ public class ExternalMetadataMapper {
                 .isbn10(external.getIsbn10())
                 .asin(external.getAsin())
                 .thumbnailUrl(external.getCoverUrl())
-                .rating(external.getRating())
+                .rating(normalizeRating(external.getRating()))
                 .externalUrl(null);
 
         if (external.getAuthors() != null) {
@@ -155,6 +155,18 @@ public class ExternalMetadataMapper {
             }
         }
         return maxLen;
+    }
+
+    /**
+     * Converts a normalized 0.0–1.0 rating to booklore's internal 0–5 scale.
+     * Clamps values outside the expected range. Returns null if input is null.
+     */
+    private Double normalizeRating(Double rating) {
+        if (rating == null) {
+            return null;
+        }
+        double clamped = Math.max(0.0, Math.min(1.0, rating));
+        return Math.round(clamped * 5.0 * 100.0) / 100.0;
     }
 
     /**
