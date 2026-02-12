@@ -20,14 +20,14 @@ include:
     inputs:
       trivy-disabled: true
       hadolint-disabled: true
-      cosign-strategy: "onrelease"
-      prod-publish-strategy: "none"
+      #cosign-strategy: "onrelease"
+      #prod-publish-strategy: "none"
       #build-tool: "dind"
-      build-args: "--platform linux/amd64,linux/arm64"
+      build-args: "--platform linux/amd64,linux/arm64 --build-arg APP_VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_REF_NAME} --build-arg APP_REVISION=$CI_COMMIT_SHA"
 
       # Optional: publish extra tags for releases (e.g., also tag "latest" on semver tags)
       # release-extra-tags: "latest"
-
+# NEEDS GITLAB_TOKEN variable
 # =========================================================
 # BACKEND TESTS (Java 25 + Gradle)
 # =========================================================
