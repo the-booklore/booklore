@@ -1,27 +1,45 @@
+# Use v-prefix ONLY if your existing tags are like v1.18.0
+# If your tags are 1.18.0, change this to: "${version}"
+tagFormat: "v${version}"
+
+branches:
+  # Only create releases from main
+  - name: main
+
 plugins:
   - "@semantic-release/commit-analyzer"
   - "@semantic-release/release-notes-generator"
   - "@semantic-release/gitlab"
-  # generates the CHANGELOG.md
+
+  # Generate CHANGELOG.md
   - "@semantic-release/changelog"
-  # emulates bumpversion (replaces version in pyproject.toml)
+
+  # Replace versions in files you actually own/need
   - - semantic-release-replace-plugin
     - replacements:
+        # Optional (recommended for BookLore): bump UI package.json version
         - files:
-            - pyproject.toml
+            - booklore-ui/package.json
           from:
-            - ^version *= *"\d+\.\d+\.\d+"
-          to: 'version = "${nextRelease.version}"'
+            - '"version"\s*:\s*"\d+\.\d+\.\d+"'
+          to: '"version": "${nextRelease.version}"'
           countMatches: true
-  # git commit/push modified files (CHANGELOG.md & pyproject.toml)
+
+        # Optional (recommended): bump Gradle version if present (choose the right file)
+        # If you have booklore-api/gradle.properties with version=...
+        - files:
+            - booklore-api/gradle.properties
+          from:
+            - '^version\s*=.*$'
+          to: 'version=${nextRelease.version}'
+          countMatches: false   # set to true only if you're sure the line exists
+
+  # Commit back generated/updated files.
+  # IMPORTANT: do NOT use [skip ci] here or you may skip tag pipelines.
   - - "@semantic-release/git"
     - assets:
-        - "*.md"
-        - "*.toml"
-      # the commit MUST trigger a pipeline on tag (to perform publish jobs)
-      # can be skipped on prod branch
-      message: "chore(semantic-release): release ${nextRelease.version} - [skip ci on prod]"
-branches:
-  - main
-  - master
-tagFormat: "${version}"
+        - "CHANGELOG.md"
+        - "pyproject.toml"
+        - "booklore-ui/package.json"
+        - "booklore-api/gradle.properties"
+      message: "chore(release): ${nextRelease.version} [skip ci on prod]"
