@@ -131,7 +131,7 @@ public class HardcoverParser implements BookParser {
         return results;
     }
 
-    private boolean filterByAuthor(GraphQLResponse.Document doc, String searchAuthor, 
+    private boolean filterByAuthor(GraphQLResponse.Document doc, String searchAuthor,
                                    boolean searchByIsbn, FuzzyScore fuzzyScore) {
         // Skip author filtering for ISBN searches or when no author provided
         if (searchByIsbn || searchAuthor.isBlank()) {
@@ -152,7 +152,7 @@ public class HardcoverParser implements BookParser {
             for (String query : searchAuthorTokens) {
                 int score = fuzzyScore.fuzzyScore(actual, query);
                 int maxScore = Math.max(
-                        fuzzyScore.fuzzyScore(query, query), 
+                        fuzzyScore.fuzzyScore(query, query),
                         fuzzyScore.fuzzyScore(actual, actual)
                 );
                 double similarity = maxScore > 0 ? (double) score / maxScore : 0;
@@ -267,7 +267,7 @@ public class HardcoverParser implements BookParser {
 
         GraphQLResponse.CachedTags cachedTags = book.getCachedTags();
 
-        if (cachedTags!= null && cachedTags.getMood() != null && !cachedTags.getMood().isEmpty()) {
+        if (cachedTags != null && cachedTags.getMood() != null && !cachedTags.getMood().isEmpty()) {
             Set<String> basicFilteredMoods = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags.getMood());
             metadata.setMoods(basicFilteredMoods.stream()
                     .map(WordUtils::capitalizeFully)
@@ -275,7 +275,7 @@ public class HardcoverParser implements BookParser {
         }
 
         if (cachedTags != null && cachedTags.getGenre() != null && !cachedTags.getGenre().isEmpty()) {
-          Set<String> filteredGenres = HardcoverMoodFilter.filterGenresWithCounts(cachedTags.getGenre());
+            Set<String> filteredGenres = HardcoverMoodFilter.filterGenresWithCounts(cachedTags.getGenre());
             metadata.setCategories(filteredGenres.stream()
                     .map(WordUtils::capitalizeFully)
                     .collect(Collectors.toSet()));
@@ -300,7 +300,7 @@ public class HardcoverParser implements BookParser {
 
         metadata.setThumbnailUrl(edition.getImage() != null ? edition.getImage().getUrl() : null);
         metadata.setProvider(MetadataProvider.Hardcover);
-        
+
         return metadata;
     }
 
@@ -399,9 +399,9 @@ public class HardcoverParser implements BookParser {
         if (StringUtils.isBlank(inputIsbn)) {
             // If we didn't search by ISBN, use first ISBN from results
             matchingIsbn = doc.getIsbns().stream()
-                .filter(isbn -> isbn.length() == 10 || isbn.length() == 13)
-                .findFirst()
-                .orElse(null);
+                    .filter(isbn -> isbn.length() == 10 || isbn.length() == 13)
+                    .findFirst()
+                    .orElse(null);
         } else if (doc.getIsbns().contains(inputIsbn)) {
             // If we searched by ISBN and it matches a result perfectly, use that
             matchingIsbn = inputIsbn;

@@ -27,9 +27,9 @@ class HardcoverMoodFilterTest {
     @DisplayName("filterBasicMoods should only return recognized moods")
     void filterBasicMoods_mixedMoods_returnsOnlyRecognized() {
         List<String> moods = List.of("funny", "invalid-mood", "sad", "not-a-mood", "dark");
-        
+
         Set<String> result = HardcoverMoodFilter.filterBasicMoods(moods);
-        
+
         assertThat(result)
                 .containsExactlyInAnyOrder("funny", "sad", "dark")
                 .doesNotContain("invalid-mood", "not-a-mood");
@@ -39,9 +39,9 @@ class HardcoverMoodFilterTest {
     @DisplayName("filterBasicMoods should normalize case to lowercase")
     void filterBasicMoods_mixedCase_normalizesToLowercase() {
         List<String> moods = List.of("FUNNY", "Sad", "DaRk", "Emotional");
-        
+
         Set<String> result = HardcoverMoodFilter.filterBasicMoods(moods);
-        
+
         assertThat(result)
                 .containsExactlyInAnyOrder("funny", "sad", "dark", "emotional");
     }
@@ -53,9 +53,9 @@ class HardcoverMoodFilterTest {
                 "funny", "sad", "dark", "emotional", "tense",
                 "hopeful", "romantic", "scary", "mysterious", "reflective"
         );
-        
+
         Set<String> result = HardcoverMoodFilter.filterBasicMoods(moods);
-        
+
         assertThat(result).hasSize(HardcoverMoodFilter.MAX_MOODS);
     }
 
@@ -67,9 +67,9 @@ class HardcoverMoodFilterTest {
         moods.add(null);
         moods.add("sad");
         moods.add(null);
-        
+
         Set<String> result = HardcoverMoodFilter.filterBasicMoods(moods);
-        
+
         assertThat(result).containsExactlyInAnyOrder("funny", "sad");
     }
 
@@ -77,9 +77,9 @@ class HardcoverMoodFilterTest {
     @DisplayName("filterBasicMoods should trim whitespace from moods")
     void filterBasicMoods_whitespace_trimsCorrectly() {
         List<String> moods = List.of("  funny  ", " sad", "dark ");
-        
+
         Set<String> result = HardcoverMoodFilter.filterBasicMoods(moods);
-        
+
         assertThat(result).containsExactlyInAnyOrder("funny", "sad", "dark");
     }
 
@@ -95,9 +95,9 @@ class HardcoverMoodFilterTest {
     void filterMoodsWithCounts_noMoodCategory_returnsEmptySet() {
         Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Genre", List.of(createCachedTag("Fiction", 10)));
-        
+
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
-        
+
         assertThat(result).isEmpty();
     }
 
@@ -117,9 +117,9 @@ class HardcoverMoodFilterTest {
                 createCachedTag("hopeful", 1),  // Very low
                 createCachedTag("scary", 1)     // Very low
         ));
-        
+
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
-        
+
         // Top moods should be included
         assertThat(result).contains("sad", "dark", "emotional");
         // Low-vote moods should be filtered
@@ -136,9 +136,9 @@ class HardcoverMoodFilterTest {
             moodTags.add(createCachedTag("mood" + i, 20 - i));
         }
         cachedTags.put("Mood", moodTags);
-        
+
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
-        
+
         assertThat(result).hasSize(HardcoverMoodFilter.MAX_MOODS);
     }
 
@@ -151,9 +151,9 @@ class HardcoverMoodFilterTest {
                 createCachedTag("sad", 15),
                 createCachedTag("dark", 10)
         ));
-        
+
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
-        
+
         // Result should be LinkedHashSet preserving order
         List<String> resultList = new ArrayList<>(result);
         assertThat(resultList).containsExactly("sad", "dark", "emotional");
@@ -169,9 +169,9 @@ class HardcoverMoodFilterTest {
                 tagWithNullCount,
                 createCachedTag("dark", 8)
         ));
-        
+
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
-        
+
         assertThat(result).containsExactlyInAnyOrder("sad", "dark");
         assertThat(result).doesNotContain("mysterious");
     }
@@ -184,9 +184,9 @@ class HardcoverMoodFilterTest {
                 createCachedTag("sad", 0),
                 createCachedTag("dark", 0)
         ));
-        
+
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
-        
+
         assertThat(result).isEmpty();
     }
 
@@ -200,9 +200,9 @@ class HardcoverMoodFilterTest {
                 createCachedTag("Classics", 5),
                 createCachedTag("Comics", 0)  // Should be filtered out
         ));
-        
+
         Set<String> result = HardcoverMoodFilter.filterGenresWithCounts(cachedTags);
-        
+
         assertThat(result).containsExactlyInAnyOrder("Fiction", "War", "Classics");
         assertThat(result).doesNotContain("Comics");
     }
@@ -216,9 +216,9 @@ class HardcoverMoodFilterTest {
                 createCachedTag("Strong Character Development", 9),
                 createCachedTag("Plot driven", 1)  // Should be filtered (below threshold)
         ));
-        
+
         Set<String> result = HardcoverMoodFilter.filterTagsWithCounts(cachedTags);
-        
+
         assertThat(result).contains("Loveable Characters", "Strong Character Development");
         assertThat(result).doesNotContain("Plot driven");
     }

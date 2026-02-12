@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for HardcoverParser.
- * 
+ * <p>
  * These tests verify:
  * - Combined title+author search strategy for better reliability
  * - ISBN search behavior
@@ -79,7 +79,7 @@ class HardcoverParserTest {
 
             when(hardcoverBookSearchService.searchBooks("Some Book Unknown Author"))
                     .thenReturn(Collections.emptyList());
-            
+
             GraphQLResponse.Hit hit = createHitWithAuthor("Some Book", "Different Author");
             when(hardcoverBookSearchService.searchBooks("Some Book"))
                     .thenReturn(List.of(hit));
@@ -209,7 +209,7 @@ class HardcoverParserTest {
                     .build();
 
             GraphQLResponse.BookWithEditions bookWithEditions = createBookWithEditions();
-            
+
             // Add a second edition
             GraphQLResponse.Edition secondEdition = new GraphQLResponse.Edition();
             secondEdition.setId(2);
@@ -217,13 +217,13 @@ class HardcoverParserTest {
             secondEdition.setIsbn13("9780316769489");
             secondEdition.setIsbn10("0316769489");
             secondEdition.setPages(400);
-            
+
             GraphQLResponse.Author author = new GraphQLResponse.Author();
             author.setName("Test Author");
             GraphQLResponse.Contributor contributor = new GraphQLResponse.Contributor();
             contributor.setAuthor(author);
             secondEdition.setCachedContributors(List.of(contributor));
-            
+
             bookWithEditions.setEditions(List.of(bookWithEditions.getEditions().get(0), secondEdition));
 
             when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
@@ -385,7 +385,7 @@ class HardcoverParserTest {
 
             assertThat(results).hasSize(1);
             BookMetadata metadata = results.get(0);
-            
+
             assertThat(metadata.getTitle()).isEqualTo("Test Book");
             assertThat(metadata.getSubtitle()).isEqualTo("A Subtitle");
             assertThat(metadata.getDescription()).isEqualTo("A description");
@@ -420,7 +420,7 @@ class HardcoverParserTest {
 
             assertThat(results).hasSize(1);
             BookMetadata metadata = results.get(0);
-            
+
             assertThat(metadata.getTitle()).isEqualTo("Test Book - Hardcover Edition");
             assertThat(metadata.getSubtitle()).isEqualTo("A Subtitle");
             assertThat(metadata.getDescription()).isEqualTo("A description");
@@ -496,7 +496,7 @@ class HardcoverParserTest {
             GraphQLResponse.Image image = new GraphQLResponse.Image();
             image.setUrl("https://example.com/cover.jpg");
             hit.getDocument().setImage(image);
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -515,7 +515,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setImage(null);
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -540,7 +540,7 @@ class HardcoverParserTest {
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setId("12345");
             hit.getDocument().setMoods(List.of("sad", "dark", "funny", "hopeful"));
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -565,7 +565,7 @@ class HardcoverParserTest {
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setId("12345");
             hit.getDocument().setMoods(List.of("sad", "funny", "invalid-mood"));
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
             when(hardcoverBookSearchService.fetchBookDetails(12345))
@@ -588,7 +588,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setMoods(null);
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -644,7 +644,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setId("not-a-number");
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -680,7 +680,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setReleaseDate("invalid-date");
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -739,7 +739,7 @@ class HardcoverParserTest {
         doc.setSlug(title.toLowerCase().replace(" ", "-"));
         doc.setAuthorNames(Set.of(author));
         doc.setId(String.valueOf(new Random().nextInt(100000)));
-        
+
         GraphQLResponse.Hit hit = new GraphQLResponse.Hit();
         hit.setDocument(doc);
         return hit;
@@ -761,22 +761,22 @@ class HardcoverParserTest {
         doc.setGenres(List.of("Fiction", "Fantasy"));
         doc.setMoods(List.of("adventurous", "exciting"));
         doc.setTags(List.of("Epic"));
-        
+
         // Series info
         GraphQLResponse.Series series = new GraphQLResponse.Series();
         series.setName("Test Series");
         series.setBooksCount(5);
-        
+
         GraphQLResponse.FeaturedSeries featuredSeries = new GraphQLResponse.FeaturedSeries();
         featuredSeries.setSeries(series);
         featuredSeries.setPosition(2);
         doc.setFeaturedSeries(featuredSeries);
-        
+
         // Image
         GraphQLResponse.Image image = new GraphQLResponse.Image();
         image.setUrl("https://example.com/cover.jpg");
         doc.setImage(image);
-        
+
         GraphQLResponse.Hit hit = new GraphQLResponse.Hit();
         hit.setDocument(doc);
         return hit;
@@ -786,21 +786,21 @@ class HardcoverParserTest {
         HardcoverBookDetails details = new HardcoverBookDetails();
         details.setId(12345);
         details.setTitle("Test Book");
-        
+
         Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
-        
+
         List<HardcoverBookDetails.CachedTag> moods = new ArrayList<>();
         moods.add(createCachedTag("sad", 15));
         moods.add(createCachedTag("dark", 12));
         moods.add(createCachedTag("emotional", 8));
         moods.add(createCachedTag("funny", 2));  // Low count, should be filtered
         cachedTags.put("Mood", moods);
-        
+
         List<HardcoverBookDetails.CachedTag> genres = new ArrayList<>();
         genres.add(createCachedTag("Fiction", 10));
         genres.add(createCachedTag("Drama", 8));
         cachedTags.put("Genre", genres);
-        
+
         details.setCachedTags(cachedTags);
         return details;
     }

@@ -40,59 +40,59 @@ public class HardcoverBookSearchService {
         if (apiToken == null) {
             return Collections.emptyList();
         }
-        
+
         GraphQLRequest body = new GraphQLRequest();
         body.setQuery("""
-            query BookSearchByIsbn($isbn: String!) {
-                books(
-                    where: {editions: {_or: [{isbn_13: {_eq: $isbn}}, {isbn_10: {_eq: $isbn}}]}}
-                ) {
-                    id
-                    slug
-                    title
-                    subtitle
-                    description
-                    cached_contributors
-                    featured_book_series {
-                      series {
-                        name
-                        books_count
+                query BookSearchByIsbn($isbn: String!) {
+                    books(
+                        where: {editions: {_or: [{isbn_13: {_eq: $isbn}}, {isbn_10: {_eq: $isbn}}]}}
+                    ) {
+                        id
+                        slug
+                        title
+                        subtitle
+                        description
+                        cached_contributors
+                        featured_book_series {
+                          series {
+                            name
+                            books_count
+                          }
+                          position
+                        }
+                        rating
+                        ratings_count
+                        reviews_count
+                        pages
+                        release_date
+                        release_year
+                        image {
+                          url
+                        }
+                        cached_tags
+                        editions(where: {_or: [{isbn_13: {_eq: $isbn}}, {isbn_10: {_eq: $isbn}}]}) {
+                          id
+                          title
+                          subtitle
+                          cached_contributors
+                          pages
+                          release_date
+                          release_year
+                          image {
+                            url
+                          }
+                          cached_tags
+                          publisher {
+                            name
+                          }
+                          isbn_10
+                          isbn_13
+                          language {
+                            code2
+                          }
+                        }
                       }
-                      position
-                    }
-                    rating
-                    ratings_count
-                    reviews_count
-                    pages
-                    release_date
-                    release_year
-                    image {
-                      url
-                    }
-                    cached_tags
-                    editions(where: {_or: [{isbn_13: {_eq: $isbn}}, {isbn_10: {_eq: $isbn}}]}) {
-                      id
-                      title
-                      subtitle
-                      cached_contributors
-                      pages
-                      release_date
-                      release_year
-                      image {
-                        url
-                      }
-                      cached_tags
-                      publisher {
-                        name
-                      }
-                      isbn_10
-                      isbn_13
-                      language {
-                        code2
-                      }
-                    }
-                  }
-                }""");
+                    }""");
         body.setVariables(java.util.Map.of("isbn", isbn));
 
         GraphQLResponse response = executeRequest(body, GraphQLResponse.class, apiToken);
@@ -117,7 +117,7 @@ public class HardcoverBookSearchService {
         }
 
         int sanitizedPerPage = Math.min(Math.max(perPage, 1), 100);
-        
+
         GraphQLRequest body = new GraphQLRequest();
         body.setQuery("query BookSearch($q: String!, $limit: Int!) { search(query: $q, query_type: \"Book\", per_page: $limit, page: 1) { results } }");
         body.setVariables(java.util.Map.of("q", query, "limit", sanitizedPerPage));
