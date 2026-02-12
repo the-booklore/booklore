@@ -431,7 +431,10 @@ public class ReadingProgressService {
         List<Long> bookIdList = new ArrayList<>(bookIds);
 
         switch (type) {
-            case BOOKLORE -> userBookProgressRepository.bulkResetBookloreProgress(userId, bookIdList, now);
+            case BOOKLORE -> {
+                userBookProgressRepository.bulkResetBookloreProgress(userId, bookIdList, now);
+                userBookFileProgressRepository.deleteByUserIdAndBookIds(userId, bookIdList);
+            }
             case KOREADER -> userBookProgressRepository.bulkResetKoreaderProgress(userId, bookIdList);
             case KOBO -> {
                 userBookProgressRepository.bulkResetKoboProgress(userId, bookIdList);
