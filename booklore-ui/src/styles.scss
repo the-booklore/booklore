@@ -49,6 +49,10 @@ html {
   scrollbar-color: rgba(128, 128, 128, 0.5) rgba(0, 0, 0, 0.1);
 }
 
+.chart-info-tooltip.p-tooltip {
+  --p-tooltip-max-width: 25rem;
+}
+
 .p-toast {
   top: 4rem !important;
 }
