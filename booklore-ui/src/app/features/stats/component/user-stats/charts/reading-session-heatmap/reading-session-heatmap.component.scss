@@ -96,71 +96,55 @@
 
 .chart-footer {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.streak-stats {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-
-  .streak-item {
-    font-size: 0.9rem;
-    color: var(--text-secondary-color);
-    white-space: nowrap;
-
-    .streak-value {
-      font-weight: 700;
-      font-size: 1.1rem;
-    }
-
-    &.current .streak-value { color: #ff9800; }
-    &.longest .streak-value { color: #4caf50; }
-    &.total .streak-value { color: #2196f3; }
-    &.consistency .streak-value { color: #9c27b0; }
-  }
-}
-
-.milestones {
+.footer-pills {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
 
-  .milestone {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.65rem;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    font-size: 0.85rem;
+  &.right {
+    justify-content: flex-end;
+  }
+}
 
-    .milestone-icon {
-      font-size: 0.85rem;
-    }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+  color: var(--text-color, #ffffff);
+  font-weight: 500;
+  white-space: nowrap;
 
-    .milestone-label {
-      color: var(--text-color, #ffffff);
-      font-weight: 500;
-    }
+  .pill-value {
+    font-weight: 700;
+  }
 
-    &.unlocked {
-      border-color: rgba(76, 175, 80, 0.3);
-      background: rgba(76, 175, 80, 0.1);
-    }
+  &.current .pill-value { color: #ff9800; }
+  &.longest .pill-value { color: #4caf50; }
+  &.total .pill-value { color: #2196f3; }
+  &.consistency .pill-value { color: #9c27b0; }
 
-    &.locked {
-      opacity: 0.4;
-    }
+  &.milestone.unlocked {
+    border-color: rgba(76, 175, 80, 0.3);
+    background: rgba(76, 175, 80, 0.1);
+  }
+
+  &.milestone.locked {
+    opacity: 0.4;
   }
 }
 

@@ -40,26 +40,25 @@
 
   @if (hasStreakData) {
     <div class="chart-footer">
-      <div class="streak-stats">
-        <span class="streak-item current">
-          <span class="streak-value">{{ currentStreak }}</span> current streak
+      <div class="footer-pills left">
+        <span class="pill current">
+          <span class="pill-value">{{ currentStreak }}</span> Current Streak
         </span>
-        <span class="streak-item longest">
-          <span class="streak-value">{{ longestStreak }}</span> longest streak
+        <span class="pill longest">
+          <span class="pill-value">{{ longestStreak }}</span> Longest Streak
         </span>
-        <span class="streak-item total">
-          <span class="streak-value">{{ totalReadingDays }}</span> total days
+        <span class="pill total">
+          <span class="pill-value">{{ totalReadingDays }}</span> Total Days
         </span>
-        <span class="streak-item consistency">
-          <span class="streak-value">{{ consistencyPercent }}%</span> consistency
+        <span class="pill consistency">
+          <span class="pill-value">{{ consistencyPercent }}%</span> Consistency
         </span>
       </div>
       @if (milestones.length > 0) {
-        <div class="milestones">
+        <div class="footer-pills right">
           @for (milestone of milestones; track milestone.label) {
-            <span class="milestone" [class.unlocked]="milestone.unlocked" [class.locked]="!milestone.unlocked">
-              <span class="milestone-icon">{{ milestone.icon }}</span>
-              <span class="milestone-label">{{ milestone.label }}</span>
+            <span class="pill milestone" [class.unlocked]="milestone.unlocked" [class.locked]="!milestone.unlocked">
+              <span class="pill-icon">{{ milestone.icon }}</span> {{ milestone.label }}
             </span>
           }
         </div>
