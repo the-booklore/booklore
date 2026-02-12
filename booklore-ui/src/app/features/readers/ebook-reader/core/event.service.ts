@@ -228,13 +228,6 @@ export class ReaderEventService {
       this.handleTouchEnd(event, doc);
     }, {passive: false});
 
-    doc.addEventListener('contextmenu', (event: MouseEvent) => {
-      const selection = doc.defaultView?.getSelection();
-      if (selection && !selection.isCollapsed) {
-        event.preventDefault();
-      }
-    });
-
     doc.addEventListener('selectionchange', () => {
       this.handleSelectionChange(doc);
     });
