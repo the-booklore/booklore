@@ -67,24 +67,6 @@
         </div>
       </div>
 
-      <div class="preferences-section">
-        <div class="section-header">
-          <h3 class="section-title">
-            <i class="pi pi-file-pdf"></i>
-            {{ t('streamingPdf.sectionTitle') }}
-          </h3>
-          <p class="section-description">
-            {{ t('streamingPdf.sectionDesc') }}
-          </p>
-        </div>
-
-        <div class="settings-card">
-          <app-new-pdf-reader-preferences-component
-            [userSettings]="userSettings">
-          </app-new-pdf-reader-preferences-component>
-        </div>
-      </div>
-
       @if (hasFontManagementPermission) {
         <div class="preferences-section">
           <div class="section-header">
