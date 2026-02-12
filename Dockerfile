@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular app
-FROM node:22-alpine AS angular-build
+FROM docker.io/library/node:22-alpine AS angular-build
 
 WORKDIR /angular-app
 
@@ -14,7 +14,7 @@ COPY ./booklore-ui /angular-app/
 RUN npm run build --configuration=production
 
 # Stage 2: Build the Spring Boot app with Gradle
-FROM gradle:9.3.1-jdk25-alpine AS springboot-build
+FROM docker.io/library/gradle:9.3.1-jdk25-alpine AS springboot-build
 
 WORKDIR /springboot-app
 
@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/home/gradle/.gradle \
     gradle clean build -x test --no-daemon --parallel
 
 # Stage 3: Final image
-FROM eclipse-temurin:25-jre-alpine
+FROM docker.io/library/eclipse-temurin:25-jre-alpine
 
 ARG APP_VERSION
 ARG APP_REVISION
