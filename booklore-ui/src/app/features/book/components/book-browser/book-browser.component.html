@@ -333,7 +333,7 @@
                     @if (entityType$ | async; as entityType) {
                       <div class="action-buttons-group">
                         @if (hasMetadataMenuItems) {
-                          <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
+                          <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body" styleClass="footer-menu"/>
                           <p-button
                             (click)="menu.toggle($event)"
                             pTooltip="Metadata actions"
@@ -402,7 +402,7 @@
                               severity="info"
                               icon="pi pi-ellipsis-v">
                             </p-button>
-                            <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body"/>
+                            <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body" styleClass="footer-menu"/>
                           </div>
                         }
                       </div>
