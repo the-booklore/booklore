@@ -17,7 +17,7 @@ backend_tests:
     - ./gradlew test --no-daemon --parallel
 
   rules:
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
 
 # =========================================================
@@ -32,9 +32,8 @@ frontend_tests:
     - cd booklore-ui
     - npm ci --force
     - npx ng test --watch=false --browsers=ChromeHeadless
-
   rules:
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
 
 # =========================================================
