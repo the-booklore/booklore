@@ -1,10 +1,10 @@
 stages:
+  - build
   - test
   - package-build
   - package-test
   - publish
   - mirror
-  - build
 # Only include semrel + docker components for non-scheduled pipelines
 include:
   - component: "$CI_SERVER_FQDN/to-be-continuous/semantic-release/gitlab-ci-semrel@4.0"
@@ -21,18 +21,9 @@ include:
       trivy-disabled: true
       hadolint-disabled: true
       cosign-strategy: "onrelease"
-      # IMPORTANT: disable "main"/"master" publish to avoid overwriting a "main" tag image;
-      # releases should be pushed on Git tags only.
       prod-publish-strategy: "none"
-
-      # Build tool choice:
-      # - default is buildah in v8 (can hit unshare/userns issues on some runners)
-      # - dind requires a privileged runner
-      build-tool: "dind"
-
-      # Multi-arch: for dind this relies on the component's build setup (buildx/qemu handling).
-      # If your runner can't do multi-arch with dind, switch to buildah and fix userns/privileges instead.
-      build-args: "--platform linux/amd64 --platform linux/arm64"
+      #build-tool: "dind"
+      build-args: "--platform linux/amd64,linux/arm64"
 
       # Optional: publish extra tags for releases (e.g., also tag "latest" on semver tags)
       # release-extra-tags: "latest"
