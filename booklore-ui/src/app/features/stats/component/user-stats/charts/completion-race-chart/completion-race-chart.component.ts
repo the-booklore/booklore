@@ -186,15 +186,12 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
       races.push({bookId, bookTitle: value.title, sessions: sessionPoints, totalDays});
     });
 
-    // Limit to 15 most recent books
-    const limitedRaces = races.slice(-15);
+    this.totalBooks = races.length;
 
-    this.totalBooks = limitedRaces.length;
-
-    if (limitedRaces.length > 0) {
-      const days = limitedRaces.map(r => r.totalDays);
-      const fastest = limitedRaces.reduce((a, b) => a.totalDays <= b.totalDays ? a : b);
-      const slowest = limitedRaces.reduce((a, b) => a.totalDays >= b.totalDays ? a : b);
+    if (races.length > 0) {
+      const days = races.map(r => r.totalDays);
+      const fastest = races.reduce((a, b) => a.totalDays <= b.totalDays ? a : b);
+      const slowest = races.reduce((a, b) => a.totalDays >= b.totalDays ? a : b);
       this.fastestCompletion = `${fastest.bookTitle.substring(0, 25)}${fastest.bookTitle.length > 25 ? '...' : ''} (${fastest.totalDays}d)`;
       this.slowestCompletion = `${slowest.bookTitle.substring(0, 25)}${slowest.bookTitle.length > 25 ? '...' : ''} (${slowest.totalDays}d)`;
       this.avgDaysToFinish = Math.round(days.reduce((a, b) => a + b, 0) / days.length);
@@ -204,7 +201,7 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
       this.avgDaysToFinish = 0;
     }
 
-    const datasets = limitedRaces.map((race, i) => {
+    const datasets = races.map((race, i) => {
       const color = LINE_COLORS[i % LINE_COLORS.length];
       return {
         label: race.bookTitle.length > 30 ? race.bookTitle.substring(0, 30) + '...' : race.bookTitle,

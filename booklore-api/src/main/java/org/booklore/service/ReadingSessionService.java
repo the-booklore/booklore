@@ -3,6 +3,7 @@ package org.booklore.service;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.CompletionRaceSessionDto;
 import org.booklore.model.dto.request.ReadingSessionRequest;
 import org.booklore.model.dto.PageTurnerSessionDto;
 import org.booklore.model.dto.response.BookCompletionHeatmapResponse;
@@ -374,13 +375,31 @@ public class ReadingSessionService {
                 .collect(Collectors.toList());
     }
 
+    private static final int COMPLETION_RACE_BOOK_LIMIT = 15;
+
     @Transactional(readOnly = true)
     public List<CompletionRaceResponse> getCompletionRace(int year) {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        return readingSessionRepository.findCompletionRaceSessionsByUserAndYear(userId, year)
-                .stream()
+        var allSessions = readingSessionRepository.findCompletionRaceSessionsByUserAndYear(userId, year);
+
+        // Collect unique book IDs in order of appearance, take last N (most recently finished)
+        LinkedHashSet<Long> allBookIds = allSessions.stream()
+                .map(CompletionRaceSessionDto::getBookId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Set<Long> limitedBookIds;
+        if (allBookIds.size() > COMPLETION_RACE_BOOK_LIMIT) {
+            limitedBookIds = allBookIds.stream()
+                    .skip(allBookIds.size() - COMPLETION_RACE_BOOK_LIMIT)
+                    .collect(Collectors.toSet());
+        } else {
+            limitedBookIds = allBookIds;
+        }
+
+        return allSessions.stream()
+                .filter(dto -> limitedBookIds.contains(dto.getBookId()))
                 .map(dto -> CompletionRaceResponse.builder()
                         .bookId(dto.getBookId())
                         .bookTitle(dto.getBookTitle())
