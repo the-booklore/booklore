@@ -27,6 +27,8 @@ import org.booklore.repository.MetadataFetchJobRepository;
 import org.booklore.service.NotificationService;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.metadata.parser.BookParser;
+import org.booklore.service.metadata.parser.custom.CustomBookParser;
+import org.booklore.service.metadata.parser.custom.CustomProviderRegistry;
 import org.booklore.task.TaskCancellationManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -60,6 +62,7 @@ public class MetadataRefreshService {
     private final PlatformTransactionManager transactionManager;
     private final AuthenticationService authenticationService;
     private final TaskCancellationManager cancellationManager;
+    private final CustomProviderRegistry customProviderRegistry;
 
 
     public void refreshMetadata(MetadataRefreshRequest request, String jobId) {
@@ -152,6 +155,13 @@ public class MetadataRefreshService {
                             bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
                         }
 
+                        // Merge custom provider metadata into any unfilled fields
+                        if (fetched != null) {
+                            Book bookDto = bookMapper.toBook(book);
+                            List<BookMetadata> customResults = fetchMetadataFromCustomProviders(bookDto);
+                            fetched = mergeCustomProviderMetadata(fetched, customResults);
+                        }
+
                         if (bookReviewMode) {
                             saveProposal(task, book.getId(), fetched);
                         } else {
@@ -236,6 +246,58 @@ public class MetadataRefreshService {
                         metadata -> metadata,
                         (existing, replacement) -> existing
                 ));
+    }
+
+    /**
+     * Fetches the top metadata result from each enabled custom provider and returns a list.
+     */
+    public List<BookMetadata> fetchMetadataFromCustomProviders(Book book) {
+        List<BookMetadata> results = new ArrayList<>();
+        FetchMetadataRequest request = buildFetchMetadataRequestFromBook(book);
+        for (CustomBookParser parser : customProviderRegistry.getEnabledParsers()) {
+            try {
+                BookMetadata metadata = parser.fetchTopMetadata(book, request);
+                if (metadata != null) {
+                    results.add(metadata);
+                }
+            } catch (Exception e) {
+                log.error("Error fetching metadata from custom provider '{}': {}", parser.getProviderName(), e.getMessage());
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Merges fields from custom provider results into an existing BookMetadata,
+     * filling in any fields that are still null/empty.
+     */
+    public BookMetadata mergeCustomProviderMetadata(BookMetadata base, List<BookMetadata> customResults) {
+        if (customResults == null || customResults.isEmpty()) {
+            return base;
+        }
+        for (BookMetadata custom : customResults) {
+            if (custom == null) continue;
+            if (base.getTitle() == null || base.getTitle().isBlank()) base.setTitle(custom.getTitle());
+            if (base.getSubtitle() == null || base.getSubtitle().isBlank()) base.setSubtitle(custom.getSubtitle());
+            if (base.getDescription() == null || base.getDescription().isBlank()) base.setDescription(custom.getDescription());
+            if (base.getPublisher() == null || base.getPublisher().isBlank()) base.setPublisher(custom.getPublisher());
+            if (base.getPublishedDate() == null) base.setPublishedDate(custom.getPublishedDate());
+            if (base.getAuthors() == null || base.getAuthors().isEmpty()) base.setAuthors(custom.getAuthors());
+            if (base.getCategories() == null || base.getCategories().isEmpty()) base.setCategories(custom.getCategories());
+            if (base.getMoods() == null || base.getMoods().isEmpty()) base.setMoods(custom.getMoods());
+            if (base.getTags() == null || base.getTags().isEmpty()) base.setTags(custom.getTags());
+            if (base.getSeriesName() == null || base.getSeriesName().isBlank()) base.setSeriesName(custom.getSeriesName());
+            if (base.getSeriesNumber() == null) base.setSeriesNumber(custom.getSeriesNumber());
+            if (base.getSeriesTotal() == null) base.setSeriesTotal(custom.getSeriesTotal());
+            if (base.getIsbn13() == null || base.getIsbn13().isBlank()) base.setIsbn13(custom.getIsbn13());
+            if (base.getIsbn10() == null || base.getIsbn10().isBlank()) base.setIsbn10(custom.getIsbn10());
+            if (base.getLanguage() == null || base.getLanguage().isBlank()) base.setLanguage(custom.getLanguage());
+            if (base.getPageCount() == null) base.setPageCount(custom.getPageCount());
+            if (base.getThumbnailUrl() == null || base.getThumbnailUrl().isBlank()) base.setThumbnailUrl(custom.getThumbnailUrl());
+            if (base.getRating() == null) base.setRating(custom.getRating());
+            if (base.getAsin() == null || base.getAsin().isBlank()) base.setAsin(custom.getAsin());
+        }
+        return base;
     }
 
     private void reportProgressIfNeeded(MetadataFetchJobEntity task, String taskId, int completedCount, int total, BookEntity book, boolean isReviewMode) {
@@ -395,6 +457,7 @@ public class MetadataRefreshService {
             case Ranobedb -> settings.getRanobedb() != null && settings.getRanobedb().isEnabled();
             case Douban -> settings.getDouban() != null && settings.getDouban().isEnabled();
             case Lubimyczytac -> settings.getLubimyczytac() != null && settings.getLubimyczytac().isEnabled();
+            case Audible -> settings.getAudible() != null && settings.getAudible().isEnabled();
             default -> true;
         };
     }

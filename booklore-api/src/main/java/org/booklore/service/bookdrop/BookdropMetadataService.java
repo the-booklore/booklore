@@ -79,6 +79,11 @@ public class BookdropMetadataService {
 
         Map<MetadataProvider, BookMetadata> metadataMap = metadataRefreshService.fetchMetadataForBook(providers, book);
         BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(initial, book.getId(), refreshOptions, metadataMap);
+
+        // Also query enabled custom providers and merge their results into any unfilled fields
+        List<BookMetadata> customResults = metadataRefreshService.fetchMetadataFromCustomProviders(book);
+        fetchedMetadata = metadataRefreshService.mergeCustomProviderMetadata(fetchedMetadata, customResults);
+
         String fetchedJson = objectMapper.writeValueAsString(fetchedMetadata);
 
         entity.setFetchedMetadata(fetchedJson);
