@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.jpa.repository.Modifying;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -58,4 +60,12 @@ public interface UserBookFileProgressRepository extends JpaRepository<UserBookFi
             @Param("userId") Long userId,
             @Param("bookIds") Iterable<Long> bookIds
     );
+
+    @Modifying
+    @Query("""
+        DELETE FROM UserBookFileProgressEntity ubfp
+        WHERE ubfp.user.id = :userId
+          AND ubfp.bookFile.book.id IN :bookIds
+    """)
+    int deleteByUserIdAndBookIds(@Param("userId") Long userId, @Param("bookIds") Iterable<Long> bookIds);
 }

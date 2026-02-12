@@ -235,9 +235,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
           summary: this.t.translate('settingsDevice.kobo.settingsUpdated'),
           detail: successMessage
         });
-        if (!this.koboSyncSettings.syncEnabled) {
-          this.shelfService.reloadShelves();
-        }
+        this.shelfService.reloadShelves();
       },
       error: () => {
         this.messageService.add({
