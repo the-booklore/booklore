@@ -144,7 +144,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
                 b.id as bookId,
                 COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
                 b.metadata.pageCount as pageCount,
-                ubp.dateFinished as dateFinished,
+                COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) as dateFinished,
                 MIN(rs.startTime) as firstSessionDate,
                 COUNT(rs) as totalSessions,
                 COALESCE(SUM(rs.durationSeconds), 0) as totalDurationSeconds
@@ -153,10 +153,10 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
             WHERE rs.user.id = :userId
             AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
-            AND ubp.dateFinished IS NOT NULL
-            AND YEAR(ubp.dateFinished) = :year
-            GROUP BY b.id, b.metadata.title, b.metadata.pageCount, ubp.dateFinished
-            ORDER BY ubp.dateFinished ASC
+            AND COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) IS NOT NULL
+            AND YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) = :year
+            GROUP BY b.id, b.metadata.title, b.metadata.pageCount, COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)
+            ORDER BY COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) ASC
             """)
     List<ReadingHeartbeatDto> findReadingHeartbeatByUserAndYear(
             @Param("userId") Long userId,
@@ -168,7 +168,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
                 COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
                 b.metadata.pageCount as pageCount,
                 ubp.personalRating as personalRating,
-                ubp.dateFinished as dateFinished,
+                COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) as dateFinished,
                 rs.startTime as startTime,
                 rs.endTime as endTime,
                 rs.durationSeconds as durationSeconds
@@ -177,7 +177,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
             WHERE rs.user.id = :userId
             AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
-            AND ubp.dateFinished IS NOT NULL
+            AND COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) IS NOT NULL
             ORDER BY b.id, rs.startTime ASC
             """)
     List<PageTurnerSessionDto> findPageTurnerSessionsByUser(@Param("userId") Long userId);

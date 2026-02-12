@@ -367,7 +367,7 @@ public class ReadingSessionService {
         }
 
         return sessionsByBook.entrySet().stream()
-                .filter(entry -> entry.getValue().size() >= 3)
+                .filter(entry -> entry.getValue().size() >= 2)
                 .map(entry -> {
                     Long bookId = entry.getKey();
                     List<PageTurnerSessionDto> bookSessions = entry.getValue();
