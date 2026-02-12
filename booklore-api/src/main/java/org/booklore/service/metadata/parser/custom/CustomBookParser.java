@@ -57,6 +57,7 @@ public class CustomBookParser implements BookParser, DetailedMetadataProvider, B
             BookMetadata metadata = mapper.toBookMetadata(external, bookTitle);
             if (metadata != null) {
                 metadata.setExternalUrl(null);
+                metadata.setCustomProviderName(config.getName());
                 mapped.add(metadata);
             }
         }
@@ -79,7 +80,11 @@ public class CustomBookParser implements BookParser, DetailedMetadataProvider, B
         if (external == null) {
             return null;
         }
-        return mapper.toBookMetadata(external, null);
+        BookMetadata metadata = mapper.toBookMetadata(external, null);
+        if (metadata != null) {
+            metadata.setCustomProviderName(config.getName());
+        }
+        return metadata;
     }
 
     @Override

@@ -192,6 +192,7 @@ export interface BookMetadata {
   moods?: string[];
   tags?: string[];
   provider?: string;
+  customProviderName?: string;
   providerBookId?: string;
   externalUrl?: string;
   thumbnailUrl?: string | null;

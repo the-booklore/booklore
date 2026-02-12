@@ -291,6 +291,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   }
 
   private getProviderFromMetadata(metadata: BookMetadata): string | null {
+    if (metadata.customProviderName) return metadata.customProviderName.toLowerCase();
     if (metadata.asin) return 'amazon';
     if (metadata.goodreadsId) return 'goodreads';
     if (metadata.googleId) return 'google';
@@ -399,6 +400,9 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   }
 
   private getDetailEnrichmentInfo(metadata: BookMetadata): { provider: string; id: string } | null {
+    if (metadata.customProviderName) {
+      return null;
+    }
     if (metadata.comicvineId && (!metadata.comicMetadata
       || (!metadata.comicMetadata.pencillers?.length
         && !metadata.comicMetadata.inkers?.length
@@ -446,6 +450,12 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   }
 
   buildProviderLink(metadata: BookMetadata): string {
+    if (metadata.customProviderName) {
+      if (metadata.externalUrl) {
+        return `<a href="${metadata.externalUrl}" target="_blank">${metadata.customProviderName}</a>`;
+      }
+      return metadata.customProviderName;
+    }
     if (metadata.asin) {
       return `<a href="https://www.amazon.com/dp/${metadata.asin}" target="_blank">Amazon</a>`;
     } else if (metadata.goodreadsId) {

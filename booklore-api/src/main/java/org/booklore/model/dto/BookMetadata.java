@@ -66,6 +66,7 @@ public class BookMetadata {
     private Set<String> moods;
     private Set<String> tags;
     private MetadataProvider provider;
+    private String customProviderName;
     private String thumbnailUrl;
     private List<BookReview> bookReviews;
     private Double rating;
