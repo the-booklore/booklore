@@ -28,13 +28,10 @@ frontend_tests:
   stage: test
   image: node:22
 
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@latest --activate
 
   script:
     - cd booklore-ui
-    - pnpm install --frozen-lockfile
+    - npm install --force --legacy-peer-deps
     - pnpm exec ng test
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
