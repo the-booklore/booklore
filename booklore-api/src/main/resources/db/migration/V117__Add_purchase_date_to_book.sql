@@ -1,2 +1,1 @@
-ALTER TABLE book ADD COLUMN purchase_date DATETIME(6) NULL;
-UPDATE book SET purchase_date = added_on WHERE purchase_date IS NULL;
+ALTER TABLE book ADD COLUMN IF NOT EXISTS purchase_date TIMESTAMP(6) NULL;

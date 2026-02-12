@@ -148,8 +148,24 @@ class BookUpdateServiceTest {
 
         bookUpdateService.updatePurchaseDate(List.of(42L), null);
 
-        assertEquals(addedOn, book.getPurchaseDate());
+        assertNull(book.getPurchaseDate());
         verify(bookRepository).saveAll(List.of(book));
+    }
+
+    @Test
+    void updatePurchaseDate_shouldThrowWhenBookIdsMissing() {
+        mockUser(true, Set.of());
+
+        APIException exNull = assertThrows(APIException.class,
+                () -> bookUpdateService.updatePurchaseDate(null, Instant.now()));
+        assertEquals(HttpStatus.BAD_REQUEST, exNull.getStatus());
+
+        APIException exEmpty = assertThrows(APIException.class,
+                () -> bookUpdateService.updatePurchaseDate(Collections.emptyList(), Instant.now()));
+        assertEquals(HttpStatus.BAD_REQUEST, exEmpty.getStatus());
+
+        verify(bookRepository, never()).findAllById(any());
+        verify(bookRepository, never()).saveAll(any());
     }
 
     @Test

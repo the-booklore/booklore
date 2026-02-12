@@ -255,8 +255,7 @@ export class BookPatchService {
           const idSet = new Set(ids);
           const updatedBooks = currentState.books.map(book => {
             if (idSet.has(book.id)) {
-              const effectivePurchaseDate = purchaseDate ?? book.addedOn;
-              return {...book, purchaseDate: effectivePurchaseDate || undefined};
+              return {...book, purchaseDate: purchaseDate || undefined};
             }
             return book;
           });

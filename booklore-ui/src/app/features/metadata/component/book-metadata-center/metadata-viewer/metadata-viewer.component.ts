@@ -1204,8 +1204,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       return;
     }
     this.isEditingPurchaseDate = true;
-    const base = book.purchaseDate || book.addedOn;
-    this.editPurchaseDate = base ? new Date(base) : new Date();
+    this.editPurchaseDate = book.purchaseDate ? new Date(book.purchaseDate) : null;
   }
 
   savePurchaseDate(book: Book): void {

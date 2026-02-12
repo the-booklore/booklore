@@ -43,13 +43,11 @@ public class PhysicalBookService {
         LibraryEntity library = libraryRepository.findById(request.getLibraryId())
                 .orElseThrow(() -> new APIException("Library not found with id: " + request.getLibraryId(), HttpStatus.NOT_FOUND));
 
-        Instant now = Instant.now();
         BookEntity bookEntity = BookEntity.builder()
                 .library(library)
                 .libraryPath(null)
                 .isPhysical(true)
-                .addedOn(now)
-                .purchaseDate(now)
+                .addedOn(Instant.now())
                 .bookFiles(new ArrayList<>())
                 .build();
 

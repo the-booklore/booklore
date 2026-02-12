@@ -96,6 +96,6 @@ describe('BookPatchService (purchase date)', () => {
     req.flush(null);
 
     const updated = mockState.getCurrentBookState().books ?? [];
-    expect(updated[0].purchaseDate).toBe(addedOn);
+    expect(updated[0].purchaseDate).toBeUndefined();
   });
 });

@@ -367,6 +367,10 @@ public class BookUpdateService {
             throw ApiError.INVALID_INPUT.createException("Purchase date cannot be in the future.");
         }
 
+        if (bookIds == null || bookIds.isEmpty()) {
+            throw ApiError.INVALID_INPUT.createException("Book IDs must be provided.");
+        }
+
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         if (user == null) {
             throw ApiError.FORBIDDEN.createException("You are not authorized to update purchase dates.");
@@ -379,7 +383,7 @@ public class BookUpdateService {
             throw ApiError.GENERIC_NOT_FOUND.createException("One or more books not found");
         }
 
-        boolean isAdmin = user != null && user.getPermissions() != null && user.getPermissions().isAdmin();
+        boolean isAdmin = user.getPermissions() != null && user.getPermissions().isAdmin();
         if (!isAdmin) {
             Set<Long> allowedLibraryIds = user.getAssignedLibraries().stream().map(Library::getId).collect(Collectors.toSet());
             boolean hasAnyForbiddenLibrary = books.stream().anyMatch(b -> b.getLibrary() == null || !allowedLibraryIds.contains(b.getLibrary().getId()));
@@ -394,8 +398,7 @@ public class BookUpdateService {
         }
 
         for (BookEntity book : books) {
-            Instant effectivePurchaseDate = purchaseDate != null ? purchaseDate : book.getAddedOn();
-            book.setPurchaseDate(effectivePurchaseDate);
+            book.setPurchaseDate(purchaseDate);
         }
         bookRepository.saveAll(books);
     }
