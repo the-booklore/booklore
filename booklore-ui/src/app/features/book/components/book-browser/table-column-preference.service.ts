@@ -24,6 +24,7 @@ export class TableColumnPreferenceService {
     {field: 'publishedDate', header: 'Published'},
     {field: 'lastReadTime', header: 'Last Read'},
     {field: 'addedOn', header: 'Added'},
+    {field: 'fileName', header: 'File Name'},
     {field: 'fileSizeKb', header: 'File Size'},
     {field: 'language', header: 'Language'},
     {field: 'isbn', header: 'ISBN'},
