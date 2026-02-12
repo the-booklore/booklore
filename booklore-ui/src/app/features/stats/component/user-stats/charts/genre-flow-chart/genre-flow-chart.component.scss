@@ -1,0 +1,103 @@
+.genre-flow-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+
+  .chart-title {
+    flex: 1;
+
+    h3 {
+      color: var(--text-color, #ffffff);
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chart-description {
+      color: var(--text-secondary-color);
+      font-size: 0.9rem;
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+}
+
+.genre-flow-icon {
+  font-size: 1.5rem;
+  color: rgba(168, 85, 247, 1);
+}
+
+.stats-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    flex: 1;
+    min-width: 100px;
+
+    .stat-value {
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat-label {
+      color: var(--text-secondary-color);
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 350px;
+  width: 100%;
+  min-width: 300px;
+}
+
+@media (max-width: 768px) {
+  .chart-wrapper {
+    height: 300px;
+    min-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-header .chart-title h3 {
+    font-size: 1.1rem;
+  }
+
+  .stats-row {
+    gap: 0.5rem;
+
+    .stat-item {
+      min-width: 80px;
+      padding: 0.4rem 0.5rem;
+    }
+  }
+
+  .chart-wrapper {
+    height: 250px;
+    min-width: 350px;
+  }
+}

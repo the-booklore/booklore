@@ -1,6 +1,8 @@
 package org.booklore.repository;
 
 import org.booklore.model.dto.*;
+import org.booklore.model.dto.PageTurnerSessionDto;
+import org.booklore.model.dto.ReadingHeartbeatDto;
 import org.booklore.model.entity.ReadingSessionEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -136,4 +138,47 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             @Param("userId") Long userId,
             @Param("bookId") Long bookId,
             Pageable pageable);
+
+    @Query("""
+            SELECT
+                b.id as bookId,
+                COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
+                b.metadata.pageCount as pageCount,
+                ubp.dateFinished as dateFinished,
+                MIN(rs.startTime) as firstSessionDate,
+                COUNT(rs) as totalSessions,
+                COALESCE(SUM(rs.durationSeconds), 0) as totalDurationSeconds
+            FROM ReadingSessionEntity rs
+            JOIN rs.book b
+            JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
+            WHERE rs.user.id = :userId
+            AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
+            AND ubp.dateFinished IS NOT NULL
+            AND YEAR(ubp.dateFinished) = :year
+            GROUP BY b.id, b.metadata.title, b.metadata.pageCount, ubp.dateFinished
+            ORDER BY ubp.dateFinished ASC
+            """)
+    List<ReadingHeartbeatDto> findReadingHeartbeatByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year);
+
+    @Query("""
+            SELECT
+                b.id as bookId,
+                COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
+                b.metadata.pageCount as pageCount,
+                ubp.personalRating as personalRating,
+                ubp.dateFinished as dateFinished,
+                rs.startTime as startTime,
+                rs.endTime as endTime,
+                rs.durationSeconds as durationSeconds
+            FROM ReadingSessionEntity rs
+            JOIN rs.book b
+            JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
+            WHERE rs.user.id = :userId
+            AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
+            AND ubp.dateFinished IS NOT NULL
+            ORDER BY b.id, rs.startTime ASC
+            """)
+    List<PageTurnerSessionDto> findPageTurnerSessionsByUser(@Param("userId") Long userId);
 }

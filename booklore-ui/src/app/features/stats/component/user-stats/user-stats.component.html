@@ -113,6 +113,21 @@
           @case ('series-progress') {
             <app-series-progress-chart></app-series-progress-chart>
           }
+          @case ('reading-heartbeat') {
+            <app-reading-heartbeat-chart [initialYear]="currentYear"></app-reading-heartbeat-chart>
+          }
+          @case ('genre-flow') {
+            <app-genre-flow-chart></app-genre-flow-chart>
+          }
+          @case ('page-turner') {
+            <app-page-turner-chart></app-page-turner-chart>
+          }
+          @case ('reading-seasons') {
+            <app-reading-seasons-chart></app-reading-seasons-chart>
+          }
+          @case ('abandonment-autopsy') {
+            <app-abandonment-autopsy-chart></app-abandonment-autopsy-chart>
+          }
         }
       </div>
     }

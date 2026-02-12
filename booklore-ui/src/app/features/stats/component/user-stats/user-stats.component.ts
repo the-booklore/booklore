@@ -21,6 +21,11 @@ import {ReadStatusChartComponent} from './charts/read-status-chart/read-status-c
 import {RatingTasteChartComponent} from './charts/rating-taste-chart/rating-taste-chart.component';
 import {SeriesProgressChartComponent} from './charts/series-progress-chart/series-progress-chart.component';
 import {ReadingBacklogChartComponent} from './charts/reading-backlog-chart/reading-backlog-chart.component';
+import {ReadingHeartbeatChartComponent} from './charts/reading-heartbeat-chart/reading-heartbeat-chart.component';
+import {GenreFlowChartComponent} from './charts/genre-flow-chart/genre-flow-chart.component';
+import {PageTurnerChartComponent} from './charts/page-turner-chart/page-turner-chart.component';
+import {ReadingSeasonsChartComponent} from './charts/reading-seasons-chart/reading-seasons-chart.component';
+import {AbandonmentAutopsyChartComponent} from './charts/abandonment-autopsy-chart/abandonment-autopsy-chart.component';
 import {UserChartConfig, UserChartConfigService} from './service/user-chart-config.service';
 
 @Component({
@@ -45,7 +50,12 @@ import {UserChartConfig, UserChartConfigService} from './service/user-chart-conf
     ReadStatusChartComponent,
     RatingTasteChartComponent,
     ReadingBacklogChartComponent,
-    SeriesProgressChartComponent
+    SeriesProgressChartComponent,
+    ReadingHeartbeatChartComponent,
+    GenreFlowChartComponent,
+    PageTurnerChartComponent,
+    ReadingSeasonsChartComponent,
+    AbandonmentAutopsyChartComponent
   ],
   templateUrl: './user-stats.component.html',
   styleUrls: ['./user-stats.component.scss']

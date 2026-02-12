@@ -1,0 +1,34 @@
+<div class="genre-flow-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-arrow-right-arrow-left genre-flow-icon"></i>
+        Genre Flow
+      </h3>
+      <p class="chart-description">How you transition between genres across consecutive reads</p>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="stat-value" [title]="stats.commonTransition">{{ stats.commonTransition | slice:0:25 }}</span>
+      <span class="stat-label">Most Common Transition</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" [title]="stats.longestStreak">{{ stats.longestStreak | slice:0:20 }}</span>
+      <span class="stat-label">Longest Genre Streak</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">{{ stats.genreLoyalty }}%</span>
+      <span class="stat-label">Genre Loyalty</span>
+    </div>
+  </div>
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>

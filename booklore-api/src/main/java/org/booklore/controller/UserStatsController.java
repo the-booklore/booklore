@@ -135,4 +135,28 @@ public class UserStatsController {
         List<BookCompletionHeatmapResponse> heatmapData = readingSessionService.getBookCompletionHeatmap();
         return ResponseEntity.ok(heatmapData);
     }
+
+    @Operation(summary = "Get reading heartbeat", description = "Returns per-book reading pace data for completed books in a specific year")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reading heartbeat data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/reading-heartbeat")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ReadingHeartbeatResponse>> getReadingHeartbeat(@RequestParam int year) {
+        List<ReadingHeartbeatResponse> heartbeatData = readingSessionService.getReadingHeartbeat(year);
+        return ResponseEntity.ok(heartbeatData);
+    }
+
+    @Operation(summary = "Get page turner scores", description = "Returns engagement/grip scores for completed books based on reading session patterns")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page turner scores retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/page-turner-scores")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<PageTurnerScoreResponse>> getPageTurnerScores() {
+        List<PageTurnerScoreResponse> scores = readingSessionService.getPageTurnerScores();
+        return ResponseEntity.ok(scores);
+    }
 }
