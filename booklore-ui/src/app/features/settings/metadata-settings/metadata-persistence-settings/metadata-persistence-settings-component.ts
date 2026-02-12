@@ -8,6 +8,7 @@ import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 import {Tooltip} from 'primeng/tooltip';
 import {AsyncPipe} from '@angular/common';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-persistence-settings-component',
@@ -15,7 +16,8 @@ import {AsyncPipe} from '@angular/common';
     ToggleSwitch,
     FormsModule,
     Tooltip,
-    AsyncPipe
+    AsyncPipe,
+    TranslocoDirective
   ],
   templateUrl: './metadata-persistence-settings-component.html',
   styleUrl: './metadata-persistence-settings-component.scss'
@@ -53,6 +55,7 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
 
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly settingsHelper = inject(SettingsHelperService);
+  private t = inject(TranslocoService);
 
   readonly appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
 
@@ -92,7 +95,7 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
       next: (settings) => this.initializeSettings(settings),
       error: (error) => {
         console.error('Failed to load settings:', error);
-        this.settingsHelper.showMessage('error', 'Error', 'Failed to load settings.');
+        this.settingsHelper.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsMeta.persistence.loadError'));
       }
     });
   }

@@ -1,6 +1,7 @@
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule} from '@angular/forms';
+import {TranslocoDirective} from '@jsverse/transloco';
 import {ReaderPreferencesService} from '../reader-preferences.service';
 import {UserSettings} from '../../user-management/user.service';
 import {Tooltip} from 'primeng/tooltip';
@@ -16,6 +17,7 @@ import {themes} from '../../../readers/ebook-reader/state/themes.constant';
   imports: [
     Button,
     FormsModule,
+    TranslocoDirective,
     Tooltip,
     Skeleton
   ],

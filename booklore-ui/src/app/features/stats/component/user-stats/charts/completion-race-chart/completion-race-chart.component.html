@@ -1,0 +1,68 @@
+<div class="completion-race-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-flag completion-race-icon"></i>
+        Reading Completion Race
+        <i class="pi pi-question-circle chart-info-icon"
+           pTooltip="Each line represents a completed book's reading journey. The X-axis shows days since you started that book, and the Y-axis shows your progress from 0% to 100%. Steeper lines mean faster reads. Only books marked as 'Read' with tracked sessions are included."
+           tooltipPosition="bottom"
+           tooltipStyleClass="chart-info-tooltip"
+           [appendTo]="'body'"></i>
+      </h3>
+      <p class="chart-description">Compare how quickly you finished different books</p>
+    </div>
+    <div class="year-selector">
+      <button type="button"
+              class="year-nav-btn"
+              (click)="changeYear(-1)"
+              title="Previous year">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+      <span class="current-year">{{ currentYear }}</span>
+      <button type="button"
+              class="year-nav-btn"
+              (click)="changeYear(1)"
+              title="Next year">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  @if (totalBooks > 0) {
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-value">{{ totalBooks }}</span>
+        <span class="stat-label">Books</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ avgDaysToFinish }}d</span>
+        <span class="stat-label">Avg Days</span>
+      </div>
+      <div class="stat-card fastest">
+        <span class="stat-value-sm">{{ fastestCompletion }}</span>
+        <span class="stat-label">Fastest</span>
+      </div>
+      <div class="stat-card slowest">
+        <span class="stat-value-sm">{{ slowestCompletion }}</span>
+        <span class="stat-label">Slowest</span>
+      </div>
+    </div>
+  }
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+
+  @if (totalBooks === 0) {
+    <div class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <p>No completed books with reading sessions found for {{ currentYear }}.</p>
+      <small>Complete some books with tracked reading sessions to see your completion races.</small>
+    </div>
+  }
+</div>

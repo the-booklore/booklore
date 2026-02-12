@@ -1,0 +1,49 @@
+<div class="reading-clock-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-clock reading-clock-icon"></i>
+        Reading Clock
+        <i class="pi pi-question-circle chart-info-icon"
+           pTooltip="Each segment of the clock represents one hour of the day (12am-11pm). The size of each segment shows how many total minutes you've spent reading during that hour across all time. Warm colors indicate your busiest hours. You're classified as a Night Owl (most reading 8pm-2am), Early Bird (5am-11am), or Balanced."
+           tooltipPosition="bottom"
+           tooltipStyleClass="chart-info-tooltip"
+           [appendTo]="'body'"></i>
+      </h3>
+      <p class="chart-description">When do you read throughout the day</p>
+    </div>
+  </div>
+
+  @if (hasData) {
+    <div class="stats-row">
+      <div class="stat-card peak">
+        <span class="stat-value">{{ peakHour }}</span>
+        <span class="stat-label">Peak Hour</span>
+      </div>
+      <div class="stat-card total">
+        <span class="stat-value">{{ totalHoursRead }}h</span>
+        <span class="stat-label">Total Read</span>
+      </div>
+      <div class="stat-card type">
+        <span class="stat-value-sm">{{ readerType }}</span>
+        <span class="stat-label">Reader Type</span>
+      </div>
+    </div>
+  }
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+
+  @if (!hasData) {
+    <div class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <p>No reading session data found.</p>
+      <small>Track your reading sessions to see your reading clock.</small>
+    </div>
+  }
+</div>

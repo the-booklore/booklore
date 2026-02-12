@@ -6,6 +6,7 @@ import {ViewPreferencesComponent} from './view-preferences/view-preferences.comp
 import {SidebarSortingPreferencesComponent} from './sidebar-sorting-preferences/sidebar-sorting-preferences.component';
 import {MetaCenterViewModeComponent} from './meta-center-view-mode/meta-center-view-mode-component';
 import {FilterPreferencesComponent} from './filter-preferences/filter-preferences.component';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-view-preferences-parent',
@@ -18,6 +19,7 @@ import {FilterPreferencesComponent} from './filter-preferences/filter-preference
     SidebarSortingPreferencesComponent,
     MetaCenterViewModeComponent,
     FilterPreferencesComponent,
+    TranslocoDirective,
   ],
   templateUrl: './view-preferences-parent.component.html',
   styleUrl: './view-preferences-parent.component.scss'

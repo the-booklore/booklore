@@ -9,6 +9,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailV2RecipientService} from './email-v2-recipient.service';
 import {EmailRecipient} from '../email-recipient.model';
 import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-email-v2-recipient',
@@ -18,7 +19,9 @@ import {DialogLauncherService} from '../../../../shared/services/dialog-launcher
     ReactiveFormsModule,
     TableModule,
     Tooltip,
-    FormsModule
+    FormsModule,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './email-v2-recipient.component.html',
   styleUrl: './email-v2-recipient.component.scss'
@@ -30,6 +33,7 @@ export class EmailV2RecipientComponent implements OnInit {
   private dialogLauncherService = inject(DialogLauncherService);
   private emailRecipientService = inject(EmailV2RecipientService);
   private messageService = inject(MessageService);
+  private t = inject(TranslocoService);
   defaultRecipientId: unknown;
 
   ngOnInit(): void {
@@ -49,8 +53,8 @@ export class EmailV2RecipientComponent implements OnInit {
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load recipient emails',
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsEmail.recipient.loadError'),
         });
       },
     });
@@ -71,37 +75,37 @@ export class EmailV2RecipientComponent implements OnInit {
         recipient.isEditing = false;
         this.messageService.add({
           severity: 'success',
-          summary: 'Success',
-          detail: 'Recipient updated successfully',
+          summary: this.t.translate('common.success'),
+          detail: this.t.translate('settingsEmail.recipient.updateSuccess'),
         });
         this.loadRecipientEmails();
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to update recipient',
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsEmail.recipient.updateError'),
         });
       },
     });
   }
 
   deleteRecipient(recipient: EmailRecipient): void {
-    if (confirm(`Are you sure you want to delete recipient "${recipient.email}"?`)) {
+    if (confirm(this.t.translate('settingsEmail.recipient.deleteConfirm', {email: recipient.email}))) {
       this.emailRecipientService.deleteRecipient(recipient.id).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Success',
-            detail: `Recipient "${recipient.email}" deleted successfully`,
+            summary: this.t.translate('common.success'),
+            detail: this.t.translate('settingsEmail.recipient.deleteSuccess', {email: recipient.email}),
           });
           this.loadRecipientEmails();
         },
         error: () => {
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to delete recipient',
+            summary: this.t.translate('common.error'),
+            detail: this.t.translate('settingsEmail.recipient.deleteError'),
           });
         },
       });
@@ -122,8 +126,8 @@ export class EmailV2RecipientComponent implements OnInit {
       this.defaultRecipientId = recipient.id;
       this.messageService.add({
         severity: 'success',
-        summary: 'Default Recipient Set',
-        detail: `${recipient.email} is now the default recipient.`
+        summary: this.t.translate('settingsEmail.recipient.defaultSetSummary'),
+        detail: this.t.translate('settingsEmail.recipient.defaultSetDetail', {email: recipient.email}),
       });
     });
   }

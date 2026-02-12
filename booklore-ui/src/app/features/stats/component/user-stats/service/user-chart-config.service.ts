@@ -14,7 +14,11 @@ import {RatingTasteChartComponent} from '../charts/rating-taste-chart/rating-tas
 import {SeriesProgressChartComponent} from '../charts/series-progress-chart/series-progress-chart.component';
 import {ReadingDNAChartComponent} from '../charts/reading-dna-chart/reading-dna-chart.component';
 import {ReadingHabitsChartComponent} from '../charts/reading-habits-chart/reading-habits-chart.component';
-import {ReadingBacklogChartComponent} from '../charts/reading-backlog-chart/reading-backlog-chart.component';
+import {PageTurnerChartComponent} from '../charts/page-turner-chart/page-turner-chart.component';
+import {CompletionRaceChartComponent} from '../charts/completion-race-chart/completion-race-chart.component';
+import {ReadingSurvivalChartComponent} from '../charts/reading-survival-chart/reading-survival-chart.component';
+import {ReadingClockChartComponent} from '../charts/reading-clock-chart/reading-clock-chart.component';
+import {BookLengthChartComponent} from '../charts/book-length-chart/book-length-chart.component';
 
 export interface UserChartConfig {
   id: string;
@@ -42,11 +46,15 @@ export class UserChartConfigService {
     {id: 'read-status', title: 'Reading Status Distribution', component: ReadStatusChartComponent, enabled: true, sizeClass: 'chart-small-square', order: 7},
     {id: 'genre-stats', title: 'Genre Statistics', component: GenreStatsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 8},
     {id: 'completion-timeline', title: 'Completion Timeline', component: CompletionTimelineChartComponent, enabled: true, sizeClass: 'chart-medium', order: 9},
-    {id: 'rating-taste', title: 'Rating Taste Comparison', component: RatingTasteChartComponent, enabled: true, sizeClass: 'chart-medium', order: 10},
-    {id: 'series-progress', title: 'Series Progress Tracker', component: SeriesProgressChartComponent, enabled: true, sizeClass: 'chart-medium', order: 11},
-    {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 12},
-    {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 13},
-    {id: 'reading-backlog', title: 'Reading Backlog Analysis', component: ReadingBacklogChartComponent, enabled: true, sizeClass: 'chart-full', order: 14},
+    {id: 'reading-clock', title: 'Reading Clock', component: ReadingClockChartComponent, enabled: true, sizeClass: 'chart-medium', order: 10},
+    {id: 'page-turner', title: 'Page Turner Score', component: PageTurnerChartComponent, enabled: true, sizeClass: 'chart-medium', order: 11},
+    {id: 'completion-race', title: 'Reading Completion Race', component: CompletionRaceChartComponent, enabled: true, sizeClass: 'chart-full', order: 12},
+    {id: 'reading-survival', title: 'Reading Survival Curve', component: ReadingSurvivalChartComponent, enabled: true, sizeClass: 'chart-medium', order: 13},
+    {id: 'book-length', title: 'Book Length Sweet Spot', component: BookLengthChartComponent, enabled: true, sizeClass: 'chart-medium', order: 14},
+    {id: 'rating-taste', title: 'Rating Taste Comparison', component: RatingTasteChartComponent, enabled: true, sizeClass: 'chart-medium', order: 15},
+    {id: 'series-progress', title: 'Series Progress Tracker', component: SeriesProgressChartComponent, enabled: true, sizeClass: 'chart-medium', order: 16},
+    {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 17},
+    {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 18},
   ];
 
   private chartsSubject = new BehaviorSubject<UserChartConfig[]>(this.loadChartConfig());

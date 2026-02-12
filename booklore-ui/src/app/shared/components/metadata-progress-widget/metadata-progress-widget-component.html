@@ -12,19 +12,19 @@
               <p-tag
                 value="Review"
                 severity="warn"
-                styleClass="task-tag">
+                class="task-tag">
               </p-tag>
             } @else {
               <p-tag
                 value="Auto"
                 severity="success"
-                styleClass="task-tag">
+                class="task-tag">
               </p-tag>
             }
             <p-tag
               [value]="getStatusLabel(task.value.status)"
               [severity]="getTagSeverity(task.value.status)"
-              styleClass="task-tag"
+              class="task-tag"
             ></p-tag>
           </div>
         </div>

@@ -311,7 +311,7 @@ public class MetadataRefreshService {
         if (context.getMetadataUpdateWrapper() != null && context.getMetadataUpdateWrapper().getMetadata() != null) {
             bookMetadataUpdater.setBookMetadata(context);
 
-            Book book = bookMapper.toBook(context.getBookEntity());
+            Book book = bookMapper.toBookWithDescription(context.getBookEntity(), true);
             
             BookLoreUser user = authenticationService.getAuthenticatedUser();
             if (user != null && book.getShelves() != null) {
@@ -612,6 +612,10 @@ public class MetadataRefreshService {
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setComicvineId(existingMetadata.getComicvineId());
+        }
+
+        if (metadataMap.containsKey(Comicvine) && metadataMap.get(Comicvine).getComicMetadata() != null) {
+            metadata.setComicMetadata(metadataMap.get(Comicvine).getComicMetadata());
         }
 
         if (enabledFields.isLubimyczytacId()) {

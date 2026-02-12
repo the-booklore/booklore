@@ -1,6 +1,5 @@
 package org.booklore.service.metadata.extractor;
 
-import org.booklore.model.dto.BookMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -14,6 +13,8 @@ import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.booklore.model.dto.BookMetadata;
+import org.booklore.util.SecureXmlUtils;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -21,8 +22,10 @@ import org.w3c.dom.NodeList;
 import javax.imageio.ImageIO;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.*;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -109,8 +112,17 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                     }
                 }
 
+                metadataBuilder.pageCount(pdf.getNumberOfPages());
+
                 if (StringUtils.isNotBlank(info.getKeywords())) {
-                    Set<String> categories = Arrays.stream(info.getKeywords().split(","))
+                    String keywords = info.getKeywords();
+                    String[] parts;
+                    if (keywords.contains(";")) {
+                        parts = keywords.split(";");
+                    } else {
+                        parts = keywords.split(",");
+                    }
+                    Set<String> categories = Arrays.stream(parts)
                             .map(String::trim)
                             .filter(StringUtils::isNotBlank)
                             .collect(Collectors.toSet());
@@ -134,9 +146,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                     } else {
                         String rawXmp = IOUtils.toString(is, StandardCharsets.UTF_8);
                         if (StringUtils.isNotBlank(rawXmp)) {
-                            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                            dbFactory.setNamespaceAware(true);
-                            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                            DocumentBuilder dBuilder = SecureXmlUtils.createSecureDocumentBuilder(true);
                             Document doc = dBuilder.parse(new ByteArrayInputStream(rawXmp.getBytes(StandardCharsets.UTF_8)));
 
                             XPathFactory xPathfactory = XPathFactory.newInstance();
@@ -145,9 +155,18 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
                             extractDublinCoreMetadata(xpath, doc, metadataBuilder);
                             extractCalibreMetadata(xpath, doc, metadataBuilder);
+                            extractBookloreMetadata(xpath, doc, metadataBuilder);
+                            
+                            // Debug logging for troubleshooting extraction issues
+                            if (log.isDebugEnabled()) {
+                                BookMetadata debugMeta = metadataBuilder.build();
+                                log.debug("PDF XMP extraction results - subtitle: '{}', moods: {}, tags: {}", 
+                                    debugMeta.getSubtitle(), debugMeta.getMoods(), debugMeta.getTags());
+                            }
 
                             Map<String, String> identifiers = extractIdentifiers(xpath, doc);
                             if (!identifiers.isEmpty()) {
+                                // Extract generic ISBN first
                                 String isbn = identifiers.get("isbn");
                                 if (StringUtils.isNotBlank(isbn)) {
                                     isbn = ISBN_CLEANUP_PATTERN.matcher(isbn).replaceAll("");
@@ -156,8 +175,24 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                     } else if (isbn.length() == 13) {
                                         metadataBuilder.isbn13(isbn);
                                     } else {
-                                        metadataBuilder.isbn13(isbn);
-                                        log.warn("ISBN length not 10 or 13: {}", isbn);
+                                        metadataBuilder.isbn13(isbn); // Fallback
+                                    }
+                                }
+
+                                // Extract specific ISBN schemes (overwrites generic only if valid)
+                                String isbn13 = identifiers.get("isbn13");
+                                if (StringUtils.isNotBlank(isbn13)) {
+                                    String cleaned = ISBN_CLEANUP_PATTERN.matcher(isbn13).replaceAll("");
+                                    if (!cleaned.isBlank()) {
+                                        metadataBuilder.isbn13(cleaned);
+                                    }
+                                }
+
+                                String isbn10 = identifiers.get("isbn10");
+                                if (StringUtils.isNotBlank(isbn10)) {
+                                    String cleaned = ISBN_CLEANUP_PATTERN.matcher(isbn10).replaceAll("");
+                                    if (!cleaned.isBlank()) {
+                                        metadataBuilder.isbn10(cleaned);
                                     }
                                 }
 
@@ -189,6 +224,16 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                 String hardcover = identifiers.get("hardcover");
                                 if (StringUtils.isNotBlank(hardcover)) {
                                     metadataBuilder.hardcoverId(hardcover);
+                                }
+
+                                String hardcoverBookId = identifiers.get("hardcover_book_id");
+                                if (StringUtils.isNotBlank(hardcoverBookId)) {
+                                    metadataBuilder.hardcoverBookId(hardcoverBookId);
+                                }
+
+                                String lubimyczytac = identifiers.get("lubimyczytac");
+                                if (StringUtils.isNotBlank(lubimyczytac)) {
+                                    metadataBuilder.lubimyczytacId(lubimyczytac);
                                 }
                             }
                         }
@@ -233,7 +278,24 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
         Set<String> subjects = xpathEvaluateMultiple(xpath, doc, "//dc:subject/rdf:Bag/rdf:li/text()");
         if (!subjects.isEmpty()) {
-            builder.categories(subjects);
+            Set<String> knownNonCategories = new HashSet<>();
+            
+            try {
+                String moods = xpath.evaluate("//booklore:Moods/text()", doc);
+                if (StringUtils.isNotBlank(moods)) {
+                    Arrays.stream(moods.split(";")).map(String::trim).forEach(knownNonCategories::add);
+                }
+                String tags = xpath.evaluate("//booklore:Tags/text()", doc);
+                if (StringUtils.isNotBlank(tags)) {
+                    Arrays.stream(tags.split(";")).map(String::trim).forEach(knownNonCategories::add);
+                }
+            } catch (Exception ignored) {}
+            
+            subjects.removeAll(knownNonCategories);
+            
+            if (!subjects.isEmpty()) {
+                builder.categories(subjects);
+            }
         }
     }
 
@@ -262,6 +324,205 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
         } catch (Exception e) {
             log.warn("Failed to extract calibre metadata: {}", e.getMessage(), e);
+        }
+    }
+
+    private void extractBookloreMetadata(XPath xpath, Document doc, BookMetadata.BookMetadataBuilder builder) {
+        try {
+            // Series information (now in Booklore namespace, not Calibre)
+            String seriesName = extractBookloreField(xpath, doc, "seriesName");
+            if (StringUtils.isNotBlank(seriesName)) {
+                builder.seriesName(seriesName);
+            }
+
+            String seriesNumber = extractBookloreField(xpath, doc, "seriesNumber");
+            if (StringUtils.isNotBlank(seriesNumber)) {
+                try {
+                    builder.seriesNumber(Float.parseFloat(seriesNumber.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid series number: {}", seriesNumber);
+                }
+            }
+
+            String seriesTotal = extractBookloreField(xpath, doc, "seriesTotal");
+            if (StringUtils.isNotBlank(seriesTotal)) {
+                try {
+                    builder.seriesTotal(Integer.parseInt(seriesTotal.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid series total: {}", seriesTotal);
+                }
+            }
+
+            // Subtitle (try both old PascalCase and new camelCase)
+            String subtitle = extractBookloreField(xpath, doc, "subtitle");
+            log.debug("Extracted subtitle (camelCase): '{}'", subtitle);
+            if (StringUtils.isBlank(subtitle)) {
+                subtitle = xpath.evaluate("//booklore:Subtitle/text()", doc);
+                log.debug("Extracted subtitle (PascalCase fallback): '{}'", subtitle);
+            }
+            if (StringUtils.isNotBlank(subtitle)) {
+                builder.subtitle(subtitle.trim());
+            }
+
+            // ISBNs from Booklore namespace
+            String isbn13 = extractBookloreField(xpath, doc, "isbn13");
+            if (StringUtils.isNotBlank(isbn13)) {
+                builder.isbn13(isbn13.trim());
+            }
+            
+            String isbn10 = extractBookloreField(xpath, doc, "isbn10");
+            if (StringUtils.isNotBlank(isbn10)) {
+                builder.isbn10(isbn10.trim());
+            }
+
+            // External IDs from Booklore namespace
+            String googleId = extractBookloreField(xpath, doc, "googleId");
+            if (StringUtils.isNotBlank(googleId)) {
+                builder.googleId(googleId.trim());
+            }
+
+            String goodreadsId = extractBookloreField(xpath, doc, "goodreadsId");
+            if (StringUtils.isNotBlank(goodreadsId)) {
+                builder.goodreadsId(goodreadsId.trim());
+            }
+
+            String hardcoverId = extractBookloreField(xpath, doc, "hardcoverId");
+            if (StringUtils.isNotBlank(hardcoverId)) {
+                builder.hardcoverId(hardcoverId.trim());
+            }
+
+            String hardcoverBookId = extractBookloreField(xpath, doc, "hardcoverBookId");
+            if (StringUtils.isNotBlank(hardcoverBookId)) {
+                builder.hardcoverBookId(hardcoverBookId.trim());
+            }
+
+            String asin = extractBookloreField(xpath, doc, "asin");
+            if (StringUtils.isNotBlank(asin)) {
+                builder.asin(asin.trim());
+            }
+
+            String comicvineId = extractBookloreField(xpath, doc, "comicvineId");
+            if (StringUtils.isNotBlank(comicvineId)) {
+                builder.comicvineId(comicvineId.trim());
+            }
+
+            String lubimyczytacId = extractBookloreField(xpath, doc, "lubimyczytacId");
+            if (StringUtils.isNotBlank(lubimyczytacId)) {
+                builder.lubimyczytacId(lubimyczytacId.trim());
+            }
+
+            String ranobedbId = extractBookloreField(xpath, doc, "ranobedbId");
+            if (StringUtils.isNotBlank(ranobedbId)) {
+                builder.ranobedbId(ranobedbId.trim());
+            }
+
+            // Page count: Do NOT read from XMP metadata for PDFs.
+            // The actual PDF page count (from pdf.getNumberOfPages()) is set earlier
+            // and should not be overridden by metadata that describes the original book.
+
+            // Moods (try new RDF Bag format first, then legacy semicolon-separated)
+            Set<String> moods = extractBookloreBag(xpath, doc, "moods");
+            log.debug("Extracted moods from RDF Bag: {}", moods);
+            if (moods.isEmpty()) {
+                // Legacy format support
+                String moodsLegacy = xpath.evaluate("//booklore:Moods/text()", doc);
+                log.debug("Legacy moods string: '{}'", moodsLegacy);
+                if (StringUtils.isNotBlank(moodsLegacy)) {
+                    moods = Arrays.stream(moodsLegacy.split(";"))
+                            .map(String::trim)
+                            .filter(StringUtils::isNotBlank)
+                            .collect(Collectors.toSet());
+                }
+            }
+            if (!moods.isEmpty()) {
+                builder.moods(moods);
+            }
+
+            // Tags (try new RDF Bag format first, then legacy semicolon-separated)
+            Set<String> tags = extractBookloreBag(xpath, doc, "tags");
+            log.debug("Extracted tags from RDF Bag: {}", tags);
+            if (tags.isEmpty()) {
+                // Legacy format support
+                String tagsLegacy = xpath.evaluate("//booklore:Tags/text()", doc);
+                log.debug("Legacy tags string: '{}'", tagsLegacy);
+                if (StringUtils.isNotBlank(tagsLegacy)) {
+                    tags = Arrays.stream(tagsLegacy.split(";"))
+                            .map(String::trim)
+                            .filter(StringUtils::isNotBlank)
+                            .collect(Collectors.toSet());
+                }
+            }
+            if (!tags.isEmpty()) {
+                builder.tags(tags);
+            }
+
+            // Ratings (try both old PascalCase and new camelCase)
+            extractBookloreRating(xpath, doc, "amazonRating", "AmazonRating", builder::amazonRating);
+            extractBookloreRating(xpath, doc, "goodreadsRating", "GoodreadsRating", builder::goodreadsRating);
+            extractBookloreRating(xpath, doc, "hardcoverRating", "HardcoverRating", builder::hardcoverRating);
+            extractBookloreRating(xpath, doc, "lubimyczytacRating", "LubimyczytacRating", builder::lubimyczytacRating);
+            extractBookloreRating(xpath, doc, "ranobedbRating", "RanobedbRating", builder::ranobedbRating);
+            
+            // User rating
+            extractBookloreRating(xpath, doc, "rating", "Rating", builder::rating);
+
+        } catch (Exception e) {
+            log.warn("Failed to extract booklore metadata: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Extracts a simple text field from Booklore namespace.
+     */
+    private String extractBookloreField(XPath xpath, Document doc, String fieldName) {
+        try {
+            return xpath.evaluate("//booklore:" + fieldName + "/text()", doc);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Extracts an RDF Bag as a Set of strings from Booklore namespace.
+     */
+    private Set<String> extractBookloreBag(XPath xpath, Document doc, String fieldName) {
+        Set<String> values = new HashSet<>();
+        try {
+            String xpathExpr = "//booklore:" + fieldName + "/rdf:Bag/rdf:li/text()";
+            log.debug("Executing XPath for {}: {}", fieldName, xpathExpr);
+            NodeList nodes = (NodeList) xpath.evaluate(xpathExpr, doc, XPathConstants.NODESET);
+            log.debug("XPath for {} returned {} nodes", fieldName, nodes != null ? nodes.getLength() : 0);
+            if (nodes != null) {
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    String text = nodes.item(i).getNodeValue();
+                    if (StringUtils.isNotBlank(text)) {
+                        values.add(text.trim());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract RDF Bag for booklore:{}: {}", fieldName, e.getMessage());
+        }
+        return values;
+    }
+
+    /**
+     * Extracts a rating field, trying both new camelCase and old PascalCase format.
+     */
+    private void extractBookloreRating(XPath xpath, Document doc, String newName, String legacyName, 
+                                        java.util.function.Consumer<Double> setter) {
+        try {
+            String value = xpath.evaluate("//booklore:" + newName + "/text()", doc);
+            if (StringUtils.isBlank(value)) {
+                value = xpath.evaluate("//booklore:" + legacyName + "/text()", doc);
+            }
+            if (StringUtils.isNotBlank(value)) {
+                setter.accept(Double.parseDouble(value.trim()));
+            }
+        } catch (NumberFormatException e) {
+            log.warn("Invalid rating value for {}", newName);
+        } catch (Exception e) {
+            // Ignore
         }
     }
 
@@ -329,6 +590,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
             prefixMap.put("xmpidq", "http://ns.adobe.com/xmp/Identifier/qual/1.0/");
             prefixMap.put("calibre", "http://calibre-ebook.com/xmp-namespace");
             prefixMap.put("calibreSI", "http://calibre-ebook.com/xmp-namespace/seriesIndex");
+            prefixMap.put("booklore", "http://booklore.org/metadata/1.0/");
         }
 
         @Override

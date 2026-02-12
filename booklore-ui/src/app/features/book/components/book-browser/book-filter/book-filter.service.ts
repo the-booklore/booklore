@@ -10,7 +10,7 @@ import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rul
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
 import {EntityType} from '../book-browser.component';
 import {Filter, FILTER_CONFIGS, FILTER_EXTRACTORS, FilterType, FilterValue, NUMERIC_ID_FILTER_TYPES, SortMode} from './book-filter.config';
-import {filterBooksByFilters} from '../filters/SidebarFilter';
+import {filterBooksByFilters} from '../filters/sidebar-filter';
 import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
 const MAX_FILTER_ITEMS = 100;

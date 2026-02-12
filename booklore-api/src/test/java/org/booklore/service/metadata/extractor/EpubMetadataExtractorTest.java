@@ -465,6 +465,30 @@ class EpubMetadataExtractorTest {
             assertTrue(cover.length > 0);
             assertArrayEquals(pngImage, cover);
         }
+
+        @Test
+        @DisplayName("Should extract cover using manifest heuristic fallback (href containing 'cover')")
+        void extractCover_manifestHeuristic_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            File epubFile = createEpubWithHeuristicManifestCover(pngImage, "some-id", "some-cover-file.png");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via manifest heuristic");
+            assertArrayEquals(pngImage, cover);
+        }
+
+        @Test
+        @DisplayName("Should extract cover using ZIP heuristic fallback (ZIP entry containing 'cover')")
+        void extractCover_zipHeuristic_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            File epubFile = createEpubWithHeuristicZipCover(pngImage, "OEBPS/my-cool-cover.jpg");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted via ZIP heuristic");
+            assertArrayEquals(pngImage, cover);
+        }
     }
 
     @Nested
@@ -615,6 +639,69 @@ class EpubMetadataExtractorTest {
             </package>
             """, title, seriesName, seriesIndex);
         return createEpubWithOpf(opfContent, "test-booklore-series-" + System.nanoTime() + ".epub");
+    }
+
+    @Nested
+    @DisplayName("BookLore Metadata Tests")
+    class BookLoreMetadataTests {
+
+        @Test
+        @DisplayName("Should extract BookLore custom properties from EPUB metadata")
+        void extractMetadata_withBookloreProperties_returnsExtendedMetadata() throws IOException {
+            File epubFile = createEpubWithBookloreMetadata();
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("A Subtitle", result.getSubtitle()),
+                () -> assertEquals(10, result.getSeriesTotal()),
+                () -> assertEquals(4.5, result.getAmazonRating()),
+                () -> assertEquals(4.0, result.getGoodreadsRating()),
+                () -> assertEquals(5.0, result.getHardcoverRating()),
+                () -> assertEquals(3.5, result.getLubimyczytacRating()),
+                () -> assertEquals(2.0, result.getRanobedbRating()),
+                () -> assertEquals("B001", result.getAsin()),
+                () -> assertEquals("1001", result.getGoodreadsId()),
+                () -> assertEquals("2002", result.getComicvineId()),
+                () -> assertEquals("3003", result.getHardcoverId()),
+                () -> assertEquals("4004", result.getRanobedbId()),
+                () -> assertEquals("5005", result.getGoogleId()),
+                () -> assertEquals("6006", result.getLubimyczytacId()),
+                () -> assertTrue(result.getMoods().contains("Dark")),
+                () -> assertTrue(result.getMoods().contains("Mystery")),
+                () -> assertTrue(result.getTags().contains("Fiction")),
+                () -> assertTrue(result.getTags().contains("Thriller"))
+            );
+        }
+    }
+
+    private File createEpubWithBookloreMetadata() throws IOException {
+        String opfContent = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" xmlns:booklore="http://booklore.org/metadata" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>BookLore Test</dc:title>
+                    <meta property="booklore:subtitle">A Subtitle</meta>
+                    <meta property="booklore:series_total">10</meta>
+                    <meta property="booklore:amazon_rating">4.5</meta>
+                    <meta property="booklore:goodreads_rating">4.0</meta>
+                    <meta property="booklore:hardcover_rating">5.0</meta>
+                    <meta property="booklore:lubimyczytac_rating">3.5</meta>
+                    <meta property="booklore:ranobedb_rating">2.0</meta>
+                    <meta property="booklore:asin">B001</meta>
+                    <meta property="booklore:goodreads_id">1001</meta>
+                    <meta property="booklore:comicvine_id">2002</meta>
+                    <meta property="booklore:hardcover_id">3003</meta>
+                    <meta property="booklore:ranobedb_id">4004</meta>
+                    <meta property="booklore:google_books_id">5005</meta>
+                    <meta property="booklore:lubimyczytac_id">6006</meta>
+                    <meta property="booklore:moods">Dark, Mystery</meta>
+                    <meta property="booklore:tags">Fiction, Thriller</meta>
+                </metadata>
+            </package>
+            """;
+        return createEpubWithOpf(opfContent, "test-booklore-" + System.nanoTime() + ".epub");
     }
 
     private File createEpubWithIsbn(String isbn13, String isbn10) throws IOException {
@@ -864,6 +951,93 @@ class EpubMetadataExtractorTest {
 
             String decodedPath = java.net.URLDecoder.decode(encodedHref, java.nio.charset.StandardCharsets.UTF_8);
             zos.putNextEntry(new ZipEntry("OEBPS/" + decodedPath));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
+    }
+
+    private File createEpubWithHeuristicManifestCover(byte[] coverImageData, String id, String href) throws IOException {
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Heuristic Manifest Cover</dc:title>
+                </metadata>
+                <manifest>
+                    <item id="%s" href="%s" media-type="image/png"/>
+                </manifest>
+            </package>
+            """, id, href);
+
+        File epubFile = tempDir.resolve("test-heuristic-manifest-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/" + href));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
+    }
+
+    private File createEpubWithHeuristicZipCover(byte[] coverImageData, String path) throws IOException {
+        File epubFile = tempDir.resolve("test-heuristic-zip-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        String opfContent = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Heuristic ZIP Cover</dc:title>
+                </metadata>
+            </package>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry(path));
             zos.write(coverImageData);
             zos.closeEntry();
         }

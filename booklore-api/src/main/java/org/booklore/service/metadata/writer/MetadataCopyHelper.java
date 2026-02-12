@@ -1,8 +1,6 @@
 package org.booklore.service.metadata.writer;
 
-import org.booklore.model.entity.AuthorEntity;
-import org.booklore.model.entity.BookMetadataEntity;
-import org.booklore.model.entity.CategoryEntity;
+import org.booklore.model.entity.*;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -147,6 +145,8 @@ public class MetadataCopyHelper {
         }
     }
 
+
+
     public void copyLubimyczytacId(boolean clear, Consumer<String> consumer) {
         if (!isLocked(metadata.getLubimyczytacIdLocked())) {
             if (clear) consumer.accept(null);
@@ -188,4 +188,79 @@ public class MetadataCopyHelper {
             }
         }
     }
+
+    public void copyMoods(boolean clear, Consumer<Set<String>> consumer) {
+        if (!isLocked(metadata.getMoodsLocked())) {
+            if (clear) {
+                consumer.accept(Set.of());
+            } else if (metadata.getMoods() != null) {
+                Set<String> moods = metadata.getMoods().stream()
+                        .map(MoodEntity::getName)
+                        .filter(n -> n != null && !n.isBlank())
+                        .collect(Collectors.toSet());
+                consumer.accept(moods);
+            }
+        }
+    }
+
+    public void copyTags(boolean clear, Consumer<Set<String>> consumer) {
+        if (!isLocked(metadata.getTagsLocked())) {
+            if (clear) {
+                consumer.accept(Set.of());
+            } else if (metadata.getTags() != null) {
+                Set<String> tags = metadata.getTags().stream()
+                        .map(TagEntity::getName)
+                        .filter(n -> n != null && !n.isBlank())
+                        .collect(Collectors.toSet());
+                consumer.accept(tags);
+            }
+        }
+    }
+
+    public void copyRating(boolean clear, Consumer<Double> consumer) {
+        if (clear) {
+            consumer.accept(null);
+        } else if (metadata.getRating() != null) {
+            consumer.accept(metadata.getRating());
+        }
+    }
+
+    public void copyAmazonRating(boolean clear, Consumer<Double> consumer) {
+        if (!isLocked(metadata.getAmazonRatingLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getAmazonRating() != null) consumer.accept(metadata.getAmazonRating());
+        }
+    }
+
+    public void copyGoodreadsRating(boolean clear, Consumer<Double> consumer) {
+        if (!isLocked(metadata.getGoodreadsRatingLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getGoodreadsRating() != null) consumer.accept(metadata.getGoodreadsRating());
+        }
+    }
+
+    public void copyHardcoverRating(boolean clear, Consumer<Double> consumer) {
+        if (!isLocked(metadata.getHardcoverRatingLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getHardcoverRating() != null) consumer.accept(metadata.getHardcoverRating());
+        }
+    }
+
+
+
+    public void copyLubimyczytacRating(boolean clear, Consumer<Double> consumer) {
+        if (!isLocked(metadata.getLubimyczytacRatingLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getLubimyczytacRating() != null) consumer.accept(metadata.getLubimyczytacRating());
+        }
+    }
+
+    public void copyRanobedbRating(boolean clear, Consumer<Double> consumer) {
+        if (!isLocked(metadata.getRanobedbRatingLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getRanobedbRating() != null) consumer.accept(metadata.getRanobedbRating());
+        }
+    }
+
+
 }

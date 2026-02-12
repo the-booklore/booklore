@@ -10,6 +10,7 @@ import {Tab, TabList, TabPanel, TabPanels, Tabs,} from 'primeng/tabs';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Button} from 'primeng/button';
 import {BookMetadataHostService} from '../../../../shared/service/book-metadata-host.service';
+import {TranslocoDirective} from '@jsverse/transloco';
 import {MetadataViewerComponent} from './metadata-viewer/metadata-viewer.component';
 import {MetadataEditorComponent} from './metadata-editor/metadata-editor.component';
 import {MetadataSearcherComponent} from './metadata-searcher/metadata-searcher.component';
@@ -29,7 +30,8 @@ import {SidecarViewerComponent} from './sidecar-viewer/sidecar-viewer.component'
     MetadataEditorComponent,
     MetadataSearcherComponent,
     SidecarViewerComponent,
-    Button
+    Button,
+    TranslocoDirective
   ],
   styleUrls: ['./book-metadata-center.component.scss'],
 })
