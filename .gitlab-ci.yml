@@ -19,6 +19,7 @@ include:
       - if: '$CI_PIPELINE_SOURCE != "schedule"'
     inputs:
       trivy-disabled: true
+      hadolint-disabled: true
       cosign-strategy: "onrelease"
       # IMPORTANT: disable "main"/"master" publish to avoid overwriting a "main" tag image;
       # releases should be pushed on Git tags only.
