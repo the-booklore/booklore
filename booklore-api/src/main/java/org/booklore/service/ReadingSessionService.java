@@ -375,7 +375,7 @@ public class ReadingSessionService {
                 .collect(Collectors.toList());
     }
 
-    private static final int COMPLETION_RACE_BOOK_LIMIT = 15;
+    private static final int COMPLETION_RACE_BOOK_LIMIT = 10;
 
     @Transactional(readOnly = true)
     public List<CompletionRaceResponse> getCompletionRace(int year) {
