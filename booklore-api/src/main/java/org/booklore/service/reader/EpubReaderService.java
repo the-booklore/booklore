@@ -15,13 +15,17 @@ import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookRepository;
 import org.booklore.util.FileUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.pdfbox.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.charset.Charset;
@@ -748,10 +752,10 @@ public class EpubReaderService {
 
     private String guessContentType(String path) {
         if (path == null) return "application/octet-stream";
-        
+
         int lastDot = path.lastIndexOf('.');
         if (lastDot < 0) return "application/octet-stream";
-        
+
         String extension = path.substring(lastDot).toLowerCase();
         return CONTENT_TYPE_MAP.getOrDefault(extension, "application/octet-stream");
     }

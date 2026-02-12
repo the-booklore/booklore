@@ -53,4 +53,17 @@
       </p-select>
     </div>
   }
+
+  @if (showSaveButton) {
+    <div class="save-sort-section">
+      <p-button
+        icon="pi pi-save"
+        label="Save as Default"
+        size="small"
+        [outlined]="true"
+        [style]="{ width: '100%' }"
+        (onClick)="onSave()">
+      </p-button>
+    </div>
+  }
 </div>

@@ -145,8 +145,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
     response.forEach((item) => {
       const startTime = new Date(item.startDate);
-      const endTime = item.endDate ? new Date(item.endDate) : new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
-      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+      const endTime = new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
+      const duration = item.totalDurationSeconds / 60;
 
       sessions.push({
         startTime,
@@ -254,6 +254,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
     }
   }
 
+  private static readonly MAX_TRACKS = 3;
+
   private layoutSessionsForDay(sessions: ReadingSession[]): TimelineSession[] {
     if (sessions.length === 0) {
       return [];
@@ -279,7 +281,11 @@ export class ReadingSessionTimelineComponent implements OnInit {
         }
       }
       if (!placed) {
-        tracks.push([session]);
+        if (tracks.length < ReadingSessionTimelineComponent.MAX_TRACKS) {
+          tracks.push([session]);
+        } else {
+          tracks[tracks.length - 1].push(session);
+        }
       }
     });
 

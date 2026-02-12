@@ -18,12 +18,13 @@ import {map} from 'rxjs';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Checkbox} from 'primeng/checkbox';
 import {Select} from 'primeng/select';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox, Select],
+  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox, Select, TranslocoDirective, TranslocoPipe],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -41,13 +42,7 @@ export class LibraryCreatorComponent implements OnInit {
   formatCounts: Record<string, number> = {};
   metadataSource: MetadataSource = 'EMBEDDED';
 
-  readonly metadataSourceOptions = [
-    {label: 'Embedded Only', value: 'EMBEDDED', description: 'Use only embedded file metadata'},
-    {label: 'Sidecar Only', value: 'SIDECAR', description: 'Use only sidecar JSON files'},
-    {label: 'Prefer Sidecar', value: 'PREFER_SIDECAR', description: 'Use sidecar if available, fallback to embedded'},
-    {label: 'Prefer Embedded', value: 'PREFER_EMBEDDED', description: 'Use embedded if available, fallback to sidecar'},
-    {label: 'None', value: 'NONE', description: 'Don\'t read metadata from files'}
-  ];
+  metadataSourceOptions: {label: string, value: string}[] = [];
 
   readonly allBookFormats: {type: BookType, label: string}[] = [
     {type: 'EPUB', label: 'EPUB'},
@@ -66,8 +61,16 @@ export class LibraryCreatorComponent implements OnInit {
   private messageService = inject(MessageService);
   private router = inject(Router);
   private iconPicker = inject(IconPickerService);
+  private readonly t = inject(TranslocoService);
 
   ngOnInit(): void {
+    this.metadataSourceOptions = [
+      {label: this.t.translate('libraryCreator.creator.metadataSourceEmbedded'), value: 'EMBEDDED'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourceSidecar'), value: 'SIDECAR'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourcePreferSidecar'), value: 'PREFER_SIDECAR'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourcePreferEmbedded'), value: 'PREFER_EMBEDDED'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourceNone'), value: 'NONE'}
+    ];
     this.initializeFormatPriority();
     this.initializeAllowedFormats();
 
@@ -154,7 +157,7 @@ export class LibraryCreatorComponent implements OnInit {
     if (this.mode !== 'edit') return null;
     const count = this.formatCounts[formatType];
     if (count && count > 0 && !this.selectedAllowedFormats.has(formatType)) {
-      return `${count} existing book${count > 1 ? 's' : ''} will not appear in future scans`;
+      return this.t.translate('libraryCreator.creator.formatWarning', {count});
     }
     return null;
   }
@@ -216,8 +219,8 @@ export class LibraryCreatorComponent implements OnInit {
       if (exists) {
         this.messageService.add({
           severity: 'error',
-          summary: 'Library Name Exists',
-          detail: 'This library name is already taken.',
+          summary: this.t.translate('libraryCreator.creator.toast.nameExistsSummary'),
+          detail: this.t.translate('libraryCreator.creator.toast.nameExistsDetail'),
         });
         return;
       }
@@ -240,11 +243,11 @@ export class LibraryCreatorComponent implements OnInit {
     if (this.mode === 'edit') {
       this.libraryService.updateLibrary(library, this.library?.id).subscribe({
         next: () => {
-          this.messageService.add({severity: 'success', summary: 'Library Updated', detail: 'The library was updated successfully.'});
+          this.messageService.add({severity: 'success', summary: this.t.translate('libraryCreator.creator.toast.updatedSummary'), detail: this.t.translate('libraryCreator.creator.toast.updatedDetail')});
           this.dynamicDialogRef.close();
         },
         error: (e) => {
-          this.messageService.add({severity: 'error', summary: 'Update Failed', detail: 'An error occurred while updating the library. Please try again.'});
+          this.messageService.add({severity: 'error', summary: this.t.translate('libraryCreator.creator.toast.updateFailedSummary'), detail: this.t.translate('libraryCreator.creator.toast.updateFailedDetail')});
           console.error(e);
         }
       });
@@ -269,17 +272,17 @@ export class LibraryCreatorComponent implements OnInit {
             this.router.navigate(['/library', createdLibrary.id, 'books']);
             this.messageService.add({
               severity: 'success',
-              summary: 'Library Created',
+              summary: this.t.translate('libraryCreator.creator.toast.createdSummary'),
               detail: count >= 500
-                ? `Library created with ${count} files. Loading in progress...`
-                : 'The library was created successfully.'
+                ? this.t.translate('libraryCreator.creator.toast.createdLargeDetail', {count})
+                : this.t.translate('libraryCreator.creator.toast.createdDetail')
             });
             this.dynamicDialogRef.close();
           }
         },
         error: (e) => {
           this.libraryService.setLargeLibraryLoading(false, 0);
-          this.messageService.add({severity: 'error', summary: 'Creation Failed', detail: 'An error occurred while creating the library. Please try again.'});
+          this.messageService.add({severity: 'error', summary: this.t.translate('libraryCreator.creator.toast.createFailedSummary'), detail: this.t.translate('libraryCreator.creator.toast.createFailedDetail')});
           console.error(e);
         }
       });

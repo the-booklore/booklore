@@ -8,6 +8,7 @@ import {DividerModule} from 'primeng/divider';
 import {MessageModule} from 'primeng/message';
 import {BackgroundUploadService} from '../background-upload.service';
 import {take} from 'rxjs';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-upload-dialog',
@@ -20,12 +21,15 @@ import {take} from 'rxjs';
     ButtonModule,
     InputTextModule,
     DividerModule,
-    MessageModule
+    MessageModule,
+    TranslocoDirective,
+    TranslocoPipe
   ]
 })
 export class UploadDialogComponent {
   private readonly dialogRef = inject(DynamicDialogRef);
   private readonly backgroundUploadService = inject(BackgroundUploadService);
+  private readonly t = inject(TranslocoService);
 
   uploadImageUrl = '';
   uploadFile: File | null = null;
@@ -47,7 +51,7 @@ export class UploadDialogComponent {
     } else if (this.uploadImageUrl.trim()) {
       upload$ = this.backgroundUploadService.uploadUrl(this.uploadImageUrl.trim());
     } else {
-      this.uploadError = 'Please select a file or paste a URL.';
+      this.uploadError = this.t.translate('layout.uploadDialog.errorNoInput');
       return;
     }
 

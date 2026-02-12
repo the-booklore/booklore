@@ -1,3 +1,4 @@
+<ng-container *transloco="let t; prefix: 'shared.setup'">
 <div class="setup-container">
   <div class="setup-card-wrapper">
     <div class="setup-card-border">
@@ -12,15 +13,15 @@
                 fill="white"/>
             </svg>
           </div>
-          <h1 class="setup-title">Welcome to Booklore</h1>
-          <p class="setup-subtitle">Setup your initial admin account to get started</p>
+          <h1 class="setup-title">{{ t('title') }}</h1>
+          <p class="setup-subtitle">{{ t('subtitle') }}</p>
         </div>
 
         <form class="setup-form" [formGroup]="setupForm" (ngSubmit)="onSubmit()">
           <div class="form-field">
             <label for="username" class="form-label">
               <i class="pi pi-user"></i>
-              <span>Username</span>
+              <span>{{ t('usernameLabel') }}</span>
             </label>
             <input
               pInputText
@@ -28,14 +29,14 @@
               name="username"
               required
               formControlName="username"
-              placeholder="Choose a username"
+              [placeholder]="t('usernamePlaceholder')"
               class="form-input"
               autocomplete="username"
             />
             @if (setupForm.get('username')?.invalid && setupForm.get('username')?.touched) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Username is required
+                {{ t('validation.usernameRequired') }}
               </small>
             }
           </div>
@@ -43,7 +44,7 @@
           <div class="form-field">
             <label for="name" class="form-label">
               <i class="pi pi-id-card"></i>
-              <span>Full Name</span>
+              <span>{{ t('fullNameLabel') }}</span>
             </label>
             <input
               pInputText
@@ -51,14 +52,14 @@
               name="name"
               required
               formControlName="name"
-              placeholder="Enter your full name"
+              [placeholder]="t('fullNamePlaceholder')"
               class="form-input"
               autocomplete="name"
             />
             @if (setupForm.get('name')?.invalid && setupForm.get('name')?.touched) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Name is required
+                {{ t('validation.nameRequired') }}
               </small>
             }
           </div>
@@ -66,7 +67,7 @@
           <div class="form-field">
             <label for="email" class="form-label">
               <i class="pi pi-envelope"></i>
-              <span>Email Address</span>
+              <span>{{ t('emailLabel') }}</span>
             </label>
             <input
               pInputText
@@ -75,14 +76,14 @@
               type="email"
               required
               formControlName="email"
-              placeholder="Enter your email address"
+              [placeholder]="t('emailPlaceholder')"
               class="form-input"
               autocomplete="email"
             />
             @if (setupForm.get('email')?.invalid && setupForm.get('email')?.touched) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Valid email is required
+                {{ t('validation.emailRequired') }}
               </small>
             }
           </div>
@@ -90,7 +91,7 @@
           <div class="form-field">
             <label for="password" class="form-label">
               <i class="pi pi-lock"></i>
-              <span>Password</span>
+              <span>{{ t('passwordLabel') }}</span>
             </label>
             <input
               pInputText
@@ -99,14 +100,14 @@
               type="password"
               required
               formControlName="password"
-              placeholder="Create a secure password"
+              [placeholder]="t('passwordPlaceholder')"
               class="form-input"
               autocomplete="new-password"
             />
             @if (setupForm.get('password')?.invalid && setupForm.get('password')?.touched) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Minimum 6 characters required
+                {{ t('validation.passwordMinLength') }}
               </small>
             }
           </div>
@@ -114,7 +115,7 @@
           <div class="form-field">
             <label for="confirmPassword" class="form-label">
               <i class="pi pi-lock"></i>
-              <span>Confirm Password</span>
+              <span>{{ t('confirmPasswordLabel') }}</span>
             </label>
             <input
               pInputText
@@ -123,20 +124,20 @@
               type="password"
               required
               formControlName="confirmPassword"
-              placeholder="Re-enter your password"
+              [placeholder]="t('confirmPasswordPlaceholder')"
               class="form-input"
               autocomplete="new-password"
             />
             @if (setupForm.get('confirmPassword')?.invalid && setupForm.get('confirmPassword')?.touched) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Password confirmation is required
+                {{ t('validation.confirmPasswordRequired') }}
               </small>
             }
             @if (setupForm.get('confirmPassword')?.touched && setupForm.hasError('passwordMismatch')) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Passwords do not match
+                {{ t('validation.passwordsMismatch') }}
               </small>
             }
           </div>
@@ -144,7 +145,7 @@
           <p-button
             fluid
             type="submit"
-            [label]="loading ? 'Creating Account...' : 'Create Admin Account'"
+            [label]="loading ? t('creatingAccountBtn') : t('createAccountBtn')"
             [icon]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-user-plus'"
             [disabled]="loading || setupForm.invalid"
             class="setup-button"
@@ -158,7 +159,7 @@
 
           @if (success) {
             <div class="message-container success-message">
-              <p-message severity="success">Admin account created successfully! Redirecting...</p-message>
+              <p-message severity="success">{{ t('successMessage') }}</p-message>
             </div>
           }
         </form>
@@ -166,3 +167,4 @@
     </div>
   </div>
 </div>
+</ng-container>

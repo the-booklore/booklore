@@ -1,6 +1,7 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
+import {Tooltip} from 'primeng/tooltip';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
@@ -27,7 +28,7 @@ type HeatmapChartData = ChartData<'matrix', MatrixDataPoint[], string>;
 @Component({
   selector: 'app-reading-heatmap-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './reading-heatmap-chart.component.html',
   styleUrls: ['./reading-heatmap-chart.component.scss']
 })

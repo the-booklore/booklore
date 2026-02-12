@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -119,14 +120,19 @@ public class BookController {
         return ResponseEntity.ok(bookMetadataService.getComicInfoMetadata(bookId));
     }
 
-    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading.")
-    @ApiResponse(responseCode = "200", description = "Book content returned successfully")
+    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading. Supports HTTP Range requests for partial content streaming.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Full book content returned"),
+            @ApiResponse(responseCode = "206", description = "Partial content returned for Range request")
+    })
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<Resource> getBookContent(
+    public void getBookContent(
             @Parameter(description = "ID of the book") @PathVariable long bookId,
-            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType) {
-        return bookService.getBookContent(bookId, bookType);
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType,
+            HttpServletRequest request,
+            HttpServletResponse response) throws java.io.IOException {
+        bookService.streamBookContent(bookId, bookType, request, response);
     }
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")

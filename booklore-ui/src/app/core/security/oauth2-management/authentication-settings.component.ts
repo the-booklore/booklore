@@ -14,6 +14,7 @@ import {MultiSelect} from 'primeng/multiselect';
 import {Library} from '../../../features/book/model/library.model';
 import {LibraryService} from '../../../features/book/service/library.service';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-authentication-settings',
@@ -27,21 +28,23 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
     Button,
     MultiSelect,
     ReactiveFormsModule,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   styleUrls: ['./authentication-settings.component.scss']
 })
 export class AuthenticationSettingsComponent implements OnInit {
   availablePermissions = [
-    {label: 'Upload Books', value: 'permissionUpload', selected: false},
-    {label: 'Download Books', value: 'permissionDownload', selected: false},
-    {label: 'Edit Book Metadata', value: 'permissionEditMetadata', selected: false},
-    {label: 'Manage Library', value: 'permissionManipulateLibrary', selected: false},
-    {label: 'Email Book', value: 'permissionEmailBook', selected: false},
-    {label: 'Delete Book', value: 'permissionDeleteBook', selected: false},
-    {label: 'KOReader Sync', value: 'permissionSyncKoreader', selected: false},
-    {label: 'Kobo Sync', value: 'permissionSyncKobo', selected: false},
-    {label: 'Access OPDS', value: 'permissionAccessOpds', selected: false}
+    {label: 'Upload Books', value: 'permissionUpload', selected: false, translationKey: 'perms.uploadBooks'},
+    {label: 'Download Books', value: 'permissionDownload', selected: false, translationKey: 'perms.downloadBooks'},
+    {label: 'Edit Book Metadata', value: 'permissionEditMetadata', selected: false, translationKey: 'perms.editMetadata'},
+    {label: 'Manage Library', value: 'permissionManipulateLibrary', selected: false, translationKey: 'perms.manageLibrary'},
+    {label: 'Email Book', value: 'permissionEmailBook', selected: false, translationKey: 'perms.emailBook'},
+    {label: 'Delete Book', value: 'permissionDeleteBook', selected: false, translationKey: 'perms.deleteBook'},
+    {label: 'KOReader Sync', value: 'permissionSyncKoreader', selected: false, translationKey: 'perms.koreaderSync'},
+    {label: 'Kobo Sync', value: 'permissionSyncKobo', selected: false, translationKey: 'perms.koboSync'},
+    {label: 'Access OPDS', value: 'permissionAccessOpds', selected: false, translationKey: 'perms.accessOpds'}
   ];
 
   internalAuthEnabled = true;
@@ -65,6 +68,7 @@ export class AuthenticationSettingsComponent implements OnInit {
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
   private libraryService = inject(LibraryService);
+  private t = inject(TranslocoService);
 
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
 
@@ -118,13 +122,13 @@ export class AuthenticationSettingsComponent implements OnInit {
     this.appSettingsService.toggleOidcEnabled(this.oidcEnabled).subscribe({
       next: () => this.messageService.add({
         severity: 'success',
-        summary: 'Saved',
-        detail: 'OIDC setting updated.'
+        summary: this.t.translate('settingsAuth.toast.saved'),
+        detail: this.t.translate('settingsAuth.toast.oidcUpdated')
       }),
       error: () => this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to update OIDC setting.'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsAuth.toast.oidcError')
       })
     });
   }
@@ -139,13 +143,13 @@ export class AuthenticationSettingsComponent implements OnInit {
     this.appSettingsService.saveSettings(payload).subscribe({
       next: () => this.messageService.add({
         severity: 'success',
-        summary: 'Saved',
-        detail: 'OIDC provider settings saved.'
+        summary: this.t.translate('settingsAuth.toast.saved'),
+        detail: this.t.translate('settingsAuth.toast.providerSaved')
       }),
       error: () => this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to save OIDC provider settings.'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsAuth.toast.providerError')
       })
     });
   }
@@ -170,13 +174,13 @@ export class AuthenticationSettingsComponent implements OnInit {
     this.appSettingsService.saveSettings(payload).subscribe({
       next: () => this.messageService.add({
         severity: 'success',
-        summary: 'Saved',
-        detail: 'OIDC auto-provisioning settings saved.'
+        summary: this.t.translate('settingsAuth.toast.saved'),
+        detail: this.t.translate('settingsAuth.toast.provisionSaved')
       }),
       error: () => this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to save OIDC auto-provisioning settings.'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsAuth.toast.provisionError')
       })
     });
   }

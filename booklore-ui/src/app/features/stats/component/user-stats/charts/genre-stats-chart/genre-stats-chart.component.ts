@@ -4,6 +4,7 @@ import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
+import {Tooltip} from 'primeng/tooltip';
 import {GenreStatsResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
 
 type GenreChartData = ChartData<'bar', number[], string>;
@@ -11,7 +12,7 @@ type GenreChartData = ChartData<'bar', number[], string>;
 @Component({
   selector: 'app-genre-stats-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './genre-stats-chart.component.html',
   styleUrls: ['./genre-stats-chart.component.scss']
 })

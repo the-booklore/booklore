@@ -1,0 +1,51 @@
+{
+  "topbar": {
+    "bookdrop": "Bookdrop",
+    "createNewLibrary": "Create New Library",
+    "uploadBook": "Upload Book",
+    "charts": "Charts",
+    "metadataManager": "Metadata Manager",
+    "settings": "Settings",
+    "documentation": "Documentation",
+    "profile": "Profile",
+    "logout": "Logout",
+    "language": "Language",
+    "supportBookLore": "Support BookLore",
+    "createLibrary": "Create Library",
+    "stats": "Stats",
+    "libraryStats": "Library Stats",
+    "readingStats": "Reading Stats"
+  },
+  "menu": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "allBooks": "All Books",
+    "libraries": "Libraries",
+    "shelves": "Shelves",
+    "magicShelves": "Magic Shelves",
+    "unshelved": "Unshelved",
+    "update": "(Update)"
+  },
+  "changelog": {
+    "title": "What's New",
+    "description": "Latest updates and improvements",
+    "loading": "Loading changelog...",
+    "empty": "No updates available."
+  },
+  "theme": {
+    "primary": "Primary",
+    "surface": "Surface"
+  },
+  "uploadDialog": {
+    "chooseFile": "Choose File:",
+    "selectImage": "Select Image",
+    "fileNote": "Supported formats: JPEG, PNG \u2022 Maximum file size: 5 MB",
+    "or": "OR",
+    "imageUrl": "Image URL:",
+    "urlPlaceholder": "Paste image URL here",
+    "urlNote": "Supported formats: JPEG, PNG \u2022 Maximum file size: 5 MB",
+    "errorNoInput": "Please select a file or paste a URL.",
+    "errorUploadFailed": "Failed to upload image.",
+    "errorUploadRetry": "Upload failed. Please try again."
+  }
+}

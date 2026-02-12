@@ -1,13 +1,13 @@
+<ng-container *transloco="let t; prefix: 'settingsOpds'">
 <div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-server"></i>
-      OPDS Configuration
+      {{ t('title') }}
       <app-external-doc-link docType="opds"></app-external-doc-link>
     </h2>
     <p class="settings-description">
-      Manage your OPDS credentials and control how your book collection is shared with reading apps.
-      By default, all libraries you have access to will be included in the OPDS feed.
+      {{ t('description') }}
     </p>
   </div>
 
@@ -16,10 +16,10 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-sliders-h"></i>
-          Server Settings
+          {{ t('server.sectionTitle') }}
         </h3>
         <p class="section-description">
-          Enable or disable OPDS and Komga API services to control access to your book collection.
+          {{ t('server.sectionDesc') }}
         </p>
       </div>
 
@@ -32,14 +32,14 @@
                   <i class="pi pi-globe"></i>
                 </div>
                 <div class="toggle-info">
-                  <span class="toggle-label">OPDS Server</span>
+                  <span class="toggle-label">{{ t('server.opdsLabel') }}</span>
                   <span class="toggle-status" [class.active]="opdsEnabled">
-                    {{ opdsEnabled ? 'Enabled' : 'Disabled' }}
+                    {{ opdsEnabled ? t('server.enabled') : t('server.disabled') }}
                   </span>
                 </div>
               </div>
               <p class="toggle-description">
-                Enable the OPDS server to access your book collection through OPDS-compatible reading apps like KOReader, Moon+ Reader, etc.
+                {{ t('server.opdsDesc') }}
               </p>
             </div>
             <p-toggleswitch
@@ -55,14 +55,14 @@
                   <i class="pi pi-box"></i>
                 </div>
                 <div class="toggle-info">
-                  <span class="toggle-label">Komga API</span>
+                  <span class="toggle-label">{{ t('server.komgaLabel') }}</span>
                   <span class="toggle-status" [class.active]="komgaApiEnabled">
-                    {{ komgaApiEnabled ? 'Enabled' : 'Disabled' }}
+                    {{ komgaApiEnabled ? t('server.enabled') : t('server.disabled') }}
                   </span>
                 </div>
               </div>
               <p class="toggle-description">
-                Enable the Komga-compatible API to use Komga clients (Tachiyomi, Komelia, etc.) with Booklore. Uses the same OPDS user accounts for authentication.
+                {{ t('server.komgaDesc') }}
               </p>
             </div>
             <p-toggleswitch
@@ -79,14 +79,14 @@
                     <i class="pi pi-folder"></i>
                   </div>
                   <div class="toggle-info">
-                    <span class="toggle-label">Group Unknown Series</span>
+                    <span class="toggle-label">{{ t('server.groupUnknownLabel') }}</span>
                     <span class="toggle-status" [class.active]="komgaGroupUnknown">
-                      {{ komgaGroupUnknown ? 'Grouped' : 'Individual' }}
+                      {{ komgaGroupUnknown ? t('server.grouped') : t('server.individual') }}
                     </span>
                   </div>
                 </div>
                 <p class="toggle-description">
-                  When enabled, books without a series will be grouped under "Unknown Series". When disabled, each book will appear as its own individual series.
+                  {{ t('server.groupUnknownDesc') }}
                 </p>
               </div>
               <p-toggleswitch
@@ -104,10 +104,10 @@
         <div class="section-header">
           <h3 class="section-title">
             <i class="pi pi-link"></i>
-            API Endpoints
+            {{ t('endpoints.sectionTitle') }}
           </h3>
           <p class="section-description">
-            Use these URLs to connect your reading apps to Booklore.
+            {{ t('endpoints.sectionDesc') }}
           </p>
         </div>
 
@@ -120,8 +120,8 @@
                     <i class="pi pi-globe"></i>
                   </div>
                   <div class="endpoint-info">
-                    <span class="endpoint-label">OPDS Catalog URL</span>
-                    <span class="endpoint-hint">For OPDS-compatible apps</span>
+                    <span class="endpoint-label">{{ t('endpoints.opdsCatalog') }}</span>
+                    <span class="endpoint-hint">{{ t('endpoints.opdsHint') }}</span>
                   </div>
                 </div>
                 <div class="endpoint-url-row">
@@ -138,7 +138,7 @@
                     [outlined]="true"
                     size="small"
                     (onClick)="copyEndpoint()"
-                    pTooltip="Copy URL">
+                    [pTooltip]="t('endpoints.copyUrl')">
                   </p-button>
                 </div>
               </div>
@@ -151,8 +151,8 @@
                     <i class="pi pi-box"></i>
                   </div>
                   <div class="endpoint-info">
-                    <span class="endpoint-label">Komga Base URL</span>
-                    <span class="endpoint-hint">For Tachiyomi, Komelia, etc.</span>
+                    <span class="endpoint-label">{{ t('endpoints.komgaBase') }}</span>
+                    <span class="endpoint-hint">{{ t('endpoints.komgaHint') }}</span>
                   </div>
                 </div>
                 <div class="endpoint-url-row">
@@ -169,7 +169,7 @@
                     [outlined]="true"
                     size="small"
                     (onClick)="copyKomgaEndpoint()"
-                    pTooltip="Copy URL">
+                    [pTooltip]="t('endpoints.copyUrl')">
                   </p-button>
                 </div>
               </div>
@@ -186,15 +186,15 @@
             <div class="section-header-text">
               <h3 class="section-title">
                 <i class="pi pi-users"></i>
-                OPDS Users
+                {{ t('users.sectionTitle') }}
               </h3>
               <p class="section-description">
-                Manage user accounts for OPDS and Komga API access. These are separate from Booklore user accounts.
+                {{ t('users.sectionDesc') }}
               </p>
             </div>
             <p-button
               icon="pi pi-plus"
-              label="Add User"
+              [label]="t('users.addUser')"
               severity="success"
               size="small"
               [outlined]="true"
@@ -207,8 +207,8 @@
           @if (users.length === 0) {
             <div class="empty-state">
               <i class="pi pi-users"></i>
-              <p class="empty-title">No users found</p>
-              <p class="empty-subtitle">Create your first OPDS user to get started</p>
+              <p class="empty-title">{{ t('users.emptyTitle') }}</p>
+              <p class="empty-subtitle">{{ t('users.emptySubtitle') }}</p>
             </div>
           } @else {
             <div class="users-list">
@@ -231,6 +231,12 @@
                             [style]="{width: '160px'}"
                             size="small"
                             [appendTo]="'body'">
+                            <ng-template pTemplate="selectedItem" let-selected>
+                              {{ selected.translationKey | transloco }}
+                            </ng-template>
+                            <ng-template pTemplate="item" let-option>
+                              {{ option.translationKey | transloco }}
+                            </ng-template>
                           </p-select>
                         } @else {
                           <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
@@ -247,7 +253,7 @@
                         [outlined]="true"
                         [rounded]="true"
                         (onClick)="saveSortOrder(user)"
-                        pTooltip="Save">
+                        [pTooltip]="'common.save' | transloco">
                       </p-button>
                       <p-button
                         icon="pi pi-times"
@@ -256,7 +262,7 @@
                         [outlined]="true"
                         [rounded]="true"
                         (onClick)="cancelEdit()"
-                        pTooltip="Cancel">
+                        [pTooltip]="'common.cancel' | transloco">
                       </p-button>
                     } @else {
                       <p-button
@@ -266,7 +272,7 @@
                         [outlined]="true"
                         [rounded]="true"
                         (onClick)="startEdit(user)"
-                        pTooltip="Edit sort order">
+                        [pTooltip]="t('users.editSortOrder')">
                       </p-button>
                       <p-button
                         icon="pi pi-trash"
@@ -275,7 +281,7 @@
                         [outlined]="true"
                         [rounded]="true"
                         (onClick)="confirmDelete(user)"
-                        pTooltip="Delete user">
+                        [pTooltip]="t('users.deleteUser')">
                       </p-button>
                     }
                   </div>
@@ -288,32 +294,32 @@
     }
 
     <p-dialog
-      header="Create OPDS User"
+      [header]="t('createDialog.title')"
       [(visible)]="showCreateUserDialog"
       [modal]="true"
       class="user-dialog"
       [style]="{width: '400px'}">
       <div class="dialog-form">
         <div class="form-field">
-          <label for="username">Username</label>
+          <label for="username">{{ t('createDialog.username') }}</label>
           <input
             id="username"
             type="text"
             pInputText
             [(ngModel)]="newUser.username"
-            placeholder="Enter username"/>
+            [placeholder]="t('createDialog.enterUsername')"/>
         </div>
         <div class="form-field">
-          <label for="password">Password</label>
+          <label for="password">{{ t('createDialog.password') }}</label>
           <input
             id="password"
             type="password"
             pInputText
             [(ngModel)]="newUser.password"
-            placeholder="Enter password"/>
+            [placeholder]="t('createDialog.enterPassword')"/>
         </div>
         <div class="form-field">
-          <label for="sortOrder">Default Sort Order</label>
+          <label for="sortOrder">{{ t('createDialog.sortOrder') }}</label>
           <p-select
             id="sortOrder"
             [options]="sortOrderOptions"
@@ -321,25 +327,31 @@
             optionLabel="label"
             optionValue="value"
             [style]="{width: '100%'}"
-            placeholder="Select sort order"
+            [placeholder]="t('createDialog.selectSortOrder')"
             [appendTo]="'body'">
+            <ng-template pTemplate="selectedItem" let-selected>
+              {{ selected.translationKey | transloco }}
+            </ng-template>
+            <ng-template pTemplate="item" let-option>
+              {{ option.translationKey | transloco }}
+            </ng-template>
           </p-select>
           <small class="form-hint">
             <i class="pi pi-info-circle"></i>
-            This will determine how books appear in the OPDS feed for this user
+            {{ t('createDialog.sortHint') }}
           </small>
         </div>
       </div>
       <ng-template pTemplate="footer">
         <div class="dialog-actions">
           <p-button
-            label="Cancel"
+            [label]="'common.cancel' | transloco"
             severity="secondary"
             outlined="true"
             (onClick)="cancelCreateUser()">
           </p-button>
           <p-button
-            label="Create"
+            [label]="t('createDialog.create')"
             severity="success"
             [disabled]="!newUser.username || !newUser.password"
             (onClick)="createUser()">
@@ -353,13 +365,14 @@
     <div class="access-denied-card">
       <i class="pi pi-lock"></i>
       <div class="access-denied-content">
-        <h3>Access Restricted</h3>
+        <h3>{{ t('accessRestricted') }}</h3>
         <p>
-          Access to OPDS is restricted.
+          {{ t('accessDenied') }}
           <br>
-          Please contact your administrator to request permission.
+          {{ t('contactAdmin') }}
         </p>
       </div>
     </div>
   }
 </div>
+</ng-container>

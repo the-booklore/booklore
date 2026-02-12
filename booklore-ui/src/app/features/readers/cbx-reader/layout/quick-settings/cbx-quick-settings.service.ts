@@ -1,13 +1,13 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
-import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode} from '../../../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval} from '../../../../settings/user-management/user.service';
 
 export interface CbxQuickSettingsState {
-  fitMode: CbxFitMode | PdfFitMode;
-  scrollMode: CbxScrollMode | PdfScrollMode;
-  pageViewMode: CbxPageViewMode | PdfPageViewMode;
-  pageSpread: CbxPageSpread | PdfPageSpread;
-  backgroundColor: CbxBackgroundColor | PdfBackgroundColor;
+  fitMode: CbxFitMode;
+  scrollMode: CbxScrollMode;
+  pageViewMode: CbxPageViewMode;
+  pageSpread: CbxPageSpread;
+  backgroundColor: CbxBackgroundColor;
   readingDirection: CbxReadingDirection;
   slideshowInterval: CbxSlideshowInterval;
 }
@@ -77,11 +77,11 @@ export class CbxQuickSettingsService {
     this.updateState({scrollMode: mode});
   }
 
-  setPageViewMode(mode: CbxPageViewMode | PdfPageViewMode): void {
+  setPageViewMode(mode: CbxPageViewMode): void {
     this.updateState({pageViewMode: mode});
   }
 
-  setPageSpread(spread: CbxPageSpread | PdfPageSpread): void {
+  setPageSpread(spread: CbxPageSpread): void {
     this.updateState({pageSpread: spread});
   }
 

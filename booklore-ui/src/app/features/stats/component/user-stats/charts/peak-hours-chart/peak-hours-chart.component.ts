@@ -5,6 +5,7 @@ import {ChartConfiguration, ChartData} from 'chart.js';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {Select} from 'primeng/select';
+import {Tooltip} from 'primeng/tooltip';
 import {FormsModule} from '@angular/forms';
 import {PeakHoursResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
 
@@ -13,7 +14,7 @@ type PeakHoursChartData = ChartData<'line', number[], string>;
 @Component({
   selector: 'app-peak-hours-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, Select, FormsModule],
+  imports: [CommonModule, BaseChartDirective, Select, FormsModule, Tooltip],
   templateUrl: './peak-hours-chart.component.html',
   styleUrls: ['./peak-hours-chart.component.scss']
 })

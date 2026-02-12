@@ -15,6 +15,9 @@
       font-size: 1.25rem;
       font-weight: 500;
       margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .chart-description {
@@ -91,6 +94,60 @@
   margin-right: 0.25em;
 }
 
+.chart-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  &.right {
+    justify-content: flex-end;
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+  color: var(--text-color, #ffffff);
+  font-weight: 500;
+  white-space: nowrap;
+
+  .pill-value {
+    font-weight: 700;
+  }
+
+  &.current .pill-value { color: #ff9800; }
+  &.longest .pill-value { color: #4caf50; }
+  &.total .pill-value { color: #2196f3; }
+  &.consistency .pill-value { color: #9c27b0; }
+
+  &.milestone.unlocked {
+    border-color: rgba(76, 175, 80, 0.3);
+    background: rgba(76, 175, 80, 0.1);
+  }
+
+  &.milestone.locked {
+    opacity: 0.4;
+  }
+}
+
 @media (max-width: 768px) {
   .chart-header {
     grid-template-columns: 1fr;
@@ -114,6 +171,11 @@
     .header-spacer {
       display: none;
     }
+  }
+
+  .chart-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

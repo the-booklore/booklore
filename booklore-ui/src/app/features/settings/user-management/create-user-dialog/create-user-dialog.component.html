@@ -1,12 +1,13 @@
+<ng-container *transloco="let t; prefix: 'settingsUsers'">
 <div class="create-user-dialog">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-user-plus header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Create New User</h2>
+      <h2 class="panel-title">{{ t('createDialog.title') }}</h2>
       <p class="panel-description">
-        Set up a new user account with permissions and library access
+        {{ t('createDialog.description') }}
       </p>
     </div>
     <p-button
@@ -24,57 +25,57 @@
       <div class="form-section basic-info-section">
         <h3 class="section-title">
           <i class="pi pi-id-card"></i>
-          Basic Information
+          {{ t('createDialog.basicInfo') }}
         </h3>
 
         <div class="form-fields-grid">
           <div class="form-field">
-            <label class="field-label">Full Name</label>
+            <label class="field-label">{{ t('createDialog.fullName') }}</label>
             <input
               type="text"
               pInputText
               formControlName="name"
-              placeholder="Enter full name..."
+              [placeholder]="t('createDialog.enterFullName')"
               class="field-input"
             />
             @if (userForm.get('name')?.invalid && (userForm.get('name')?.dirty || userForm.get('name')?.touched)) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Name is required and must be at least 3 characters.
+                {{ t('createDialog.nameRequired') }}
               </small>
             }
           </div>
 
           <div class="form-field">
-            <label class="field-label">Username</label>
+            <label class="field-label">{{ t('createDialog.username') }}</label>
             <input
               type="text"
               pInputText
               formControlName="username"
-              placeholder="Enter username..."
+              [placeholder]="t('createDialog.enterUsername')"
               class="field-input"
             />
             @if (userForm.get('username')?.invalid && (userForm.get('username')?.dirty || userForm.get('username')?.touched)) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Username is required.
+                {{ t('createDialog.usernameRequired') }}
               </small>
             }
           </div>
 
           <div class="form-field field-full">
-            <label class="field-label">Email</label>
+            <label class="field-label">{{ t('createDialog.email') }}</label>
             <input
               type="email"
               pInputText
               formControlName="email"
-              placeholder="Enter email..."
+              [placeholder]="t('createDialog.enterEmail')"
               class="field-input"
             />
             @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
               <small class="field-error">
                 <i class="pi pi-exclamation-circle"></i>
-                Enter a valid email address.
+                {{ t('createDialog.emailInvalid') }}
               </small>
             }
           </div>
@@ -82,41 +83,41 @@
           <div class="password-row field-full">
             <div class="password-grid">
               <div class="form-field">
-                <label class="field-label">Password</label>
+                <label class="field-label">{{ t('createDialog.password') }}</label>
                 <input
                   type="password"
                   pInputText
                   formControlName="password"
-                  placeholder="Enter password..."
+                  [placeholder]="t('createDialog.enterPassword')"
                   class="field-input"
                 />
                 @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
                   <small class="field-error">
                     <i class="pi pi-exclamation-circle"></i>
-                    Password must be at least 6 characters long.
+                    {{ t('createDialog.passwordMinLength') }}
                   </small>
                 }
               </div>
 
               <div class="form-field">
-                <label class="field-label">Confirm Password</label>
+                <label class="field-label">{{ t('createDialog.confirmPassword') }}</label>
                 <input
                   type="password"
                   pInputText
                   formControlName="confirmPassword"
-                  placeholder="Confirm password..."
+                  [placeholder]="t('createDialog.confirmPasswordPlaceholder')"
                   class="field-input"
                 />
                 @if (userForm.get('confirmPassword')?.invalid && (userForm.get('confirmPassword')?.dirty || userForm.get('confirmPassword')?.touched)) {
                   <small class="field-error">
                     <i class="pi pi-exclamation-circle"></i>
-                    Password confirmation is required
+                    {{ t('createDialog.confirmRequired') }}
                   </small>
                 }
                 @if (userForm.errors?.['passwordMismatch'] && (userForm.get('confirmPassword')?.dirty || userForm.get('confirmPassword')?.touched)) {
                   <small class="field-error">
                     <i class="pi pi-exclamation-circle"></i>
-                    Passwords do not match.
+                    {{ t('createDialog.passwordMismatch') }}
                   </small>
                 }
               </div>
@@ -130,15 +131,15 @@
       <div class="form-section">
         <h3 class="section-title">
           <i class="pi pi-book"></i>
-          Library Access
+          {{ t('createDialog.libraryAccess') }}
         </h3>
 
         <div class="form-field">
-          <label class="field-label">Accessible Libraries</label>
+          <label class="field-label">{{ t('createDialog.accessibleLibraries') }}</label>
           <p-multiselect
             [options]="libraries"
             formControlName="selectedLibraries"
-            placeholder="Select Libraries"
+            [placeholder]="t('createDialog.selectLibraries')"
             optionLabel="name"
             display="chip"
             class="field-input"
@@ -147,7 +148,7 @@
           @if (userForm.get('selectedLibraries')?.invalid && (userForm.get('selectedLibraries')?.dirty || userForm.get('selectedLibraries')?.touched)) {
             <small class="field-error">
               <i class="pi pi-exclamation-circle"></i>
-              At least one library must be selected.
+              {{ t('createDialog.libraryRequired') }}
             </small>
           }
         </div>
@@ -158,14 +159,14 @@
       <div class="form-section">
         <h3 class="section-title">
           <i class="pi pi-shield"></i>
-          Permissions
+          {{ t('permissions') }}
         </h3>
 
         <div class="permissions-container">
           <div class="permission-group">
             <h4 class="permission-group-title">
               <i class="pi pi-book"></i>
-              Book Management
+              {{ t('permGroups.bookManagement') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item">
@@ -174,7 +175,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-upload permission-icon"></i>
                   </div>
-                  <span class="permission-name">Upload Books</span>
+                  <span class="permission-name">{{ t('perms.uploadBooks') }}</span>
                 </label>
               </div>
 
@@ -184,7 +185,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-download permission-icon"></i>
                   </div>
-                  <span class="permission-name">Download Books</span>
+                  <span class="permission-name">{{ t('perms.downloadBooks') }}</span>
                 </label>
               </div>
 
@@ -194,7 +195,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-trash permission-icon"></i>
                   </div>
-                  <span class="permission-name">Delete Books</span>
+                  <span class="permission-name">{{ t('perms.deleteBooks') }}</span>
                 </label>
               </div>
 
@@ -204,7 +205,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-pencil permission-icon"></i>
                   </div>
-                  <span class="permission-name">Edit Metadata</span>
+                  <span class="permission-name">{{ t('createDialog.editMetadata') }}</span>
                 </label>
               </div>
 
@@ -214,7 +215,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-folder permission-icon"></i>
                   </div>
-                  <span class="permission-name">Manage Library</span>
+                  <span class="permission-name">{{ t('perms.manageLibrary') }}</span>
                 </label>
               </div>
 
@@ -224,7 +225,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-envelope permission-icon"></i>
                   </div>
-                  <span class="permission-name">Email Books</span>
+                  <span class="permission-name">{{ t('perms.emailBooks') }}</span>
                 </label>
               </div>
             </div>
@@ -233,7 +234,7 @@
           <div class="permission-group">
             <h4 class="permission-group-title">
               <i class="pi pi-mobile"></i>
-              Device Sync
+              {{ t('permGroups.deviceSync') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item">
@@ -242,7 +243,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-sync permission-icon"></i>
                   </div>
-                  <span class="permission-name">KOReader Sync</span>
+                  <span class="permission-name">{{ t('perms.koreaderSync') }}</span>
                 </label>
               </div>
 
@@ -252,7 +253,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-tablet permission-icon"></i>
                   </div>
-                  <span class="permission-name">Kobo Sync</span>
+                  <span class="permission-name">{{ t('perms.koboSync') }}</span>
                 </label>
               </div>
 
@@ -262,7 +263,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-globe permission-icon"></i>
                   </div>
-                  <span class="permission-name">OPDS Feed Access</span>
+                  <span class="permission-name">{{ t('perms.opdsFeedAccess') }}</span>
                 </label>
               </div>
             </div>
@@ -271,7 +272,7 @@
           <div class="permission-group">
             <h4 class="permission-group-title">
               <i class="pi pi-eye"></i>
-              System Access
+              {{ t('permGroups.systemAccess') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item">
@@ -280,7 +281,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-cloud-upload permission-icon"></i>
                   </div>
-                  <span class="permission-name">Access Bookdrop</span>
+                  <span class="permission-name">{{ t('perms.accessBookdrop') }}</span>
                 </label>
               </div>
 
@@ -290,7 +291,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-chart-bar permission-icon"></i>
                   </div>
-                  <span class="permission-name">View Library Statistics</span>
+                  <span class="permission-name">{{ t('perms.viewLibraryStats') }}</span>
                 </label>
               </div>
 
@@ -300,7 +301,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-chart-line permission-icon"></i>
                   </div>
-                  <span class="permission-name">View User Reading Statistics</span>
+                  <span class="permission-name">{{ t('perms.viewUserStats') }}</span>
                 </label>
               </div>
             </div>
@@ -309,7 +310,7 @@
           <div class="permission-group">
             <h4 class="permission-group-title">
               <i class="pi pi-cog"></i>
-              System Configuration
+              {{ t('permGroups.systemConfig') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item">
@@ -318,7 +319,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-cog permission-icon"></i>
                   </div>
-                  <span class="permission-name">Manage Metadata Configuration</span>
+                  <span class="permission-name">{{ t('perms.manageMetadataConfig') }}</span>
                 </label>
               </div>
 
@@ -328,7 +329,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-sliders-h permission-icon"></i>
                   </div>
-                  <span class="permission-name">Manage Application Preferences</span>
+                  <span class="permission-name">{{ t('perms.manageAppPreferences') }}</span>
                 </label>
               </div>
 
@@ -338,7 +339,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-list-check permission-icon"></i>
                   </div>
-                  <span class="permission-name">Access Task Manager</span>
+                  <span class="permission-name">{{ t('perms.accessTaskManager') }}</span>
                 </label>
               </div>
 
@@ -348,7 +349,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-images permission-icon"></i>
                   </div>
-                  <span class="permission-name">Manage Icons</span>
+                  <span class="permission-name">{{ t('perms.manageIcons') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -357,7 +358,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-palette permission-icon"></i>
                   </div>
-                  <span class="permission-name">Manage Fonts</span>
+                  <span class="permission-name">{{ t('perms.manageFonts') }}</span>
                 </label>
               </div>
             </div>
@@ -366,7 +367,7 @@
           <div class="permission-group">
             <h4 class="permission-group-title">
               <i class="pi pi-pencil"></i>
-              Metadata Editing
+              {{ t('permGroups.metadataEditing') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item">
@@ -375,7 +376,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-sync permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Auto Fetch Metadata</span>
+                  <span class="permission-name">{{ t('perms.bulkAutoFetch') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -384,7 +385,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-cog permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Custom Fetch Metadata</span>
+                  <span class="permission-name">{{ t('perms.bulkCustomFetch') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -393,7 +394,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-pencil permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Edit Metadata</span>
+                  <span class="permission-name">{{ t('createDialog.bulkEditMetadata') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -402,7 +403,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-image permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Regenerate Cover</span>
+                  <span class="permission-name">{{ t('perms.bulkRegenerateCover') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -411,7 +412,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-folder-open permission-icon"></i>
                   </div>
-                  <span class="permission-name">Move/Organize Files</span>
+                  <span class="permission-name">{{ t('perms.moveOrganize') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -420,7 +421,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-lock-open permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Lock/Unlock Metadata</span>
+                  <span class="permission-name">{{ t('perms.bulkLockUnlock') }}</span>
                 </label>
               </div>
             </div>
@@ -429,7 +430,7 @@
           <div class="permission-group">
             <h4 class="permission-group-title">
               <i class="pi pi-refresh"></i>
-              Bulk Reset
+              {{ t('permGroups.bulkReset') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item">
@@ -438,7 +439,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-history permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Reset Booklore Read Progress</span>
+                  <span class="permission-name">{{ t('perms.bulkResetBooklore') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -447,7 +448,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-tablet permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Reset KoReader Read Progress</span>
+                  <span class="permission-name">{{ t('perms.bulkResetKoreader') }}</span>
                 </label>
               </div>
               <div class="permission-item">
@@ -456,7 +457,7 @@
                   <div class="permission-icon-wrapper">
                     <i class="pi pi-check-square permission-icon"></i>
                   </div>
-                  <span class="permission-name">Bulk Reset Book Read Status</span>
+                  <span class="permission-name">{{ t('perms.bulkResetReadStatus') }}</span>
                 </label>
               </div>
             </div>
@@ -465,7 +466,7 @@
           <div class="permission-group full-width">
             <h4 class="permission-group-title">
               <i class="pi pi-shield"></i>
-              Administration
+              {{ t('permGroups.administration') }}
             </h4>
             <div class="permission-group-items">
               <div class="permission-item admin-permission">
@@ -474,7 +475,7 @@
                   <div class="permission-icon-wrapper admin-icon">
                     <i class="pi pi-shield permission-icon"></i>
                   </div>
-                  <span class="permission-name admin-name">Full Administrator Access</span>
+                  <span class="permission-name admin-name">{{ t('perms.fullAdmin') }}</span>
                 </label>
               </div>
             </div>
@@ -486,18 +487,18 @@
     <div class="dialog-footer">
       <div class="footer-info">
         <i class="pi pi-info-circle"></i>
-        <span>All fields are required to create a user</span>
+        <span>{{ t('createDialog.footerInfo') }}</span>
       </div>
       <div class="footer-actions">
         <p-button
-          label="Cancel"
+          [label]="'common.cancel' | transloco"
           severity="secondary"
           [outlined]="true"
           type="button"
           (click)="closeDialog()"
         />
         <p-button
-          label="Create User"
+          [label]="t('createDialog.createUser')"
           icon="pi pi-check"
           severity="success"
           [disabled]="userForm.invalid"
@@ -507,3 +508,4 @@
     </div>
   </form>
 </div>
+</ng-container>

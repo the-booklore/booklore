@@ -3,7 +3,6 @@ package org.booklore.controller;
 import org.booklore.service.book.BookService;
 import org.booklore.service.bookdrop.BookDropService;
 import org.booklore.service.reader.CbxReaderService;
-import org.booklore.service.reader.PdfReaderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,7 +24,6 @@ import java.io.IOException;
 public class BookMediaController {
 
     private final BookService bookService;
-    private final PdfReaderService pdfReaderService;
     private final CbxReaderService cbxReaderService;
     private final BookDropService bookDropService;
 
@@ -55,18 +53,6 @@ public class BookMediaController {
     @GetMapping("/book/{bookId}/audiobook-cover")
     public ResponseEntity<Resource> getAudiobookCover(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getAudiobookCover(bookId));
-    }
-
-    @Operation(summary = "Get PDF page as image", description = "Retrieve a specific page from a PDF book as an image.")
-    @ApiResponse(responseCode = "200", description = "PDF page image returned successfully")
-    @GetMapping("/book/{bookId}/pdf/pages/{pageNumber}")
-    public void getPdfPage(
-            @Parameter(description = "ID of the book") @PathVariable Long bookId,
-            @Parameter(description = "Page number to retrieve") @PathVariable int pageNumber,
-            @Parameter(description = "Optional book type for alternative format (e.g., PDF, CBX)") @RequestParam(required = false) String bookType,
-            HttpServletResponse response) throws IOException {
-        response.setContentType(MediaType.IMAGE_JPEG_VALUE);
-        pdfReaderService.streamPageImage(bookId, bookType, pageNumber, response.getOutputStream());
     }
 
     @Operation(summary = "Get CBX page as image", description = "Retrieve a specific page from a CBX book as an image.")

@@ -197,7 +197,7 @@ public class BookMetadataService {
                     .build();
 
             bookMetadataUpdater.setBookMetadata(context);
-            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBook(book));
+            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBookWithDescription(book, true));
             return null;
         });
     }

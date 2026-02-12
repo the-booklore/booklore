@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'metadata.coverSearch'">
 <div class="cover-search-container">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi {{ coverType === 'audiobook' ? 'pi-headphones' : 'pi-image' }} header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Search {{ coverType === 'audiobook' ? 'Audiobook' : 'Ebook' }} Cover</h2>
-      <p class="panel-description">Find and select a cover for your book</p>
+      <h2 class="panel-title">{{ coverType === 'audiobook' ? t('searchAudiobookCover') : t('searchEbookCover') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
     </div>
     <p-button
       icon="pi pi-times"
@@ -25,19 +26,19 @@
           <div class="form-field title-field">
             <label for="title">
               <i class="pi pi-book"></i>
-              Title
+              {{ t('titleLabel') }}
               <span class="required">*</span>
             </label>
             <input
               pInputText
               id="title"
               formControlName="title"
-              placeholder="Enter book title"
+              [placeholder]="t('titlePlaceholder')"
             />
             @if (searchForm.get('title')?.invalid && searchForm.get('title')?.touched) {
               <small class="error-message">
                 <i class="pi pi-exclamation-circle"></i>
-                Title is required
+                {{ t('titleRequired') }}
               </small>
             }
           </div>
@@ -45,20 +46,20 @@
           <div class="form-field author-field">
             <label for="author">
               <i class="pi pi-user"></i>
-              Author
+              {{ t('authorLabel') }}
             </label>
             <input
               pInputText
               id="author"
               formControlName="author"
-              placeholder="Enter author name (optional)"
+              [placeholder]="t('authorPlaceholder')"
             />
           </div>
 
           <div class="form-actions">
             <p-button
               type="submit"
-              label="Search"
+              [label]="t('searchBtn')"
               icon="pi pi-search"
               [loading]="loading"
               [disabled]="searchForm.invalid">
@@ -70,7 +71,7 @@
               [rounded]="true"
               severity="secondary"
               (click)="onClear()"
-              pTooltip="Reset search"
+              [pTooltip]="t('resetSearchTooltip')"
               tooltipPosition="top">
             </p-button>
           </div>
@@ -86,14 +87,14 @@
           <div class="empty-state-icon">
             <i class="pi pi-images"></i>
           </div>
-          <h3>Search for Book Covers</h3>
-          <p>Enter a book title above to find cover images from various sources.</p>
+          <h3>{{ t('searchForCovers') }}</h3>
+          <p>{{ t('searchForCoversDescription') }}</p>
         </div>
       } @else if (loading) {
         <!-- Loading State -->
         <div class="loading-state">
           <p-progressSpinner strokeWidth="3" animationDuration="1s"></p-progressSpinner>
-          <p>Searching for covers...</p>
+          <p>{{ t('searchingForCovers') }}</p>
         </div>
       } @else if (coverImages.length === 0) {
         <!-- No Results State -->
@@ -101,19 +102,19 @@
           <div class="empty-state-icon warning">
             <i class="pi pi-search"></i>
           </div>
-          <h3>No Covers Found</h3>
-          <p>Try adjusting your search terms or check the spelling.</p>
+          <h3>{{ t('noCoversFound') }}</h3>
+          <p>{{ t('noCoversFoundDescription') }}</p>
         </div>
       } @else {
         <!-- Results Grid -->
         <div class="results-header">
           <span class="results-count">
             <i class="pi pi-images"></i>
-            {{ coverImages.length }} cover{{ coverImages.length !== 1 ? 's' : '' }} found
+            {{ coverImages.length === 1 ? t('coversFoundSingular', { count: coverImages.length }) : t('coversFoundPlural', { count: coverImages.length }) }}
           </span>
           <span class="results-hint">
             <i class="pi pi-info-circle"></i>
-            Click on an image to preview, or select to apply
+            {{ t('resultsHint') }}
           </span>
         </div>
 
@@ -123,7 +124,7 @@
               <div class="cover-image-wrapper">
                 <p-image
                   [src]="cover.url"
-                  [alt]="'Book cover ' + (i + 1)"
+                  [alt]="t('bookCoverAlt', { index: i + 1 })"
                   appendTo="body"
                   [preview]="true">
                 </p-image>
@@ -135,7 +136,7 @@
                 <div class="cover-overlay">
                   <p-button
                     (click)="selectAndSave(cover)"
-                    label="Select Cover"
+                    [label]="t('selectCover')"
                     icon="pi pi-check"
                     size="small">
                   </p-button>
@@ -148,3 +149,4 @@
     </div>
   </div>
 </div>
+</ng-container>
