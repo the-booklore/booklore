@@ -107,11 +107,23 @@
           @case ('rating-taste') {
             <app-rating-taste-chart></app-rating-taste-chart>
           }
-          @case ('reading-backlog') {
-            <app-reading-backlog-chart></app-reading-backlog-chart>
-          }
           @case ('series-progress') {
             <app-series-progress-chart></app-series-progress-chart>
+          }
+          @case ('page-turner') {
+            <app-page-turner-chart></app-page-turner-chart>
+          }
+          @case ('completion-race') {
+            <app-completion-race-chart [initialYear]="currentYear"></app-completion-race-chart>
+          }
+          @case ('reading-survival') {
+            <app-reading-survival-chart></app-reading-survival-chart>
+          }
+          @case ('reading-clock') {
+            <app-reading-clock-chart></app-reading-clock-chart>
+          }
+          @case ('book-length') {
+            <app-book-length-chart></app-book-length-chart>
           }
         }
       </div>

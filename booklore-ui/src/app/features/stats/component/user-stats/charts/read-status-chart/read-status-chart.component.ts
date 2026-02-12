@@ -4,6 +4,7 @@ import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData, Chart, TooltipItem} from 'chart.js';
+import {Tooltip} from 'primeng/tooltip';
 import {BookService} from '../../../../../book/service/book.service';
 import {BookState} from '../../../../../book/model/state/book-state.model';
 import {Book, ReadStatus} from '../../../../../book/model/book.model';
@@ -38,7 +39,7 @@ type StatusChartData = ChartData<'doughnut', number[], string>;
 @Component({
   selector: 'app-read-status-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './read-status-chart.component.html',
   styleUrls: ['./read-status-chart.component.scss']
 })

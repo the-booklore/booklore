@@ -3,18 +3,24 @@ package org.booklore.service;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.CompletionRaceSessionDto;
 import org.booklore.model.dto.request.ReadingSessionRequest;
+import org.booklore.model.dto.PageTurnerSessionDto;
 import org.booklore.model.dto.response.BookCompletionHeatmapResponse;
+import org.booklore.model.dto.response.CompletionRaceResponse;
 import org.booklore.model.dto.response.CompletionTimelineResponse;
 import org.booklore.model.dto.response.FavoriteReadingDaysResponse;
 import org.booklore.model.dto.response.GenreStatisticsResponse;
+import org.booklore.model.dto.response.PageTurnerScoreResponse;
 import org.booklore.model.dto.response.PeakReadingHoursResponse;
+
 import org.booklore.model.dto.response.ReadingSessionHeatmapResponse;
 import org.booklore.model.dto.response.ReadingSessionResponse;
 import org.booklore.model.dto.response.ReadingSessionTimelineResponse;
 import org.booklore.model.dto.response.ReadingSpeedResponse;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.entity.CategoryEntity;
 import org.booklore.model.entity.ReadingSessionEntity;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.BookRepository;
@@ -31,15 +37,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -244,13 +249,13 @@ public class ReadingSessionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ReadingSessionResponse> getReadingSessionsForBook(Long bookId, int page) {
+    public Page<ReadingSessionResponse> getReadingSessionsForBook(Long bookId, int page, int size) {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
         bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
-        Pageable pageable = PageRequest.of(page, 5);
+        Pageable pageable = PageRequest.of(page, size);
         Page<ReadingSessionEntity> sessions = readingSessionRepository.findByUserIdAndBookId(userId, bookId, pageable);
 
         return sessions.map(session -> ReadingSessionResponse.builder()
@@ -286,5 +291,153 @@ public class ReadingSessionService {
                         .count(dto.getCount())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PageTurnerScoreResponse> getPageTurnerScores() {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        var sessions = readingSessionRepository.findPageTurnerSessionsByUser(userId);
+
+        Map<Long, List<PageTurnerSessionDto>> sessionsByBook = sessions.stream()
+                .collect(Collectors.groupingBy(PageTurnerSessionDto::getBookId, LinkedHashMap::new, Collectors.toList()));
+
+        Set<Long> bookIds = sessionsByBook.keySet();
+        Map<Long, List<String>> bookCategories = new HashMap<>();
+        if (!bookIds.isEmpty()) {
+            bookRepository.findAllWithMetadataByIds(bookIds).forEach(book -> {
+                List<String> categories = book.getMetadata() != null && book.getMetadata().getCategories() != null
+                        ? book.getMetadata().getCategories().stream()
+                        .map(CategoryEntity::getName)
+                        .sorted()
+                        .collect(Collectors.toList())
+                        : List.of();
+                bookCategories.put(book.getId(), categories);
+            });
+        }
+
+        return sessionsByBook.entrySet().stream()
+                .filter(entry -> entry.getValue().size() >= 2)
+                .map(entry -> {
+                    Long bookId = entry.getKey();
+                    List<PageTurnerSessionDto> bookSessions = entry.getValue();
+                    PageTurnerSessionDto first = bookSessions.getFirst();
+
+                    List<Double> durations = bookSessions.stream()
+                            .map(s -> s.getDurationSeconds() != null ? s.getDurationSeconds().doubleValue() : 0.0)
+                            .collect(Collectors.toList());
+
+                    List<Double> gaps = new ArrayList<>();
+                    for (int i = 1; i < bookSessions.size(); i++) {
+                        Instant prevEnd = bookSessions.get(i - 1).getEndTime();
+                        Instant currStart = bookSessions.get(i).getStartTime();
+                        if (prevEnd != null && currStart != null) {
+                            gaps.add((double) ChronoUnit.HOURS.between(prevEnd, currStart));
+                        }
+                    }
+
+                    double sessionAcceleration = linearRegressionSlope(durations);
+                    double gapReduction = gaps.size() >= 2 ? linearRegressionSlope(gaps) : 0.0;
+
+                    int totalSessions = bookSessions.size();
+                    int lastQuarterStart = (int) Math.floor(totalSessions * 0.75);
+                    double firstThreeQuartersAvg = durations.subList(0, lastQuarterStart).stream()
+                            .mapToDouble(Double::doubleValue).average().orElse(0);
+                    double lastQuarterAvg = durations.subList(lastQuarterStart, totalSessions).stream()
+                            .mapToDouble(Double::doubleValue).average().orElse(0);
+                    boolean finishBurst = lastQuarterAvg > firstThreeQuartersAvg;
+
+                    double accelScore = Math.min(1.0, Math.max(0.0, (sessionAcceleration + 50) / 100.0));
+                    double gapScore = Math.min(1.0, Math.max(0.0, (-gapReduction + 50) / 100.0));
+                    double burstScore = finishBurst ? 1.0 : 0.0;
+
+                    int gripScore = (int) Math.round(
+                            Math.min(100, Math.max(0, accelScore * 35 + gapScore * 35 + burstScore * 30)));
+
+                    double avgDuration = durations.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+
+                    return PageTurnerScoreResponse.builder()
+                            .bookId(bookId)
+                            .bookTitle(first.getBookTitle())
+                            .categories(bookCategories.getOrDefault(bookId, List.of()))
+                            .pageCount(first.getPageCount())
+                            .personalRating(first.getPersonalRating())
+                            .gripScore(gripScore)
+                            .totalSessions((long) totalSessions)
+                            .avgSessionDurationSeconds(Math.round(avgDuration * 100.0) / 100.0)
+                            .sessionAcceleration(Math.round(sessionAcceleration * 100.0) / 100.0)
+                            .gapReduction(Math.round(gapReduction * 100.0) / 100.0)
+                            .finishBurst(finishBurst)
+                            .build();
+                })
+                .sorted(Comparator.comparingInt(PageTurnerScoreResponse::getGripScore).reversed())
+                .collect(Collectors.toList());
+    }
+
+    private static final int COMPLETION_RACE_BOOK_LIMIT = 10;
+
+    @Transactional(readOnly = true)
+    public List<CompletionRaceResponse> getCompletionRace(int year) {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        var allSessions = readingSessionRepository.findCompletionRaceSessionsByUserAndYear(userId, year);
+
+        // Collect unique book IDs in order of appearance, take last N (most recently finished)
+        LinkedHashSet<Long> allBookIds = allSessions.stream()
+                .map(CompletionRaceSessionDto::getBookId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Set<Long> limitedBookIds;
+        if (allBookIds.size() > COMPLETION_RACE_BOOK_LIMIT) {
+            limitedBookIds = allBookIds.stream()
+                    .skip(allBookIds.size() - COMPLETION_RACE_BOOK_LIMIT)
+                    .collect(Collectors.toSet());
+        } else {
+            limitedBookIds = allBookIds;
+        }
+
+        return allSessions.stream()
+                .filter(dto -> limitedBookIds.contains(dto.getBookId()))
+                .map(dto -> CompletionRaceResponse.builder()
+                        .bookId(dto.getBookId())
+                        .bookTitle(dto.getBookTitle())
+                        .sessionDate(dto.getSessionDate())
+                        .endProgress(dto.getEndProgress())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReadingSessionHeatmapResponse> getReadingDates() {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        return readingSessionRepository.findAllSessionCountsByUser(userId)
+                .stream()
+                .map(dto -> ReadingSessionHeatmapResponse.builder()
+                        .date(dto.getDate())
+                        .count(dto.getCount())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private double linearRegressionSlope(List<Double> values) {
+        int n = values.size();
+        if (n < 2) return 0.0;
+
+        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        for (int i = 0; i < n; i++) {
+            sumX += i;
+            sumY += values.get(i);
+            sumXY += i * values.get(i);
+            sumX2 += (double) i * i;
+        }
+
+        double denominator = n * sumX2 - sumX * sumX;
+        if (denominator == 0) return 0.0;
+
+        return (n * sumXY - sumX * sumY) / denominator;
     }
 }

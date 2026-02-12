@@ -105,13 +105,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       map((book): MenuItem[] => {
         const items: MenuItem[] = [];
         const primaryType = book.primaryFile?.bookType;
-        if (primaryType === 'PDF') {
-          items.push({
-            label: this.t.translate('metadata.viewer.menuStreamingReader'),
-            icon: 'pi pi-play',
-            command: () => this.read(book.id, 'pdf-streaming')
-          });
-        } else if (primaryType === 'EPUB') {
+        if (primaryType === 'EPUB') {
           items.push({
             label: this.t.translate('metadata.viewer.menuStreamingReader'),
             icon: 'pi pi-play',
@@ -133,8 +127,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           }
 
           uniqueAltTypes.forEach(formatType => {
-            if (formatType === 'PDF' || formatType === 'EPUB') {
-              // For PDF/EPUB, offer both standard and streaming readers
+            if (formatType === 'EPUB') {
+              // For EPUB, offer both standard and streaming readers
               items.push({
                 label: formatType,
                 icon: this.getFileIcon(formatType),
@@ -147,7 +141,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                   {
                     label: this.t.translate('metadata.viewer.menuStreamingReader'),
                     icon: 'pi pi-play',
-                    command: () => this.read(book.id, formatType === 'PDF' ? 'pdf-streaming' : 'epub-streaming', formatType)
+                    command: () => this.read(book.id, 'epub-streaming', formatType)
                   }
                 ]
               });
@@ -474,7 +468,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.isExpanded = !this.isExpanded;
   }
 
-  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming", bookType?: BookType): void {
+  read(bookId: number | undefined, reader?: "epub-streaming", bookType?: BookType): void {
     if (bookId) this.bookService.readBook(bookId, reader, bookType);
   }
 

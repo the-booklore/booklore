@@ -18,10 +18,12 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
   private readonly t = inject(TranslocoService);
 
   sessions: ReadingSessionResponse[] = [];
-  totalRecords = 0;
-  first = 0;
   rows = 5;
   loading = false;
+
+  get pageReportTemplate(): string {
+    return this.t.translate('metadata.readingSessions.pageReport');
+  }
 
   ngOnInit() {
     this.loadSessions();
@@ -29,31 +31,22 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['bookId'] && !changes['bookId'].firstChange) {
-      this.first = 0;
       this.loadSessions();
     }
   }
 
-  loadSessions(page: number = 0) {
+  loadSessions() {
     this.loading = true;
-    this.readingSessionService.getSessionsByBookId(this.bookId, page, this.rows)
+    this.readingSessionService.getSessionsByBookId(this.bookId, 0, 9999)
       .subscribe({
         next: (response) => {
           this.sessions = response.content;
-          this.totalRecords = response.totalElements;
           this.loading = false;
         },
         error: () => {
           this.loading = false;
         }
       });
-  }
-
-  onPageChange(event: { first?: number; rows?: number | null }): void {
-    if (event.first === undefined || event.rows === undefined || event.rows === null) return;
-    this.first = event.first;
-    const page = Math.floor(event.first / event.rows);
-    this.loadSessions(page);
   }
 
   formatDuration(seconds: number): string {
