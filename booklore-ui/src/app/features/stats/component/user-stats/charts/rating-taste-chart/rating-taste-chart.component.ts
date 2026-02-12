@@ -1,6 +1,7 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
+import {Tooltip} from 'primeng/tooltip';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, switchMap, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData, ScatterDataPoint} from 'chart.js';
@@ -30,7 +31,7 @@ type RatingTasteChartData = ChartData<'scatter', BookDataPoint[], string>;
 @Component({
   selector: 'app-rating-taste-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip],
   templateUrl: './rating-taste-chart.component.html',
   styleUrls: ['./rating-taste-chart.component.scss']
 })
