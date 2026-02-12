@@ -30,7 +30,7 @@ frontend_tests:
 
   script:
     - cd booklore-ui
-    - npm ci --force
+    - npm install
     - npx ng test --watch=false --browsers=ChromeHeadless
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule"'
