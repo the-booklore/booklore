@@ -454,10 +454,6 @@ components:
           type: string
           format: uri
           description: URL to cover image
-        thumbnailUrl:
-          type: string
-          format: uri
-          description: URL to thumbnail image
         matchScore:
           type: number
           format: float

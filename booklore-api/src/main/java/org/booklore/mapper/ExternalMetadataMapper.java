@@ -43,7 +43,7 @@ public class ExternalMetadataMapper {
                 .isbn13(external.getIsbn13())
                 .isbn10(external.getIsbn10())
                 .asin(external.getAsin())
-                .thumbnailUrl(external.getThumbnailUrl())
+                .thumbnailUrl(external.getCoverUrl())
                 .rating(external.getRating())
                 .externalUrl(null);
 

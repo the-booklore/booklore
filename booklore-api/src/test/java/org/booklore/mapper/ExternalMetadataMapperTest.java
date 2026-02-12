@@ -205,7 +205,7 @@ class ExternalMetadataMapperTest {
                     .isbn13("9780441172719")
                     .isbn10("0441172717")
                     .asin("B00B7NPRY8")
-                    .thumbnailUrl("https://example.com/cover.jpg")
+                    .coverUrl("https://example.com/cover.jpg")
                     .rating(4.5)
                     .authors(List.of("Frank Herbert"))
                     .categories(List.of("Science Fiction", "Fantasy"))

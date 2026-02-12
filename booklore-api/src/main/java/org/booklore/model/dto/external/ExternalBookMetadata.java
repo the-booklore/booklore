@@ -37,6 +37,5 @@ public class ExternalBookMetadata {
     private Double rating;
     private Integer reviewCount;
     private String coverUrl;
-    private String thumbnailUrl;
     private Double matchScore;
 }
