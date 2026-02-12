@@ -19,6 +19,11 @@ interface Milestone {
   unlocked: boolean;
 }
 
+interface CalendarDay {
+  date: string;
+  count: number;
+}
+
 @Component({
   selector: 'app-reading-streaks-chart',
   standalone: true,
@@ -34,10 +39,11 @@ export class ReadingStreaksChartComponent implements OnInit, OnDestroy {
   public longestStreak = 0;
   public totalReadingDays = 0;
   public consistencyPercent = 0;
-  public streaks: Streak[] = [];
   public milestones: Milestone[] = [];
   public hasData = false;
-  public maxStreakLength = 1;
+  public calendarDays: (CalendarDay | null)[] = [];
+  public monthLabels: { label: string; col: number }[] = [];
+  public numWeeks = 0;
 
   ngOnInit(): void {
     this.userStatsService.getReadingDates()
@@ -56,20 +62,11 @@ export class ReadingStreaksChartComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  getStreakColor(length: number): string {
-    const ratio = length / this.maxStreakLength;
-    if (ratio >= 0.8) return '#4caf50';
-    if (ratio >= 0.5) return '#8bc34a';
-    if (ratio >= 0.3) return '#ffc107';
-    return '#ff9800';
-  }
-
-  getStreakWidth(length: number): number {
-    return Math.max(4, (length / this.maxStreakLength) * 100);
-  }
-
-  formatDate(date: Date): string {
-    return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+  getCellClass(day: CalendarDay): string {
+    if (day.count === 0) return 'level-0';
+    if (day.count <= 1) return 'level-1';
+    if (day.count <= 3) return 'level-2';
+    return 'level-3';
   }
 
   private processData(data: ReadingSessionHeatmapResponse[]): void {
@@ -111,11 +108,10 @@ export class ReadingStreaksChartComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Get last 12 months of streaks
-    const twelveMonthsAgo = new Date();
-    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-    this.streaks = allStreaks.filter(s => s.endDate >= twelveMonthsAgo);
-    this.maxStreakLength = Math.max(1, ...allStreaks.map(s => s.length));
+    // Build calendar heatmap
+    const dateCountMap = new Map<string, number>();
+    data.forEach(d => dateCountMap.set(d.date, d.count));
+    this.buildCalendar(dateCountMap);
 
     // Calculate longest streak
     this.longestStreak = allStreaks.length > 0 ? Math.max(...allStreaks.map(s => s.length)) : 0;
@@ -155,6 +151,54 @@ export class ReadingStreaksChartComponent implements OnInit, OnDestroy {
       {label: '365 Reading Days', icon: '🏆', requirement: 365, type: 'total', unlocked: this.totalReadingDays >= 365},
       {label: 'Year of Reading', icon: '👑', requirement: 365, type: 'streak', unlocked: this.longestStreak >= 365},
     ];
+  }
+
+  private buildCalendar(dateCountMap: Map<string, number>): void {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(today);
+    start.setDate(start.getDate() - 52 * 7);
+    const startDow = start.getDay();
+    start.setDate(start.getDate() + (startDow === 0 ? -6 : 1 - startDow));
+
+    const cells: (CalendarDay | null)[] = [];
+    const months: { label: string; col: number }[] = [];
+    let prevMonth = -1;
+
+    const current = new Date(start);
+    let weekIndex = 0;
+
+    while (current <= today) {
+      const dow = (current.getDay() + 6) % 7; // Mon=0, Sun=6
+      if (dow === 0 && cells.length > 0) weekIndex++;
+
+      if (current.getMonth() !== prevMonth) {
+        months.push({
+          label: current.toLocaleDateString('en-US', {month: 'short'}),
+          col: weekIndex + 1
+        });
+        prevMonth = current.getMonth();
+      }
+
+      const dateStr = this.toDateStr(current);
+      cells.push({date: dateStr, count: dateCountMap.get(dateStr) || 0});
+      current.setDate(current.getDate() + 1);
+    }
+
+    // Pad last week with nulls
+    const lastDow = (today.getDay() + 6) % 7;
+    for (let i = lastDow + 1; i <= 6; i++) {
+      cells.push(null);
+    }
+
+    this.numWeeks = weekIndex + 1;
+    this.calendarDays = cells;
+    this.monthLabels = months;
+  }
+
+  private toDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   private isConsecutiveDay(dateStr1: string, dateStr2: string): boolean {

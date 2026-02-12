@@ -33,20 +33,44 @@
       </div>
     </div>
 
-    @if (streaks.length > 0) {
-      <div class="streak-timeline">
-        <h4>Last 12 Months</h4>
-        <div class="streak-blocks">
-          @for (streak of streaks; track streak.startDate) {
-            <div class="streak-block"
-                 [style.width.%]="getStreakWidth(streak.length)"
-                 [style.background-color]="getStreakColor(streak.length)"
-                 [title]="streak.length + ' days: ' + formatDate(streak.startDate) + ' - ' + formatDate(streak.endDate)">
-              @if (streak.length >= 3) {
-                <span class="streak-label">{{ streak.length }}d</span>
+    @if (calendarDays.length > 0) {
+      <div class="calendar-heatmap">
+        <h4>Activity</h4>
+        <div class="heatmap-wrapper">
+          <div class="day-labels">
+            <span>Mon</span>
+            <span></span>
+            <span>Wed</span>
+            <span></span>
+            <span>Fri</span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="heatmap-scroll">
+            <div class="month-labels" [style.grid-template-columns]="'repeat(' + numWeeks + ', 12px)'">
+              @for (month of monthLabels; track month.col) {
+                <span [style.grid-column]="month.col">{{ month.label }}</span>
               }
             </div>
-          }
+            <div class="heatmap-grid" [style.grid-template-columns]="'repeat(' + numWeeks + ', 12px)'">
+              @for (cell of calendarDays; track $index) {
+                @if (cell) {
+                  <div class="heatmap-cell" [ngClass]="getCellClass(cell)"
+                       [title]="cell.date + ': ' + cell.count + ' sessions'"></div>
+                } @else {
+                  <div class="heatmap-cell empty"></div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+        <div class="heatmap-legend">
+          <span class="legend-label">Less</span>
+          <div class="legend-cell level-0"></div>
+          <div class="legend-cell level-1"></div>
+          <div class="legend-cell level-2"></div>
+          <div class="legend-cell level-3"></div>
+          <span class="legend-label">More</span>
         </div>
       </div>
     }
