@@ -61,17 +61,6 @@
   color: rgba(156, 39, 176, 1);
 }
 
-.chart-info-icon {
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 0.9rem;
-  cursor: help;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: rgba(255, 255, 255, 0.8);
-  }
-}
-
 .chart-wrapper {
   position: relative;
   height: 500px;

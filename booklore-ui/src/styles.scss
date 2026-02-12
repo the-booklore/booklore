@@ -53,6 +53,17 @@ html {
   --p-tooltip-max-width: 25rem;
 }
 
+.chart-info-icon {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.9rem;
+  cursor: help;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
 .p-toast {
   top: 4rem !important;
 }
