@@ -26,31 +26,41 @@
 
         <div class="multi-sort-editor">
           <label class="multi-sort-label">{{ t('sortOrderLabel') }}</label>
+          <app-multi-sort-popover
+            [sortCriteria]="globalSortAsOptions"
+            [availableSortOptions]="allSortAsOptions"
+            (criteriaChange)="onGlobalSortCriteriaChange($event)">
+          </app-multi-sort-popover>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-header-standalone">
+          <label class="setting-label">{{ t('visibleSortFields') }}</label>
+        </div>
+        <p class="setting-description">
+          {{ t('visibleSortFieldsDesc') }}
+          <span class="sort-field-count">({{ sortFieldSelectionCountText }})</span>
+        </p>
+        <div class="sort-field-order-editor">
           <div
-            class="sort-criteria-list"
+            #sortFieldList
+            class="sort-field-order-list"
             cdkDropList
-            [cdkDropListData]="sortCriteria"
-            (cdkDropListDropped)="onSortCriteriaDrop($event)">
-            @for (criterion of sortCriteria; track criterion.field; let i = $index) {
-              <div class="sort-criterion-row" cdkDrag>
-                <div class="criterion-drag-handle" cdkDragHandle>
+            [cdkDropListData]="visibleSortFields"
+            (cdkDropListDropped)="onSortFieldDrop($event)">
+            @for (f of visibleSortFields; track f; let i = $index) {
+              <div class="sort-field-order-row" cdkDrag>
+                <div class="sort-field-drag-handle" cdkDragHandle>
                   <i class="pi pi-bars"></i>
                 </div>
-                <span class="criterion-rank">{{ i + 1 }}.</span>
-                <span class="criterion-label">{{ getSortLabel(criterion.field) }}</span>
+                <span class="sort-field-rank">{{ i + 1 }}.</span>
+                <span class="sort-field-label">{{ getSortFieldLabel(f) }}</span>
                 <button
                   type="button"
-                  class="direction-toggle-btn"
-                  (click)="toggleSortDirection(i)"
-                  [pTooltip]="criterion.direction === 'ASC' ? t('ascending') : t('descending')"
-                  tooltipPosition="top">
-                  <i [class]="criterion.direction === 'ASC' ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
-                </button>
-                <button
-                  type="button"
-                  class="remove-criterion-btn"
-                  (click)="removeSortCriterion(i)"
-                  [disabled]="sortCriteria.length === 1"
+                  class="remove-sort-field-btn"
+                  (click)="removeSortField(i)"
+                  [disabled]="visibleSortFields.length <= minSortFields"
                   [pTooltip]="t('remove')"
                   tooltipPosition="top">
                   <i class="pi pi-times"></i>
@@ -58,21 +68,29 @@
               </div>
             }
           </div>
-          @if (availableSortFields.length > 0) {
-            <div class="add-sort-row">
+          <div class="sort-field-actions-row">
+            @if (availableSortFieldsToAdd.length > 0 && visibleSortFields.length < maxSortFields) {
               <p-select
                 size="small"
-                [options]="availableSortFields"
-                [(ngModel)]="selectedAddField"
+                [options]="availableSortFieldsToAdd"
+                [(ngModel)]="selectedAddSortField"
                 optionLabel="label"
-                optionValue="field"
+                optionValue="value"
                 [placeholder]="t('addSortField')"
                 [style]="{ width: '200px' }"
                 appendTo="body"
-                (onChange)="addSortCriterion()">
+                (onChange)="addSortField()">
               </p-select>
-            </div>
-          }
+            }
+            <button
+              type="button"
+              class="reset-sort-fields-btn"
+              (click)="resetSortFieldsToDefaults()"
+              [pTooltip]="t('resetToDefaults')"
+              tooltipPosition="top">
+              <i class="pi pi-refresh"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -101,8 +119,7 @@
               <tr>
                 <th style="min-width: 150px; max-width: 220px;">{{ t('tableType') }}</th>
                 <th style="min-width: 220px; max-width: 280px;">{{ t('tableName') }}</th>
-                <th style="min-width: 190px; max-width: 250px;">{{ t('tableSortBy') }}</th>
-                <th style="min-width: 125px;">{{ t('tableDirection') }}</th>
+                <th style="min-width: 160px;">{{ t('tableSortConfig') }}</th>
                 <th style="min-width: 125px;">{{ t('tableViewMode') }}</th>
                 <th style="width: 75px; text-align: center;">{{ t('tableActions') }}</th>
               </tr>
@@ -124,13 +141,20 @@
                   }
                 </td>
                 <td>
-                  <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
-                            [(ngModel)]="override.sort" [style]="{'width': '100%'}" appendTo="body"></p-select>
-                </td>
-                <td>
-                  <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="override.sortDir"
-                            optionLabel="label" optionValue="value"
-                            [style]="{'width': '100%'}" appendTo="body"></p-select>
+                  <p-button
+                    [label]="t('editSort')"
+                    icon="pi pi-sort"
+                    size="small"
+                    [outlined]="true"
+                    (onClick)="overrideSortPop.toggle($event)">
+                  </p-button>
+                  <p-popover #overrideSortPop [dismissable]="true" appendTo="body">
+                    <app-multi-sort-popover
+                      [sortCriteria]="override.sortCriteriaAsOptions"
+                      [availableSortOptions]="allSortAsOptions"
+                      (criteriaChange)="onOverrideSortCriteriaChange(rowIndex, $event)">
+                    </app-multi-sort-popover>
+                  </p-popover>
                 </td>
                 <td>
                   <p-select size="small" [options]="viewModeOptions" [(ngModel)]="override.view"

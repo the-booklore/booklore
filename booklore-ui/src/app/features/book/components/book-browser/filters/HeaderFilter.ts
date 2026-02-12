@@ -40,14 +40,16 @@ export class HeaderFilter implements BookFilter {
               const categories = book.metadata?.categories || [];
               const isbn = book.metadata?.isbn10 || '';
               const isbn13 = book.metadata?.isbn13 || '';
+              const fileName = book.primaryFile?.fileName || '';
 
               const matchesTitle = normalize(title).includes(nTerm);
               const matchesSeries = normalize(series).includes(nTerm);
               const matchesAuthor = authors.some(author => normalize(author).includes(nTerm));
               const matchesCategory = categories.some(category => normalize(category).includes(nTerm));
               const matchesIsbn = normalize(isbn).includes(nTerm) || normalize(isbn13).includes(nTerm);
+              const matchesFileName = normalize(fileName).includes(nTerm);
 
-              return matchesTitle || matchesSeries || matchesAuthor || matchesCategory || matchesIsbn;
+              return matchesTitle || matchesSeries || matchesAuthor || matchesCategory || matchesIsbn || matchesFileName;
             }) || null;
 
             return {...bookState, books: filteredBooks};

@@ -163,8 +163,13 @@ export class BookPatchService {
         const updatedBooks = (currentState.books || []).map(book => {
           const response = responses.find(r => r.bookId === book.id);
           if (response) {
+            const progressReset: Partial<Book> =
+              type === 'KOREADER' ? {koreaderProgress: undefined} :
+              type === 'KOBO' ? {koboProgress: undefined} :
+              {epubProgress: undefined, pdfProgress: undefined, cbxProgress: undefined, audiobookProgress: undefined};
             return {
               ...book,
+              ...progressReset,
               readStatus: response.readStatus,
               readStatusModifiedTime: response.readStatusModifiedTime,
               dateFinished: response.dateFinished

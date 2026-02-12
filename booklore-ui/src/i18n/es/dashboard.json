@@ -41,17 +41,21 @@
     },
     "sortFields": {
       "title": "Título",
-      "titleSeries": "Título + Serie",
       "fileName": "Nombre de archivo",
       "filePath": "Ruta de archivo",
       "addedOn": "Fecha de adición",
       "author": "Autor",
       "authorSurnameVorname": "Autor (Apellido)",
-      "authorSeries": "Autor + Serie",
+      "seriesName": "Nombre de serie",
+      "seriesNumber": "Número de serie",
       "personalRating": "Valoración personal",
       "publisher": "Editorial",
       "publishedDate": "Fecha de publicación",
       "lastReadTime": "Última lectura",
+      "readStatus": "Estado de lectura",
+      "dateFinished": "Fecha de finalización",
+      "readingProgress": "Progreso de lectura",
+      "bookType": "Tipo de libro",
       "pageCount": "Páginas"
     },
     "sortDirections": {

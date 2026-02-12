@@ -24,7 +24,7 @@ import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
 import {BookFilterComponent} from './book-filter/book-filter.component';
 import {Tooltip} from 'primeng/tooltip';
-import {BookFilterMode, EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
+import {BookFilterMode, DEFAULT_VISIBLE_SORT_FIELDS, EntityViewPreferences, SortCriterion, UserService} from '../../../settings/user-management/user.service';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
 import {SideBarFilter} from './filters/sidebar-filter';
 import {HeaderFilter} from './filters/HeaderFilter';
@@ -56,7 +56,6 @@ import {BookFilterOrchestrationService} from './book-filter-orchestration.servic
 import {BookBrowserScrollService} from './book-browser-scroll.service';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {MultiSortPopoverComponent} from './sorting/multi-sort-popover/multi-sort-popover.component';
-import {CdkDragDrop} from '@angular/cdk/drag-drop';
 import {SortService} from '../../service/sort.service';
 
 export enum EntityType {
@@ -144,6 +143,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   entityViewPreferences: EntityViewPreferences | undefined;
   currentViewMode: string | undefined;
   lastAppliedSortCriteria: SortOption[] = [];
+  visibleSortOptions: SortOption[] = [];
   showFilter = false;
   screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
   mobileColumnCount = 3;
@@ -446,8 +446,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
 
+      const visibleFields = user.user?.userSettings?.visibleSortFields ?? DEFAULT_VISIBLE_SORT_FIELDS;
+      const sortOptionsByField = new Map(this.bookSorter.sortOptions.map(o => [o.field, o]));
+      this.visibleSortOptions = visibleFields.map(f => sortOptionsByField.get(f)).filter((o): o is SortOption => !!o);
 
-      this.bookSorter.setSortCriteria(parseResult.sortCriteria);
+
+      // Only update sort criteria if they actually changed to avoid resetting popover/CDK state
+      if (!this.areSortCriteriaEqual(this.bookSorter.selectedSortCriteria, parseResult.sortCriteria)) {
+        this.bookSorter.setSortCriteria(parseResult.sortCriteria);
+      }
       this.currentViewMode = parseResult.viewMode;
 
       if (!this.areSortCriteriaEqual(this.lastAppliedSortCriteria, this.bookSorter.selectedSortCriteria)) {
@@ -650,21 +657,89 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
-  // Multi-sort popover handlers
-  onAddSortCriterion(field: string): void {
-    this.bookSorter.addSortCriterion(field);
+  onSortCriteriaChange(criteria: SortOption[]): void {
+    this.bookSorter.setSortCriteria(criteria);
+    this.onMultiSortChange(criteria);
   }
 
-  onRemoveSortCriterion(index: number): void {
-    this.bookSorter.removeSortCriterion(index);
+  get canSaveSort(): boolean {
+    return this.entityType === EntityType.LIBRARY ||
+           this.entityType === EntityType.SHELF ||
+           this.entityType === EntityType.MAGIC_SHELF ||
+           this.entityType === EntityType.ALL_BOOKS ||
+           this.entityType === EntityType.UNSHELVED;
   }
 
-  onToggleSortDirection(index: number): void {
-    this.bookSorter.toggleCriterionDirection(index);
-  }
+  onSaveSortConfig(criteria: SortOption[]): void {
+    if (!this.entityType) return;
 
-  onReorderSortCriteria(event: CdkDragDrop<SortOption[]>): void {
-    this.bookSorter.reorderCriteria(event);
+    const user = this.userService.getCurrentUser();
+    if (!user) return;
+
+    const sortCriteria: SortCriterion[] = criteria.map(c => ({
+      field: c.field,
+      direction: c.direction === SortDirection.ASCENDING ? 'ASC' as const : 'DESC' as const
+    }));
+
+    const prefs: EntityViewPreferences = structuredClone(
+      user.userSettings.entityViewPreferences ?? {global: {sortKey: 'title', sortDir: 'ASC', view: 'GRID', coverSize: 1.0, seriesCollapsed: false, overlayBookType: true}, overrides: []}
+    );
+
+    if (this.entityType === EntityType.ALL_BOOKS || this.entityType === EntityType.UNSHELVED) {
+      prefs.global = {
+        ...prefs.global,
+        sortKey: sortCriteria[0]?.field ?? 'title',
+        sortDir: sortCriteria[0]?.direction ?? 'ASC',
+        sortCriteria
+      };
+    } else {
+      if (!this.entity) return;
+      if (!prefs.overrides) prefs.overrides = [];
+
+      let overrideEntityType: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
+      switch (this.entityType) {
+        case EntityType.LIBRARY: overrideEntityType = 'LIBRARY'; break;
+        case EntityType.SHELF: overrideEntityType = 'SHELF'; break;
+        case EntityType.MAGIC_SHELF: overrideEntityType = 'MAGIC_SHELF'; break;
+        default: return;
+      }
+
+      const existingIndex = prefs.overrides.findIndex(
+        o => o.entityType === overrideEntityType && o.entityId === this.entity!.id
+      );
+
+      if (existingIndex >= 0) {
+        prefs.overrides[existingIndex].preferences = {
+          ...prefs.overrides[existingIndex].preferences,
+          sortKey: sortCriteria[0]?.field ?? 'title',
+          sortDir: sortCriteria[0]?.direction ?? 'ASC',
+          sortCriteria
+        };
+      } else {
+        prefs.overrides.push({
+          entityType: overrideEntityType,
+          entityId: this.entity!.id!,
+          preferences: {
+            sortKey: sortCriteria[0]?.field ?? 'title',
+            sortDir: sortCriteria[0]?.direction ?? 'ASC',
+            sortCriteria,
+            view: 'GRID',
+            coverSize: 1.0,
+            seriesCollapsed: false,
+            overlayBookType: true
+          }
+        });
+      }
+    }
+
+    this.userService.updateUserSetting(user.id, 'entityViewPreferences', prefs);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Sort Saved',
+      detail: this.entityType === EntityType.ALL_BOOKS || this.entityType === EntityType.UNSHELVED
+        ? 'Default sort configuration saved.'
+        : `Sort configuration saved for this ${this.entityType.toLowerCase()}.`
+    });
   }
 
   get sortCriteriaCount(): number {

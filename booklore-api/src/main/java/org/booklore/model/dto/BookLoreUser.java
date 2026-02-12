@@ -78,6 +78,7 @@ public class BookLoreUser {
         public boolean enableSeriesView;
         public boolean autoSaveMetadata;
         public List<String> visibleFilters;
+        public List<String> visibleSortFields;
         public DashboardConfig dashboardConfig;
 
         @Data
@@ -107,6 +108,7 @@ public class BookLoreUser {
         public static class GlobalPreferences {
             private String sortKey;
             private String sortDir;
+            private List<SortCriterion> sortCriteria;
             private String view;
             private Float coverSize;
             @JsonAlias("seriesCollapse")
@@ -131,10 +133,21 @@ public class BookLoreUser {
         public static class OverrideDetails {
             private String sortKey;
             private String sortDir;
+            private List<SortCriterion> sortCriteria;
             private String view;
             @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
             private Boolean overlayBookType;
+            private Float coverSize;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class SortCriterion {
+            private String field;
+            private String direction;
         }
 
         @Data
@@ -236,7 +249,7 @@ public class BookLoreUser {
             private String title;
             private boolean enabled;
             private int order;
-            private int maxItems;
+            private Integer maxItems;
             private Long magicShelfId;
             private String sortField;
             private String sortDirection;

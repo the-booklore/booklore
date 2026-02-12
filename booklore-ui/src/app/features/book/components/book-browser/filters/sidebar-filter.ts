@@ -128,6 +128,8 @@ export function doesBookMatchFilter(
       });
     case 'contentRating':
       return filterValues.includes(book.metadata?.contentRating);
+    case 'narrator':
+      return filterValues.includes(book.metadata?.narrator);
     case 'comicCharacter':
       return mode === 'or'
         ? filterValues.some(val => book.metadata?.comicMetadata?.characters?.includes(val as string))

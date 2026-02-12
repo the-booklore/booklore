@@ -118,7 +118,6 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     this.updateExpandedPanels();
   }
 
-  // Template Helpers
   getVirtualScrollHeight = (itemCount: number): number => Math.min(itemCount * 28, 440);
 
   trackByFilterType = (_: number, type: FilterType): string => type;
@@ -167,7 +166,6 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   }
 
   private updateVisibleFilterTypes(): void {
-    // Filter and order filterTypes based on user's visible filter preferences
     this.visibleFilterTypes = this._visibleFilters.filter(
       vf => this.filterTypes.includes(vf as FilterType)
     ) as FilterType[];

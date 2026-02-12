@@ -16,7 +16,7 @@ import {TranslocoDirective} from '@jsverse/transloco';
 
 export interface ReadEvent {
   bookId: number;
-  reader?: 'pdf-streaming' | 'epub-streaming';
+  reader?: 'epub-streaming';
   bookType?: BookType;
 }
 
@@ -89,7 +89,7 @@ export class MetadataTabsComponent {
     return this.bookInSeries && this.bookInSeries.length > 1 ? 'series' : 'similar';
   }
 
-  read(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming', bookType?: BookType): void {
+  read(bookId: number, reader?: 'epub-streaming', bookType?: BookType): void {
     this.readBook.emit({ bookId, reader, bookType });
   }
 

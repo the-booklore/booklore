@@ -60,8 +60,8 @@ public class PdfReaderService {
         }
     }
 
-    public List<Integer> getAvailablePages(Long bookId) {
-        return getAvailablePages(bookId, null);
+    public void getAvailablePages(Long bookId) {
+        getAvailablePages(bookId, null);
     }
 
     public List<Integer> getAvailablePages(Long bookId, String bookType) {
@@ -75,10 +75,6 @@ public class PdfReaderService {
             log.error("Failed to read PDF for book {}", bookId, e);
             throw ApiError.FILE_READ_ERROR.createException("Failed to read PDF: " + e.getMessage());
         }
-    }
-
-    public PdfBookInfo getBookInfo(Long bookId) {
-        return getBookInfo(bookId, null);
     }
 
     public PdfBookInfo getBookInfo(Long bookId, String bookType) {
