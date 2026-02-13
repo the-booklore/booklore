@@ -107,6 +107,9 @@ mirror_from_github:
 .semrel-base:
   tags: [universal]
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - when: on_success
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
       when: on_success
     - when: never
@@ -120,6 +123,9 @@ mirror_from_github:
 .docker-base:
   tags: [buildah]
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - when: on_success
     # MR: build/push an MR snapshot image AFTER tests (stage ordering ensures tests must pass)
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
