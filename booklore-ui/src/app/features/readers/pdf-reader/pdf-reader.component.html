@@ -16,6 +16,7 @@
     [rotation]="rotation"
     [zoom]="zoom"
     [spread]="spread"
+    [enablePrint]="canPrint"
     [customToolbar]="additionalButtons"
     (pagesLoaded)="onPdfPagesLoaded($event)"
     (pageChange)="onPageChange($event)"
@@ -36,7 +37,9 @@
         <pdf-hand-tool></pdf-hand-tool>
         <pdf-select-tool></pdf-select-tool>
         <pdf-rotate-page></pdf-rotate-page>
-        <pdf-print></pdf-print>
+        @if (canPrint) {
+          <pdf-print></pdf-print>
+        }
         <pdf-no-spread></pdf-no-spread>
         <pdf-even-spread></pdf-even-spread>
         <pdf-odd-spread></pdf-odd-spread>

@@ -32,6 +32,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
   isLoading = true;
   totalPages: number = 0;
   isDarkTheme = true;
+  canPrint = false;
 
   rotation: 0 | 90 | 180 | 270 = 0;
   authorization = '';
@@ -92,6 +93,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
             this.zoom = pdfPrefs.pdfSettings?.zoom || myself.userSettings.pdfReaderSetting.pageZoom || 'page-fit';
             this.spread = pdfPrefs.pdfSettings?.spread || myself.userSettings.pdfReaderSetting.pageSpread || 'odd';
           }
+          this.canPrint = myself.permissions.canDownload || myself.permissions.admin;
           this.page = pdfMeta.pdfProgress?.page || 1;
           this.bookData = `${API_CONFIG.BASE_URL}/api/v1/books/${this.bookId}/content`;
           const token = this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
