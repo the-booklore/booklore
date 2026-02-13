@@ -88,6 +88,11 @@ public class FileUploadService {
 
     @Transactional
     public BookFile uploadAdditionalFile(Long bookId, MultipartFile file, boolean isBook, BookFileType bookType, String description) {
+        validateFile(file);
+        if (!isBook && bookType == null) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("bookType is required when isBook is false");
+        }
+
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
         final Long libraryId = book.getLibrary() != null ? book.getLibrary().getId() : null;
@@ -140,6 +145,10 @@ public class FileUploadService {
                 fileSubPath = book.getPrimaryBookFile().getFileSubPath();
                 finalPath = buildAdditionalFilePath(book, sanitizedFileName);
                 effectiveBookType = bookType;
+            }
+
+            if (isBook && book.getLibrary() != null) {
+                validateAllowedFormat(book.getLibrary(), effectiveBookType);
             }
             // Ensure uploads cannot escape the configured library root via path traversal
             validateFinalPathUnderBase(Path.of(book.getLibraryPath().getPath()), finalPath);
@@ -363,6 +372,10 @@ public class FileUploadService {
     }
 
     private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("Uploaded file is missing.");
+        }
+
         final String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || BookFileExtension.fromFileName(originalFilename).isEmpty()) {
             throw ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension");
