@@ -10,39 +10,39 @@ public class BulkMetadataUpdateRequest {
     private Set<Long> bookIds;
 
     private Set<String> authors;
-    private boolean clearAuthors;
+    private Boolean clearAuthors;
 
     private String publisher;
-    private boolean clearPublisher;
+    private Boolean clearPublisher;
 
     private String language;
-    private boolean clearLanguage;
+    private Boolean clearLanguage;
 
     private String seriesName;
-    private boolean clearSeriesName;
+    private Boolean clearSeriesName;
 
     private Integer seriesTotal;
-    private boolean clearSeriesTotal;
+    private Boolean clearSeriesTotal;
 
     private LocalDate publishedDate;
-    private boolean clearPublishedDate;
+    private Boolean clearPublishedDate;
 
     private Set<String> genres;
-    private boolean clearGenres;
+    private Boolean clearGenres;
 
     private Set<String> moods;
-    private boolean clearMoods;
+    private Boolean clearMoods;
 
     private Set<String> tags;
-    private boolean clearTags;
+    private Boolean clearTags;
 
-    private boolean mergeCategories;
-    private boolean mergeMoods;
-    private boolean mergeTags;
+    private Boolean mergeCategories;
+    private Boolean mergeMoods;
+    private Boolean mergeTags;
 
     private Integer ageRating;
-    private boolean clearAgeRating;
+    private Boolean clearAgeRating;
 
     private String contentRating;
-    private boolean clearContentRating;
+    private Boolean clearContentRating;
 }

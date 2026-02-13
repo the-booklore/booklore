@@ -159,7 +159,7 @@ public class MetadataRefreshService {
                             MetadataReplaceMode replaceMode = refreshOptions.getReplaceMode() != null 
                                     ? refreshOptions.getReplaceMode() 
                                     : MetadataReplaceMode.REPLACE_MISSING;
-                            updateBookMetadata(book, fetched, refreshOptions.isRefreshCovers(), refreshOptions.isMergeCategories(), replaceMode);
+                            updateBookMetadata(book, fetched, Boolean.TRUE.equals(refreshOptions.getRefreshCovers()), Boolean.TRUE.equals(refreshOptions.getMergeCategories()), replaceMode);
                         }
 
                         sendBatchProgressNotification(jobId, finalCompletedCount + 1, totalBooks, "Processed: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, bookReviewMode);
@@ -442,153 +442,153 @@ public class MetadataRefreshService {
         MetadataReplaceMode replaceMode = refreshOptions.getReplaceMode();
         boolean isReplaceAll = replaceMode == MetadataReplaceMode.REPLACE_ALL;
 
-        if (enabledFields.isTitle()) {
+        if (Boolean.TRUE.equals(enabledFields.getTitle())) {
             metadata.setTitle(resolveFieldAsString(metadataMap, fieldOptions.getTitle(), BookMetadata::getTitle));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setTitle(existingMetadata.getTitle());
         }
         
-        if (enabledFields.isSubtitle()) {
+        if (Boolean.TRUE.equals(enabledFields.getSubtitle())) {
             metadata.setSubtitle(resolveFieldAsString(metadataMap, fieldOptions.getSubtitle(), BookMetadata::getSubtitle));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setSubtitle(existingMetadata.getSubtitle());
         }
         
-        if (enabledFields.isDescription()) {
+        if (Boolean.TRUE.equals(enabledFields.getDescription())) {
             metadata.setDescription(resolveFieldAsString(metadataMap, fieldOptions.getDescription(), BookMetadata::getDescription));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setDescription(existingMetadata.getDescription());
         }
         
-        if (enabledFields.isAuthors()) {
+        if (Boolean.TRUE.equals(enabledFields.getAuthors())) {
             metadata.setAuthors(resolveFieldAsList(metadataMap, fieldOptions.getAuthors(), BookMetadata::getAuthors));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setAuthors(existingMetadata.getAuthors());
         }
         
-        if (enabledFields.isPublisher()) {
+        if (Boolean.TRUE.equals(enabledFields.getPublisher())) {
             metadata.setPublisher(resolveFieldAsString(metadataMap, fieldOptions.getPublisher(), BookMetadata::getPublisher));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setPublisher(existingMetadata.getPublisher());
         }
         
-        if (enabledFields.isPublishedDate()) {
+        if (Boolean.TRUE.equals(enabledFields.getPublishedDate())) {
             metadata.setPublishedDate(resolveField(metadataMap, fieldOptions.getPublishedDate(), BookMetadata::getPublishedDate));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setPublishedDate(existingMetadata.getPublishedDate());
         }
         
-        if (enabledFields.isSeriesName()) {
+        if (Boolean.TRUE.equals(enabledFields.getSeriesName())) {
             metadata.setSeriesName(resolveFieldAsString(metadataMap, fieldOptions.getSeriesName(), BookMetadata::getSeriesName));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setSeriesName(existingMetadata.getSeriesName());
         }
         
-        if (enabledFields.isSeriesNumber()) {
+        if (Boolean.TRUE.equals(enabledFields.getSeriesNumber())) {
             metadata.setSeriesNumber(resolveField(metadataMap, fieldOptions.getSeriesNumber(), BookMetadata::getSeriesNumber));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setSeriesNumber(existingMetadata.getSeriesNumber());
         }
         
-        if (enabledFields.isSeriesTotal()) {
+        if (Boolean.TRUE.equals(enabledFields.getSeriesTotal())) {
             metadata.setSeriesTotal(resolveFieldAsInteger(metadataMap, fieldOptions.getSeriesTotal(), BookMetadata::getSeriesTotal));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setSeriesTotal(existingMetadata.getSeriesTotal());
         }
         
-        if (enabledFields.isIsbn13()) {
+        if (Boolean.TRUE.equals(enabledFields.getIsbn13())) {
             metadata.setIsbn13(resolveFieldAsString(metadataMap, fieldOptions.getIsbn13(), BookMetadata::getIsbn13));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setIsbn13(existingMetadata.getIsbn13());
         }
         
-        if (enabledFields.isIsbn10()) {
+        if (Boolean.TRUE.equals(enabledFields.getIsbn10())) {
             metadata.setIsbn10(resolveFieldAsString(metadataMap, fieldOptions.getIsbn10(), BookMetadata::getIsbn10));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setIsbn10(existingMetadata.getIsbn10());
         }
         
-        if (enabledFields.isLanguage()) {
+        if (Boolean.TRUE.equals(enabledFields.getLanguage())) {
             metadata.setLanguage(resolveFieldAsString(metadataMap, fieldOptions.getLanguage(), BookMetadata::getLanguage));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setLanguage(existingMetadata.getLanguage());
         }
         
-        if (enabledFields.isPageCount()) {
+        if (Boolean.TRUE.equals(enabledFields.getPageCount())) {
             metadata.setPageCount(resolveFieldAsInteger(metadataMap, fieldOptions.getPageCount(), BookMetadata::getPageCount));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setPageCount(existingMetadata.getPageCount());
         }
         
-        if (enabledFields.isCover()) {
+        if (Boolean.TRUE.equals(enabledFields.getCover())) {
             metadata.setThumbnailUrl(resolveFieldAsString(metadataMap, fieldOptions.getCover(), BookMetadata::getThumbnailUrl));
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setThumbnailUrl(existingMetadata.getThumbnailUrl());
         }
-        if (enabledFields.isAmazonRating()) {
+        if (Boolean.TRUE.equals(enabledFields.getAmazonRating())) {
             if (metadataMap.containsKey(Amazon)) {
                 metadata.setAmazonRating(metadataMap.get(Amazon).getAmazonRating());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setAmazonRating(existingMetadata.getAmazonRating());
         }
-
-        if (enabledFields.isAmazonReviewCount()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getAmazonReviewCount())) {
             if (metadataMap.containsKey(Amazon)) {
                 metadata.setAmazonReviewCount(metadataMap.get(Amazon).getAmazonReviewCount());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setAmazonReviewCount(existingMetadata.getAmazonReviewCount());
         }
-
-        if (enabledFields.isGoodreadsRating()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getGoodreadsRating())) {
             if (metadataMap.containsKey(GoodReads)) {
                 metadata.setGoodreadsRating(metadataMap.get(GoodReads).getGoodreadsRating());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setGoodreadsRating(existingMetadata.getGoodreadsRating());
         }
-
-        if (enabledFields.isGoodreadsReviewCount()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getGoodreadsReviewCount())) {
             if (metadataMap.containsKey(GoodReads)) {
                 metadata.setGoodreadsReviewCount(metadataMap.get(GoodReads).getGoodreadsReviewCount());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setGoodreadsReviewCount(existingMetadata.getGoodreadsReviewCount());
         }
-
-        if (enabledFields.isHardcoverRating()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getHardcoverRating())) {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setHardcoverRating(metadataMap.get(Hardcover).getHardcoverRating());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setHardcoverRating(existingMetadata.getHardcoverRating());
         }
-
-        if (enabledFields.isHardcoverReviewCount()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getHardcoverReviewCount())) {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setHardcoverReviewCount(metadataMap.get(Hardcover).getHardcoverReviewCount());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setHardcoverReviewCount(existingMetadata.getHardcoverReviewCount());
         }
-
-        if (enabledFields.isAsin()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getAsin())) {
             if (metadataMap.containsKey(Amazon)) {
                 metadata.setAsin(metadataMap.get(Amazon).getAsin());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setAsin(existingMetadata.getAsin());
         }
-        if (enabledFields.isGoodreadsId()) {
+        if (Boolean.TRUE.equals(enabledFields.getGoodreadsId())) {
             if (metadataMap.containsKey(GoodReads)) {
                 metadata.setGoodreadsId(metadataMap.get(GoodReads).getGoodreadsId());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setGoodreadsId(existingMetadata.getGoodreadsId());
         }
-
-        if (enabledFields.isHardcoverId()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getHardcoverId())) {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setHardcoverId(metadataMap.get(Hardcover).getHardcoverId());
                 metadata.setHardcoverBookId(metadataMap.get(Hardcover).getHardcoverBookId());
@@ -597,77 +597,77 @@ public class MetadataRefreshService {
             metadata.setHardcoverId(existingMetadata.getHardcoverId());
             metadata.setHardcoverBookId(existingMetadata.getHardcoverBookId());
         }
-
-        if (enabledFields.isGoogleId()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getGoogleId())) {
             if (metadataMap.containsKey(Google)) {
                 metadata.setGoogleId(metadataMap.get(Google).getGoogleId());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setGoogleId(existingMetadata.getGoogleId());
         }
-
-        if (enabledFields.isComicvineId()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getComicvineId())) {
             if (metadataMap.containsKey(Comicvine)) {
                 metadata.setComicvineId(metadataMap.get(Comicvine).getComicvineId());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setComicvineId(existingMetadata.getComicvineId());
         }
-
+ 
         if (metadataMap.containsKey(Comicvine) && metadataMap.get(Comicvine).getComicMetadata() != null) {
             metadata.setComicMetadata(metadataMap.get(Comicvine).getComicMetadata());
         }
-
-        if (enabledFields.isLubimyczytacId()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getLubimyczytacId())) {
             if (metadataMap.containsKey(Lubimyczytac)) {
                 metadata.setLubimyczytacId(metadataMap.get(Lubimyczytac).getLubimyczytacId());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setLubimyczytacId(existingMetadata.getLubimyczytacId());
         }
-
-        if (enabledFields.isLubimyczytacRating()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getLubimyczytacRating())) {
             if (metadataMap.containsKey(Lubimyczytac)) {
                 metadata.setLubimyczytacRating(metadataMap.get(Lubimyczytac).getLubimyczytacRating());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setLubimyczytacRating(existingMetadata.getLubimyczytacRating());
         }
-
-        if (enabledFields.isRanobedbId()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getRanobedbId())) {
             if (metadataMap.containsKey(Ranobedb)) {
                 metadata.setRanobedbId(metadataMap.get(Ranobedb).getRanobedbId());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setRanobedbId(existingMetadata.getRanobedbId());
         }
-
-        if (enabledFields.isRanobedbRating()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getRanobedbRating())) {
             if (metadataMap.containsKey(Ranobedb)) {
                 metadata.setRanobedbRating(metadataMap.get(Ranobedb).getRanobedbRating());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setRanobedbRating(existingMetadata.getRanobedbRating());
         }
-
-        if (enabledFields.isMoods()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getMoods())) {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setMoods(metadataMap.get(Hardcover).getMoods());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setMoods(existingMetadata.getMoods());
         }
-
-        if (enabledFields.isTags()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getTags())) {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setTags(metadataMap.get(Hardcover).getTags());
             }
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setTags(existingMetadata.getTags());
         }
-
-        if (enabledFields.isCategories()) {
-            if (refreshOptions.isMergeCategories()) {
+ 
+        if (Boolean.TRUE.equals(enabledFields.getCategories())) {
+            if (Boolean.TRUE.equals(refreshOptions.getMergeCategories())) {
                 metadata.setCategories(getAllCategories(metadataMap, fieldOptions.getCategories(), BookMetadata::getCategories));
             } else {
                 metadata.setCategories(resolveFieldAsList(metadataMap, fieldOptions.getCategories(), BookMetadata::getCategories));
@@ -675,7 +675,7 @@ public class MetadataRefreshService {
         } else if (isReplaceAll && existingMetadata != null) {
             metadata.setCategories(existingMetadata.getCategories());
         }
-
+ 
         List<BookReview> allReviews = metadataMap.values().stream()
                 .filter(Objects::nonNull)
                 .flatMap(md -> Optional.ofNullable(md.getBookReviews()).stream().flatMap(Collection::stream))
@@ -683,7 +683,7 @@ public class MetadataRefreshService {
         if (!allReviews.isEmpty()) {
             metadata.setBookReviews(allReviews);
         }
-
+ 
         return metadata;
     }
 

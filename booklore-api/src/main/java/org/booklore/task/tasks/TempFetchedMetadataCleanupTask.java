@@ -1,5 +1,7 @@
 package org.booklore.task.tasks;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.TaskCreateRequest;
@@ -8,8 +10,6 @@ import org.booklore.model.enums.TaskType;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.MetadataFetchJobRepository;
 import org.booklore.task.TaskStatus;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +43,7 @@ public class TempFetchedMetadataCleanupTask implements Task {
 
         try {
             int deleted;
-            if (request.isTriggeredByCron()) {
+            if (Boolean.TRUE.equals(request.getTriggeredByCron())) {
                 Instant cutoff = Instant.now().minus(3, ChronoUnit.DAYS);
                 deleted = metadataFetchJobRepository.deleteAllByCompletedAtBefore(cutoff);
                 log.info("{}: Removed {} metadata fetch jobs older than {}", getTaskType(), deleted, cutoff);

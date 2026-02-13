@@ -86,49 +86,49 @@ class MetadataRefreshServiceTitleUpdateTest {
         void enabledFields_defaultConstructor_shouldHaveAllFieldsTrue() {
             MetadataRefreshOptions.EnabledFields enabledFields = new MetadataRefreshOptions.EnabledFields();
 
-            assertThat(enabledFields.isTitle())
+            assertThat(Boolean.TRUE.equals(enabledFields.getTitle()))
                     .as("title should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isSubtitle())
+            assertThat(Boolean.TRUE.equals(enabledFields.getSubtitle()))
                     .as("subtitle should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isDescription())
+            assertThat(Boolean.TRUE.equals(enabledFields.getDescription()))
                     .as("description should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isAuthors())
+            assertThat(Boolean.TRUE.equals(enabledFields.getAuthors()))
                     .as("authors should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isPublisher())
+            assertThat(Boolean.TRUE.equals(enabledFields.getPublisher()))
                     .as("publisher should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isPublishedDate())
+            assertThat(Boolean.TRUE.equals(enabledFields.getPublishedDate()))
                     .as("publishedDate should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isSeriesName())
+            assertThat(Boolean.TRUE.equals(enabledFields.getSeriesName()))
                     .as("seriesName should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isSeriesNumber())
+            assertThat(Boolean.TRUE.equals(enabledFields.getSeriesNumber()))
                     .as("seriesNumber should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isSeriesTotal())
+            assertThat(Boolean.TRUE.equals(enabledFields.getSeriesTotal()))
                     .as("seriesTotal should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isIsbn13())
+            assertThat(Boolean.TRUE.equals(enabledFields.getIsbn13()))
                     .as("isbn13 should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isIsbn10())
+            assertThat(Boolean.TRUE.equals(enabledFields.getIsbn10()))
                     .as("isbn10 should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isLanguage())
+            assertThat(Boolean.TRUE.equals(enabledFields.getLanguage()))
                     .as("language should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isCategories())
+            assertThat(Boolean.TRUE.equals(enabledFields.getCategories()))
                     .as("categories should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isCover())
+            assertThat(Boolean.TRUE.equals(enabledFields.getCover()))
                     .as("cover should be enabled by default")
                     .isTrue();
-            assertThat(enabledFields.isPageCount())
+            assertThat(Boolean.TRUE.equals(enabledFields.getPageCount()))
                     .as("pageCount should be enabled by default")
                     .isTrue();
         }
@@ -246,7 +246,7 @@ class MetadataRefreshServiceTitleUpdateTest {
             Long bookId = 224L; // Using the same book ID from the user's log
             
             MetadataRefreshOptions refreshOptions = new MetadataRefreshOptions();
-            assertThat(refreshOptions.getEnabledFields().isTitle())
+            assertThat(Boolean.TRUE.equals(refreshOptions.getEnabledFields().getTitle()))
                     .as("Title should be enabled by default in refresh options")
                     .isTrue();
             

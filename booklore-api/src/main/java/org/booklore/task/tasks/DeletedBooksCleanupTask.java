@@ -1,5 +1,7 @@
 package org.booklore.task.tasks;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.TaskCreateRequest;
@@ -8,8 +10,6 @@ import org.booklore.model.enums.TaskType;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.BookRepository;
 import org.booklore.task.TaskStatus;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -41,7 +41,7 @@ public class DeletedBooksCleanupTask implements Task {
 
         try {
             int deletedCount;
-            if (request.isTriggeredByCron()) {
+            if (Boolean.TRUE.equals(request.getTriggeredByCron())) {
                 Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);
                 deletedCount = bookRepository.deleteSoftDeletedBefore(cutoff);
                 log.info("{}: Removed {} deleted books older than {}", getTaskType(), deletedCount, cutoff);

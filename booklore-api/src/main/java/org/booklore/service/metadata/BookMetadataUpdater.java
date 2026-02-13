@@ -173,36 +173,36 @@ public class BookMetadataUpdater {
         if (clear == null) {
             clear = new MetadataClearFlags();
         }
-        handleFieldUpdate(e.getTitleLocked(), clear.isTitle(), m.getTitle(), v -> e.setTitle(nullIfBlank(v)), e::getTitle, replaceMode);
-        handleFieldUpdate(e.getSubtitleLocked(), clear.isSubtitle(), m.getSubtitle(), v -> e.setSubtitle(nullIfBlank(v)), e::getSubtitle, replaceMode);
-        handleFieldUpdate(e.getPublisherLocked(), clear.isPublisher(), m.getPublisher(), v -> e.setPublisher(nullIfBlank(v)), e::getPublisher, replaceMode);
-        handleFieldUpdate(e.getPublishedDateLocked(), clear.isPublishedDate(), m.getPublishedDate(), e::setPublishedDate, e::getPublishedDate, replaceMode);
-        handleFieldUpdate(e.getDescriptionLocked(), clear.isDescription(), m.getDescription(), v -> e.setDescription(nullIfBlank(v)), e::getDescription, replaceMode);
-        handleFieldUpdate(e.getSeriesNameLocked(), clear.isSeriesName(), m.getSeriesName(), e::setSeriesName, e::getSeriesName, replaceMode);
-        handleFieldUpdate(e.getSeriesNumberLocked(), clear.isSeriesNumber(), m.getSeriesNumber(), e::setSeriesNumber, e::getSeriesNumber, replaceMode);
-        handleFieldUpdate(e.getSeriesTotalLocked(), clear.isSeriesTotal(), m.getSeriesTotal(), e::setSeriesTotal, e::getSeriesTotal, replaceMode);
-        handleFieldUpdate(e.getIsbn13Locked(), clear.isIsbn13(), m.getIsbn13(), v -> e.setIsbn13(nullIfBlank(v)), e::getIsbn13, replaceMode);
-        handleFieldUpdate(e.getIsbn10Locked(), clear.isIsbn10(), m.getIsbn10(), v -> e.setIsbn10(nullIfBlank(v)), e::getIsbn10, replaceMode);
-        handleFieldUpdate(e.getAsinLocked(), clear.isAsin(), m.getAsin(), v -> e.setAsin(nullIfBlank(v)), e::getAsin, replaceMode);
-        handleFieldUpdate(e.getGoodreadsIdLocked(), clear.isGoodreadsId(), m.getGoodreadsId(), v -> e.setGoodreadsId(nullIfBlank(v)), e::getGoodreadsId, replaceMode);
-        handleFieldUpdate(e.getComicvineIdLocked(), clear.isComicvineId(), m.getComicvineId(), v -> e.setComicvineId(nullIfBlank(v)), e::getComicvineId, replaceMode);
-        handleFieldUpdate(e.getHardcoverIdLocked(), clear.isHardcoverId(), m.getHardcoverId(), v -> e.setHardcoverId(nullIfBlank(v)), e::getHardcoverId, replaceMode);
-        handleFieldUpdate(e.getHardcoverBookIdLocked(), clear.isHardcoverBookId(), m.getHardcoverBookId(), e::setHardcoverBookId, e::getHardcoverBookId, replaceMode);
-        handleFieldUpdate(e.getGoogleIdLocked(), clear.isGoogleId(), m.getGoogleId(), v -> e.setGoogleId(nullIfBlank(v)), e::getGoogleId, replaceMode);
-        handleFieldUpdate(e.getPageCountLocked(), clear.isPageCount(), m.getPageCount(), e::setPageCount, e::getPageCount, replaceMode);
-        handleFieldUpdate(e.getLanguageLocked(), clear.isLanguage(), m.getLanguage(), v -> e.setLanguage(nullIfBlank(v)), e::getLanguage, replaceMode);
-        handleFieldUpdate(e.getAmazonRatingLocked(), clear.isAmazonRating(), m.getAmazonRating(), e::setAmazonRating, e::getAmazonRating, replaceMode);
-        handleFieldUpdate(e.getAmazonReviewCountLocked(), clear.isAmazonReviewCount(), m.getAmazonReviewCount(), e::setAmazonReviewCount, e::getAmazonReviewCount, replaceMode);
-        handleFieldUpdate(e.getGoodreadsRatingLocked(), clear.isGoodreadsRating(), m.getGoodreadsRating(), e::setGoodreadsRating, e::getGoodreadsRating, replaceMode);
-        handleFieldUpdate(e.getGoodreadsReviewCountLocked(), clear.isGoodreadsReviewCount(), m.getGoodreadsReviewCount(), e::setGoodreadsReviewCount, e::getGoodreadsReviewCount, replaceMode);
-        handleFieldUpdate(e.getHardcoverRatingLocked(), clear.isHardcoverRating(), m.getHardcoverRating(), e::setHardcoverRating, e::getHardcoverRating, replaceMode);
-        handleFieldUpdate(e.getHardcoverReviewCountLocked(), clear.isHardcoverReviewCount(), m.getHardcoverReviewCount(), e::setHardcoverReviewCount, e::getHardcoverReviewCount, replaceMode);
-        handleFieldUpdate(e.getLubimyczytacIdLocked(), clear.isLubimyczytacId(), m.getLubimyczytacId(), v -> e.setLubimyczytacId(nullIfBlank(v)), () -> e.getLubimyczytacId(), replaceMode);
-        handleFieldUpdate(e.getLubimyczytacRatingLocked(), clear.isLubimyczytacRating(), m.getLubimyczytacRating(), v -> e.setLubimyczytacRating(v), () -> e.getLubimyczytacRating(), replaceMode);
-        handleFieldUpdate(e.getRanobedbIdLocked(), clear.isRanobedbId(), m.getRanobedbId(), v -> e.setRanobedbId(nullIfBlank(v)), e::getRanobedbId, replaceMode);
-        handleFieldUpdate(e.getRanobedbRatingLocked(), clear.isRanobedbRating(), m.getRanobedbRating(), e::setRanobedbRating, e::getRanobedbRating, replaceMode);
-        handleFieldUpdate(e.getAgeRatingLocked(), clear.isAgeRating(), m.getAgeRating(), e::setAgeRating, e::getAgeRating, replaceMode);
-        handleFieldUpdate(e.getContentRatingLocked(), clear.isContentRating(), m.getContentRating(), v -> e.setContentRating(nullIfBlank(v)), e::getContentRating, replaceMode);
+        handleFieldUpdate(e.getTitleLocked(), Boolean.TRUE.equals(clear.getTitle()), m.getTitle(), v -> e.setTitle(nullIfBlank(v)), e::getTitle, replaceMode);
+        handleFieldUpdate(e.getSubtitleLocked(), Boolean.TRUE.equals(clear.getSubtitle()), m.getSubtitle(), v -> e.setSubtitle(nullIfBlank(v)), e::getSubtitle, replaceMode);
+        handleFieldUpdate(e.getPublisherLocked(), Boolean.TRUE.equals(clear.getPublisher()), m.getPublisher(), v -> e.setPublisher(nullIfBlank(v)), e::getPublisher, replaceMode);
+        handleFieldUpdate(e.getPublishedDateLocked(), Boolean.TRUE.equals(clear.getPublishedDate()), m.getPublishedDate(), e::setPublishedDate, e::getPublishedDate, replaceMode);
+        handleFieldUpdate(e.getDescriptionLocked(), Boolean.TRUE.equals(clear.getDescription()), m.getDescription(), v -> e.setDescription(nullIfBlank(v)), e::getDescription, replaceMode);
+        handleFieldUpdate(e.getSeriesNameLocked(), Boolean.TRUE.equals(clear.getSeriesName()), m.getSeriesName(), e::setSeriesName, e::getSeriesName, replaceMode);
+        handleFieldUpdate(e.getSeriesNumberLocked(), Boolean.TRUE.equals(clear.getSeriesNumber()), m.getSeriesNumber(), e::setSeriesNumber, e::getSeriesNumber, replaceMode);
+        handleFieldUpdate(e.getSeriesTotalLocked(), Boolean.TRUE.equals(clear.getSeriesTotal()), m.getSeriesTotal(), e::setSeriesTotal, e::getSeriesTotal, replaceMode);
+        handleFieldUpdate(e.getIsbn13Locked(), Boolean.TRUE.equals(clear.getIsbn13()), m.getIsbn13(), v -> e.setIsbn13(nullIfBlank(v)), e::getIsbn13, replaceMode);
+        handleFieldUpdate(e.getIsbn10Locked(), Boolean.TRUE.equals(clear.getIsbn10()), m.getIsbn10(), v -> e.setIsbn10(nullIfBlank(v)), e::getIsbn10, replaceMode);
+        handleFieldUpdate(e.getAsinLocked(), Boolean.TRUE.equals(clear.getAsin()), m.getAsin(), v -> e.setAsin(nullIfBlank(v)), e::getAsin, replaceMode);
+        handleFieldUpdate(e.getGoodreadsIdLocked(), Boolean.TRUE.equals(clear.getGoodreadsId()), m.getGoodreadsId(), v -> e.setGoodreadsId(nullIfBlank(v)), e::getGoodreadsId, replaceMode);
+        handleFieldUpdate(e.getComicvineIdLocked(), Boolean.TRUE.equals(clear.getComicvineId()), m.getComicvineId(), v -> e.setComicvineId(nullIfBlank(v)), e::getComicvineId, replaceMode);
+        handleFieldUpdate(e.getHardcoverIdLocked(), Boolean.TRUE.equals(clear.getHardcoverId()), m.getHardcoverId(), v -> e.setHardcoverId(nullIfBlank(v)), e::getHardcoverId, replaceMode);
+        handleFieldUpdate(e.getHardcoverBookIdLocked(), Boolean.TRUE.equals(clear.getHardcoverBookId()), m.getHardcoverBookId(), e::setHardcoverBookId, e::getHardcoverBookId, replaceMode);
+        handleFieldUpdate(e.getGoogleIdLocked(), Boolean.TRUE.equals(clear.getGoogleId()), m.getGoogleId(), v -> e.setGoogleId(nullIfBlank(v)), e::getGoogleId, replaceMode);
+        handleFieldUpdate(e.getPageCountLocked(), Boolean.TRUE.equals(clear.getPageCount()), m.getPageCount(), e::setPageCount, e::getPageCount, replaceMode);
+        handleFieldUpdate(e.getLanguageLocked(), Boolean.TRUE.equals(clear.getLanguage()), m.getLanguage(), v -> e.setLanguage(nullIfBlank(v)), e::getLanguage, replaceMode);
+        handleFieldUpdate(e.getAmazonRatingLocked(), Boolean.TRUE.equals(clear.getAmazonRating()), m.getAmazonRating(), e::setAmazonRating, e::getAmazonRating, replaceMode);
+        handleFieldUpdate(e.getAmazonReviewCountLocked(), Boolean.TRUE.equals(clear.getAmazonReviewCount()), m.getAmazonReviewCount(), e::setAmazonReviewCount, e::getAmazonReviewCount, replaceMode);
+        handleFieldUpdate(e.getGoodreadsRatingLocked(), Boolean.TRUE.equals(clear.getGoodreadsRating()), m.getGoodreadsRating(), e::setGoodreadsRating, e::getGoodreadsRating, replaceMode);
+        handleFieldUpdate(e.getGoodreadsReviewCountLocked(), Boolean.TRUE.equals(clear.getGoodreadsReviewCount()), m.getGoodreadsReviewCount(), e::setGoodreadsReviewCount, e::getGoodreadsReviewCount, replaceMode);
+        handleFieldUpdate(e.getHardcoverRatingLocked(), Boolean.TRUE.equals(clear.getHardcoverRating()), m.getHardcoverRating(), e::setHardcoverRating, e::getHardcoverRating, replaceMode);
+        handleFieldUpdate(e.getHardcoverReviewCountLocked(), Boolean.TRUE.equals(clear.getHardcoverReviewCount()), m.getHardcoverReviewCount(), e::setHardcoverReviewCount, e::getHardcoverReviewCount, replaceMode);
+        handleFieldUpdate(e.getLubimyczytacIdLocked(), Boolean.TRUE.equals(clear.getLubimyczytacId()), m.getLubimyczytacId(), v -> e.setLubimyczytacId(nullIfBlank(v)), () -> e.getLubimyczytacId(), replaceMode);
+        handleFieldUpdate(e.getLubimyczytacRatingLocked(), Boolean.TRUE.equals(clear.getLubimyczytacRating()), m.getLubimyczytacRating(), v -> e.setLubimyczytacRating(v), () -> e.getLubimyczytacRating(), replaceMode);
+        handleFieldUpdate(e.getRanobedbIdLocked(), Boolean.TRUE.equals(clear.getRanobedbId()), m.getRanobedbId(), v -> e.setRanobedbId(nullIfBlank(v)), e::getRanobedbId, replaceMode);
+        handleFieldUpdate(e.getRanobedbRatingLocked(), Boolean.TRUE.equals(clear.getRanobedbRating()), m.getRanobedbRating(), e::setRanobedbRating, e::getRanobedbRating, replaceMode);
+        handleFieldUpdate(e.getAgeRatingLocked(), Boolean.TRUE.equals(clear.getAgeRating()), m.getAgeRating(), e::setAgeRating, e::getAgeRating, replaceMode);
+        handleFieldUpdate(e.getContentRatingLocked(), Boolean.TRUE.equals(clear.getContentRating()), m.getContentRating(), v -> e.setContentRating(nullIfBlank(v)), e::getContentRating, replaceMode);
     }
 
     private <T> void handleFieldUpdate(Boolean locked, boolean shouldClear, T newValue, Consumer<T> setter, Supplier<T> getter, MetadataReplaceMode mode) {
@@ -237,7 +237,7 @@ public class BookMetadataUpdater {
 
         e.setAuthors(Optional.ofNullable(e.getAuthors()).orElseGet(HashSet::new));
 
-        if (clear.isAuthors()) {
+        if (Boolean.TRUE.equals(clear.getAuthors())) {
             e.getAuthors().clear();
             return;
         }
@@ -275,7 +275,7 @@ public class BookMetadataUpdater {
 
         e.setCategories(Optional.ofNullable(e.getCategories()).orElseGet(HashSet::new));
 
-        if (clear.isCategories()) {
+        if (Boolean.TRUE.equals(clear.getCategories())) {
             e.getCategories().clear();
             return;
         }
@@ -310,7 +310,7 @@ public class BookMetadataUpdater {
 
         e.setMoods(Optional.ofNullable(e.getMoods()).orElseGet(HashSet::new));
 
-        if (clear.isMoods()) {
+        if (Boolean.TRUE.equals(clear.getMoods())) {
             e.getMoods().clear();
             return;
         }
@@ -345,7 +345,7 @@ public class BookMetadataUpdater {
 
         e.setTags(Optional.ofNullable(e.getTags()).orElseGet(HashSet::new));
 
-        if (clear.isTags()) {
+        if (Boolean.TRUE.equals(clear.getTags())) {
             e.getTags().clear();
             return;
         }
@@ -379,8 +379,8 @@ public class BookMetadataUpdater {
         if (clear == null) {
             clear = new MetadataClearFlags();
         }
-        handleFieldUpdate(e.getNarratorLocked(), clear.isNarrator(), m.getNarrator(), v -> e.setNarrator(nullIfBlank(v)), e::getNarrator, replaceMode);
-        handleFieldUpdate(e.getAbridgedLocked(), clear.isAbridged(), m.getAbridged(), e::setAbridged, e::getAbridged, replaceMode);
+        handleFieldUpdate(e.getNarratorLocked(), Boolean.TRUE.equals(clear.getNarrator()), m.getNarrator(), v -> e.setNarrator(nullIfBlank(v)), e::getNarrator, replaceMode);
+        handleFieldUpdate(e.getAbridgedLocked(), Boolean.TRUE.equals(clear.getAbridged()), m.getAbridged(), e::setAbridged, e::getAbridged, replaceMode);
     }
 
     private void updateComicMetadataIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataReplaceMode replaceMode) {

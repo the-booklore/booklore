@@ -1,5 +1,10 @@
 package org.booklore.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
 import org.booklore.config.security.annotation.CheckBookAccess;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMetadataMapper;
@@ -15,11 +20,6 @@ import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.metadata.BookMetadataUpdater;
 import org.booklore.service.metadata.MetadataManagementService;
 import org.booklore.service.metadata.MetadataMatchService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -87,9 +87,9 @@ public class MetadataController {
     @PutMapping("/bulk-edit-metadata")
     @PreAuthorize("@securityUtil.canBulkEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> bulkEditMetadata(@Parameter(description = "Bulk metadata update request") @RequestBody BulkMetadataUpdateRequest bulkMetadataUpdateRequest) {
-        boolean mergeCategories = bulkMetadataUpdateRequest.isMergeCategories();
-        boolean mergeMoods = bulkMetadataUpdateRequest.isMergeMoods();
-        boolean mergeTags = bulkMetadataUpdateRequest.isMergeTags();
+        boolean mergeCategories = Boolean.TRUE.equals(bulkMetadataUpdateRequest.getMergeCategories());
+        boolean mergeMoods = Boolean.TRUE.equals(bulkMetadataUpdateRequest.getMergeMoods());
+        boolean mergeTags = Boolean.TRUE.equals(bulkMetadataUpdateRequest.getMergeTags());
         bookMetadataService.bulkUpdateMetadata(bulkMetadataUpdateRequest, mergeCategories, mergeMoods, mergeTags);
         return ResponseEntity.noContent().build();
     }

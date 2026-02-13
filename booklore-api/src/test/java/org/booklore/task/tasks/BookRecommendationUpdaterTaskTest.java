@@ -88,6 +88,7 @@ class BookRecommendationUpdaterTaskTest {
         assertEquals("task-123", response.getTaskId());
         assertEquals(TaskStatus.COMPLETED, response.getStatus());
 
+        @SuppressWarnings("unchecked")
         org.mockito.ArgumentCaptor<List<BookEntity>> captor = org.mockito.ArgumentCaptor.forClass(List.class);
         verify(bookQueryService).saveAll(captor.capture());
         

@@ -1,18 +1,18 @@
 package org.booklore.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.ChangePasswordRequest;
 import org.booklore.model.dto.request.ChangeUserPasswordRequest;
 import org.booklore.model.dto.request.UpdateUserSettingRequest;
-import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.UserUpdateRequest;
 import org.booklore.service.user.UserService;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.Parameter;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -93,6 +93,7 @@ public class UserController {
     @ApiResponse(responseCode = "204", description = "User settings updated successfully")
     @PutMapping("/{id}/settings")
     @PreAuthorize("@securityUtil.isSelf(#id)")
+    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
     public void updateUserSetting(
             @Parameter(description = "ID of the user") @PathVariable Long id,
             @Parameter(description = "Update user setting request") @RequestBody UpdateUserSettingRequest request) {

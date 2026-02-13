@@ -1,14 +1,16 @@
 package org.booklore.service.metadata;
 
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.BookReview;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.entity.BookReviewEntity;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,7 +29,7 @@ public class BookReviewUpdateService {
         if (Boolean.TRUE.equals(entity.getReviewsLocked())) {
             return;
         }
-        if (clearFlags.isReviews()) {
+        if (Boolean.TRUE.equals(clearFlags.getReviews())) {
             entity.getReviews().clear();
             return;
         }

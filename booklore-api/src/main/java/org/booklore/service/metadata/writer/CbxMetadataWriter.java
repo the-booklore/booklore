@@ -200,10 +200,10 @@ public class CbxMetadataWriter implements MetadataWriter {
     private void applyMetadataChanges(ComicInfo info, BookMetadataEntity metadata, MetadataClearFlags clearFlags) {
         MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
 
-        helper.copyTitle(clearFlags != null && clearFlags.isTitle(), info::setTitle);
+        helper.copyTitle(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getTitle() : null), info::setTitle);
         
         // Summary: Remove HTML tags safely using Jsoup (handles complex HTML like attributes with '>')
-        helper.copyDescription(clearFlags != null && clearFlags.isDescription(), val -> {
+        helper.copyDescription(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getDescription() : null), val -> {
             if (val != null) {
                 // Jsoup.clean with Safelist.none() removes all HTML tags safely, 
                 // handling edge cases like '<a href="...>">' that regex fails on
@@ -219,12 +219,12 @@ public class CbxMetadataWriter implements MetadataWriter {
             }
         });
         
-        helper.copyPublisher(clearFlags != null && clearFlags.isPublisher(), info::setPublisher);
-        helper.copySeriesName(clearFlags != null && clearFlags.isSeriesName(), info::setSeries);
-        helper.copySeriesNumber(clearFlags != null && clearFlags.isSeriesNumber(), val -> info.setNumber(formatFloatValue(val)));
-        helper.copySeriesTotal(clearFlags != null && clearFlags.isSeriesTotal(), info::setCount);
+        helper.copyPublisher(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getPublisher() : null), info::setPublisher);
+        helper.copySeriesName(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getSeriesName() : null), info::setSeries);
+        helper.copySeriesNumber(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getSeriesNumber() : null), val -> info.setNumber(formatFloatValue(val)));
+        helper.copySeriesTotal(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getSeriesTotal() : null), info::setCount);
         
-        helper.copyPublishedDate(clearFlags != null && clearFlags.isPublishedDate(), date -> {
+        helper.copyPublishedDate(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getPublishedDate() : null), date -> {
              if (date != null) {
                  info.setYear(date.getYear());
                  info.setMonth(date.getMonthValue());
@@ -236,10 +236,10 @@ public class CbxMetadataWriter implements MetadataWriter {
              }
         });
         
-        helper.copyPageCount(clearFlags != null && clearFlags.isPageCount(), info::setPageCount);
-        helper.copyLanguage(clearFlags != null && clearFlags.isLanguage(), info::setLanguageISO);
+        helper.copyPageCount(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getPageCount() : null), info::setPageCount);
+        helper.copyLanguage(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getLanguage() : null), info::setLanguageISO);
         
-        helper.copyAuthors(clearFlags != null && clearFlags.isAuthors(), set -> {
+        helper.copyAuthors(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getAuthors() : null), set -> {
             info.setWriter(joinStrings(set));
             info.setPenciller(null);
             info.setInker(null);
@@ -249,7 +249,7 @@ public class CbxMetadataWriter implements MetadataWriter {
         });
 
         // Genre - categories
-        helper.copyCategories(clearFlags != null && clearFlags.isCategories(), set -> {
+        helper.copyCategories(Boolean.TRUE.equals(clearFlags != null ? clearFlags.getCategories() : null), set -> {
             info.setGenre(joinStrings(set));
         });
         

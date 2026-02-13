@@ -19,7 +19,10 @@ import org.jaudiotagger.tag.images.ArtworkFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,12 +72,12 @@ public class AudiobookMetadataWriter implements MetadataWriter {
             boolean[] hasChanges = {false};
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
 
-            helper.copyTitle(clear != null && clear.isTitle(), val -> {
+            helper.copyTitle(Boolean.TRUE.equals(clear != null ? clear.getTitle() : null), val -> {
                 setTagField(tag, FieldKey.ALBUM, val, hasChanges);
                 setTagField(tag, FieldKey.TITLE, val, hasChanges);
             });
 
-            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> {
+            helper.copyAuthors(Boolean.TRUE.equals(clear != null ? clear.getAuthors() : null), authors -> {
                 String authorStr = authors != null ? String.join("; ", authors) : null;
                 setTagField(tag, FieldKey.ALBUM_ARTIST, authorStr, hasChanges);
                 setTagField(tag, FieldKey.ARTIST, authorStr, hasChanges);
@@ -84,40 +87,40 @@ public class AudiobookMetadataWriter implements MetadataWriter {
                 setTagField(tag, FieldKey.COMPOSER, metadata.getNarrator(), hasChanges);
             }
 
-            helper.copyDescription(clear != null && clear.isDescription(), val -> {
+            helper.copyDescription(Boolean.TRUE.equals(clear != null ? clear.getDescription() : null), val -> {
                 setTagField(tag, FieldKey.COMMENT, val, hasChanges);
             });
 
-            helper.copyPublisher(clear != null && clear.isPublisher(), val -> {
+            helper.copyPublisher(Boolean.TRUE.equals(clear != null ? clear.getPublisher() : null), val -> {
                 setTagField(tag, FieldKey.RECORD_LABEL, val, hasChanges);
             });
 
-            helper.copyPublishedDate(clear != null && clear.isPublishedDate(), val -> {
+            helper.copyPublishedDate(Boolean.TRUE.equals(clear != null ? clear.getPublishedDate() : null), val -> {
                 String year = val != null ? String.valueOf(val.getYear()) : null;
                 setTagField(tag, FieldKey.YEAR, year, hasChanges);
             });
 
-            helper.copyCategories(clear != null && clear.isCategories(), categories -> {
+            helper.copyCategories(Boolean.TRUE.equals(clear != null ? clear.getCategories() : null), categories -> {
                 String genre = categories != null && !categories.isEmpty()
                         ? String.join("; ", categories)
                         : null;
                 setTagField(tag, FieldKey.GENRE, genre, hasChanges);
             });
 
-            helper.copyLanguage(clear != null && clear.isLanguage(), val -> {
+            helper.copyLanguage(Boolean.TRUE.equals(clear != null ? clear.getLanguage() : null), val -> {
                 setTagField(tag, FieldKey.LANGUAGE, val, hasChanges);
             });
 
-            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> {
+            helper.copySeriesName(Boolean.TRUE.equals(clear != null ? clear.getSeriesName() : null), val -> {
                 setTagField(tag, FieldKey.GROUPING, val, hasChanges);
             });
 
-            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
+            helper.copySeriesNumber(Boolean.TRUE.equals(clear != null ? clear.getSeriesNumber() : null), val -> {
                 String trackNo = val != null ? String.format("%.0f", val) : null;
                 setTagField(tag, FieldKey.TRACK, trackNo, hasChanges);
             });
 
-            helper.copySeriesTotal(clear != null && clear.isSeriesTotal(), val -> {
+            helper.copySeriesTotal(Boolean.TRUE.equals(clear != null ? clear.getSeriesTotal() : null), val -> {
                 String trackTotal = val != null ? String.valueOf(val) : null;
                 setTagField(tag, FieldKey.TRACK_TOTAL, trackTotal, hasChanges);
             });

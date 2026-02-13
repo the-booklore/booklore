@@ -2,10 +2,10 @@ package org.booklore.model.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
-import org.booklore.model.enums.MetadataProvider;
-import org.booklore.model.enums.MetadataReplaceMode;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.booklore.model.enums.MetadataProvider;
+import org.booklore.model.enums.MetadataReplaceMode;
 
 @Getter
 @Setter
@@ -14,8 +14,8 @@ import lombok.*;
 @Builder
 public class MetadataRefreshOptions {
     private Long libraryId;
-    private boolean refreshCovers;
-    private boolean mergeCategories;
+    private Boolean refreshCovers;
+    private Boolean mergeCategories;
     private Boolean reviewBeforeApply;
     /**
      * Controls how fetched metadata replaces existing metadata.
@@ -94,69 +94,69 @@ public class MetadataRefreshOptions {
         // @JsonSetter(nulls = Nulls.SKIP) ensures that null values in persisted JSON
         // (e.g. from older versions missing newer fields) are ignored, preserving defaults.
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean title = true;
+        private Boolean title = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean subtitle = true;
+        private Boolean subtitle = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean description = true;
+        private Boolean description = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean authors = true;
+        private Boolean authors = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean publisher = true;
+        private Boolean publisher = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean publishedDate = true;
+        private Boolean publishedDate = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean seriesName = true;
+        private Boolean seriesName = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean seriesNumber = true;
+        private Boolean seriesNumber = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean seriesTotal = true;
+        private Boolean seriesTotal = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean isbn13 = true;
+        private Boolean isbn13 = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean isbn10 = true;
+        private Boolean isbn10 = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean language = true;
+        private Boolean language = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean categories = true;
+        private Boolean categories = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean cover = true;
+        private Boolean cover = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean pageCount = true;
+        private Boolean pageCount = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean asin = true;
+        private Boolean asin = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean goodreadsId = true;
+        private Boolean goodreadsId = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean comicvineId = true;
+        private Boolean comicvineId = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean hardcoverId = true;
+        private Boolean hardcoverId = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean googleId = true;
+        private Boolean googleId = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean lubimyczytacId = true;
+        private Boolean lubimyczytacId = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean amazonRating = true;
+        private Boolean amazonRating = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean amazonReviewCount = true;
+        private Boolean amazonReviewCount = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean goodreadsRating = true;
+        private Boolean goodreadsRating = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean goodreadsReviewCount = true;
+        private Boolean goodreadsReviewCount = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean hardcoverRating = true;
+        private Boolean hardcoverRating = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean hardcoverReviewCount = true;
+        private Boolean hardcoverReviewCount = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean lubimyczytacRating = true;
+        private Boolean lubimyczytacRating = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean ranobedbId = true;
+        private Boolean ranobedbId = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean ranobedbRating = true;
+        private Boolean ranobedbRating = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean moods = true;
+        private Boolean moods = true;
         @Builder.Default @JsonSetter(nulls = Nulls.SKIP)
-        private boolean tags = true;
+        private Boolean tags = true;
 
         /**
          * Default constructor that initializes all fields to true.

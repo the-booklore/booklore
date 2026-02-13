@@ -88,18 +88,18 @@ public class EpubMetadataWriter implements MetadataWriter {
             boolean[] hasChanges = {false};
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
 
-            helper.copyTitle(clear != null && clear.isTitle(), val -> {
+            helper.copyTitle(Boolean.TRUE.equals(clear != null ? clear.getTitle() : null), val -> {
                 replaceAndTrackChange(opfDoc, metadataElement, "title", DC_NS, val, hasChanges);
                 if (StringUtils.isNotBlank(metadata.getSubtitle())) {
                     addSubtitleToTitle(metadataElement, opfDoc, metadata.getSubtitle());
                 }
             });
-            helper.copyDescription(clear != null && clear.isDescription(), val -> replaceAndTrackChange(opfDoc, metadataElement, "description", DC_NS, val, hasChanges));
-            helper.copyPublisher(clear != null && clear.isPublisher(), val -> replaceAndTrackChange(opfDoc, metadataElement, "publisher", DC_NS, val, hasChanges));
-            helper.copyPublishedDate(clear != null && clear.isPublishedDate(), val -> replaceAndTrackChange(opfDoc, metadataElement, "date", DC_NS, val != null ? val.toString() : null, hasChanges));
-            helper.copyLanguage(clear != null && clear.isLanguage(), val -> replaceAndTrackChange(opfDoc, metadataElement, "language", DC_NS, val, hasChanges));
+            helper.copyDescription(Boolean.TRUE.equals(clear != null ? clear.getDescription() : null), val -> replaceAndTrackChange(opfDoc, metadataElement, "description", DC_NS, val, hasChanges));
+            helper.copyPublisher(Boolean.TRUE.equals(clear != null ? clear.getPublisher() : null), val -> replaceAndTrackChange(opfDoc, metadataElement, "publisher", DC_NS, val, hasChanges));
+            helper.copyPublishedDate(Boolean.TRUE.equals(clear != null ? clear.getPublishedDate() : null), val -> replaceAndTrackChange(opfDoc, metadataElement, "date", DC_NS, val != null ? val.toString() : null, hasChanges));
+            helper.copyLanguage(Boolean.TRUE.equals(clear != null ? clear.getLanguage() : null), val -> replaceAndTrackChange(opfDoc, metadataElement, "language", DC_NS, val, hasChanges));
 
-            helper.copyAuthors(clear != null && clear.isAuthors(), names -> {
+            helper.copyAuthors(Boolean.TRUE.equals(clear != null ? clear.getAuthors() : null), names -> {
                 removeCreatorsByRole(metadataElement, "");
                 removeCreatorsByRole(metadataElement, "aut");
                 if (names != null) {
@@ -114,7 +114,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 hasChanges[0] = true;
             });
 
-            helper.copyCategories(clear != null && clear.isCategories(), categories -> {
+            helper.copyCategories(Boolean.TRUE.equals(clear != null ? clear.getCategories() : null), categories -> {
                 removeElementsByTagNameNS(metadataElement, DC_NS, "subject");
                 if (categories != null) {
                     for (String cat : categories.stream().map(String::trim).distinct().toList()) {
@@ -124,77 +124,77 @@ public class EpubMetadataWriter implements MetadataWriter {
                 hasChanges[0] = true;
             });
 
-            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> {
+            helper.copySeriesName(Boolean.TRUE.equals(clear != null ? clear.getSeriesName() : null), val -> {
                 replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges);
             });
 
-            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
+            helper.copySeriesNumber(Boolean.TRUE.equals(clear != null ? clear.getSeriesNumber() : null), val -> {
                 replaceBelongsToCollection(metadataElement, opfDoc, metadata.getSeriesName(), metadata.getSeriesNumber(), hasChanges);
             });
 
-            helper.copyIsbn13(clear != null && clear.isIsbn13(), val -> {
+            helper.copyIsbn13(Boolean.TRUE.equals(clear != null ? clear.getIsbn13() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "isbn");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "isbn", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyIsbn10(clear != null && clear.isIsbn10(), val -> {
+            helper.copyIsbn10(Boolean.TRUE.equals(clear != null ? clear.getIsbn10() : null), val -> {
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "isbn", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyAsin(clear != null && clear.isAsin(), val -> {
+            helper.copyAsin(Boolean.TRUE.equals(clear != null ? clear.getAsin() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "amazon");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "amazon", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), val -> {
+            helper.copyGoodreadsId(Boolean.TRUE.equals(clear != null ? clear.getGoodreadsId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "goodreads");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "goodreads", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyGoogleId(clear != null && clear.isGoogleId(), val -> {
+            helper.copyGoogleId(Boolean.TRUE.equals(clear != null ? clear.getGoogleId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "google");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "google", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyComicvineId(clear != null && clear.isComicvineId(), val -> {
+            helper.copyComicvineId(Boolean.TRUE.equals(clear != null ? clear.getComicvineId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "comicvine");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "comicvine", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyHardcoverId(clear != null && clear.isHardcoverId(), val -> {
+            helper.copyHardcoverId(Boolean.TRUE.equals(clear != null ? clear.getHardcoverId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "hardcover");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcover", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), val -> {
+            helper.copyHardcoverBookId(Boolean.TRUE.equals(clear != null ? clear.getHardcoverBookId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "hardcoverbook");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcoverbook", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyLubimyczytacId(clear != null && clear.isLubimyczytacId(), val -> {
+            helper.copyLubimyczytacId(Boolean.TRUE.equals(clear != null ? clear.getLubimyczytacId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "lubimyczytac");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "lubimyczytac", val));
                 }
                 hasChanges[0] = true;
             });
-            helper.copyRanobedbId(clear != null && clear.isRanobedbId(), val -> {
+            helper.copyRanobedbId(Boolean.TRUE.equals(clear != null ? clear.getRanobedbId() : null), val -> {
                 removeIdentifierByUrn(metadataElement, "ranobedb");
                 if (val != null && !val.isBlank()) {
                     metadataElement.appendChild(createIdentifierElement(opfDoc, "ranobedb", val));

@@ -21,7 +21,7 @@ public class TaskCreateRequest {
     private TaskType taskType;
     @Builder.Default
     @JsonSetter(nulls = Nulls.SKIP)
-    private boolean triggeredByCron = false;
+    private Boolean triggeredByCron = false;
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "taskType", include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
     @JsonSubTypes({

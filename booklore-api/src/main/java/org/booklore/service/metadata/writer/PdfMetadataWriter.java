@@ -135,16 +135,16 @@ public class PdfMetadataWriter implements MetadataWriter {
         // Build categories-only keywords for PDF legacy compatibility (Info Dictionary)
         // Moods and tags are stored separately in XMP booklore namespace, so they should NOT be in Info Dict keywords
         StringBuilder keywordsBuilder = new StringBuilder();
-        helper.copyCategories(clear != null && clear.isCategories(), cats -> {
+        helper.copyCategories(Boolean.TRUE.equals(clear != null ? clear.getCategories() : null), cats -> {
             if (cats != null && !cats.isEmpty()) {
                 keywordsBuilder.append(String.join("; ", cats));
             }
         });
 
-        helper.copyTitle(clear != null && clear.isTitle(), title -> info.setTitle(title != null ? title : ""));
-        helper.copyPublisher(clear != null && clear.isPublisher(), pub -> info.setProducer(pub != null ? pub : ""));
-        helper.copyAuthors(clear != null && clear.isAuthors(), authors -> info.setAuthor(authors != null ? String.join(", ", authors) : ""));
-        helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
+        helper.copyTitle(Boolean.TRUE.equals(clear != null ? clear.getTitle() : null), title -> info.setTitle(title != null ? title : ""));
+        helper.copyPublisher(Boolean.TRUE.equals(clear != null ? clear.getPublisher() : null), pub -> info.setProducer(pub != null ? pub : ""));
+        helper.copyAuthors(Boolean.TRUE.equals(clear != null ? clear.getAuthors() : null), authors -> info.setAuthor(authors != null ? String.join(", ", authors) : ""));
+        helper.copyPublishedDate(Boolean.TRUE.equals(clear != null ? clear.getPublishedDate() : null), date -> {
             Calendar cal = Calendar.getInstance();
             cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
                     .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
@@ -164,19 +164,19 @@ public class PdfMetadataWriter implements MetadataWriter {
             XMPMetadata xmp = XMPMetadata.createXMPMetadata();
             DublinCoreSchema dc = xmp.createAndAddDublinCoreSchema();
 
-            helper.copyTitle(clear != null && clear.isTitle(), title -> dc.setTitle(title != null ? title : ""));
-            helper.copyDescription(clear != null && clear.isDescription(), desc -> dc.setDescription(desc != null ? desc : ""));
-            helper.copyPublisher(clear != null && clear.isPublisher(), pub -> dc.addPublisher(pub != null ? pub : ""));
+            helper.copyTitle(Boolean.TRUE.equals(clear != null ? clear.getTitle() : null), title -> dc.setTitle(title != null ? title : ""));
+            helper.copyDescription(Boolean.TRUE.equals(clear != null ? clear.getDescription() : null), desc -> dc.setDescription(desc != null ? desc : ""));
+            helper.copyPublisher(Boolean.TRUE.equals(clear != null ? clear.getPublisher() : null), pub -> dc.addPublisher(pub != null ? pub : ""));
             
             // Write language as provided by user
-            helper.copyLanguage(clear != null && clear.isLanguage(), lang -> {
+            helper.copyLanguage(Boolean.TRUE.equals(clear != null ? clear.getLanguage() : null), lang -> {
                 if (lang != null && !lang.isBlank()) {
                     dc.addLanguage(lang);
                 }
             });
             
             // Use date-only format for dc:date (YYYY-MM-DD)
-            helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
+            helper.copyPublishedDate(Boolean.TRUE.equals(clear != null ? clear.getPublishedDate() : null), date -> {
                 if (date != null) {
                     // XMPBox requires Calendar, but we can create one with just the date (no time)
                     Calendar cal = Calendar.getInstance();
@@ -187,7 +187,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             });
 
             // Clean author names (normalize whitespace)
-            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> {
+            helper.copyAuthors(Boolean.TRUE.equals(clear != null ? clear.getAuthors() : null), authors -> {
                 if (authors != null && !authors.isEmpty()) {
                     authors.stream()
                         .map(name -> name.replaceAll("\\s+", " ").trim())
@@ -197,7 +197,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             });
 
             // Add categories as dc:subject
-            helper.copyCategories(clear != null && clear.isCategories(), cats -> {
+            helper.copyCategories(Boolean.TRUE.equals(clear != null ? clear.getCategories() : null), cats -> {
                 if (cats != null && !cats.isEmpty()) {
                     cats.forEach(dc::addSubject);
                 }
@@ -284,7 +284,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             
             // Series total is optional, only write if > 0
             if (metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) {
-                helper.copySeriesTotal(clear != null && clear.isSeriesTotal(), total -> {
+                helper.copySeriesTotal(Boolean.TRUE.equals(clear != null ? clear.getSeriesTotal() : null), total -> {
                     if (total != null && total > 0) {
                         appendBookloreElement(doc, bookloreDescription, "seriesTotal", total.toString());
                     }
@@ -293,70 +293,70 @@ public class PdfMetadataWriter implements MetadataWriter {
         }
 
         // Subtitle
-        helper.copySubtitle(clear != null && clear.isSubtitle(), subtitle -> {
+        helper.copySubtitle(Boolean.TRUE.equals(clear != null ? clear.getSubtitle() : null), subtitle -> {
             if (subtitle != null && !subtitle.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "subtitle", subtitle);
             }
         });
 
         // ISBN Identifiers
-        helper.copyIsbn13(clear != null && clear.isIsbn13(), isbn -> {
+        helper.copyIsbn13(Boolean.TRUE.equals(clear != null ? clear.getIsbn13() : null), isbn -> {
             if (isbn != null && !isbn.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "isbn13", isbn);
             }
         });
 
-        helper.copyIsbn10(clear != null && clear.isIsbn10(), isbn -> {
+        helper.copyIsbn10(Boolean.TRUE.equals(clear != null ? clear.getIsbn10() : null), isbn -> {
             if (isbn != null && !isbn.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "isbn10", isbn);
             }
         });
 
         // External IDs (only if not blank)
-        helper.copyGoogleId(clear != null && clear.isGoogleId(), id -> {
+        helper.copyGoogleId(Boolean.TRUE.equals(clear != null ? clear.getGoogleId() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "googleId", id);
             }
         });
 
-        helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), id -> {
+        helper.copyGoodreadsId(Boolean.TRUE.equals(clear != null ? clear.getGoodreadsId() : null), id -> {
             String normalizedId = normalizeGoodreadsId(id);
             if (normalizedId != null && !normalizedId.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "goodreadsId", normalizedId);
             }
         });
 
-        helper.copyHardcoverId(clear != null && clear.isHardcoverId(), id -> {
+        helper.copyHardcoverId(Boolean.TRUE.equals(clear != null ? clear.getHardcoverId() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "hardcoverId", id);
             }
         });
 
-        helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), id -> {
+        helper.copyHardcoverBookId(Boolean.TRUE.equals(clear != null ? clear.getHardcoverBookId() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "hardcoverBookId", id);
             }
         });
 
-        helper.copyAsin(clear != null && clear.isAsin(), id -> {
+        helper.copyAsin(Boolean.TRUE.equals(clear != null ? clear.getAsin() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "asin", id);
             }
         });
 
-        helper.copyComicvineId(clear != null && clear.isComicvineId(), id -> {
+        helper.copyComicvineId(Boolean.TRUE.equals(clear != null ? clear.getComicvineId() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "comicvineId", id);
             }
         });
 
-        helper.copyLubimyczytacId(clear != null && clear.isLubimyczytacId(), id -> {
+        helper.copyLubimyczytacId(Boolean.TRUE.equals(clear != null ? clear.getLubimyczytacId() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "lubimyczytacId", id);
             }
         });
 
-        helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> {
+        helper.copyRanobedbId(Boolean.TRUE.equals(clear != null ? clear.getRanobedbId() : null), id -> {
             if (id != null && !id.isBlank()) {
                 appendBookloreElement(doc, bookloreDescription, "ranobedbId", id);
             }
@@ -364,21 +364,21 @@ public class PdfMetadataWriter implements MetadataWriter {
 
         // Ratings (only if > 0)
         helper.copyRating(false, rating -> appendBookloreRating(doc, bookloreDescription, "rating", rating));
-        helper.copyHardcoverRating(clear != null && clear.isHardcoverRating(), rating -> appendBookloreRating(doc, bookloreDescription, "hardcoverRating", rating));
-        helper.copyGoodreadsRating(clear != null && clear.isGoodreadsRating(), rating -> appendBookloreRating(doc, bookloreDescription, "goodreadsRating", rating));
-        helper.copyAmazonRating(clear != null && clear.isAmazonRating(), rating -> appendBookloreRating(doc, bookloreDescription, "amazonRating", rating));
-        helper.copyLubimyczytacRating(clear != null && clear.isLubimyczytacRating(), rating -> appendBookloreRating(doc, bookloreDescription, "lubimyczytacRating", rating));
-        helper.copyRanobedbRating(clear != null && clear.isRanobedbRating(), rating -> appendBookloreRating(doc, bookloreDescription, "ranobedbRating", rating));
+        helper.copyHardcoverRating(Boolean.TRUE.equals(clear != null ? clear.getHardcoverRating() : null), rating -> appendBookloreRating(doc, bookloreDescription, "hardcoverRating", rating));
+        helper.copyGoodreadsRating(Boolean.TRUE.equals(clear != null ? clear.getGoodreadsRating() : null), rating -> appendBookloreRating(doc, bookloreDescription, "goodreadsRating", rating));
+        helper.copyAmazonRating(Boolean.TRUE.equals(clear != null ? clear.getAmazonRating() : null), rating -> appendBookloreRating(doc, bookloreDescription, "amazonRating", rating));
+        helper.copyLubimyczytacRating(Boolean.TRUE.equals(clear != null ? clear.getLubimyczytacRating() : null), rating -> appendBookloreRating(doc, bookloreDescription, "lubimyczytacRating", rating));
+        helper.copyRanobedbRating(Boolean.TRUE.equals(clear != null ? clear.getRanobedbRating() : null), rating -> appendBookloreRating(doc, bookloreDescription, "ranobedbRating", rating));
 
         // Tags (as RDF Bag)
-        helper.copyTags(clear != null && clear.isTags(), tags -> {
+        helper.copyTags(Boolean.TRUE.equals(clear != null ? clear.getTags() : null), tags -> {
             if (tags != null && !tags.isEmpty()) {
                 appendBookloreBag(doc, bookloreDescription, "tags", tags);
             }
         });
 
         // Moods (as RDF Bag)
-        helper.copyMoods(clear != null && clear.isMoods(), moods -> {
+        helper.copyMoods(Boolean.TRUE.equals(clear != null ? clear.getMoods() : null), moods -> {
             if (moods != null && !moods.isEmpty()) {
                 appendBookloreBag(doc, bookloreDescription, "moods", moods);
             }
@@ -461,7 +461,7 @@ public class PdfMetadataWriter implements MetadataWriter {
      */
     private boolean hasValidSeries(BookMetadataEntity metadata, MetadataClearFlags clear) {
         // If clearing series, don't write it
-        if (clear != null && (clear.isSeriesName() || clear.isSeriesNumber())) {
+        if (clear != null && (Boolean.TRUE.equals(clear.getSeriesName()) || Boolean.TRUE.equals(clear.getSeriesNumber()))) {
             return false;
         }
         
