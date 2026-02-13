@@ -15,6 +15,7 @@ import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {take, takeUntil} from 'rxjs/operators';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-book-table',
@@ -27,7 +28,8 @@ import {ReadStatusHelper} from '../../../helpers/read-status.helper';
     Button,
     TooltipModule,
     NgClass,
-    RouterLink
+    RouterLink,
+    TranslocoDirective
   ],
   styleUrls: ['./book-table.component.scss'],
   providers: [DatePipe]
@@ -48,6 +50,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   private userService = inject(UserService);
   private datePipe = inject(DatePipe);
   private readStatusHelper = inject(ReadStatusHelper);
+  private readonly t = inject(TranslocoService);
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
@@ -327,15 +330,15 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: `Metadata ${lockAction === 'LOCK' ? 'Locked' : 'Unlocked'}`,
-          detail: `Book metadata has been ${lockAction === 'LOCK' ? 'locked' : 'unlocked'} successfully.`,
+          summary: lockAction === 'LOCK' ? this.t.translate('book.table.toast.metadataLockedSummary') : this.t.translate('book.table.toast.metadataUnlockedSummary'),
+          detail: lockAction === 'LOCK' ? this.t.translate('book.table.toast.metadataLockedDetail') : this.t.translate('book.table.toast.metadataUnlockedDetail'),
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: `Failed to ${lockAction === 'LOCK' ? 'Lock' : 'Unlock'}`,
-          detail: `An error occurred while ${lockAction === 'LOCK' ? 'locking' : 'unlocking'} the metadata.`,
+          summary: lockAction === 'LOCK' ? this.t.translate('book.table.toast.lockFailedSummary') : this.t.translate('book.table.toast.unlockFailedSummary'),
+          detail: lockAction === 'LOCK' ? this.t.translate('book.table.toast.lockFailedDetail') : this.t.translate('book.table.toast.unlockFailedDetail'),
         });
       }
     });

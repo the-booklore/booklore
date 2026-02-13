@@ -14,6 +14,7 @@ import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {Filter, FILTER_LABELS, FilterType} from './book-filter.config';
 import {BookFilterService} from './book-filter.service';
 import {filter} from 'rxjs/operators';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 type FilterModeOption = { label: string; value: BookFilterMode };
 
@@ -26,7 +27,8 @@ type FilterModeOption = { label: string; value: BookFilterMode };
   imports: [
     Accordion, AccordionPanel, AccordionHeader, AccordionContent,
     CdkVirtualScrollViewport, CdkFixedSizeVirtualScroll, CdkVirtualForOf,
-    NgClass, Badge, AsyncPipe, TitleCasePipe, FormsModule, SelectButton
+    NgClass, Badge, AsyncPipe, TitleCasePipe, FormsModule, SelectButton,
+    TranslocoDirective
   ]
 })
 export class BookFilterComponent implements OnInit, OnDestroy {
