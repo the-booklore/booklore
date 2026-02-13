@@ -1,6 +1,6 @@
 # Use v-prefix ONLY if your existing tags are like v1.18.0
 # If your tags are 1.18.0, change this to: "${version}"
-tagFormat: "v${version}"
+tagFormat: "${version}"
 
 branches:
   # Only create releases from main
