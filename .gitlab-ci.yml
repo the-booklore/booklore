@@ -1,3 +1,15 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - if: '$CI_COMMIT_TAG'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - when: never
+
 stages:
   - build
   - test
@@ -5,32 +17,52 @@ stages:
   - package-test
   - publish
   - mirror
-# Only include semrel + docker components for non-scheduled pipelines
+
+default:
+  tags:
+    - universal
+
+variables:
+  # Use a CI-specific Dockerfile (recommended with buildah: fully-qualified FROM images, npm install, etc.)
+  DOCKER_FILE: "Dockerfile.ci"
+
+# =========================================================
+# Includes
+# - semantic-release: ONLY on main branch push pipelines (optional)
+# - docker component: ONLY on merge request pipelines
+# =========================================================
 include:
   - component: "$CI_SERVER_FQDN/to-be-continuous/semantic-release/gitlab-ci-semrel@4.0"
     rules:
-      - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
     inputs:
       changelog-enabled: true
       auto-release-enabled: true
 
   - component: "$CI_SERVER_FQDN/to-be-continuous/docker/gitlab-ci-docker@8.0"
     rules:
-      - if: '$CI_PIPELINE_SOURCE != "schedule"'
+      - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      - if: '$CI_COMMIT_TAG'
     inputs:
       trivy-disabled: true
       hadolint-disabled: true
-      #cosign-strategy: "onrelease"
       prod-publish-strategy: "none"
-      #build-tool: "dind"
-      build-args: "--platform linux/amd64,linux/arm64 --build-arg APP_VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_REF_NAME} --build-arg APP_REVISION=$CI_COMMIT_SHA"
+
+      # Build params
+      build-args: >-
+        --platform linux/amd64,linux/arm64
+        --build-arg APP_VERSION=mr-${CI_MERGE_REQUEST_IID}
+        --build-arg APP_REVISION=$CI_COMMIT_SHA
+
       push-args: "--compression-format zstd --compression-level 20"
-      snapshot-image: "$CI_REGISTRY_IMAGE/snapshot:$CI_COMMIT_REF_SLUG"
-      # Optional: publish extra tags for releases (e.g., also tag "latest" on semver tags)
-      # release-extra-tags: "latest"
-# NEEDS GITLAB_TOKEN variable
+
+      # Tag the MR image uniquely per MR + commit
+      snapshot-image: "$CI_REGISTRY_IMAGE/mr:${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+
 # =========================================================
 # BACKEND TESTS (Java 25 + Gradle)
+# - runs on branch pushes and MR pipelines
+# - does NOT run on schedules
 # =========================================================
 backend_tests:
   stage: test
@@ -41,12 +73,12 @@ backend_tests:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: never
-    - if: '$CI_COMMIT_TAG'
-      when: never
     - when: on_success
 
 # =========================================================
 # FRONTEND TESTS (Node 22 + Angular)
+# - runs on branch pushes and MR pipelines
+# - does NOT run on schedules
 # =========================================================
 frontend_tests:
   stage: test
@@ -54,13 +86,40 @@ frontend_tests:
   script:
     - cd booklore-ui
     - npm install --force --legacy-peer-deps
-    - npx ng test
+    - npx ng test --watch=false
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: never
-    - if: '$CI_COMMIT_TAG'
-      when: never
     - when: on_success
+
+# =========================================================
+# Docker component jobs: force them to:
+# - run ONLY for merge requests
+# - wait for tests
+#
+# IMPORTANT:
+# If your docker component uses different job names, adjust them.
+# Open the pipeline graph once and copy the docker job names here.
+# =========================================================
+docker-build:
+  stage: package-build
+  needs:
+    - job: backend_tests
+      optional: true
+    - job: frontend_tests
+      optional: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      variables:
+        DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/mr:${CI_MERGE_REQUEST_IID}-${CI_COMMIT_SHORT_SHA}"
+      when: on_success
+    - if: '$CI_COMMIT_TAG'
+      variables:
+        DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE:${CI_COMMIT_TAG}"  
+      when: on_success
+    - when: never
+
+
 
 # =========================================================
 # MIRROR JOB — ONLY SYNC DEVELOP (scheduled pipelines only)
@@ -70,6 +129,8 @@ mirror_from_github:
   image: alpine:latest
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: on_success
+    - when: never
   before_script:
     - apk add --no-cache git
   script:
@@ -79,6 +140,7 @@ mirror_from_github:
     - git push --force gitlab develop
     - git push --force gitlab --tags
 
+# Docker jobs should run on your buildah runner
 .docker-base:
   tags:
     - buildah
