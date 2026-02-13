@@ -5,6 +5,7 @@ booklore:
         connect-timeout: 500ms
         read-timeout: 500ms
         cache-ttl: 1s
+        cache-refresh: 500ms
       jwt:
         clock-skew: 60s
         # For testing, we might want to be less strict or test specific algorithms.

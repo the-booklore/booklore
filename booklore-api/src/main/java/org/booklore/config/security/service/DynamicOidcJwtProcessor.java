@@ -1,7 +1,5 @@
 package org.booklore.config.security.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -29,6 +27,8 @@ import org.booklore.util.OidcUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -552,7 +552,7 @@ public class DynamicOidcJwtProcessor {
         }
     }
 
-    private Set<JWSAlgorithm> extractSupportedAlgorithms(com.fasterxml.jackson.databind.JsonNode root) {
+    private Set<JWSAlgorithm> extractSupportedAlgorithms(tools.jackson.databind.JsonNode root) {
         var algorithms = new LinkedHashSet<JWSAlgorithm>();
         String[] fieldsToInspect = {
                 "id_token_signing_alg_values_supported",
@@ -1077,7 +1077,7 @@ public class DynamicOidcJwtProcessor {
                 });
                 log.debug("Parsed JSON array from claim '{}': {}", claimName, parsed);
                 return parsed;
-            } catch (com.fasterxml.jackson.core.JsonProcessingException | IllegalArgumentException e) {
+            } catch (tools.jackson.core.JacksonException | IllegalArgumentException e) {
                 log.warn("Failed to parse JSON array from claim '{}': {}", claimName, e.getMessage());
                 // Fall through to comma-separated parsing
             }

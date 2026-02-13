@@ -75,140 +75,173 @@
           (onChange)="toggleOidcEnabled()">
         </p-toggleswitch>
       </div>
+      </div>
     </div>
-  </div>
-</div>
+
+    <!-- OIDC Provider Configuration -->
+    <div class="section-body">
+      <div class="section-header-row">
+        <h4 class="subsection-title">{{ t('providerConfig.sectionTitle') }}</h4>
+        <p-button
+          [outlined]="true"
+          [label]="'common.save' | transloco"
+          icon="pi pi-save"
+          severity="success"
+          size="small"
+          (click)="saveOidcProvider()"
+          [disabled]="!isOidcFormComplete()">
+        </p-button>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-item">
+          <label for="providerName">{{ t('providerConfig.providerName') }}</label>
+          <input
+            pInputText
+            id="providerName"
+            [(ngModel)]="oidcProvider.providerName"
+            [placeholder]="t('providerConfig.providerPlaceholder')"/>
         </div>
-<p-button
-  [outlined]="true"
-  [label]="'common.save' | transloco"
-  icon="pi pi-save"
-  severity="success"
-  size="small"
-  (click)="saveOidcProvider()"
-  [disabled]="!isOidcFormComplete()">
-</p-button>
 
-<div class="section-body">
-  <div class="config-grid">
-    <div class="config-item">
-      <label for="providerName">{{ t('providerConfig.providerName') }}</label>
-      <input
-        pInputText
-        id="providerName"
-        [(ngModel)]="oidcProvider.providerName"
-        [placeholder]="t('providerConfig.providerPlaceholder')"/>
-    </div>
-
-    <div class="config-item">
-      <label for="clientId">{{ t('providerConfig.clientId') }}</label>
-      <input
-        pInputText
-        id="clientId"
-        [(ngModel)]="oidcProvider.clientId"
-        [placeholder]="t('providerConfig.clientIdPlaceholder')"/>
-    </div>
-
-    <div class="config-item full-width">
-      <label for="issuerUri">{{ t('providerConfig.issuerUri') }}</label>
-      <input
-        pInputText
-        id="issuerUri"
-        [(ngModel)]="oidcProvider.issuerUri"
-        [placeholder]="t('providerConfig.issuerPlaceholder')"/>
-    </div>
-
-    <div class="config-item full-width">
-      <label for="scope">{{ t('providerConfig.scope') }}</label>
-      <input
-        pInputText
-        id="scope"
-        [readonly]="true"
-        disabled="disabled"
-        value="openid profile email offline_access"/>
-      <span class="field-hint">{{ t('providerConfig.scopeHint') }}</span>
-    </div>
-  </div>
-
-  <div class="claims-section">
-    <h4 class="subsection-title">{{ t('providerConfig.claimMappings') }}</h4>
-    <p class="subsection-description">
-      {{ t('providerConfig.claimDesc') }}
-    </p>
-    <div class="claims-grid">
-      <div class="config-item">
-        <label for="claimUsername">{{ t('providerConfig.usernameClaim') }}</label>
-        <input
-          pInputText
-          id="claimUsername"
-          [(ngModel)]="oidcProvider.claimMapping.username"
-          [placeholder]="t('providerConfig.usernamePlaceholder')"/>
-      </div>
-      <div class="config-item">
-        <label for="claimEmail">{{ t('providerConfig.emailClaim') }}</label>
-        <input
-          pInputText
-          id="claimEmail"
-          [(ngModel)]="oidcProvider.claimMapping.email"
-          [placeholder]="t('providerConfig.emailPlaceholder')"/>
-      </div>
-      <div class="config-item">
-        <label for="claimName">{{ t('providerConfig.nameClaim') }}</label>
-        <input
-          pInputText
-          id="claimName"
-          [(ngModel)]="oidcProvider.claimMapping.name"
-          [placeholder]="t('providerConfig.namePlaceholder')"/>
-      </div>
-    </div>
-  </div>
-</div>
-
-@if (autoUserProvisioningEnabled) {
-  <div class="default-settings">
-    <div class="permissions-group">
-      <h4 class="group-title">{{ t('provisioning.defaultPerms') }}</h4>
-      <div class="permissions-grid">
-        <div class="permission-item">
-          <p-checkbox
-            [binary]="true"
-            [disabled]="true"
-            [ngModel]="true"
-            inputId="permissionRead">
-          </p-checkbox>
-          <label for="permissionRead">{{ t('provisioning.readBooks') }}</label>
+        <div class="config-item">
+          <label for="clientId">{{ t('providerConfig.clientId') }}</label>
+          <input
+            pInputText
+            id="clientId"
+            [(ngModel)]="oidcProvider.clientId"
+            [placeholder]="t('providerConfig.clientIdPlaceholder')"/>
         </div>
-        @for (perm of availablePermissions; track perm) {
-          <div class="permission-item">
-            <p-checkbox
-              [(ngModel)]="perm.selected"
-              [binary]="true"
-              [inputId]="perm.value">
-            </p-checkbox>
-            <label [for]="perm.value">{{ t(perm.translationKey) }}</label>
+
+        <div class="config-item full-width">
+          <label for="issuerUri">{{ t('providerConfig.issuerUri') }}</label>
+          <input
+            pInputText
+            id="issuerUri"
+            [(ngModel)]="oidcProvider.issuerUri"
+            [placeholder]="t('providerConfig.issuerPlaceholder')"/>
+        </div>
+
+        <div class="config-item full-width">
+          <label for="scope">{{ t('providerConfig.scope') }}</label>
+          <input
+            pInputText
+            id="scope"
+            [readonly]="true"
+            disabled="disabled"
+            value="openid profile email offline_access"/>
+          <span class="field-hint">{{ t('providerConfig.scopeHint') }}</span>
+        </div>
+      </div>
+
+      <div class="claims-section">
+        <h4 class="subsection-title">{{ t('providerConfig.claimMappings') }}</h4>
+        <p class="subsection-description">
+          {{ t('providerConfig.claimDesc') }}
+        </p>
+        <div class="claims-grid">
+          <div class="config-item">
+            <label for="claimUsername">{{ t('providerConfig.usernameClaim') }}</label>
+            <input
+              pInputText
+              id="claimUsername"
+              [(ngModel)]="oidcProvider.claimMapping.username"
+              [placeholder]="t('providerConfig.usernamePlaceholder')"/>
           </div>
-        }
+          <div class="config-item">
+            <label for="claimEmail">{{ t('providerConfig.emailClaim') }}</label>
+            <input
+              pInputText
+              id="claimEmail"
+              [(ngModel)]="oidcProvider.claimMapping.email"
+              [placeholder]="t('providerConfig.emailPlaceholder')"/>
+          </div>
+          <div class="config-item">
+            <label for="claimName">{{ t('providerConfig.nameClaim') }}</label>
+            <input
+              pInputText
+              id="claimName"
+              [(ngModel)]="oidcProvider.claimMapping.name"
+              [placeholder]="t('providerConfig.namePlaceholder')"/>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-}
 
-<div class="libraries-group">
-  <h4 class="group-title">{{ t('provisioning.defaultLibraryAccess') }}</h4>
-  <p-multiSelect
-    [options]="allLibraries"
-    optionLabel="name"
-    optionValue="id"
-    [(ngModel)]="editingLibraryIds"
-    [placeholder]="t('provisioning.selectLibraries')"
-    appendTo="body"
-    class="libraries-select">
-  </p-multiSelect>
-</div>
+    <!-- Auto-Provisioning Settings -->
+    <div class="section-body">
+      <div class="section-header-row">
+        <div class="section-title-group">
+          <h3 class="section-title">
+            <i class="pi pi-user-plus"></i>
+            {{ t('provisioning.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('provisioning.sectionDesc') }}
+          </p>
+        </div>
+        <p-button
+          [outlined]="true"
+          [label]="'common.save' | transloco"
+          icon="pi pi-save"
+          severity="success"
+          size="small"
+          (click)="saveOidcAutoProvisionSettings()"
+          [disabled]="!oidcEnabled">
+        </p-button>
+      </div>
+
+      <div class="config-item-row">
+        <div class="config-info">
+          <span class="config-label">{{ t('provisioning.enableAutoLabel') }}</span>
+          <span class="config-hint">{{ t('provisioning.enableAutoHint') }}</span>
+        </div>
+        <p-toggleswitch
+          [(ngModel)]="autoUserProvisioningEnabled"
+          [disabled]="!oidcEnabled">
+        </p-toggleswitch>
+      </div>
+
+      @if (autoUserProvisioningEnabled) {
+        <div class="default-settings">
+          <div class="permissions-group">
+            <h4 class="group-title">{{ t('provisioning.defaultPerms') }}</h4>
+            <div class="permissions-grid">
+              <div class="permission-item">
+                <p-checkbox
+                  [binary]="true"
+                  [disabled]="true"
+                  [ngModel]="true"
+                  inputId="permissionRead">
+                </p-checkbox>
+                <label for="permissionRead">{{ t('provisioning.readBooks') }}</label>
+              </div>
+              @for (perm of availablePermissions; track perm) {
+                <div class="permission-item">
+                  <p-checkbox
+                    [(ngModel)]="perm.selected"
+                    [binary]="true"
+                    [inputId]="perm.value">
+                  </p-checkbox>
+                  <label [for]="perm.value">{{ t(perm.translationKey) }}</label>
+                </div>
+              }
             </div>
           </div>
-        }
-      </div>
+
+          <div class="libraries-group">
+            <h4 class="group-title">{{ t('provisioning.defaultLibraryAccess') }}</h4>
+            <p-multiSelect
+              [options]="allLibraries"
+              optionLabel="name"
+              optionValue="id"
+              [(ngModel)]="editingLibraryIds"
+              [placeholder]="t('provisioning.selectLibraries')"
+              appendTo="body"
+              class="libraries-select">
+            </p-multiSelect>
+          </div>
+        </div>
+      }
     </div>
   </div>
 </div>

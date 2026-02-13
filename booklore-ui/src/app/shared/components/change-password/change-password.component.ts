@@ -38,6 +38,7 @@ export class ChangePasswordComponent implements OnInit {
   protected authService = inject(AuthService);
   protected messageService = inject(MessageService);
   protected router = inject(Router);
+  protected t = inject(TranslocoService);
 
   ngOnInit() {
     const navigation = history.state;
@@ -88,7 +89,7 @@ export class ChangePasswordComponent implements OnInit {
             }
           });
         },
-        error: (err) => {
+        error: () => {
           this.errorMessage = 'Failed to retrieve user information.';
           this.messageService.add({
             severity: 'error',
@@ -159,7 +160,7 @@ export class ChangePasswordComponent implements OnInit {
           }
         });
       },
-      error: (err) => {
+      error: () => {
         this.errorMessage = 'Failed to retrieve user information. Cannot set local password.';
         this.isCreatingLocal = false;
       }

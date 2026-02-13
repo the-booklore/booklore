@@ -1,4 +1,13 @@
-import {AfterViewInit, ChangeDetectorRef, Component, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  inject,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
@@ -24,7 +33,13 @@ import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
 import {BookFilterComponent} from './book-filter/book-filter.component';
 import {Tooltip} from 'primeng/tooltip';
-import {BookFilterMode, DEFAULT_VISIBLE_SORT_FIELDS, EntityViewPreferences, SortCriterion, UserService} from '../../../settings/user-management/user.service';
+import {
+  BookFilterMode,
+  DEFAULT_VISIBLE_SORT_FIELDS,
+  EntityViewPreferences,
+  SortCriterion,
+  UserService
+} from '../../../settings/user-management/user.service';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
 import {SideBarFilter} from './filters/sidebar-filter';
 import {HeaderFilter} from './filters/HeaderFilter';
@@ -146,6 +161,7 @@ get validSortFields(): string[] {
   return this.bookSorter.sortOptions.map(opt => opt.field);
 }
 lastAppliedSort: SortOption | null = null;
+  lastAppliedSortCriteria: SortOption[] = [];
   visibleSortOptions: SortOption[] = [];
   showFilter = false;
   screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;

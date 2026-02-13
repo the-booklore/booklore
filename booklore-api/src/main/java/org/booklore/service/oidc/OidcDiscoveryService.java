@@ -1,19 +1,19 @@
 package org.booklore.service.oidc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.OidcProperties;
 import org.booklore.exception.OidcDiscoveryException;
 import org.booklore.util.OidcUtils;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.time.Duration;
 import java.time.Instant;

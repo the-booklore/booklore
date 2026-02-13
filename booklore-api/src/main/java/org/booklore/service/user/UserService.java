@@ -1,6 +1,5 @@
 package org.booklore.service.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
