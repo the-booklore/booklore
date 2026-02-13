@@ -17,6 +17,7 @@
 
 [![Discord](https://img.shields.io/badge/Join_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/Ee5hd458Uz)
 [![Open Collective](https://img.shields.io/opencollective/all/booklore?style=for-the-badge&color=7FADF2&logo=opencollective)](https://opencollective.com/booklore)
+[![Translate](https://img.shields.io/weblate/progress/booklore?style=for-the-badge&logo=weblate&logoColor=white&color=2ECCAA)](https://hosted.weblate.org/engage/booklore/)
 
 ---
 
@@ -390,6 +391,22 @@ Join community!
 
 </div>
 
+
+---
+
+<div align="center">
+
+## 🌍 **Translations**
+
+Help translate BookLore into your language!
+
+<a href="https://hosted.weblate.org/engage/booklore/">
+  <img src="https://hosted.weblate.org/widget/booklore/multi-auto.svg" alt="Translation status" />
+</a>
+
+Read more about translations [here](https://hosted.weblate.org/engage/booklore/).
+
+</div>
 
 ---
 
