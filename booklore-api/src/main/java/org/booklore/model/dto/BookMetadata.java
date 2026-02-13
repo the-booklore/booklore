@@ -33,6 +33,7 @@ public class BookMetadata {
     private Boolean abridged;
 
     private AudiobookMetadata audiobookMetadata;
+    private ComicMetadata comicMetadata;
 
     private String asin;
     private Double amazonRating;
@@ -67,6 +68,7 @@ public class BookMetadata {
     private MetadataProvider provider;
     private String thumbnailUrl;
     private List<BookReview> bookReviews;
+    private Double rating;
 
     private Boolean titleLocked;
     private Boolean subtitleLocked;

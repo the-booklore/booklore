@@ -15,6 +15,7 @@ export class TaskHelperService {
   refreshMetadataTask(options: MetadataRefreshRequest) {
     const request: TaskCreateRequest = {
       taskType: TaskType.REFRESH_METADATA_MANUAL,
+      triggeredByCron: false,
       options
     };
     return this.taskService.startTask(request).pipe(

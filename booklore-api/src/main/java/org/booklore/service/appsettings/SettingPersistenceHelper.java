@@ -1,17 +1,17 @@
 package org.booklore.service.appsettings;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.request.MetadataRefreshOptions;
 import org.booklore.model.dto.settings.*;
 import org.booklore.model.entity.AppSettingEntity;
 import org.booklore.model.enums.MetadataProvider;
 import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.repository.AppSettingsRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 import java.util.Set;
@@ -54,7 +54,7 @@ public class SettingPersistenceHelper {
         if (json != null && !json.isBlank()) {
             try {
                 return deserializer.deserialize(json);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 log.error("Failed to parse JSON for setting key '{}'. Using default value. Error: {}", key, e.getMessage());
                 return defaultValue;
             }
@@ -62,7 +62,7 @@ public class SettingPersistenceHelper {
         if (defaultValue != null && persistDefault) {
             try {
                 saveDefaultSetting(key, objectMapper.writeValueAsString(defaultValue));
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 log.error("Failed to persist default value for setting key '{}'. Error: {}", key, e.getMessage());
             }
         }
@@ -71,10 +71,10 @@ public class SettingPersistenceHelper {
 
     @FunctionalInterface
     private interface JsonDeserializer<T> {
-        T deserialize(String json) throws JsonProcessingException;
+        T deserialize(String json) throws JacksonException;
     }
 
-    public String serializeSettingValue(AppSettingKey key, Object val) throws JsonProcessingException {
+    public String serializeSettingValue(AppSettingKey key, Object val) throws JacksonException {
         return key.isJson() ? objectMapper.writeValueAsString(val) : val.toString();
     }
 
@@ -146,12 +146,14 @@ public class SettingPersistenceHelper {
                 .comicvineId(nullProvider)
                 .hardcoverId(nullProvider)
                 .googleId(nullProvider)
+                .lubimyczytacId(nullProvider)
                 .amazonRating(nullProvider)
                 .amazonReviewCount(nullProvider)
                 .goodreadsRating(nullProvider)
                 .goodreadsReviewCount(nullProvider)
                 .hardcoverRating(nullProvider)
                 .hardcoverReviewCount(nullProvider)
+                .lubimyczytacRating(nullProvider)
                 .ranobedbId(nullProvider)
                 .ranobedbRating(nullProvider)
                 .moods(nullProvider)
@@ -179,12 +181,14 @@ public class SettingPersistenceHelper {
                 .comicvineId(true)
                 .hardcoverId(true)
                 .googleId(true)
+                .lubimyczytacId(true)
                 .amazonRating(true)
                 .amazonReviewCount(true)
                 .goodreadsRating(true)
                 .goodreadsReviewCount(true)
                 .hardcoverRating(true)
                 .hardcoverReviewCount(true)
+                .lubimyczytacRating(true)
                 .ranobedbId(false)
                 .ranobedbRating(false)
                 .moods(true)

@@ -11,8 +11,8 @@ import {GroupRule} from '../component/magic-shelf-component';
 export interface MagicShelf {
   id?: number | null;
   name: string;
-  icon?: string;
-  iconType?: 'PRIME_NG' | 'CUSTOM_SVG';
+  icon?: string | null;
+  iconType?: 'PRIME_NG' | 'CUSTOM_SVG' | null;
   filterJson: string;
   isPublic?: boolean;
 }
@@ -98,7 +98,7 @@ export class MagicShelfService {
     const payload: MagicShelf = {
       id: data.id,
       name: data.name ?? '',
-      icon: data.icon ?? 'pi pi-book',
+      icon: data.icon,
       iconType: data.iconType,
       filterJson: JSON.stringify(data.group),
       isPublic: data.isPublic ?? false

@@ -5,6 +5,7 @@ import {ChartConfiguration, ChartData} from 'chart.js';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {Select} from 'primeng/select';
+import {Tooltip} from 'primeng/tooltip';
 import {FormsModule} from '@angular/forms';
 import {FavoriteDaysResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
 
@@ -13,7 +14,7 @@ type FavoriteDaysChartData = ChartData<'bar', number[], string>;
 @Component({
   selector: 'app-favorite-days-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, Select, FormsModule],
+  imports: [CommonModule, BaseChartDirective, Select, FormsModule, Tooltip],
   templateUrl: './favorite-days-chart.component.html',
   styleUrls: ['./favorite-days-chart.component.scss']
 })

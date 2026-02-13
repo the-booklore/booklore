@@ -6,6 +6,7 @@ import org.booklore.model.dto.Sort;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.IconType;
 import org.booklore.model.enums.LibraryOrganizationMode;
+import org.booklore.model.enums.MetadataSource;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,9 +45,8 @@ public class LibraryEntity {
     private String icon;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "icon_type", nullable = false)
-    @Builder.Default
-    private IconType iconType = IconType.PRIME_NG;
+    @Column(name = "icon_type")
+    private IconType iconType;
 
     @Column(name = "file_naming_pattern")
     private String fileNamingPattern;
@@ -65,10 +65,9 @@ public class LibraryEntity {
     @Builder.Default
     private LibraryOrganizationMode organizationMode = LibraryOrganizationMode.AUTO_DETECT;
 
-    @PrePersist
-    public void ensureIconType() {
-        if (this.iconType == null) {
-            this.iconType = IconType.PRIME_NG;
-        }
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metadata_source")
+    @Builder.Default
+    private MetadataSource metadataSource = MetadataSource.EMBEDDED;
+
 }

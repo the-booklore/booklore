@@ -1,5 +1,6 @@
 package org.booklore.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AudiobookMetadata {
     private Long durationSeconds;
     private Integer bitrate;
@@ -23,6 +25,7 @@ public class AudiobookMetadata {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ChapterInfo {
         private Integer index;
         private String title;

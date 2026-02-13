@@ -4,6 +4,11 @@
       <h3>
         <i class="pi pi-calendar heatmap-title-icon"></i>
         Reading Session Activity
+        <i class="pi pi-question-circle chart-info-icon"
+           pTooltip="A daily heatmap of your reading sessions for the selected year. Darker cells mean more sessions that day. Streak stats track consecutive reading days across all time. Milestones unlock as you hit streak or total-day thresholds."
+           tooltipPosition="bottom"
+           tooltipStyleClass="chart-info-tooltip"
+           [appendTo]="'body'"></i>
       </h3>
       <p class="chart-description">Daily overview of your reading sessions across the year</p>
     </div>
@@ -24,6 +29,7 @@
     </div>
     <div class="header-spacer"></div>
   </div>
+
   <div class="chart-wrapper">
     <canvas baseChart
             [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
@@ -31,4 +37,32 @@
             [type]="chartType">
     </canvas>
   </div>
+
+  @if (hasStreakData) {
+    <div class="chart-footer">
+      <div class="footer-pills left">
+        <span class="pill current">
+          <span class="pill-value">{{ currentStreak }}</span> Current Streak
+        </span>
+        <span class="pill longest">
+          <span class="pill-value">{{ longestStreak }}</span> Longest Streak
+        </span>
+        <span class="pill total">
+          <span class="pill-value">{{ totalReadingDays }}</span> Total Days
+        </span>
+        <span class="pill consistency">
+          <span class="pill-value">{{ consistencyPercent }}%</span> Consistency
+        </span>
+      </div>
+      @if (milestones.length > 0) {
+        <div class="footer-pills right">
+          @for (milestone of milestones; track milestone.label) {
+            <span class="pill milestone" [class.unlocked]="milestone.unlocked" [class.locked]="!milestone.unlocked">
+              <span class="pill-icon">{{ milestone.icon }}</span> {{ milestone.label }}
+            </span>
+          }
+        </div>
+      }
+    </div>
+  }
 </div>

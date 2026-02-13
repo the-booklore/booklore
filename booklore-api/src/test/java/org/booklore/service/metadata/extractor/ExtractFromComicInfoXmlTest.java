@@ -71,9 +71,9 @@ class ExtractFromComicInfoXmlTest {
         // Verify categories
         assertTrue(metadata.getCategories().contains("Superhero"));
         assertTrue(metadata.getCategories().contains("Crime"));
-        assertTrue(metadata.getCategories().contains("Batman"));
-        assertTrue(metadata.getCategories().contains("DC"));
-        assertTrue(metadata.getCategories().contains("Frank Miller"));
+        assertTrue(metadata.getTags().contains("Batman"));
+        assertTrue(metadata.getTags().contains("DC"));
+        assertTrue(metadata.getTags().contains("Frank Miller"));
     }
 
     @Test
@@ -336,7 +336,6 @@ class ExtractFromComicInfoXmlTest {
         assertTrue(metadata.getAuthors().contains("Jane Smith"));
     }
 
-    @Test
     void testExtractFromComicInfoXml_MultipleCategories() throws IOException {
         String xml = """
                 <ComicInfo>
@@ -353,9 +352,9 @@ class ExtractFromComicInfoXmlTest {
         assertTrue(metadata.getCategories().contains("Action"));
         assertTrue(metadata.getCategories().contains("Adventure"));
         assertTrue(metadata.getCategories().contains("Sci-Fi"));
-        assertTrue(metadata.getCategories().contains("robots"));
-        assertTrue(metadata.getCategories().contains("space"));
-        assertTrue(metadata.getCategories().contains("future"));
+        assertTrue(metadata.getTags().contains("robots"));
+        assertTrue(metadata.getTags().contains("space"));
+        assertTrue(metadata.getTags().contains("future"));
     }
 
     @Test
@@ -736,9 +735,9 @@ class ExtractFromComicInfoXmlTest {
         // Verify categories
         assertTrue(metadata.getCategories().contains("Superhero"));
         assertTrue(metadata.getCategories().contains("Crime"));
-        assertTrue(metadata.getCategories().contains("Batman"));
-        assertTrue(metadata.getCategories().contains("DC"));
-        assertTrue(metadata.getCategories().contains("Frank Miller"));
+        assertTrue(metadata.getTags().contains("Batman"));
+        assertTrue(metadata.getTags().contains("DC"));
+        assertTrue(metadata.getTags().contains("Frank Miller"));
     }
 
     @Test

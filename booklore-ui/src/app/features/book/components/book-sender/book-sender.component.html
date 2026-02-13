@@ -13,7 +13,7 @@
       [text]="true"
       severity="secondary"
       (click)="dynamicDialogRef.close()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -27,7 +27,7 @@
           placeholder="Select Email Provider"
           [(ngModel)]="selectedProvider"
           appendTo="body"
-          styleClass="full-width">
+          class="full-width">
         </p-select>
       </div>
 
@@ -40,9 +40,34 @@
           [(ngModel)]="selectedRecipient"
           [disabled]="!selectedProvider"
           appendTo="body"
-          styleClass="full-width">
+          class="full-width">
         </p-select>
       </div>
+
+      @if (emailableFiles.length > 0) {
+        <div class="form-field">
+          <label class="field-label">File Format</label>
+          <div class="format-options">
+            @for (file of emailableFiles; track file.id) {
+              <div class="format-option" [class.selected]="selectedFileId === file.id">
+                <p-radioButton name="fileFormat" [value]="file.id" [(ngModel)]="selectedFileId"/>
+                <div class="format-info">
+                  <span class="format-type">{{ file.bookType || 'Unknown' }}</span>
+                  @if (file.isPrimary) { <span class="primary-badge">Primary</span> }
+                  <span class="file-size">{{ formatFileSize(file.fileSizeKb) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (showLargeFileWarning) {
+        <div class="warning-banner">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span>This file exceeds 25MB. Some email providers may reject large attachments.</span>
+        </div>
+      }
     </div>
   </div>
 

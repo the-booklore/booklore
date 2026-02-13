@@ -4,12 +4,13 @@ import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import org.booklore.config.properties.WebSocketProperties;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.config.WebSocketMessageBrokerStats;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 
 @Configuration
@@ -22,9 +23,10 @@ public class BeanConfig {
     private WebSocketMessageBrokerStats webSocketMessageBrokerStats;
 
     @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.connectTimeout(Duration.ofSeconds(10)).readTimeout(Duration.ofSeconds(15))
-                .build();
+    public RestTemplate restTemplate(HttpClient httpClient) {
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(Duration.ofSeconds(15));
+        return new RestTemplate(factory);
     }
 
     @PostConstruct
@@ -35,4 +37,6 @@ public class BeanConfig {
             webSocketMessageBrokerStats.setLoggingPeriod(loggingPeriodMs);
         }
     }
+
+
 }

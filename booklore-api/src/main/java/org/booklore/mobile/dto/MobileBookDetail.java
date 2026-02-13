@@ -1,8 +1,10 @@
 package org.booklore.mobile.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -11,6 +13,8 @@ import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MobileBookDetail {
     private Long id;
@@ -49,6 +53,8 @@ public class MobileBookDetail {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class EpubProgress {
         private String cfi;
         private String href;
@@ -58,6 +64,8 @@ public class MobileBookDetail {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PdfProgress {
         private Integer page;
         private Float percentage;
@@ -66,6 +74,8 @@ public class MobileBookDetail {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CbxProgress {
         private Integer page;
         private Float percentage;
@@ -74,6 +84,8 @@ public class MobileBookDetail {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class AudiobookProgress {
         private Long positionMs;
         private Integer trackIndex;

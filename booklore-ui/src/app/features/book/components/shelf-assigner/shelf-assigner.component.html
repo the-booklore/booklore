@@ -19,7 +19,7 @@
       [rounded]="true"
       severity="secondary"
       (onClick)="closeDialog()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -45,17 +45,18 @@
                 />
               </div>
               <label [for]="'shelf-' + shelf.id" class="shelf-label">
-                <div class="shelf-icon-wrapper">
-                  @if (shelf.icon) {
+                @if (shelf.icon) {
+                  <div class="shelf-icon-wrapper">
                     <app-icon-display
                       [icon]="getShelfIcon(shelf)"
                       size="20px"
                       iconClass="shelf-icon"
                     />
-                  } @else {
-                    <i class="pi pi-bookmark shelf-icon"></i>
-                  }
-                </div>
+                  </div>
+                } @else {
+                    <div class="shelf-icon-wrapper-empty">
+                  </div>
+                }
                 <span class="shelf-name">{{ shelf.name }}</span>
               </label>
             </div>

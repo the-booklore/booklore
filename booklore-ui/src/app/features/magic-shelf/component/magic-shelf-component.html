@@ -15,7 +15,7 @@
       [rounded]="true"
       severity="secondary"
       (onClick)="cancel()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -29,22 +29,36 @@
         <div class="icon-picker-section">
           <div class="icon-picker-wrapper">
             <label>Shelf Icon</label>
-            <div class="icon-display-container" (click)="openIconPicker()">
-              @if (selectedIcon) {
-                <app-icon-display
-                  [icon]="selectedIcon"
-                  [size]="'16px'"
-                  iconClass="selected-icon"
-                  alt="Selected shelf icon">
-                </app-icon-display>
-                <span class="icon-label">Click to change</span>
-              } @else {
+            @if (selectedIcon) {
+              <div class="selected-icon-display">
+                <div class="icon-display-container" (click)="openIconPicker()" (keydown.enter)="openIconPicker()" tabindex="0" role="button">
+                  <app-icon-display
+                    [icon]="selectedIcon"
+                    [size]="'16px'"
+                    iconClass="selected-icon"
+                    alt="Selected shelf icon">
+                  </app-icon-display>
+                  <span class="icon-label">Click to change</span>
+                </div>
+                <p-button
+                  icon="pi pi-times"
+                  severity="danger"
+                  [outlined]="true"
+                  [rounded]="true"
+                  size="small"
+                  (onClick)="clearSelectedIcon()"
+                  pTooltip="Remove icon"
+                  tooltipPosition="left"
+                />
+              </div>
+            } @else {
+              <div class="icon-display-container" (click)="openIconPicker()" (keydown.enter)="openIconPicker()" tabindex="0" role="button">
                 <div class="icon-placeholder">
                   <i class="pi pi-plus"></i>
                   <span>Select Icon</span>
                 </div>
-              }
-            </div>
+              </div>
+            }
           </div>
         </div>
         @if (isAdmin) {

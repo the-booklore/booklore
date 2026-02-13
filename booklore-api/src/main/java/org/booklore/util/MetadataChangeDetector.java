@@ -3,6 +3,7 @@ package org.booklore.util;
 import lombok.experimental.UtilityClass;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.ComicMetadata;
 import org.booklore.model.entity.*;
 
 import java.util.*;
@@ -245,6 +246,12 @@ public class MetadataChangeDetector {
                 return true;
             }
         }
+        if (hasComicMetadataChanges(newMeta, existingMeta)) {
+            return true;
+        }
+        if (hasComicLockChanges(newMeta, existingMeta)) {
+            return true;
+        }
         return differsLock(newMeta.getCoverLocked(), existingMeta.getCoverLocked()) || differsLock(newMeta.getAudiobookCoverLocked(), existingMeta.getAudiobookCoverLocked());
     }
 
@@ -258,6 +265,9 @@ public class MetadataChangeDetector {
             if (hasCollectionValueDifference(field, newMeta, existingMeta, clear)) {
                 return true;
             }
+        }
+        if (hasComicMetadataChanges(newMeta, existingMeta)) {
+            return true;
         }
         return false;
     }
@@ -347,6 +357,14 @@ public class MetadataChangeDetector {
         return value;
     }
 
+    private static boolean differsValue(Object newVal, Object oldVal) {
+        Object normNew = normalize(newVal);
+        Object normOld = normalize(oldVal);
+        if (normOld == null && isEffectivelyEmpty(normNew)) return false;
+        if (normNew == null && isEffectivelyEmpty(normOld)) return false;
+        return !Objects.equals(normNew, normOld);
+    }
+
     private static Set<String> toNameSet(Set<?> entities) {
         if (entities == null) {
             return Collections.emptySet();
@@ -360,5 +378,165 @@ public class MetadataChangeDetector {
                     default -> e.toString();
                 })
                 .collect(Collectors.toSet());
+    }
+
+    private static boolean hasComicMetadataChanges(BookMetadata newMeta, BookMetadataEntity existingMeta) {
+        ComicMetadata comicDto = newMeta.getComicMetadata();
+        ComicMetadataEntity comicEntity = existingMeta.getComicMetadata();
+
+        // No comic metadata in DTO, no changes
+        if (comicDto == null) {
+            return false;
+        }
+
+        // Comic metadata in DTO but not in entity - only a value change if DTO has actual data
+        if (comicEntity == null) {
+            return hasNonEmptyComicValue(comicDto);
+        }
+
+        // Compare individual fields (using differsValue to treat null and empty as equivalent)
+        return differsValue(comicDto.getIssueNumber(), comicEntity.getIssueNumber())
+                || differsValue(comicDto.getVolumeName(), comicEntity.getVolumeName())
+                || differsValue(comicDto.getVolumeNumber(), comicEntity.getVolumeNumber())
+                || differsValue(comicDto.getStoryArc(), comicEntity.getStoryArc())
+                || differsValue(comicDto.getStoryArcNumber(), comicEntity.getStoryArcNumber())
+                || differsValue(comicDto.getAlternateSeries(), comicEntity.getAlternateSeries())
+                || differsValue(comicDto.getAlternateIssue(), comicEntity.getAlternateIssue())
+                || differsValue(comicDto.getImprint(), comicEntity.getImprint())
+                || differsValue(comicDto.getFormat(), comicEntity.getFormat())
+                || differsValue(comicDto.getBlackAndWhite(), comicEntity.getBlackAndWhite())
+                || differsValue(comicDto.getManga(), comicEntity.getManga())
+                || differsValue(comicDto.getReadingDirection(), comicEntity.getReadingDirection())
+                || differsValue(comicDto.getWebLink(), comicEntity.getWebLink())
+                || differsValue(comicDto.getNotes(), comicEntity.getNotes())
+                || !stringSetsEqual(comicDto.getCharacters(), extractCharacterNames(comicEntity.getCharacters()))
+                || !stringSetsEqual(comicDto.getTeams(), extractTeamNames(comicEntity.getTeams()))
+                || !stringSetsEqual(comicDto.getLocations(), extractLocationNames(comicEntity.getLocations()))
+                || hasCreatorChanges(comicDto, comicEntity);
+    }
+
+    private static boolean hasComicLockChanges(BookMetadata newMeta, BookMetadataEntity existingMeta) {
+        ComicMetadata comicDto = newMeta.getComicMetadata();
+        ComicMetadataEntity comicEntity = existingMeta.getComicMetadata();
+        if (comicDto == null) return false;
+        if (comicEntity == null) return false;
+        return differsLock(comicDto.getIssueNumberLocked(), comicEntity.getIssueNumberLocked())
+                || differsLock(comicDto.getVolumeNameLocked(), comicEntity.getVolumeNameLocked())
+                || differsLock(comicDto.getVolumeNumberLocked(), comicEntity.getVolumeNumberLocked())
+                || differsLock(comicDto.getStoryArcLocked(), comicEntity.getStoryArcLocked())
+                || differsLock(comicDto.getStoryArcNumberLocked(), comicEntity.getStoryArcNumberLocked())
+                || differsLock(comicDto.getAlternateSeriesLocked(), comicEntity.getAlternateSeriesLocked())
+                || differsLock(comicDto.getAlternateIssueLocked(), comicEntity.getAlternateIssueLocked())
+                || differsLock(comicDto.getImprintLocked(), comicEntity.getImprintLocked())
+                || differsLock(comicDto.getFormatLocked(), comicEntity.getFormatLocked())
+                || differsLock(comicDto.getBlackAndWhiteLocked(), comicEntity.getBlackAndWhiteLocked())
+                || differsLock(comicDto.getMangaLocked(), comicEntity.getMangaLocked())
+                || differsLock(comicDto.getReadingDirectionLocked(), comicEntity.getReadingDirectionLocked())
+                || differsLock(comicDto.getWebLinkLocked(), comicEntity.getWebLinkLocked())
+                || differsLock(comicDto.getNotesLocked(), comicEntity.getNotesLocked())
+                || differsLock(comicDto.getCreatorsLocked(), comicEntity.getCreatorsLocked())
+                || differsLock(comicDto.getPencillersLocked(), comicEntity.getPencillersLocked())
+                || differsLock(comicDto.getInkersLocked(), comicEntity.getInkersLocked())
+                || differsLock(comicDto.getColoristsLocked(), comicEntity.getColoristsLocked())
+                || differsLock(comicDto.getLetterersLocked(), comicEntity.getLetterersLocked())
+                || differsLock(comicDto.getCoverArtistsLocked(), comicEntity.getCoverArtistsLocked())
+                || differsLock(comicDto.getEditorsLocked(), comicEntity.getEditorsLocked())
+                || differsLock(comicDto.getCharactersLocked(), comicEntity.getCharactersLocked())
+                || differsLock(comicDto.getTeamsLocked(), comicEntity.getTeamsLocked())
+                || differsLock(comicDto.getLocationsLocked(), comicEntity.getLocationsLocked());
+    }
+
+    public static boolean hasLockChanges(BookMetadata newMeta, BookMetadataEntity existingMeta) {
+        for (FieldDescriptor<?> field : SIMPLE_FIELDS) {
+            if (differsLock(field.getNewLock(newMeta), field.getOldLock(existingMeta))) {
+                return true;
+            }
+        }
+        for (CollectionFieldDescriptor field : COLLECTION_FIELDS) {
+            if (differsLock(field.getNewLock(newMeta), field.getOldLock(existingMeta))) {
+                return true;
+            }
+        }
+        if (differsLock(newMeta.getCoverLocked(), existingMeta.getCoverLocked())) return true;
+        if (differsLock(newMeta.getAudiobookCoverLocked(), existingMeta.getAudiobookCoverLocked())) return true;
+        if (differsLock(newMeta.getReviewsLocked(), existingMeta.getReviewsLocked())) return true;
+        return hasComicLockChanges(newMeta, existingMeta);
+    }
+
+    private static boolean hasNonEmptyComicValue(ComicMetadata dto) {
+        return !isEffectivelyEmpty(dto.getIssueNumber())
+                || !isEffectivelyEmpty(dto.getVolumeName())
+                || dto.getVolumeNumber() != null
+                || !isEffectivelyEmpty(dto.getStoryArc())
+                || dto.getStoryArcNumber() != null
+                || !isEffectivelyEmpty(dto.getAlternateSeries())
+                || !isEffectivelyEmpty(dto.getAlternateIssue())
+                || !isEffectivelyEmpty(dto.getImprint())
+                || !isEffectivelyEmpty(dto.getFormat())
+                || dto.getBlackAndWhite() != null
+                || dto.getManga() != null
+                || !isEffectivelyEmpty(dto.getReadingDirection())
+                || !isEffectivelyEmpty(dto.getWebLink())
+                || !isEffectivelyEmpty(dto.getNotes())
+                || (dto.getCharacters() != null && !dto.getCharacters().isEmpty())
+                || (dto.getTeams() != null && !dto.getTeams().isEmpty())
+                || (dto.getLocations() != null && !dto.getLocations().isEmpty())
+                || (dto.getPencillers() != null && !dto.getPencillers().isEmpty())
+                || (dto.getInkers() != null && !dto.getInkers().isEmpty())
+                || (dto.getColorists() != null && !dto.getColorists().isEmpty())
+                || (dto.getLetterers() != null && !dto.getLetterers().isEmpty())
+                || (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty())
+                || (dto.getEditors() != null && !dto.getEditors().isEmpty());
+    }
+
+    private static boolean stringSetsEqual(Set<String> set1, Set<String> set2) {
+        if (set1 == null && (set2 == null || set2.isEmpty())) return true;
+        if (set1 == null || set2 == null) return false;
+        if (set1.isEmpty() && set2.isEmpty()) return true;
+        return set1.equals(set2);
+    }
+
+    private static Set<String> extractCharacterNames(Set<ComicCharacterEntity> entities) {
+        if (entities == null) return Collections.emptySet();
+        return entities.stream().map(ComicCharacterEntity::getName).collect(Collectors.toSet());
+    }
+
+    private static Set<String> extractTeamNames(Set<ComicTeamEntity> entities) {
+        if (entities == null) return Collections.emptySet();
+        return entities.stream().map(ComicTeamEntity::getName).collect(Collectors.toSet());
+    }
+
+    private static Set<String> extractLocationNames(Set<ComicLocationEntity> entities) {
+        if (entities == null) return Collections.emptySet();
+        return entities.stream().map(ComicLocationEntity::getName).collect(Collectors.toSet());
+    }
+
+    private static boolean hasCreatorChanges(ComicMetadata dto, ComicMetadataEntity entity) {
+        // For creators, we do a simplified comparison based on whether there are any creators in DTO
+        boolean dtoHasCreators = (dto.getPencillers() != null && !dto.getPencillers().isEmpty())
+                || (dto.getInkers() != null && !dto.getInkers().isEmpty())
+                || (dto.getColorists() != null && !dto.getColorists().isEmpty())
+                || (dto.getLetterers() != null && !dto.getLetterers().isEmpty())
+                || (dto.getCoverArtists() != null && !dto.getCoverArtists().isEmpty())
+                || (dto.getEditors() != null && !dto.getEditors().isEmpty());
+
+        boolean entityHasCreators = entity.getCreatorMappings() != null && !entity.getCreatorMappings().isEmpty();
+
+        // If both have no creators, no change
+        if (!dtoHasCreators && !entityHasCreators) return false;
+
+        // If one has creators and other doesn't, there's a change
+        if (dtoHasCreators != entityHasCreators) return true;
+
+        // Both have creators - compare counts as a basic check
+        int dtoCount = countNonNull(dto.getPencillers()) + countNonNull(dto.getInkers())
+                + countNonNull(dto.getColorists()) + countNonNull(dto.getLetterers())
+                + countNonNull(dto.getCoverArtists()) + countNonNull(dto.getEditors());
+
+        return dtoCount != entity.getCreatorMappings().size();
+    }
+
+    private static int countNonNull(Set<String> set) {
+        return set == null ? 0 : set.size();
     }
 }

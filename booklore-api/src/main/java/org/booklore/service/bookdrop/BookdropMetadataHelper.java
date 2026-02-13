@@ -1,12 +1,12 @@
 package org.booklore.service.bookdrop;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.entity.BookdropFileEntity;
 import org.booklore.repository.BookdropFileRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Collections;
 import java.util.List;

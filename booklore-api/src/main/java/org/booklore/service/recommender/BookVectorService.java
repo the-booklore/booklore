@@ -1,15 +1,15 @@
 package org.booklore.service.recommender;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.entity.AuthorEntity;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.entity.CategoryEntity;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -102,7 +102,7 @@ public class BookVectorService {
     public String serializeVector(double[] vector) {
         try {
             return objectMapper.writeValueAsString(vector);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Error serializing vector", e);
             return null;
         }
@@ -114,7 +114,7 @@ public class BookVectorService {
         }
         try {
             return objectMapper.readValue(vectorJson, double[].class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Error deserializing vector", e);
             return null;
         }

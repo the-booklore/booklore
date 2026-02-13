@@ -8,7 +8,9 @@ import org.booklore.service.book.BookQueryService;
 import org.booklore.service.book.BookService;
 import org.booklore.service.book.BookUpdateService;
 import org.booklore.service.progress.ReadingProgressService;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
+import org.booklore.service.FileStreamingService;
 import org.booklore.util.FileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,8 @@ class BookServiceDeleteTests {
         BookDownloadService bookDownloadService = Mockito.mock(BookDownloadService.class);
         MonitoringRegistrationService monitoringRegistrationService = Mockito.mock(MonitoringRegistrationService.class);
         BookUpdateService bookUpdateService = Mockito.mock(BookUpdateService.class);
+        SidecarMetadataWriter sidecarMetadataWriter = Mockito.mock(SidecarMetadataWriter.class);
+        FileStreamingService fileStreamingService = Mockito.mock(FileStreamingService.class);
 
         bookService = new BookService(
                 bookRepository,
@@ -67,7 +71,9 @@ class BookServiceDeleteTests {
                 bookDownloadService,
                 monitoringRegistrationService,
                 bookUpdateService,
-                ebookViewerPreferenceRepository
+                ebookViewerPreferenceRepository,
+                sidecarMetadataWriter,
+                fileStreamingService
         );
     }
 

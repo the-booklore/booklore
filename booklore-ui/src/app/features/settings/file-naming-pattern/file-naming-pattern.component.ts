@@ -9,13 +9,16 @@ import {catchError, filter, take} from 'rxjs/operators';
 import {Library} from '../../book/model/library.model';
 import {LibraryService} from '../../book/service/library.service';
 import {InputText} from 'primeng/inputtext';
+import {Tooltip} from 'primeng/tooltip';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
+import {replacePlaceholders} from '../../../shared/util/pattern-resolver';
 
 @Component({
   selector: 'app-file-naming-pattern',
   templateUrl: './file-naming-pattern.component.html',
   standalone: true,
-  imports: [FormsModule, Button, InputText, ExternalDocLinkComponent],
+  imports: [FormsModule, Button, InputText, Tooltip, ExternalDocLinkComponent, TranslocoDirective, TranslocoPipe],
   styleUrls: ['./file-naming-pattern.component.scss'],
 })
 export class FileNamingPatternComponent implements OnInit {
@@ -38,6 +41,7 @@ export class FileNamingPatternComponent implements OnInit {
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
   private libraryService = inject(LibraryService);
+  private t = inject(TranslocoService);
 
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
 
@@ -55,15 +59,8 @@ export class FileNamingPatternComponent implements OnInit {
       });
   }
 
-  private replacePlaceholders(pattern: string, values: Record<string, string>): string {
-    pattern = pattern.replace(/<([^<>]+)>/g, (_, block) => {
-      const placeholders = [...block.matchAll(/{(.*?)}/g)].map((m) => m[1]);
-      const allHaveValues = placeholders.every((key) => values[key]?.trim());
-      return allHaveValues
-        ? block.replace(/{(.*?)}/g, (_: string, key: string) => values[key] ?? '')
-        : '';
-    });
-    return pattern.replace(/{(.*?)}/g, (_, key) => values[key] ?? '').trim();
+  private resolvePattern(pattern: string, values: Record<string, string>): string {
+    return replacePlaceholders(pattern, values);
   }
 
   private appendExtensionIfMissing(path: string, ext = '.pdf'): string {
@@ -73,7 +70,7 @@ export class FileNamingPatternComponent implements OnInit {
   }
 
   private generatePreview(pattern: string): string {
-    let path = this.replacePlaceholders(pattern || '', this.exampleMetadata);
+    let path = this.resolvePattern(pattern || '', this.exampleMetadata);
 
     if (!path) return '/original_filename.pdf';
     if (path.endsWith('/')) return path + 'original_filename.pdf';
@@ -94,13 +91,13 @@ export class FileNamingPatternComponent implements OnInit {
   }
 
   validatePattern(pattern: string): boolean {
-    const validPatternRegex = /^[\w\s\-{}\[\]\/().<>.,:'"#]*$/;
+    const validPatternRegex = /^[\w\s\-{}\[\]\/().<>.,:'"#|]*$/;
     return validPatternRegex.test(pattern);
   }
 
   onDefaultPatternChange(pattern: string): void {
     this.defaultPattern = pattern;
-    this.defaultErrorMessage = this.validatePattern(pattern) ? '' : 'Pattern contains invalid characters.';
+    this.defaultErrorMessage = this.validatePattern(pattern) ? '' : this.t.translate('settingsNaming.defaultPattern.invalidChars');
   }
 
   onLibraryPatternChange(library: Library): void {
@@ -113,7 +110,7 @@ export class FileNamingPatternComponent implements OnInit {
 
   savePatterns(): void {
     if (this.defaultErrorMessage) {
-      this.showMessage('error', 'Invalid Pattern', 'Please fix errors before saving.');
+      this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsNaming.defaultPattern.invalidError'));
       return;
     }
     this.appSettingsService
@@ -121,8 +118,8 @@ export class FileNamingPatternComponent implements OnInit {
         {key: AppSettingKey.UPLOAD_FILE_PATTERN, newValue: this.defaultPattern},
       ])
       .subscribe({
-        next: () => this.showMessage('success', 'Settings Saved', 'The default pattern was successfully saved!'),
-        error: () => this.showMessage('error', 'Error', 'There was an error saving the settings.'),
+        next: () => this.showMessage('success', this.t.translate('common.success'), this.t.translate('settingsNaming.defaultPattern.saveSuccess')),
+        error: () => this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsNaming.defaultPattern.saveError')),
       });
   }
 
@@ -135,9 +132,9 @@ export class FileNamingPatternComponent implements OnInit {
     forkJoin(patchRequests).subscribe(results => {
       const failures = results.filter(result => result === null);
       if (failures.length === 0) {
-        this.showMessage('success', 'Library Patterns Saved', 'Library-specific patterns were successfully saved!');
+        this.showMessage('success', this.t.translate('common.success'), this.t.translate('settingsNaming.libraryOverrides.saveSuccess'));
       } else {
-        this.showMessage('error', 'Error', `Failed to save ${failures.length} library pattern(s).`);
+        this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsNaming.libraryOverrides.saveError', {count: failures.length}));
       }
     });
   }

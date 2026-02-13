@@ -80,7 +80,7 @@ class PathPatternResolverTest {
         var book = createBook("Title", List.of("Author"), LocalDate.of(2020, 1, 1),
                 "Series", 1f, null, null, null, null, "f.epub");
         String p = "<{series}/><{seriesIndex}. ><{language}/>{title}";
-        assertThat(PathPatternResolver.resolvePattern(book, p)).isEqualTo("Series/1. Title.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, p)).isEqualTo("Series/01. Title.epub");
     }
 
     @Test void placeholdersOutsideOptional_replacedWithEmpty() {
@@ -93,8 +93,8 @@ class PathPatternResolverTest {
         var book1 = createBook("Title", List.of("Author"), LocalDate.now(), "Series", 3.5f, null, null, null, null, "f.epub");
         var book2 = createBook("Title", List.of("Author"), LocalDate.now(), "Series", 3f, null, null, null, null, "f.epub");
         String p = "<{series}/><{seriesIndex}. >{title}";
-        assertThat(PathPatternResolver.resolvePattern(book1, p)).isEqualTo("Series/3.5. Title.epub");
-        assertThat(PathPatternResolver.resolvePattern(book2, p)).isEqualTo("Series/3. Title.epub");
+        assertThat(PathPatternResolver.resolvePattern(book1, p)).isEqualTo("Series/03.5. Title.epub");
+        assertThat(PathPatternResolver.resolvePattern(book2, p)).isEqualTo("Series/03. Title.epub");
     }
 
     @Test void sanitizes_illegalCharsAndWhitespace() {
@@ -145,8 +145,8 @@ class PathPatternResolverTest {
         var b1 = createBook("T", List.of("A"), null, "S", 1f, null, null, null, null, "f.epub");
         var b2 = createBook("T", List.of("A"), null, "S", 1.5f, null, null, null, null, "f.epub");
         String p = "<{series}/><{seriesIndex}. >{title}";
-        assertThat(PathPatternResolver.resolvePattern(b1, p)).isEqualTo("S/1. T.epub");
-        assertThat(PathPatternResolver.resolvePattern(b2, p)).isEqualTo("S/1.5. T.epub");
+        assertThat(PathPatternResolver.resolvePattern(b1, p)).isEqualTo("S/01. T.epub");
+        assertThat(PathPatternResolver.resolvePattern(b2, p)).isEqualTo("S/01.5. T.epub");
     }
 
     @Test void sanitize_removesIllegalCharacters() {
@@ -217,7 +217,7 @@ class PathPatternResolverTest {
     @Test void patternEndsWithSlash_slashIsPreserved() {
         var book = createBook("T", List.of("A"), null, "S", 1f, null, null, null, null, "b.pdf");
         String pattern = "<{series}/><{seriesIndex}/>{title}/";
-        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("S/1/T/.pdf");
+        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("S/01/T/.pdf");
     }
 
     @Test void extensionDotEscaped_doubleDotsNotAdded() {
@@ -278,5 +278,147 @@ class PathPatternResolverTest {
 
         assertThat(PathPatternResolver.resolvePattern(book1, pattern)).isEqualTo("Title - Subtitle.epub");
         assertThat(PathPatternResolver.resolvePattern(book2, pattern)).isEqualTo("file.epub");
+    }
+
+    // ===== Else Clause Tests =====
+
+    @Test void elseClause_leftSideWhenPresent() {
+        var book = createBook("Title", List.of("Author"), null, "Series", 1f, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}|Standalone>/{title}")).isEqualTo("Series/Title.epub");
+    }
+
+    @Test void elseClause_fallbackWhenMissing() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}|Standalone>/{title}")).isEqualTo("Standalone/Title.epub");
+    }
+
+    @Test void elseClause_fallbackWithPlaceholders() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}/{seriesIndex} - {title}|{title}>")).isEqualTo("Title.epub");
+    }
+
+    @Test void elseClause_backwardCompatibleNoPipe() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}/>{title}")).isEqualTo("Title.epub");
+    }
+
+    @Test void elseClause_mixedBlocksWithAndWithoutElse() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}|Standalone>/<{year} - >{title}")).isEqualTo("Standalone/Title.epub");
+    }
+
+    // ===== Modifier Tests =====
+
+    @Test void modifier_firstMultipleAuthors() {
+        var book = createBook("Title", List.of("Patrick Rothfuss", "Brandon Sanderson"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors:first}/{title}")).isEqualTo("Patrick Rothfuss/Title.epub");
+    }
+
+    @Test void modifier_sortAuthor() {
+        var book = createBook("Title", List.of("Patrick Rothfuss"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors:sort}/{title}")).isEqualTo("Rothfuss, Patrick/Title.epub");
+    }
+
+    @Test void modifier_initialTitle() {
+        var book = createBook("The Name of the Wind", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title:initial}/{title}")).isEqualTo("T/The Name of the Wind.epub");
+    }
+
+    @Test void modifier_initialAuthorsUsesLastName() {
+        var book = createBook("Title", List.of("Patrick Rothfuss"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors:initial}/{authors:sort}/{title}")).isEqualTo("R/Rothfuss, Patrick/Title.epub");
+    }
+
+    @Test void modifier_upper() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title:upper}")).isEqualTo("TITLE.epub");
+    }
+
+    @Test void modifier_lower() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title:lower}")).isEqualTo("title.epub");
+    }
+
+    @Test void modifier_insideElseClause() {
+        var book = createBook("Title", List.of("Patrick Rothfuss"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}|{authors:sort}>/{title}")).isEqualTo("Rothfuss, Patrick/Title.epub");
+    }
+
+    @Test void modifier_inOptionalBlock() {
+        var book = createBook("Title", List.of("Patrick Rothfuss"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{authors:sort}/>{title}")).isEqualTo("Rothfuss, Patrick/Title.epub");
+    }
+
+    // ===== Edge Case Tests =====
+
+    @Test void modifier_sortThreeWordName() {
+        var book = createBook("T", List.of("Mary Jane Watson"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors:sort}/{title}")).isEqualTo("Watson, Mary Jane/T.epub");
+    }
+
+    @Test void modifier_initialSingleWordAuthor() {
+        var book = createBook("T", List.of("Plato"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors:initial}/{title}")).isEqualTo("P/T.epub");
+    }
+
+    @Test void elseClause_multipleBlocks() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}|Standalone>/<{year}|Unknown> - {title}"))
+                .isEqualTo("Standalone/Unknown - Title.epub");
+    }
+
+    @Test void elseClause_emptyFallback() {
+        var book = createBook("Title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series}|>{title}")).isEqualTo("Title.epub");
+    }
+
+    @Test void elseClause_primaryPartiallyMissing() {
+        var book = createBook("Title", List.of("Author"), null, "Series", null, null, null, null, null, "f.epub");
+        // series present but seriesIndex missing → fallback
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series} #{seriesIndex}|{title}>")).isEqualTo("Title.epub");
+    }
+
+    @Test void modifier_inPrimarySideOfElseClause() {
+        var book = createBook("Title", List.of("Patrick Rothfuss"), null, "Series", null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series} by {authors:sort}|{title}>"))
+                .isEqualTo("Series by Rothfuss, Patrick.epub");
+    }
+
+    @Test void modifier_chainedDifferentFields() {
+        var book = createBook("Title", List.of("Patrick Rothfuss"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title:initial}/{authors:first}/{title:lower}"))
+                .isEqualTo("T/Patrick Rothfuss/title.epub");
+    }
+
+    @Test void modifier_onMissingFieldInOptionalBlock() {
+        var book = createBook("Title", null, null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{authors:sort}/>{title}")).isEqualTo("Title.epub");
+    }
+
+    @Test void modifier_firstWithManyAuthors() {
+        var book = createBook("Title", List.of("Alice", "Bob", "Carol", "Dave"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors:first}/{title}")).isEqualTo("Alice/Title.epub");
+    }
+
+    @Test void modifier_withElseClauseAndExtensionPlaceholder() {
+        var book = createBook("Title", List.of("Jane Doe"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series:upper}|{authors:sort}>/{title}.{extension}"))
+                .isEqualTo("Doe, Jane/Title.epub");
+    }
+
+    @Test void modifier_initialLowercaseTitle() {
+        var book = createBook("lowercase title", List.of("Author"), null, null, null, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title:initial}/{title}")).isEqualTo("L/lowercase title.epub");
+    }
+
+    @Test void elseClause_primaryCompleteIgnoresFallback() {
+        var book = createBook("Title", List.of("Author"), null, "Series", 5f, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "<{series} #{seriesIndex}|{title}>")).isEqualTo("Series #05.epub");
+    }
+
+    @Test void elseClause_existingPatternsUnchanged() {
+        var book = createBook("Title", List.of("Author"), LocalDate.of(2023, 1, 1), "Series", 1f, null, null, null, null, "f.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{authors}/<{series}/><{seriesIndex}. >{title}< ({year})>"))
+                .isEqualTo("Author/Series/01. Title (2023).epub");
     }
 }

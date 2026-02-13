@@ -331,6 +331,10 @@ public class BookMetadataEntity {
     @JsonIgnore
     private BookEntity book;
 
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @JoinColumn(name = "book_id", referencedColumnName = "book_id", insertable = false, updatable = false)
+    private ComicMetadataEntity comicMetadata;
+
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "book_metadata_author_mapping",
@@ -414,6 +418,9 @@ public class BookMetadataEntity {
         this.abridgedLocked = lock;
         this.ageRatingLocked = lock;
         this.contentRatingLocked = lock;
+        if (this.comicMetadata != null) {
+            this.comicMetadata.applyLockToAllFields(lock);
+        }
     }
 
     public boolean areAllFieldsLocked() {
@@ -459,6 +466,7 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.abridgedLocked)
                 && Boolean.TRUE.equals(this.ageRatingLocked)
                 && Boolean.TRUE.equals(this.contentRatingLocked)
+                && (this.comicMetadata == null || this.comicMetadata.areAllFieldsLocked())
                 ;
     }
 }

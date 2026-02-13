@@ -1,17 +1,16 @@
 package org.booklore.model;
 
+import lombok.*;
 import org.booklore.model.dto.Book;
 import org.booklore.model.enums.FileProcessStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
 
 @Builder
 @Getter
+@Setter
 @ToString
+@NoArgsConstructor
 @AllArgsConstructor
 public class FileProcessResult {
-    private final Book book;
-    private final FileProcessStatus status;
+    private Book book;
+    private FileProcessStatus status;
 }

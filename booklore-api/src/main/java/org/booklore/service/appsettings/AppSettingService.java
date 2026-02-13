@@ -1,6 +1,5 @@
 package org.booklore.service.appsettings;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.transaction.Transactional;
 import org.booklore.config.AppProperties;
@@ -12,9 +11,11 @@ import org.booklore.model.entity.AppSettingEntity;
 import org.booklore.model.enums.PermissionType;
 import org.booklore.service.oidc.OidcDiscoveryService;
 import org.booklore.util.UserPermissionUtils;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
+@DependsOnDatabaseInitialization
 public class AppSettingService {
 
     private final AppProperties appProperties;
@@ -55,7 +57,7 @@ public class AppSettingService {
     }
 
     @Transactional
-    public void updateSetting(AppSettingKey key, Object val) throws JsonProcessingException {
+    public void updateSetting(AppSettingKey key, Object val) throws JacksonException {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         validatePermission(key, user);

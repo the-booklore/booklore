@@ -1,19 +1,5 @@
 package org.booklore.controller;
 
-import org.booklore.model.dto.BookLoreUser;
-import org.booklore.model.dto.Shelf;
-import org.booklore.model.dto.kobo.KoboAuthentication;
-import org.booklore.model.dto.kobo.KoboReadingState;
-import org.booklore.model.dto.kobo.KoboReadingStateList;
-import org.booklore.model.dto.kobo.KoboReadingStateRequest;
-import org.booklore.model.dto.kobo.KoboResources;
-import org.booklore.model.dto.kobo.KoboTestResponse;
-import org.booklore.service.ShelfService;
-import org.booklore.service.book.BookDownloadService;
-import org.booklore.service.book.BookService;
-import org.booklore.service.kobo.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,10 +10,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.Shelf;
+import org.booklore.model.dto.kobo.*;
+import org.booklore.service.ShelfService;
+import org.booklore.service.book.BookDownloadService;
+import org.booklore.service.book.BookService;
+import org.booklore.service.kobo.*;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Set;
@@ -61,7 +56,7 @@ public class KoboController {
     @Operation(summary = "Initialize Kobo resources", description = "Initialize Kobo resources for the device.")
     @ApiResponse(responseCode = "200", description = "Initialization successful")
     @GetMapping("/v1/initialization")
-    public ResponseEntity<KoboResources> initialization() throws JsonProcessingException {
+    public ResponseEntity<KoboResources> initialization() throws JacksonException {
         return koboInitializationService.initialize(token);
     }
 

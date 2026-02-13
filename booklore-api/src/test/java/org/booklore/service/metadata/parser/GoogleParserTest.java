@@ -6,12 +6,12 @@ import org.booklore.model.dto.request.FetchMetadataRequest;
 import org.booklore.model.dto.settings.AppSettings;
 import org.booklore.model.dto.settings.MetadataProviderSettings;
 import org.booklore.service.appsettings.AppSettingService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.http.HttpClient;

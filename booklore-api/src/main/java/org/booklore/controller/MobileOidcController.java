@@ -236,7 +236,7 @@ public class MobileOidcController {
     private String discoverTokenEndpoint(String issuerUri) throws Exception {
         // Use the centralized OIDC discovery service which handles caching and validation
         String discoveryJson = oidcDiscoveryService.getDiscoveryDocument(issuerUri);
-        
+
         JsonNode discoveryDoc = objectMapper.readTree(discoveryJson);
         JsonNode tokenEndpointNode = discoveryDoc.get("token_endpoint");
 
@@ -247,7 +247,7 @@ public class MobileOidcController {
 
         return tokenEndpointNode.asText();
     }
-    
+
     private String getClientIp(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null) {
