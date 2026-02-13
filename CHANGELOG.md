@@ -1,3 +1,18 @@
+# [1.19.0](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.18.0...1.19.0) (2026-02-13)
+
+
+### Bug Fixes
+
+* reset audiobook progress and clear cached progress in UI ([#2641](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2641)) ([#2711](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2711)) ([f8f448a](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/f8f448a19bc3c5e36e343d3063beb39f15cd1cd3))
+* **ui:** inline mobile charts submenu to prevent layout overflow ([#2549](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2549)) ([#2713](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2713)) ([df95f58](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/df95f5806d79487c088baf24afe8faa2157cc4e5))
+* **ui:** prevent footer submenu from rendering off screen ([#2531](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2531)) ([#2714](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2714)) ([c650335](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/c6503358d3e91a80990e21f3bd9d5b5d33357cc5))
+* **ui:** reload shelves when enabling Kobo sync ([#2528](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2528)) ([#2715](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2715)) ([dc35ef4](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/dc35ef443d1eb549538f16bd23a018630192ca81))
+
+
+### Features
+
+* **ui:** add file name column to table view and include filename in search ([#2712](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2712)) ([910d26c](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/910d26c5303a2d373783e3affb3d7fc5859edbf1))
+
 # [1.18.0](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/v1.17.0...v1.18.0) (2026-02-13)
 
 
