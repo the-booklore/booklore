@@ -401,7 +401,7 @@ Join community!
 Help translate BookLore into your language!
 
 <a href="https://hosted.weblate.org/engage/booklore/">
-  <img src="https://hosted.weblate.org/widget/booklore/multi-auto.svg" alt="Translation status" />
+  <img src="https://hosted.weblate.org/widget/booklore/multi-auto.svg?v=1" alt="Translation status" />
 </a>
 
 Read more about translations [here](https://hosted.weblate.org/engage/booklore/).
