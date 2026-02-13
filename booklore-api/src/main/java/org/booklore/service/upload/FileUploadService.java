@@ -72,9 +72,8 @@ public class FileUploadService {
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
             final String relativePath = PathPatternResolver.resolvePattern(metadata, uploadPattern, originalFileName);
-            final Path finalPath = Paths.get(libraryPathEntity.getPath(), relativePath);
+            final Path finalPath = resolveAndValidateFinalPath(Path.of(libraryPathEntity.getPath()), relativePath);
 
-            validateFinalPath(finalPath);
             moveFileToFinalLocation(tempPath, finalPath);
 
             log.info("File uploaded to final location: {}", finalPath);
@@ -142,7 +141,8 @@ public class FileUploadService {
                 finalPath = buildAdditionalFilePath(book, sanitizedFileName);
                 effectiveBookType = bookType;
             }
-            validateFinalPath(finalPath);
+            // Ensure uploads cannot escape the configured library root via path traversal
+            validateFinalPathUnderBase(Path.of(book.getLibraryPath().getPath()), finalPath);
 
             if (libraryId != null) {
                 log.debug("Unregistering library {} for monitoring", libraryId);
@@ -224,7 +224,7 @@ public class FileUploadService {
             file.transferTo(tempPath);
 
             final Path finalPath = dropFolder.resolve(sanitizedFilename);
-            validateFinalPath(finalPath);
+            validateFinalPathUnderBase(dropFolder, finalPath);
             Files.move(tempPath, finalPath);
 
             log.info("File moved to book-drop folder: {}", finalPath);
@@ -275,8 +275,22 @@ public class FileUploadService {
         return Files.createTempFile(prefix, suffix);
     }
 
-    private void validateFinalPath(Path finalPath) {
-        if (Files.exists(finalPath)) {
+    private Path resolveAndValidateFinalPath(Path baseDir, String relativePath) {
+        Path base = baseDir.toAbsolutePath().normalize();
+        Path target = base.resolve(relativePath).normalize();
+        validateFinalPathUnderBase(base, target);
+        return target;
+    }
+
+    private void validateFinalPathUnderBase(Path baseDir, Path targetPath) {
+        Path base = baseDir.toAbsolutePath().normalize();
+        Path target = targetPath.toAbsolutePath().normalize();
+
+        if (!target.startsWith(base)) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("Invalid upload path");
+        }
+
+        if (Files.exists(target)) {
             throw ApiError.FILE_ALREADY_EXISTS.createException();
         }
     }
