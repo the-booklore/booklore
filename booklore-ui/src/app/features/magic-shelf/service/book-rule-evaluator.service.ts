@@ -2,21 +2,25 @@ import {Injectable} from '@angular/core';
 import {Book} from '../../book/model/book.model';
 import {GroupRule, Rule, RuleField} from '../component/magic-shelf-component';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class BookRuleEvaluatorService {
 
-  evaluateGroup(book: Book, group: GroupRule): boolean {
+  evaluateGroup(book: Book, group: GroupRule, allBooks: Book[] = []): boolean {
     const results = group.rules.map(rule => {
       if ('type' in rule && rule.type === 'group') {
-        return this.evaluateGroup(book, rule as GroupRule);
+        return this.evaluateGroup(book, rule as GroupRule, allBooks);
       } else {
-        return this.evaluateRule(book, rule as Rule);
+        return this.evaluateRule(book, rule as Rule, allBooks);
       }
     });
     return group.join === 'and' ? results.every(Boolean) : results.some(Boolean);
   }
 
-  private evaluateRule(book: Book, rule: Rule): boolean {
+  private evaluateRule(book: Book, rule: Rule, allBooks: Book[]): boolean {
+    if (rule.field === 'seriesStatus' || rule.field === 'seriesGaps' || rule.field === 'seriesPosition') {
+      return this.evaluateCompositeField(book, rule, allBooks);
+    }
+
     const rawValue = this.extractBookValue(book, rule.field);
 
     const normalize = (val: unknown): unknown => {
@@ -81,6 +85,12 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
         case 'isbn10':
           return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
+        case 'narrator':
+          return [String(book.metadata?.narrator ?? '').toLowerCase()];
+        case 'description':
+          return [String(book.metadata?.description ?? '').toLowerCase()];
+        case 'contentRating':
+          return [String(book.metadata?.contentRating ?? '').toLowerCase()];
         default:
           return [];
       }
@@ -91,17 +101,17 @@ export class BookRuleEvaluatorService {
 
     const ruleList = Array.isArray(rule.value)
       ? rule.value.map(v => {
-          if (isNumericIdField) return String(v);
-          const lowerValue = String(v).toLowerCase();
-          return isFileTypeField ? mapFileTypeValue(lowerValue) : lowerValue;
-        })
+        if (isNumericIdField) return String(v);
+        const lowerValue = String(v).toLowerCase();
+        return isFileTypeField ? mapFileTypeValue(lowerValue) : lowerValue;
+      })
       : (rule.value ? [
-          isNumericIdField
-            ? String(rule.value)
-            : isFileTypeField
-              ? mapFileTypeValue(String(rule.value).toLowerCase())
-              : String(rule.value).toLowerCase()
-        ] : []);
+        isNumericIdField
+          ? String(rule.value)
+          : isFileTypeField
+            ? mapFileTypeValue(String(rule.value).toLowerCase())
+            : String(rule.value).toLowerCase()
+      ] : []);
 
     switch (rule.operator) {
       case 'equals':
@@ -224,6 +234,24 @@ export class BookRuleEvaluatorService {
         return ruleList.some(v => bookList.includes(v));
       }
 
+      case 'within_last': {
+        if (!(value instanceof Date)) return false;
+        const threshold = this.computeDateThreshold(Number(rule.value), String(rule.valueEnd ?? 'days'));
+        return value >= threshold;
+      }
+
+      case 'older_than': {
+        if (!(value instanceof Date)) return false;
+        const threshold = this.computeDateThreshold(Number(rule.value), String(rule.valueEnd ?? 'days'));
+        return value < threshold;
+      }
+
+      case 'this_period': {
+        if (!(value instanceof Date)) return false;
+        const start = this.getStartOfPeriod(String(rule.value ?? 'year'));
+        return value >= start;
+      }
+
       default:
         return false;
     }
@@ -293,8 +321,183 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverReviewCount;
       case 'ranobedbRating':
         return book.metadata?.ranobedbRating;
+      case 'addedOn':
+        return book.addedOn ? new Date(book.addedOn) : null;
+      case 'description':
+        return book.metadata?.description?.toLowerCase() ?? null;
+      case 'narrator':
+        return book.metadata?.narrator?.toLowerCase() ?? null;
+      case 'ageRating':
+        return book.metadata?.ageRating;
+      case 'contentRating':
+        return book.metadata?.contentRating?.toLowerCase() ?? null;
+      case 'audibleRating':
+        return book.metadata?.audibleRating;
+      case 'audibleReviewCount':
+        return book.metadata?.audibleReviewCount;
+      case 'abridged':
+        return book.metadata?.abridged;
+      case 'audiobookDuration':
+        return book.metadata?.audiobookMetadata?.durationSeconds ?? null;
+      case 'isPhysical':
+        return book.isPhysical;
+      case 'lubimyczytacRating':
+        return book.metadata?.lubimyczytacRating;
+      case 'readingProgress': {
+        const prg = [
+          book.koreaderProgress?.percentage ?? 0,
+          book.koboProgress?.percentage ?? 0,
+          book.pdfProgress?.percentage ?? 0,
+          book.epubProgress?.percentage ?? 0,
+          book.cbxProgress?.percentage ?? 0,
+          book.audiobookProgress?.percentage ?? 0,
+        ];
+        return Math.max(...prg);
+      }
       default:
         return (book as Record<string, unknown>)[field];
+    }
+  }
+
+  private evaluateCompositeField(book: Book, rule: Rule, allBooks: Book[]): boolean {
+    const seriesName = book.metadata?.seriesName;
+    if (!seriesName) return false;
+
+    const seriesBooks = allBooks.filter(b => b.metadata?.seriesName === seriesName);
+    const value = typeof rule.value === 'string' ? rule.value.toLowerCase() : '';
+    const negate = rule.operator === 'not_equals';
+
+    let result: boolean;
+    switch (rule.field) {
+      case 'seriesStatus':
+        result = this.evaluateSeriesStatus(seriesBooks, value);
+        break;
+      case 'seriesGaps':
+        result = this.evaluateSeriesGaps(seriesBooks, value);
+        break;
+      case 'seriesPosition':
+        result = this.evaluateSeriesPosition(book, seriesBooks, value);
+        break;
+      default:
+        result = false;
+    }
+
+    return negate ? !result : result;
+  }
+
+  private evaluateSeriesStatus(seriesBooks: Book[], value: string): boolean {
+    switch (value) {
+      case 'reading':
+        return seriesBooks.some(b => b.readStatus === 'READING' || b.readStatus === 'RE_READING');
+      case 'not_started':
+        return !seriesBooks.some(b =>
+          b.readStatus === 'READ' || b.readStatus === 'READING' ||
+          b.readStatus === 'RE_READING' || b.readStatus === 'PARTIALLY_READ'
+        );
+      case 'fully_read':
+        return seriesBooks.length > 0 && seriesBooks.every(b => b.readStatus === 'READ');
+      case 'completed': {
+        const totals = seriesBooks.map(b => b.metadata?.seriesTotal).filter((t): t is number => t != null);
+        if (totals.length === 0) return false;
+        const maxTotal = Math.max(...totals);
+        return seriesBooks.some(b => b.metadata?.seriesNumber != null && Math.floor(b.metadata.seriesNumber) === maxTotal);
+      }
+      case 'ongoing': {
+        const totals = seriesBooks.map(b => b.metadata?.seriesTotal).filter((t): t is number => t != null);
+        if (totals.length === 0) return false;
+        const maxTotal = Math.max(...totals);
+        return !seriesBooks.some(b => b.metadata?.seriesNumber != null && Math.floor(b.metadata.seriesNumber) === maxTotal);
+      }
+      default:
+        return false;
+    }
+  }
+
+  private evaluateSeriesGaps(seriesBooks: Book[], value: string): boolean {
+    const numberedBooks = seriesBooks
+      .filter(b => b.metadata?.seriesNumber != null)
+      .map(b => b.metadata!.seriesNumber!);
+
+    if (numberedBooks.length === 0) return false;
+
+    switch (value) {
+      case 'any_gap': {
+        const uniqueFloors = new Set(numberedBooks.map(n => Math.floor(n)));
+        const maxFloor = Math.max(...numberedBooks.map(n => Math.floor(n)));
+        return uniqueFloors.size < maxFloor;
+      }
+      case 'missing_first':
+        return !numberedBooks.some(n => Math.floor(n) === 1);
+      case 'missing_latest': {
+        const totals = seriesBooks.map(b => b.metadata?.seriesTotal).filter((t): t is number => t != null);
+        if (totals.length === 0) return false;
+        const maxTotal = Math.max(...totals);
+        return !numberedBooks.some(n => Math.floor(n) === maxTotal);
+      }
+      case 'duplicate_number':
+        return numberedBooks.length > new Set(numberedBooks).size;
+      default:
+        return false;
+    }
+  }
+
+  private evaluateSeriesPosition(book: Book, seriesBooks: Book[], value: string): boolean {
+    if (book.metadata?.seriesNumber == null) return false;
+
+    const numberedBooks = seriesBooks.filter(b => b.metadata?.seriesNumber != null);
+
+    switch (value) {
+      case 'first_in_series': {
+        const minNumber = Math.min(...numberedBooks.map(b => b.metadata!.seriesNumber!));
+        return book.metadata.seriesNumber === minNumber;
+      }
+      case 'last_in_series': {
+        const maxNumber = Math.max(...numberedBooks.map(b => b.metadata!.seriesNumber!));
+        return book.metadata.seriesNumber === maxNumber;
+      }
+      case 'next_unread': {
+        if (book.readStatus === 'READ') return false;
+        const hasLowerUnread = numberedBooks.some(b =>
+          b.metadata!.seriesNumber! < book.metadata!.seriesNumber! &&
+          b.readStatus !== 'READ'
+        );
+        if (hasLowerUnread) return false;
+        return numberedBooks.some(b =>
+          b.metadata!.seriesNumber! < book.metadata!.seriesNumber! &&
+          b.readStatus === 'READ'
+        );
+      }
+      default:
+        return false;
+    }
+  }
+
+  private computeDateThreshold(amount: number, unit: string): Date {
+    const now = new Date();
+    switch (unit.toLowerCase()) {
+      case 'weeks':
+        return new Date(now.getTime() - amount * 7 * 24 * 60 * 60 * 1000);
+      case 'months':
+        return new Date(now.getFullYear(), now.getMonth() - amount, now.getDate());
+      case 'years':
+        return new Date(now.getFullYear() - amount, now.getMonth(), now.getDate());
+      default:
+        return new Date(now.getTime() - amount * 24 * 60 * 60 * 1000);
+    }
+  }
+
+  private getStartOfPeriod(period: string): Date {
+    const now = new Date();
+    switch (period.toLowerCase()) {
+      case 'week': {
+        const day = now.getDay();
+        const diff = day === 0 ? 6 : day - 1;
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+      }
+      case 'month':
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+      default:
+        return new Date(now.getFullYear(), 0, 1);
     }
   }
 }

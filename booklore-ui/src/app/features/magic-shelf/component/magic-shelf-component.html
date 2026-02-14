@@ -116,15 +116,20 @@
                 <ng-container *ngTemplateOutlet="groupTemplate; context: { group: ruleCtrl }"></ng-container>
               </ng-container>
             } @else {
-              <p-select [options]="fieldOptions" formControlName="field" (onChange)="onFieldChange(ruleCtrl)" [placeholder]="t('placeholders.field')" appendTo="body" class="field-select"/>
+              <p-select [options]="fieldOptions" [group]="true" optionGroupLabel="label" optionGroupChildren="items" [filter]="true" filterBy="label" formControlName="field" (onChange)="onFieldChange(ruleCtrl)" [placeholder]="t('placeholders.field')" appendTo="body" class="field-select"/>
               <p-select [options]="getOperatorOptionsForField(ruleCtrl.get('field')?.value)" appendTo="body" formControlName="operator" [placeholder]="t('placeholders.operator')" class="operator-select" (onChange)="onOperatorChange(ruleCtrl)"/>
 
               @if (!['is_empty', 'is_not_empty'].includes(ruleCtrl.get('operator')?.value)) {
-                @if (ruleCtrl.get('operator')?.value === 'in_between') {
+                @if (['within_last', 'older_than'].includes(ruleCtrl.get('operator')?.value)) {
+                  <p-inputNumber formControlName="value" class="value-input" [min]="1" [placeholder]="t('placeholders.amount')" [showButtons]="true"></p-inputNumber>
+                  <p-select [options]="dateUnitOptions" formControlName="valueEnd" [placeholder]="t('placeholders.selectUnit')" appendTo="body" class="value-input"></p-select>
+                } @else if (ruleCtrl.get('operator')?.value === 'this_period') {
+                  <p-select [options]="datePeriodOptions" formControlName="value" [placeholder]="t('placeholders.selectPeriod')" appendTo="body" class="value-input"></p-select>
+                } @else if (ruleCtrl.get('operator')?.value === 'in_between') {
                   @if (ruleCtrl.get('field')?.value === 'publishedDate') {
                     <p-datepicker [formControl]="ruleCtrl.get('valueStart')" dateFormat="dd-M-yy" [placeholder]="t('placeholders.startYear')" appendTo="body" fluid class="value-input"></p-datepicker>
                     <p-datepicker [formControl]="ruleCtrl.get('valueEnd')" dateFormat="dd-M-yy" [placeholder]="t('placeholders.endYear')" appendTo="body" fluid class="value-input"></p-datepicker>
-                  } @else if (ruleCtrl.get('field')?.value === 'dateFinished') {
+                  } @else if (['dateFinished', 'addedOn', 'lastReadTime'].includes(ruleCtrl.get('field')?.value)) {
                     <p-datepicker [formControl]="ruleCtrl.get('valueStart')" dateFormat="dd-M-yy" [placeholder]="t('placeholders.startDate')" appendTo="body" fluid class="value-input"></p-datepicker>
                     <p-datepicker [formControl]="ruleCtrl.get('valueEnd')" dateFormat="dd-M-yy" [placeholder]="t('placeholders.endDate')" appendTo="body" fluid class="value-input"></p-datepicker>
                   } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'number') {
@@ -140,12 +145,20 @@
                 } @else {
                   @if (ruleCtrl.get('field')?.value === 'publishedDate') {
                     <p-datepicker formControlName="value" dateFormat="dd-M-yy" appendTo="body" fluid class="value-input"></p-datepicker>
-                  } @else if (ruleCtrl.get('field')?.value === 'dateFinished') {
+                  } @else if (['dateFinished', 'addedOn', 'lastReadTime'].includes(ruleCtrl.get('field')?.value)) {
                     <p-datepicker formControlName="value" dateFormat="dd-M-yy" appendTo="body" fluid class="value-input"></p-datepicker>
+                  } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'boolean') {
+                    <p-select [options]="booleanOptions" formControlName="value" [placeholder]="t('placeholders.selectValue')" appendTo="body" class="value-input"></p-select>
                   } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'number') {
                     <p-inputNumber formControlName="value" class="value-input" mode="decimal" [placeholder]="t('placeholders.value')" [showButtons]="true"></p-inputNumber>
                   } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'decimal') {
                     <p-inputNumber formControlName="value" mode="decimal" [minFractionDigits]="1" [maxFractionDigits]="1" [min]="0" [max]="numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.max || 10" class="value-input" [placeholder]="t('placeholders.value')"></p-inputNumber>
+                  } @else if (ruleCtrl.get('field')?.value === 'seriesStatus') {
+                    <p-select [options]="seriesStatusOptions" formControlName="value" [placeholder]="t('placeholders.selectSeriesStatus')" appendTo="body" class="value-input"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'seriesGaps') {
+                    <p-select [options]="seriesGapsOptions" formControlName="value" [placeholder]="t('placeholders.selectSeriesGap')" appendTo="body" class="value-input"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'seriesPosition') {
+                    <p-select [options]="seriesPositionOptions" formControlName="value" [placeholder]="t('placeholders.selectSeriesPosition')" appendTo="body" class="value-input"></p-select>
                   } @else if (['includes_any', 'includes_all', 'excludes_all'].includes(ruleCtrl.get('operator')?.value)) {
                     @if (ruleCtrl.get('field')?.value === 'readStatus') {
                       <p-multiSelect [options]="readStatusOptions" formControlName="value" display="chip" class="value-input" appendTo="body" [placeholder]="t('placeholders.selectStatuses')"></p-multiSelect>
@@ -157,6 +170,8 @@
                       <p-multiSelect [options]="shelfOptions" formControlName="value" display="chip" class="value-input" appendTo="body" [placeholder]="t('placeholders.selectShelves')"></p-multiSelect>
                     } @else if (ruleCtrl.get('field')?.value === 'categories') {
                       <p-multiSelect [options]="categoryOptions" formControlName="value" display="chip" class="value-input" appendTo="body" [placeholder]="t('placeholders.selectGenres')"></p-multiSelect>
+                    } @else if (ruleCtrl.get('field')?.value === 'contentRating') {
+                      <p-multiSelect [options]="contentRatingOptions" formControlName="value" display="chip" class="value-input" appendTo="body" [placeholder]="t('placeholders.selectContentRatings')"></p-multiSelect>
                     } @else {
                       <div class="autocomplete-wrapper">
                         <p-autoComplete [formControl]="ruleCtrl.get('value')" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" [placeholder]="t('placeholders.enterValues')" (onBlur)="onAutoCompleteBlur(ruleCtrl.get('value'), $event)"></p-autoComplete>
@@ -172,6 +187,8 @@
                     <p-select [options]="shelfOptions" formControlName="value" [placeholder]="t('placeholders.selectShelf')" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'categories') {
                     <p-select [options]="categoryOptions" formControlName="value" [placeholder]="t('placeholders.selectGenre')" appendTo="body" class="value-input"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'contentRating') {
+                    <p-select [options]="contentRatingOptions" formControlName="value" [placeholder]="t('placeholders.selectContentRating')" appendTo="body" class="value-input"></p-select>
                   } @else {
                     <input pInputText formControlName="value" class="value-input" [placeholder]="t('placeholders.value')"/>
                   }

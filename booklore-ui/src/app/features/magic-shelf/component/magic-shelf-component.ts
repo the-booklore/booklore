@@ -14,7 +14,7 @@ import {MessageService} from 'primeng/api';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
-import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
+import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, RELATIVE_DATE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
 import {IconPickerService, IconSelection} from '../../../shared/service/icon-picker.service';
 import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
@@ -42,6 +42,9 @@ export type RuleOperator =
   | 'includes_any'
   | 'excludes_all'
   | 'includes_all'
+  | 'within_last'
+  | 'older_than'
+  | 'this_period'
 
 export type RuleField =
   | 'library'
@@ -74,7 +77,22 @@ export type RuleField =
   | 'lastReadTime'
   | 'metadataScore'
   | 'moods'
-  | 'tags';
+  | 'tags'
+  | 'addedOn'
+  | 'lubimyczytacRating'
+  | 'description'
+  | 'narrator'
+  | 'ageRating'
+  | 'contentRating'
+  | 'audibleRating'
+  | 'audibleReviewCount'
+  | 'abridged'
+  | 'audiobookDuration'
+  | 'isPhysical'
+  | 'seriesStatus'
+  | 'seriesGaps'
+  | 'seriesPosition'
+  | 'readingProgress';
 
 
 interface FullFieldConfig {
@@ -83,7 +101,7 @@ interface FullFieldConfig {
   max?: number;
 }
 
-type FieldType = 'number' | 'decimal' | 'date' | undefined;
+type FieldType = 'number' | 'decimal' | 'date' | 'boolean' | undefined;
 
 export interface Rule {
   field: RuleField;
@@ -150,8 +168,39 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsReviewCount: {label: 'goodreadsReviewCount', type: 'number'},
   hardcoverRating: {label: 'hardcoverRating', type: 'decimal', max: 5},
   hardcoverReviewCount: {label: 'hardcoverReviewCount', type: 'number'},
-  ranobedbRating: {label: 'ranobedbRating', type: 'decimal', max: 5}
+  ranobedbRating: {label: 'ranobedbRating', type: 'decimal', max: 5},
+  addedOn: {label: 'addedOn', type: 'date'},
+  lubimyczytacRating: {label: 'lubimyczytacRating', type: 'decimal', max: 5},
+  description: {label: 'description'},
+  narrator: {label: 'narrator'},
+  ageRating: {label: 'ageRating', type: 'number'},
+  contentRating: {label: 'contentRating'},
+  audibleRating: {label: 'audibleRating', type: 'decimal', max: 5},
+  audibleReviewCount: {label: 'audibleReviewCount', type: 'number'},
+  abridged: {label: 'abridged', type: 'boolean'},
+  audiobookDuration: {label: 'audiobookDuration', type: 'number'},
+  isPhysical: {label: 'isPhysical', type: 'boolean'},
+  seriesStatus: {label: 'seriesStatus'},
+  seriesGaps: {label: 'seriesGaps'},
+  seriesPosition: {label: 'seriesPosition'},
+  readingProgress: {label: 'readingProgress', type: 'decimal', max: 100}
 };
+
+interface FieldGroup {
+  translationKey: string;
+  fields: RuleField[];
+}
+
+const FIELD_GROUPS: FieldGroup[] = [
+  { translationKey: 'organization', fields: ['library', 'shelf', 'readStatus', 'readingProgress'] },
+  { translationKey: 'bookInfo', fields: ['title', 'subtitle', 'description', 'authors', 'categories', 'publisher', 'language', 'pageCount', 'ageRating', 'contentRating'] },
+  { translationKey: 'series', fields: ['seriesName', 'seriesNumber', 'seriesTotal', 'seriesStatus', 'seriesGaps', 'seriesPosition'] },
+  { translationKey: 'dates', fields: ['publishedDate', 'dateFinished', 'lastReadTime', 'addedOn'] },
+  { translationKey: 'ratingsReviews', fields: ['personalRating', 'metadataScore', 'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount', 'hardcoverRating', 'hardcoverReviewCount', 'ranobedbRating', 'lubimyczytacRating', 'audibleRating', 'audibleReviewCount'] },
+  { translationKey: 'tagsMoods', fields: ['moods', 'tags'] },
+  { translationKey: 'audiobook', fields: ['narrator', 'abridged', 'audiobookDuration'] },
+  { translationKey: 'fileIdentifiers', fields: ['fileType', 'fileSize', 'isbn13', 'isbn10', 'isPhysical'] }
+];
 
 const READ_STATUS_KEYS: Record<string, string> = {
   UNREAD: 'unread',
@@ -204,13 +253,19 @@ export class MagicShelfComponent implements OnInit {
   }
 
   get fieldOptions() {
-    return Object.entries(FIELD_CONFIGS).map(([key, config]) => {
-      const translationKey = key === 'categories' ? 'genre' : config.label;
-      return {
-        label: this.t.translate(`magicShelf.fields.${translationKey}`),
-        value: key as RuleField
-      };
-    });
+    return FIELD_GROUPS
+      .map(group => ({
+        label: this.t.translate(`magicShelf.fieldGroups.${group.translationKey}`),
+        items: group.fields.map(field => {
+          const config = FIELD_CONFIGS[field];
+          const translationKey = field === 'categories' ? 'genre' : config.label;
+          return {
+            label: this.t.translate(`magicShelf.fields.${translationKey}`),
+            value: field
+          };
+        })
+      }))
+      .filter(group => group.items.length > 0);
   }
 
   fileType: { label: string; value: string }[] = [
@@ -229,6 +284,67 @@ export class MagicShelfComponent implements OnInit {
       label: this.t.translate(`magicShelf.readStatuses.${READ_STATUS_KEYS[key]}`),
       value
     }));
+  }
+
+  get booleanOptions() {
+    return [
+      {label: this.t.translate('magicShelf.booleanValues.yes'), value: 'true'},
+      {label: this.t.translate('magicShelf.booleanValues.no'), value: 'false'},
+    ];
+  }
+
+  get contentRatingOptions() {
+    return [
+      {label: this.t.translate('magicShelf.contentRatings.everyone'), value: 'EVERYONE'},
+      {label: this.t.translate('magicShelf.contentRatings.teen'), value: 'TEEN'},
+      {label: this.t.translate('magicShelf.contentRatings.mature'), value: 'MATURE'},
+      {label: this.t.translate('magicShelf.contentRatings.adult'), value: 'ADULT'},
+      {label: this.t.translate('magicShelf.contentRatings.explicit'), value: 'EXPLICIT'},
+    ];
+  }
+
+  get seriesStatusOptions() {
+    return [
+      {label: this.t.translate('magicShelf.seriesStatuses.reading'), value: 'reading'},
+      {label: this.t.translate('magicShelf.seriesStatuses.completed'), value: 'completed'},
+      {label: this.t.translate('magicShelf.seriesStatuses.ongoing'), value: 'ongoing'},
+      {label: this.t.translate('magicShelf.seriesStatuses.notStarted'), value: 'not_started'},
+      {label: this.t.translate('magicShelf.seriesStatuses.fullyRead'), value: 'fully_read'},
+    ];
+  }
+
+  get seriesGapsOptions() {
+    return [
+      {label: this.t.translate('magicShelf.seriesGaps.anyGap'), value: 'any_gap'},
+      {label: this.t.translate('magicShelf.seriesGaps.missingFirst'), value: 'missing_first'},
+      {label: this.t.translate('magicShelf.seriesGaps.missingLatest'), value: 'missing_latest'},
+      {label: this.t.translate('magicShelf.seriesGaps.duplicateNumber'), value: 'duplicate_number'},
+    ];
+  }
+
+  get seriesPositionOptions() {
+    return [
+      {label: this.t.translate('magicShelf.seriesPositions.nextUnread'), value: 'next_unread'},
+      {label: this.t.translate('magicShelf.seriesPositions.firstInSeries'), value: 'first_in_series'},
+      {label: this.t.translate('magicShelf.seriesPositions.lastInSeries'), value: 'last_in_series'},
+    ];
+  }
+
+  get dateUnitOptions() {
+    return [
+      {label: this.t.translate('magicShelf.dateUnits.days'), value: 'days'},
+      {label: this.t.translate('magicShelf.dateUnits.weeks'), value: 'weeks'},
+      {label: this.t.translate('magicShelf.dateUnits.months'), value: 'months'},
+      {label: this.t.translate('magicShelf.dateUnits.years'), value: 'years'},
+    ];
+  }
+
+  get datePeriodOptions() {
+    return [
+      {label: this.t.translate('magicShelf.datePeriods.week'), value: 'week'},
+      {label: this.t.translate('magicShelf.datePeriods.month'), value: 'month'},
+      {label: this.t.translate('magicShelf.datePeriods.year'), value: 'year'},
+    ];
   }
 
   libraries: Library[] = [];
@@ -348,13 +464,25 @@ export class MagicShelfComponent implements OnInit {
   buildRuleFromData(data: Rule): RuleFormGroup {
     const config = FIELD_CONFIGS[data.field];
     const type = config?.type;
+    const isRelativeDate = RELATIVE_DATE_OPERATORS.includes(data.operator);
+
+    let value, valueStart, valueEnd;
+    if (isRelativeDate) {
+      value = data.operator === 'this_period' ? data.value : parseValue(data.value, 'number');
+      valueStart = null;
+      valueEnd = data.operator !== 'this_period' ? data.valueEnd : null;
+    } else {
+      value = parseValue(data.value, type);
+      valueStart = parseValue(data.valueStart, type);
+      valueEnd = parseValue(data.valueEnd, type);
+    }
 
     return new FormGroup({
       field: new FormControl<RuleField>(data.field),
       operator: new FormControl<RuleOperator>(data.operator),
-      value: new FormControl(parseValue(data.value, type)),
-      valueStart: new FormControl(parseValue(data.valueStart, type)),
-      valueEnd: new FormControl(parseValue(data.valueEnd, type)),
+      value: new FormControl(value),
+      valueStart: new FormControl(valueStart),
+      valueEnd: new FormControl(valueEnd),
     }) as RuleFormGroup;
   }
 
@@ -391,19 +519,46 @@ export class MagicShelfComponent implements OnInit {
       {label: this.t.translate('magicShelf.operators.between'), value: 'in_between'},
     ];
 
+    const relativeDateOperators = [
+      {label: this.t.translate('magicShelf.operators.withinLast'), value: 'within_last'},
+      {label: this.t.translate('magicShelf.operators.olderThan'), value: 'older_than'},
+      {label: this.t.translate('magicShelf.operators.thisPeriod'), value: 'this_period'},
+    ];
+
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
+
+    if (config.type === 'boolean') {
+      return baseOperators;
+    }
+
+    // Composite fields: only is/isNot or has/hasNot
+    if (field === 'seriesStatus' || field === 'seriesPosition') {
+      return [
+        {label: this.t.translate('magicShelf.operators.is'), value: 'equals'},
+        {label: this.t.translate('magicShelf.operators.isNot'), value: 'not_equals'},
+      ];
+    }
+    if (field === 'seriesGaps') {
+      return [
+        {label: this.t.translate('magicShelf.operators.has'), value: 'equals'},
+        {label: this.t.translate('magicShelf.operators.hasNot'), value: 'not_equals'},
+      ];
+    }
+
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'contentRating', 'narrator', 'description'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'contentRating'].includes(field);
 
-    if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
+    if (config.type === 'date') {
+      operators.push(...comparisonOperators, ...relativeDateOperators);
+    } else if (config.type === 'number' || config.type === 'decimal') {
       operators.push(...comparisonOperators);
     } else if (isTextEligible) {
       operators.push(...textOperators);
@@ -466,7 +621,15 @@ export class MagicShelfComponent implements OnInit {
     const valueStartCtrl = ruleCtrl.get('valueStart');
     const valueEndCtrl = ruleCtrl.get('valueEnd');
 
-    if (MULTI_VALUE_OPERATORS.includes(operator)) {
+    if (operator === 'within_last' || operator === 'older_than') {
+      valueCtrl?.setValue(null);
+      valueStartCtrl?.setValue(null);
+      valueEndCtrl?.setValue('days');
+    } else if (operator === 'this_period') {
+      valueCtrl?.setValue(null);
+      valueStartCtrl?.setValue(null);
+      valueEndCtrl?.setValue(null);
+    } else if (MULTI_VALUE_OPERATORS.includes(operator)) {
       valueCtrl?.setValue([]);
       valueStartCtrl?.setValue(null);
       valueEndCtrl?.setValue(null);

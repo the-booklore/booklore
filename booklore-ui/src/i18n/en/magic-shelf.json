@@ -42,7 +42,16 @@
     "selectFileType": "Select File Type",
     "selectLibrary": "Select Library",
     "selectShelf": "Select Shelf",
-    "selectGenre": "Select Genre"
+    "selectGenre": "Select Genre",
+    "selectValue": "Select Value",
+    "selectContentRating": "Select Content Rating",
+    "selectContentRatings": "Select Content Ratings",
+    "amount": "Amount",
+    "selectUnit": "Select Unit",
+    "selectPeriod": "Select Period",
+    "selectSeriesStatus": "Select Status",
+    "selectSeriesGap": "Select Gap Type",
+    "selectSeriesPosition": "Select Position"
   },
   "conditions": {
     "and": "AND",
@@ -80,7 +89,32 @@
     "hardcoverRating": "Hardcover Rating",
     "hardcoverReviewCount": "Hardcover Review Count",
     "ranobedbRating": "Ranobedb Rating",
-    "genre": "Genre"
+    "genre": "Genre",
+    "addedOn": "Date Added",
+    "lubimyczytacRating": "Lubimyczytac Rating",
+    "description": "Description",
+    "narrator": "Narrator",
+    "ageRating": "Age Rating",
+    "contentRating": "Content Rating",
+    "audibleRating": "Audible Rating",
+    "audibleReviewCount": "Audible Review Count",
+    "abridged": "Abridged",
+    "audiobookDuration": "Audiobook Duration (s)",
+    "isPhysical": "Physical Book",
+    "seriesStatus": "Series Status",
+    "seriesGaps": "Series Gaps",
+    "seriesPosition": "Series Position",
+    "readingProgress": "Reading Progress (%)"
+  },
+  "fieldGroups": {
+    "organization": "Organization",
+    "bookInfo": "Book Info",
+    "series": "Series",
+    "dates": "Dates",
+    "ratingsReviews": "Ratings & Reviews",
+    "tagsMoods": "Tags & Moods",
+    "audiobook": "Audiobook",
+    "fileIdentifiers": "File & Identifiers"
   },
   "operators": {
     "equals": "Equals",
@@ -98,7 +132,25 @@
     "greaterOrEqual": "\u2265 Greater or Equal",
     "lessThan": "< Less Than",
     "lessOrEqual": "\u2264 Less or Equal",
-    "between": "Between"
+    "between": "Between",
+    "withinLast": "Within Last",
+    "olderThan": "Older Than",
+    "thisPeriod": "This Period",
+    "is": "Is",
+    "isNot": "Is Not",
+    "has": "Has",
+    "hasNot": "Has Not"
+  },
+  "booleanValues": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "contentRatings": {
+    "everyone": "Everyone",
+    "teen": "Teen",
+    "mature": "Mature",
+    "adult": "Adult",
+    "explicit": "Explicit"
   },
   "readStatuses": {
     "unread": "Unread",
@@ -110,6 +162,35 @@
     "wontRead": "Wont Read",
     "abandoned": "Abandoned",
     "unset": "Unset"
+  },
+  "seriesStatuses": {
+    "reading": "Currently Reading",
+    "completed": "Completed",
+    "ongoing": "Ongoing",
+    "notStarted": "Not Started",
+    "fullyRead": "Fully Read"
+  },
+  "seriesGaps": {
+    "anyGap": "Any Gap",
+    "missingFirst": "Missing First",
+    "missingLatest": "Missing Latest",
+    "duplicateNumber": "Duplicate Number"
+  },
+  "seriesPositions": {
+    "nextUnread": "Next Unread",
+    "firstInSeries": "First in Series",
+    "lastInSeries": "Last in Series"
+  },
+  "dateUnits": {
+    "days": "Days",
+    "weeks": "Weeks",
+    "months": "Months",
+    "years": "Years"
+  },
+  "datePeriods": {
+    "week": "This Week",
+    "month": "This Month",
+    "year": "This Year"
   },
   "toast": {
     "validationErrorSummary": "Validation Error",
