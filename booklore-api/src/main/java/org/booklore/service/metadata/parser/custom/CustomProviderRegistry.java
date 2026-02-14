@@ -104,7 +104,7 @@ public class CustomProviderRegistry {
      */
     public boolean isProviderEnabled(String providerId) {
         return getCustomProviderConfigs().stream()
-                .anyMatch(c -> c.getId().equals(providerId) && c.isEnabled());
+                .anyMatch(c -> providerId != null && providerId.equals(c.getId()) && c.isEnabled());
     }
 
     /**
