@@ -93,11 +93,17 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
           // Custom providers
           this.customProviderIdMap.clear();
           const customProviderNames: string[] = [];
+          const usedNames = new Set<string>();
           const customProviders: CustomMetadataProviderConfig[] = providerSettings.customProviders ?? [];
           for (const cp of customProviders) {
             if (cp.enabled && cp.id && cp.name) {
-              customProviderNames.push(cp.name);
-              this.customProviderIdMap.set(cp.name, cp.id);
+              let displayName = cp.name;
+              if (usedNames.has(displayName)) {
+                displayName = `${cp.name} (${cp.id.slice(0, 8)})`;
+              }
+              usedNames.add(displayName);
+              customProviderNames.push(displayName);
+              this.customProviderIdMap.set(displayName, cp.id);
             }
           }
 
