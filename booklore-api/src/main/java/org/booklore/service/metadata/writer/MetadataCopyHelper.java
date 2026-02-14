@@ -4,6 +4,7 @@ import org.booklore.model.entity.AuthorEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.entity.CategoryEntity;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -159,6 +160,12 @@ public class MetadataCopyHelper {
             if (clear) consumer.accept(null);
             else if (metadata.getRanobedbId() != null) consumer.accept(metadata.getRanobedbId());
         }
+    }
+
+    public void copyPurchaseDate(boolean clear, Consumer<Instant> consumer) {
+        if (clear) consumer.accept(null);
+        else if (metadata.getBook() != null && metadata.getBook().getPurchaseDate() != null)
+            consumer.accept(metadata.getBook().getPurchaseDate());
     }
 
     public void copyAuthors(boolean clear, Consumer<Set<String>> consumer) {

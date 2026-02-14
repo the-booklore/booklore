@@ -44,4 +44,5 @@ public class MetadataClearFlags {
     private boolean abridged;
     private boolean ageRating;
     private boolean contentRating;
+    private boolean purchaseDate;
 }

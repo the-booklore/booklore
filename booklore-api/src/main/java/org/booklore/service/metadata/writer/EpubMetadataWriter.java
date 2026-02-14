@@ -203,6 +203,10 @@ public class EpubMetadataWriter implements MetadataWriter {
                 }
                 hasChanges[0] = true;
             });
+            helper.copyPurchaseDate(clear != null && clear.isPurchaseDate(), val -> {
+                replaceBookloreMetaElement(metadataElement, opfDoc, "purchase_date", val != null ? val.toString() : null);
+                hasChanges[0] = true;
+            });
 
             if (StringUtils.isNotBlank(thumbnailUrl)) {
                 byte[] coverData = loadImage(thumbnailUrl);
@@ -870,6 +874,10 @@ public class EpubMetadataWriter implements MetadataWriter {
                 .toList()) + "]";
             metadataElement.appendChild(createBookloreMetaElement(doc, "tags", tagsJson));
         }
+
+        if (metadata.getBook() != null && metadata.getBook().getPurchaseDate() != null) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "purchase_date", metadata.getBook().getPurchaseDate().toString()));
+        }
     }
 
     private Element createBookloreMetaElement(Document doc, String property, String value) {
@@ -878,6 +886,19 @@ public class EpubMetadataWriter implements MetadataWriter {
         meta.setAttribute("property", "booklore:" + property);
         meta.setTextContent(value);
         return meta;
+    }
+
+    private void replaceBookloreMetaElement(Element metadataElement, Document doc, String property, String value) {
+        NodeList metas = metadataElement.getElementsByTagNameNS(OPF_NS, "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            if (("booklore:" + property).equals(meta.getAttribute("property"))) {
+                metadataElement.removeChild(meta);
+            }
+        }
+        if (value != null) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, property, value));
+        }
     }
 
     private void cleanupCalibreArtifacts(Element metadataElement, Document doc) {

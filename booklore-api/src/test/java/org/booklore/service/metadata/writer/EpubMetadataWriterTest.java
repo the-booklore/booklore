@@ -21,6 +21,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -107,6 +108,29 @@ class EpubMetadataWriterTest {
                     assertTrue(fileString.contains("id=\"creator02\""));
                 }
             }
+        }
+
+        @Test
+        @DisplayName("Should write purchaseDate to EPUB metadata")
+        void writeMetadata_shouldWritePurchaseDate() throws IOException {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Original Title</dc:title>
+                        </metadata>
+                    </package>""";
+            File epubFile = createEpubWithOpf(opfContent, "test-purchasedate-" + System.nanoTime() + ".epub");
+            
+            Instant purchaseDate = Instant.parse("2023-11-01T10:00:00Z");
+            bookEntity.setPurchaseDate(purchaseDate);
+            metadata.setBook(bookEntity);
+
+            assertDoesNotThrow(() -> writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags()));
+
+            String newContent = readOpfContent(epubFile);
+            assertTrue(newContent.contains("property=\"booklore:purchase_date\""), "Should contain booklore:purchase_date property. Content: " + newContent);
+            assertTrue(newContent.contains("2023-11-01T10:00:00Z"), "Should contain purchase date value");
         }
     }
 

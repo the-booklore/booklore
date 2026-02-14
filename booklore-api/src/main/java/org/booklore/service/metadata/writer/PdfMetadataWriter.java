@@ -218,6 +218,13 @@ public class PdfMetadataWriter implements MetadataWriter {
             rdfDescription.appendChild(xmpIdentifier);
         }
 
+        helper.copyPurchaseDate(clear != null && clear.isPurchaseDate(), date -> {
+            if (date != null) {
+                rdfDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:booklore", "http://booklore.org/metadata/1.0/");
+                rdfDescription.appendChild(createSimpleElement(doc, "booklore:purchase_date", date.toString()));
+            }
+        });
+
         rdfDescription.appendChild(createSimpleElement(doc, "xmp:MetadataDate", ZonedDateTime.now().toString()));
         rdfDescription.appendChild(createSimpleElement(doc, "xmp:CreateDate", metadata.getPublishedDate() != null
                 ? metadata.getPublishedDate().atStartOfDay(ZoneId.systemDefault()).toString()
