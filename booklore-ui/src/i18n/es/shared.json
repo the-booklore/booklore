@@ -98,7 +98,21 @@
     "cancellationScheduledSummary": "Cancelación programada",
     "cancellationScheduledDetail": "La cancelación de la tarea se ha programado correctamente",
     "cancelFailedSummary": "Error al cancelar",
-    "cancelFailedDetail": "No se pudo cancelar la tarea. Inténtalo de nuevo."
+    "cancelFailedDetail": "No se pudo cancelar la tarea. Inténtalo de nuevo.",
+    "taskTitle": "Tarea de obtención de metadatos",
+    "tagReview": "Revisión",
+    "tagAuto": "Auto",
+    "bookProgress": "Libro <strong>{{ current }}</strong> de {{ total }}",
+    "reviewBtn": "Revisar",
+    "discardBtn": "Descartar",
+    "dismissBtn": "Cerrar",
+    "discardTooltip": "Conservar metadatos actuales, descartar los nuevos metadatos obtenidos",
+    "cancelBtn": "Cancelar",
+    "cancelTooltip": "Cancelar esta tarea",
+    "statusInProgress": "En progreso",
+    "statusCompleted": "Completado",
+    "statusError": "Error",
+    "statusCancelled": "Cancelado"
   },
   "reader": {
     "failedToLoadPages": "Error al cargar las páginas",

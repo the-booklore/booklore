@@ -98,7 +98,21 @@
     "cancellationScheduledSummary": "Cancellation Scheduled",
     "cancellationScheduledDetail": "Task cancellation has been successfully scheduled",
     "cancelFailedSummary": "Cancel Failed",
-    "cancelFailedDetail": "Failed to cancel the task. Please try again."
+    "cancelFailedDetail": "Failed to cancel the task. Please try again.",
+    "taskTitle": "Metadata Fetch Task",
+    "tagReview": "Review",
+    "tagAuto": "Auto",
+    "bookProgress": "Book <strong>{{ current }}</strong> of {{ total }}",
+    "reviewBtn": "Review",
+    "discardBtn": "Discard",
+    "dismissBtn": "Dismiss",
+    "discardTooltip": "Preserve current metadata, discard new fetched metadata",
+    "cancelBtn": "Cancel",
+    "cancelTooltip": "Cancel this task",
+    "statusInProgress": "In Progress",
+    "statusCompleted": "Completed",
+    "statusError": "Error",
+    "statusCancelled": "Cancelled"
   },
   "reader": {
     "failedToLoadPages": "Failed to load pages",

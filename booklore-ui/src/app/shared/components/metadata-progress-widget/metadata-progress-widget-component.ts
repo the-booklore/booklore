@@ -7,9 +7,9 @@ import {ButtonModule} from 'primeng/button';
 import {Divider} from 'primeng/divider';
 import {Tooltip} from 'primeng/tooltip';
 import {MessageService} from 'primeng/api';
-import {TranslocoService} from '@jsverse/transloco';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
-import {MetadataBatchProgressNotification, MetadataBatchStatus, MetadataBatchStatusLabels} from '../../model/metadata-batch-progress.model';
+import {MetadataBatchProgressNotification, MetadataBatchStatus} from '../../model/metadata-batch-progress.model';
 import {MetadataProgressService} from '../../service/metadata-progress.service';
 import {MetadataTaskService} from '../../../features/book/service/metadata-task';
 import {Tag} from 'primeng/tag';
@@ -21,7 +21,7 @@ import {DialogLauncherService} from '../../services/dialog-launcher.service';
   templateUrl: './metadata-progress-widget-component.html',
   styleUrls: ['./metadata-progress-widget-component.scss'],
   standalone: true,
-  imports: [KeyValuePipe, ProgressBarModule, ButtonModule, Divider, Tooltip, Tag]
+  imports: [KeyValuePipe, ProgressBarModule, ButtonModule, Divider, Tooltip, Tag, TranslocoDirective]
 })
 export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
   activeTasks: Record<string, MetadataBatchProgressNotification> = {};
@@ -160,8 +160,16 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
     }
   }
 
+  private readonly statusLabelKeys: Record<MetadataBatchStatus, string> = {
+    [MetadataBatchStatus.IN_PROGRESS]: 'shared.metadataProgress.statusInProgress',
+    [MetadataBatchStatus.COMPLETED]: 'shared.metadataProgress.statusCompleted',
+    [MetadataBatchStatus.ERROR]: 'shared.metadataProgress.statusError',
+    [MetadataBatchStatus.CANCELLED]: 'shared.metadataProgress.statusCancelled',
+  };
+
   getStatusLabel(status: MetadataBatchStatus): string {
-    return MetadataBatchStatusLabels[status] ?? status;
+    const key = this.statusLabelKeys[status];
+    return key ? this.t.translate(key) : status;
   }
 
   protected readonly Object = Object;

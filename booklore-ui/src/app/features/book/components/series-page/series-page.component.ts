@@ -443,8 +443,8 @@ export class SeriesPageComponent implements OnDestroy {
       message: this.t.translate('book.browser.confirm.regenCoverMessage', {count}),
       header: this.t.translate('book.browser.confirm.regenCoverHeader'),
       icon: 'pi pi-image',
-      acceptLabel: 'Yes',
-      rejectLabel: 'No',
+      acceptLabel: this.t.translate('common.yes'),
+      rejectLabel: this.t.translate('common.no'),
       acceptButtonProps: {
         label: this.t.translate('common.yes'),
         severity: 'success'
@@ -483,8 +483,8 @@ export class SeriesPageComponent implements OnDestroy {
       message: this.t.translate('book.browser.confirm.customCoverMessage', {count}),
       header: this.t.translate('book.browser.confirm.customCoverHeader'),
       icon: 'pi pi-palette',
-      acceptLabel: 'Yes',
-      rejectLabel: 'No',
+      acceptLabel: this.t.translate('common.yes'),
+      rejectLabel: this.t.translate('common.no'),
       acceptButtonProps: {
         label: this.t.translate('common.yes'),
         severity: 'success'

@@ -166,7 +166,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private sideBarFilter = new SideBarFilter(this.selectedFilter, this.selectedFilterMode);
   private headerFilter = new HeaderFilter(this.searchTerm$);
   protected bookSorter = new BookSorter(
-    sortCriteria => this.onMultiSortChange(sortCriteria)
+    sortCriteria => this.onMultiSortChange(sortCriteria),
+    this.t
   );
   private sortService = inject(SortService);
 

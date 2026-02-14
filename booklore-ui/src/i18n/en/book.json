@@ -451,7 +451,97 @@
   "filter": {
     "title": "Filters",
     "showingFirst100": "Showing first 100 items",
-    "footerNote": "Note: Top 100 items are displayed per filter category"
+    "footerNote": "Note: Top 100 items are displayed per filter category",
+    "labels": {
+      "author": "Author",
+      "category": "Genre",
+      "series": "Series",
+      "bookType": "Book Type",
+      "readStatus": "Read Status",
+      "personalRating": "Personal Rating",
+      "publisher": "Publisher",
+      "matchScore": "Metadata Match Score",
+      "library": "Library",
+      "shelf": "Shelf",
+      "shelfStatus": "Shelf Status",
+      "tag": "Tag",
+      "publishedDate": "Published Year",
+      "fileSize": "File Size",
+      "amazonRating": "Amazon Rating",
+      "goodreadsRating": "Goodreads Rating",
+      "hardcoverRating": "Hardcover Rating",
+      "language": "Language",
+      "pageCount": "Page Count",
+      "mood": "Mood",
+      "ageRating": "Age Rating",
+      "contentRating": "Content Rating",
+      "narrator": "Narrator",
+      "comicCharacter": "Comic Character",
+      "comicTeam": "Comic Team",
+      "comicLocation": "Comic Location",
+      "comicCreator": "Comic Creator"
+    },
+    "readStatus": {
+      "unread": "Unread",
+      "reading": "Reading",
+      "reReading": "Re-reading",
+      "partiallyRead": "Partially Read",
+      "paused": "Paused",
+      "read": "Read",
+      "wontRead": "Won't Read",
+      "abandoned": "Abandoned",
+      "unset": "Unset"
+    },
+    "matchScore": {
+      "outstanding": "Outstanding (95–100%)",
+      "excellent": "Excellent (90–94%)",
+      "great": "Great (80–89%)",
+      "good": "Good (70–79%)",
+      "fair": "Fair (50–69%)",
+      "weak": "Weak (30–49%)",
+      "poor": "Poor (0–29%)"
+    },
+    "fileSize": {
+      "lt1mb": "< 1 MB",
+      "1to10mb": "1–10 MB",
+      "10to50mb": "10–50 MB",
+      "50to100mb": "50–100 MB",
+      "250to500mb": "250–500 MB",
+      "05to1gb": "0.5–1 GB",
+      "1to2gb": "1–2 GB",
+      "5plusGb": "5+ GB"
+    },
+    "pageCount": {
+      "lt50": "< 50 pages",
+      "50to100": "50–100 pages",
+      "100to200": "100–200 pages",
+      "200to400": "200–400 pages",
+      "400to600": "400–600 pages",
+      "600to1000": "600–1000 pages",
+      "1000plus": "1000+ pages"
+    },
+    "ageRating": {
+      "allAges": "All Ages"
+    },
+    "contentRating": {
+      "everyone": "Everyone",
+      "teen": "Teen",
+      "mature": "Mature",
+      "adult": "Adult",
+      "explicit": "Explicit"
+    },
+    "shelfStatus": {
+      "shelved": "Shelved",
+      "unshelved": "Unshelved"
+    },
+    "comicRoles": {
+      "penciller": "Penciller",
+      "inker": "Inker",
+      "colorist": "Colorist",
+      "letterer": "Letterer",
+      "coverArtist": "Cover Artist",
+      "editor": "Editor"
+    }
   },
   "shelfAssigner": {
     "title": "Assign Books to Shelves",
@@ -552,7 +642,37 @@
     "addSortFieldPlaceholder": "Add sort field...",
     "saveAsDefault": "Save as Default",
     "ascendingTooltip": "Ascending - click to change",
-    "descendingTooltip": "Descending - click to change"
+    "descendingTooltip": "Descending - click to change",
+    "options": {
+      "title": "Title",
+      "fileName": "File Name",
+      "filePath": "File Path",
+      "author": "Author",
+      "authorSurnameVorname": "Author (Surname)",
+      "seriesName": "Series Name",
+      "seriesNumber": "Series Number",
+      "lastReadTime": "Last Read",
+      "personalRating": "Personal Rating",
+      "addedOn": "Added On",
+      "fileSizeKb": "File Size",
+      "locked": "Locked",
+      "publisher": "Publisher",
+      "publishedDate": "Published Date",
+      "readStatus": "Read Status",
+      "dateFinished": "Date Finished",
+      "readingProgress": "Reading Progress",
+      "bookType": "Book Type",
+      "amazonRating": "Amazon Rating",
+      "amazonReviewCount": "Amazon #",
+      "goodreadsRating": "Goodreads Rating",
+      "goodreadsReviewCount": "Goodreads #",
+      "hardcoverRating": "Hardcover Rating",
+      "hardcoverReviewCount": "Hardcover #",
+      "ranobedbRating": "Ranobedb Rating",
+      "narrator": "Narrator",
+      "pageCount": "Pages",
+      "random": "Random"
+    }
   },
   "fileAttacher": {
     "title": "Attach File to Another Book",

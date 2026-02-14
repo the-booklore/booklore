@@ -451,7 +451,97 @@
   "filter": {
     "title": "Filtros",
     "showingFirst100": "Mostrando los primeros 100 elementos",
-    "footerNote": "Nota: Se muestran los 100 primeros elementos por categoría de filtro"
+    "footerNote": "Nota: Se muestran los 100 primeros elementos por categoría de filtro",
+    "labels": {
+      "author": "Autor",
+      "category": "Género",
+      "series": "Serie",
+      "bookType": "Tipo de libro",
+      "readStatus": "Estado de lectura",
+      "personalRating": "Calificación personal",
+      "publisher": "Editorial",
+      "matchScore": "Puntuación de coincidencia de metadatos",
+      "library": "Biblioteca",
+      "shelf": "Estante",
+      "shelfStatus": "Estado del estante",
+      "tag": "Etiqueta",
+      "publishedDate": "Año de publicación",
+      "fileSize": "Tamaño de archivo",
+      "amazonRating": "Calificación Amazon",
+      "goodreadsRating": "Calificación Goodreads",
+      "hardcoverRating": "Calificación Hardcover",
+      "language": "Idioma",
+      "pageCount": "Número de páginas",
+      "mood": "Estado de ánimo",
+      "ageRating": "Clasificación por edad",
+      "contentRating": "Clasificación de contenido",
+      "narrator": "Narrador",
+      "comicCharacter": "Personaje de cómic",
+      "comicTeam": "Equipo de cómic",
+      "comicLocation": "Ubicación de cómic",
+      "comicCreator": "Creador de cómic"
+    },
+    "readStatus": {
+      "unread": "No leído",
+      "reading": "Leyendo",
+      "reReading": "Releyendo",
+      "partiallyRead": "Parcialmente leído",
+      "paused": "Pausado",
+      "read": "Leído",
+      "wontRead": "No leeré",
+      "abandoned": "Abandonado",
+      "unset": "Sin definir"
+    },
+    "matchScore": {
+      "outstanding": "Sobresaliente (95–100%)",
+      "excellent": "Excelente (90–94%)",
+      "great": "Genial (80–89%)",
+      "good": "Bueno (70–79%)",
+      "fair": "Regular (50–69%)",
+      "weak": "Débil (30–49%)",
+      "poor": "Pobre (0–29%)"
+    },
+    "fileSize": {
+      "lt1mb": "< 1 MB",
+      "1to10mb": "1–10 MB",
+      "10to50mb": "10–50 MB",
+      "50to100mb": "50–100 MB",
+      "250to500mb": "250–500 MB",
+      "05to1gb": "0,5–1 GB",
+      "1to2gb": "1–2 GB",
+      "5plusGb": "5+ GB"
+    },
+    "pageCount": {
+      "lt50": "< 50 páginas",
+      "50to100": "50–100 páginas",
+      "100to200": "100–200 páginas",
+      "200to400": "200–400 páginas",
+      "400to600": "400–600 páginas",
+      "600to1000": "600–1000 páginas",
+      "1000plus": "1000+ páginas"
+    },
+    "ageRating": {
+      "allAges": "Todas las edades"
+    },
+    "contentRating": {
+      "everyone": "Todos",
+      "teen": "Adolescente",
+      "mature": "Maduro",
+      "adult": "Adulto",
+      "explicit": "Explícito"
+    },
+    "shelfStatus": {
+      "shelved": "En estante",
+      "unshelved": "Sin estante"
+    },
+    "comicRoles": {
+      "penciller": "Dibujante",
+      "inker": "Entintador",
+      "colorist": "Colorista",
+      "letterer": "Rotulista",
+      "coverArtist": "Artista de portada",
+      "editor": "Editor"
+    }
   },
   "shelfAssigner": {
     "title": "Asignar libros a estantes",
@@ -552,7 +642,37 @@
     "addSortFieldPlaceholder": "Agregar campo de orden...",
     "saveAsDefault": "Guardar como predeterminado",
     "ascendingTooltip": "Ascendente - clic para cambiar",
-    "descendingTooltip": "Descendente - clic para cambiar"
+    "descendingTooltip": "Descendente - clic para cambiar",
+    "options": {
+      "title": "Título",
+      "fileName": "Nombre de archivo",
+      "filePath": "Ruta de archivo",
+      "author": "Autor",
+      "authorSurnameVorname": "Autor (Apellido)",
+      "seriesName": "Nombre de serie",
+      "seriesNumber": "Número de serie",
+      "lastReadTime": "Última lectura",
+      "personalRating": "Calificación personal",
+      "addedOn": "Fecha de añadido",
+      "fileSizeKb": "Tamaño de archivo",
+      "locked": "Bloqueado",
+      "publisher": "Editorial",
+      "publishedDate": "Fecha de publicación",
+      "readStatus": "Estado de lectura",
+      "dateFinished": "Fecha de finalización",
+      "readingProgress": "Progreso de lectura",
+      "bookType": "Tipo de libro",
+      "amazonRating": "Calificación Amazon",
+      "amazonReviewCount": "Amazon #",
+      "goodreadsRating": "Calificación Goodreads",
+      "goodreadsReviewCount": "Goodreads #",
+      "hardcoverRating": "Calificación Hardcover",
+      "hardcoverReviewCount": "Hardcover #",
+      "ranobedbRating": "Calificación Ranobedb",
+      "narrator": "Narrador",
+      "pageCount": "Páginas",
+      "random": "Aleatorio"
+    }
   },
   "fileAttacher": {
     "title": "Adjuntar archivo a otro libro",

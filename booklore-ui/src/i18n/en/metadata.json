@@ -100,6 +100,7 @@
     "contentRatingAdult": "Adult",
     "contentRatingExplicit": "Explicit",
     "ageRatingAllAges": "All Ages",
+    "selectPlaceholder": "Select",
     "toast": {
       "successSummary": "Success",
       "metadataUpdated": "Book metadata updated",

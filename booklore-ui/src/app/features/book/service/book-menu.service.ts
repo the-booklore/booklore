@@ -334,7 +334,7 @@ export class BookMenuService {
 
                if (allShelfIds.size === 0) {
                  this.loadingService.hide(loader);
-                 this.messageService.add({ severity: 'info', summary: 'Info', detail: this.t.translate('book.menuService.toast.noBooksOnShelvesDetail') });
+                 this.messageService.add({ severity: 'info', summary: this.t.translate('common.info'), detail: this.t.translate('book.menuService.toast.noBooksOnShelvesDetail') });
                  return;
                }
 

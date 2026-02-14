@@ -22,7 +22,7 @@
               <p-accordion-header>
             <span class="filter-type-label">
               <span class="filter-label-text">
-                {{ filterLabels[filterType] || (filterType | titlecase) }}
+                {{ getFilterLabel(filterType) }}
               </span>
               @if (activeFilters[filterType]?.length) {
                 <span class="active-filter-count">
