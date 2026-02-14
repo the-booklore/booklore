@@ -284,9 +284,14 @@ public class PdfMetadataWriter implements MetadataWriter {
     }
 
     private Element createSimpleElement(Document doc, String name, String content) {
-        String namespace = name.startsWith("calibre:")
-                ? "http://calibre-ebook.com/xmp-namespace"
-                : "http://ns.adobe.com/xap/1.0/";
+        String namespace;
+        if (name.startsWith("calibre:")) {
+            namespace = "http://calibre-ebook.com/xmp-namespace";
+        } else if (name.startsWith("booklore:")) {
+            namespace = "http://booklore.org/metadata/1.0/";
+        } else {
+            namespace = "http://ns.adobe.com/xap/1.0/";
+        }
 
         Element el = doc.createElementNS(namespace, name);
         el.setTextContent(content);
