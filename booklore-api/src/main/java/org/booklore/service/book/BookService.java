@@ -7,6 +7,7 @@ import org.booklore.model.dto.*;
 import org.booklore.model.dto.request.ReadProgressRequest;
 import org.booklore.model.dto.response.BookDeletionResponse;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
+import org.booklore.model.dto.response.BookSyncResponse;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.LibraryPathEntity;
@@ -41,6 +42,8 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -75,9 +78,7 @@ public class BookService {
         List<Book> books = isAdmin
                 ? bookQueryService.getAllBooks(includeDescription)
                 : bookQueryService.getAllBooksByLibraryIds(
-                user.getAssignedLibraries().stream()
-                        .map(Library::getId)
-                        .collect(Collectors.toSet()),
+                getUserLibraryIds(user),
                 includeDescription,
                 user.getId()
         );
@@ -94,10 +95,121 @@ public class BookService {
                     progressMap.get(book.getId()),
                     fileProgressMap.get(book.getId())
             );
-            book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
+            Set<Shelf> filtered = filterShelvesByUserId(book.getShelves(), user.getId());
+            book.setShelves(!includeDescription && filtered != null && filtered.isEmpty() ? null : filtered);
         });
 
         return books;
+    }
+
+    public String computeBooksETag(boolean includeDescription) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        boolean isAdmin = user.getPermissions().isAdmin();
+
+        Object[] row = extractStatsRow(isAdmin
+                ? bookRepository.getBookStats()
+                : bookRepository.getBookStatsByLibraryIds(getUserLibraryIds(user)));
+
+        long count = ((Number) row[0]).longValue();
+        long maxBookTs = toEpochMilli(row[1]);
+        long maxAddedTs = toEpochMilli(row[2]);
+        long maxProgressTs = toEpochMilli(userBookProgressRepository.getMaxProgressTimestamp(user.getId()));
+
+        return "\"" + count + "-" + maxBookTs + "-" + maxAddedTs + "-" + maxProgressTs
+                + "-" + includeDescription + "\"";
+    }
+
+    public BookSyncResponse getBooksDelta(Instant since, boolean includeDescription) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        boolean isAdmin = user.getPermissions().isAdmin();
+        Set<Long> libraryIds = isAdmin ? null : getUserLibraryIds(user);
+
+        // Find book IDs modified since the given timestamp
+        Set<Long> modifiedBookIds = isAdmin
+                ? bookRepository.findBookIdsModifiedSince(since)
+                : bookRepository.findBookIdsModifiedSinceByLibraryIds(since, libraryIds);
+
+        // Find book IDs with progress changes
+        Set<Long> progressChangedIds = userBookProgressRepository.findBookIdsWithProgressChangedSince(user.getId(), since);
+
+        // Combine all changed IDs
+        Set<Long> allChangedIds = new HashSet<>(modifiedBookIds);
+        allChangedIds.addAll(progressChangedIds);
+
+        // Find deleted book IDs
+        List<Long> deletedIds = isAdmin
+                ? bookRepository.findDeletedBookIdsSince(since)
+                : bookRepository.findDeletedBookIdsSinceByLibraryIds(since, libraryIds);
+
+        // Fetch and enrich changed books
+        List<Book> changedBooks = List.of();
+        if (!allChangedIds.isEmpty()) {
+            List<BookEntity> bookEntities = bookQueryService.findAllWithMetadataByIds(allChangedIds);
+            if (!isAdmin) {
+                // Content restriction is handled by BookQueryService for non-admin users,
+                // but since we're using findAllWithMetadataByIds directly, filter by library
+                bookEntities = bookEntities.stream()
+                        .filter(b -> libraryIds.contains(b.getLibrary().getId()))
+                        .collect(Collectors.toList());
+            }
+            changedBooks = enrichBookEntities(bookEntities, user, includeDescription);
+        }
+
+        // Get total book count for client to detect full-sync needs
+        Object[] row = extractStatsRow(isAdmin
+                ? bookRepository.getBookStats()
+                : bookRepository.getBookStatsByLibraryIds(libraryIds));
+        long totalCount = ((Number) row[0]).longValue();
+
+        return BookSyncResponse.builder()
+                .books(changedBooks)
+                .deletedIds(deletedIds)
+                .syncTimestamp(Instant.now().toString())
+                .totalBookCount(totalCount)
+                .build();
+    }
+
+    private List<Book> enrichBookEntities(List<BookEntity> bookEntities, BookLoreUser user, boolean includeDescription) {
+        // Map entities through the same DTO pipeline as full fetch (includes field stripping)
+        List<Book> books = bookQueryService.mapEntitiesToDto(bookEntities, includeDescription, user.getId());
+
+        Set<Long> bookIds = books.stream().map(Book::getId).collect(Collectors.toSet());
+        Map<Long, UserBookProgressEntity> progressMap =
+                readingProgressService.fetchUserProgress(user.getId(), bookIds);
+        Map<Long, UserBookFileProgressEntity> fileProgressMap =
+                readingProgressService.fetchUserFileProgress(user.getId(), bookIds);
+
+        books.forEach(book -> {
+            readingProgressService.enrichBookWithProgress(
+                    book,
+                    progressMap.get(book.getId()),
+                    fileProgressMap.get(book.getId())
+            );
+            Set<Shelf> filtered = filterShelvesByUserId(book.getShelves(), user.getId());
+            book.setShelves(!includeDescription && filtered != null && filtered.isEmpty() ? null : filtered);
+        });
+
+        return books;
+    }
+
+    private long toEpochMilli(Object value) {
+        if (value == null) return 0;
+        if (value instanceof Instant inst) return inst.toEpochMilli();
+        if (value instanceof Timestamp ts) return ts.toInstant().toEpochMilli();
+        return 0;
+    }
+
+    private Object[] extractStatsRow(Object[] result) {
+        if (result.length > 0 && result[0] instanceof Object[]) {
+            return (Object[]) result[0];
+        }
+        return result;
+    }
+
+    private Set<Long> getUserLibraryIds(BookLoreUser user) {
+        return user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(Collectors.toSet());
     }
 
     public List<Book> getBooksByIds(Set<Long> bookIds, boolean withDescription) {
