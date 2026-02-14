@@ -68,12 +68,14 @@ public class BookMetadataService {
 
 
     public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
+        final FetchMetadataRequest effectiveRequest = request != null ? request : new FetchMetadataRequest();
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         Book book = bookMapper.toBook(bookEntity);
 
-        Flux<BookMetadata> builtInFlux = Flux.fromIterable(request.getProviders())
+        List<MetadataProvider> providers = effectiveRequest.getProviders();
+        Flux<BookMetadata> builtInFlux = Flux.fromIterable(providers != null ? providers : List.of())
                 .flatMap(provider ->
-                    Mono.fromCallable(() -> fetchMetadataListFromAProvider(provider, book, request))
+                    Mono.fromCallable(() -> fetchMetadataListFromAProvider(provider, book, effectiveRequest))
                             .subscribeOn(Schedulers.boundedElastic())
                             .flatMapMany(Flux::fromIterable)
                             .onErrorResume(e -> {
@@ -82,14 +84,14 @@ public class BookMetadataService {
                             })
                 );
 
-        List<String> customIds = request.getCustomProviderIds();
+        List<String> customIds = effectiveRequest.getCustomProviderIds();
         if (customIds == null || customIds.isEmpty()) {
             return builtInFlux;
         }
 
         Flux<BookMetadata> customFlux = Flux.fromIterable(customIds)
                 .flatMap(customProviderId ->
-                    Mono.fromCallable(() -> fetchMetadataFromCustomProvider(customProviderId, book, request))
+                    Mono.fromCallable(() -> fetchMetadataFromCustomProvider(customProviderId, book, effectiveRequest))
                             .subscribeOn(Schedulers.boundedElastic())
                             .flatMapMany(Flux::fromIterable)
                             .onErrorResume(e -> {
