@@ -93,12 +93,23 @@ public class CustomBookParser implements BookParser, DetailedMetadataProvider, B
             return List.of();
         }
 
+        String isbn = request.getIsbn();
+        String isbn13 = null;
+        String isbn10 = null;
+        if (isbn != null) {
+            if (isbn.length() == 13) {
+                isbn13 = isbn;
+            } else if (isbn.length() == 10) {
+                isbn10 = isbn;
+            }
+        }
+
         List<ExternalCoverImage> results = client.searchCovers(
                 null,
                 request.getTitle(),
                 request.getAuthor(),
-                request.getIsbn(),
-                null,
+                isbn13,
+                isbn10,
                 null,
                 "large"
         );
