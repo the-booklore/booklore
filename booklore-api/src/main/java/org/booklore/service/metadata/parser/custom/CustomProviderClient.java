@@ -7,8 +7,10 @@ import org.booklore.model.dto.external.ExternalProviderCapabilities;
 import org.booklore.model.dto.settings.CustomMetadataProviderConfig;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -24,10 +26,18 @@ public class CustomProviderClient {
     private final RestClient restClient;
     private final CustomMetadataProviderConfig config;
 
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(30);
+
     public CustomProviderClient(RestClient.Builder restClientBuilder, CustomMetadataProviderConfig config) {
         this.config = config;
 
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
+        requestFactory.setReadTimeout(READ_TIMEOUT);
+
         RestClient.Builder builder = restClientBuilder.clone()
+                .requestFactory(requestFactory)
                 .baseUrl(config.getBaseUrl());
 
         if (config.getBearerToken() != null && !config.getBearerToken().isBlank()) {
