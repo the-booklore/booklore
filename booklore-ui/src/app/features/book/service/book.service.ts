@@ -690,6 +690,10 @@ export class BookService {
     return this.http.post<void>(`${this.url}/${bookId}/regenerate-cover`, {});
   }
 
+  getFileMetadata(bookId: number): Observable<BookMetadata> {
+    return this.http.get<BookMetadata>(`${this.url}/${bookId}/file-metadata`);
+  }
+
   generateCustomCover(bookId: number): Observable<void> {
     return this.http.post<void>(`${this.url}/${bookId}/generate-custom-cover`, {});
   }
