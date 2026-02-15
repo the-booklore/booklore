@@ -8,6 +8,7 @@ export interface NotebookEntry {
   color?: string;
   style?: string;
   chapterTitle?: string;
+  primaryBookType?: string;
   createdAt: string;
   updatedAt?: string;
 }

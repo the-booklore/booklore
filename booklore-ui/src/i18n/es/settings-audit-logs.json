@@ -5,10 +5,12 @@
   "filterPlaceholder": "Filtrar por acción",
   "userFilterPlaceholder": "Filtrar por usuario",
   "dateRangePlaceholder": "Filtrar por rango de fechas",
+  "clearFilters": "Borrar todos los filtros",
+  "autoRefresh": "Actualización automática (10s)",
   "pageReport": "Mostrando {first} a {last} de {totalRecords} entradas",
   "empty": "No se encontraron registros de auditoría",
   "columns": {
-    "timestamp": "Fecha y hora",
+    "timestamp": "Cuándo",
     "user": "Usuario",
     "action": "Acción",
     "description": "Descripción",
