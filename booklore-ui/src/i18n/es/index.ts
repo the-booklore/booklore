@@ -14,6 +14,7 @@ import settingsUsers from './settings-users.json';
 import settingsNaming from './settings-naming.json';
 import settingsOpds from './settings-opds.json';
 import settingsTasks from './settings-tasks.json';
+import settingsAuditLogs from './settings-audit-logs.json';
 import settingsAuth from './settings-auth.json';
 import settingsDevice from './settings-device.json';
 import settingsProfile from './settings-profile.json';
@@ -35,5 +36,5 @@ import magicShelf from './magic-shelf.json';
 
 // To add a new domain: create the JSON file and add it here.
 // Settings tabs each get their own file: settings-email, settings-reader, settings-view, etc.
-const translations: Translation = {common, auth, nav, dashboard, settings, settingsEmail, settingsReader, settingsView, settingsMeta, settingsLibMeta, settingsApp, settingsUsers, settingsNaming, settingsOpds, settingsTasks, settingsAuth, settingsDevice, settingsProfile, app, shared, layout, libraryCreator, bookdrop, metadata, notebook, book, readerAudiobook, readerCbx, readerEbook, readerPdf, statsLibrary, statsUser, magicShelf};
+const translations: Translation = {common, auth, nav, dashboard, settings, settingsEmail, settingsReader, settingsView, settingsMeta, settingsLibMeta, settingsApp, settingsUsers, settingsNaming, settingsOpds, settingsTasks, settingsAuditLogs, settingsAuth, settingsDevice, settingsProfile, app, shared, layout, libraryCreator, bookdrop, metadata, notebook, book, readerAudiobook, readerCbx, readerEbook, readerPdf, statsLibrary, statsUser, magicShelf};
 export default translations;

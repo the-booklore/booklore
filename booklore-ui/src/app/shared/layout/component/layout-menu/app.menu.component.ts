@@ -15,11 +15,15 @@ import {MagicShelfService, MagicShelfState} from '../../../../features/magic-she
 import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {Slider} from 'primeng/slider';
+import {FormsModule} from '@angular/forms';
+import {Popover} from 'primeng/popover';
+import {LocalStorageService} from '../../../service/local-storage.service';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [AppMenuitemComponent, MenuModule, AsyncPipe, TranslocoDirective],
+  imports: [AppMenuitemComponent, MenuModule, AsyncPipe, TranslocoDirective, Slider, FormsModule, Popover],
   templateUrl: './app.menu.component.html',
   styleUrl: './app.menu.component.scss',
 })
@@ -41,6 +45,7 @@ export class AppMenuComponent implements OnInit {
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
   private t = inject(TranslocoService);
+  private localStorageService = inject(LocalStorageService);
 
   librarySortField: 'name' | 'id' = 'name';
   librarySortOrder: 'asc' | 'desc' = 'desc';
@@ -48,9 +53,12 @@ export class AppMenuComponent implements OnInit {
   shelfSortOrder: 'asc' | 'desc' = 'asc';
   magicShelfSortField: 'name' | 'id' = 'name';
   magicShelfSortOrder: 'asc' | 'desc' = 'asc';
+  sidebarWidth = 225;
 
 
   ngOnInit(): void {
+    this.sidebarWidth = this.localStorageService.get<number>('sidebarWidth') ?? 225;
+
     this.versionService.getVersion().subscribe((data) => {
       this.versionInfo = data;
     });
@@ -99,6 +107,14 @@ export class AppMenuComponent implements OnInit {
         },
       ])
     );
+  }
+
+  onSidebarWidthChange(): void {
+    document.documentElement.style.setProperty('--sidebar-width', this.sidebarWidth + 'px');
+  }
+
+  saveSidebarWidth(): void {
+    this.localStorageService.set('sidebarWidth', this.sidebarWidth);
   }
 
   private initMenus(): void {

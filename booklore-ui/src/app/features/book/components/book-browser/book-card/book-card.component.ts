@@ -5,6 +5,8 @@ import {Button} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookService} from '../../../service/book.service';
+import {BookFileService} from '../../../service/book-file.service';
+import {BookMetadataManageService} from '../../../service/book-metadata-manage.service';
 import {CheckboxChangeEvent, CheckboxModule} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-refresh-type.enum';
@@ -60,6 +62,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private additionalFilesLoaded = false;
 
   private bookService = inject(BookService);
+  private bookFileService = inject(BookFileService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private taskHelperService = inject(TaskHelperService);
   private userService = inject(UserService);
   private emailService = inject(EmailService);
@@ -312,7 +316,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
           label: this.t.translate('book.card.menu.download'),
           icon: 'pi pi-download',
           command: () => {
-            this.bookService.downloadFile(this.book);
+            this.bookFileService.downloadFile(this.book);
           }
         });
       } else {
@@ -441,7 +445,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: this.t.translate('book.card.menu.regenerateCover'),
             icon: 'pi pi-image',
             command: () => {
-              this.bookService.regenerateCover(this.book.id).subscribe({
+              this.bookMetadataManageService.regenerateCover(this.book.id).subscribe({
                 next: () => this.messageService.add({
                   severity: 'success',
                   summary: this.t.translate('common.success'),
@@ -459,7 +463,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: this.t.translate('book.card.menu.generateCustomCover'),
             icon: 'pi pi-palette',
             command: () => {
-              this.bookService.generateCustomCover(this.book.id).subscribe({
+              this.bookMetadataManageService.generateCustomCover(this.book.id).subscribe({
                 next: () => this.messageService.add({
                   severity: 'success',
                   summary: this.t.translate('common.success'),
@@ -617,7 +621,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       label: `${this.book.fileName || 'Book File'}`,
       icon: 'pi pi-file',
       command: () => {
-        this.bookService.downloadFile(this.book);
+        this.bookFileService.downloadFile(this.book);
       }
     });
 
@@ -719,7 +723,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private downloadAdditionalFile(book: Book, fileId: number): void {
-    this.bookService.downloadAdditionalFile(book, fileId);
+    this.bookFileService.downloadAdditionalFile(book, fileId);
   }
 
   private deleteAdditionalFile(bookId: number, fileId: number, fileName: string): void {
@@ -731,7 +735,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       rejectIcon: 'pi pi-times',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.bookService.deleteAdditionalFile(bookId, fileId).subscribe({
+        this.bookFileService.deleteAdditionalFile(bookId, fileId).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',

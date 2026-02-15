@@ -6,6 +6,7 @@ import {filter, finalize, map, switchMap, tap} from "rxjs/operators";
 import {combineLatest, Observable, Subscription} from "rxjs";
 import {Book, ReadStatus} from "../../model/book.model";
 import {BookService} from "../../service/book.service";
+import {BookMetadataManageService} from "../../service/book-metadata-manage.service";
 import {BookCardComponent} from "../book-browser/book-card/book-card.component";
 import {CoverScalePreferenceService} from "../book-browser/cover-scale-preference.service";
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from "primeng/tabs";
@@ -71,6 +72,7 @@ export class SeriesPageComponent implements OnDestroy {
 
   private route = inject(ActivatedRoute);
   private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
   private metadataCenterViewMode: "route" | "dialog" = "route";
   private dialogRef?: DynamicDialogRef | null;
@@ -454,7 +456,7 @@ export class SeriesPageComponent implements OnDestroy {
         severity: 'secondary'
       },
       accept: () => {
-        this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+        this.bookMetadataManageService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
@@ -494,7 +496,7 @@ export class SeriesPageComponent implements OnDestroy {
         severity: 'secondary'
       },
       accept: () => {
-        this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+        this.bookMetadataManageService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',

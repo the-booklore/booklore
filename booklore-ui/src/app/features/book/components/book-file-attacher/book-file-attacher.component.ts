@@ -7,6 +7,7 @@ import { Checkbox } from 'primeng/checkbox';
 import { Subject, takeUntil } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { BookService } from '../../service/book.service';
+import { BookFileService } from '../../service/book-file.service';
 import { Book } from '../../model/book.model';
 import { MessageService } from 'primeng/api';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -42,6 +43,7 @@ export class BookFileAttacherComponent implements OnInit, OnDestroy {
     private dialogRef: DynamicDialogRef,
     private config: DynamicDialogConfig,
     private bookService: BookService,
+    private bookFileService: BookFileService,
     private messageService: MessageService
   ) {}
 
@@ -131,7 +133,7 @@ export class BookFileAttacherComponent implements OnInit, OnDestroy {
 
     const sourceBookIds = this.sourceBooks.map(b => b.id);
 
-    this.bookService.attachBookFiles(
+    this.bookFileService.attachBookFiles(
       this.targetBook.id,
       sourceBookIds,
       this.deleteSourceBooks

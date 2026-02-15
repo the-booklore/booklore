@@ -1,6 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookService} from './book.service';
+import {BookMetadataManageService} from './book-metadata-manage.service';
 import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS, readStatusLabels} from '../components/book-browser/book-filter/book-filter.config';
 import {ReadStatus} from '../model/book.model';
 import {ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
@@ -19,6 +20,7 @@ export class BookMenuService {
   confirmationService = inject(ConfirmationService);
   messageService = inject(MessageService);
   bookService = inject(BookService);
+  bookMetadataManageService = inject(BookMetadataManageService);
   loadingService = inject(LoadingService);
   private readonly t = inject(TranslocoService);
 
@@ -152,7 +154,7 @@ export class BookMenuService {
                 rejectLabel: this.t.translate('common.no'),
                 accept: () => {
                   const loader = this.loadingService.show(this.t.translate('book.menuService.loading.settingAgeRating', {count}));
-                  this.bookService.updateBooksMetadata({
+                  this.bookMetadataManageService.updateBooksMetadata({
                     bookIds: Array.from(selectedBooks),
                     ageRating: option.id
                   }).pipe(finalize(() => this.loadingService.hide(loader)))
@@ -194,7 +196,7 @@ export class BookMenuService {
                 rejectLabel: this.t.translate('common.no'),
                 accept: () => {
                   const loader = this.loadingService.show(this.t.translate('book.menuService.loading.clearingAgeRating', {count}));
-                  this.bookService.updateBooksMetadata({
+                  this.bookMetadataManageService.updateBooksMetadata({
                     bookIds: Array.from(selectedBooks),
                     clearAgeRating: true
                   }).pipe(finalize(() => this.loadingService.hide(loader)))
@@ -239,7 +241,7 @@ export class BookMenuService {
                 rejectLabel: this.t.translate('common.no'),
                 accept: () => {
                   const loader = this.loadingService.show(this.t.translate('book.menuService.loading.settingContentRating', {count}));
-                  this.bookService.updateBooksMetadata({
+                  this.bookMetadataManageService.updateBooksMetadata({
                     bookIds: Array.from(selectedBooks),
                     contentRating: value
                   }).pipe(finalize(() => this.loadingService.hide(loader)))
@@ -281,7 +283,7 @@ export class BookMenuService {
                 rejectLabel: this.t.translate('common.no'),
                 accept: () => {
                   const loader = this.loadingService.show(this.t.translate('book.menuService.loading.clearingContentRating', {count}));
-                  this.bookService.updateBooksMetadata({
+                  this.bookMetadataManageService.updateBooksMetadata({
                     bookIds: Array.from(selectedBooks),
                     clearContentRating: true
                   }).pipe(finalize(() => this.loadingService.hide(loader)))
