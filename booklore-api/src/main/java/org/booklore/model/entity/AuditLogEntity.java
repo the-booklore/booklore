@@ -41,6 +41,9 @@ public class AuditLogEntity {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
+    @Column(name = "country_code", length = 2)
+    private String countryCode;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

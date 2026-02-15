@@ -43,6 +43,20 @@
             [showButtonBar]="true"
             class="date-range-filter">
           </p-datepicker>
+          <button
+            *ngIf="hasActiveFilters"
+            (click)="clearAllFilters()"
+            class="icon-btn clear-btn"
+            [title]="t('clearFilters')">
+            <i class="pi pi-filter-slash"></i>
+          </button>
+          <button
+            (click)="toggleAutoRefresh()"
+            class="icon-btn refresh-btn"
+            [class.active]="autoRefresh"
+            [title]="t('autoRefresh')">
+            <i class="pi pi-sync" [class.pi-spin]="autoRefresh"></i>
+          </button>
         </div>
       </div>
       <div class="section-body">
@@ -61,25 +75,34 @@
 
           <ng-template pTemplate="header">
             <tr>
-              <th style="width: 175px">{{ t('columns.timestamp') }}</th>
+              <th style="width: 120px">{{ t('columns.timestamp') }}</th>
               <th style="width: 100px">{{ t('columns.user') }}</th>
               <th style="width: 140px">{{ t('columns.action') }}</th>
               <th>{{ t('columns.description') }}</th>
-              <th style="width: 130px">{{ t('columns.ip') }}</th>
+              <th style="width: 160px">{{ t('columns.ip') }}</th>
             </tr>
           </ng-template>
 
           <ng-template pTemplate="body" let-log>
             <tr>
-              <td class="timestamp-cell">{{ log.createdAt | date:'medium' }}</td>
+              <td class="timestamp-cell" [title]="log.createdAt | date:'medium'">
+                {{ getRelativeTime(log.createdAt) }}
+              </td>
               <td>{{ log.username }}</td>
               <td>
                 <span class="action-badge" [ngClass]="getActionClass(log.action)">
                   {{ formatAction(log.action) }}
                 </span>
               </td>
-              <td class="description-cell">{{ log.description }}</td>
-              <td class="ip-cell">{{ log.ipAddress || '—' }}</td>
+              <td class="description-cell"
+                  [class.expanded]="expandedRows.has(log.id)"
+                  (click)="toggleDescription(log.id)">
+                {{ log.description }}
+              </td>
+              <td class="ip-cell">
+                <span *ngIf="log.countryCode" class="flag-emoji">{{ countryCodeToFlag(log.countryCode) }}</span>
+                {{ log.ipAddress || '—' }}
+              </td>
             </tr>
           </ng-template>
 
