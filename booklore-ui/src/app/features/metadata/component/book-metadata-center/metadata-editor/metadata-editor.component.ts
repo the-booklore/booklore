@@ -12,6 +12,7 @@ import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODE
 import {FileUpload, FileUploadErrorEvent, FileUploadEvent,} from "primeng/fileupload";
 import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
+import {BookMetadataManageService} from "../../../../book/service/book-metadata-manage.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
 import {filter, finalize, switchMap, take, tap} from "rxjs/operators";
@@ -69,6 +70,7 @@ export class MetadataEditorComponent implements OnInit {
 
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
   private bookDialogHelperService = inject(BookDialogHelperService);
@@ -595,7 +597,7 @@ export class MetadataEditorComponent implements OnInit {
 
   saveMetadata(): Observable<void> {
     this.isSaving = true;
-    return this.bookService
+    return this.bookMetadataManageService
       .updateBookMetadata(
         this.currentBookId,
         this.buildMetadataWrapper(undefined),
@@ -853,7 +855,7 @@ export class MetadataEditorComponent implements OnInit {
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
     const metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
-    this.bookService
+    this.bookMetadataManageService
       .updateBookMetadata(this.currentBookId, metadataUpdateWrapper, false)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -881,7 +883,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   getUploadCoverUrl(): string {
-    return this.bookService.getUploadCoverUrl(this.currentBookId);
+    return this.bookMetadataManageService.getUploadCoverUrl(this.currentBookId);
   }
 
   onBeforeSend(): void {
@@ -915,7 +917,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   regenerateCover(bookId: number) {
-    this.bookService.regenerateCover(bookId).pipe(
+    this.bookMetadataManageService.regenerateCover(bookId).pipe(
       switchMap(() => this.bookService.getBookByIdFromAPI(bookId, false)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
@@ -939,7 +941,7 @@ export class MetadataEditorComponent implements OnInit {
 
   generateCustomCover(bookId: number) {
     this.isGeneratingCover = true;
-    this.bookService.generateCustomCover(bookId).pipe(
+    this.bookMetadataManageService.generateCustomCover(bookId).pipe(
       switchMap(() => this.bookService.getBookByIdFromAPI(bookId, false)),
       finalize(() => this.isGeneratingCover = false),
       takeUntilDestroyed(this.destroyRef)
@@ -963,7 +965,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   regenerateAudiobookCover(bookId: number) {
-    this.bookService.regenerateAudiobookCover(bookId).pipe(
+    this.bookMetadataManageService.regenerateAudiobookCover(bookId).pipe(
       switchMap(() => this.bookService.getBookByIdFromAPI(bookId, false)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
@@ -987,7 +989,7 @@ export class MetadataEditorComponent implements OnInit {
 
   generateCustomAudiobookCover(bookId: number) {
     this.isGeneratingAudiobookCover = true;
-    this.bookService.generateCustomAudiobookCover(bookId).pipe(
+    this.bookMetadataManageService.generateCustomAudiobookCover(bookId).pipe(
       switchMap(() => this.bookService.getBookByIdFromAPI(bookId, false)),
       finalize(() => this.isGeneratingAudiobookCover = false),
       takeUntilDestroyed(this.destroyRef)
@@ -1038,7 +1040,7 @@ export class MetadataEditorComponent implements OnInit {
 
   fetchFromFile(bookId: number) {
     this.isFetchingFromFile = true;
-    this.bookService.getFileMetadata(bookId).pipe(
+    this.bookMetadataManageService.getFileMetadata(bookId).pipe(
       finalize(() => this.isFetchingFromFile = false),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
@@ -1156,7 +1158,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   supportsDualCovers(book: Book): boolean {
-    return this.bookService.supportsDualCovers(book);
+    return this.bookMetadataManageService.supportsDualCovers(book);
   }
 
   isCBX(book: Book): boolean {
@@ -1168,7 +1170,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   getUploadAudiobookCoverUrl(): string {
-    return this.bookService.getUploadAudiobookCoverUrl(this.currentBookId);
+    return this.bookMetadataManageService.getUploadAudiobookCoverUrl(this.currentBookId);
   }
 
   openAudiobookCoverSearch() {

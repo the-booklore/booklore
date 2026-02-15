@@ -412,3 +412,15 @@ export interface CreatePhysicalBookRequest {
   pageCount?: number;
   categories?: string[];
 }
+
+export interface BookStatusUpdateResponse {
+  bookId: number;
+  readStatus: ReadStatus;
+  readStatusModifiedTime: string;
+  dateFinished?: string;
+}
+
+export interface PersonalRatingUpdateResponse {
+  bookId: number;
+  personalRating?: number;
+}
