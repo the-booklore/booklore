@@ -67,7 +67,6 @@ public class BookService {
     private final SidecarMetadataWriter sidecarMetadataWriter;
     private final FileStreamingService fileStreamingService;
 
-
     public List<Book> getBookDTOs(boolean includeDescription) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         boolean isAdmin = user.getPermissions().isAdmin();
@@ -369,7 +368,6 @@ public class BookService {
 
         fileStreamingService.streamWithRangeSupport(path, contentType, request, response);
     }
-
     @Transactional
     public ResponseEntity<BookDeletionResponse> deleteBooks(Set<Long> ids) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
@@ -507,7 +505,11 @@ public class BookService {
                 .collect(Collectors.toSet());
     }
 
-    public List<org.booklore.model.dto.response.BookSearchResult> fuzzySearchByTitle(String searchTitle) {
+    public List<org.booklore.model.dto.response.BookSearchResult> fuzzySearch(String searchTitle, String searchIsbn) {
+        if (searchTitle == null && searchIsbn == null) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("At least one search parameter (title or isbn) must be provided");
+        }
+
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         boolean isAdmin = user.getPermissions().isAdmin();
 
@@ -528,13 +530,53 @@ public class BookService {
                             ? book.getMetadata().getTitle()
                             : (book.getPrimaryBookFile() != null ? book.getPrimaryBookFile().getFileName() : "");
                     
-                    int score = fuzzyScore.fuzzyScore(bookTitle.toLowerCase(), searchTitle.toLowerCase());
-                    int maxScore = Math.max(
-                            fuzzyScore.fuzzyScore(bookTitle, bookTitle),
-                            fuzzyScore.fuzzyScore(searchTitle, searchTitle)
-                    );
+                    double normalizedScore = 0.0;
                     
-                    double normalizedScore = maxScore > 0 ? (double) score / maxScore : 0.0;
+                    // Search by ISBN if provided
+                    if (searchIsbn != null && book.getMetadata() != null) {
+                        String cleanSearchIsbn = searchIsbn.replaceAll("[^0-9X]", "");
+                        String bookIsbn13 = book.getMetadata().getIsbn13() != null 
+                                ? book.getMetadata().getIsbn13().replaceAll("[^0-9X]", "") 
+                                : "";
+                        String bookIsbn10 = book.getMetadata().getIsbn10() != null 
+                                ? book.getMetadata().getIsbn10().replaceAll("[^0-9X]", "") 
+                                : "";
+                        
+                        // Exact match gets perfect score
+                        if (cleanSearchIsbn.equalsIgnoreCase(bookIsbn13) || cleanSearchIsbn.equalsIgnoreCase(bookIsbn10)) {
+                            normalizedScore = 1.0;
+                        } else if (!bookIsbn13.isEmpty() || !bookIsbn10.isEmpty()) {
+                            // Fuzzy match for partial ISBN matches
+                            int isbnScore13 = !bookIsbn13.isEmpty() 
+                                    ? fuzzyScore.fuzzyScore(bookIsbn13.toLowerCase(), cleanSearchIsbn.toLowerCase()) 
+                                    : 0;
+                            int isbnScore10 = !bookIsbn10.isEmpty() 
+                                    ? fuzzyScore.fuzzyScore(bookIsbn10.toLowerCase(), cleanSearchIsbn.toLowerCase()) 
+                                    : 0;
+                            int bestIsbnScore = Math.max(isbnScore13, isbnScore10);
+                            int maxScore = Math.max(
+                                    fuzzyScore.fuzzyScore(cleanSearchIsbn, cleanSearchIsbn),
+                                    Math.max(
+                                            !bookIsbn13.isEmpty() ? fuzzyScore.fuzzyScore(bookIsbn13, bookIsbn13) : 0,
+                                            !bookIsbn10.isEmpty() ? fuzzyScore.fuzzyScore(bookIsbn10, bookIsbn10) : 0
+                                    )
+                            );
+                            normalizedScore = maxScore > 0 ? (double) bestIsbnScore / maxScore : 0.0;
+                        }
+                    }
+                    
+                    // Search by title if provided and no ISBN match found
+                    if (searchTitle != null && normalizedScore < 1.0) {
+                        int titleScore = fuzzyScore.fuzzyScore(bookTitle.toLowerCase(), searchTitle.toLowerCase());
+                        int maxScore = Math.max(
+                                fuzzyScore.fuzzyScore(bookTitle, bookTitle),
+                                fuzzyScore.fuzzyScore(searchTitle, searchTitle)
+                        );
+                        double titleNormalizedScore = maxScore > 0 ? (double) titleScore / maxScore : 0.0;
+                        
+                        // Use the better score between ISBN and title
+                        normalizedScore = Math.max(normalizedScore, titleNormalizedScore);
+                    }
                     
                     String hash = book.getPrimaryBookFile() != null 
                             ? book.getPrimaryBookFile().getCurrentHash() 
@@ -554,6 +596,11 @@ public class BookService {
                 .sorted((a, b) -> Double.compare(b.getMatchScore(), a.getMatchScore()))
                 .limit(50)
                 .collect(Collectors.toList());
+    }
+
+    @Deprecated
+    public List<org.booklore.model.dto.response.BookSearchResult> fuzzySearchByTitle(String searchTitle) {
+        return fuzzySearch(searchTitle, null);
     }
 
 }

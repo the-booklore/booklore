@@ -2,6 +2,7 @@ package org.booklore.service.koreader;
 
 import org.booklore.config.security.userdetails.KoreaderUserDetails;
 import org.booklore.exception.ApiError;
+import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.progress.KoreaderProgress;
 import org.booklore.model.entity.*;
@@ -11,6 +12,7 @@ import org.booklore.repository.KoreaderUserRepository;
 import org.booklore.repository.UserBookFileProgressRepository;
 import org.booklore.repository.UserBookProgressRepository;
 import org.booklore.repository.UserRepository;
+import org.booklore.service.book.BookService;
 import org.booklore.service.hardcover.HardcoverSyncService;
 import org.booklore.util.koreader.EpubCfiService;
 import lombok.AllArgsConstructor;
@@ -36,6 +38,7 @@ public class KoreaderService {
     private final KoreaderUserRepository koreaderUserRepository;
     private final HardcoverSyncService hardcoverSyncService;
     private final EpubCfiService epubCfiService;
+    private final BookService bookService;
 
     public ResponseEntity<Map<String, String>> authorizeUser() {
         KoreaderUserDetails authDetails = getAuthDetails();
@@ -46,7 +49,7 @@ public class KoreaderService {
         return ResponseEntity.ok(Map.of("username", authDetails.getUsername()));
     }
 
-    public ResponseEntity<?> getBookByHash(String bookHash) {
+    public ResponseEntity<Book> getBookByHash(String bookHash) {
         // Handle both KoreaderUserDetails and BookLoreUser principals
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String username = null;
@@ -60,15 +63,12 @@ public class KoreaderService {
             throw ApiError.GENERIC_UNAUTHORIZED.createException("User not authenticated");
         }
         
-        BookEntity book = findBookByHash(bookHash);
+        Book book = bookService.getBookByHash(bookHash, true);
         
         log.info("getBookByHash: fetched book id={} for hash={} by user={}", 
                 book.getId(), bookHash, username);
         
-        return ResponseEntity.ok(Map.of(
-            "id", book.getId(),
-            "currentHash", book.getPrimaryBookFile().getCurrentHash() != null ? book.getPrimaryBookFile().getCurrentHash() : ""
-        ));
+        return ResponseEntity.ok(book);
     }
 
     public KoreaderProgress getProgress(String bookHash) {

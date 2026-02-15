@@ -77,9 +77,9 @@ public class BookController {
         return ResponseEntity.ok(bookService.getBook(bookId, withDescription));
     }
 
-    @Operation(summary = "Get book by MD5 hash", description = "Retrieve book details by MD5 hash. Used by KOReader to map local books to Booklore books.")
+    @Operation(summary = "Get book by MD5 hash", description = "Retrieve book details by MD5 hash. Used by KOReader to map local books to Booklore books. ISBN values are available in metadata.isbn10 and metadata.isbn13.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Book found and details returned"),
+            @ApiResponse(responseCode = "200", description = "Book found and details returned including ISBN values in metadata"),
             @ApiResponse(responseCode = "404", description = "Book not found with this hash")
     })
     @GetMapping("/by-hash/{md5Hash}")
@@ -290,11 +290,12 @@ public class BookController {
         return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
     }
 
-    @Operation(summary = "Search books by title", description = "Search for books using fuzzy title matching. Returns matching books with cover, title, and hash.")
+    @Operation(summary = "Search books by title or ISBN", description = "Search for books using fuzzy title matching or ISBN. At least one search parameter must be provided. Returns matching books with cover, title, and hash.")
     @ApiResponse(responseCode = "200", description = "Search results returned successfully")
     @GetMapping("/search")
-    public ResponseEntity<List<org.booklore.model.dto.response.BookSearchResult>> searchBooksByTitle(
-            @Parameter(description = "Title to search for") @RequestParam String title) {
-        return ResponseEntity.ok(bookService.fuzzySearchByTitle(title));
+    public ResponseEntity<List<org.booklore.model.dto.response.BookSearchResult>> searchBooks(
+            @Parameter(description = "Title to search for") @RequestParam(required = false) String title,
+            @Parameter(description = "ISBN to search for (ISBN-10 or ISBN-13)") @RequestParam(required = false) String isbn) {
+        return ResponseEntity.ok(bookService.fuzzySearch(title, isbn));
     }
 }
