@@ -1,3 +1,10 @@
+## [1.20.2](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.20.1...1.20.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* test none ([6618f2c](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/6618f2c504bd064b14b57baf6937175b4b864ecb))
+
 ## [1.20.1](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.20.0...1.20.1) (2026-02-15)
 
 
