@@ -57,7 +57,7 @@
           <li>
             <button
               class="topbar-item"
-              (click)="shouldShowStatsMenu ? statsMenu.toggle($event) : handleStatsButtonClick($event)"
+              (click)="shouldShowStatsMenu ? statsMenu?.toggle($event) : handleStatsButtonClick($event)"
               [pTooltip]="statsTooltip"
               tooltipPosition="bottom">
               <svg class="multi-color-chart-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

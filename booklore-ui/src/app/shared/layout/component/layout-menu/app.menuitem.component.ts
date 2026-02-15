@@ -60,6 +60,7 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     return this.router.url.split('?')[0] === this.item.routerLink[0];
   }
 
+  private userStateSubscription: Subscription;
   menuSourceSubscription: Subscription;
   menuResetSubscription: Subscription;
   private routerSubscription: Subscription;
@@ -71,7 +72,7 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     private dialogLauncher: DialogLauncherService,
     private bookDialogHelperService: BookDialogHelperService
   ) {
-    this.userService.userState$.subscribe(userState => {
+    this.userStateSubscription = this.userService.userState$.subscribe(userState => {
       if (userState?.user) {
         this.canManipulateLibrary = userState.user.permissions.canManageLibrary;
         this.admin = userState.user.permissions.admin;
@@ -112,15 +113,10 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.menuSourceSubscription) {
-      this.menuSourceSubscription.unsubscribe();
-    }
-    if (this.menuResetSubscription) {
-      this.menuResetSubscription.unsubscribe();
-    }
-    if (this.routerSubscription) {
-      this.routerSubscription.unsubscribe();
-    }
+    this.userStateSubscription?.unsubscribe();
+    this.menuSourceSubscription?.unsubscribe();
+    this.menuResetSubscription?.unsubscribe();
+    this.routerSubscription?.unsubscribe();
   }
 
   toggleExpand(key: string) {
