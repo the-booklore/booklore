@@ -40,7 +40,7 @@ include:
     inputs:
       trivy-disabled: true
       hadolint-disabled: true
-      prod-publish-strategy: "none"
+      prod-publish-strategy: "auto"
       push-args: "--compression-format zstd --compression-level 20"
       snapshot-image: "$CI_REGISTRY_IMAGE/snapshot:$CI_COMMIT_REF_SLUG"
 
