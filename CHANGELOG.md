@@ -1,3 +1,43 @@
+# [1.20.0](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.19.0...1.20.0) (2026-02-15)
+
+
+### Bug Fixes
+
+* align frontend Page interfaces with VIA_DTO serialization format ([#2745](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2745)) ([#2751](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2751)) ([44002c2](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/44002c2c3ce521690b0afa71de8eef3dc8e9d284))
+* **api:** add a new book api endpoint ([46881cb](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/46881cb9f035caa67f72610dba45a035b81f028a))
+* book get hash of primary book file ([8a16f8d](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/8a16f8d97a136a6dd957e5b6a9e4d23ebfdd59ce))
+* enable compact object headers (Project Lilliput) to reduce heap usage ([#2755](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2755)) ([ab13a4b](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/ab13a4b17f7f05a1840ebee11d9b55d8c907dcab))
+* **epub:** suppress FileNotFoundException for optional EPUB files ([5e0de4d](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/5e0de4d3ebbdbeb7b1dff9c96c3255cceb32674d))
+* **i18n:** correct sidecar file extension from .opf to .metadata.json ([51d9414](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/51d9414aaea7945a1a88085b44213baf07bf1af1))
+* make README logo visible in GitHub light mode ([#2756](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2756)) ([af0f5a4](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/af0f5a408051ce72046dc65b49ce8ab54e2f1427))
+* replace Quill editor with native HTML rendering for book descriptions ([#2719](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2719)) ([#2733](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2733)) ([83edbf4](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/83edbf46d5d5ea32d3da18a7f9411a1164935fd5))
+* show provider icons in metadata viewer when only ID is present ([#2734](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2734)) ([bf04a1f](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/bf04a1f4dbef31b77906e61b93693ecf07c9258e))
+* **ui:** encode filter values in query params to handle commas in names ([#2117](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2117)) ([#2717](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2717)) ([414b6d8](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/414b6d8d9e30215fe487dbf77fd6a885789233bd))
+* **ui:** fix memory leaks and cascading API calls in metadata editor ([#2489](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2489)) ([#2716](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2716)) ([dc238ca](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/dc238caff61fb44b0f8b3a92cfaf23deb05d0580))
+* update metadata viewer in real time after progress reset ([3e44ee7](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/3e44ee7d92c33379e0fdfba69106356d2bf10daf))
+
+
+### Features
+
+* add annotation notebook with server-side pagination ([#2736](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2736)) ([54f633f](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/54f633faad0d68495e8f43c4314672a8add2d968))
+* add audit log system for tracking admin-significant actions ([#2759](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2759)) ([c9551ef](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/c9551ef4abe0d156d1df09fca582e7b1f9f0a562))
+* add button to fetch metadata from book file in metadata editor ([#2739](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2739)) ([77b4deb](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/77b4deb9426e98febbfbc613275c70d60dd38b75))
+* add else clause and value modifiers to file naming patterns ([#2724](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2724)) ([6b0cc27](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/6b0cc27d1b17d5b8d63bc86133b27c5cd50456f4))
+* add grouped field dropdown and composite fields to magic shelf ([#2750](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2750)) ([218befb](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/218befb3b5db3b214b73aed906f5fb8670e71e31))
+* add i18n translations for book components, services, and readers (en/es) ([#2738](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2738)) ([5076522](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/5076522f3531f93341fca9f2564170ff3ab0e557))
+* add i18n translations for stats, pdf reader, magic shelf, and remaining components (en/es) ([#2742](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2742)) ([9fa7b07](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/9fa7b0736c13b0637ac8789cbd428f5fe99acb34))
+* add metadata presence filter to magic shelf ([#2757](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2757)) ([0899b99](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/0899b9918822d9f320cc0967f8fa531f99eca504))
+* disable PDF printing for users without download permission ([#2735](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2735)) ([#2737](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2737)) ([81960f8](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/81960f820eb6d0165863fe5dee4207fb5f8109ec))
+* **epub:** enhance EPUB processing with optimized path validation and content type mapping ([#2598](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2598)) ([ae041f9](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/ae041f900f01d6fd949ae943e5d6b20815d0e1c1))
+* **i18n:** add Weblate integration and auth translations ([#2727](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2727)) ([d4335f6](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/d4335f6125d7209090f54dc25fb94f9a271e232e))
+* move sidebar width from global setting to localStorage with view preferences UI ([#2749](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2749)) ([8c31912](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/8c319122bb2c93b30cb9ff15761383f1ec9f4502))
+
+
+### Performance Improvements
+
+* optimize book list API with ETag, delta sync, and IndexedDB caching ([#2753](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2753)) ([6f77223](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/6f7722368699f2b8668e91bb3dc71229831404f1))
+* strip unused fields from book list API response ([#2741](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/issues/2741)) ([ffd2adb](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/ffd2adb032f05d43f47b42ff8b68dc5924edd5d8))
+
 # [1.19.0](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.18.0...1.19.0) (2026-02-13)
 
 
