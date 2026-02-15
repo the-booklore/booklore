@@ -2,12 +2,14 @@ package org.booklore.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.booklore.BookloreApplication;
 import org.booklore.model.dto.*;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ComicCreatorRole;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.BookRepository;
+import org.booklore.service.task.TaskCronService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,8 +32,9 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-@SpringBootTest(classes = {org.booklore.BookloreApplication.class})
+@SpringBootTest(classes = {BookloreApplication.class})
 @Transactional
 @TestPropertySource(properties = {
         "spring.flyway.enabled=false",
@@ -58,13 +61,13 @@ class BookRuleEvaluatorServiceIntegrationTest {
         @Bean("flyway")
         @Primary
         public org.flywaydb.core.Flyway flyway() {
-            return org.mockito.Mockito.mock(org.flywaydb.core.Flyway.class);
+            return mock(org.flywaydb.core.Flyway.class);
         }
 
         @Bean
         @Primary
-        public org.booklore.service.task.TaskCronService taskCronService() {
-            return org.mockito.Mockito.mock(org.booklore.service.task.TaskCronService.class);
+        public TaskCronService taskCronService() {
+            return mock(TaskCronService.class);
         }
     }
 

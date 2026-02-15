@@ -26,6 +26,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 
 @Slf4j
 @AllArgsConstructor
@@ -39,6 +41,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final DefaultSettingInitializer defaultSettingInitializer;
+    private final AuditService auditService;
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -87,9 +90,13 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
-        BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername()));
+        BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> {
+            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for unknown user: " + loginRequest.getUsername());
+            return ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername());
+        });
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
+            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for user: " + loginRequest.getUsername());
             throw ApiError.INVALID_CREDENTIALS.createException();
         }
 
@@ -125,6 +132,7 @@ public class AuthenticationService {
                 .build();
 
         refreshTokenRepository.save(refreshTokenEntity);
+        auditService.log(AuditAction.LOGIN_SUCCESS, "User", user.getId(), "Login successful for user: " + user.getUsername());
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", accessToken,

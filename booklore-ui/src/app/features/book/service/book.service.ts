@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, from, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, switchMap, tap} from 'rxjs/operators';
-import {Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BookStatusUpdateResponse, BookSyncResponse, BookType, CreatePhysicalBookRequest, PersonalRatingUpdateResponse, ReadStatus} from '../model/book.model';
+import {Book, BookDeletionResponse, BookRecommendation, BookSetting, BookStatusUpdateResponse, BookSyncResponse, BookType, CreatePhysicalBookRequest, PersonalRatingUpdateResponse, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -81,22 +81,18 @@ export class BookService {
       )),
       switchMap(({cachedBooks, syncTs}) => {
         if (cachedBooks.length > 0 && syncTs) {
-          // Emit cached books immediately for instant render
           this.bookStateService.updateBookState({
             books: cachedBooks,
             loaded: true,
             error: null,
           });
 
-          // Background delta sync
           this.deltaSync(syncTs);
           return of(cachedBooks);
         }
-        // No cache — full fetch
         return this.fetchBooksFullAndCache();
       }),
       catchError(error => {
-        // IndexedDB failed — fall back to full fetch
         return this.fetchBooksFullAndCache().pipe(
           catchError(fetchError => {
             const curr = this.bookStateService.getCurrentBookState();
@@ -145,18 +141,15 @@ export class BookService {
         const currentState = this.bookStateService.getCurrentBookState();
         let books = [...(currentState.books || [])];
 
-        // Remove deleted books
         if (delta.deletedIds?.length) {
           const deletedSet = new Set(delta.deletedIds);
           books = books.filter(b => !deletedSet.has(b.id));
           this.bookCacheService.deleteMany(delta.deletedIds);
         }
 
-        // Upsert changed/new books
         if (delta.books?.length) {
           const updatedMap = new Map(delta.books.map(b => [b.id, b]));
           books = books.map(b => updatedMap.get(b.id) ?? b);
-          // Add new books that weren't in the existing list
           const existingIds = new Set(books.map(b => b.id));
           for (const book of delta.books) {
             if (!existingIds.has(book.id)) {
@@ -166,7 +159,6 @@ export class BookService {
           this.bookCacheService.putAll(delta.books);
         }
 
-        // If total count doesn't match, do a full refresh
         if (delta.totalBookCount !== books.length) {
           this.refreshBooks();
           return;
@@ -183,7 +175,6 @@ export class BookService {
         }
       }),
       catchError(() => {
-        // Delta sync failed — fall back to full refresh
         this.refreshBooks();
         return of(null);
       })
@@ -377,7 +368,6 @@ export class BookService {
       return;
     }
 
-    // Determine the book type - use explicit type if provided, otherwise use primary
     const bookType: BookType | undefined = explicitBookType ?? book.primaryFile?.bookType;
     const isAlternativeFormat = explicitBookType && explicitBookType !== book.primaryFile?.bookType;
 
@@ -416,13 +406,12 @@ export class BookService {
       return;
     }
 
-    // Add bookType to query params if reading an alternative format
     if (isAlternativeFormat) {
       queryParams['bookType'] = bookType;
     }
 
     const hasQueryParams = Object.keys(queryParams).length > 0;
-    this.router.navigate([`/${baseUrl}/book/${book.id}`], hasQueryParams ? { queryParams } : undefined);
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], hasQueryParams ? {queryParams} : undefined);
 
     this.updateLastReadTime(book.id);
   }
@@ -444,10 +433,6 @@ export class BookService {
   savePdfProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
     return this.bookPatchService.savePdfProgress(bookId, page, percentage, bookFileId);
   }
-
-  /*saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): Observable<void> {
-    return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
-  }*/
 
   saveCbxProgress(bookId: number, page: number, percentage: number, bookFileId?: number): Observable<void> {
     return this.bookPatchService.saveCbxProgress(bookId, page, percentage, bookFileId);
@@ -491,10 +476,6 @@ export class BookService {
 
   handleMultipleBookUpdates(updatedBooks: Book[]): void {
     this.bookSocketService.handleMultipleBookUpdates(updatedBooks);
-  }
-
-  handleBookMetadataUpdate(bookId: number, updatedMetadata: BookMetadata): void {
-    this.bookSocketService.handleBookMetadataUpdate(bookId, updatedMetadata);
   }
 
   handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {

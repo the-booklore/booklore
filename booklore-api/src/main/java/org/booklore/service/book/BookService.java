@@ -46,6 +46,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 
 @Slf4j
 @AllArgsConstructor
@@ -69,6 +71,7 @@ public class BookService {
     private final EbookViewerPreferenceRepository ebookViewerPreferencesRepository;
     private final SidecarMetadataWriter sidecarMetadataWriter;
     private final FileStreamingService fileStreamingService;
+    private final AuditService auditService;
 
 
     public List<Book> getBookDTOs(boolean includeDescription) {
@@ -513,6 +516,7 @@ public class BookService {
         }
 
         bookRepository.deleteAll(books);
+        auditService.log(AuditAction.BOOK_DELETED, "Deleted " + ids.size() + " book(s)");
         BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
         return failedFileDeletions.isEmpty()
                 ? ResponseEntity.ok(response)
