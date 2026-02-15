@@ -43,6 +43,7 @@ include:
       prod-publish-strategy: "none"
       push-args: "--compression-format zstd --compression-level 20"
       snapshot-image: "$CI_REGISTRY_IMAGE/snapshot:$CI_COMMIT_REF_SLUG"
+      release-extra-tags: "latest \\g<major>.\\g<minor>\\g<build> \\g<major>\\g<build>"
 
 # -----------------------------
 # Tests (branch pushes + MRs)
