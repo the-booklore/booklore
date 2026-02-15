@@ -1,3 +1,10 @@
+## [1.20.3](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.20.2...1.20.3) (2026-02-15)
+
+
+### Bug Fixes
+
+* change version display ([8939094](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/commit/89390940e1341370e56e586b427c2f622241a12e))
+
 ## [1.20.2](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.20.1...1.20.2) (2026-02-15)
 
 
