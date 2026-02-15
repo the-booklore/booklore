@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.booklore.model.enums.AuditAction;
 import org.booklore.service.audit.AuditService;
+import org.booklore.util.RequestUtils;
 
 @Slf4j
 @AllArgsConstructor
@@ -42,6 +43,7 @@ public class AuthenticationService {
     private final JwtUtils jwtUtils;
     private final DefaultSettingInitializer defaultSettingInitializer;
     private final AuditService auditService;
+    private final LoginRateLimitService loginRateLimitService;
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -90,16 +92,22 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
+        String ip = RequestUtils.getCurrentRequest().getRemoteAddr();
+        loginRateLimitService.checkRateLimit(ip);
+
         BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> {
             auditService.log(AuditAction.LOGIN_FAILED, "Login failed for unknown user: " + loginRequest.getUsername());
+            loginRateLimitService.recordFailedAttempt(ip);
             return ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername());
         });
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
             auditService.log(AuditAction.LOGIN_FAILED, "Login failed for user: " + loginRequest.getUsername());
+            loginRateLimitService.recordFailedAttempt(ip);
             throw ApiError.INVALID_CREDENTIALS.createException();
         }
 
+        loginRateLimitService.resetAttempts(ip);
         return loginUser(user);
     }
 
