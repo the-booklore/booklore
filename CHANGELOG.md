@@ -1,3 +1,10 @@
+## [1.20.5](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/compare/1.20.4...1.20.5) (2026-02-16)
+
+
+### Bug Fixes
+
+* **api:** add batch session endpoint to upload all sessions of a book ([5fbfcbf](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/commit/5fbfcbf67e5481132b3f5a49289df7a4a973d0b4))
+
 ## [1.20.4](https://gitlab.theprivateserver.de/WorldTeacher/wt-booklore/compare/1.20.3...1.20.4) (2026-02-15)
 
 
