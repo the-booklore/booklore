@@ -670,10 +670,10 @@
         <span>{{ t('synopsisTitle') }}</span>
       </div>
       <div class="description-body">
-        <div [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
+        <div #descriptionContent [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
           <div class="description-html" [innerHTML]="book.metadata!.description"></div>
         </div>
-        @if (book.metadata!.description && book.metadata!.description.length > 500) {
+        @if (isExpanded || isOverflowing) {
           <button class="expand-toggle" (click)="toggleExpand()">
             {{ isExpanded ? t('showLess') : t('showMore') }}
             <i class="pi" [ngClass]="isExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>

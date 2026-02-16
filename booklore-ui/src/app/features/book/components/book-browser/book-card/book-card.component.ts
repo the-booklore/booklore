@@ -13,7 +13,7 @@ import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-r
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {NgClass} from '@angular/common';
 import {User, UserService} from '../../../../settings/user-management/user.service';
-import {filter, Subject} from 'rxjs';
+import {filter, Subject, Subscription} from 'rxjs';
 import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Router} from '@angular/router';
@@ -101,7 +101,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   showBookTypePill = true;
 
-  private overlayPrefSub?: any;
+  private overlayPrefSub?: Subscription;
 
   ngOnInit(): void {
     this.computeAllMemoizedValues();

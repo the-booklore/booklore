@@ -21,5 +21,6 @@ public class AuditLogDto {
     private Long entityId;
     private String description;
     private String ipAddress;
+    private String countryCode;
     private LocalDateTime createdAt;
 }

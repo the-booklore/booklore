@@ -12,6 +12,7 @@ export interface AuditLog {
   entityId: number | null;
   description: string;
   ipAddress: string | null;
+  countryCode: string | null;
   createdAt: string;
 }
 

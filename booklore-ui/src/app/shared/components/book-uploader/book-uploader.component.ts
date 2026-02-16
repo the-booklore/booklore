@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, ViewChild} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit, ViewChild} from '@angular/core';
 import {FileSelectEvent, FileUpload, FileUploadHandlerEvent} from 'primeng/fileupload';
 import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
@@ -16,6 +16,7 @@ import {HttpClient, HttpEventType, HttpRequest} from '@angular/common/http';
 import {Tooltip} from 'primeng/tooltip';
 import {AppSettingsService} from '../../service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AppSettings} from '../../model/app-settings.model';
 import {SelectButton} from 'primeng/selectbutton';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -62,6 +63,7 @@ export class BookUploaderComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly ref = inject(DynamicDialogRef);
   private readonly t = inject(TranslocoService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly libraryState$: Observable<LibraryState> = this.libraryService.libraryState$;
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
@@ -85,7 +87,7 @@ export class BookUploaderComponent implements OnInit {
         this.maxFileSizeDisplay = `${maxSizeMb} MB`;
       });
 
-    this.libraryState$.subscribe(state => {
+    this.libraryState$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(state => {
       if (state?.libraries?.length !== 1 || this.selectedLibrary) {
         return;
       }

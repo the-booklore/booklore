@@ -57,6 +57,31 @@
   min-width: 220px;
 }
 
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--p-text-muted-color);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--p-content-hover-background);
+    color: var(--p-text-color);
+  }
+
+  &.active {
+    background: color-mix(in srgb, var(--p-primary-color) 15%, transparent);
+    color: var(--p-primary-color);
+    border-color: var(--p-primary-color);
+  }
+}
+
 ::ng-deep .p-datatable-table {
   table-layout: fixed;
 }
@@ -95,18 +120,31 @@
   white-space: nowrap;
   font-size: 0.875rem;
   color: var(--p-text-muted-color);
+  cursor: default;
 }
 
 .description-cell {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+
+  &.expanded {
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 
 .ip-cell {
   font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
   font-size: 0.8rem;
   color: var(--p-text-muted-color);
+}
+
+.flag-emoji {
+  font-size: 1.15rem;
+  margin-right: 0.25rem;
+  vertical-align: middle;
 }
 
 ::ng-deep .p-datatable.p-datatable-sm .p-datatable-tbody > tr > td.empty-message {

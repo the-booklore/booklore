@@ -45,6 +45,7 @@ public interface NotebookEntryRepository extends Repository<AnnotationEntity, Lo
         String getColor();
         String getStyle();
         String getChapterTitle();
+        String getPrimaryBookType();
         LocalDateTime getCreatedAt();
         LocalDateTime getUpdatedAt();
     }
@@ -56,6 +57,7 @@ public interface NotebookEntryRepository extends Repository<AnnotationEntity, Lo
 
     @Query(value = "SELECT t.id, t.type, t.book_id AS bookId, t.book_title AS bookTitle, " +
                    "t.text, t.note, t.color, t.style, t.chapter_title AS chapterTitle, " +
+                   "(SELECT bf.book_type FROM book_file bf WHERE bf.book_id = t.book_id ORDER BY bf.id LIMIT 1) AS primaryBookType, " +
                    "t.created_at AS createdAt, t.updated_at AS updatedAt " +
                    "FROM (" + ENTRIES_UNION + ") t" + ENTRIES_FILTER,
            countQuery = "SELECT COUNT(*) FROM (" + ENTRIES_UNION + ") t" + ENTRIES_FILTER,
