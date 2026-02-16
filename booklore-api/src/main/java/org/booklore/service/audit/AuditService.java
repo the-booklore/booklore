@@ -23,6 +23,7 @@ import java.util.List;
 public class AuditService {
 
     private final AuditLogRepository auditLogRepository;
+    private final GeoIpService geoIpService;
 
     public void log(AuditAction action, String description) {
         log(action, null, null, description);
@@ -46,6 +47,8 @@ public class AuditService {
                 // Non-HTTP context (scheduled tasks, etc.)
             }
 
+            String countryCode = geoIpService.resolveCountryCode(ipAddress);
+
             AuditLogEntity entity = AuditLogEntity.builder()
                     .userId(userId)
                     .username(username)
@@ -54,6 +57,7 @@ public class AuditService {
                     .entityId(entityId)
                     .description(description)
                     .ipAddress(ipAddress)
+                    .countryCode(countryCode)
                     .build();
 
             auditLogRepository.save(entity);
@@ -86,6 +90,7 @@ public class AuditService {
                 .entityId(entity.getEntityId())
                 .description(entity.getDescription())
                 .ipAddress(entity.getIpAddress())
+                .countryCode(entity.getCountryCode())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

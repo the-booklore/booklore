@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core';
+import {AfterViewChecked, Component, DestroyRef, ElementRef, inject, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {Button} from 'primeng/button';
 import {AsyncPipe, DecimalPipe, NgClass} from '@angular/common';
 import {combineLatest, Observable} from 'rxjs';
@@ -44,7 +44,7 @@ import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/tran
   styleUrl: './metadata-viewer.component.scss',
   imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe]
 })
-export class MetadataViewerComponent implements OnInit, OnChanges {
+export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChecked {
   @Input() book$!: Observable<Book | null>;
   @Input() recommendedBooks: BookRecommendation[] = [];
   private originalRecommendedBooks: BookRecommendation[] = [];
@@ -70,7 +70,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
   bookInSeries: Book[] = [];
+  @ViewChild('descriptionContent') descriptionContentRef?: ElementRef<HTMLElement>;
   isExpanded = false;
+  isOverflowing = false;
   isComicSectionExpanded = true;
   isAudiobookSectionExpanded = true;
   showFilePath = false;
@@ -458,6 +460,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.recommendedBooks = this.originalRecommendedBooks.filter(
       rec => !bookInSeriesIds.has(rec.book.id)
     );
+  }
+
+  ngAfterViewChecked(): void {
+    if (!this.isExpanded && this.descriptionContentRef) {
+      const el = this.descriptionContentRef.nativeElement;
+      this.isOverflowing = el.scrollHeight > el.clientHeight;
+    }
   }
 
   toggleExpand(): void {

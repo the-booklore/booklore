@@ -179,10 +179,13 @@ export class NotebookComponent implements OnInit, OnDestroy {
     const groupMap = new Map<number, BookGroup>();
     for (const entry of entries) {
       if (!groupMap.has(entry.bookId)) {
+        const isAudiobook = entry.primaryBookType === 'AUDIOBOOK';
         groupMap.set(entry.bookId, {
           bookId: entry.bookId,
           bookTitle: entry.bookTitle,
-          thumbnailUrl: this.urlHelper.getThumbnailUrl1(entry.bookId),
+          thumbnailUrl: isAudiobook
+            ? this.urlHelper.getAudiobookThumbnailUrl(entry.bookId)
+            : this.urlHelper.getDirectThumbnailUrl(entry.bookId),
           entries: [],
         });
       }

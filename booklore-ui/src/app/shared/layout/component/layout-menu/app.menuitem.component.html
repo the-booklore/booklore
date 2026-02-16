@@ -83,7 +83,7 @@
       <p-menu #entitymenu [model]="item.menu" [popup]="true" appendTo="body"></p-menu>
     }
 
-        @if (item.type === 'Library' && (!admin && !canManipulateLibrary) || item.type === 'All Books' || item.label === 'Unshelved' || item.label === 'Kobo') {
+        @if (item.type === 'Library' && (!admin && !canManipulateLibrary) || item.type === 'All Books' || item.type === 'Series' || item.label === 'Unshelved' || item.label === 'Kobo') {
           <p class="book-count">
         {{ (item.bookCount$ | async)?.toString() || '0' }}
       </p>

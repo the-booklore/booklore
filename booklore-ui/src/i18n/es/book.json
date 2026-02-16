@@ -128,7 +128,12 @@
     "alt": {
       "cover": "Portada de {{ title }}",
       "titleTooltip": "Título: {{ title }}",
-      "seriesCollapsed": "Series contraídas: {{ count }} libros"
+      "seriesCollapsed": "Series contraídas: {{ count }} libros",
+      "viewSeriesInfo": "Ver información de la serie",
+      "viewDetails": "Ver detalles del libro",
+      "readBook": "Leer libro",
+      "playAudiobook": "Reproducir audiolibro",
+      "bookMenu": "Menú de acciones del libro"
     }
   },
   "notes": {
