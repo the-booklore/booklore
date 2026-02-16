@@ -1,3 +1,10 @@
+## [1.21.1](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/compare/1.21.0...1.21.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* pass pipeline ([5b5ffd4](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/commit/5b5ffd47a1100756230e4709e26b6fdb0eb7026c))
+
 # [1.21.0](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/compare/1.20.5...1.21.0) (2026-02-16)
 
 
