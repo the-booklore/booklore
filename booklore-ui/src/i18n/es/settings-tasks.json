@@ -34,6 +34,19 @@
     "replaceMissingDesc": "Solo actualizar libros que no tienen información de metadatos. Los metadatos existentes se preservarán.",
     "replaceAllDesc": "Reemplazar todos los metadatos de todos los libros, incluso si ya tienen metadatos. Usar con precaución ya que sobrescribirá los datos existentes."
   },
+  "fileHashVerification": {
+    "label": "Opciones de Verificación de Hash de Archivo:",
+    "selectLibrary": "Seleccionar Biblioteca",
+    "allLibraries": "Todas las Bibliotecas",
+    "dryRun": "Ejecución de Prueba (Solo Vista Previa)",
+    "dryRunDesc": "Previsualiza qué archivos se actualizarían sin realizar cambios en la base de datos.",
+    "overwriteInitialHash": "Sobrescribir Hash Inicial",
+    "overwriteInitialHashDesc": "Actualiza el hash almacenado incluso si se configuró manualmente. Úselo con precaución ya que puede sobrescribir hashes personalizados.",
+    "taskName": "Verificar Hashes de Archivo",
+    "taskDesc": "Verifica la integridad del archivo comparando los hashes almacenados con los hashes reales del archivo y actualiza las discrepancias.",
+    "recalculateHashes": "Recalcular Hashes de KOReader",
+    "recalculateHashesDesc": "Recalcula y actualiza los hashes de dispositivo KOReader para todos los libros para garantizar la compatibilidad de sincronización adecuada."
+  },
   "progress": {
     "staleWarning": "Esta tarea parece estar bloqueada. No se han recibido actualizaciones en más de 5 minutos.",
     "statusLabel": "Estado:",

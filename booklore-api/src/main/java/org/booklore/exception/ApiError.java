@@ -38,6 +38,7 @@ public enum ApiError {
     NO_COVER_IN_FILE(HttpStatus.BAD_REQUEST, "No embedded cover image found in the audiobook file"),
     FAILED_TO_DOWNLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "Error while downloading file, bookId: %s"),
     INVALID_REFRESH_TYPE(HttpStatus.BAD_REQUEST, "The refresh type is invalid"),
+    INVALID_VERIFICATION_TYPE(HttpStatus.BAD_REQUEST, "The verification type is invalid"),
     METADATA_LOCKED(HttpStatus.FORBIDDEN, "Attempt to update locked metadata"),
     USERNAME_ALREADY_TAKEN(HttpStatus.BAD_REQUEST, "Username already taken: %s"),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found: %s"),

@@ -19,10 +19,13 @@ import {
   TaskType
 } from './task.service';
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
+import {FileHashVerificationRequest, FileHashVerificationType} from './file-hash-verification-request.model';
 import {finalize, forkJoin, Subscription} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
+import {LibraryService} from '../../book/service/library.service';
+import {Library} from '../../book/model/library.model';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
@@ -47,6 +50,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   // Services
   private messageService = inject(MessageService);
   private taskService = inject(TaskService);
+  private libraryService = inject(LibraryService);
   private t = inject(TranslocoService);
 
   // State
@@ -55,6 +59,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   loading = false;
   executingTasks = new Set<string>();
   private subscription?: Subscription;
+  libraries: Library[] = [];
 
   // Metadata Replace Options
   metadataReplaceOptions = [
@@ -73,6 +78,11 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   ];
   selectedMetadataReplaceMode: MetadataReplaceMode = MetadataReplaceMode.REPLACE_MISSING;
 
+  // File Hash Verification Options
+  verificationDryRun: boolean = true;
+  verificationOverwriteInitialHash: boolean = false;
+  selectedLibraryId: number | null = null;
+
   // Cron Editing State
   cronUpdating = false;
   editingCronTaskType: string | null = null;
@@ -90,6 +100,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadTasks();
     this.subscribeToTaskProgress();
+    this.loadLibraries();
   }
 
   ngOnDestroy(): void {
@@ -123,6 +134,21 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
       });
   }
 
+  loadLibraries(): void {
+    this.libraryService.libraryState$.subscribe(state => {
+      if (state.libraries) {
+        this.libraries = state.libraries;
+      }
+    });
+  }
+
+  getLibraryOptions() {
+    return [
+      { id: null, name: 'All Libraries' },
+      ...this.libraries
+    ];
+  }
+
   private subscribeToTaskProgress(): void {
     this.subscription = this.taskService.taskProgress$.subscribe(progress => {
       if (progress) {
@@ -149,8 +175,26 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
     this.taskHistories.set(progress.taskType, updatedHistory);
 
+    // Show completion notification to user
     if (progress.taskStatus === TaskStatus.COMPLETED || progress.taskStatus === TaskStatus.FAILED) {
+      this.showTaskCompletionNotification(progress);
       setTimeout(() => this.loadTasks(), 1000);
+    }
+  }
+
+  private showTaskCompletionNotification(progress: TaskProgressPayload): void {
+    const taskName = this.getTaskDisplayName(progress.taskType);
+    
+    if (progress.taskStatus === TaskStatus.COMPLETED) {
+      if (progress.message) {
+        // Show detailed message for tasks that provide completion summaries
+        this.showMessage('success', `${taskName} Completed`, progress.message);
+      } else {
+        this.showMessage('success', 'Task Completed', `${taskName} has been completed successfully.`);
+      }
+    } else if (progress.taskStatus === TaskStatus.FAILED) {
+      const errorMsg = progress.message || `${taskName} failed to complete.`;
+      this.showMessage('error', 'Task Failed', errorMsg);
     }
   }
 
@@ -188,12 +232,21 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
       options = {
         metadataReplaceMode: this.selectedMetadataReplaceMode
       };
+    } else if (type === TaskType.VERIFY_FILE_HASHES) {
+      options = {
+        verificationType: FileHashVerificationType.LIBRARY,
+        libraryId: this.selectedLibraryId,
+        verificationOptions: {
+          dryRun: this.verificationDryRun,
+          overwriteInitialHash: this.verificationOverwriteInitialHash
+        }
+      };
     }
 
     this.runTaskWithOptions(type, options);
   }
 
-  private runTaskWithOptions(type: string, options: LibraryRescanOptions | MetadataRefreshRequest | null): void {
+  private runTaskWithOptions(type: string, options: LibraryRescanOptions | MetadataRefreshRequest | FileHashVerificationRequest | null): void {
     const request: TaskCreateRequest = {
       taskType: type as TaskType,
       triggeredByCron: false,
@@ -201,6 +254,8 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     };
 
     const isAsync = TASK_TYPE_CONFIG[type as TaskType]?.async || false;
+    const isDryRun = type === TaskType.VERIFY_FILE_HASHES && 
+                     (options as FileHashVerificationRequest)?.verificationOptions?.dryRun;
 
     this.executingTasks.add(type);
     this.taskService.startTask(request)
@@ -473,7 +528,8 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
       [TaskType.UPDATE_BOOK_RECOMMENDATIONS]: 'pi-sparkles',
       [TaskType.CLEANUP_DELETED_BOOKS]: 'pi-trash',
       [TaskType.SYNC_LIBRARY_FILES]: 'pi-sync',
-      [TaskType.CLEANUP_TEMP_METADATA]: 'pi-file'
+      [TaskType.CLEANUP_TEMP_METADATA]: 'pi-file',
+      [TaskType.VERIFY_FILE_HASHES]: 'pi-shield'
     };
     return icons[taskType] || 'pi-cog';
   }

@@ -1,1 +1,15 @@
-{}
+{
+  "fileHashVerification": {
+    "label": "Datei-Hash-Überprüfungsoptionen:",
+    "selectLibrary": "Bibliothek auswählen",
+    "allLibraries": "Alle Bibliotheken",
+    "dryRun": "Testlauf (Nur Vorschau)",
+    "dryRunDesc": "Vorschau der Dateien, die aktualisiert würden, ohne Änderungen an der Datenbank vorzunehmen.",
+    "overwriteInitialHash": "Initialen Hash überschreiben",
+    "overwriteInitialHashDesc": "Aktualisieren Sie den gespeicherten Hash, auch wenn er manuell festgelegt wurde. Verwenden Sie dies mit Vorsicht, da benutzerdefinierte Hashes überschrieben werden können.",
+    "taskName": "Datei-Hashes überprüfen",
+    "taskDesc": "Überprüft die Dateiintegrität durch Vergleich gespeicherter Hashes mit tatsächlichen Datei-Hashes und aktualisiert Abweichungen.",
+    "recalculateHashes": "KOReader-Hashes neu berechnen",
+    "recalculateHashesDesc": "Berechnet und aktualisiert KOReader-Geräte-Hashes für alle Bücher neu, um eine ordnungsgemäße Synchronisationskompatibilität sicherzustellen."
+  }
+}

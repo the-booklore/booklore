@@ -185,6 +185,41 @@
                 </div>
               }
 
+              @if (!isTaskRunning(taskInfo.taskType) && taskInfo.taskType === TaskType.VERIFY_FILE_HASHES) {
+                <div class="task-options">
+                  <div class="option-row">
+                    <label class="option-label">Library:</label>
+                    <p-select
+                      [options]="getLibraryOptions()"
+                      [(ngModel)]="selectedLibraryId"
+                      size="small"
+                      optionLabel="name"
+                      optionValue="id"
+                      placeholder="All Libraries"
+                      class="mode-select">
+                    </p-select>
+                  </div>
+                  <div class="option-row">
+                    <div class="option-toggle">
+                      <p-toggleswitch [(ngModel)]="verificationDryRun"></p-toggleswitch>
+                      <label class="toggle-label">
+                        Dry Run
+                        <span class="toggle-hint">Preview changes without modifying database</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="option-row">
+                    <div class="option-toggle">
+                      <p-toggleswitch [(ngModel)]="verificationOverwriteInitialHash"></p-toggleswitch>
+                      <label class="toggle-label">
+                        Overwrite Initial Hash
+                        <span class="toggle-hint">Replace initial hash even if it already exists</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              }
+
               @if (isTaskRunning(taskInfo.taskType)) {
                 <div class="task-progress">
                   @if (isTaskStale(getTaskHistory(taskInfo.taskType))) {
