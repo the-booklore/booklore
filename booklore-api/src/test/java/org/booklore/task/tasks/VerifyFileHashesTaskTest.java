@@ -76,7 +76,7 @@ class VerifyFileHashesTaskTest {
                 .build();
         
         TaskCreateRequest taskCreateRequest = mock(TaskCreateRequest.class);
-        when(taskCreateRequest.getOptions(FileHashVerificationRequest.class))
+        when(taskCreateRequest.getOptionsAs(FileHashVerificationRequest.class))
                 .thenReturn(verificationRequest);
         when(taskCreateRequest.getTaskId()).thenReturn("task-1");
         
@@ -115,7 +115,7 @@ class VerifyFileHashesTaskTest {
                 .build();
         
         TaskCreateRequest taskCreateRequest = mock(TaskCreateRequest.class);
-        when(taskCreateRequest.getOptions(FileHashVerificationRequest.class))
+        when(taskCreateRequest.getOptionsAs(FileHashVerificationRequest.class))
                 .thenReturn(verificationRequest);
         when(taskCreateRequest.getTaskId()).thenReturn("task-1");
         doThrow(new RuntimeException("Service error"))
@@ -147,7 +147,7 @@ class VerifyFileHashesTaskTest {
                         .isDryRun(true)
                         .build();
         
-        when(taskCreateRequest.getOptions(FileHashVerificationRequest.class))
+        when(taskCreateRequest.getOptionsAs(FileHashVerificationRequest.class))
                 .thenReturn(booksRequest);
         when(taskCreateRequest.getTaskId()).thenReturn("task-2");
         when(fileHashVerificationService.verifyFileHashes(booksRequest, "task-2"))
@@ -162,7 +162,7 @@ class VerifyFileHashesTaskTest {
     @Test
     void execute_shouldThrowException_whenRequestIsNull() {
         TaskCreateRequest taskCreateRequest = mock(TaskCreateRequest.class);
-        when(taskCreateRequest.getOptions(FileHashVerificationRequest.class))
+        when(taskCreateRequest.getOptionsAs(FileHashVerificationRequest.class))
                 .thenReturn(null);
         when(taskCreateRequest.getTaskId()).thenReturn("task-3");
 

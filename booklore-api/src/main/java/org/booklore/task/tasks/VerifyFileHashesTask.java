@@ -35,7 +35,7 @@ public class VerifyFileHashesTask implements Task {
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {
-        FileHashVerificationRequest verificationRequest = request.getOptions(FileHashVerificationRequest.class);
+        FileHashVerificationRequest verificationRequest = request.getOptionsAs(FileHashVerificationRequest.class);
         String taskId = request.getTaskId();
 
         if (verificationRequest == null) {
