@@ -1,3 +1,10 @@
+# [1.21.0](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/compare/1.20.5...1.21.0) (2026-02-16)
+
+
+### Features
+
+* koreader plugin ([ff0c75f](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/commit/ff0c75fb7bd1946e45c20bdb108d0ede615f664d))
+
 ## [1.20.5](https://gitlab.worldteacher.dev/WorldTeacher/wt-booklore/compare/1.20.4...1.20.5) (2026-02-16)
 
 
