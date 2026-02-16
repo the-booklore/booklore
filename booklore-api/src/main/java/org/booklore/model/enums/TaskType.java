@@ -50,6 +50,14 @@ public enum TaskType {
             true,
             "Refresh Metadata",
             "Updates metadata information for your selected books."
+    ),
+    VERIFY_FILE_HASHES(
+            false,
+            true,
+            true,
+            false,
+            "Verify File Hashes",
+            "Verifies file integrity by comparing stored hashes with actual file hashes and updates any mismatches."
     );
 
     @Getter

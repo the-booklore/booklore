@@ -27,6 +27,7 @@ public class TaskCreateRequest {
     @JsonSubTypes({
             @JsonSubTypes.Type(value = LibraryRescanOptions.class, name = "REFRESH_LIBRARY_METADATA"),
             @JsonSubTypes.Type(value = MetadataRefreshRequest.class, name = "REFRESH_METADATA_MANUAL"),
+            @JsonSubTypes.Type(value = FileHashVerificationRequest.class, name = "VERIFY_FILE_HASHES"),
     })
     private Object options;
 

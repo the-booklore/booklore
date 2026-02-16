@@ -1,1 +1,15 @@
-{}
+{
+  "fileHashVerification": {
+    "label": "Opzioni di verifica hash file:",
+    "selectLibrary": "Seleziona libreria",
+    "allLibraries": "Tutte le librerie",
+    "dryRun": "Esecuzione di prova (Solo anteprima)",
+    "dryRunDesc": "Anteprima di quali file verrebbero aggiornati senza apportare modifiche al database.",
+    "overwriteInitialHash": "Sovrascrivi hash iniziale",
+    "overwriteInitialHashDesc": "Aggiorna l'hash memorizzato anche se è stato impostato manualmente. Usare con cautela poiché potrebbe sovrascrivere hash personalizzati.",
+    "taskName": "Verifica hash file",
+    "taskDesc": "Verifica l'integrità dei file confrontando gli hash memorizzati con gli hash effettivi dei file e aggiorna eventuali discrepanze.",
+    "recalculateHashes": "Ricalcola hash KOReader",
+    "recalculateHashesDesc": "Ricalcola e aggiorna gli hash dei dispositivi KOReader per tutti i libri per garantire una corretta compatibilità di sincronizzazione."
+  }
+}

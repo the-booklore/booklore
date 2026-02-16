@@ -1,1 +1,15 @@
-{}
+{
+  "fileHashVerification": {
+    "label": "Opties voor bestandshashverificatie:",
+    "selectLibrary": "Selecteer bibliotheek",
+    "allLibraries": "Alle bibliotheken",
+    "dryRun": "Droge run (Alleen voorbeeld)",
+    "dryRunDesc": "Bekijk een voorbeeld van welke bestanden zouden worden bijgewerkt zonder wijzigingen aan te brengen in de database.",
+    "overwriteInitialHash": "Overschrijf initiële hash",
+    "overwriteInitialHashDesc": "Update de opgeslagen hash zelfs als deze handmatig is ingesteld. Gebruik met voorzichtigheid omdat dit aangepaste hashes kan overschrijven.",
+    "taskName": "Verifieer bestandshashes",
+    "taskDesc": "Verifieert bestandsintegriteit door opgeslagen hashes te vergelijken met werkelijke bestandshashes en werkt eventuele afwijkingen bij.",
+    "recalculateHashes": "Herbereken KOReader-hashes",
+    "recalculateHashesDesc": "Herberekent en werkt KOReader-apparaathashes bij voor alle boeken om een correcte synchronisatiecompatibiliteit te garanderen."
+  }
+}

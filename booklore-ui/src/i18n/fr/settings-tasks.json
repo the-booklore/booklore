@@ -1,1 +1,15 @@
-{}
+{
+  "fileHashVerification": {
+    "label": "Options de vérification du hachage de fichier :",
+    "selectLibrary": "Sélectionner la bibliothèque",
+    "allLibraries": "Toutes les bibliothèques",
+    "dryRun": "Exécution à blanc (Aperçu uniquement)",
+    "dryRunDesc": "Aperçu des fichiers qui seraient mis à jour sans apporter de modifications à la base de données.",
+    "overwriteInitialHash": "Écraser le hachage initial",
+    "overwriteInitialHashDesc": "Mettre à jour le hachage stocké même s'il a été défini manuellement. À utiliser avec précaution car cela peut écraser les hachages personnalisés.",
+    "taskName": "Vérifier les hachages de fichiers",
+    "taskDesc": "Vérifie l'intégrité des fichiers en comparant les hachages stockés avec les hachages de fichiers réels et met à jour les écarts.",
+    "recalculateHashes": "Recalculer les hachages KOReader",
+    "recalculateHashesDesc": "Recalcule et met à jour les hachages des appareils KOReader pour tous les livres afin d'assurer une compatibilité de synchronisation appropriée."
+  }
+}

@@ -3,6 +3,7 @@ import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
+import {FileHashVerificationRequest} from './file-hash-verification-request.model';
 
 export enum TaskType {
   CLEAR_PDF_CACHE = 'CLEAR_PDF_CACHE',
@@ -11,7 +12,8 @@ export enum TaskType {
   CLEANUP_DELETED_BOOKS = 'CLEANUP_DELETED_BOOKS',
   SYNC_LIBRARY_FILES = 'SYNC_LIBRARY_FILES',
   CLEANUP_TEMP_METADATA = 'CLEANUP_TEMP_METADATA',
-  REFRESH_METADATA_MANUAL = 'REFRESH_METADATA_MANUAL'
+  REFRESH_METADATA_MANUAL = 'REFRESH_METADATA_MANUAL',
+  VERIFY_FILE_HASHES = 'VERIFY_FILE_HASHES'
 }
 
 export const TASK_TYPE_CONFIG: Record<TaskType, { parallel: boolean; async: boolean; displayOrder: number }> = {
@@ -20,8 +22,9 @@ export const TASK_TYPE_CONFIG: Record<TaskType, { parallel: boolean; async: bool
   [TaskType.UPDATE_BOOK_RECOMMENDATIONS]: {parallel: false, async: true, displayOrder: 3},
   [TaskType.CLEANUP_DELETED_BOOKS]: {parallel: false, async: false, displayOrder: 4},
   [TaskType.CLEANUP_TEMP_METADATA]: {parallel: false, async: false, displayOrder: 5},
-  [TaskType.REFRESH_METADATA_MANUAL]: {parallel: false, async: false, displayOrder: 6},
-  [TaskType.CLEAR_PDF_CACHE]: {parallel: false, async: false, displayOrder: 7},
+  [TaskType.VERIFY_FILE_HASHES]: {parallel: false, async: true, displayOrder: 6},
+  [TaskType.REFRESH_METADATA_MANUAL]: {parallel: false, async: false, displayOrder: 7},
+  [TaskType.CLEAR_PDF_CACHE]: {parallel: false, async: false, displayOrder: 8},
 };
 
 export enum MetadataReplaceMode {
@@ -36,7 +39,7 @@ export interface LibraryRescanOptions {
 export interface TaskCreateRequest {
   taskType: TaskType;
   triggeredByCron?: boolean;
-  options?: LibraryRescanOptions | MetadataRefreshRequest | null;
+  options?: LibraryRescanOptions | MetadataRefreshRequest | FileHashVerificationRequest | null;
 }
 
 export interface TaskCreateResponse {

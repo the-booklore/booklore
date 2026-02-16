@@ -1,1 +1,15 @@
-{}
+{
+  "fileHashVerification": {
+    "label": "Opcje weryfikacji skrótu pliku:",
+    "selectLibrary": "Wybierz bibliotekę",
+    "allLibraries": "Wszystkie biblioteki",
+    "dryRun": "Próbny przebieg (Tylko podgląd)",
+    "dryRunDesc": "Podejrzyj, które pliki zostaną zaktualizowane bez wprowadzania zmian do bazy danych.",
+    "overwriteInitialHash": "Nadpisz początkowy skrót",
+    "overwriteInitialHashDesc": "Zaktualizuj przechowywany skrót, nawet jeśli został ustawiony ręcznie. Używaj ostrożnie, ponieważ może to nadpisać niestandardowe skróty.",
+    "taskName": "Zweryfikuj skróty plików",
+    "taskDesc": "Weryfikuje integralność plików poprzez porównanie przechowywanych skrótów z rzeczywistymi skrótami plików i aktualizuje wszelkie niezgodności.",
+    "recalculateHashes": "Przelicz skróty KOReader",
+    "recalculateHashesDesc": "Ponownie oblicza i aktualizuje skróty urządzeń KOReader dla wszystkich książek, aby zapewnić prawidłową zgodność synchronizacji."
+  }
+}
