@@ -27,8 +27,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -131,6 +131,35 @@ class EpubMetadataWriterTest {
             String newContent = readOpfContent(epubFile);
             assertTrue(newContent.contains("property=\"booklore:purchase_date\""), "Should contain booklore:purchase_date property. Content: " + newContent);
             assertTrue(newContent.contains("2023-11-01T10:00:00Z"), "Should contain purchase date value");
+        }
+
+        @Test
+        @DisplayName("Round-trip: write purchaseDate then extract it back from EPUB")
+        void roundTrip_purchaseDate_writeAndReadBack() throws IOException {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Round Trip Book</dc:title>
+                        </metadata>
+                    </package>""";
+            File epubFile = createEpubWithOpf(opfContent, "test-roundtrip-" + System.nanoTime() + ".epub");
+
+            Instant purchaseDate = Instant.parse("2024-06-15T08:30:00Z");
+            bookEntity.setPurchaseDate(purchaseDate);
+            metadata.setTitle("Round Trip Book");
+            metadata.setBook(bookEntity);
+
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            org.booklore.service.metadata.extractor.EpubMetadataExtractor extractor =
+                    new org.booklore.service.metadata.extractor.EpubMetadataExtractor();
+            org.booklore.model.dto.BookMetadata extracted = extractor.extractMetadata(epubFile);
+
+            assertNotNull(extracted, "Extracted metadata should not be null");
+            assertNotNull(extracted.getPurchaseDate(), "Extracted purchaseDate should not be null");
+            assertEquals(purchaseDate, extracted.getPurchaseDate(),
+                    "Extracted purchaseDate should match written value");
         }
     }
 

@@ -10,6 +10,12 @@ import org.booklore.model.entity.*;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.*;
+import org.booklore.model.MetadataClearFlags;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.file.FileFingerprint;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
+import org.booklore.service.metadata.writer.MetadataWriterFactory;
 import org.booklore.service.progress.ReadingProgressService;
 import org.booklore.service.restriction.ContentRestrictionService;
 import lombok.AllArgsConstructor;
@@ -41,6 +47,9 @@ public class BookUpdateService {
     private final ReadingProgressService readingProgressService;
     private final EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
     private final ContentRestrictionService contentRestrictionService;
+    private final MetadataWriterFactory metadataWriterFactory;
+    private final AppSettingService appSettingService;
+    private final SidecarMetadataWriter sidecarMetadataWriter;
 
     public void updateBookViewerSetting(long bookId, BookViewerSettings bookViewerSettings) {
         BookEntity book = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
@@ -401,6 +410,42 @@ public class BookUpdateService {
             book.setPurchaseDate(purchaseDate);
         }
         bookRepository.saveAll(books);
+
+        var writeSettings = appSettingService.getAppSettings().getMetadataPersistenceSettings().getSaveToOriginalFile();
+        if (writeSettings.isAnyFormatEnabled()) {
+            for (BookEntity book : books) {
+                persistPurchaseDateToFile(book);
+            }
+        }
+
+        if (sidecarMetadataWriter.isWriteOnUpdateEnabled()) {
+            for (BookEntity book : books) {
+                try {
+                    sidecarMetadataWriter.writeSidecarMetadata(book);
+                } catch (Exception e) {
+                    log.warn("Failed to write sidecar metadata for book ID {}: {}", book.getId(), e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void persistPurchaseDateToFile(BookEntity book) {
+        var primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null) return;
+        BookFileType bookType = primaryFile.getBookType();
+        if (bookType == null) return;
+
+        metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
+            try {
+                java.io.File file = new java.io.File(book.getFullFilePath().toUri());
+                writer.saveMetadataToFile(file, book.getMetadata(), null, new MetadataClearFlags());
+                String newHash = FileFingerprint.generateHash(book.getFullFilePath());
+                primaryFile.setCurrentHash(newHash);
+                bookRepository.save(book);
+            } catch (Exception e) {
+                log.warn("Failed to write purchase date to file for book ID {}: {}", book.getId(), e.getMessage());
+            }
+        });
     }
 
     private Set<Shelf> filterShelvesByUserId(Set<Shelf> shelves, Long userId) {

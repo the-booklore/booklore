@@ -195,7 +195,6 @@ public class CbxMetadataWriter implements MetadataWriter {
         helper.copySeriesNumber(clearFlags != null && clearFlags.isSeriesNumber(), val -> updateXmlElement(xmlDoc, rootElement, "Number", formatFloatValue(val)));
         helper.copySeriesTotal(clearFlags != null && clearFlags.isSeriesTotal(), val -> updateXmlElement(xmlDoc, rootElement, "Count", val != null ? val.toString() : null));
         helper.copyPublishedDate(clearFlags != null && clearFlags.isPublishedDate(), date -> updateDateElements(xmlDoc, rootElement, date));
-        helper.copyPurchaseDate(clearFlags != null && clearFlags.isPurchaseDate(), date -> updateXmlElement(xmlDoc, rootElement, "PurchaseDate", date != null ? date.toString() : null));
         helper.copyPageCount(clearFlags != null && clearFlags.isPageCount(), val -> updateXmlElement(xmlDoc, rootElement, "PageCount", val != null ? val.toString() : null));
         helper.copyLanguage(clearFlags != null && clearFlags.isLanguage(), val -> updateXmlElement(xmlDoc, rootElement, "LanguageISO", val));
         helper.copyAuthors(clearFlags != null && clearFlags.isAuthors(), set -> {

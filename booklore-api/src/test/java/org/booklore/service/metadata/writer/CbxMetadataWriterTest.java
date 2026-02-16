@@ -114,10 +114,6 @@ class CbxMetadataWriterTest {
         cats.add(actionCat);
         cats.add(adventureCat);
         meta.setCategories(cats);
-        
-        org.booklore.model.entity.BookEntity book = new org.booklore.model.entity.BookEntity();
-        book.setPurchaseDate(java.time.Instant.parse("2023-11-01T10:00:00Z"));
-        meta.setBook(book);
 
         // Execute
         writer.saveMetadataToFile(cbz, meta, null, new MetadataClearFlags());
@@ -141,7 +137,6 @@ class CbxMetadataWriterTest {
             String lang = text(doc, "LanguageISO");
             String writerEl = text(doc, "Writer");
             String genre = text(doc, "Genre");
-            String purchaseDate = text(doc, "PurchaseDate");
 
             assertEquals("My Comic", title);
             assertEquals("Short desc", summary);
@@ -154,7 +149,7 @@ class CbxMetadataWriterTest {
             assertEquals("14", day);
             assertEquals("42", pageCount);
             assertEquals("en", lang);
-            assertEquals("2023-11-01T10:00:00Z", purchaseDate);
+            assertNull(text(doc, "PurchaseDate"), "PurchaseDate should not be written (not in ComicInfo v2.0 schema)");
             if (writerEl != null) {
                 assertTrue(writerEl.contains("Alice"));
                 assertTrue(writerEl.contains("Bob"));

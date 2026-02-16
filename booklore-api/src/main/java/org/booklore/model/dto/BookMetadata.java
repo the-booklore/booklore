@@ -31,6 +31,7 @@ public class BookMetadata {
     private String language;
     private String narrator;
     private Boolean abridged;
+    private Instant purchaseDate;
 
     private AudiobookMetadata audiobookMetadata;
     private ComicMetadata comicMetadata;

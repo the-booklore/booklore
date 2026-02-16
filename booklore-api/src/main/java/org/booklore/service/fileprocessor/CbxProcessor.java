@@ -240,6 +240,9 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             if (extracted.getCategories() != null) {
                 bookCreatorService.addCategoriesToBook(extracted.getCategories(), bookEntity);
             }
+            if (extracted.getPurchaseDate() != null) {
+                bookEntity.setPurchaseDate(extracted.getPurchaseDate());
+            }
             if (extracted.getComicMetadata() != null) {
                 saveComicMetadata(bookEntity, extracted.getComicMetadata());
             }

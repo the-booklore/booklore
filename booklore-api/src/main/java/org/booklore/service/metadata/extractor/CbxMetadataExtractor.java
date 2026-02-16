@@ -193,6 +193,14 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         );
         builder.language(getTextContent(document, "LanguageISO"));
 
+        String purchaseDateStr = getTextContent(document, "PurchaseDate");
+        if (purchaseDateStr != null && !purchaseDateStr.isBlank()) {
+            try {
+                builder.purchaseDate(java.time.Instant.parse(purchaseDateStr.trim()));
+            } catch (Exception ignored) {
+            }
+        }
+
         Set<String> authors = new HashSet<>();
         authors.addAll(splitValues(getTextContent(document, "Writer")));
         if (!authors.isEmpty()) {

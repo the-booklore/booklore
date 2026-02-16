@@ -150,6 +150,9 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             if (extracted.getCategories() != null) {
                 bookCreatorService.addCategoriesToBook(extracted.getCategories(), bookEntity);
             }
+            if (extracted.getPurchaseDate() != null) {
+                bookEntity.setPurchaseDate(extracted.getPurchaseDate());
+            }
 
         } catch (Exception e) {
             log.warn("Failed to extract PDF metadata for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());

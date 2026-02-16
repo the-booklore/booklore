@@ -65,7 +65,7 @@ public class SidecarMetadataWriter {
                 writeCoverFile(book, bookPath.getParent().resolve(coverFileName));
             }
 
-            SidecarMetadata sidecarMetadata = mapper.toSidecarMetadata(metadata, coverFileName);
+            SidecarMetadata sidecarMetadata = mapper.toSidecarMetadata(metadata, coverFileName, book);
             String json = objectMapper.writeValueAsString(sidecarMetadata);
             json = json.replace(" : ", ": ").replace("[ ]", "[]");
             Files.writeString(sidecarPath, json);

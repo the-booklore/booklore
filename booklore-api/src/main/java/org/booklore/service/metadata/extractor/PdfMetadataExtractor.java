@@ -145,6 +145,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
                             extractDublinCoreMetadata(xpath, doc, metadataBuilder);
                             extractCalibreMetadata(xpath, doc, metadataBuilder);
+                            extractBookloreMetadata(xpath, doc, metadataBuilder);
 
                             Map<String, String> identifiers = extractIdentifiers(xpath, doc);
                             if (!identifiers.isEmpty()) {
@@ -265,6 +266,20 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
         }
     }
 
+    private void extractBookloreMetadata(XPath xpath, Document doc, BookMetadata.BookMetadataBuilder builder) {
+        try {
+            String purchaseDate = xpath.evaluate("//*[local-name()='purchase_date' and namespace-uri()='http://booklore.org/metadata/1.0/']/text()", doc);
+            if (StringUtils.isNotBlank(purchaseDate)) {
+                try {
+                    builder.purchaseDate(java.time.Instant.parse(purchaseDate.trim()));
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract booklore metadata: {}", e.getMessage(), e);
+        }
+    }
+
     private Map<String, String> extractIdentifiers(XPath xpath, Document doc) throws XPathExpressionException {
         Map<String, String> ids = new HashMap<>();
         NodeList idNodes = (NodeList) xpath.evaluate(
@@ -329,6 +344,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
             prefixMap.put("xmpidq", "http://ns.adobe.com/xmp/Identifier/qual/1.0/");
             prefixMap.put("calibre", "http://calibre-ebook.com/xmp-namespace");
             prefixMap.put("calibreSI", "http://calibre-ebook.com/xmp-namespace/seriesIndex");
+            prefixMap.put("booklore", "http://booklore.org/metadata/1.0/");
         }
 
         @Override

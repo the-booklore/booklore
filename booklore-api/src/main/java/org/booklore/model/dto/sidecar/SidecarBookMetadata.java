@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.booklore.model.dto.ComicMetadata;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -36,5 +37,6 @@ public class SidecarBookMetadata {
     private String contentRating;
     private String narrator;
     private Boolean abridged;
+    private Instant purchaseDate;
     private ComicMetadata comicMetadata;
 }

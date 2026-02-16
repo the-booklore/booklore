@@ -18,6 +18,10 @@ import java.util.stream.Collectors;
 public class SidecarMetadataMapper {
 
     public SidecarMetadata toSidecarMetadata(BookMetadataEntity entity, String coverFileName) {
+        return toSidecarMetadata(entity, coverFileName, null);
+    }
+
+    public SidecarMetadata toSidecarMetadata(BookMetadataEntity entity, String coverFileName, BookEntity bookEntity) {
         if (entity == null) {
             return null;
         }
@@ -43,6 +47,7 @@ public class SidecarMetadataMapper {
                 .contentRating(entity.getContentRating())
                 .narrator(entity.getNarrator())
                 .abridged(entity.getAbridged())
+                .purchaseDate(bookEntity != null ? bookEntity.getPurchaseDate() : null)
                 .comicMetadata(buildComicMetadata(entity.getComicMetadata()))
                 .build();
 
@@ -106,6 +111,10 @@ public class SidecarMetadataMapper {
                     .lubimyczytacId(ids.getLubimyczytacId())
                     .ranobedbId(ids.getRanobedbId())
                     .audibleId(ids.getAudibleId());
+        }
+
+        if (m.getPurchaseDate() != null) {
+            builder.purchaseDate(m.getPurchaseDate());
         }
 
         if (m.getRatings() != null) {

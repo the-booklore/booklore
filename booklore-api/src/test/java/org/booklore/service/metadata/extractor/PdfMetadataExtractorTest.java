@@ -1,23 +1,34 @@
 package org.booklore.service.metadata.extractor;
 
+import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.MetadataPersistenceSettings;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.metadata.writer.PdfMetadataWriter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.PDPage;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class PdfMetadataExtractorTest {
 
@@ -107,6 +118,50 @@ class PdfMetadataExtractorTest {
         assertNotNull(coverImage);
         assertTrue(coverImage.getWidth() > 0);
         assertTrue(coverImage.getHeight() > 0);
+    }
+
+    @Test
+    @DisplayName("Round-trip: write purchaseDate to PDF then extract it back")
+    void roundTrip_purchaseDate_writeAndReadBack() throws IOException {
+        File pdfFile = tempDir.resolve("roundtrip-purchase.pdf").toFile();
+
+        try (PDDocument doc = new PDDocument()) {
+            doc.addPage(new PDPage());
+            PDDocumentInformation info = new PDDocumentInformation();
+            info.setTitle("Round Trip PDF");
+            doc.setDocumentInformation(info);
+            doc.save(pdfFile);
+        }
+
+        // Set up writer with mocked settings
+        AppSettingService appSettingService = mock(AppSettingService.class);
+        MetadataPersistenceSettings.FormatSettings pdfFormat = MetadataPersistenceSettings.FormatSettings.builder()
+                .enabled(true).maxFileSizeInMb(100).build();
+        MetadataPersistenceSettings.SaveToOriginalFile save = MetadataPersistenceSettings.SaveToOriginalFile.builder()
+                .pdf(pdfFormat).build();
+        MetadataPersistenceSettings persistence = new MetadataPersistenceSettings();
+        persistence.setSaveToOriginalFile(save);
+        AppSettings appSettings = mock(AppSettings.class);
+        when(appSettings.getMetadataPersistenceSettings()).thenReturn(persistence);
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+        PdfMetadataWriter writer = new PdfMetadataWriter(appSettingService);
+
+        Instant purchaseDate = Instant.parse("2024-03-20T14:00:00Z");
+        BookMetadataEntity meta = new BookMetadataEntity();
+        meta.setTitle("Round Trip PDF");
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setPurchaseDate(purchaseDate);
+        meta.setBook(bookEntity);
+
+        writer.saveMetadataToFile(pdfFile, meta, null, new MetadataClearFlags());
+
+        // Extract and verify round-trip
+        BookMetadata extracted = extractor.extractMetadata(pdfFile);
+        assertNotNull(extracted, "Extracted metadata should not be null");
+        assertNotNull(extracted.getPurchaseDate(), "Extracted purchaseDate should not be null");
+        assertEquals(purchaseDate, extracted.getPurchaseDate(),
+                "Extracted purchaseDate should match written value");
     }
 
     @Test

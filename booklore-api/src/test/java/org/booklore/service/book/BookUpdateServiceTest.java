@@ -54,6 +54,12 @@ class BookUpdateServiceTest {
     private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
     @Mock
     private ContentRestrictionService contentRestrictionService;
+    @Mock
+    private org.booklore.service.metadata.writer.MetadataWriterFactory metadataWriterFactory;
+    @Mock
+    private org.booklore.service.appsettings.AppSettingService appSettingService;
+    @Mock
+    private org.booklore.service.metadata.sidecar.SidecarMetadataWriter sidecarMetadataWriter;
 
     @InjectMocks
     private BookUpdateService bookUpdateService;
@@ -61,6 +67,16 @@ class BookUpdateServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        org.booklore.model.dto.settings.MetadataPersistenceSettings.SaveToOriginalFile saveSettings =
+                org.booklore.model.dto.settings.MetadataPersistenceSettings.SaveToOriginalFile.builder().build();
+        org.booklore.model.dto.settings.MetadataPersistenceSettings persistenceSettings =
+                new org.booklore.model.dto.settings.MetadataPersistenceSettings();
+        persistenceSettings.setSaveToOriginalFile(saveSettings);
+        org.booklore.model.dto.settings.AppSettings mockAppSettings = mock(org.booklore.model.dto.settings.AppSettings.class);
+        when(mockAppSettings.getMetadataPersistenceSettings()).thenReturn(persistenceSettings);
+        when(appSettingService.getAppSettings()).thenReturn(mockAppSettings);
+
         bookUpdateService = new BookUpdateService(
                 bookRepository,
                 pdfViewerPreferencesRepository,
@@ -74,7 +90,10 @@ class BookUpdateServiceTest {
                 bookQueryService,
                 readingProgressService,
                 ebookViewerPreferenceRepository,
-                contentRestrictionService
+                contentRestrictionService,
+                metadataWriterFactory,
+                appSettingService,
+                sidecarMetadataWriter
         );
     }
 

@@ -111,6 +111,10 @@ public class BookMetadataUpdater {
         updateComicMetadataIfNeeded(newMetadata, metadata, replaceMode);
         updateLocks(newMetadata, metadata);
 
+        if (newMetadata.getPurchaseDate() != null && bookEntity.getPurchaseDate() == null) {
+            bookEntity.setPurchaseDate(newMetadata.getPurchaseDate());
+        }
+
         bookEntity.setMetadataUpdatedAt(Instant.now());
         bookRepository.save(bookEntity);
         try {
