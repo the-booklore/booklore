@@ -1,7 +1,7 @@
 app:
-  path-config: '/app/data'
-  bookdrop-folder: '/bookdrop'
-  version: 'development'
+  path-config: "/app/data"
+  bookdrop-folder: "/bookdrop"
+  version: ${APP_VERSION:development}
   swagger:
     enabled: ${SWAGGER_ENABLED:false}
   remote-auth:
@@ -26,7 +26,7 @@ server:
     mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml,application/xml,application/atom+xml
     min-response-size: 1024
   tomcat:
-    relaxed-query-chars: '[,],%,{,},|'
+    relaxed-query-chars: "[,],%,{,},|"
 
 spring:
   servlet:
@@ -43,12 +43,12 @@ spring:
     password: ${DATABASE_PASSWORD:${MYSQL_ROOT_PASSWORD}}
     hikari:
       pool-name: BookloreHikariPool
-      max-lifetime: 580000         # 9.6 minutes (avoid DB-side connection cuts)
+      max-lifetime: 580000 # 9.6 minutes (avoid DB-side connection cuts)
       connection-test-query: SELECT 1
-      connection-timeout: 30000    # 30s to acquire a connection before timeout
-      maximum-pool-size: 20        # Higher ceiling for virtual-thread bursts
-      minimum-idle: 5              # Keep warm connections ready
-      idle-timeout: 300000         # 5 minutes before idle connections are closed
+      connection-timeout: 30000 # 30s to acquire a connection before timeout
+      maximum-pool-size: 20 # Higher ceiling for virtual-thread bursts
+      minimum-idle: 5 # Keep warm connections ready
+      idle-timeout: 300000 # 5 minutes before idle connections are closed
   jpa:
     hibernate:
       naming:
@@ -57,7 +57,7 @@ spring:
     properties:
       hibernate:
         query:
-          timeout: 30              # 30s max for any HQL/JPQL query
+          timeout: 30 # 30s max for any HQL/JPQL query
         jdbc:
           batch_size: 500
           order_inserts: true
