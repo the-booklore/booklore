@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'layout.changelog'">
 <div class="changelog-container">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-sparkles header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">What's New</h2>
-      <p class="panel-description">Latest updates and improvements</p>
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
     </div>
     <p-button
       icon="pi pi-times"
@@ -20,13 +21,13 @@
   <div class="dialog-content">
     @if (loading) {
       <div class="loading-state">
-        Loading changelog...
+        {{ t('loading') }}
       </div>
     }
 
     @if (!loading && changelog.length === 0) {
       <div class="empty-state">
-        No updates available.
+        {{ t('empty') }}
       </div>
     }
 
@@ -46,3 +47,4 @@
     }
   </div>
 </div>
+</ng-container>

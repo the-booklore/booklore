@@ -1,12 +1,14 @@
 import {Component, ElementRef, inject, OnDestroy, OnInit, viewChild} from '@angular/core';
 import {Select} from 'primeng/select';
-import {ALL_FILTER_OPTIONS, BookFilterMode, DEFAULT_VISIBLE_FILTERS, User, UserService, UserSettings, UserState, VisibleFilterType} from '../../user-management/user.service';
+import {ALL_FILTER_OPTION_VALUES, ALL_FILTER_OPTIONS, BookFilterMode, DEFAULT_VISIBLE_FILTERS, User, UserService, UserSettings, UserState, VisibleFilterType} from '../../user-management/user.service';
+import {FILTER_LABEL_KEYS} from '../../../book/components/book-browser/book-filter/book-filter.config';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
 import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 const MIN_VISIBLE_FILTERS = 5;
 const MAX_VISIBLE_FILTERS = 20;
@@ -19,7 +21,9 @@ const MAX_VISIBLE_FILTERS = 20;
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
-    Tooltip
+    Tooltip,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './filter-preferences.component.html',
   styleUrl: './filter-preferences.component.scss'
@@ -43,6 +47,7 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   userData$: Observable<UserState> = this.userService.userState$;
@@ -82,8 +87,8 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     this.userService.updateUserSetting(this.currentUser.id, rootKey, updatedValue);
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Updated',
-      detail: 'Your preferences have been saved successfully.',
+      summary: this.t.translate('settingsView.sidebarSort.prefsUpdated'),
+      detail: this.t.translate('settingsView.sidebarSort.prefsUpdatedDetail'),
       life: 1500
     });
   }
@@ -96,11 +101,14 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   get availableFilters(): {label: string; value: string}[] {
     const used = new Set(this.selectedVisibleFilters);
-    return this.allFilterOptions.filter(opt => !used.has(opt.value));
+    return ALL_FILTER_OPTION_VALUES
+      .filter(v => !used.has(v))
+      .map(v => ({label: this.getFilterLabel(v), value: v}));
   }
 
   getFilterLabel(value: string): string {
-    return this.allFilterOptions.find(opt => opt.value === value)?.label ?? value;
+    const key = FILTER_LABEL_KEYS[value as keyof typeof FILTER_LABEL_KEYS];
+    return key ? this.t.translate(key) : value;
   }
 
   onDrop(event: CdkDragDrop<VisibleFilterType[]>): void {
@@ -133,6 +141,6 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
   }
 
   get selectionCountText(): string {
-    return `${this.selectedVisibleFilters.length} of ${this.allFilterOptions.length} selected`;
+    return this.t.translate('settingsView.filter.selectionCount', {count: this.selectedVisibleFilters.length, total: this.allFilterOptions.length});
   }
 }

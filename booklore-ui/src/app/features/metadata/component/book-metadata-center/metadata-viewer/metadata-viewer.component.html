@@ -1,5 +1,5 @@
 @if (book$ | async; as book) {
-  <div class="metadata-viewer-container">
+  <div class="metadata-viewer-container" *transloco="let t; prefix: 'metadata.viewer'">
     <div class="metadata-header">
 
       <div class="cover-section">
@@ -70,7 +70,7 @@
               rounded
               outlined
               severity="info"
-              pTooltip="Go to previous book"
+              [pTooltip]="t('goToPreviousBook')"
               tooltipPosition="bottom">
             </p-button>
             <span class="navigation-position">
@@ -84,7 +84,7 @@
               severity="info"
               rounded
               outlined
-              pTooltip="Go to next book"
+              [pTooltip]="t('goToNextBook')"
               tooltipPosition="bottom">
             </p-button>
           </div>
@@ -114,7 +114,7 @@
                 <i
                   class="pi lock-icon"
                   [ngClass]="isMetadataFullyLocked(book?.metadata!) ? 'pi-lock locked' : 'pi-lock-open unlocked'"
-                  [pTooltip]="isMetadataFullyLocked(book?.metadata!) ? 'This book metadata is locked.' : 'This book metadata is unlocked.'"
+                  [pTooltip]="isMetadataFullyLocked(book?.metadata!) ? t('metadataLocked') : t('metadataUnlocked')"
                   tooltipPosition="top"
                 ></i>
               </div>
@@ -134,7 +134,7 @@
 
             <div class="personal-rating">
               <div class="rating-group">
-                <i class="pi pi-thumbs-up-fill rating-icon" pTooltip="Personal Rating" tooltipPosition="top"></i>
+                <i class="pi pi-thumbs-up-fill rating-icon" [pTooltip]="t('personalRating')" tooltipPosition="top"></i>
                 <p-rating
                   [ngModel]="book?.personalRating"
                   (onRate)="onPersonalRatingChange(book, $event)"
@@ -148,98 +148,110 @@
                 icon="pi pi-undo"
                 severity="warn"
                 (onClick)="resetPersonalRating(book)"
-                pTooltip="Reset Rating"
+                [pTooltip]="t('resetRating')"
                 tooltipPosition="top"
                 class="reset-button">
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.ranobedbRating || book?.metadata?.audibleRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.asin || book?.metadata?.goodreadsRating || book?.metadata?.goodreadsId || book?.metadata?.hardcoverRating || book?.metadata?.hardcoverId || book?.metadata?.lubimyczytacRating || book?.metadata?.lubimyczytacId || book?.metadata?.ranobedbRating || book?.metadata?.ranobedbId || book?.metadata?.audibleRating || book?.metadata?.audibleId || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
             <div class="external-ratings">
-              @if (book?.metadata?.amazonRating) {
+              @if (book?.metadata?.amazonRating || book?.metadata?.asin) {
                 <a
                   class="rating-link"
                   [href]="'https://www.amazon.' + amazonDomain + '/dp/' + (book.metadata?.asin ?? '')"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [pTooltip]="getRatingTooltip(book, 'amazon')"
+                  [pTooltip]="book?.metadata?.amazonRating ? getRatingTooltip(book, 'amazon') : undefined"
                   tooltipPosition="top"
                 >
                   <img src="https://www.amazon.com/favicon.ico" alt="Amazon" class="rating-favicon"/>
-                  <span class="rating-value">{{ getRatingPercent(book.metadata!.amazonRating) }}%</span>
+                  @if (book?.metadata?.amazonRating) {
+                    <span class="rating-value">{{ getRatingPercent(book.metadata!.amazonRating) }}%</span>
+                  }
                 </a>
               }
 
-              @if (book?.metadata?.goodreadsRating) {
+              @if (book?.metadata?.goodreadsRating || book?.metadata?.goodreadsId) {
                 <a
                   class="rating-link"
                   [href]="'https://www.goodreads.com/book/show/' + (book.metadata?.goodreadsId ?? '')"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [pTooltip]="getRatingTooltip(book, 'goodreads')"
+                  [pTooltip]="book?.metadata?.goodreadsRating ? getRatingTooltip(book, 'goodreads') : undefined"
                   tooltipPosition="top"
                 >
                   <img src="https://www.goodreads.com/favicon.ico" alt="Goodreads" class="rating-favicon"/>
-                  <span class="rating-value">{{ getRatingPercent(book.metadata!.goodreadsRating) }}%</span>
+                  @if (book?.metadata?.goodreadsRating) {
+                    <span class="rating-value">{{ getRatingPercent(book.metadata!.goodreadsRating) }}%</span>
+                  }
                 </a>
               }
 
-              @if (book?.metadata?.hardcoverRating) {
+              @if (book?.metadata?.hardcoverRating || book?.metadata?.hardcoverId) {
                 <a
                   class="rating-link"
                   [href]="'https://hardcover.app/books/' + (book.metadata?.hardcoverId ?? '')"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [pTooltip]="getRatingTooltip(book, 'hardcover')"
+                  [pTooltip]="book?.metadata?.hardcoverRating ? getRatingTooltip(book, 'hardcover') : undefined"
                   tooltipPosition="top"
                 >
                   <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon"/>
-                  <span class="rating-value">{{ getRatingPercent(book.metadata!.hardcoverRating) }}%</span>
+                  @if (book?.metadata?.hardcoverRating) {
+                    <span class="rating-value">{{ getRatingPercent(book.metadata!.hardcoverRating) }}%</span>
+                  }
                 </a>
               }
 
-              @if (book?.metadata?.lubimyczytacRating) {
+              @if (book?.metadata?.lubimyczytacRating || book?.metadata?.lubimyczytacId) {
                 <a
                   class="rating-link"
                   [href]="book.metadata?.lubimyczytacId ? 'https://lubimyczytac.pl/ksiazka/' + book.metadata?.lubimyczytacId + '/ksiazka' : ''"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [pTooltip]="getRatingTooltip(book, 'lubimyczytac')"
+                  [pTooltip]="book?.metadata?.lubimyczytacRating ? getRatingTooltip(book, 'lubimyczytac') : undefined"
                   tooltipPosition="top"
                 >
                   <img src="https://lubimyczytac.pl/favicon.ico" alt="Lubimyczytac" class="rating-favicon"/>
-                  <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
+                  @if (book?.metadata?.lubimyczytacRating) {
+                    <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
+                  }
                 </a>
               }
 
-              @if (book?.metadata?.ranobedbRating) {
+              @if (book?.metadata?.ranobedbRating || book?.metadata?.ranobedbId) {
                 <a
                   class="rating-link"
                   [href]="'https://ranobedb.org/book/' + (book.metadata?.ranobedbId ?? '')"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [pTooltip]="getRatingTooltip(book, 'ranobedb')"
+                  [pTooltip]="book?.metadata?.ranobedbRating ? getRatingTooltip(book, 'ranobedb') : undefined"
                   tooltipPosition="top"
                 >
                   <img src="https://www.ranobedb.org/favicon.png" alt="Ranobedb" class="rating-favicon"/>
-                  <span class="rating-value">{{ getRatingPercent(book.metadata!.ranobedbRating) }}%</span>
+                  @if (book?.metadata?.ranobedbRating) {
+                    <span class="rating-value">{{ getRatingPercent(book.metadata!.ranobedbRating) }}%</span>
+                  }
                 </a>
               }
 
-              @if (book?.metadata?.audibleRating) {
+              @if (book?.metadata?.audibleRating || book?.metadata?.audibleId) {
                 <a
                   class="rating-link"
                   [href]="'https://www.audible.com/pd/' + (book.metadata?.audibleId ?? '')"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [pTooltip]="getRatingTooltip(book, 'audible')"
+                  [pTooltip]="book?.metadata?.audibleRating ? getRatingTooltip(book, 'audible') : undefined"
                   tooltipPosition="top"
                 >
                   <img src="https://www.audible.com/favicon.ico" alt="Audible" class="rating-favicon"/>
-                  <span class="rating-value">{{ getRatingPercent(book.metadata!.audibleRating) }}%</span>
+                  @if (book?.metadata?.audibleRating) {
+                    <span class="rating-value">{{ getRatingPercent(book.metadata!.audibleRating) }}%</span>
+                  }
                 </a>
               }
 
@@ -270,7 +282,7 @@
           <div class="tags-section">
             @if (book?.metadata?.categories?.length) {
               <div class="tag-row">
-                <span class="tag-label">Genres:</span>
+                <span class="tag-label">{{ t('genresLabel') }}</span>
                 <div class="tag-scroll">
                   <div class="tag-container">
                     @for (category of book.metadata!.categories; track category) {
@@ -285,7 +297,7 @@
 
             @if (book?.metadata?.moods?.length) {
               <div class="tag-row">
-                <span class="tag-label">Moods:</span>
+                <span class="tag-label">{{ t('moodsLabel') }}</span>
                 <div class="tag-scroll">
                   <div class="tag-container">
                     @for (mood of book.metadata!.moods; track mood) {
@@ -300,7 +312,7 @@
 
             @if (book?.metadata?.tags?.length) {
               <div class="tag-row">
-                <span class="tag-label">Tags:</span>
+                <span class="tag-label">{{ t('tagsLabel') }}</span>
                 <div class="tag-scroll">
                   <div class="tag-container">
                     @for (tag of book.metadata!.tags; track tag) {
@@ -316,7 +328,7 @@
 
           <div class="metadata-grid">
             <div class="metadata-item">
-              <span class="metadata-key">Library:</span>
+              <span class="metadata-key">{{ t('libraryLabel') }}</span>
               @if (book?.libraryName) {
                 <span class="metadata-value metadata-link" (click)="goToLibrary(book.libraryId!)">
                   {{ book?.libraryName }}
@@ -327,7 +339,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Publisher:</span>
+              <span class="metadata-key">{{ t('publisherLabel') }}</span>
               @if (book?.metadata?.publisher) {
                 <span class="metadata-value metadata-link" (click)="goToPublisher(book?.metadata?.publisher!)">
                   {{ book?.metadata?.publisher }}
@@ -338,7 +350,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Published:</span>
+              <span class="metadata-key">{{ t('publishedLabel') }}</span>
               @if (book?.metadata!.publishedDate) {
                 <span class="metadata-value metadata-link" (click)="goToPublishedYear(book?.metadata!.publishedDate!)">
                   {{ book?.metadata!.publishedDate }}
@@ -349,7 +361,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Language:</span>
+              <span class="metadata-key">{{ t('languageLabel') }}</span>
               @if (book?.metadata!.language) {
                 <span class="metadata-value metadata-link" (click)="goToLanguage(book?.metadata!.language!)">
                   {{ book?.metadata!.language }}
@@ -360,14 +372,14 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Formats:</span>
+              <span class="metadata-key">{{ t('formatsLabel') }}</span>
               <span class="metadata-value-group format-tags">
                 @if (getDisplayFormat(book?.primaryFile); as displayFormat) {
                   <span class="format-tag-wrapper primary-format" (click)="goToFileType(book?.primaryFile?.filePath)" [pTooltip]="book?.primaryFile?.fileName ?? ''" tooltipPosition="top">
                     <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(displayFormat)" customTextColor="#fff">
                       {{ displayFormat }}
                     </app-tag>
-                    <span class="format-badge">PRIMARY</span>
+                    <span class="format-badge">{{ t('primaryBadge') }}</span>
                   </span>
                 }
                 @for (formatExt of getUniqueAlternativeFormats(book); track formatExt) {
@@ -378,20 +390,20 @@
                   </span>
                 }
                 @if (!book?.primaryFile?.filePath && !book?.alternativeFormats?.length) {
-                  <app-tag size="3xs" variant="pill" [customBgColor]="'var(--book-type-physical-color)'" customTextColor="#fff">PHYSICAL</app-tag>
+                  <app-tag size="3xs" variant="pill" [customBgColor]="'var(--book-type-physical-color)'" customTextColor="#fff">{{ t('physicalBadge') }}</app-tag>
                 }
               </span>
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">BookLore Progress:</span>
+              <span class="metadata-key">{{ t('bookloreProgressLabel') }}</span>
               <span class="metadata-value-group">
                 <app-tag size="3xs" variant="pill" [color]="getProgressColor(getProgressPercent(book))">
                   {{ getProgressPercent(book) !== null ? getProgressPercent(book) + '%' : 'N/A' }}
                 </app-tag>
                 @if (getProgressPercent(book) !== null) {
                   <p-button
-                    pTooltip="Reset progress"
+                    [pTooltip]="t('resetProgress')"
                     tooltipPosition="bottom"
                     icon="pi pi-refresh"
                     size="small"
@@ -405,7 +417,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Metadata Match:</span>
+              <span class="metadata-key">{{ t('metadataMatchLabel') }}</span>
               @if (book?.metadataMatchScore != null) {
                 <span (click)="goToMatchScoreRange(book?.metadataMatchScore!)" style="cursor: pointer;">
                   <app-tag size="3xs" variant="pill" [color]="getMatchScoreColor(book?.metadataMatchScore!)">
@@ -418,7 +430,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">ISBN:</span>
+              <span class="metadata-key">{{ t('isbnLabel') }}</span>
               @if (book?.metadata?.isbn13 || book?.metadata?.isbn10) {
                 <span class="metadata-value">
                   {{ book.metadata!.isbn13 }}
@@ -433,7 +445,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Read Status:</span>
+              <span class="metadata-key">{{ t('readStatusLabel') }}</span>
               <span class="metadata-value-group">
                 <span (click)="goToReadStatus(selectedReadStatus)" style="cursor: pointer;">
                   <app-tag size="3xs" variant="pill" [color]="getStatusColor(selectedReadStatus)">
@@ -447,13 +459,13 @@
 
             @if (book?.koreaderProgress && book.koreaderProgress?.percentage != null) {
               <div class="metadata-item">
-                <span class="metadata-key">KOReader Progress:</span>
+                <span class="metadata-key">{{ t('koreaderProgressLabel') }}</span>
                 <span class="metadata-value-group">
                   <app-tag size="3xs" variant="pill" [color]="getKoProgressColor(getKOReaderPercentage(book))">
                     {{ getKOReaderPercentage(book) + '%' }}
                   </app-tag>
                   <p-button
-                    pTooltip="Reset progress"
+                    [pTooltip]="t('resetProgress')"
                     tooltipPosition="bottom"
                     icon="pi pi-refresh"
                     size="small"
@@ -468,13 +480,13 @@
 
             @if (book?.koboProgress && book.koboProgress?.percentage != null) {
               <div class="metadata-item">
-                <span class="metadata-key">Kobo Progress:</span>
+                <span class="metadata-key">{{ t('koboProgressLabel') }}</span>
                 <span class="metadata-value-group">
                   <app-tag size="3xs" variant="pill" [color]="getKoProgressColor(book.koboProgress?.percentage)">
                     {{ book.koboProgress?.percentage | number:'1.0-1' }}%
                   </app-tag>
                   <p-button
-                    pTooltip="Reset progress"
+                    [pTooltip]="t('resetProgress')"
                     tooltipPosition="bottom"
                     icon="pi pi-refresh"
                     size="small"
@@ -490,7 +502,7 @@
             @if (selectedReadStatus === ReadStatus.READ) {
               <div class="metadata-item">
                 @if (book?.dateFinished) {
-                  <span class="metadata-key">Finished On:</span>
+                  <span class="metadata-key">{{ t('finishedOnLabel') }}</span>
                   @if (!isEditingDateFinished) {
                     <span class="metadata-value-group">
                       <span class="metadata-value">{{ formatDate(book.dateFinished) }}</span>
@@ -503,11 +515,12 @@
                         dateFormat="dd-M-yy"
                         size="small"
                         [showIcon]="true"
-                        iconDisplay="input"
+                        [iconDisplay]="'input'"
+                        appendTo="body"
                         [style]="{ 'width': '125px', 'font-size': '12px' }">
                       </p-datepicker>
-                      <p-button rounded icon="pi pi-check" size="small" severity="success" text (onClick)="saveDateFinished(book)" pTooltip="Save date"></p-button>
-                      <p-button rounded icon="pi pi-times" size="small" severity="danger" text (onClick)="cancelDateFinishedEdit()" pTooltip="Cancel"></p-button>
+                      <p-button rounded icon="pi pi-check" size="small" severity="success" text (onClick)="saveDateFinished(book)" [pTooltip]="t('saveDate')"></p-button>
+                      <p-button rounded icon="pi pi-times" size="small" severity="danger" text (onClick)="cancelDateFinishedEdit()" [pTooltip]="'common.cancel' | transloco"></p-button>
                     </span>
                   }
                 }
@@ -515,7 +528,7 @@
             }
 
             <div class="metadata-item">
-              <span class="metadata-key">Page Count:</span>
+              <span class="metadata-key">{{ t('pageCountLabel') }}</span>
               @if (book?.metadata!.pageCount) {
                 <span class="metadata-value metadata-link" (click)="goToPageCountRange(book?.metadata!.pageCount!)">
                   {{ book?.metadata!.pageCount }}
@@ -526,7 +539,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Age Rating:</span>
+              <span class="metadata-key">{{ t('ageRatingLabel') }}</span>
               @if (book?.metadata?.ageRating != null) {
                 <span class="metadata-value metadata-link" (click)="goToAgeRating(book?.metadata?.ageRating!)">
                   {{ getAgeRatingLabel(book?.metadata?.ageRating) }}
@@ -537,7 +550,7 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">Content Rating:</span>
+              <span class="metadata-key">{{ t('contentRatingLabel') }}</span>
               @if (book?.metadata?.contentRating) {
                 <span class="metadata-value metadata-link" (click)="goToContentRating(book?.metadata?.contentRating!)">
                   {{ getContentRatingLabel(book?.metadata?.contentRating) }}
@@ -549,7 +562,7 @@
 
             @if (hasDigitalFile(book)) {
               <div class="metadata-item">
-                <span class="metadata-key">File Size:</span>
+                <span class="metadata-key">{{ t('fileSizeLabel') }}</span>
                 @if (book?.primaryFile?.fileSizeKb) {
                   <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.primaryFile?.fileSizeKb!)">
                     {{ formatFileSize(book?.primaryFile) }}
@@ -563,7 +576,7 @@
 
           @if (hasDigitalFile(book)) {
             <div class="file-path-section">
-              <span class="metadata-key">File Path:</span>
+              <span class="metadata-key">{{ t('filePathLabel') }}</span>
               <i class="pi eye-icon" [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'" (click)="showFilePath = !showFilePath"></i>
               @if (showFilePath) {
                 <code class="file-path-code">{{ book?.primaryFile?.filePath }}</code>
@@ -584,7 +597,7 @@
                     rounded
                     text
                     severity="secondary"
-                    pTooltip="Go to previous book"
+                    [pTooltip]="t('goToPreviousBook')"
                     tooltipPosition="bottom">
                   </p-button>
                   <span class="navigation-position">
@@ -598,7 +611,7 @@
                     severity="secondary"
                     rounded
                     text
-                    pTooltip="Go to next book"
+                    [pTooltip]="t('goToNextBook')"
                     tooltipPosition="bottom">
                   </p-button>
                 </div>
@@ -628,13 +641,13 @@
                 }
                 @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
                   <p-button
-                    [label]="isAutoFetching ? 'Fetching...' : 'Fetch Metadata'"
+                    [label]="isAutoFetching ? t('fetchingBtn') : t('fetchMetadataBtn')"
                     [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
                     [outlined]="true"
                     severity="warn"
                     (onClick)="quickRefresh(book!.id)"
                     [disabled]="isAutoFetching"
-                    pTooltip="Automatically fetch metadata using default sources"
+                    [pTooltip]="t('fetchMetadataTooltip')"
                     tooltipPosition="top"
                     class="mobile-icon-only">
                   </p-button>
@@ -655,19 +668,15 @@
     <div class="description-section">
       <div class="section-header">
         <i class="pi pi-align-left"></i>
-        <span>Synopsis</span>
+        <span>{{ t('synopsisTitle') }}</span>
       </div>
       <div class="description-body">
-        <div [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
-          <div class="readonly-editor">
-            <p-editor #quillEditor [readonly]="true" [(ngModel)]="book.metadata!.description">
-              <ng-template #header></ng-template>
-            </p-editor>
-          </div>
+        <div #descriptionContent [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
+          <div class="description-html" [innerHTML]="book.metadata!.description"></div>
         </div>
-        @if (book.metadata!.description && book.metadata!.description.length > 500) {
+        @if (isExpanded || isOverflowing) {
           <button class="expand-toggle" (click)="toggleExpand()">
-            {{ isExpanded ? 'Show less' : 'Show more' }}
+            {{ isExpanded ? t('showLess') : t('showMore') }}
             <i class="pi" [ngClass]="isExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
           </button>
         }
@@ -679,7 +688,7 @@
         <div class="section-header clickable" (click)="isComicSectionExpanded = !isComicSectionExpanded">
           <div class="section-header-left">
             <i class="pi pi-images"></i>
-            <span>Comic Details</span>
+            <span>{{ t('comicDetailsTitle') }}</span>
           </div>
           <i class="pi section-toggle-icon" [ngClass]="isComicSectionExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
         </div>
@@ -690,13 +699,13 @@
           <div class="comic-info-grid">
             @if (comic.issueNumber) {
               <div class="comic-info-item">
-                <span class="comic-info-label">Issue</span>
+                <span class="comic-info-label">{{ t('comicIssue') }}</span>
                 <span class="comic-info-value">#{{ comic.issueNumber }}</span>
               </div>
             }
             @if (comic.volumeName) {
               <div class="comic-info-item">
-                <span class="comic-info-label">Volume</span>
+                <span class="comic-info-label">{{ t('comicVolume') }}</span>
                 <span class="comic-info-value">
                   {{ comic.volumeName }}
                   @if (comic.volumeNumber) {
@@ -707,7 +716,7 @@
             }
             @if (comic.storyArc) {
               <div class="comic-info-item">
-                <span class="comic-info-label">Story Arc</span>
+                <span class="comic-info-label">{{ t('comicStoryArc') }}</span>
                 <span class="comic-info-value">
                   {{ comic.storyArc }}
                   @if (comic.storyArcNumber) {
@@ -718,7 +727,7 @@
             }
             @if (comic.alternateSeries) {
               <div class="comic-info-item">
-                <span class="comic-info-label">Alt. Series</span>
+                <span class="comic-info-label">{{ t('comicAltSeries') }}</span>
                 <span class="comic-info-value">
                   {{ comic.alternateSeries }}
                   @if (comic.alternateIssue) {
@@ -729,13 +738,13 @@
             }
             @if (comic.format) {
               <div class="comic-info-item">
-                <span class="comic-info-label">Format</span>
+                <span class="comic-info-label">{{ t('comicFormat') }}</span>
                 <span class="comic-info-value">{{ comic.format }}</span>
               </div>
             }
             @if (comic.imprint) {
               <div class="comic-info-item">
-                <span class="comic-info-label">Imprint</span>
+                <span class="comic-info-label">{{ t('comicImprint') }}</span>
                 <span class="comic-info-value">{{ comic.imprint }}</span>
               </div>
             }
@@ -745,12 +754,12 @@
             <div class="comic-subsection">
               <div class="comic-subsection-title">
                 <i class="pi pi-users"></i>
-                <span>Creators</span>
+                <span>{{ t('creatorsTitle') }}</span>
               </div>
               <div class="comic-creators-grid">
                 @if (comic.pencillers?.length) {
                   <div class="comic-creator-row">
-                    <span class="comic-creator-role">Pencillers</span>
+                    <span class="comic-creator-role">{{ t('pencillers') }}</span>
                     <div class="comic-creator-names">
                       @for (name of comic.pencillers; track name) {
                         <a class="comic-creator-link" (click)="goToCreator(name, 'penciller')">{{ name }}</a>
@@ -760,7 +769,7 @@
                 }
                 @if (comic.inkers?.length) {
                   <div class="comic-creator-row">
-                    <span class="comic-creator-role">Inkers</span>
+                    <span class="comic-creator-role">{{ t('inkers') }}</span>
                     <div class="comic-creator-names">
                       @for (name of comic.inkers; track name) {
                         <a class="comic-creator-link" (click)="goToCreator(name, 'inker')">{{ name }}</a>
@@ -770,7 +779,7 @@
                 }
                 @if (comic.colorists?.length) {
                   <div class="comic-creator-row">
-                    <span class="comic-creator-role">Colorists</span>
+                    <span class="comic-creator-role">{{ t('colorists') }}</span>
                     <div class="comic-creator-names">
                       @for (name of comic.colorists; track name) {
                         <a class="comic-creator-link" (click)="goToCreator(name, 'colorist')">{{ name }}</a>
@@ -780,7 +789,7 @@
                 }
                 @if (comic.letterers?.length) {
                   <div class="comic-creator-row">
-                    <span class="comic-creator-role">Letterers</span>
+                    <span class="comic-creator-role">{{ t('letterers') }}</span>
                     <div class="comic-creator-names">
                       @for (name of comic.letterers; track name) {
                         <a class="comic-creator-link" (click)="goToCreator(name, 'letterer')">{{ name }}</a>
@@ -790,7 +799,7 @@
                 }
                 @if (comic.coverArtists?.length) {
                   <div class="comic-creator-row">
-                    <span class="comic-creator-role">Cover Artists</span>
+                    <span class="comic-creator-role">{{ t('coverArtists') }}</span>
                     <div class="comic-creator-names">
                       @for (name of comic.coverArtists; track name) {
                         <a class="comic-creator-link" (click)="goToCreator(name, 'coverArtist')">{{ name }}</a>
@@ -800,7 +809,7 @@
                 }
                 @if (comic.editors?.length) {
                   <div class="comic-creator-row">
-                    <span class="comic-creator-role">Editors</span>
+                    <span class="comic-creator-role">{{ t('editors') }}</span>
                     <div class="comic-creator-names">
                       @for (name of comic.editors; track name) {
                         <a class="comic-creator-link" (click)="goToCreator(name, 'editor')">{{ name }}</a>
@@ -816,12 +825,12 @@
             <div class="comic-subsection">
               <div class="comic-subsection-title">
                 <i class="pi pi-globe"></i>
-                <span>Universe</span>
+                <span>{{ t('universeTitle') }}</span>
               </div>
               <div class="comic-tags-container">
                 @if (comic.characters?.length) {
                   <div class="comic-tag-row">
-                    <span class="comic-tag-label">Characters</span>
+                    <span class="comic-tag-label">{{ t('characters') }}</span>
                     <div class="comic-tag-list">
                       @for (character of comic.characters; track character) {
                         <a class="comic-tag-clickable" (click)="goToCharacter(character)">
@@ -833,7 +842,7 @@
                 }
                 @if (comic.teams?.length) {
                   <div class="comic-tag-row">
-                    <span class="comic-tag-label">Teams</span>
+                    <span class="comic-tag-label">{{ t('teams') }}</span>
                     <div class="comic-tag-list">
                       @for (team of comic.teams; track team) {
                         <a class="comic-tag-clickable" (click)="goToTeam(team)">
@@ -845,7 +854,7 @@
                 }
                 @if (comic.locations?.length) {
                   <div class="comic-tag-row">
-                    <span class="comic-tag-label">Locations</span>
+                    <span class="comic-tag-label">{{ t('locations') }}</span>
                     <div class="comic-tag-list">
                       @for (location of comic.locations; track location) {
                         <a class="comic-tag-clickable" (click)="goToLocation(location)">
@@ -863,17 +872,17 @@
             <div class="comic-properties">
               @if (comic.manga) {
                 <span class="comic-property-badge manga">
-                  <i class="pi pi-book"></i> Manga
+                  <i class="pi pi-book"></i> {{ t('manga') }}
                 </span>
               }
               @if (comic.blackAndWhite) {
                 <span class="comic-property-badge bw">
-                  <i class="pi pi-palette"></i> B&W
+                  <i class="pi pi-palette"></i> {{ t('blackAndWhite') }}
                 </span>
               }
               @if (comic.readingDirection === 'rtl') {
                 <span class="comic-property-badge rtl">
-                  <i class="pi pi-arrow-left"></i> RTL
+                  <i class="pi pi-arrow-left"></i> {{ t('rightToLeft') }}
                 </span>
               }
             </div>
@@ -892,7 +901,7 @@
             <div class="comic-notes">
               <div class="comic-notes-label">
                 <i class="pi pi-file-edit"></i>
-                <span>Notes</span>
+                <span>{{ t('notesLabel') }}</span>
               </div>
               <p class="comic-notes-content">{{ comic.notes }}</p>
             </div>
@@ -906,7 +915,7 @@
         <div class="section-header clickable" (click)="isAudiobookSectionExpanded = !isAudiobookSectionExpanded">
           <div class="section-header-left">
             <i class="pi pi-headphones"></i>
-            <span>Audiobook Details</span>
+            <span>{{ t('audiobookDetailsTitle') }}</span>
           </div>
           <i class="pi section-toggle-icon" [ngClass]="isAudiobookSectionExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
         </div>
@@ -917,13 +926,13 @@
           <div class="audiobook-info-grid">
             @if (audio.durationSeconds) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Duration</span>
+                <span class="audiobook-info-label">{{ t('audiobookDuration') }}</span>
                 <span class="audiobook-info-value">{{ formatDuration(audio.durationSeconds) }}</span>
               </div>
             }
             @if (book.metadata?.narrator) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Narrator</span>
+                <span class="audiobook-info-label">{{ t('audiobookNarrator') }}</span>
                 <a class="audiobook-info-value audiobook-link" (click)="goToNarrator(book.metadata!.narrator!)">
                   {{ book.metadata?.narrator }}
                 </a>
@@ -931,31 +940,31 @@
             }
             @if (audio.chapterCount) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Chapters</span>
+                <span class="audiobook-info-label">{{ t('audiobookChapters') }}</span>
                 <span class="audiobook-info-value">{{ audio.chapterCount }}</span>
               </div>
             }
             @if (audio.bitrate) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Bitrate</span>
+                <span class="audiobook-info-label">{{ t('audiobookBitrate') }}</span>
                 <span class="audiobook-info-value">{{ audio.bitrate }} kbps</span>
               </div>
             }
             @if (audio.sampleRate) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Sample Rate</span>
+                <span class="audiobook-info-label">{{ t('audiobookSampleRate') }}</span>
                 <span class="audiobook-info-value">{{ formatSampleRate(audio.sampleRate) }}</span>
               </div>
             }
             @if (audio.channels) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Channels</span>
+                <span class="audiobook-info-label">{{ t('audiobookChannels') }}</span>
                 <span class="audiobook-info-value">{{ getChannelLabel(audio.channels) }}</span>
               </div>
             }
             @if (audio.codec) {
               <div class="audiobook-info-item">
-                <span class="audiobook-info-label">Codec</span>
+                <span class="audiobook-info-label">{{ t('audiobookCodec') }}</span>
                 <span class="audiobook-info-value">{{ audio.codec.toUpperCase() }}</span>
               </div>
             }
@@ -965,7 +974,7 @@
             <div class="audiobook-properties">
               <span class="audiobook-property-badge" [ngClass]="book.metadata?.abridged ? 'abridged' : 'unabridged'">
                 <i class="pi" [ngClass]="book.metadata?.abridged ? 'pi-minus-circle' : 'pi-check-circle'"></i>
-                {{ book.metadata?.abridged ? 'Abridged' : 'Unabridged' }}
+                {{ book.metadata?.abridged ? t('abridged') : t('unabridged') }}
               </span>
             </div>
           }
@@ -986,8 +995,8 @@
     </app-metadata-tabs>
   </div>
 } @else {
-  <div class="loading-state">
+  <div class="loading-state" *transloco="let t; prefix: 'metadata.viewer'">
     <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
-    <p class="loading-text">Loading book details...</p>
+    <p class="loading-text">{{ t('loadingBookDetails') }}</p>
   </div>
 }

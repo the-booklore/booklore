@@ -42,7 +42,7 @@ export class UrlHelperService {
     return this.appendToken(url);
   }
 
-  getThumbnailUrl1(bookId: number, coverUpdatedOn?: string): string {
+  getDirectThumbnailUrl(bookId: number, coverUpdatedOn?: string): string {
     let url = `${this.mediaBaseUrl}/book/${bookId}/thumbnail`;
     if (coverUpdatedOn) {
       url += `?${coverUpdatedOn}`;

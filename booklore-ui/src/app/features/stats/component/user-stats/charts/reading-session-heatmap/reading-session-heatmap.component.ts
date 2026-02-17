@@ -1,11 +1,13 @@
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
+import {Tooltip} from 'primeng/tooltip';
 import {Chart, ChartConfiguration, ChartData, registerables} from 'chart.js';
 import {MatrixController, MatrixElement} from 'chartjs-chart-matrix';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {ReadingSessionHeatmapResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -17,12 +19,20 @@ interface MatrixDataPoint {
   date: string;
 }
 
+interface Milestone {
+  label: string;
+  icon: string;
+  requirement: number;
+  type: 'streak' | 'total';
+  unlocked: boolean;
+}
+
 type SessionHeatmapChartData = ChartData<'matrix', MatrixDataPoint[], string>;
 
 @Component({
   selector: 'app-reading-session-heatmap',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip, TranslocoDirective],
   templateUrl: './reading-session-heatmap.component.html',
   styleUrls: ['./reading-session-heatmap.component.scss']
 })
@@ -34,7 +44,15 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
   public readonly chartData$: Observable<SessionHeatmapChartData>;
   public readonly chartOptions: ChartConfiguration['options'];
 
+  public currentStreak = 0;
+  public longestStreak = 0;
+  public totalReadingDays = 0;
+  public consistencyPercent = 0;
+  public milestones: Milestone[] = [];
+  public hasStreakData = false;
+
   private readonly userStatsService = inject(UserStatsService);
+  private readonly translocoService = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
   private readonly chartDataSubject: BehaviorSubject<SessionHeatmapChartData>;
   private maxSessionCount = 1;
@@ -79,7 +97,9 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
             },
             label: (context) => {
               const point = context.raw as MatrixDataPoint;
-              return `${point.v} reading session${point.v === 1 ? '' : 's'}`;
+              return point.v === 1
+                ? this.translocoService.translate('statsUser.sessionHeatmap.readingSession', {count: point.v})
+                : this.translocoService.translate('statsUser.sessionHeatmap.readingSessions_plural', {count: point.v});
             }
           }
         },
@@ -130,6 +150,7 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
     Chart.register(...registerables, MatrixController, MatrixElement);
     this.currentYear = this.initialYear;
     this.loadYearData(this.currentYear);
+    this.loadStreakData();
   }
 
   ngOnDestroy(): void {
@@ -221,6 +242,100 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
         borderWidth: 1
       }]
     });
+  }
+
+  private loadStreakData(): void {
+    this.userStatsService.getReadingDates()
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError((error) => {
+          console.error('Error loading reading dates:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe((data) => this.processStreakData(data));
+  }
+
+  private processStreakData(data: ReadingSessionHeatmapResponse[]): void {
+    if (!data || data.length === 0) {
+      this.hasStreakData = false;
+      return;
+    }
+
+    this.hasStreakData = true;
+    this.totalReadingDays = data.length;
+
+    const sortedDates = Array.from(new Set(data.map(d => d.date))).sort();
+    const dateSet = new Set(sortedDates);
+
+    // Calculate all streaks
+    const streakLengths: number[] = [];
+    let streakStart: string | null = null;
+    let prevDate: string | null = null;
+    let lastStreakEnd: string | null = null;
+    let lastStreakLength = 0;
+
+    for (const dateStr of sortedDates) {
+      if (!prevDate || !this.isConsecutiveDay(prevDate, dateStr)) {
+        if (prevDate && streakStart) {
+          const len = this.daysBetween(streakStart, prevDate) + 1;
+          streakLengths.push(len);
+          lastStreakEnd = prevDate;
+          lastStreakLength = len;
+        }
+        streakStart = dateStr;
+      }
+      prevDate = dateStr;
+    }
+    if (prevDate && streakStart) {
+      const len = this.daysBetween(streakStart, prevDate) + 1;
+      streakLengths.push(len);
+      lastStreakEnd = prevDate;
+      lastStreakLength = len;
+    }
+
+    this.longestStreak = streakLengths.length > 0 ? Math.max(...streakLengths) : 0;
+
+    // Current streak
+    const today = this.toDateStr(new Date());
+    const yesterday = this.toDateStr(new Date(Date.now() - 86400000));
+
+    if ((dateSet.has(today) || dateSet.has(yesterday)) && (lastStreakEnd === today || lastStreakEnd === yesterday)) {
+      this.currentStreak = lastStreakLength;
+    } else {
+      this.currentStreak = 0;
+    }
+
+    // Consistency
+    if (sortedDates.length >= 2) {
+      const totalPossibleDays = this.daysBetween(sortedDates[0], today) + 1;
+      this.consistencyPercent = totalPossibleDays > 0
+        ? Math.round((this.totalReadingDays / totalPossibleDays) * 100)
+        : 0;
+    }
+
+    // Milestones
+    this.milestones = [
+      {label: this.translocoService.translate('statsUser.sessionHeatmap.milestone7DayStreak'), icon: '\uD83D\uDD25', requirement: 7, type: 'streak', unlocked: this.longestStreak >= 7},
+      {label: this.translocoService.translate('statsUser.sessionHeatmap.milestone30DayStreak'), icon: '\u26A1', requirement: 30, type: 'streak', unlocked: this.longestStreak >= 30},
+      {label: this.translocoService.translate('statsUser.sessionHeatmap.milestone100ReadingDays'), icon: '\uD83D\uDCDA', requirement: 100, type: 'total', unlocked: this.totalReadingDays >= 100},
+      {label: this.translocoService.translate('statsUser.sessionHeatmap.milestone365ReadingDays'), icon: '\uD83C\uDFC6', requirement: 365, type: 'total', unlocked: this.totalReadingDays >= 365},
+      {label: this.translocoService.translate('statsUser.sessionHeatmap.milestoneYearOfReading'), icon: '\uD83D\uDC51', requirement: 365, type: 'streak', unlocked: this.longestStreak >= 365},
+    ];
+  }
+
+  private toDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  private isConsecutiveDay(dateStr1: string, dateStr2: string): boolean {
+    const d1 = new Date(dateStr1);
+    const d2 = new Date(dateStr2);
+    return Math.abs(d2.getTime() - d1.getTime() - 86400000) < 3600000;
+  }
+
+  private daysBetween(dateStr1: string, dateStr2: string): number {
+    return Math.round((new Date(dateStr2).getTime() - new Date(dateStr1).getTime()) / 86400000);
   }
 
   private getDateFromWeek(year: number, week: number): Date {

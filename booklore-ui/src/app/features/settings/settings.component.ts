@@ -11,12 +11,14 @@ import {ViewPreferencesParentComponent} from './view-preferences-parent/view-pre
 import {ReaderPreferences} from './reader-preferences/reader-preferences.component';
 import {FileNamingPatternComponent} from './file-naming-pattern/file-naming-pattern.component';
 import {TaskManagementComponent} from './task-management/task-management.component';
+import {AuditLogsComponent} from './audit-logs/audit-logs.component';
 import {OpdsSettings} from './opds-settings/opds-settings';
 import {MetadataSettingsComponent} from './metadata-settings/metadata-settings-component';
 import {DeviceSettingsComponent} from './device-settings/device-settings-component';
 import {LibraryMetadataSettingsComponent} from './library-metadata-settings/library-metadata-settings.component';
 import {PageTitleService} from "../../shared/service/page-title.service";
 import {EmailV2Component} from './email-v2/email-v2.component';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 export enum SettingsTab {
   ReaderSettings = 'reader',
@@ -31,6 +33,7 @@ export enum SettingsTab {
   AuthenticationSettings = 'authentication',
   OpdsV2 = 'opds',
   Tasks = 'task',
+  AuditLogs = 'audit-logs',
 }
 
 @Component({
@@ -53,7 +56,9 @@ export enum SettingsTab {
     OpdsSettings,
     LibraryMetadataSettingsComponent,
     TaskManagementComponent,
-    EmailV2Component
+    AuditLogsComponent,
+    EmailV2Component,
+    TranslocoDirective
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'

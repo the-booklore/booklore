@@ -13,7 +13,7 @@
     <div class="loader-overlay">
       <div class="loader-content">
         <div class="spinner"></div>
-        <p class="loader-text">Loading book...</p>
+        <p class="loader-text">{{ 'readerEbook.reader.loadingBook' | transloco }}</p>
       </div>
     </div>
   }
@@ -81,5 +81,9 @@
       (save)="onNoteSave($event)"
       (cancel)="onNoteCancel()"
     ></app-reader-note-dialog>
+  }
+
+  @if (showShortcutsHelp) {
+    <app-ebook-shortcuts-help (close)="showShortcutsHelp = false"></app-ebook-shortcuts-help>
   }
 </div>

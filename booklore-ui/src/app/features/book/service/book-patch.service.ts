@@ -6,7 +6,7 @@ import {Book, BookFileProgress, ReadStatus} from '../model/book.model';
 import {BookStateService} from './book-state.service';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {ResetProgressType, ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
-import {BookStatusUpdateResponse, PersonalRatingUpdateResponse} from './book.service';
+import {BookStatusUpdateResponse, PersonalRatingUpdateResponse} from '../model/book.model';
 
 @Injectable({
   providedIn: 'root',
@@ -163,8 +163,13 @@ export class BookPatchService {
         const updatedBooks = (currentState.books || []).map(book => {
           const response = responses.find(r => r.bookId === book.id);
           if (response) {
+            const progressReset: Partial<Book> =
+              type === 'KOREADER' ? {koreaderProgress: undefined} :
+              type === 'KOBO' ? {koboProgress: undefined} :
+              {epubProgress: undefined, pdfProgress: undefined, cbxProgress: undefined, audiobookProgress: undefined};
             return {
               ...book,
+              ...progressReset,
               readStatus: response.readStatus,
               readStatusModifiedTime: response.readStatusModifiedTime,
               dateFinished: response.dateFinished

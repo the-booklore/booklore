@@ -1,28 +1,27 @@
 package org.booklore.service.metadata.writer;
 
-import org.booklore.model.MetadataClearFlags;
-import org.booklore.model.entity.BookMetadataEntity;
-import org.booklore.model.enums.BookFileType;
-import org.booklore.service.appsettings.AppSettingService;
-import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
-import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.xmpbox.XMPMetadata;
 import org.apache.xmpbox.schema.DublinCoreSchema;
 import org.apache.xmpbox.xml.XmpSerializer;
+import org.booklore.model.MetadataClearFlags;
+import org.booklore.model.dto.settings.MetadataPersistenceSettings;
+import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.util.SecureXmlUtils;
+import org.booklore.service.metadata.BookLoreMetadata;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -37,10 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -74,14 +70,14 @@ public class PdfMetadataWriter implements MetadataWriter {
             log.warn("Could not create PDF temp backup for {}: {}", file.getName(), e.getMessage());
         }
 
-        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
-             PDDocument pdf = Loader.loadPDF(randomAccessRead, IOUtils.createMemoryOnlyStreamCache())) {
+        try (PDDocument pdf = Loader.loadPDF(file, IOUtils.createTempFileOnlyStreamCache())) {
             pdf.setAllSecurityToBeRemoved(true);
             applyMetadataToDocument(pdf, metadataEntity, clear);
             tempFile = File.createTempFile("pdfmeta-", ".pdf");
             // PDFBox 3.x saves in compressed mode by default
             pdf.save(tempFile);
             Files.move(tempFile.toPath(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            tempFile = null; // Prevent deletion in finally block after successful move
             log.info("Successfully embedded metadata into PDF: {}", file.getName());
         } catch (Exception e) {
             log.warn("Failed to write metadata to PDF {}: {}", file.getName(), e.getMessage(), e);
@@ -130,14 +126,40 @@ public class PdfMetadataWriter implements MetadataWriter {
         return true;
     }
 
+    // Maximum length for PDF Info Dictionary keywords (some older PDF specs limit to 255 bytes)
+    private static final int MAX_INFO_KEYWORDS_LENGTH = 255;
+
     private void applyMetadataToDocument(PDDocument pdf, BookMetadataEntity entity, MetadataClearFlags clear) {
         PDDocumentInformation info = pdf.getDocumentInformation();
         MetadataCopyHelper helper = new MetadataCopyHelper(entity);
 
+        // Build categories-only keywords for PDF legacy compatibility (Info Dictionary)
+        // Moods and tags are stored separately in XMP booklore namespace, so they should NOT be in Info Dict keywords
+        StringBuilder keywordsBuilder = new StringBuilder();
+        helper.copyCategories(clear != null && clear.isCategories(), cats -> {
+            if (cats != null && !cats.isEmpty()) {
+                keywordsBuilder.append(String.join("; ", cats));
+            }
+        });
+
         helper.copyTitle(clear != null && clear.isTitle(), title -> info.setTitle(title != null ? title : ""));
         helper.copyPublisher(clear != null && clear.isPublisher(), pub -> info.setProducer(pub != null ? pub : ""));
         helper.copyAuthors(clear != null && clear.isAuthors(), authors -> info.setAuthor(authors != null ? String.join(", ", authors) : ""));
-        helper.copyCategories(clear != null && clear.isCategories(), cats -> info.setKeywords(cats != null ? String.join(", ", cats) : ""));
+        helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
+                    .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+            info.setCreationDate(cal);
+        });
+        
+        // Truncate keywords for legacy PDF Info Dictionary (255 byte limit in older specs)
+        String keywords = keywordsBuilder.toString();
+        if (keywords.length() > MAX_INFO_KEYWORDS_LENGTH) {
+            keywords = keywords.substring(0, MAX_INFO_KEYWORDS_LENGTH - 3) + "...";
+            log.debug("PDF keywords truncated from {} to {} characters for legacy compatibility", 
+                keywordsBuilder.length(), keywords.length());
+        }
+        info.setKeywords(keywords);
 
         try {
             XMPMetadata xmp = XMPMetadata.createXMPMetadata();
@@ -146,17 +168,45 @@ public class PdfMetadataWriter implements MetadataWriter {
             helper.copyTitle(clear != null && clear.isTitle(), title -> dc.setTitle(title != null ? title : ""));
             helper.copyDescription(clear != null && clear.isDescription(), desc -> dc.setDescription(desc != null ? desc : ""));
             helper.copyPublisher(clear != null && clear.isPublisher(), pub -> dc.addPublisher(pub != null ? pub : ""));
-            helper.copyLanguage(clear != null && clear.isLanguage(), lang -> dc.addLanguage(lang != null ? lang : ""));
+            
+            // Write language as provided by user
+            helper.copyLanguage(clear != null && clear.isLanguage(), lang -> {
+                if (lang != null && !lang.isBlank()) {
+                    dc.addLanguage(lang);
+                }
+            });
+            
+            // Use date-only format for dc:date (YYYY-MM-DD)
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
-                Calendar cal = Calendar.getInstance();
-                cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
-                        .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
-                dc.addDate(cal);
+                if (date != null) {
+                    // XMPBox requires Calendar, but we can create one with just the date (no time)
+                    Calendar cal = Calendar.getInstance();
+                    cal.clear(); // Clear time fields
+                    cal.set(date.getYear(), date.getMonthValue() - 1, date.getDayOfMonth());
+                    dc.addDate(cal);
+                }
             });
 
-            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> (authors != null ? authors : List.of("")).forEach(dc::addCreator));
+            // Clean author names (normalize whitespace)
+            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> {
+                if (authors != null && !authors.isEmpty()) {
+                    authors.stream()
+                        .map(name -> name.replaceAll("\\s+", " ").trim())
+                        .filter(name -> !name.isBlank())
+                        .forEach(dc::addCreator);
+                }
+            });
 
-            helper.copyCategories(clear != null && clear.isCategories(), cats -> (cats != null ? cats : List.of("")).forEach(dc::addSubject));
+            // Add categories as dc:subject
+            helper.copyCategories(clear != null && clear.isCategories(), cats -> {
+                if (cats != null && !cats.isEmpty()) {
+                    cats.forEach(dc::addSubject);
+                }
+            });
+            
+            // Note: BookLore custom fields (subtitle, ratings, moods, tags as separate field) 
+            // are added via raw XML manipulation in addCustomIdentifiersToXmp to avoid XMPBox namespace issues
+            // Moods and tags are stored separately in booklore namespace to avoid confusion with categories
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new XmpSerializer().serialize(xmp, baos, true);
@@ -188,69 +238,163 @@ public class PdfMetadataWriter implements MetadataWriter {
         }
     }
 
+
+    /**
+     * Adds custom metadata to XMP using Booklore namespace for all custom fields.
+     * <p>
+     * Namespace strategy:
+     * - Dublin Core (dc:) for title, description, creator, publisher, date, subject, language
+     * - XMP Basic (xmp:) for metadata dates, creator tool
+     * - Booklore (booklore:) for series, subtitle, ISBNs, external IDs, ratings, moods, tags, page count
+     */
     private byte[] addCustomIdentifiersToXmp(byte[] xmpBytes, BookMetadataEntity metadata, MetadataCopyHelper helper, MetadataClearFlags clear) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
         Document doc = builder.parse(new ByteArrayInputStream(xmpBytes));
 
         Element rdfRoot = (Element) doc.getElementsByTagNameNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "RDF").item(0);
         if (rdfRoot == null) throw new IllegalStateException("RDF root missing in XMP");
 
-        Element rdfDescription = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Description");
-        rdfDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xmp", "http://ns.adobe.com/xap/1.0/");
-        rdfDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xmpidq", "http://ns.adobe.com/xmp/Identifier/qual/1.0/");
-        rdfDescription.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:about", "");
+        // XMP Basic namespace for tool and date info
+        Element xmpBasicDescription = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Description");
+        xmpBasicDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xmp", "http://ns.adobe.com/xap/1.0/");
+        xmpBasicDescription.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:about", "");
 
-        Element xmpIdentifier = doc.createElementNS("http://ns.adobe.com/xap/1.0/", "xmp:Identifier");
-        Element rdfBag = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Bag");
-
-        helper.copyGoogleId(clear != null && clear.isGoogleId(), id -> appendIdentifier(doc, rdfBag, "google", id != null ? id : ""));
-        helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), id -> appendIdentifier(doc, rdfBag, "goodreads", id != null ? id : ""));
-        helper.copyComicvineId(clear != null && clear.isComicvineId(), id -> appendIdentifier(doc, rdfBag, "comicvine", id != null ? id : ""));
-        helper.copyHardcoverId(clear != null && clear.isHardcoverId(), id -> appendIdentifier(doc, rdfBag, "hardcover", id != null ? id : ""));
-        helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> appendIdentifier(doc, rdfBag, "ranobedb", id != null ? id : ""));
-        helper.copyAsin(clear != null && clear.isAsin(), id -> appendIdentifier(doc, rdfBag, "amazon", id != null ? id : ""));
-        helper.copyIsbn13(clear != null && clear.isIsbn13(), id -> appendIdentifier(doc, rdfBag, "isbn", id != null ? id : ""));
-
-        if (rdfBag.hasChildNodes()) {
-            xmpIdentifier.appendChild(rdfBag);
-            rdfDescription.appendChild(xmpIdentifier);
+        xmpBasicDescription.appendChild(createXmpElement(doc, "xmp:CreatorTool", "Booklore"));
+        // Use ISO-8601 format for current timestamps
+        String nowIso = ZonedDateTime.now().format(java.time.format.DateTimeFormatter.ISO_INSTANT);
+        xmpBasicDescription.appendChild(createXmpElement(doc, "xmp:MetadataDate", nowIso));
+        xmpBasicDescription.appendChild(createXmpElement(doc, "xmp:ModifyDate", nowIso));
+        if (metadata.getPublishedDate() != null) {
+            // Use date-only format (YYYY-MM-DD) when we only have a date, not a full timestamp
+            xmpBasicDescription.appendChild(createXmpElement(doc, "xmp:CreateDate", 
+                    metadata.getPublishedDate().toString()));
         }
 
-        rdfDescription.appendChild(createSimpleElement(doc, "xmp:MetadataDate", ZonedDateTime.now().toString()));
-        rdfDescription.appendChild(createSimpleElement(doc, "xmp:CreateDate", metadata.getPublishedDate() != null
-                ? metadata.getPublishedDate().atStartOfDay(ZoneId.systemDefault()).toString()
-                : ZonedDateTime.now().toString()));
-        rdfDescription.appendChild(createSimpleElement(doc, "xmp:CreatorTool", "Booklore"));
-        rdfDescription.appendChild(createSimpleElement(doc, "xmp:ModifyDate", ZonedDateTime.now().toString()));
+        rdfRoot.appendChild(xmpBasicDescription);
 
-        rdfRoot.appendChild(rdfDescription);
+        // Booklore namespace for all custom metadata
+        Element bookloreDescription = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Description");
+        bookloreDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:" + BookLoreMetadata.NS_PREFIX, BookLoreMetadata.NS_URI);
+        bookloreDescription.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:about", "");
 
-        Element calibreDescription = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Description");
-        calibreDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:calibre", "http://calibre-ebook.com/xmp-namespace");
-        calibreDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:calibreSI", "http://calibre-ebook.com/xmp-namespace-series-index");
-        calibreDescription.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:about", "");
+        // Series Information - ONLY write if BOTH name AND number are valid
+        // A series name without a number is broken/incomplete data
+        if (hasValidSeries(metadata, clear)) {
+            appendBookloreElement(doc, bookloreDescription, "seriesName", metadata.getSeriesName());
+            appendBookloreElement(doc, bookloreDescription, "seriesNumber", formatSeriesNumber(metadata.getSeriesNumber()));
+            
+            // Series total is optional, only write if > 0
+            if (metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) {
+                helper.copySeriesTotal(clear != null && clear.isSeriesTotal(), total -> {
+                    if (total != null && total > 0) {
+                        appendBookloreElement(doc, bookloreDescription, "seriesTotal", total.toString());
+                    }
+                });
+            }
+        }
 
-        helper.copySeriesName(clear != null && clear.isSeriesName(), series -> {
-            Element seriesElem = doc.createElementNS("http://calibre-ebook.com/xmp-namespace", "calibre:series");
-            seriesElem.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:calibreSI", "http://calibre-ebook.com/xmp-namespace-series-index");
-            seriesElem.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:parseType", "Resource");
-
-            Element valueElem = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:value");
-            valueElem.setTextContent(series != null ? series : "");
-            seriesElem.appendChild(valueElem);
-
-            helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), index -> {
-                Element indexElem = doc.createElementNS("http://calibre-ebook.com/xmp-namespace-series-index", "calibreSI:series_index");
-                indexElem.setTextContent(index != null ? String.format("%.2f", index) : "0.00");
-                seriesElem.appendChild(indexElem);
-            });
-
-            calibreDescription.appendChild(seriesElem);
+        // Subtitle
+        helper.copySubtitle(clear != null && clear.isSubtitle(), subtitle -> {
+            if (subtitle != null && !subtitle.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "subtitle", subtitle);
+            }
         });
 
-        rdfRoot.appendChild(calibreDescription);
+        // ISBN Identifiers
+        helper.copyIsbn13(clear != null && clear.isIsbn13(), isbn -> {
+            if (isbn != null && !isbn.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "isbn13", isbn);
+            }
+        });
+
+        helper.copyIsbn10(clear != null && clear.isIsbn10(), isbn -> {
+            if (isbn != null && !isbn.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "isbn10", isbn);
+            }
+        });
+
+        // External IDs (only if not blank)
+        helper.copyGoogleId(clear != null && clear.isGoogleId(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "googleId", id);
+            }
+        });
+
+        helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), id -> {
+            String normalizedId = normalizeGoodreadsId(id);
+            if (normalizedId != null && !normalizedId.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "goodreadsId", normalizedId);
+            }
+        });
+
+        helper.copyHardcoverId(clear != null && clear.isHardcoverId(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "hardcoverId", id);
+            }
+        });
+
+        helper.copyHardcoverBookId(clear != null && clear.isHardcoverBookId(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "hardcoverBookId", id);
+            }
+        });
+
+        helper.copyAsin(clear != null && clear.isAsin(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "asin", id);
+            }
+        });
+
+        helper.copyComicvineId(clear != null && clear.isComicvineId(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "comicvineId", id);
+            }
+        });
+
+        helper.copyLubimyczytacId(clear != null && clear.isLubimyczytacId(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "lubimyczytacId", id);
+            }
+        });
+
+        helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> {
+            if (id != null && !id.isBlank()) {
+                appendBookloreElement(doc, bookloreDescription, "ranobedbId", id);
+            }
+        });
+
+        // Ratings (only if > 0)
+        helper.copyRating(false, rating -> appendBookloreRating(doc, bookloreDescription, "rating", rating));
+        helper.copyHardcoverRating(clear != null && clear.isHardcoverRating(), rating -> appendBookloreRating(doc, bookloreDescription, "hardcoverRating", rating));
+        helper.copyGoodreadsRating(clear != null && clear.isGoodreadsRating(), rating -> appendBookloreRating(doc, bookloreDescription, "goodreadsRating", rating));
+        helper.copyAmazonRating(clear != null && clear.isAmazonRating(), rating -> appendBookloreRating(doc, bookloreDescription, "amazonRating", rating));
+        helper.copyLubimyczytacRating(clear != null && clear.isLubimyczytacRating(), rating -> appendBookloreRating(doc, bookloreDescription, "lubimyczytacRating", rating));
+        helper.copyRanobedbRating(clear != null && clear.isRanobedbRating(), rating -> appendBookloreRating(doc, bookloreDescription, "ranobedbRating", rating));
+
+        // Tags (as RDF Bag)
+        helper.copyTags(clear != null && clear.isTags(), tags -> {
+            if (tags != null && !tags.isEmpty()) {
+                appendBookloreBag(doc, bookloreDescription, "tags", tags);
+            }
+        });
+
+        // Moods (as RDF Bag)
+        helper.copyMoods(clear != null && clear.isMoods(), moods -> {
+            if (moods != null && !moods.isEmpty()) {
+                appendBookloreBag(doc, bookloreDescription, "moods", moods);
+            }
+        });
+
+        // Page Count
+        helper.copyPageCount(false, pageCount -> {
+            if (pageCount != null && pageCount > 0) {
+                appendBookloreElement(doc, bookloreDescription, "pageCount", pageCount.toString());
+            }
+        });
+
+        if (bookloreDescription.hasChildNodes()) {
+            rdfRoot.appendChild(bookloreDescription);
+        }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Transformer tf = TransformerFactory.newInstance().newTransformer();
@@ -260,36 +404,46 @@ public class PdfMetadataWriter implements MetadataWriter {
         return baos.toByteArray();
     }
 
-    private void appendIdentifier(Document doc, Element bag, String scheme, String value) {
-        if (StringUtils.isBlank(value)) return;
-        Element li = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:li");
-        li.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:parseType", "Resource");
-
-        Element schemeElem = doc.createElementNS("http://ns.adobe.com/xmp/Identifier/qual/1.0/", "xmpidq:Scheme");
-        schemeElem.setTextContent(scheme);
-
-        Element valueElem = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:value");
-        valueElem.setTextContent(value);
-
-        li.appendChild(schemeElem);
-        li.appendChild(valueElem);
-        bag.appendChild(li);
-    }
-
-    private Element createSimpleElement(Document doc, String name, String content) {
-        String namespace = name.startsWith("calibre:")
-                ? "http://calibre-ebook.com/xmp-namespace"
-                : "http://ns.adobe.com/xap/1.0/";
-
-        Element el = doc.createElementNS(namespace, name);
+    private Element createXmpElement(Document doc, String name, String content) {
+        Element el = doc.createElementNS("http://ns.adobe.com/xap/1.0/", name);
         el.setTextContent(content);
         return el;
+    }
+
+    private void appendBookloreElement(Document doc, Element parent, String localName, String value) {
+        Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":" + localName);
+        elem.setTextContent(value);
+        parent.appendChild(elem);
+    }
+
+    private void appendBookloreRating(Document doc, Element parent, String localName, Double rating) {
+        if (rating != null && rating > 0) {
+            Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":" + localName);
+            elem.setTextContent(String.format(Locale.US, "%.1f", rating));
+            parent.appendChild(elem);
+        }
+    }
+
+    private void appendBookloreBag(Document doc, Element parent, String localName, Set<String> values) {
+        Element elem = doc.createElementNS(BookLoreMetadata.NS_URI, BookLoreMetadata.NS_PREFIX + ":" + localName);
+        Element rdfBag = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:Bag");
+        
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                Element li = doc.createElementNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:li");
+                li.setTextContent(value);
+                rdfBag.appendChild(li);
+            }
+        }
+        
+        elem.appendChild(rdfBag);
+        parent.appendChild(elem);
     }
 
     private boolean isXmpMetadataDifferent(byte[] existingBytes, byte[] newBytes) {
         if (existingBytes == null || newBytes == null) return true;
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(false);
             Document doc1 = builder.parse(new ByteArrayInputStream(existingBytes));
             Document doc2 = builder.parse(new ByteArrayInputStream(newBytes));
             return !Objects.equals(
@@ -301,4 +455,72 @@ public class PdfMetadataWriter implements MetadataWriter {
             return true;
         }
     }
+
+    /**
+     * Validates that both series name AND series number are present and valid.
+     * A series name without a number (or vice versa) is broken/incomplete data and should not be written.
+     */
+    private boolean hasValidSeries(BookMetadataEntity metadata, MetadataClearFlags clear) {
+        // If clearing series, don't write it
+        if (clear != null && (clear.isSeriesName() || clear.isSeriesNumber())) {
+            return false;
+        }
+        
+        // Check if either field is locked - if so, respect the lock
+        if (Boolean.TRUE.equals(metadata.getSeriesNameLocked()) || Boolean.TRUE.equals(metadata.getSeriesNumberLocked())) {
+            return false;
+        }
+        
+        // Both name AND number must be valid
+        return metadata.getSeriesName() != null 
+                && !metadata.getSeriesName().isBlank()
+                && metadata.getSeriesNumber() != null 
+                && metadata.getSeriesNumber() > 0;
+    }
+
+    /**
+     * Formats series number nicely: "22" for whole numbers, "1.5" for decimals.
+     * Avoids unnecessary ".00" suffix.
+     */
+    private String formatSeriesNumber(Float number) {
+        if (number == null) return "0";
+        
+        // If it's a whole number, don't show decimal places
+        if (number % 1 == 0) {
+            return String.valueOf(number.intValue());
+        }
+        
+        // For decimals, show up to 2 decimal places but trim trailing zeros
+        String formatted = String.format(Locale.US, "%.2f", number);
+        // Remove trailing zeros after decimal point: "1.50" -> "1.5"
+        formatted = formatted.replaceAll("0+$", "").replaceAll("\\.$", "");
+        return formatted;
+    }
+
+    /**
+     * Normalizes Goodreads ID to extract just the numeric part.
+     * Goodreads URLs/IDs can be in formats like:
+     * - "52555538" (just ID)
+     * - "52555538-dead-simple-python" (ID with slug)
+     * The slug can change but the numeric ID is stable.
+     */
+    private String normalizeGoodreadsId(String goodreadsId) {
+        if (goodreadsId == null || goodreadsId.isBlank()) {
+            return null;
+        }
+        
+        // Extract numeric ID from slug format "12345678-book-title"
+        int dashIndex = goodreadsId.indexOf('-');
+        if (dashIndex > 0) {
+            String numericPart = goodreadsId.substring(0, dashIndex);
+            // Validate it's actually numeric
+            if (numericPart.matches("\\d+")) {
+                return numericPart;
+            }
+        }
+        
+        // Already just the ID, or return as-is if it's all numeric
+        return goodreadsId.matches("\\d+") ? goodreadsId : goodreadsId;
+    }
+
 }

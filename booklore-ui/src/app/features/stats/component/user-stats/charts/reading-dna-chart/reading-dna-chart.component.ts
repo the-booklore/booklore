@@ -4,9 +4,11 @@ import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
+import {Tooltip} from 'primeng/tooltip';
 import {BookService} from '../../../../../book/service/book.service';
 import {BookState} from '../../../../../book/model/state/book-state.model';
 import {Book, ReadStatus} from '../../../../../book/model/book.model';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface ReadingDNAProfile {
   adventurous: number;
@@ -31,12 +33,13 @@ type ReadingDNAChartData = ChartData<'radar', number[], string>;
 @Component({
   selector: 'app-reading-dna-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, Tooltip, TranslocoDirective],
   templateUrl: './reading-dna-chart.component.html',
   styleUrls: ['./reading-dna-chart.component.scss']
 })
 export class ReadingDNAChartComponent implements OnInit, OnDestroy {
   private readonly bookService = inject(BookService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   public readonly chartType = 'radar' as const;
@@ -76,18 +79,12 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
             size: 12
           },
           padding: 25,
-          callback: function (label: string) {
-            const icons: Record<string, string> = {
-              'Adventurous': '🌟',
-              'Perfectionist': '💎',
-              'Intellectual': '🧠',
-              'Emotional': '💖',
-              'Patient': '🕰️',
-              'Social': '👥',
-              'Nostalgic': '📚',
-              'Ambitious': '🚀'
-            };
-            return [icons[label] || '', label];
+          callback: (label: string) => {
+            const traitKeys = ['adventurous', 'perfectionist', 'intellectual', 'emotional', 'patient', 'social', 'nostalgic', 'ambitious'];
+            const icons = ['🌟', '💎', '🧠', '💖', '🕰️', '👥', '📚', '🚀'];
+            const translatedLabels = traitKeys.map(k => this.t.translate(`statsUser.readingDna.traits.${k}`));
+            const idx = translatedLabels.indexOf(label);
+            return [idx >= 0 ? icons[idx] : '', label];
           }
         }
       }
@@ -110,16 +107,16 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
         callbacks: {
           title: (context) => {
             const label = context[0]?.label || '';
-            return `${label} Personality`;
+            return this.t.translate('statsUser.readingDna.tooltipPersonality', {label});
           },
           label: (context) => {
             const score = context.parsed.r;
             const insight = this.personalityInsights.find(i => i.trait === context.label);
 
             return [
-              `Score: ${score.toFixed(1)}/100`,
+              this.t.translate('statsUser.readingDna.tooltipScore', {score}),
               '',
-              insight ? insight.description : 'Your reading personality trait'
+              insight ? insight.description : this.t.translate('statsUser.readingDna.tooltipDefaultDescription')
             ];
           }
         }
@@ -143,11 +140,10 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     }
   };
 
+  private readonly traitKeys = ['adventurous', 'perfectionist', 'intellectual', 'emotional', 'patient', 'social', 'nostalgic', 'ambitious'];
+
   private readonly chartDataSubject = new BehaviorSubject<ReadingDNAChartData>({
-    labels: [
-      'Adventurous', 'Perfectionist', 'Intellectual', 'Emotional',
-      'Patient', 'Social', 'Nostalgic', 'Ambitious'
-    ],
+    labels: [],
     datasets: []
   });
 
@@ -177,56 +173,48 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
   }
 
   private updateChartData(profile: ReadingDNAProfile | null): void {
-    try {
-      if (!profile) {
-        this.chartDataSubject.next({
-          labels: [],
-          datasets: []
-        });
-        this.personalityInsights = [];
-        return;
-      }
-
-      const data = [
-        profile.adventurous,
-        profile.perfectionist,
-        profile.intellectual,
-        profile.emotional,
-        profile.patient,
-        profile.social,
-        profile.nostalgic,
-        profile.ambitious
-      ];
-
-      const gradientColors = [
-        '#e91e63', '#2196f3', '#00bcd4', '#ff9800',
-        '#9c27b0', '#3f51b5', '#673ab7', '#009688'
-      ];
-
-      this.chartDataSubject.next({
-        labels: [
-          'Adventurous', 'Perfectionist', 'Intellectual', 'Emotional',
-          'Patient', 'Social', 'Nostalgic', 'Ambitious'
-        ],
-        datasets: [{
-          label: 'Reading DNA Profile',
-          data,
-          backgroundColor: 'rgba(233, 30, 99, 0.2)',
-          borderColor: '#e91e63',
-          borderWidth: 3,
-          pointBackgroundColor: gradientColors,
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 3,
-          pointRadius: 5,
-          pointHoverRadius: 8,
-          fill: true
-        }]
-      });
-
-      this.personalityInsights = this.convertToPersonalityInsights(profile);
-    } catch (error) {
-      console.error('Error updating reading DNA chart data:', error);
+    if (!profile) {
+      this.chartDataSubject.next({labels: [], datasets: []});
+      this.personalityInsights = [];
+      return;
     }
+
+    const data = [
+      profile.adventurous,
+      profile.perfectionist,
+      profile.intellectual,
+      profile.emotional,
+      profile.patient,
+      profile.social,
+      profile.nostalgic,
+      profile.ambitious
+    ];
+
+    const gradientColors = [
+      '#e91e63', '#2196f3', '#00bcd4', '#ff9800',
+      '#9c27b0', '#3f51b5', '#673ab7', '#009688'
+    ];
+
+    const translatedLabels = this.traitKeys.map(k => this.t.translate(`statsUser.readingDna.traits.${k}`));
+
+    this.chartDataSubject.next({
+      labels: translatedLabels,
+      datasets: [{
+        label: this.t.translate('statsUser.readingDna.readingDnaProfile'),
+        data,
+        backgroundColor: 'rgba(233, 30, 99, 0.2)',
+        borderColor: '#e91e63',
+        borderWidth: 3,
+        pointBackgroundColor: gradientColors,
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        fill: true
+      }]
+    });
+
+    this.personalityInsights = this.buildPersonalityInsights(profile);
   }
 
   private calculateReadingDNAData(): ReadingDNAProfile | null {
@@ -251,9 +239,9 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     );
   }
 
-  private analyzeReadingDNA(books: Book[]): ReadingDNAProfile {
+  private analyzeReadingDNA(books: Book[]): ReadingDNAProfile | null {
     if (books.length === 0) {
-      return this.getDefaultProfile();
+      return null;
     }
 
     return {
@@ -268,65 +256,49 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     };
   }
 
+  // Genre diversity + language variety
   private calculateAdventurousScore(books: Book[]): number {
     const genres = new Set<string>();
     const languages = new Set<string>();
-    const formats = new Set<string>();
 
     books.forEach(book => {
       book.metadata?.categories?.forEach(cat => genres.add(cat.toLowerCase()));
       if (book.metadata?.language) languages.add(book.metadata.language);
-      if (book.primaryFile?.bookType) formats.add(book.primaryFile.bookType);
     });
 
-    const genreScore = Math.min(60, genres.size * 4);
-    const languageScore = Math.min(20, languages.size * 10);
-    const formatScore = Math.min(20, formats.size * 7);
+    // Having unique genres equal to 40% of book count = max genre diversity
+    const diversityRatio = genres.size / Math.max(1, books.length * 0.4);
+    const genreScore = Math.min(75, diversityRatio * 75);
 
-    return genreScore + languageScore + formatScore;
+    // Each language beyond the first adds 12.5 pts
+    const languageScore = Math.min(25, Math.max(0, languages.size - 1) * 12.5);
+
+    return Math.min(100, Math.round(genreScore + languageScore));
   }
 
+  // Completion rate + high personal ratings
   private calculatePerfectionistScore(books: Book[]): number {
     const completedBooks = books.filter(b => b.readStatus === ReadStatus.READ);
     const completionRate = completedBooks.length / books.length;
 
-    const qualityBooks = books.filter(book => {
-      const metadata = book.metadata;
-      if (!metadata) return false;
-      return (metadata.goodreadsRating && metadata.goodreadsRating >= 4.0) ||
-        (metadata.amazonRating && metadata.amazonRating >= 4.0) ||
-        (book.personalRating && book.personalRating >= 4);
-    });
+    const ratedBooks = books.filter(book => book.personalRating);
+    const highRatedBooks = ratedBooks.filter(book => book.personalRating! >= 4);
+    const highRatingRate = ratedBooks.length > 0 ? highRatedBooks.length / ratedBooks.length : 0;
 
-    const qualityRate = qualityBooks.length / books.length;
-    const completionScore = completionRate * 60;
-    const qualityScore = qualityRate * 40;
-
-    return Math.min(100, completionScore + qualityScore);
+    return Math.min(100, Math.round(completionRate * 60 + highRatingRate * 40));
   }
 
+  // Non-fiction/academic genre proportion + long books
   private calculateIntellectualScore(books: Book[]): number {
     const intellectualGenres = [
-      'philosophy', 'science', 'history', 'biography', 'politics',
-      'psychology', 'sociology', 'economics', 'technology', 'mathematics',
-      'physics', 'chemistry', 'medicine', 'law', 'education',
-      'anthropology', 'archaeology', 'astronomy', 'biology', 'geology',
-      'linguistics', 'neuroscience', 'quantum physics', 'engineering',
-      'computer science', 'artificial intelligence', 'data science',
-      'research', 'academic', 'scholarly', 'theoretical', 'scientific',
-      'analytical', 'critical thinking', 'logic', 'rhetoric',
-      'cultural studies', 'international relations', 'diplomacy',
-      'public policy', 'governance', 'constitutional law', 'ethics',
-      'moral philosophy', 'epistemology', 'metaphysics', 'theology',
-      'religious studies', 'comparative religion', 'apologetics'
+      'philosophy', 'history', 'biography', 'politics', 'psychology',
+      'economics', 'mathematics', 'engineering', 'medicine', 'law',
+      'education', 'sociology', 'nonfiction', 'non-fiction', 'academic'
     ];
 
-    const intellectualBooks = books.filter(book => {
-      if (!book.metadata?.categories) return false;
-      return book.metadata.categories.some(cat =>
-        intellectualGenres.some(genre => cat.toLowerCase().includes(genre))
-      );
-    });
+    const intellectualBooks = books.filter(book =>
+      this.bookMatchesGenres(book, intellectualGenres)
+    );
 
     const longBooks = books.filter(book =>
       book.metadata?.pageCount && book.metadata.pageCount > 400
@@ -335,42 +307,28 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     const intellectualRate = intellectualBooks.length / books.length;
     const longBookRate = longBooks.length / books.length;
 
-    return Math.min(100, (intellectualRate * 70) + (longBookRate * 30));
+    return Math.min(100, Math.round(intellectualRate * 70 + longBookRate * 30));
   }
 
+  // Emotionally-driven genre proportion + rating engagement
   private calculateEmotionalScore(books: Book[]): number {
     const emotionalGenres = [
-      'fiction', 'romance', 'drama', 'literary', 'contemporary',
-      'memoir', 'poetry', 'young adult', 'coming of age', 'family',
-      'love story', 'relationships', 'emotional', 'heartbreak',
-      'healing', 'self-help', 'personal development', 'inspirational',
-      'motivational', 'spiritual', 'mindfulness', 'meditation',
-      'grief', 'loss', 'trauma', 'recovery', 'therapy',
-      'women\'s fiction', 'chick lit', 'new adult', 'teen',
-      'childhood', 'parenting', 'motherhood', 'fatherhood',
-      'friendship', 'betrayal', 'forgiveness', 'redemption',
-      'slice of life', 'domestic fiction', 'family saga',
-      'generational saga', 'multicultural', 'immigrant stories',
-      'lgbtq+', 'queer fiction', 'feminist', 'gender studies',
-      'social issues', 'mental health', 'addiction', 'wellness',
-      'autobiography', 'personal narrative', 'diary', 'journal'
+      'romance', 'memoir', 'poetry', 'drama', 'self-help',
+      'autobiography', 'literary fiction', 'coming of age'
     ];
 
-    const emotionalBooks = books.filter(book => {
-      if (!book.metadata?.categories) return false;
-      return book.metadata.categories.some(cat =>
-        emotionalGenres.some(genre => cat.toLowerCase().includes(genre))
-      );
-    });
+    const emotionalBooks = books.filter(book =>
+      this.bookMatchesGenres(book, emotionalGenres)
+    );
 
-    const personallyRatedBooks = books.filter(book => book.personalRating);
-
+    const ratedBooks = books.filter(book => book.personalRating);
+    const ratingEngagement = ratedBooks.length / books.length;
     const emotionalRate = emotionalBooks.length / books.length;
-    const ratingEngagement = personallyRatedBooks.length / books.length;
 
-    return Math.min(100, (emotionalRate * 60) + (ratingEngagement * 40));
+    return Math.min(100, Math.round(emotionalRate * 70 + ratingEngagement * 30));
   }
 
+  // Long books + series reading + in-progress commitment
   private calculatePatienceScore(books: Book[]): number {
     const longBooks = books.filter(book =>
       book.metadata?.pageCount && book.metadata.pageCount > 500
@@ -380,64 +338,41 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
       book.metadata?.seriesName && book.metadata?.seriesNumber
     );
 
-    const progressBooks = books.filter(book => {
-      const progress = Math.max(
-        book.epubProgress?.percentage || 0,
-        book.pdfProgress?.percentage || 0,
-        book.cbxProgress?.percentage || 0,
-        book.koreaderProgress?.percentage || 0,
-        book.koboProgress?.percentage || 0
-      );
-      return progress > 50;
-    });
+    const progressBooks = books.filter(book => this.getBookProgress(book) > 50);
 
     const longBookRate = longBooks.length / books.length;
     const seriesRate = seriesBooks.length / books.length;
     const progressRate = progressBooks.length / books.length;
 
-    return Math.min(100, (longBookRate * 40) + (seriesRate * 35) + (progressRate * 25));
+    return Math.min(100, Math.round(longBookRate * 40 + seriesRate * 35 + progressRate * 25));
   }
 
+  // Popular/mainstream genre proportion + high review counts
   private calculateSocialScore(books: Book[]): number {
-    const popularBooks = books.filter(book => {
-      const metadata = book.metadata;
-      if (!metadata) return false;
-      return (metadata.goodreadsReviewCount && metadata.goodreadsReviewCount > 1000) ||
-        (metadata.amazonReviewCount && metadata.amazonReviewCount > 500);
-    });
-
     const mainstreamGenres = [
-      'thriller', 'mystery', 'romance', 'fantasy', 'science fiction',
-      'horror', 'adventure', 'bestseller', 'contemporary', 'popular',
-      'crime', 'detective', 'suspense', 'action', 'espionage',
-      'spy', 'police procedural', 'cozy mystery', 'psychological thriller',
-      'domestic thriller', 'legal thriller', 'medical thriller',
-      'urban fantasy', 'paranormal', 'supernatural', 'magic',
-      'dystopian', 'post-apocalyptic', 'cyberpunk', 'space opera',
-      'military science fiction', 'hard science fiction', 'steampunk',
-      'alternate history', 'time travel', 'vampire', 'werewolf',
-      'zombie', 'ghost', 'gothic', 'dark fantasy', 'epic fantasy',
-      'sword and sorcery', 'high fantasy', 'historical romance',
-      'regency romance', 'western', 'sports', 'celebrity',
-      'entertainment', 'pop culture', 'reality tv', 'social media',
-      'true crime', 'celebrity biography', 'gossip', 'lifestyle',
-      'fashion', 'beauty', 'cooking', 'travel', 'humor',
-      'comedy', 'satire', 'graphic novel', 'manga', 'comic'
+      'thriller', 'mystery', 'crime', 'suspense', 'horror',
+      'fantasy', 'science fiction', 'adventure', 'true crime',
+      'humor', 'graphic novel', 'manga', 'comic'
     ];
 
-    const mainstreamBooks = books.filter(book => {
-      if (!book.metadata?.categories) return false;
-      return book.metadata.categories.some(cat =>
-        mainstreamGenres.some(genre => cat.toLowerCase().includes(genre))
-      );
+    const mainstreamBooks = books.filter(book =>
+      this.bookMatchesGenres(book, mainstreamGenres)
+    );
+
+    const popularBooks = books.filter(book => {
+      const m = book.metadata;
+      if (!m) return false;
+      return (m.goodreadsReviewCount && m.goodreadsReviewCount > 10000) ||
+        (m.amazonReviewCount && m.amazonReviewCount > 2000);
     });
 
-    const popularRate = popularBooks.length / books.length;
     const mainstreamRate = mainstreamBooks.length / books.length;
+    const popularRate = popularBooks.length / books.length;
 
-    return Math.min(100, (popularRate * 50) + (mainstreamRate * 50));
+    return Math.min(100, Math.round(mainstreamRate * 50 + popularRate * 50));
   }
 
+  // Old publication dates + classic genre proportion
   private calculateNostalgicScore(books: Book[]): number {
     const currentYear = new Date().getFullYear();
     const classicThreshold = currentYear - 30;
@@ -445,37 +380,28 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     const oldBooks = books.filter(book => {
       if (!book.metadata?.publishedDate) return false;
       const pubYear = new Date(book.metadata.publishedDate).getFullYear();
-      return pubYear < classicThreshold;
+      return pubYear > 0 && pubYear < classicThreshold;
     });
 
     const classicGenres = [
-      'classic', 'literature', 'historical', 'vintage', 'traditional',
-      'heritage', 'timeless', 'canonical', 'masterpiece', 'landmark',
-      'seminal', 'influential', 'groundbreaking', 'pioneering',
-      'classical literature', 'world literature', 'nobel prize',
-      'pulitzer prize', 'booker prize', 'national book award',
-      'literary fiction', 'modernist', 'post-modernist', 'realist',
-      'naturalist', 'romantic', 'victorian', 'edwardian',
-      'renaissance', 'enlightenment', 'ancient', 'medieval',
-      'colonial', 'antebellum', 'gilded age', 'jazz age',
-      'lost generation', 'beat generation', 'harlem renaissance',
-      'golden age', 'silver age', 'folk tales', 'fairy tales',
-      'mythology', 'legends', 'folklore', 'oral tradition',
-      'epic poetry', 'sonnets', 'ballads', 'odes',
-      'dramatic works', 'shakespearean', 'greek tragedy',
-      'roman literature', 'biblical', 'religious classics',
-      'philosophical classics', 'historical classics'
+      'classic', 'mythology', 'folklore', 'fairy tale',
+      'ancient', 'medieval', 'victorian', 'gothic'
     ];
 
-    const oldBookRate = oldBooks.length / books.length;
-    const classicRate = classicGenres.length / books.length;
+    const classicBooks = books.filter(book =>
+      this.bookMatchesGenres(book, classicGenres)
+    );
 
-    return Math.min(100, (oldBookRate * 60) + (classicRate * 40));
+    const oldBookRate = oldBooks.length / books.length;
+    const classicRate = classicBooks.length / books.length;
+
+    return Math.min(100, Math.round(oldBookRate * 60 + classicRate * 40));
   }
 
+  // Library volume + challenging book proportion + completion of challenging books
   private calculateAmbitiousScore(books: Book[]): number {
-    const totalBooks = books.length;
-    const volumeScore = Math.min(40, totalBooks * 2);
+    // Need ~100 books to max out the volume component
+    const volumeScore = Math.min(40, books.length * 0.4);
 
     const challengingBooks = books.filter(book =>
       book.metadata?.pageCount && book.metadata.pageCount > 600
@@ -489,75 +415,39 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     const completionRate = challengingBooks.length > 0 ?
       completedChallenging.length / challengingBooks.length : 0;
 
-    const challengingScore = challengingRate * 35;
-    const completionBonus = completionRate * 25;
-
-    return Math.min(100, volumeScore + challengingScore + completionBonus);
+    return Math.min(100, Math.round(volumeScore + challengingRate * 35 + completionRate * 25));
   }
 
-  private getDefaultProfile(): ReadingDNAProfile {
-    return {
-      adventurous: 50,
-      perfectionist: 50,
-      intellectual: 50,
-      emotional: 50,
-      patient: 50,
-      social: 50,
-      nostalgic: 50,
-      ambitious: 50
-    };
+  private bookMatchesGenres(book: Book, genres: string[]): boolean {
+    if (!book.metadata?.categories) return false;
+    return book.metadata.categories.some(cat =>
+      genres.some(genre => cat.toLowerCase().includes(genre))
+    );
   }
 
-  private convertToPersonalityInsights(profile: ReadingDNAProfile): PersonalityInsight[] {
-    return [
-      {
-        trait: 'Adventurous',
-        score: profile.adventurous,
-        description: 'You explore diverse genres and experimental content',
-        color: '#e91e63'
-      },
-      {
-        trait: 'Perfectionist',
-        score: profile.perfectionist,
-        description: 'You prefer high-quality books and finish what you start',
-        color: '#2196f3'
-      },
-      {
-        trait: 'Intellectual',
-        score: profile.intellectual,
-        description: 'You gravitate toward complex, educational material',
-        color: '#00bcd4'
-      },
-      {
-        trait: 'Emotional',
-        score: profile.emotional,
-        description: 'You connect emotionally with fiction and personal stories',
-        color: '#ff9800'
-      },
-      {
-        trait: 'Patient',
-        score: profile.patient,
-        description: 'You tackle long books and complete series',
-        color: '#9c27b0'
-      },
-      {
-        trait: 'Social',
-        score: profile.social,
-        description: 'You enjoy popular, widely-discussed books',
-        color: '#3f51b5'
-      },
-      {
-        trait: 'Nostalgic',
-        score: profile.nostalgic,
-        description: 'You appreciate classic literature and older works',
-        color: '#673ab7'
-      },
-      {
-        trait: 'Ambitious',
-        score: profile.ambitious,
-        description: 'You challenge yourself with volume and difficulty',
-        color: '#009688'
-      }
-    ];
+  private getBookProgress(book: Book): number {
+    return Math.max(
+      book.epubProgress?.percentage || 0,
+      book.pdfProgress?.percentage || 0,
+      book.cbxProgress?.percentage || 0,
+      book.koreaderProgress?.percentage || 0,
+      book.koboProgress?.percentage || 0
+    );
+  }
+
+  private getTraitDescription(traitKey: string, score: number): string {
+    const level = score < 33 ? 'low' : score < 67 ? 'mid' : 'high';
+    return this.t.translate(`statsUser.readingDna.descriptions.${traitKey}.${level}`);
+  }
+
+  private buildPersonalityInsights(profile: ReadingDNAProfile): PersonalityInsight[] {
+    const traitColors = ['#e91e63', '#2196f3', '#00bcd4', '#ff9800', '#9c27b0', '#3f51b5', '#673ab7', '#009688'];
+
+    return this.traitKeys.map((key, i) => ({
+      trait: this.t.translate(`statsUser.readingDna.traits.${key}`),
+      score: profile[key as keyof ReadingDNAProfile],
+      description: this.getTraitDescription(key, profile[key as keyof ReadingDNAProfile]),
+      color: traitColors[i]
+    }));
   }
 }

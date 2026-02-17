@@ -1,5 +1,12 @@
 package org.booklore.service.fileprocessor;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.settings.LibraryFile;
@@ -15,13 +22,6 @@ import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.util.BookCoverUtils;
 import org.booklore.util.FileService;
 import org.booklore.util.FileUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.ImageType;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
@@ -102,11 +102,17 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             if (StringUtils.isNotBlank(extracted.getTitle())) {
                 bookEntity.getMetadata().setTitle(truncate(extracted.getTitle(), 1000));
             }
+            if (StringUtils.isNotBlank(extracted.getSubtitle())) {
+                bookEntity.getMetadata().setSubtitle(truncate(extracted.getSubtitle(), 1000));
+            }
             if (StringUtils.isNotBlank(extracted.getSeriesName())) {
                 bookEntity.getMetadata().setSeriesName(truncate(extracted.getSeriesName(), 1000));
             }
             if (extracted.getSeriesNumber() != null) {
                 bookEntity.getMetadata().setSeriesNumber(extracted.getSeriesNumber());
+            }
+            if (extracted.getSeriesTotal() != null) {
+                bookEntity.getMetadata().setSeriesTotal(extracted.getSeriesTotal());
             }
             if (extracted.getAuthors() != null) {
                 bookCreatorService.addAuthorsToBook(extracted.getAuthors(), bookEntity);
@@ -123,6 +129,11 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             if (StringUtils.isNotBlank(extracted.getLanguage())) {
                 bookEntity.getMetadata().setLanguage(extracted.getLanguage());
             }
+            if (extracted.getPageCount() != null) {
+                bookEntity.getMetadata().setPageCount(extracted.getPageCount());
+            }
+            
+            // External IDs
             if (StringUtils.isNotBlank(extracted.getAsin())) {
                 bookEntity.getMetadata().setAsin(extracted.getAsin());
             }
@@ -131,6 +142,9 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             }
             if (StringUtils.isNotBlank(extracted.getHardcoverId())) {
                 bookEntity.getMetadata().setHardcoverId(extracted.getHardcoverId());
+            }
+            if (StringUtils.isNotBlank(extracted.getHardcoverBookId())) {
+                bookEntity.getMetadata().setHardcoverBookId(extracted.getHardcoverBookId());
             }
             if (StringUtils.isNotBlank(extracted.getGoodreadsId())) {
                 bookEntity.getMetadata().setGoodreadsId(extracted.getGoodreadsId());
@@ -141,14 +155,45 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             if (StringUtils.isNotBlank(extracted.getRanobedbId())) {
                 bookEntity.getMetadata().setRanobedbId(extracted.getRanobedbId());
             }
+            if (StringUtils.isNotBlank(extracted.getLubimyczytacId())) {
+                bookEntity.getMetadata().setLubimyczytacId(extracted.getLubimyczytacId());
+            }
             if (StringUtils.isNotBlank(extracted.getIsbn10())) {
                 bookEntity.getMetadata().setIsbn10(extracted.getIsbn10());
             }
             if (StringUtils.isNotBlank(extracted.getIsbn13())) {
                 bookEntity.getMetadata().setIsbn13(extracted.getIsbn13());
             }
-            if (extracted.getCategories() != null) {
+            
+            // Categories, moods, and tags
+            if (extracted.getCategories() != null && !extracted.getCategories().isEmpty()) {
                 bookCreatorService.addCategoriesToBook(extracted.getCategories(), bookEntity);
+            }
+            if (extracted.getMoods() != null && !extracted.getMoods().isEmpty()) {
+                bookCreatorService.addMoodsToBook(extracted.getMoods(), bookEntity);
+            }
+            if (extracted.getTags() != null && !extracted.getTags().isEmpty()) {
+                bookCreatorService.addTagsToBook(extracted.getTags(), bookEntity);
+            }
+            
+            // Ratings
+            if (extracted.getAmazonRating() != null) {
+                bookEntity.getMetadata().setAmazonRating(extracted.getAmazonRating());
+            }
+            if (extracted.getGoodreadsRating() != null) {
+                bookEntity.getMetadata().setGoodreadsRating(extracted.getGoodreadsRating());
+            }
+            if (extracted.getHardcoverRating() != null) {
+                bookEntity.getMetadata().setHardcoverRating(extracted.getHardcoverRating());
+            }
+            if (extracted.getLubimyczytacRating() != null) {
+                bookEntity.getMetadata().setLubimyczytacRating(extracted.getLubimyczytacRating());
+            }
+            if (extracted.getRanobedbRating() != null) {
+                bookEntity.getMetadata().setRanobedbRating(extracted.getRanobedbRating());
+            }
+            if (extracted.getRating() != null) {
+                bookEntity.getMetadata().setRating(extracted.getRating());
             }
 
         } catch (Exception e) {

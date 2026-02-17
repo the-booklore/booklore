@@ -1,4 +1,5 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -11,6 +12,7 @@ import {DashboardConfig, ScrollerConfig, ScrollerType} from '../../models/dashbo
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {map} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 export const MAX_SCROLLERS = 10;
 export const DEFAULT_MAX_ITEMS = 20;
@@ -27,7 +29,9 @@ export const MAX_ITEMS = 20;
     CheckboxModule,
     InputTextModule,
     SelectModule,
-    InputNumberModule
+    InputNumberModule,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './dashboard-settings.component.html',
   styleUrls: ['./dashboard-settings.component.scss']
@@ -36,6 +40,8 @@ export class DashboardSettingsComponent implements OnInit {
   private configService = inject(DashboardConfigService);
   private dialogRef = inject(DynamicDialogRef);
   private magicShelfService = inject(MagicShelfService);
+  private translocoService = inject(TranslocoService);
+  private destroyRef = inject(DestroyRef);
 
   config!: DashboardConfig;
 
@@ -95,6 +101,10 @@ export class DashboardSettingsComponent implements OnInit {
   readonly MAX_SCROLLERS = MAX_SCROLLERS;
 
   ngOnInit(): void {
+    this.translocoService.langChanges$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.buildTranslatedOptions());
+
     this.configService.config$.subscribe(config => {
       this.config = JSON.parse(JSON.stringify(config));
     });
@@ -109,18 +119,55 @@ export class DashboardSettingsComponent implements OnInit {
     });
   }
 
+  private buildTranslatedOptions(): void {
+    const t = (key: string) => this.translocoService.translate(`dashboard.settings.${key}`);
+
+    this.availableScrollerTypes = [
+      {label: t('scrollerTypes.lastRead'), value: ScrollerType.LAST_READ},
+      {label: t('scrollerTypes.lastListened'), value: ScrollerType.LAST_LISTENED},
+      {label: t('scrollerTypes.latestAdded'), value: ScrollerType.LATEST_ADDED},
+      {label: t('scrollerTypes.random'), value: ScrollerType.RANDOM},
+      {label: t('scrollerTypes.magicShelf'), value: ScrollerType.MAGIC_SHELF}
+    ];
+
+    this.sortFieldOptions = [
+      {label: t('sortFields.title'), value: 'title'},
+      {label: t('sortFields.fileName'), value: 'fileName'},
+      {label: t('sortFields.filePath'), value: 'filePath'},
+      {label: t('sortFields.addedOn'), value: 'addedOn'},
+      {label: t('sortFields.author'), value: 'author'},
+      {label: t('sortFields.authorSurnameVorname'), value: 'authorSurnameVorname'},
+      {label: t('sortFields.seriesName'), value: 'seriesName'},
+      {label: t('sortFields.seriesNumber'), value: 'seriesNumber'},
+      {label: t('sortFields.personalRating'), value: 'personalRating'},
+      {label: t('sortFields.publisher'), value: 'publisher'},
+      {label: t('sortFields.publishedDate'), value: 'publishedDate'},
+      {label: t('sortFields.lastReadTime'), value: 'lastReadTime'},
+      {label: t('sortFields.readStatus'), value: 'readStatus'},
+      {label: t('sortFields.dateFinished'), value: 'dateFinished'},
+      {label: t('sortFields.readingProgress'), value: 'readingProgress'},
+      {label: t('sortFields.bookType'), value: 'bookType'},
+      {label: t('sortFields.pageCount'), value: 'pageCount'}
+    ];
+
+    this.sortDirectionOptions = [
+      {label: t('sortDirections.asc'), value: 'asc'},
+      {label: t('sortDirections.desc'), value: 'desc'}
+    ];
+  }
+
   getScrollerTitle(scroller: ScrollerConfig): string {
     if (scroller.type === ScrollerType.MAGIC_SHELF && scroller.magicShelfId) {
-      return this.magicShelvesMap.get(scroller.magicShelfId) || 'Magic Shelf';
+      return this.magicShelvesMap.get(scroller.magicShelfId) || 'dashboard.scroller.magicShelf';
     }
 
     switch (scroller.type) {
       case ScrollerType.LAST_READ:
-        return 'Continue Reading';
+        return 'dashboard.scroller.continueReading';
       case ScrollerType.LAST_LISTENED:
-        return 'Continue Listening';
+        return 'dashboard.scroller.continueListening';
       case ScrollerType.LATEST_ADDED:
-        return 'Recently Added';
+        return 'dashboard.scroller.recentlyAdded';
       case ScrollerType.RANDOM:
         return 'Discover Something New';
       case ScrollerType.UP_NEXT:
@@ -130,7 +177,7 @@ export class DashboardSettingsComponent implements OnInit {
       case ScrollerType.RECOMMENDATIONS:
         return 'Recommendations';
       default:
-        return 'Scroller';
+        return 'dashboard.scroller.default';
     }
   }
 

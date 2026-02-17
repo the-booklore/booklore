@@ -17,13 +17,14 @@ import {AppSettingKey, KoboSettings} from '../../../../../shared/model/app-setti
 import {ShelfService} from '../../../../book/service/shelf.service';
 import {ExternalDocLinkComponent} from '../../../../../shared/components/external-doc-link/external-doc-link.component';
 import {ToastModule} from 'primeng/toast';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-kobo-sync-setting-component',
   standalone: true,
   templateUrl: './kobo-sync-settings-component.html',
   styleUrl: './kobo-sync-settings-component.scss',
-  imports: [FormsModule, Button, InputText, ConfirmDialog, ToggleSwitch, Slider, Divider, ExternalDocLinkComponent, ToastModule],
+  imports: [FormsModule, Button, InputText, ConfirmDialog, ToggleSwitch, Slider, Divider, ExternalDocLinkComponent, ToastModule, TranslocoDirective],
   providers: [MessageService, ConfirmationService]
 })
 export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
@@ -34,6 +35,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   protected appSettingsService = inject(AppSettingsService);
   protected settingsHelperService = inject(SettingsHelperService);
   private shelfService = inject(ShelfService);
+  private readonly t = inject(TranslocoService);
 
   private readonly destroy$ = new Subject<void>();
   private readonly sliderChange$ = new Subject<void>();
@@ -78,7 +80,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       debounceTime(500),
       takeUntil(this.destroy$)
     ).subscribe(() => {
-      this.updateKoboSettings('Progress thresholds updated successfully');
+      this.updateKoboSettings(this.t.translate('settingsDevice.kobo.progressUpdated'));
     });
   }
 
@@ -122,7 +124,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         this.credentialsSaved = !!settings.token;
       },
       error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load Kobo settings'});
+        this.messageService.add({severity: 'error', summary: this.t.translate('common.error'), detail: this.t.translate('settingsDevice.kobo.loadError')});
       }
     });
   }
@@ -150,15 +152,15 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     navigator.clipboard.writeText(text).then(() => {
       this.messageService.add({
         severity: 'success',
-        summary: 'Copied',
-        detail: `${label} copied to clipboard`
+        summary: this.t.translate('settingsDevice.copied'),
+        detail: this.t.translate('settingsDevice.copiedDetail', {label})
       });
     }).catch(err => {
       console.error('Copy failed', err);
       this.messageService.add({
         severity: 'error',
-        summary: 'Copy Failed',
-        detail: `Unable to copy ${label.toLowerCase()} to clipboard`
+        summary: this.t.translate('settingsDevice.copyFailed'),
+        detail: this.t.translate('settingsDevice.copyFailedDetail', {label})
       });
     });
   }
@@ -170,8 +172,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
 
   confirmRegenerateToken() {
     this.confirmationService.confirm({
-      message: 'This will generate a new token and invalidate the previous one. Continue?',
-      header: 'Confirm Regeneration',
+      message: this.t.translate('settingsDevice.kobo.confirmRegenerate'),
+      header: this.t.translate('settingsDevice.kobo.confirmRegenerateHeader'),
       icon: 'pi pi-exclamation-triangle',
       accept: () => this.regenerateToken()
     });
@@ -182,10 +184,10 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       next: (settings) => {
         this.koboSyncSettings.token = settings.token;
         this.credentialsSaved = true;
-        this.messageService.add({severity: 'success', summary: 'Token regenerated', detail: 'New token generated successfully'});
+        this.messageService.add({severity: 'success', summary: this.t.translate('settingsDevice.kobo.tokenRegenerated'), detail: this.t.translate('settingsDevice.kobo.tokenRegeneratedDetail')});
       },
       error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to regenerate token'});
+        this.messageService.add({severity: 'error', summary: this.t.translate('common.error'), detail: this.t.translate('settingsDevice.kobo.tokenRegenerateError')});
       }
     });
   }
@@ -201,16 +203,16 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   onSyncToggle() {
     if (!this.koboSyncSettings.syncEnabled) {
       this.confirmationService.confirm({
-        message: 'Disabling Kobo sync will delete your Kobo shelf. Are you sure you want to proceed?',
-        header: 'Confirm Disable',
+        message: this.t.translate('settingsDevice.kobo.confirmDisable'),
+        header: this.t.translate('settingsDevice.kobo.confirmDisableHeader'),
         icon: 'pi pi-exclamation-triangle',
-        accept: () => this.updateKoboSettings('Kobo sync disabled'),
+        accept: () => this.updateKoboSettings(this.t.translate('settingsDevice.kobo.syncDisabled')),
         reject: () => {
           this.koboSyncSettings.syncEnabled = true;
         }
       });
     } else {
-      this.updateKoboSettings('Kobo sync enabled');
+      this.updateKoboSettings(this.t.translate('settingsDevice.kobo.syncEnabled'));
     }
   }
 
@@ -220,8 +222,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
 
   onAutoAddToggle() {
     const message = this.koboSyncSettings.autoAddToShelf
-      ? 'New books will be automatically added to Kobo shelf'
-      : 'Auto-add to Kobo shelf disabled';
+      ? this.t.translate('settingsDevice.kobo.autoAddEnabled')
+      : this.t.translate('settingsDevice.kobo.autoAddDisabled');
     this.updateKoboSettings(message);
   }
 
@@ -230,18 +232,16 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Settings Updated',
+          summary: this.t.translate('settingsDevice.kobo.settingsUpdated'),
           detail: successMessage
         });
-        if (!this.koboSyncSettings.syncEnabled) {
-          this.shelfService.reloadShelves();
-        }
+        this.shelfService.reloadShelves();
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to update Kobo settings'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsDevice.kobo.settingsUpdateError')
         });
       }
     });
@@ -253,15 +253,15 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         next: () => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Settings Saved',
-            detail: 'Kobo settings updated successfully'
+            summary: this.t.translate('settingsDevice.kobo.settingsSaved'),
+            detail: this.t.translate('settingsDevice.kobo.settingsSuccess')
           });
         },
         error: () => {
           this.messageService.add({
             severity: 'error',
-            summary: 'Save Failed',
-            detail: 'Failed to save Kobo settings'
+            summary: this.t.translate('settingsDevice.kobo.saveFailed'),
+            detail: this.t.translate('settingsDevice.kobo.saveError')
           });
         }
       });

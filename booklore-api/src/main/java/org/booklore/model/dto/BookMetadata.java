@@ -68,6 +68,9 @@ public class BookMetadata {
     private MetadataProvider provider;
     private String thumbnailUrl;
     private List<BookReview> bookReviews;
+    private Double rating;
+
+    private Boolean allMetadataLocked;
 
     private Boolean titleLocked;
     private Boolean subtitleLocked;

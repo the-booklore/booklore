@@ -6,13 +6,13 @@ import {filter, first, map, switchMap, takeUntil, timeout} from 'rxjs/operators'
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
-import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode, UserService} from '../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, UserService} from '../../settings/user-management/user.service';
 import {MessageService} from 'primeng/api';
+import {TranslocoService, TranslocoPipe} from '@jsverse/transloco';
 import {Book, BookSetting, BookType} from '../../book/model/book.model';
 import {BookState} from '../../book/model/state/book-state.model';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {FormsModule} from "@angular/forms";
-import {NewPdfReaderService} from '../../book/service/new-pdf-reader.service';
 import {ReadingSessionService} from '../../../shared/service/reading-session.service';
 import {ReaderHeaderFooterVisibilityManager} from '../ebook-reader';
 
@@ -36,6 +36,7 @@ import {BookNoteV2} from '../../../shared/service/book-note-v2.service';
     CommonModule,
     ProgressSpinner,
     FormsModule,
+    TranslocoPipe,
     CbxHeaderComponent,
     CbxSidebarComponent,
     CbxFooterComponent,
@@ -63,11 +64,11 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   currentPage = 0;
   isLoading = true;
 
-  pageSpread: CbxPageSpread | PdfPageSpread = CbxPageSpread.ODD;
-  pageViewMode: CbxPageViewMode | PdfPageViewMode = CbxPageViewMode.SINGLE_PAGE;
-  backgroundColor: CbxBackgroundColor | PdfBackgroundColor = CbxBackgroundColor.GRAY;
-  fitMode: CbxFitMode | PdfFitMode = CbxFitMode.FIT_PAGE;
-  scrollMode: CbxScrollMode | PdfScrollMode = CbxScrollMode.PAGINATED;
+  pageSpread: CbxPageSpread = CbxPageSpread.ODD;
+  pageViewMode: CbxPageViewMode = CbxPageViewMode.SINGLE_PAGE;
+  backgroundColor: CbxBackgroundColor = CbxBackgroundColor.GRAY;
+  fitMode: CbxFitMode = CbxFitMode.FIT_PAGE;
+  scrollMode: CbxScrollMode = CbxScrollMode.PAGINATED;
 
   private touchStartX = 0;
   private touchEndX = 0;
@@ -94,6 +95,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   noteDialogData: CbxNoteDialogData | null = null;
   private editingNote: BookNoteV2 | null = null;
 
+  // Footer visibility (for slideshow progress bar positioning)
+  isFooterVisible = false;
+
   // Fullscreen state
   isFullscreen = false;
 
@@ -107,7 +111,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   // Double-tap zoom
   private lastTapTime = 0;
-  private originalFitMode: CbxFitMode | PdfFitMode | null = null;
+  private originalFitMode: CbxFitMode | null = null;
 
   // Shortcuts help dialog
   showShortcutsHelp = false;
@@ -121,10 +125,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cbxReaderService = inject(CbxReaderService);
-  private pdfReaderService = inject(NewPdfReaderService);
   private bookService = inject(BookService);
   private userService = inject(UserService);
   private messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
   private pageTitle = inject(PageTitleService);
   private readingSessionService = inject(ReadingSessionService);
   private headerService = inject(CbxHeaderService);
@@ -138,7 +142,6 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   protected readonly CbxPageViewMode = CbxPageViewMode;
   protected readonly CbxPageSpread = CbxPageSpread;
 
-  private static readonly TYPE_PDF = 'PDF';
   private static readonly TYPE_CBX = 'CBX';
   private static readonly SETTING_GLOBAL = 'Global';
 
@@ -148,6 +151,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       this.headerService.setForceVisible(state.headerVisible);
       this.footerService.setForceVisible(state.footerVisible);
     });
+
+    this.footerService.forceVisible$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(visible => this.isFooterVisible = visible);
 
     this.subscribeToHeaderEvents();
     this.subscribeToSidebarEvents();
@@ -196,9 +203,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
             this.loadSeriesNavigationAsync(book);
           }
 
-          const pagesObservable = this.bookType === CbxReaderComponent.TYPE_PDF
-            ? this.pdfReaderService.getAvailablePages(this.bookId, this.altBookType)
-            : this.cbxReaderService.getAvailablePages(this.bookId, this.altBookType);
+          const pagesObservable = this.cbxReaderService.getAvailablePages(this.bookId, this.altBookType);
 
           pagesObservable.subscribe({
             next: (pages) => {
@@ -232,30 +237,6 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
                 }
               }
 
-              if (this.bookType === CbxReaderComponent.TYPE_PDF) {
-                const global = userSettings.perBookSetting.pdf === CbxReaderComponent.SETTING_GLOBAL;
-                this.pageViewMode = global
-                  ? PdfPageViewMode[userSettings.newPdfReaderSetting.pageViewMode as keyof typeof PdfPageViewMode] || PdfPageViewMode.SINGLE_PAGE
-                  : PdfPageViewMode[bookSettings.newPdfSettings?.pageViewMode as keyof typeof PdfPageViewMode] || PdfPageViewMode[userSettings.newPdfReaderSetting.pageViewMode as keyof typeof PdfPageViewMode] || PdfPageViewMode.SINGLE_PAGE;
-
-                this.pageSpread = global
-                  ? PdfPageSpread[userSettings.newPdfReaderSetting.pageSpread as keyof typeof PdfPageSpread] || PdfPageSpread.ODD
-                  : PdfPageSpread[bookSettings.newPdfSettings?.pageSpread as keyof typeof PdfPageSpread] || PdfPageSpread[userSettings.newPdfReaderSetting.pageSpread as keyof typeof PdfPageSpread] || PdfPageSpread.ODD;
-
-                this.fitMode = global
-                  ? PdfFitMode[userSettings.newPdfReaderSetting.fitMode as keyof typeof PdfFitMode] || PdfFitMode.FIT_PAGE
-                  : PdfFitMode[bookSettings.newPdfSettings?.fitMode as keyof typeof PdfFitMode] || PdfFitMode[userSettings.newPdfReaderSetting.fitMode as keyof typeof PdfFitMode] || PdfFitMode.FIT_PAGE;
-
-                this.scrollMode = global
-                  ? PdfScrollMode[userSettings.newPdfReaderSetting.scrollMode as keyof typeof PdfScrollMode] || PdfScrollMode.PAGINATED
-                  : PdfScrollMode[bookSettings.newPdfSettings?.scrollMode as keyof typeof PdfScrollMode] || PdfScrollMode[userSettings.newPdfReaderSetting.scrollMode as keyof typeof PdfScrollMode] || PdfScrollMode.PAGINATED;
-
-                this.backgroundColor = global
-                  ? PdfBackgroundColor[userSettings.newPdfReaderSetting.backgroundColor as keyof typeof PdfBackgroundColor] || PdfBackgroundColor.GRAY
-                  : PdfBackgroundColor[bookSettings.newPdfSettings?.backgroundColor as keyof typeof PdfBackgroundColor] || PdfBackgroundColor[userSettings.newPdfReaderSetting.backgroundColor as keyof typeof PdfBackgroundColor] || PdfBackgroundColor.GRAY;
-
-                this.currentPage = (book.pdfProgress?.page || 1) - 1;
-              }
               this.alignCurrentPageToParity();
               this.updateServiceStates();
               this.updateBookmarkState();
@@ -269,15 +250,15 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
               this.readingSessionService.startSession(this.bookId, "CBX", (this.currentPage + 1).toString(), percentage);
             },
             error: (err) => {
-              const errorMessage = err?.error?.message || 'Failed to load pages';
-              this.messageService.add({severity: 'error', summary: 'Error', detail: errorMessage});
+              const errorMessage = err?.error?.message || this.t.translate('shared.reader.failedToLoadPages');
+              this.messageService.add({severity: 'error', summary: this.t.translate('common.error'), detail: errorMessage});
               this.isLoading = false;
             }
           });
         },
         error: (err) => {
-          const errorMessage = err?.error?.message || 'Failed to load the book';
-          this.messageService.add({severity: 'error', summary: 'Error', detail: errorMessage});
+          const errorMessage = err?.error?.message || this.t.translate('shared.reader.failedToLoadBook');
+          this.messageService.add({severity: 'error', summary: this.t.translate('common.error'), detail: errorMessage});
           this.isLoading = false;
         }
       });
@@ -603,7 +584,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   get isTwoPageView(): boolean {
-    return this.pageViewMode === this.CbxPageViewMode.TWO_PAGE || this.pageViewMode === PdfPageViewMode.TWO_PAGE;
+    return this.pageViewMode === this.CbxPageViewMode.TWO_PAGE;
   }
 
   get hasSeries(): boolean {
@@ -681,7 +662,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   private alignCurrentPageToParity() {
     if (!this.pages.length || !this.isTwoPageView) return;
 
-    const desiredOdd = this.pageSpread === CbxPageSpread.ODD || this.pageSpread === PdfPageSpread.ODD;
+    const desiredOdd = this.pageSpread === CbxPageSpread.ODD;
     for (let i = this.currentPage; i >= 0; i--) {
       if ((this.pages[i] % 2 === 1) === desiredOdd) {
         this.currentPage = i;
@@ -806,9 +787,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   private getPageImageUrl(pageIndex: number): string {
-    return this.bookType === CbxReaderComponent.TYPE_PDF
-      ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType)
-      : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType);
+    return this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType);
   }
 
   get infiniteScrollImageUrls(): string[] {
@@ -816,25 +795,15 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   private updateViewerSetting(): void {
-    const bookSetting: BookSetting = this.bookType === CbxReaderComponent.TYPE_CBX
-      ? {
-        cbxSettings: {
-          pageSpread: this.pageSpread as CbxPageSpread,
-          pageViewMode: this.pageViewMode as CbxPageViewMode,
-          fitMode: this.fitMode as CbxFitMode,
-          scrollMode: this.scrollMode as CbxScrollMode,
-          backgroundColor: this.backgroundColor as CbxBackgroundColor,
-        }
+    const bookSetting: BookSetting = {
+      cbxSettings: {
+        pageSpread: this.pageSpread,
+        pageViewMode: this.pageViewMode,
+        fitMode: this.fitMode,
+        scrollMode: this.scrollMode,
+        backgroundColor: this.backgroundColor,
       }
-      : {
-        newPdfSettings: {
-          pageSpread: this.pageSpread as PdfPageSpread,
-          pageViewMode: this.pageViewMode as PdfPageViewMode,
-          fitMode: this.fitMode as PdfFitMode,
-          scrollMode: this.scrollMode as PdfScrollMode,
-          backgroundColor: this.backgroundColor as PdfBackgroundColor,
-        }
-      };
+    };
     this.bookService.updateViewerSetting(bookSetting, this.bookId).subscribe();
   }
 
@@ -843,12 +812,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10
       : 0;
 
-    if (this.bookType === CbxReaderComponent.TYPE_CBX) {
-      this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
-    }
-    if (this.bookType === CbxReaderComponent.TYPE_PDF) {
-      this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
-    }
+    this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage, this.bookFileId).subscribe();
   }
 
   private updateSessionProgress(): void {
@@ -1042,7 +1006,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   private enforcePortraitSinglePageView() {
     if (this.isPhonePortrait() && this.isTwoPageView) {
-      this.pageViewMode = this.bookType === CbxReaderComponent.TYPE_CBX ? CbxPageViewMode.SINGLE_PAGE : PdfPageViewMode.SINGLE_PAGE;
+      this.pageViewMode = CbxPageViewMode.SINGLE_PAGE;
       this.quickSettingsService.setPageViewMode(this.pageViewMode);
       this.footerService.setTwoPageView(false);
       this.updateViewerSetting();

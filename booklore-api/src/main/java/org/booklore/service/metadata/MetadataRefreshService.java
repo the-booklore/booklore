@@ -311,7 +311,7 @@ public class MetadataRefreshService {
         if (context.getMetadataUpdateWrapper() != null && context.getMetadataUpdateWrapper().getMetadata() != null) {
             bookMetadataUpdater.setBookMetadata(context);
 
-            Book book = bookMapper.toBook(context.getBookEntity());
+            Book book = bookMapper.toBookWithDescription(context.getBookEntity(), true);
             
             BookLoreUser user = authenticationService.getAuthenticatedUser();
             if (user != null && book.getShelves() != null) {

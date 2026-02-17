@@ -7,6 +7,7 @@ import {Password} from 'primeng/password';
 import {MessageService} from 'primeng/api';
 import {UserService} from '../../../features/settings/user-management/user.service';
 import {AuthService} from '../../service/auth.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-change-password',
@@ -16,7 +17,8 @@ import {AuthService} from '../../service/auth.service';
     FormsModule,
     Message,
     Password,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    TranslocoDirective
   ],
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.scss'
@@ -31,6 +33,7 @@ export class ChangePasswordComponent {
   protected userService = inject(UserService);
   protected authService = inject(AuthService);
   protected messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
 
   get passwordsMatch(): boolean {
     return this.newPassword === this.confirmNewPassword;
@@ -41,31 +44,31 @@ export class ChangePasswordComponent {
     this.successMessage = null;
 
     if (!this.currentPassword || !this.newPassword || !this.confirmNewPassword) {
-      this.errorMessage = 'All fields are required.';
+      this.errorMessage = this.t.translate('shared.changePassword.validation.allFieldsRequired');
       return;
     }
 
     if (!this.passwordsMatch) {
-      this.errorMessage = 'New passwords do not match.';
+      this.errorMessage = this.t.translate('shared.changePassword.validation.passwordsDoNotMatch');
       return;
     }
 
     if (this.currentPassword === this.newPassword) {
-      this.errorMessage = 'New password cannot be the same as the current password.';
+      this.errorMessage = this.t.translate('shared.changePassword.validation.sameAsCurrentPassword');
       return;
     }
 
     this.userService.changePassword(this.currentPassword, this.newPassword).subscribe({
       next: () => {
-        this.successMessage = 'Password changed successfully!';
+        this.successMessage = this.t.translate('shared.changePassword.toast.success');
         this.logout();
       },
       error: (err) => {
         this.errorMessage = err.message;
         this.messageService.add({
           severity: 'error',
-          summary: 'Password Change Failed',
-          detail: this.errorMessage ?? 'An unknown error occurred.'
+          summary: this.t.translate('shared.changePassword.toast.failedSummary'),
+          detail: this.errorMessage ?? this.t.translate('shared.changePassword.toast.failedDetailDefault')
         });
       }
     });

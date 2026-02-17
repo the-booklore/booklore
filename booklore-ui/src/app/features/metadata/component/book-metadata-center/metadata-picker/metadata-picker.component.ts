@@ -9,6 +9,7 @@ import {forkJoin, Observable} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {BookService} from '../../../../book/service/book.service';
+import {BookMetadataManageService} from '../../../../book/service/book-metadata-manage.service';
 import {Textarea} from 'primeng/textarea';
 import {filter, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
@@ -19,6 +20,7 @@ import {LazyLoadImageModule} from 'ng-lazyload-image';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-settings.model';
 import {ALL_COMIC_METADATA_FIELDS, ALL_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, getArrayFields, getBookDetailsFields, getBottomFields, getProviderFields, getSeriesFields, getTextareaFields, getTopFields, MetadataFieldConfig, MetadataFormBuilder, MetadataUtilsService} from '../../../../../shared/metadata';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-picker',
@@ -36,7 +38,8 @@ import {ALL_COMIC_METADATA_FIELDS, ALL_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELD
     AutoComplete,
     Image,
     LazyLoadImageModule,
-    Checkbox
+    Checkbox,
+    TranslocoDirective
   ]
 })
 export class MetadataPickerComponent implements OnInit {
@@ -76,11 +79,13 @@ export class MetadataPickerComponent implements OnInit {
 
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   protected urlHelper = inject(UrlHelperService);
   private destroyRef = inject(DestroyRef);
   private appSettingsService = inject(AppSettingsService);
   private formBuilder = inject(MetadataFormBuilder);
   private metadataUtils = inject(MetadataUtilsService);
+  private readonly t = inject(TranslocoService);
 
   private enabledProviderFields: MetadataProviderSpecificFields | null = null;
 
@@ -284,14 +289,14 @@ export class MetadataPickerComponent implements OnInit {
     const updatedBookMetadata = this.buildMetadataWrapper(undefined);
 
     const requests: Observable<unknown>[] = [
-      this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false)
+      this.bookMetadataManageService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false)
     ];
 
     // Handle audiobook cover upload when fetched from Audible provider
     if (this.isAudibleProvider() && this.copiedFields['audiobookThumbnailUrl']) {
       const audiobookCoverUrl = this.fetchedMetadata.thumbnailUrl;
       if (audiobookCoverUrl) {
-        requests.push(this.bookService.uploadAudiobookCoverFromUrl(this.currentBookId, audiobookCoverUrl));
+        requests.push(this.bookMetadataManageService.uploadAudiobookCoverFromUrl(this.currentBookId, audiobookCoverUrl));
       }
     }
 
@@ -303,11 +308,11 @@ export class MetadataPickerComponent implements OnInit {
             this.savedFields[field] = true;
           }
         }
-        this.messageService.add({severity: 'info', summary: 'Success', detail: 'Book metadata updated'});
+        this.messageService.add({severity: 'info', summary: this.t.translate('metadata.picker.toast.successSummary'), detail: this.t.translate('metadata.picker.toast.metadataUpdated')});
       },
       error: () => {
         this.isSaving = false;
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update book metadata'});
+        this.messageService.add({severity: 'error', summary: this.t.translate('metadata.picker.toast.errorSummary'), detail: this.t.translate('metadata.picker.toast.metadataUpdateFailed')});
       }
     });
   }
@@ -512,23 +517,23 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
-    this.bookService.updateBookMetadata(this.currentBookId, this.buildMetadataWrapper(shouldLockAllFields), false).subscribe({
+    this.bookMetadataManageService.updateBookMetadata(this.currentBookId, this.buildMetadataWrapper(shouldLockAllFields), false).subscribe({
       next: () => {
         if (shouldLockAllFields !== undefined) {
           this.messageService.add({
             severity: 'success',
-            summary: shouldLockAllFields ? 'Metadata Locked' : 'Metadata Unlocked',
+            summary: shouldLockAllFields ? this.t.translate('metadata.picker.toast.metadataLocked') : this.t.translate('metadata.picker.toast.metadataUnlocked'),
             detail: shouldLockAllFields
-              ? 'All fields have been successfully locked.'
-              : 'All fields have been successfully unlocked.',
+              ? this.t.translate('metadata.picker.toast.allFieldsLocked')
+              : this.t.translate('metadata.picker.toast.allFieldsUnlocked'),
           });
         }
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to update lock state',
+          summary: this.t.translate('metadata.picker.toast.errorSummary'),
+          detail: this.t.translate('metadata.picker.toast.lockStateFailed'),
         });
       }
     });
@@ -603,8 +608,8 @@ export class MetadataPickerComponent implements OnInit {
       if (isLocked) {
         this.messageService.add({
           severity: 'warn',
-          summary: 'Action Blocked',
-          detail: `${comicConfig.label} is locked and cannot be updated.`
+          summary: this.t.translate('metadata.picker.toast.actionBlockedSummary'),
+          detail: this.t.translate('metadata.picker.toast.fieldLockedDetail', {field: comicConfig.label})
         });
         return;
       }
@@ -627,8 +632,8 @@ export class MetadataPickerComponent implements OnInit {
     if (isLocked) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Action Blocked',
-        detail: `${lockField} is locked and cannot be updated.`
+        summary: this.t.translate('metadata.picker.toast.actionBlockedSummary'),
+        detail: this.t.translate('metadata.picker.toast.fieldLockedDetail', {field: lockField})
       });
       return;
     }

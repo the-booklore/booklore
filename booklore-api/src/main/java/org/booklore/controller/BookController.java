@@ -13,6 +13,7 @@ import org.booklore.model.dto.request.ReadStatusUpdateRequest;
 import org.booklore.model.dto.request.ShelvesAssignmentRequest;
 import org.booklore.model.dto.response.BookDeletionResponse;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
+import org.booklore.model.dto.response.BookSyncResponse;
 import org.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import org.booklore.model.enums.ResetProgressType;
 import org.booklore.service.book.BookFileAttachmentService;
@@ -27,16 +28,20 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -54,13 +59,34 @@ public class BookController {
     private final ReadingProgressService readingProgressService;
     private final PhysicalBookService physicalBookService;
 
-    @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
-    @ApiResponse(responseCode = "200", description = "List of books returned successfully")
+    @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions. Supports ETag-based conditional requests.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of books returned successfully"),
+            @ApiResponse(responseCode = "304", description = "Not modified — client cache is still valid")
+    })
     @GetMapping
     public ResponseEntity<List<Book>> getBooks(
             @Parameter(description = "Include book descriptions in the response")
+            @RequestParam(required = false, defaultValue = "false") boolean withDescription,
+            @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch) {
+        String etag = bookService.computeBooksETag(withDescription);
+        if (etag.equals(ifNoneMatch)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
+        }
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .cacheControl(CacheControl.noCache().cachePrivate())
+                .body(bookService.getBookDTOs(withDescription));
+    }
+
+    @Operation(summary = "Get book changes since timestamp", description = "Returns books added/modified since the given timestamp and IDs of deleted books. Used for delta synchronization.")
+    @ApiResponse(responseCode = "200", description = "Delta sync response returned successfully")
+    @GetMapping("/delta")
+    public ResponseEntity<BookSyncResponse> getBooksDelta(
+            @Parameter(description = "Timestamp to fetch changes since (ISO-8601 instant)") @RequestParam Instant since,
+            @Parameter(description = "Include book descriptions in the response")
             @RequestParam(required = false, defaultValue = "false") boolean withDescription) {
-        return ResponseEntity.ok(bookService.getBookDTOs(withDescription));
+        return ResponseEntity.ok(bookService.getBooksDelta(since, withDescription));
     }
 
     @Operation(summary = "Get a book by ID", description = "Retrieve details of a specific book by its ID.")
@@ -119,14 +145,27 @@ public class BookController {
         return ResponseEntity.ok(bookMetadataService.getComicInfoMetadata(bookId));
     }
 
-    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading.")
-    @ApiResponse(responseCode = "200", description = "Book content returned successfully")
+    @Operation(summary = "Get file metadata", description = "Extract embedded metadata from the book file.")
+    @ApiResponse(responseCode = "200", description = "File metadata returned successfully")
+    @GetMapping("/{bookId}/file-metadata")
+    public ResponseEntity<?> getFileMetadata(
+            @Parameter(description = "ID of the book") @PathVariable long bookId) {
+        return ResponseEntity.ok(bookMetadataService.getFileMetadata(bookId));
+    }
+
+    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading. Supports HTTP Range requests for partial content streaming.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Full book content returned"),
+            @ApiResponse(responseCode = "206", description = "Partial content returned for Range request")
+    })
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<Resource> getBookContent(
+    public void getBookContent(
             @Parameter(description = "ID of the book") @PathVariable long bookId,
-            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType) {
-        return bookService.getBookContent(bookId, bookType);
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType,
+            HttpServletRequest request,
+            HttpServletResponse response) throws java.io.IOException {
+        bookService.streamBookContent(bookId, bookType, request, response);
     }
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")

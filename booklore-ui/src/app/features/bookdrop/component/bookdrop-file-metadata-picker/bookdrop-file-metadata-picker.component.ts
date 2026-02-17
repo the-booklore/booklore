@@ -14,6 +14,7 @@ import {ConfirmationService} from 'primeng/api';
 import {DatePicker} from 'primeng/datepicker';
 import {ALL_METADATA_FIELDS, getArrayFields, getBottomFields, getTextareaFields, MetadataFieldConfig} from '../../../../shared/metadata';
 import {MetadataUtilsService} from '../../../../shared/metadata';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-bookdrop-file-metadata-picker-component',
@@ -29,6 +30,7 @@ import {MetadataUtilsService} from '../../../../shared/metadata';
     Image,
     LazyLoadImageModule,
     DatePicker,
+    TranslocoDirective,
   ],
   templateUrl: './bookdrop-file-metadata-picker.component.html',
   styleUrl: './bookdrop-file-metadata-picker.component.scss'
@@ -38,6 +40,7 @@ export class BookdropFileMetadataPickerComponent {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly metadataUtils = inject(MetadataUtilsService);
   protected readonly urlHelper = inject(UrlHelperService);
+  private readonly t = inject(TranslocoService);
 
   @Input() fetchedMetadata!: BookMetadata;
   @Input() originalMetadata?: BookMetadata;
@@ -130,8 +133,8 @@ export class BookdropFileMetadataPickerComponent {
 
   confirmReset(): void {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to reset all metadata changes made to this file?',
-      header: 'Reset Metadata Changes?',
+      message: this.t.translate('bookdrop.metadataPicker.confirmResetMessage'),
+      header: this.t.translate('bookdrop.metadataPicker.confirmResetHeader'),
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => this.resetAll()

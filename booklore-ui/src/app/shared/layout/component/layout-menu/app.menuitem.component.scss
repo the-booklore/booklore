@@ -54,7 +54,7 @@
   }
 }
 
-:host(.active-menuitem) .menu-item-container {
+.menu-item-container.active-route-container {
   background-color: color-mix(in srgb, var(--p-primary-300), transparent 93%);
   border-radius: 8px;
 }
@@ -72,6 +72,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-left: 0.35rem;
+  font-size: 0.985rem;
 }
 
 .menu-item-end-content {

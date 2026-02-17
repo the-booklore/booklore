@@ -8,7 +8,7 @@
       class="book-cover"
       [class.loaded]="isImageLoaded"
       [class.square-cover]="_isAudiobook"
-      [alt]="'Cover of ' + displayTitle"
+      [alt]="('book.card.alt.cover' | transloco: { title: displayTitle })"
       loading="lazy"
       decoding="async"
       (load)="onImageLoad()"/>
@@ -32,14 +32,14 @@
     </div>
 
     @if (_isSeriesViewActive) {
-      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
+      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()" [ariaLabel]="'book.card.alt.viewSeriesInfo' | transloco"></p-button>
     } @else {
-      <a [routerLink]="urlHelper.getBookUrl(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn">
-      </p-button></a>      
+      <a [routerLink]="urlHelper.getBookUrl(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn" [ariaLabel]="'book.card.alt.viewDetails' | transloco">
+      </p-button></a>
     }
 
     @if (!_isSeriesViewActive && hasDigitalFile()) {
-      <p-button [rounded]="true" [icon]="_isAudiobook ? 'pi pi-play' : 'pi pi-book'" class="read-btn" (click)="readBook(book)"></p-button>
+      <p-button [rounded]="true" [icon]="_isAudiobook ? 'pi pi-play' : 'pi pi-book'" class="read-btn" (click)="readBook(book)" [ariaLabel]="_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco)"></p-button>
     }
 
     @if (isCheckboxEnabled) {
@@ -103,7 +103,8 @@
         size="small"
         [text]="true"
         (click)="onMenuToggle($event, menu)"
-        icon="pi pi-ellipsis-v">
+        icon="pi pi-ellipsis-v"
+        [ariaLabel]="'book.card.alt.bookMenu' | transloco">
       </p-button>
     </div>
   }

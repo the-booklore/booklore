@@ -1,21 +1,26 @@
 package org.booklore.mapper;
 
 import org.booklore.model.dto.Book;
-import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.entity.LibraryPathEntity;
 import org.booklore.model.enums.BookFileType;
 import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SpringBootTest
+@ActiveProfiles("test")
 class BookMapperTest {
 
-    private final BookMapper mapper = Mappers.getMapper(BookMapper.class);
+    @Autowired
+    private BookMapper mapper;
 
     @Test
     void shouldMapExistingFieldsCorrectly() {

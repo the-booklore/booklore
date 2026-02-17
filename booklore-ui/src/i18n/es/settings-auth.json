@@ -1,0 +1,73 @@
+{
+  "title": "Ajustes de autenticación",
+  "description": "Configura los métodos de autenticación para tu instancia de Booklore. La autenticación interna siempre está habilitada y puedes habilitar opcionalmente OIDC para proveedores de autenticación externos.",
+  "methods": {
+    "sectionTitle": "Métodos de autenticación",
+    "sectionDesc": "Elige qué métodos de autenticación están disponibles para que los usuarios inicien sesión."
+  },
+  "internal": {
+    "label": "Autenticación interna",
+    "status": "Siempre habilitada",
+    "description": "Autenticación integrada con nombre de usuario y contraseña. Este es el método predeterminado y no se puede deshabilitar."
+  },
+  "oidc": {
+    "label": "Autenticación OIDC",
+    "experimental": "Experimental",
+    "description": "OpenID Connect para inicio de sesión único con proveedores externos (Authentik, Keycloak, etc.).",
+    "configHint": "Configura los ajustes a continuación para habilitar.",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado"
+  },
+  "providerConfig": {
+    "sectionTitle": "Configuración del proveedor OIDC",
+    "sectionDesc": "Configura los ajustes de tu proveedor OIDC. Todos los campos son obligatorios para habilitar la autenticación OIDC.",
+    "providerName": "Nombre del proveedor",
+    "providerPlaceholder": "ej. Authentik, Keycloak",
+    "clientId": "ID de cliente",
+    "clientIdPlaceholder": "Tu ID de cliente OIDC",
+    "issuerUri": "URI del emisor",
+    "issuerPlaceholder": "ej. https://auth.example.com/realms/booklore",
+    "scope": "Alcance",
+    "scopeHint": "Alcances requeridos para el inicio de sesión OIDC. Deben ser compatibles con tu proveedor.",
+    "claimMappings": "Mapeo de claims",
+    "claimDesc": "Mapea los claims del token OIDC a los campos de usuario de Booklore. Deben coincidir con los claims del token de tu proveedor.",
+    "usernameClaim": "Claim de nombre de usuario",
+    "usernamePlaceholder": "ej. preferred_username",
+    "emailClaim": "Claim de correo electrónico",
+    "emailPlaceholder": "ej. email",
+    "nameClaim": "Claim de nombre para mostrar",
+    "namePlaceholder": "ej. name"
+  },
+  "provisioning": {
+    "sectionTitle": "Aprovisionamiento de usuarios",
+    "sectionDesc": "Configura cómo se crean los nuevos usuarios OIDC y qué permisos reciben.",
+    "autoLabel": "Aprovisionamiento automático de usuarios",
+    "autoEnabled": "Habilitado",
+    "autoDisabled": "Deshabilitado",
+    "autoDesc": "Cuando está habilitado, los nuevos usuarios se crean automáticamente en el primer inicio de sesión OIDC con los permisos a continuación. Cuando está deshabilitado, los usuarios deben crearse manualmente en Booklore antes de poder iniciar sesión mediante OIDC.",
+    "defaultPerms": "Permisos predeterminados",
+    "readBooks": "Leer libros",
+    "defaultLibraryAccess": "Acceso predeterminado a bibliotecas",
+    "selectLibraries": "Seleccionar bibliotecas a las que los nuevos usuarios pueden acceder"
+  },
+  "perms": {
+    "uploadBooks": "Subir libros",
+    "downloadBooks": "Descargar libros",
+    "editMetadata": "Editar metadatos de libros",
+    "manageLibrary": "Gestionar biblioteca",
+    "emailBook": "Enviar libro por correo",
+    "deleteBook": "Eliminar libro",
+    "koreaderSync": "Sincronización KOReader",
+    "koboSync": "Sincronización Kobo",
+    "accessOpds": "Acceder a OPDS"
+  },
+  "toast": {
+    "saved": "Guardado",
+    "oidcUpdated": "Ajuste OIDC actualizado.",
+    "oidcError": "Error al actualizar el ajuste OIDC.",
+    "providerSaved": "Ajustes del proveedor OIDC guardados.",
+    "providerError": "Error al guardar los ajustes del proveedor OIDC.",
+    "provisionSaved": "Ajustes de aprovisionamiento automático OIDC guardados.",
+    "provisionError": "Error al guardar los ajustes de aprovisionamiento automático OIDC."
+  }
+}

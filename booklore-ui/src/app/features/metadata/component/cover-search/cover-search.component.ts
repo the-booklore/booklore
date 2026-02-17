@@ -8,8 +8,10 @@ import {InputText} from 'primeng/inputtext';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {BookService} from '../../../book/service/book.service';
+import {BookMetadataManageService} from '../../../book/service/book-metadata-manage.service';
 import {Image} from 'primeng/image';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-cover-search',
@@ -21,7 +23,8 @@ import {Tooltip} from 'primeng/tooltip';
     InputText,
     ProgressSpinner,
     Image,
-    Tooltip
+    Tooltip,
+    TranslocoDirective
   ],
   styleUrls: ['./cover-search.component.scss']
 })
@@ -38,7 +41,9 @@ export class CoverSearchComponent implements OnInit {
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   protected dynamicDialogRef = inject(DynamicDialogRef);
   protected bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
 
   constructor() {
     this.searchForm = this.fb.group({
@@ -104,23 +109,25 @@ export class CoverSearchComponent implements OnInit {
 
   selectAndSave(image: CoverImage) {
     const uploadObservable = this.coverType === 'audiobook'
-      ? this.bookService.uploadAudiobookCoverFromUrl(this.bookId, image.url)
-      : this.bookService.uploadCoverFromUrl(this.bookId, image.url);
+      ? this.bookMetadataManageService.uploadAudiobookCoverFromUrl(this.bookId, image.url)
+      : this.bookMetadataManageService.uploadCoverFromUrl(this.bookId, image.url);
 
     uploadObservable.subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Cover Updated',
-          detail: `${this.coverType === 'audiobook' ? 'Audiobook' : 'Ebook'} cover image updated successfully.`
+          summary: this.t.translate('metadata.coverSearch.toast.coverUpdatedSummary'),
+          detail: this.coverType === 'audiobook'
+            ? this.t.translate('metadata.coverSearch.toast.audiobookCoverUpdatedDetail')
+            : this.t.translate('metadata.coverSearch.toast.ebookCoverUpdatedDetail')
         });
         this.dynamicDialogRef.close(true);
       },
       error: err => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Cover Update Failed',
-          detail: err?.message || 'Failed to update cover image.'
+          summary: this.t.translate('metadata.coverSearch.toast.coverUpdateFailedSummary'),
+          detail: err?.message || this.t.translate('metadata.coverSearch.toast.coverUpdateFailedDetail')
         });
       }
     });

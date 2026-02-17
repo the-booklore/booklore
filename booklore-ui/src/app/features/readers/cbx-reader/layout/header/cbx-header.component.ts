@@ -1,6 +1,7 @@
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
+import {TranslocoPipe} from '@jsverse/transloco';
 import {CbxHeaderService, CbxHeaderState} from './cbx-header.service';
 import {ReaderIconComponent} from '../../../ebook-reader';
 import {CommonModule} from '@angular/common';
@@ -8,7 +9,7 @@ import {CommonModule} from '@angular/common';
 @Component({
   selector: 'app-cbx-header',
   standalone: true,
-  imports: [CommonModule, ReaderIconComponent],
+  imports: [CommonModule, TranslocoPipe, ReaderIconComponent],
   templateUrl: './cbx-header.component.html',
   styleUrls: ['./cbx-header.component.scss']
 })
@@ -20,6 +21,7 @@ export class CbxHeaderComponent implements OnInit, OnDestroy {
   @Input() currentPageHasNotes = false;
 
   isVisible = true;
+  overflowOpen = false;
   state: CbxHeaderState = {
     isFullscreen: false,
     isSlideshowActive: false

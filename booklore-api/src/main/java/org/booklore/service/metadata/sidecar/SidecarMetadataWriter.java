@@ -1,8 +1,5 @@
 package org.booklore.service.metadata.sidecar;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.dto.settings.SidecarSettings;
@@ -12,6 +9,9 @@ import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.util.FileService;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,10 +31,10 @@ public class SidecarMetadataWriter {
         this.mapper = mapper;
         this.fileService = fileService;
         this.appSettingService = appSettingService;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
-        this.objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        this.objectMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .configure(SerializationFeature.INDENT_OUTPUT, true)
+                .build();
     }
 
     public void writeSidecarMetadata(BookEntity book) {

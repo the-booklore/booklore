@@ -1,17 +1,18 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.metadataPicker'">
 @if (fetchedMetadata && fetchedMetadata.title) {
   <form [formGroup]="metadataForm" class="metapicker">
     <div class="form-scroll">
       <div class="metaheader">
         <label class="field-label"></label>
         <div class="header-fields-row">
-          <p class="header-column">File Data</p>
+          <p class="header-column">{{ t('fileData') }}</p>
           <div class="midbuttons">
             <p-button
               size="small"
               icon="pi pi-angle-left"
               class="btn-margin"
               [outlined]="true"
-              pTooltip="Copy missing fields from fetched metadata"
+              [pTooltip]="t('copyMissingTooltip')"
               tooltipPosition="bottom"
               (onClick)="copyMissing()"
             ></p-button>
@@ -20,7 +21,7 @@
               icon="pi pi-angle-double-left"
               class="btn-margin"
               [outlined]="true"
-              pTooltip="Overwrite all fields with fetched metadata"
+              [pTooltip]="t('overwriteAllTooltip')"
               tooltipPosition="bottom"
               (onClick)="copyAll()"
             ></p-button>
@@ -30,12 +31,12 @@
               icon="pi pi-refresh"
               class="btn-margin"
               [outlined]="true"
-              pTooltip="Reset all fields to original values"
+              [pTooltip]="t('resetAllTooltip')"
               tooltipPosition="bottom"
               (onClick)="confirmReset()"
             ></p-button>
           </div>
-          <p class="header-column">Fetched Data</p>
+          <p class="header-column">{{ t('fetchedData') }}</p>
         </div>
       </div>
       <div class="metacontent">
@@ -57,7 +58,7 @@
                 ></p-image>
               }
               @else {
-                <div class="thumbnail no-cover-text">No cover image</div>
+                <div class="thumbnail no-cover-text">{{ t('noCoverImage') }}</div>
               }
               <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
             </div>
@@ -82,7 +83,7 @@
                 ></p-image>
               }
               @else {
-                <div class="thumbnail no-cover-text">Cover image not found</div>
+                <div class="thumbnail no-cover-text">{{ t('coverImageNotFound') }}</div>
               }
               <input type="hidden" [value]="fetchedMetadata.thumbnailUrl" readonly/>
             </div>
@@ -317,14 +318,14 @@
     <div class="form-scroll">
       <div class="metaheader">
         <p class="missingmd">
-          Unable to fetch metadata for this file
+          {{ t('unableToFetchMetadata') }}
         </p>
         <p-button
           size="small"
           severity="warn"
           icon="pi pi-refresh"
           [outlined]="true"
-          pTooltip="Reset all fields to original values"
+          [pTooltip]="t('resetAllTooltip')"
           tooltipPosition="left"
           (onClick)="confirmReset()"
         ></p-button>
@@ -490,3 +491,4 @@
     </div>
   </form>
 }
+</ng-container>

@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.hibernate.orm' version '7.2.4.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
+    id 'jacoco'
 }
 
 group = 'org.booklore'
@@ -43,7 +44,7 @@ dependencies {
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.7'
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
-    implementation 'org.flywaydb:flyway-mysql:12.0.0'
+    implementation 'org.flywaydb:flyway-mysql:12.0.1'
 
     // --- Security & Authentication ---
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
@@ -90,6 +91,10 @@ dependencies {
     implementation 'org.tukaani:xz:1.11'  // Required by commons-compress for 7z support
     implementation 'org.apache.commons:commons-text:1.15.0'
 
+    // --- XML Support (JAXB) ---
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.5'
+    runtimeOnly 'org.glassfish.jaxb:jaxb-runtime:4.0.6'
+
     // --- Template Engine ---
     implementation 'org.freemarker:freemarker:2.3.34'
 
@@ -104,6 +109,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
 
     // --- Caching ---
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
 
     // --- Test Dependencies ---
@@ -123,6 +129,15 @@ hibernate {
 test {
     useJUnitPlatform()
     jvmArgs("-XX:+EnableDynamicAgentLoading")
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 bootRun {

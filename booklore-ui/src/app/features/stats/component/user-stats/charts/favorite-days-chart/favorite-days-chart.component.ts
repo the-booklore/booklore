@@ -5,15 +5,17 @@ import {ChartConfiguration, ChartData} from 'chart.js';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {Select} from 'primeng/select';
+import {Tooltip} from 'primeng/tooltip';
 import {FormsModule} from '@angular/forms';
 import {FavoriteDaysResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 type FavoriteDaysChartData = ChartData<'bar', number[], string>;
 
 @Component({
   selector: 'app-favorite-days-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, Select, FormsModule],
+  imports: [CommonModule, BaseChartDirective, Select, FormsModule, Tooltip, TranslocoDirective],
   templateUrl: './favorite-days-chart.component.html',
   styleUrls: ['./favorite-days-chart.component.scss']
 })
@@ -23,6 +25,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
   public readonly chartOptions: ChartConfiguration['options'];
 
   private readonly userStatsService = inject(UserStatsService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
   private readonly chartDataSubject: BehaviorSubject<FavoriteDaysChartData>;
 
@@ -31,21 +34,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
   public selectedYear: number | null = null;
   public selectedMonth: number | null = null;
   public yearOptions: { label: string; value: number | null }[] = [];
-  public monthOptions: { label: string; value: number | null }[] = [
-    {label: 'All Months', value: null},
-    {label: 'January', value: 1},
-    {label: 'February', value: 2},
-    {label: 'March', value: 3},
-    {label: 'April', value: 4},
-    {label: 'May', value: 5},
-    {label: 'June', value: 6},
-    {label: 'July', value: 7},
-    {label: 'August', value: 8},
-    {label: 'September', value: 9},
-    {label: 'October', value: 10},
-    {label: 'November', value: 11},
-    {label: 'December', value: 12}
-  ];
+  public monthOptions: { label: string; value: number | null }[] = [];
 
   constructor() {
     this.chartDataSubject = new BehaviorSubject<FavoriteDaysChartData>({
@@ -87,8 +76,10 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
             label: (context) => {
               const label = context.dataset.label || '';
               const value = context.parsed.y;
-              if (label === 'Sessions') {
-                return `${label}: ${value} session${value !== 1 ? 's' : ''}`;
+              const sessionsLabel = this.t.translate('statsUser.favoriteDays.sessions');
+              if (label === sessionsLabel) {
+                const key = value !== 1 ? 'statsUser.favoriteDays.tooltipSessionsPlural' : 'statsUser.favoriteDays.tooltipSessions';
+                return this.t.translate(key, {label, value});
               } else {
                 const hours = Math.floor(value);
                 const minutes = Math.floor((value % 1) * 60);
@@ -103,7 +94,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
         x: {
           title: {
             display: true,
-            text: 'Day of Week',
+            text: this.t.translate('statsUser.favoriteDays.axisDayOfWeek'),
             color: '#ffffff',
             font: {
               family: "'Inter', sans-serif",
@@ -124,7 +115,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           position: 'left',
           title: {
             display: true,
-            text: 'Number of Sessions',
+            text: this.t.translate('statsUser.favoriteDays.axisNumberOfSessions'),
             color: 'rgba(139, 92, 246, 1)',
             font: {
               family: "'Inter', sans-serif",
@@ -149,7 +140,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           position: 'right',
           title: {
             display: true,
-            text: 'Duration (hours)',
+            text: this.t.translate('statsUser.favoriteDays.axisDurationHours'),
             color: 'rgba(236, 72, 153, 1)',
             font: {
               family: "'Inter', sans-serif",
@@ -186,10 +177,15 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
 
   private initializeYearOptions(): void {
     const currentYear = new Date().getFullYear();
-    this.yearOptions = [{label: 'All Years', value: null}];
+    this.yearOptions = [{label: this.t.translate('statsUser.favoriteDays.allYears'), value: null}];
     for (let year = currentYear; year >= currentYear - 10; year--) {
       this.yearOptions.push({label: year.toString(), value: year});
     }
+    const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    this.monthOptions = [
+      {label: this.t.translate('statsUser.favoriteDays.allMonths'), value: null},
+      ...monthKeys.map((key, i) => ({label: this.t.translate(`statsUser.favoriteDays.${key}`), value: i + 1}))
+    ];
   }
 
   public onFilterChange(): void {
@@ -234,7 +230,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
       labels,
       datasets: [
         {
-          label: 'Sessions',
+          label: this.t.translate('statsUser.favoriteDays.sessions'),
           data: sessionCounts,
           backgroundColor: 'rgba(139, 92, 246, 0.8)',
           borderColor: 'rgba(139, 92, 246, 1)',
@@ -245,7 +241,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           yAxisID: 'y'
         },
         {
-          label: 'Duration (hours)',
+          label: this.t.translate('statsUser.favoriteDays.durationHours'),
           data: durations,
           backgroundColor: 'rgba(236, 72, 153, 0.8)',
           borderColor: 'rgba(236, 72, 153, 1)',

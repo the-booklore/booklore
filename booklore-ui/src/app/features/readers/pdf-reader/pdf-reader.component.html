@@ -7,18 +7,22 @@
 @if (!isLoading) {
   <ngx-extended-pdf-viewer
     [src]="bookData"
+    [authorization]="authorization"
     [textLayer]="true"
     [showHandToolButton]="true"
     [height]="'auto'"
+    [theme]="isDarkTheme ? 'dark' : 'light'"
     [page]="page"
     [rotation]="rotation"
     [zoom]="zoom"
     [spread]="spread"
+    [enablePrint]="canPrint"
     [customToolbar]="additionalButtons"
     (pagesLoaded)="onPdfPagesLoaded($event)"
     (pageChange)="onPageChange($event)"
     (zoomChange)="onZoomChange($event)"
-    (spreadChange)="onSpreadChange($event)">
+    (spreadChange)="onSpreadChange($event)"
+    (annotationEditorEvent)="onAnnotationEditorEvent()">
   </ngx-extended-pdf-viewer>
 
   <ng-template #additionalButtons>
@@ -29,21 +33,13 @@
         <pdf-paging-area></pdf-paging-area>
       </div>
       <pdf-zoom-toolbar></pdf-zoom-toolbar>
-      <div id="toolbarViewerRight">
-        <pdf-shy-button
-          [cssClass]="'lg' | responsiveCSSClass"
-          class="newTab"
-          title="Close PDF Reader"
-          primaryToolbarId="closePdfReaderButton"
-          [action]="closeReader"
-          [order]="5"
-          image="<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='orange' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-circle-x-icon lucide-circle-x'><circle cx='12' cy='12' r='10'/><path d='m15 9-6 6'/><path d='m9 9 6 6'/></svg>"
-        >
-        </pdf-shy-button>
+      <div id="toolbarViewerRight" [class.pdf-dark]="isDarkTheme">
         <pdf-hand-tool></pdf-hand-tool>
         <pdf-select-tool></pdf-select-tool>
         <pdf-rotate-page></pdf-rotate-page>
-        <pdf-print></pdf-print>
+        @if (canPrint) {
+          <pdf-print></pdf-print>
+        }
         <pdf-no-spread></pdf-no-spread>
         <pdf-even-spread></pdf-even-spread>
         <pdf-odd-spread></pdf-odd-spread>
@@ -55,6 +51,27 @@
         <pdf-book-mode></pdf-book-mode>
         <div class="verticalToolbarSeparator hiddenSmallView"></div>
         <pdf-toggle-secondary-toolbar></pdf-toggle-secondary-toolbar>
+        <div class="verticalToolbarSeparator"></div>
+        <pdf-highlight-editor></pdf-highlight-editor>
+        <pdf-text-editor></pdf-text-editor>
+        <pdf-draw-editor></pdf-draw-editor>
+        <div class="verticalToolbarSeparator"></div>
+        <button class="toolbar-btn" [title]="isDarkTheme ? ('readerPdf.toolbar.switchToLightMode' | transloco) : ('readerPdf.toolbar.switchToDarkMode' | transloco)" (click)="isDarkTheme = !isDarkTheme">
+          @if (isDarkTheme) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+          }
+        </button>
+        <button id="closePdfReaderButton" class="close-reader-btn" [title]="'readerPdf.toolbar.closePdfReader' | transloco" (click)="closeReader()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </svg>
+        </button>
       </div>
     </div>
   </ng-template>

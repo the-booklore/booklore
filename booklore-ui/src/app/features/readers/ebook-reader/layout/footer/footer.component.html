@@ -1,10 +1,11 @@
+<ng-container *transloco="let t; prefix: 'readerEbook.footer'">
 <div class="reader-navbar" [class.visible]="navbarVisible">
-  <button class="icon-btn" title="Previous Section" [disabled]="!canGoPrevious" (click)="onPreviousSection()">
+  <button class="icon-btn" [title]="t('previousSection')" [disabled]="!canGoPrevious" (click)="onPreviousSection()">
     <app-reader-icon name="chevron-left"></app-reader-icon>
   </button>
 
   <div class="progress-section">
-    <button class="location-btn" (click)="toggleLocationPopover()" title="Location">
+    <button class="location-btn" (click)="toggleLocationPopover()" [title]="t('location')">
       <span class="location-text">{{ currentPercentage }}%</span>
     </button>
 
@@ -16,7 +17,7 @@
         [max]="100"
         [value]="currentPercentage"
         (input)="onProgressChange($event)"
-        title="Progress"/>
+        [title]="t('progress')"/>
       <div class="progress-ticks">
         @for (frac of displaySectionFractions; track frac) {
           <span class="progress-tick" [style.left.%]="frac * 100"></span>
@@ -25,63 +26,77 @@
     </div>
   </div>
 
-  <button class="icon-btn" title="Next Section" [disabled]="!canGoNext" (click)="onNextSection()">
+  <button class="icon-btn" [title]="t('nextSection')" [disabled]="!canGoNext" (click)="onNextSection()">
     <app-reader-icon name="chevron-right"></app-reader-icon>
   </button>
 </div>
 
 @if (showLocationPopover) {
-  <div class="location-popover" (mousedown)="$event.preventDefault()">
+  <div class="location-popover">
     <div class="popover-content">
       <div class="time-info">
         <div class="time-section">
-          <span class="label">Time Left in Section</span>
+          <span class="label">{{ t('timeLeftInSection') }}</span>
           <span class="value">{{ timeSection }}</span>
         </div>
         <div class="separator"></div>
         <div class="time-section">
-          <span class="label">Time Left in Book</span>
+          <span class="label">{{ t('timeLeftInBook') }}</span>
           <span class="value">{{ timeTotal }}</span>
         </div>
       </div>
 
       <div class="divider"></div>
 
-      <div class="location-controls">
-        <div class="control-row">
-          <label>Page</label>
-          <span>{{ currentPage }}</span>
+      <div class="book-info">
+        <div class="chapter-info">
+          <span class="label">{{ t('chapter') }}</span>
+          <span class="chapter-name">{{ currentChapter }}</span>
         </div>
-        <div class="control-row">
-          <label>Location</label>
-          <input type="number" [value]="locationCurrent"/>
-          <span>/ {{ locationTotal }}</span>
-        </div>
-        <div class="control-row">
-          <label>Section</label>
-          <span>{{ sectionCurrent }} / {{ sectionTotal }}</span>
+        <div class="info-row">
+          <div class="info-column">
+            <span class="label">{{ t('section') }}</span>
+            <span class="value">{{ sectionCurrent }} / {{ sectionTotal }}</span>
+          </div>
+          @if (progressData?.pageItem) {
+            <div class="info-separator"></div>
+            <div class="info-column">
+              <span class="label">{{ t('page') }}</span>
+              <span class="value">{{ currentPage }}</span>
+            </div>
+          }
         </div>
       </div>
 
       <div class="divider"></div>
 
-      <div class="section-navigation">
-        <button class="nav-btn" title="First Section" (click)="onFirstSection()">
-          <app-reader-icon name="chevron-first" [size]="16"></app-reader-icon>
+      <div class="nav-section">
+        <div class="goto-row">
+          <label>{{ t('goTo') }}</label>
+          <input type="number" [value]="currentPercentage" #percentInput
+            (keydown.enter)="onGoToPercentage(percentInput.value)" [min]="0" [max]="100"/>
+          <span>%</span>
+          <button class="go-btn" (click)="onGoToPercentage(percentInput.value)" [title]="t('goToPercentage')">{{ t('go') }}</button>
+        </div>
+        <div class="section-navigation">
+        <button class="nav-btn" [title]="t('firstSection')" (click)="onFirstSection()">
+          <app-reader-icon name="chevron-first" [size]="20"></app-reader-icon>
         </button>
-        <button class="nav-btn" title="Previous Section" (click)="onPreviousSection()">
-          <app-reader-icon name="chevron-left" [size]="16"></app-reader-icon>
+        <button class="nav-btn" [title]="t('previousSection')" (click)="onPreviousSection()">
+          <app-reader-icon name="chevron-left" [size]="20"></app-reader-icon>
         </button>
-        <button class="nav-btn" title="Jump To...">
-          <app-reader-icon name="dots-vertical" [size]="16"></app-reader-icon>
+        <button class="nav-btn" [title]="t('jumpTo')">
+          <app-reader-icon name="dots-vertical" [size]="20"></app-reader-icon>
         </button>
-        <button class="nav-btn" title="Next Section" (click)="onNextSection()">
-          <app-reader-icon name="chevron-right" [size]="16"></app-reader-icon>
+        <button class="nav-btn" [title]="t('nextSection')" (click)="onNextSection()">
+          <app-reader-icon name="chevron-right" [size]="20"></app-reader-icon>
         </button>
-        <button class="nav-btn" title="Last Section" (click)="onLastSection()">
-          <app-reader-icon name="chevron-last" [size]="16"></app-reader-icon>
+        <button class="nav-btn" [title]="t('lastSection')" (click)="onLastSection()">
+          <app-reader-icon name="chevron-last" [size]="20"></app-reader-icon>
         </button>
+      </div>
       </div>
     </div>
   </div>
 }
+</ng-container>

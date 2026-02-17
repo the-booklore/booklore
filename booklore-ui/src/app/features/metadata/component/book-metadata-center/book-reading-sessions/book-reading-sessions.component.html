@@ -1,38 +1,34 @@
-<div class="reading-sessions-container">
+<div class="reading-sessions-container" *transloco="let t; prefix: 'metadata.readingSessions'">
   @if (loading && sessions.length === 0) {
     <div class="loading-state">
       <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
-      <p class="loading-text">Loading reading sessions...</p>
+      <p class="loading-text">{{ t('loading') }}</p>
     </div>
   } @else if (sessions.length === 0) {
     <div class="empty-state">
       <i class="pi pi-clock" style="font-size: 3rem; color: var(--text-color-secondary);"></i>
-      <p>No reading sessions recorded yet</p>
+      <p>{{ t('emptyState') }}</p>
     </div>
   } @else {
     <p-table
       [value]="sessions"
-      [lazy]="true"
       [paginator]="true"
       [rows]="rows"
-      [totalRecords]="totalRecords"
       [loading]="loading"
-      [first]="first"
-      (onLazyLoad)="onPageChange($event)"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Showing {first} to {last} of {totalRecords} sessions"
       class="p-datatable-sm">
-      <ng-template #header>
+      <ng-template pTemplate="header">
         <tr>
-          <th>Session</th>
-          <th>Type</th>
-          <th>Duration</th>
-          <th>Progress</th>
-          <th>Progress Delta</th>
-          <th>Location</th>
+          <th>{{ t('headerSession') }}</th>
+          <th>{{ t('headerType') }}</th>
+          <th>{{ t('headerDuration') }}</th>
+          <th>{{ t('headerProgress') }}</th>
+          <th>{{ t('headerProgressDelta') }}</th>
+          <th>{{ t('headerLocation') }}</th>
         </tr>
       </ng-template>
-      <ng-template #body let-session>
+      <ng-template pTemplate="body" let-session>
         <tr>
           <td>
             <div class="session-time">

@@ -1,3 +1,4 @@
+<ng-container *transloco="let t; prefix: 'settingsProfile'">
 <div class="user-profile-dialog">
 
   <div class="panel-header">
@@ -5,9 +6,9 @@
       <i class="pi pi-user header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">User Profile</h2>
+      <h2 class="panel-title">{{ t('title') }}</h2>
       <p class="panel-description">
-        Manage your account information and security settings
+        {{ t('description') }}
       </p>
     </div>
     <p-button
@@ -24,11 +25,11 @@
     <div class="form-section">
       <h3 class="section-title">
         <i class="pi pi-id-card"></i>
-        Basic Information
+        {{ t('basicInfo') }}
       </h3>
 
       <div class="form-field">
-        <label class="field-label">Username</label>
+        <label class="field-label">{{ t('username') }}</label>
         <input
           disabled
           id="username"
@@ -36,11 +37,11 @@
           pInputText
           [(ngModel)]="editUserData.username"
           class="field-input"
-          placeholder="Username..."/>
+          [placeholder]="t('usernamePlaceholder')"/>
       </div>
 
       <div class="form-field">
-        <label class="field-label">Full Name</label>
+        <label class="field-label">{{ t('fullName') }}</label>
         <input
           [disabled]="!isEditing"
           id="fullname"
@@ -48,11 +49,11 @@
           pInputText
           [(ngModel)]="editUserData.name"
           class="field-input"
-          placeholder="Enter full name..."/>
+          [placeholder]="t('fullNamePlaceholder')"/>
       </div>
 
       <div class="form-field">
-        <label class="field-label">Email</label>
+        <label class="field-label">{{ t('email') }}</label>
         <input
           [disabled]="!isEditing"
           id="email"
@@ -60,17 +61,17 @@
           pInputText
           [(ngModel)]="editUserData.email"
           class="field-input"
-          placeholder="Enter email..."/>
+          [placeholder]="t('emailPlaceholder')"/>
       </div>
 
       <div class="edit-actions">
         @if (!isEditing) {
-          <p-button label="Edit Profile" severity="info" icon="pi pi-pencil" [outlined]="true" (onClick)="toggleEdit()"></p-button>
+          <p-button [label]="t('editProfile')" severity="info" icon="pi pi-pencil" [outlined]="true" (onClick)="toggleEdit()"></p-button>
         }
         @if (isEditing) {
           <div class="edit-buttons">
-            <p-button label="Cancel" severity="secondary" [outlined]="true" icon="pi pi-times" (onClick)="toggleEdit()"></p-button>
-            <p-button label="Save Changes" severity="success" [outlined]="true" icon="pi pi-check" (onClick)="updateProfile()"></p-button>
+            <p-button [label]="'common.cancel' | transloco" severity="secondary" [outlined]="true" icon="pi pi-times" (onClick)="toggleEdit()"></p-button>
+            <p-button [label]="t('saveChanges')" severity="success" [outlined]="true" icon="pi pi-check" (onClick)="updateProfile()"></p-button>
           </div>
         }
       </div>
@@ -81,12 +82,12 @@
     <div class="form-section">
       <h3 class="section-title">
         <i class="pi pi-shield"></i>
-        Security Settings
+        {{ t('security') }}
       </h3>
 
       <form [formGroup]="changePasswordForm" (ngSubmit)="submitPasswordChange()">
         <div class="form-field">
-          <label class="field-label" for="currentPassword">Current Password</label>
+          <label class="field-label" for="currentPassword">{{ t('currentPassword') }}</label>
           <p-password
             id="currentPassword"
             formControlName="currentPassword"
@@ -99,14 +100,14 @@
             <small class="field-error">
               <i class="pi pi-exclamation-circle"></i>
               @if (changePasswordForm.get('currentPassword')?.errors?.['required']) {
-                <span>Current password is required.</span>
+                <span>{{ t('validation.currentPasswordRequired') }}</span>
               }
             </small>
           }
         </div>
 
         <div class="form-field">
-          <label class="field-label" for="newPassword">New Password</label>
+          <label class="field-label" for="newPassword">{{ t('newPassword') }}</label>
           <p-password
             id="newPassword"
             formControlName="newPassword"
@@ -119,17 +120,17 @@
             <small class="field-error">
               <i class="pi pi-exclamation-circle"></i>
               @if (changePasswordForm.get('newPassword')?.errors?.['required']) {
-                <span>New password is required.</span>
+                <span>{{ t('validation.newPasswordRequired') }}</span>
               }
               @if (changePasswordForm.get('newPassword')?.errors?.['minlength']) {
-                <span>Password must be at least 6 characters long.</span>
+                <span>{{ t('validation.passwordMinLength') }}</span>
               }
             </small>
           }
         </div>
 
         <div class="form-field">
-          <label class="field-label" for="confirmNewPassword">Confirm New Password</label>
+          <label class="field-label" for="confirmNewPassword">{{ t('confirmNewPassword') }}</label>
           <p-password
             id="confirmNewPassword"
             formControlName="confirmNewPassword"
@@ -142,7 +143,7 @@
             <small class="field-error">
               <i class="pi pi-exclamation-circle"></i>
               @if (changePasswordForm.get('confirmNewPassword')?.errors?.['required']) {
-                <span>Please confirm your new password.</span>
+                <span>{{ t('validation.confirmPasswordRequired') }}</span>
               }
             </small>
           }
@@ -150,13 +151,13 @@
                 changePasswordForm.get('confirmNewPassword')?.touched) {
             <small class="field-error">
               <i class="pi pi-exclamation-circle"></i>
-              <span>Passwords do not match.</span>
+              <span>{{ t('validation.passwordMismatch') }}</span>
             </small>
           }
         </div>
 
         <div class="password-actions">
-          <p-button type="submit" severity="info" [outlined]="true" label="Change Password" icon="pi pi-key" [disabled]="changePasswordForm.invalid"></p-button>
+          <p-button type="submit" severity="info" [outlined]="true" [label]="t('changePassword')" icon="pi pi-key" [disabled]="changePasswordForm.invalid"></p-button>
         </div>
       </form>
     </div>
@@ -167,6 +168,7 @@
 @if (!currentUser) {
   <div class="loading-state">
     <i class="pi pi-spin pi-spinner loading-icon"></i>
-    <p>Loading user data...</p>
+    <p>{{ t('loading') }}</p>
   </div>
 }
+</ng-container>

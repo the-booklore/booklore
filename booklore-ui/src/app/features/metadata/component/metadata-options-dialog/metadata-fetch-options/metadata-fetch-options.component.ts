@@ -7,13 +7,15 @@ import {AppSettingsService} from '../../../../../shared/service/app-settings.ser
 import {filter, take} from 'rxjs/operators';
 import {MetadataAdvancedFetchOptionsComponent} from '../metadata-advanced-fetch-options/metadata-advanced-fetch-options.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-fetch-options',
   standalone: true,
   templateUrl: './metadata-fetch-options.component.html',
   imports: [
-    MetadataAdvancedFetchOptionsComponent
+    MetadataAdvancedFetchOptionsComponent,
+    TranslocoDirective
   ],
   styleUrl: './metadata-fetch-options.component.scss'
 })

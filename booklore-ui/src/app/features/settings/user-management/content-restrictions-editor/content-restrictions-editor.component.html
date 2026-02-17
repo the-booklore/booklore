@@ -1,39 +1,50 @@
+<ng-container *transloco="let t; prefix: 'settingsUsers.contentRestrictions'">
 <div class="content-restrictions-editor">
   @if (isEditing) {
     <div class="add-restriction-form">
       <div class="form-row">
         <div class="form-field">
-          <label>Type</label>
+          <label>{{ t('type') }}</label>
           <p-select
             [options]="restrictionTypes"
             [(ngModel)]="newRestriction.restrictionType"
-            optionLabel="label"
             optionValue="value"
-            placeholder="Select type"
+            [placeholder]="t('selectType')"
             appendTo="body">
+            <ng-template let-item pTemplate="item">
+              {{ item.translationKey | transloco }}
+            </ng-template>
+            <ng-template let-item pTemplate="selectedItem">
+              {{ item.translationKey | transloco }}
+            </ng-template>
           </p-select>
         </div>
         <div class="form-field">
-          <label>Mode</label>
+          <label>{{ t('mode') }}</label>
           <p-select
             [options]="restrictionModes"
             [(ngModel)]="newRestriction.mode"
-            optionLabel="label"
             optionValue="value"
-            placeholder="Select mode"
+            [placeholder]="t('selectMode')"
             appendTo="body">
+            <ng-template let-item pTemplate="item">
+              {{ item.translationKey | transloco }}
+            </ng-template>
+            <ng-template let-item pTemplate="selectedItem">
+              {{ item.translationKey | transloco }}
+            </ng-template>
           </p-select>
         </div>
         <div class="form-field form-field-wide">
-          <label>Value</label>
+          <label>{{ t('value') }}</label>
           <p-select
             [options]="getValueOptions()"
             [(ngModel)]="newRestriction.value"
             optionLabel="label"
             optionValue="value"
-            placeholder="Select value"
+            [placeholder]="t('selectValue')"
             [filter]="true"
-            filterPlaceholder="Search..."
+            [filterPlaceholder]="t('searchFilter')"
             appendTo="body">
           </p-select>
         </div>
@@ -43,7 +54,7 @@
             severity="success"
             [outlined]="true"
             (onClick)="addRestriction()"
-            pTooltip="Add restriction">
+            [pTooltip]="t('addTooltip')">
           </p-button>
         </div>
       </div>
@@ -53,8 +64,8 @@
   @if (restrictions.length === 0) {
     <div class="empty-state">
       <i class="pi pi-check-circle"></i>
-      <p>No content restrictions configured</p>
-      <span class="empty-hint">This user can access all content in their assigned libraries</span>
+      <p>{{ t('emptyTitle') }}</p>
+      <span class="empty-hint">{{ t('emptyHint') }}</span>
     </div>
   } @else {
     <div class="restrictions-list">
@@ -62,9 +73,9 @@
         <div class="restrictions-group">
           <h5 class="group-title">
             <i class="pi pi-ban"></i>
-            Hidden Content (Exclude)
+            {{ t('excludeTitle') }}
           </h5>
-          <p class="group-description">Books matching these criteria will be hidden from this user</p>
+          <p class="group-description">{{ t('excludeDesc') }}</p>
           <div class="restrictions-chips">
             @for (restriction of getExcludeRestrictions(); track restriction.id) {
               <div class="restriction-chip mode-exclude">
@@ -85,9 +96,9 @@
         <div class="restrictions-group">
           <h5 class="group-title">
             <i class="pi pi-check"></i>
-            Allowed Content Only
+            {{ t('allowOnlyTitle') }}
           </h5>
-          <p class="group-description">Only books matching these criteria will be visible to this user</p>
+          <p class="group-description">{{ t('allowOnlyDesc') }}</p>
           <div class="restrictions-chips">
             @for (restriction of getAllowOnlyRestrictions(); track restriction.id) {
               <div class="restriction-chip mode-allow">
@@ -108,6 +119,7 @@
 
   <div class="restrictions-info">
     <i class="pi pi-info-circle"></i>
-    <span>Exclude rules take priority over Allow Only rules for safety</span>
+    <span>{{ t('infoNote') }}</span>
   </div>
 </div>
+</ng-container>
