@@ -81,6 +81,7 @@ public class NotebookService {
                 .color(p.getColor())
                 .style(p.getStyle())
                 .chapterTitle(p.getChapterTitle())
+                .primaryBookType(p.getPrimaryBookType())
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())
                 .build();

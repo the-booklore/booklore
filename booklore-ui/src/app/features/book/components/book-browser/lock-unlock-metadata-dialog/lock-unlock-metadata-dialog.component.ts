@@ -4,7 +4,7 @@ import {FormsModule} from '@angular/forms';
 
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
-import {BookService} from '../../../service/book.service';
+import {BookMetadataManageService} from '../../../service/book-metadata-manage.service';
 import {Divider} from 'primeng/divider';
 import {LoadingService} from '../../../../../core/services/loading.service';
 import {finalize} from 'rxjs';
@@ -23,7 +23,7 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
   styleUrl: './lock-unlock-metadata-dialog.component.scss'
 })
 export class LockUnlockMetadataDialogComponent implements OnInit {
-  private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
@@ -129,7 +129,7 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     this.isSaving = true;
     const loader = this.loadingService.show(this.t.translate('book.lockUnlockDialog.toast.updatingFieldLocks'));
 
-    this.bookService.toggleFieldLocks(this.bookIds, fieldActions)
+    this.bookMetadataManageService.toggleFieldLocks(this.bookIds, fieldActions)
       .pipe(finalize(() => {
         this.isSaving = false;
         this.loadingService.hide(loader);

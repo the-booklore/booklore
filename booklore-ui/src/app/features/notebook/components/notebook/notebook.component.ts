@@ -27,7 +27,8 @@ interface BookOption {
 }
 
 const EMPTY_PAGE: NotebookPage = {
-  content: [], totalElements: 0, totalPages: 0, number: 0, size: 0, first: true, last: true, empty: true
+  content: [],
+  page: { totalElements: 0, totalPages: 0, number: 0, size: 0 },
 };
 
 @Component({
@@ -92,7 +93,7 @@ export class NotebookComponent implements OnInit, OnDestroy {
       }),
       takeUntil(this.destroy$)
     ).subscribe(result => {
-      this.totalEntries = result.totalElements;
+      this.totalEntries = result.page.totalElements;
       this.groupEntries(result.content);
       this.loading = false;
     });
@@ -178,10 +179,13 @@ export class NotebookComponent implements OnInit, OnDestroy {
     const groupMap = new Map<number, BookGroup>();
     for (const entry of entries) {
       if (!groupMap.has(entry.bookId)) {
+        const isAudiobook = entry.primaryBookType === 'AUDIOBOOK';
         groupMap.set(entry.bookId, {
           bookId: entry.bookId,
           bookTitle: entry.bookTitle,
-          thumbnailUrl: this.urlHelper.getThumbnailUrl1(entry.bookId),
+          thumbnailUrl: isAudiobook
+            ? this.urlHelper.getAudiobookThumbnailUrl(entry.bookId)
+            : this.urlHelper.getDirectThumbnailUrl(entry.bookId),
           entries: [],
         });
       }

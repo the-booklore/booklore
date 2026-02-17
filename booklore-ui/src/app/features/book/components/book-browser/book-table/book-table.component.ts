@@ -9,6 +9,7 @@ import {SortOption} from '../../../model/sort.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {Button} from 'primeng/button';
 import {BookService} from '../../../service/book.service';
+import {BookMetadataManageService} from '../../../service/book-metadata-manage.service';
 import {MessageService} from 'primeng/api';
 import {RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
@@ -46,6 +47,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
   protected urlHelper = inject(UrlHelperService);
   private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private messageService = inject(MessageService);
   private userService = inject(UserService);
   private datePipe = inject(DatePipe);
@@ -326,7 +328,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     const allLocked = lockKeys.every(key => metadata[key] === true);
     const lockAction = allLocked ? 'UNLOCK' : 'LOCK';
 
-    this.bookService.toggleAllLock(new Set([metadata.bookId]), lockAction).subscribe({
+    this.bookMetadataManageService.toggleAllLock(new Set([metadata.bookId]), lockAction).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',

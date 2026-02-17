@@ -1,0 +1,24 @@
+<ng-container *transloco="let t; prefix: 'seriesBrowser'">
+  <div class="series-scroller-container">
+    <h2 class="series-scroller-title">{{ title }}</h2>
+
+    @if (!series || series.length === 0) {
+      <div class="series-scroller-empty">
+        <div class="empty-state-icon">
+          <i class="pi pi-list"></i>
+        </div>
+        <p>{{ t('noSeriesInCategory') }}</p>
+      </div>
+    } @else {
+      <div class="series-scroller-track">
+        @for (s of series; track s.seriesName) {
+          <app-series-card
+            [series]="s"
+            [compact]="true"
+            (cardClick)="onSeriesClick($event)">
+          </app-series-card>
+        }
+      </div>
+    }
+  </div>
+</ng-container>

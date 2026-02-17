@@ -15,6 +15,9 @@ import org.booklore.model.enums.ShelfType;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.ShelfRepository;
 import org.booklore.repository.UserRepository;
+import lombok.AllArgsConstructor;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,7 @@ public class ShelfService {
     private final BookMapper bookMapper;
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     @Transactional
     public Shelf createShelf(ShelfCreateRequest request) {
@@ -50,7 +54,9 @@ public class ShelfService {
                 .isPublic(request.isPublicShelf())
                 .user(fetchUserEntityById(userId))
                 .build();
-        return shelfMapper.toShelf(shelfRepository.save(shelfEntity));
+        Shelf result = shelfMapper.toShelf(shelfRepository.save(shelfEntity));
+        auditService.log(AuditAction.SHELF_CREATED, "Shelf", shelfEntity.getId(), "Created shelf: " + request.getName());
+        return result;
     }
 
     @Transactional
@@ -63,7 +69,9 @@ public class ShelfService {
         shelfEntity.setIcon(request.getIcon());
         shelfEntity.setIconType(request.getIconType());
         shelfEntity.setPublic(request.isPublicShelf());
-        return shelfMapper.toShelf(shelfRepository.save(shelfEntity));
+        Shelf result = shelfMapper.toShelf(shelfRepository.save(shelfEntity));
+        auditService.log(AuditAction.SHELF_UPDATED, "Shelf", id, "Updated shelf: " + request.getName());
+        return result;
     }
 
     public List<Shelf> getShelves() {
@@ -80,6 +88,7 @@ public class ShelfService {
     @Transactional
     public void deleteShelf(Long shelfId) {
         shelfRepository.deleteById(shelfId);
+        auditService.log(AuditAction.SHELF_DELETED, "Shelf", shelfId, "Deleted shelf: " + shelfId);
     }
 
     public Shelf getUserKoboShelf() {

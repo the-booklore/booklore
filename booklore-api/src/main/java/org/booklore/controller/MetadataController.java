@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 
 @RestController
 @RequestMapping("/api/v1/books")
@@ -39,6 +41,7 @@ public class MetadataController {
     private final MetadataMatchService metadataMatchService;
     private final BookRepository bookRepository;
     private final MetadataManagementService metadataManagementService;
+    private final AuditService auditService;
 
     @Operation(summary = "Get prospective metadata for a book", description = "Fetch prospective metadata for a book by its ID. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "200", description = "Prospective metadata returned successfully")
@@ -60,7 +63,24 @@ public class MetadataController {
             @Parameter(description = "Metadata update wrapper") @RequestBody MetadataUpdateWrapper metadataUpdateWrapper,
             @Parameter(description = "ID of the book") @PathVariable long bookId,
             @Parameter(description = "Merge categories") @RequestParam(defaultValue = "false") boolean mergeCategories) {
-        BookMetadata bookMetadata = bookMetadataService.updateMetadata(bookId, metadataUpdateWrapper, mergeCategories);
+        BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(java.util.Collections.singleton(bookId)).stream()
+                .findFirst()
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(metadataUpdateWrapper)
+                .updateThumbnail(true)
+                .mergeCategories(mergeCategories)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .mergeMoods(false)
+                .mergeTags(false)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
+        bookRepository.save(bookEntity);
+        auditService.log(AuditAction.METADATA_UPDATED, "Book", bookId, "Updated metadata for book: " + bookEntity.getMetadata().getTitle());
+        BookMetadata bookMetadata = bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
         return ResponseEntity.ok(bookMetadata);
     }
 

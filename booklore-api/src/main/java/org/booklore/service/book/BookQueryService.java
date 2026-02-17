@@ -39,6 +39,10 @@ public class BookQueryService {
         return bookRepository.findAllWithMetadataByIds(bookIds);
     }
 
+    public List<Book> mapEntitiesToDto(List<BookEntity> entities, boolean includeDescription, Long userId) {
+        return mapBooksToDto(entities, includeDescription, userId, !includeDescription);
+    }
+
     public List<BookEntity> getAllFullBookEntities() {
         return bookRepository.findAllFullBooks();
     }
@@ -158,6 +162,12 @@ public class BookQueryService {
             m.setAudibleReviewCount(null);
             m.setLubimyczytacRating(null);
 
+            // Strip empty metadata collections
+            if (m.getMoods() != null && m.getMoods().isEmpty()) m.setMoods(null);
+            if (m.getTags() != null && m.getTags().isEmpty()) m.setTags(null);
+            if (m.getAuthors() != null && m.getAuthors().isEmpty()) m.setAuthors(null);
+            if (m.getCategories() != null && m.getCategories().isEmpty()) m.setCategories(null);
+
             // Strip ComicMetadata fields
             ComicMetadata cm = m.getComicMetadata();
             if (cm != null) {
@@ -204,6 +214,10 @@ public class BookQueryService {
                 cm.setNotes(null);
             }
         }
+
+        // Strip empty book-level collections
+        if (dto.getAlternativeFormats() != null && dto.getAlternativeFormats().isEmpty()) dto.setAlternativeFormats(null);
+        if (dto.getSupplementaryFiles() != null && dto.getSupplementaryFiles().isEmpty()) dto.setSupplementaryFiles(null);
     }
 
     private boolean computeAllMetadataLocked(BookMetadata m) {

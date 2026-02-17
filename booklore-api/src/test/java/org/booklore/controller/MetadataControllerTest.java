@@ -5,6 +5,7 @@ import org.booklore.model.MetadataUpdateWrapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.metadata.MetadataManagementService;
+import org.booklore.service.audit.AuditService;
 import org.booklore.service.metadata.MetadataMatchService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,8 @@ class MetadataControllerTest {
     private MetadataMatchService metadataMatchService;
     @Mock
     private MetadataManagementService metadataManagementService;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private MetadataController metadataController;

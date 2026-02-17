@@ -89,6 +89,8 @@ export class LoginComponent implements OnInit, OnDestroy {
       error: (error) => {
         if (error.status === 0) {
           this.errorMessage = this.translocoService.translate('auth.login.connectionError');
+        } else if (error.status === 429) {
+          this.errorMessage = this.translocoService.translate('auth.login.rateLimited');
         } else {
           this.errorMessage = error?.error?.message || this.translocoService.translate('auth.login.unexpectedError');
         }
