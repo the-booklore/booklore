@@ -27,12 +27,6 @@ export function initializeAuthFactory() {
     const authInitService = inject(AuthInitializationService);
 
     return new Promise<void>((resolve) => {
-      if (!navigator.onLine) {
-        console.warn('[Auth] App is offline, skipping auth initialization');
-        authInitService.markAsInitialized();
-        resolve();
-        return;
-      }
 
       const settingsTimeout = setTimeout(() => {
         console.warn('[Auth] Public settings fetch timed out, falling back to local auth');
