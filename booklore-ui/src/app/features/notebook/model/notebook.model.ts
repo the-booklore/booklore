@@ -8,19 +8,19 @@ export interface NotebookEntry {
   color?: string;
   style?: string;
   chapterTitle?: string;
+  primaryBookType?: string;
   createdAt: string;
   updatedAt?: string;
 }
 
 export interface NotebookPage {
   content: NotebookEntry[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-  first: boolean;
-  last: boolean;
-  empty: boolean;
+  page: {
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+  };
 }
 
 export interface NotebookBookOption {

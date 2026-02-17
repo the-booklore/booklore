@@ -372,7 +372,7 @@ export class ReadingSessionTimelineComponent implements OnInit {
   }
 
   public getCoverUrl(bookId: number): string {
-    return this.urlHelperService.getThumbnailUrl1(bookId);
+    return this.urlHelperService.getDirectThumbnailUrl(bookId);
   }
 
   public getTooltipContent(session: TimelineSession): string {

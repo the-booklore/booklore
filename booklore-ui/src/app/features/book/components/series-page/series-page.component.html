@@ -77,13 +77,12 @@
 
               <!-- DESCRIPTION -->
               <div class="description-box">
-                <div [ngClass]="{ 'line-clamp-5': !isExpanded, 'line-clamp-none': isExpanded }"
+                <div #descriptionContent [ngClass]="{ 'line-clamp-5': !isExpanded, 'line-clamp-none': isExpanded }"
                   class="description-container">
                   <div class="readonly-editor"
                   [innerHTML]="(firstDescription$ | async) || t('noDescription')"></div>
                 </div>
-                @let desc = firstDescription$ | async;
-                @if ((desc?.length ?? 0) > 500) {
+                @if (isExpanded || isOverflowing) {
                   <p-button [label]="isExpanded ? t('showLess') : t('showMore')"
                     [icon]="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" iconPos="right" size="small" text
                     (click)="toggleExpand()">

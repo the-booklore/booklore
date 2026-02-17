@@ -12,6 +12,7 @@ import {UserService} from '../../../settings/user-management/user.service';
 import {FormsModule} from '@angular/forms';
 import {Tooltip} from 'primeng/tooltip';
 import {BookService} from '../../service/book.service';
+import {BookMetadataManageService} from '../../service/book-metadata-manage.service';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 
 @Component({
@@ -28,6 +29,7 @@ export class BookReviewsComponent implements OnInit, OnChanges {
 
   private reviewService = inject(BookReviewService);
   private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
   private userService = inject(UserService);
@@ -198,7 +200,7 @@ export class BookReviewsComponent implements OnInit, OnChanges {
       'reviewsLocked': newLockState ? 'LOCK' : 'UNLOCK'
     };
 
-    this.bookService.toggleFieldLocks([this.bookId], fieldActions)
+    this.bookMetadataManageService.toggleFieldLocks([this.bookId], fieldActions)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
