@@ -6,7 +6,7 @@
       </div>
       <div class="header-text">
         <h2 class="panel-title">{{ t('title') }}</h2>
-        <p class="panel-description">{{ t('description') }}</p>
+        <p class="panel-description">{{ t('description', { maxScrollers: MAX_SCROLLERS }) }}</p>
       </div>
       <p-button
         icon="pi pi-times"
@@ -17,19 +17,6 @@
         class="close-button"
       />
     </div>
-    <div class="header-text">
-      <h2 class="panel-title">Dashboard Configuration</h2>
-      <p class="panel-description">Add up to 10 scrollers from different book collections and customize their behavior</p>
-    </div>
-    <p-button
-      icon="pi pi-times"
-      [text]="true"
-      [rounded]="true"
-      severity="secondary"
-      (onClick)="cancel()"
-      class="close-button"
-    />
-  </div>
 
     <div class="scrollers-container">
       @for (scroller of config.scrollers; track scroller.id; let i = $index) {
@@ -64,17 +51,17 @@
                   </p-select>
                 </div>
 
-              <div class="scroller-field">
-                <label>Direction</label>
-                <p-select
-                  fluid
-                  [options]="sortDirectionOptions"
-                  [(ngModel)]="scroller.sortDirection"
-                  placeholder="Select direction"
-                  appendTo="body">
-                </p-select>
-              </div>
-            }
+                <div class="scroller-field">
+                  <label>Direction</label>
+                  <p-select
+                    fluid
+                    [options]="sortDirectionOptions"
+                    [(ngModel)]="scroller.sortDirection"
+                    placeholder="Select direction"
+                    appendTo="body">
+                  </p-select>
+                </div>
+              }
 
             @if (scroller.type === 'upNext') {
               <div class="scroller-field">
@@ -101,30 +88,17 @@
                 </p-select>
               </div>
             }
-          </div>
 
-                <div class="scroller-field">
-                  <label>{{ t('direction') }}</label>
-                  <p-select
-                    fluid
-                    [options]="sortDirectionOptions"
-                    [(ngModel)]="scroller.sortDirection"
-                    [placeholder]="t('selectDirection')"
-                    appendTo="body">
-                  </p-select>
-                </div>
-              }
-            </div>
-
-            <div class="scroller-field max-items-field">
-              <label>{{ t('maxItems') }}</label>
-              <p-inputNumber
-                fluid
-                [(ngModel)]="scroller.maxItems"
-                [min]="MIN_ITEMS"
-                [max]="MAX_ITEMS"
-                [showButtons]="true">
-              </p-inputNumber>
+              <div class="scroller-field max-items-field">
+                <label>{{ t('maxItems') }}</label>
+                <p-inputNumber
+                  fluid
+                  [(ngModel)]="scroller.maxItems"
+                  [min]="MIN_ITEMS"
+                  [max]="MAX_ITEMS"
+                  [showButtons]="true">
+                </p-inputNumber>
+              </div>
             </div>
 
             <div class="scroller-controls-right">
@@ -161,36 +135,37 @@
       }
     </div>
 
-  <div class="dialog-footer">
-    <div class="footer-left">
-      <p-button
-        label="Add Scroller"
-        icon="pi pi-plus"
-        severity="primary"
-        (click)="addScroller()"
-        [disabled]="config.scrollers.length >= MAX_SCROLLERS">
-      </p-button>
-      <p-button
-        label="Reset to Default"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
-        (click)="resetToDefault()">
-      </p-button>
-    </div>
-    <div class="footer-actions">
-      <p-button
-        label="Cancel"
-        [outlined]="true"
-        severity="secondary"
-        (click)="cancel()">
-      </p-button>
-      <p-button
-        label="Save"
-        icon="pi pi-check"
-        severity="success"
-        (click)="save()">
-      </p-button>
+    <div class="dialog-footer">
+      <div class="footer-left">
+        <p-button
+          label="Add Scroller"
+          icon="pi pi-plus"
+          severity="primary"
+          (click)="addScroller()"
+          [disabled]="config.scrollers.length >= MAX_SCROLLERS">
+        </p-button>
+        <p-button
+          label="Reset to Default"
+          icon="pi pi-refresh"
+          severity="secondary"
+          text
+          (click)="resetToDefault()">
+        </p-button>
+      </div>
+      <div class="footer-actions">
+        <p-button
+          label="Cancel"
+          [outlined]="true"
+          severity="secondary"
+          (click)="cancel()">
+        </p-button>
+        <p-button
+          label="Save"
+          icon="pi pi-check"
+          severity="success"
+          (click)="save()">
+        </p-button>
+      </div>
     </div>
   </div>
 </ng-container>

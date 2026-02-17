@@ -12,7 +12,7 @@ import {DashboardConfig, ScrollerConfig, ScrollerType} from '../../models/dashbo
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {map} from 'rxjs/operators';
-import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 export const MAX_SCROLLERS = 10;
 export const DEFAULT_MAX_ITEMS = 20;
@@ -30,8 +30,7 @@ export const MAX_ITEMS = 20;
     InputTextModule,
     SelectModule,
     InputNumberModule,
-    TranslocoDirective,
-    TranslocoPipe
+    TranslocoDirective
   ],
   templateUrl: './dashboard-settings.component.html',
   styleUrls: ['./dashboard-settings.component.scss']
@@ -169,13 +168,13 @@ export class DashboardSettingsComponent implements OnInit {
       case ScrollerType.LATEST_ADDED:
         return 'dashboard.scroller.recentlyAdded';
       case ScrollerType.RANDOM:
-        return 'Discover Something New';
+        return 'dashboard.scroller.discoverNew';
       case ScrollerType.UP_NEXT:
-        return 'Up Next';
+        return 'dashboard.scroller.upNext';
       case ScrollerType.READ_AGAIN:
-        return 'Read Again';
+        return 'dashboard.scroller.readAgain';
       case ScrollerType.RECOMMENDATIONS:
-        return 'Recommendations';
+        return 'dashboard.scroller.recomendations';
       default:
         return 'dashboard.scroller.default';
     }

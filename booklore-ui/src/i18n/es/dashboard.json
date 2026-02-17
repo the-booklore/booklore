@@ -19,7 +19,7 @@
   },
   "settings": {
     "title": "Configuración del panel",
-    "description": "Añade hasta 5 carruseles de diferentes colecciones de libros y personaliza su comportamiento",
+    "description": "Añade hasta {{maxScrollers}} carruseles de diferentes colecciones de libros y personaliza su comportamiento",
     "type": "Tipo",
     "selectType": "Seleccionar tipo",
     "magicShelf": "Estante mágico",

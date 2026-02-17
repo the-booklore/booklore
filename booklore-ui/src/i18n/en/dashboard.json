@@ -19,7 +19,7 @@
   },
   "settings": {
     "title": "Dashboard Configuration",
-    "description": "Add up to 5 scrollers from different book collections and customize their behavior",
+    "description": "Add up to {{maxScrollers}} scrollers from different book collections and customize their behavior",
     "type": "Type",
     "selectType": "Select type",
     "magicShelf": "Magic Shelf",
