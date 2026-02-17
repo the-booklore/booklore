@@ -7,6 +7,10 @@
           <i [class]="'pi pi-crown'"></i>
           {{ t('seriesDetailsTab') }}
         </p-tab>
+        <p-tab value="list">
+          <i [class]="'pi pi-list'"></i>
+          {{ t('bookListTab') }}
+        </p-tab>
       </p-tablist>
       <p-tabpanels class="tabpanels-responsive">
         <p-tabpanel value="view">
@@ -15,214 +19,441 @@
             <div class="series-main">
               <div class="series-details">
 
-                <div class="series-info-section">
+                <!-- HERO: Stacked covers + Info side by side -->
+                <div class="series-hero">
 
-                  <div class="series-title-block">
-                    <div class="series-title-row">
+                  <!-- LEFT: Stacked Covers -->
+                  @if (coverBooks$ | async; as coverBooks) {
+                    <div class="hero-covers">
+                      <div class="stacked-covers" [ngClass]="'covers-' + coverBooks.length">
+                        @for (book of coverBooks; track book.id; let i = $index) {
+                          <img
+                            [src]="getBookThumbnailUrl(book)"
+                            class="cover-img"
+                            [ngClass]="'cover-' + i"
+                            [alt]="book.metadata?.title || ''"
+                            loading="lazy"
+                            decoding="async"/>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- RIGHT: All series info -->
+                  <div class="hero-info">
+
+                    <!-- Title + Authors -->
+                    <div class="series-title-block">
                       <h2 class="series-title">
                         {{ seriesTitle$ | async }}
                       </h2>
+                      @if (allAuthors$ | async; as authors) {
+                        <p class="series-authors">
+                          @for (author of authors; track $index; let isLast = $last) {
+                            <a class="author-link" (click)="goToAuthorBooks(author)">
+                              {{ author }}
+                            </a>
+                            @if (!isLast) {
+                              <span>, </span>
+                            }
+                          }
+                        </p>
+                      }
                     </div>
 
-                    <p class="series-authors">
-                      @for (author of firstBook.metadata?.authors; track $index; let isLast = $last) {
-                        <a class="author-link" (click)="goToAuthorBooks(author)">
-                          {{ author }}
-                        </a>
-                        @if (!isLast) {
-                          <span>, </span>
+                    <!-- Categories -->
+                    @if (allCategories$ | async; as categories) {
+                      @if (categories.length) {
+                        <div class="categories-scroll">
+                          <div class="categories-list">
+                            @for (category of categories; track category) {
+                              <a (click)="goToCategory(category)" class="category-link">
+                                <p-tag [value]="category"></p-tag>
+                              </a>
+                            }
+                          </div>
+                        </div>
+                      }
+                    }
+
+                    <!-- Metadata row -->
+                    <div class="metadata-grid">
+                      <div class="metadata-item">
+                        <span class="metadata-label">{{ t('publisher') }}</span>
+                        @if (allPublishers$ | async; as publishers) {
+                          @if (publishers.length) {
+                            <span class="metadata-value">
+                              @for (pub of publishers; track pub; let isLast = $last) {
+                                <span class="publisher-link" (click)="goToPublisher(pub)">{{ pub }}</span>
+                                @if (!isLast) {, }
+                              }
+                            </span>
+                          } @else {
+                            <span class="metadata-value">-</span>
+                          }
+                        } @else {
+                          <span class="metadata-value">-</span>
+                        }
+                      </div>
+                      <div class="metadata-item">
+                        <span class="metadata-label">{{ t('years') }}</span>
+                        <span class="metadata-value">{{ (yearsRange$ | async) || '-' }}</span>
+                      </div>
+                      <div class="metadata-item">
+                        <span class="metadata-label">{{ t('numberOfBooks') }}</span>
+                        <span class="metadata-value">{{ books.length || 0 }}</span>
+                      </div>
+                      <div class="metadata-item">
+                        <span class="metadata-label">{{ t('language') }}</span>
+                        <span class="metadata-value">
+                          @if (allLanguages$ | async; as languages) {
+                            {{ languages.length ? languages.join(', ') : '-' }}
+                          } @else {
+                            -
+                          }
+                        </span>
+                      </div>
+                      @if (seriesStats$ | async; as stats) {
+                        @if (stats.totalPages > 0) {
+                          <div class="metadata-item">
+                            <span class="metadata-label">{{ t('stats.totalPages') }}</span>
+                            <span class="metadata-value">{{ stats.totalPages | number }}</span>
+                          </div>
+                        }
+                        @if (stats.formatCounts.size > 0) {
+                          <div class="metadata-item">
+                            <span class="metadata-label">{{ t('stats.formats') }}</span>
+                            <span class="metadata-value">
+                              @for (entry of stats.formatCounts | keyvalue; track entry.key) {
+                                {{ entry.key }} ({{ entry.value }}){{ $last ? '' : ', ' }}
+                              }
+                            </span>
+                          </div>
+                        }
+                        @if (stats.totalAudioDurationSeconds > 0) {
+                          <div class="metadata-item">
+                            <span class="metadata-label">{{ t('stats.totalAudioDuration') }}</span>
+                            <span class="metadata-value">{{ formatDuration(stats.totalAudioDurationSeconds) }}</span>
+                          </div>
                         }
                       }
-                    </p>
-                </div>
-
-                @if (firstBook.metadata?.categories?.length) {
-                  <div class="categories-scroll">
-                    <div class="categories-list">
-                      @for (category of firstBook.metadata?.categories; track category) {
-                        <a (click)="goToCategory(category)" class="category-link">
-                          <p-tag [value]="category"></p-tag>
-                        </a>
-                      }
                     </div>
-                  </div>
-                }
-                <div class="metadata-section-padding">
-                  <div class="metadata-grid">
-                    <p>
-                      <span class="metadata-label">{{ t('publisher') }} </span>
-                      @if (firstBook.metadata?.publisher; as publisher) {
-                        <span class="publisher-link" (click)="goToPublisher(publisher)">
-                          {{publisher}}
+
+                    <!-- Reading progress bar -->
+                    @if (readStatusBreakdown$ | async; as segments) {
+                      @if (segments.length) {
+                        <div class="read-progress-section">
+                          <div class="read-progress-bar">
+                            @for (seg of segments; track seg.status) {
+                              <div class="read-progress-segment"
+                                [ngStyle]="{'width': seg.percent + '%', 'background-color': getStatusColor(seg.status)}"
+                                [pTooltip]="getStatusLabel(seg.status) + ': ' + seg.count">
+                              </div>
+                            }
+                          </div>
+                          <div class="read-progress-legend">
+                            @for (seg of segments; track seg.status) {
+                              <span class="legend-item"
+                                [ngStyle]="{'border-color': getStatusColor(seg.status)}">
+                                <span class="legend-dot"
+                                  [ngStyle]="{'background-color': getStatusColor(seg.status)}"></span>
+                                {{ getStatusLabel(seg.status) }} ({{ seg.count }})
+                              </span>
+                            }
+                            @let readProg = seriesReadProgress$ | async;
+                            @if (readProg) {
+                              <span class="read-percent-label">
+                                {{ t('readPercent', { progress: readProg }) }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    }
+
+                    <!-- Completion tracker -->
+                    @if (seriesCompletion$ | async; as completion) {
+                      <div class="completion-section">
+                        <span class="completion-label">
+                          {{ t('completionOwned', { owned: completion.owned, total: completion.total }) }}
                         </span>
-                      } @else {
-                        <span>-</span>
-                      }
-                    </p>
-                    <p><strong>{{ t('years') }}</strong> {{ (yearsRange$ | async) || '-' }}</p>
-                    <p><strong>{{ t('numberOfBooks') }}</strong> {{ books.length || 0}}</p>
-                    <p><strong>{{ t('language') }}</strong> {{ firstBook.metadata?.language || "-"}}</p>
-                    <p><strong>{{ t('readStatus') }}</strong>
-                    @let s = seriesReadStatus$ | async;
-                    <span class="status-badge"
-                      [ngClass]="getStatusSeverityClass(s || 'UNREAD')">
-                      {{ getStatusLabel(s) }}
-                      @if (s === 'PARTIALLY_READ') {
-                        ({{ seriesReadProgress$ | async }})
-                      }
-                    </span>
-                  </p>
-                </div>
-              </div>
+                        <p-progressBar
+                          [value]="completion.percent"
+                          [showValue]="false"
+                          class="completion-bar"
+                          [ngClass]="completion.percent === 100 ? 'progress-complete' : 'progress-incomplete'">
+                        </p-progressBar>
+                        @if (completion.missingNumbers.length > 0) {
+                          <p class="missing-books">
+                            {{ t('missingBooks', { numbers: completion.missingNumbers.join(', ') }) }}
+                          </p>
+                        }
+                      </div>
+                    }
 
-              <!-- DESCRIPTION -->
-              <div class="description-box">
-                <div #descriptionContent [ngClass]="{ 'line-clamp-5': !isExpanded, 'line-clamp-none': isExpanded }"
-                  class="description-container">
-                  <div class="readonly-editor"
-                  [innerHTML]="(firstDescription$ | async) || t('noDescription')"></div>
-                </div>
-                @if (isExpanded || isOverflowing) {
-                  <p-button [label]="isExpanded ? t('showLess') : t('showMore')"
-                    [icon]="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" iconPos="right" size="small" text
-                    (click)="toggleExpand()">
-                  </p-button>
-                }
-              </div>
+                    <!-- Ratings -->
+                    @if (seriesStats$ | async; as stats) {
+                      @if (stats.avgPersonalRating != null || stats.avgGoodreads != null || stats.avgAmazon != null || stats.avgHardcover != null) {
+                        <div class="ratings-row">
+                          @if (stats.avgPersonalRating != null) {
+                            <div class="rating-chip">
+                              <i class="pi pi-star-fill rating-icon personal"></i>
+                              <span class="rating-value">{{ stats.avgPersonalRating | number:'1.1-1' }}/10</span>
+                              <span class="rating-label">{{ t('stats.avgPersonalRating') }}</span>
+                            </div>
+                          }
+                          @if (stats.avgGoodreads != null) {
+                            <div class="rating-chip">
+                              <i class="pi pi-star-fill rating-icon goodreads"></i>
+                              <span class="rating-value">{{ getRatingPercent(stats.avgGoodreads) }}%</span>
+                              <span class="rating-label">{{ t('stats.avgGoodreads') }}</span>
+                            </div>
+                          }
+                          @if (stats.avgAmazon != null) {
+                            <div class="rating-chip">
+                              <i class="pi pi-star-fill rating-icon amazon"></i>
+                              <span class="rating-value">{{ getRatingPercent(stats.avgAmazon) }}%</span>
+                              <span class="rating-label">{{ t('stats.avgAmazon') }}</span>
+                            </div>
+                          }
+                          @if (stats.avgHardcover != null) {
+                            <div class="rating-chip">
+                              <i class="pi pi-star-fill rating-icon hardcover"></i>
+                              <span class="rating-value">{{ getRatingPercent(stats.avgHardcover) }}%</span>
+                              <span class="rating-label">{{ t('stats.avgHardcover') }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                    }
 
-              <div class="series-items-grid" #Container
-                [ngStyle]="{'grid-template-columns': 'repeat(auto-fill, minmax(' + gridColumnMinWidth + ', 1fr))'}">
-                @for (book of books; track book; let i = $index) {
-                  <div class="grid-item"
-                    [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
-                    <app-book-card
-                        [index]="i"
-                        [book]="book"
-                        [isCheckboxEnabled]="true"
-                        [isSelected]="selectedBooks.has(book.id)"
-                        (checkboxClick)="onCheckboxClicked($event)"
-                        [onBookSelect]="handleBookSelect.bind(this)"
-                        [isSeriesCollapsed]="false"
-                        [overlayPreferenceService]="bookCardOverlayPreferenceService">
-                    </app-book-card>
+                    <!-- Next Up -->
+                    @if (nextUp$ | async; as nextUp) {
+                      <div class="next-up-card">
+                        <div class="next-up-header">
+                          <i class="pi pi-bookmark"></i>
+                          {{ nextUp.isReading ? t('continueReading') : t('nextUp') }}
+                        </div>
+                        <div class="next-up-body">
+                          <img [src]="nextUp.thumbnailUrl"
+                            [alt]="nextUp.book.metadata?.title || ''"
+                            class="next-up-thumb"
+                            loading="lazy"/>
+                          <div class="next-up-info">
+                            <span class="next-up-title">{{ nextUp.book.metadata?.title || '' }}</span>
+                            @if (nextUp.book.metadata?.seriesNumber != null) {
+                              <span class="next-up-number">#{{ nextUp.book.metadata?.seriesNumber }}</span>
+                            }
+                            @if (nextUp.isReading && nextUp.progressPercent != null) {
+                              <div class="next-up-progress-row">
+                                <p-progressBar
+                                  [value]="nextUp.progressPercent"
+                                  [showValue]="false"
+                                  class="next-up-progress">
+                                </p-progressBar>
+                                <span class="next-up-progress-label">{{ nextUp.progressPercent }}%</span>
+                              </div>
+                            }
+                            <p-button
+                              size="small"
+                              icon="pi pi-book"
+                              [label]="nextUp.isReading ? t('continueButton') : t('readButton')"
+                              severity="info"
+                              [text]="true"
+                              (click)="readBook(nextUp.book.id)">
+                            </p-button>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
                   </div>
-                }
-                @if (books.length === 0) {
-                  <div class="empty-state">{{ t('noBooksFound') }}</div>
-                }
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div class="description-box">
+                  <div #descriptionContent [ngClass]="{ 'line-clamp-3': !isExpanded, 'line-clamp-none': isExpanded }"
+                    class="description-container">
+                    <div class="readonly-editor"
+                    [innerHTML]="(firstDescription$ | async) || t('noDescription')"></div>
+                  </div>
+                  @if (isExpanded || isOverflowing) {
+                    <p-button [label]="isExpanded ? t('showLess') : t('showMore')"
+                      [icon]="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" iconPos="right" size="small" text
+                      (click)="toggleExpand()">
+                    </p-button>
+                  }
+                </div>
+
+                <div class="series-items-grid" #Container
+                  [ngStyle]="{'grid-template-columns': 'repeat(auto-fill, minmax(' + gridColumnMinWidth + ', 1fr))'}">
+                  @for (book of books; track book; let i = $index) {
+                    <div class="grid-item"
+                      [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
+                      <app-book-card
+                          [index]="i"
+                          [book]="book"
+                          [isCheckboxEnabled]="true"
+                          [isSelected]="selectedBooks.has(book.id)"
+                          (checkboxClick)="onCheckboxClicked($event)"
+                          [onBookSelect]="handleBookSelect.bind(this)"
+                          [isSeriesCollapsed]="false"
+                          [overlayPreferenceService]="bookCardOverlayPreferenceService">
+                      </app-book-card>
+                    </div>
+                  }
+                  @if (books.length === 0) {
+                    <div class="empty-state">{{ t('noBooksFound') }}</div>
+                  }
+                </div>
+
               </div>
 
             </div>
+        }
 
-          </div>
-        </div>
-      }
+      </p-tabpanel>
 
-    </p-tabpanel>
-  </p-tabpanels>
-</p-tabs>
-@if (selectedBooks.size > 0) {
-  @if (userService.userState$ | async; as userState) {
-    <div class="book-browser-footer" [@slideInOut]>
-      <div class="footer-content">
-        <div class="footer-left">
-          <div class="selected-count-badge">
-            <i class="pi pi-check-circle badge-icon"></i>
-            <span class="badge-count" style="color: var(--primary-color)">{{ selectedBooks.size }}</span>
-            <span class="badge-label">{{ t('selected') }}</span>
-          </div>
+      <!-- BOOK LIST TAB -->
+      <p-tabpanel value="list">
+        <div class="book-list-container">
+          @for (book of books; track book.id) {
+            <div class="book-list-row" (click)="readBook(book.id)">
+              <span class="list-series-number">
+                {{ book.metadata?.seriesNumber != null ? '#' + book.metadata?.seriesNumber : '-' }}
+              </span>
+              <img [src]="getBookThumbnailUrl(book)"
+                [alt]="book.metadata?.title || ''"
+                class="list-thumb"
+                loading="lazy"/>
+              <div class="list-book-info">
+                <span class="list-book-title">{{ book.metadata?.title || '' }}</span>
+                @if (book.metadata?.publishedDate; as date) {
+                  <span class="list-book-year">{{ date }}</span>
+                }
+              </div>
+              @if (book.metadata?.pageCount; as pages) {
+                <span class="list-pages">{{ pages }} {{ t('listPages') }}</span>
+              }
+              <span class="list-status-badge"
+                [ngStyle]="{'background-color': getStatusColor(book.readStatus)}">
+                {{ getStatusLabel(book.readStatus) }}
+              </span>
+              @if (book.primaryFile?.bookType; as bookType) {
+                <p-tag [value]="bookType" class="list-format-tag" severity="secondary"></p-tag>
+              }
+            </div>
+          }
+          @if (books.length === 0) {
+            <div class="empty-state">{{ t('noBooksFound') }}</div>
+          }
         </div>
-        <div class="footer-center">
-            <div class="footer-action-group">
-              @if (hasMetadataMenuItems) {
-                <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
-                <p-button
-                  (click)="menu.toggle($event)"
-                  [pTooltip]="t('tooltip.metadataActions')"
-                  tooltipPosition="top"
-                  outlined="true"
-                  severity="info"
-                  icon="pi pi-database">
-                </p-button>
-              }
-              <p-button
-                icon="pi pi-bookmark-fill"
-                outlined="true"
-                severity="info"
-                (onClick)="openShelfAssigner()"
-                [pTooltip]="t('tooltip.assignToShelf')"
-                tooltipPosition="top">
-              </p-button>
-              @if (userState.user!.permissions.canBulkLockUnlockMetadata) {
-                <p-button
-                  outlined="true"
-                  icon="pi pi-lock"
-                  severity="info"
-                  (click)="lockUnlockMetadata()"
-                  [pTooltip]="t('tooltip.lockUnlockMetadata')"
-                  tooltipPosition="top">
-                </p-button>
-              }
-              @if (userState.user!.permissions.canMoveOrganizeFiles && (appSettingsService.appSettings$ | async)?.diskType === 'LOCAL') {
-                <p-button
-                  outlined="true"
-                  icon="pi pi-arrows-h"
-                  severity="info"
-                  (click)="moveFiles()"
-                  [pTooltip]="t('tooltip.organizeFiles')"
-                  tooltipPosition="top">
-                </p-button>
-              }
-              @if (hasMoreActionsItems) {
-                <div class="more-actions-wrapper">
+      </p-tabpanel>
+
+    </p-tabpanels>
+  </p-tabs>
+  @if (selectedBooks.size > 0) {
+    @if (userService.userState$ | async; as userState) {
+      <div class="book-browser-footer" [@slideInOut]>
+        <div class="footer-content">
+          <div class="footer-left">
+            <div class="selected-count-badge">
+              <i class="pi pi-check-circle badge-icon"></i>
+              <span class="badge-count" style="color: var(--primary-color)">{{ selectedBooks.size }}</span>
+              <span class="badge-label">{{ t('selected') }}</span>
+            </div>
+          </div>
+          <div class="footer-center">
+              <div class="footer-action-group">
+                @if (hasMetadataMenuItems) {
+                  <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
                   <p-button
                     (click)="menu.toggle($event)"
-                    [pTooltip]="t('tooltip.moreActions')"
+                    [pTooltip]="t('tooltip.metadataActions')"
                     tooltipPosition="top"
                     outlined="true"
                     severity="info"
-                    icon="pi pi-ellipsis-v">
+                    icon="pi pi-database">
                   </p-button>
-                  <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body"/>
-                </div>
-              }
-            </div>
-          <p-divider layout="vertical"></p-divider>
-          <div class="footer-action-group">
-            <p-button
-              outlined="true"
-              icon="pi pi-check-square"
-              severity="success"
-              (click)="selectAllBooks()"
-              [pTooltip]="t('tooltip.selectAll')"
-              tooltipPosition="top">
-            </p-button>
-            <p-button
-              outlined="true"
-              icon="pi pi-times"
-              severity="warn"
-              (click)="deselectAllBooks()"
-              [pTooltip]="t('tooltip.deselectAll')"
-              tooltipPosition="top">
-            </p-button>
-          </div>
-          @if (userState.user!.permissions.admin || userState.user!.permissions.canDeleteBook) {
+                }
+                <p-button
+                  icon="pi pi-bookmark-fill"
+                  outlined="true"
+                  severity="info"
+                  (onClick)="openShelfAssigner()"
+                  [pTooltip]="t('tooltip.assignToShelf')"
+                  tooltipPosition="top">
+                </p-button>
+                @if (userState.user!.permissions.canBulkLockUnlockMetadata) {
+                  <p-button
+                    outlined="true"
+                    icon="pi pi-lock"
+                    severity="info"
+                    (click)="lockUnlockMetadata()"
+                    [pTooltip]="t('tooltip.lockUnlockMetadata')"
+                    tooltipPosition="top">
+                  </p-button>
+                }
+                @if (userState.user!.permissions.canMoveOrganizeFiles && (appSettingsService.appSettings$ | async)?.diskType === 'LOCAL') {
+                  <p-button
+                    outlined="true"
+                    icon="pi pi-arrows-h"
+                    severity="info"
+                    (click)="moveFiles()"
+                    [pTooltip]="t('tooltip.organizeFiles')"
+                    tooltipPosition="top">
+                  </p-button>
+                }
+                @if (hasMoreActionsItems) {
+                  <div class="more-actions-wrapper">
+                    <p-button
+                      (click)="menu.toggle($event)"
+                      [pTooltip]="t('tooltip.moreActions')"
+                      tooltipPosition="top"
+                      outlined="true"
+                      severity="info"
+                      icon="pi pi-ellipsis-v">
+                    </p-button>
+                    <p-tieredMenu #menu [model]="moreActionsMenuItems" [popup]="true" appendTo="body"/>
+                  </div>
+                }
+              </div>
             <p-divider layout="vertical"></p-divider>
-            <p-button
-              outlined="true"
-              icon="pi pi-trash"
-              severity="danger"
-              (click)="confirmDeleteBooks()"
-              [pTooltip]="t('tooltip.deleteSelected')"
-              tooltipPosition="top">
-            </p-button>
-          }
+            <div class="footer-action-group">
+              <p-button
+                outlined="true"
+                icon="pi pi-check-square"
+                severity="success"
+                (click)="selectAllBooks()"
+                [pTooltip]="t('tooltip.selectAll')"
+                tooltipPosition="top">
+              </p-button>
+              <p-button
+                outlined="true"
+                icon="pi pi-times"
+                severity="warn"
+                (click)="deselectAllBooks()"
+                [pTooltip]="t('tooltip.deselectAll')"
+                tooltipPosition="top">
+              </p-button>
+            </div>
+            @if (userState.user!.permissions.admin || userState.user!.permissions.canDeleteBook) {
+              <p-divider layout="vertical"></p-divider>
+              <p-button
+                outlined="true"
+                icon="pi pi-trash"
+                severity="danger"
+                (click)="confirmDeleteBooks()"
+                [pTooltip]="t('tooltip.deleteSelected')"
+                tooltipPosition="top">
+              </p-button>
+            }
+          </div>
+          <div class="footer-right"></div>
         </div>
-        <div class="footer-right"></div>
       </div>
-    </div>
+    }
   }
-}
 </div>
 
 } @else {
