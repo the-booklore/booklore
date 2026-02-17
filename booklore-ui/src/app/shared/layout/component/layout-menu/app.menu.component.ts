@@ -12,6 +12,7 @@ import {AppVersion, VersionService} from '../../../service/version.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
+import {SeriesDataService} from '../../../../features/series-browser/service/series-data.service';
 import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
@@ -44,6 +45,7 @@ export class AppMenuComponent implements OnInit {
   private dialogLauncherService = inject(DialogLauncherService);
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
+  private seriesDataService = inject(SeriesDataService);
   private t = inject(TranslocoService);
   private localStorageService = inject(LocalStorageService);
 
@@ -97,6 +99,13 @@ export class AppMenuComponent implements OnInit {
               icon: 'pi pi-fw pi-book',
               routerLink: ['/all-books'],
               bookCount$: of(bookState.books ? bookState.books.length : 0),
+            },
+            {
+              label: this.t.translate('layout.menu.series'),
+              type: 'Series',
+              icon: 'pi pi-fw pi-objects-column',
+              routerLink: ['/series'],
+              bookCount$: this.seriesDataService.allSeries$.pipe(map(series => series.length)),
             },
             {
               label: this.t.translate('layout.menu.notebook'),

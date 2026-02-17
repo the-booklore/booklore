@@ -27,7 +27,7 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {Tooltip} from "primeng/tooltip";
 import {Divider} from "primeng/divider";
 import {animate, style, transition, trigger} from "@angular/animations";
-import {Component, inject, OnDestroy} from '@angular/core';
+import {AfterViewChecked, Component, ElementRef, inject, OnDestroy, ViewChild} from '@angular/core';
 import {BookCardOverlayPreferenceService} from '../book-browser/book-card-overlay-preference.service';
 
 @Component({
@@ -68,7 +68,7 @@ import {BookCardOverlayPreferenceService} from '../book-browser/book-card-overla
     ])
   ]
 })
-export class SeriesPageComponent implements OnDestroy {
+export class SeriesPageComponent implements OnDestroy, AfterViewChecked {
 
   private route = inject(ActivatedRoute);
   private bookService = inject(BookService);
@@ -88,8 +88,10 @@ export class SeriesPageComponent implements OnDestroy {
   protected appSettingsService = inject(AppSettingsService);
   private readonly t = inject(TranslocoService);
 
+  @ViewChild('descriptionContent') descriptionContentRef?: ElementRef<HTMLElement>;
   tab: string = "view";
   isExpanded = false;
+  isOverflowing = false;
 
   // Selection state
   selectedBooks = new Set<number>();
@@ -265,6 +267,13 @@ export class SeriesPageComponent implements OnDestroy {
       );
     } else {
       this.navigateToFilteredBooks(filterKey, filterValue);
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (!this.isExpanded && this.descriptionContentRef) {
+      const el = this.descriptionContentRef.nativeElement;
+      this.isOverflowing = el.scrollHeight > el.clientHeight;
     }
   }
 
