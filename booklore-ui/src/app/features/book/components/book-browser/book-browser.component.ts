@@ -3,6 +3,7 @@ import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
 import {BookService} from '../../service/book.service';
+import {BookMetadataManageService} from '../../service/book-metadata-manage.service';
 import {debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject, Subscription} from 'rxjs';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -109,6 +110,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private dialogHelperService = inject(BookDialogHelperService);
   private bookMenuService = inject(BookMenuService);
   private libraryShelfMenuService = inject(LibraryShelfMenuService);
@@ -846,7 +848,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
         severity: 'secondary'
       },
       accept: () => {
-        this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+        this.bookMetadataManageService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
@@ -886,7 +888,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
         severity: 'secondary'
       },
       accept: () => {
-        this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+        this.bookMetadataManageService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',

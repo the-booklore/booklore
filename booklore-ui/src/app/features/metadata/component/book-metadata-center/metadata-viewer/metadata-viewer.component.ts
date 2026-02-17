@@ -1,8 +1,9 @@
-import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core';
+import {AfterViewChecked, Component, DestroyRef, ElementRef, inject, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {Button} from 'primeng/button';
 import {AsyncPipe, DecimalPipe, NgClass} from '@angular/common';
 import {combineLatest, Observable} from 'rxjs';
 import {BookService} from '../../../../book/service/book.service';
+import {BookFileService} from '../../../../book/service/book-file.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
 import {Book, BookFile, BookMetadata, BookRecommendation, BookType, ComicMetadata, FileInfo, ReadStatus} from '../../../../book/model/book.model';
@@ -43,7 +44,7 @@ import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/tran
   styleUrl: './metadata-viewer.component.scss',
   imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe]
 })
-export class MetadataViewerComponent implements OnInit, OnChanges {
+export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChecked {
   @Input() book$!: Observable<Book | null>;
   @Input() recommendedBooks: BookRecommendation[] = [];
   private originalRecommendedBooks: BookRecommendation[] = [];
@@ -54,6 +55,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private bookFileService = inject(BookFileService);
   private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
@@ -68,7 +70,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
   bookInSeries: Book[] = [];
+  @ViewChild('descriptionContent') descriptionContentRef?: ElementRef<HTMLElement>;
   isExpanded = false;
+  isOverflowing = false;
   isComicSectionExpanded = true;
   isAudiobookSectionExpanded = true;
   showFilePath = false;
@@ -458,6 +462,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     );
   }
 
+  ngAfterViewChecked(): void {
+    if (!this.isExpanded && this.descriptionContentRef) {
+      const el = this.descriptionContentRef.nativeElement;
+      this.isOverflowing = el.scrollHeight > el.clientHeight;
+    }
+  }
+
   toggleExpand(): void {
     this.isExpanded = !this.isExpanded;
   }
@@ -484,11 +495,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   download(book: Book) {
-    this.bookService.downloadFile(book);
+    this.bookFileService.downloadFile(book);
   }
 
   downloadAdditionalFile(book: Book, fileId: number) {
-    this.bookService.downloadAdditionalFile(book, fileId);
+    this.bookFileService.downloadAdditionalFile(book, fileId);
   }
 
   // Event handlers for MetadataTabsComponent
@@ -505,7 +516,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   onDownloadAllFiles(event: DownloadAllFilesEvent): void {
-    this.bookService.downloadAllFiles(event.book);
+    this.bookFileService.downloadAllFiles(event.book);
   }
 
   onDeleteBookFile(event: DeleteBookFileEvent): void {
@@ -526,7 +537,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       rejectButtonStyleClass: 'p-button-secondary',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.bookService.deleteAdditionalFile(bookId, fileId).subscribe({
+        this.bookFileService.deleteAdditionalFile(bookId, fileId).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',
@@ -572,7 +583,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       rejectButtonStyleClass: 'p-button-secondary',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.bookService.deleteBookFile(book.id, fileId, isPrimary).subscribe({
+        this.bookFileService.deleteBookFile(book.id, fileId, isPrimary).subscribe({
           next: () => {
             this.messageService.add({
               severity: 'success',

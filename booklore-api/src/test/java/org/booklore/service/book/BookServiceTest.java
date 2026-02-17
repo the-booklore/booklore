@@ -2,6 +2,7 @@ package org.booklore.service.book;
 
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.APIException;
+import org.booklore.service.audit.AuditService;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.*;
 import org.booklore.model.dto.request.ReadProgressRequest;
@@ -69,6 +70,8 @@ class BookServiceTest {
     private MonitoringRegistrationService monitoringRegistrationService;
     @Mock
     private BookUpdateService bookUpdateService;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private BookService bookService;

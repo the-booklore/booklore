@@ -8,7 +8,7 @@ import { FileSelectEvent, FileUpload, FileUploadHandlerEvent } from 'primeng/fil
 import { Badge } from 'primeng/badge';
 import { Tooltip } from 'primeng/tooltip';
 import { Subject, takeUntil } from 'rxjs';
-import { BookService } from '../../service/book.service';
+import { BookFileService } from '../../service/book-file.service';
 import { AppSettingsService } from '../../../../shared/service/app-settings.service';
 import { Book, AdditionalFileType } from '../../model/book.model';
 import { MessageService } from 'primeng/api';
@@ -58,7 +58,7 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
   constructor(
     private dialogRef: DynamicDialogRef,
     private config: DynamicDialogConfig,
-    private bookService: BookService,
+    private bookFileService: BookFileService,
     private appSettingsService: AppSettingsService,
     private messageService: MessageService,
     private cdr: ChangeDetectorRef
@@ -152,7 +152,7 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
     for (const uploadFile of filesToUpload) {
       uploadFile.status = 'Uploading';
 
-      this.bookService.uploadAdditionalFile(
+      this.bookFileService.uploadAdditionalFile(
         this.book.id,
         uploadFile.file,
         this.fileType,

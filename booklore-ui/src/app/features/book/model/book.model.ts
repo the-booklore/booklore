@@ -381,6 +381,13 @@ export interface BookDeletionResponse {
   failedFileDeletions: number[];
 }
 
+export interface BookSyncResponse {
+  books: Book[];
+  deletedIds: number[];
+  syncTimestamp: string;
+  totalBookCount: number;
+}
+
 export enum ReadStatus {
   UNREAD = 'UNREAD',
   READING = 'READING',
@@ -404,4 +411,16 @@ export interface CreatePhysicalBookRequest {
   language?: string;
   pageCount?: number;
   categories?: string[];
+}
+
+export interface BookStatusUpdateResponse {
+  bookId: number;
+  readStatus: ReadStatus;
+  readStatusModifiedTime: string;
+  dateFinished?: string;
+}
+
+export interface PersonalRatingUpdateResponse {
+  bookId: number;
+  personalRating?: number;
 }
