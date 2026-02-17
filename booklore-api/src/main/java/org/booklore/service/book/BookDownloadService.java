@@ -20,7 +20,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
@@ -41,7 +40,6 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 @AllArgsConstructor
 @Service
-@Transactional(readOnly = true)
 public class BookDownloadService {
 
     private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
@@ -98,7 +96,7 @@ public class BookDownloadService {
 
     public ResponseEntity<Resource> downloadBookFile(Long bookId, Long fileId) {
         try {
-            BookFileEntity bookFileEntity = bookFileRepository.findById(fileId)
+            BookFileEntity bookFileEntity = bookFileRepository.findByIdWithBookAndLibraryPath(fileId)
                     .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException(fileId));
 
             // Verify the file belongs to the specified book

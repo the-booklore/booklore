@@ -6,14 +6,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.booklore.config.security.annotation.CheckBookAccess;
+import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMetadataMapper;
+import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.request.*;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.enums.AuditAction;
 import org.booklore.model.enums.MetadataProvider;
 import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.repository.BookRepository;
+import org.booklore.service.audit.AuditService;
 import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.metadata.BookMetadataUpdater;
 import org.booklore.service.metadata.MetadataManagementService;
@@ -26,8 +30,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
-import org.booklore.model.enums.AuditAction;
-import org.booklore.service.audit.AuditService;
 
 @RestController
 @RequestMapping("/api/v1/books")
