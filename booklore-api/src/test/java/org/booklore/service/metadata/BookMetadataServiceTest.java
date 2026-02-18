@@ -7,6 +7,7 @@ import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.repository.BookRepository;
+import org.booklore.service.audit.AuditService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +30,8 @@ class BookMetadataServiceTest {
     private BookMetadataUpdater bookMetadataUpdater;
     @Mock
     private BookMetadataMapper bookMetadataMapper;
+    @Mock
+    private AuditService auditService;
 
     @InjectMocks
     private BookMetadataService bookMetadataService;
