@@ -80,7 +80,7 @@ class HardcoverSyncServiceTest {
         hardcoverSyncSettings.setHardcoverApiKey("test-api-key");
 
         when(hardcoverSyncSettingsService.getSettingsForUserId(TEST_USER_ID)).thenReturn(hardcoverSyncSettings);
-        when(bookRepository.findByIdWithBookFiles(TEST_BOOK_ID)).thenReturn(Optional.of(testBook));
+        when(bookRepository.findByIdWithMetadata(TEST_BOOK_ID)).thenReturn(Optional.of(testBook));
         
         // Setup RestClient mock chain - handles multiple calls
         when(restClient.post()).thenReturn(requestBodyUriSpec);
@@ -133,7 +133,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should skip sync when book not found")
     void syncProgressToHardcover_whenBookNotFound_shouldSkip() {
-        when(bookRepository.findByIdWithBookFiles(TEST_BOOK_ID)).thenReturn(Optional.empty());
+        when(bookRepository.findByIdWithMetadata(TEST_BOOK_ID)).thenReturn(Optional.empty());
 
         service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f, TEST_USER_ID);
 
