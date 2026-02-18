@@ -58,10 +58,9 @@
       color: #e91e63;
     }
 
-    .stat-value-sm {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--text-color, #ffffff);
+    .stat-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-secondary-color);
       text-align: center;
     }
 
@@ -73,7 +72,11 @@
       margin-top: 0.25rem;
     }
 
-    &.danger .stat-value-sm {
+    &.danger .stat-value {
+      color: #ff5722;
+    }
+
+    &.danger .stat-subtitle {
       color: #ff5722;
     }
   }

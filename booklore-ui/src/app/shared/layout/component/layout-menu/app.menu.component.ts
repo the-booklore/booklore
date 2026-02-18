@@ -12,14 +12,19 @@ import {AppVersion, VersionService} from '../../../service/version.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
+import {SeriesDataService} from '../../../../features/series-browser/service/series-data.service';
 import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {Slider} from 'primeng/slider';
+import {FormsModule} from '@angular/forms';
+import {Popover} from 'primeng/popover';
+import {LocalStorageService} from '../../../service/local-storage.service';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [AppMenuitemComponent, MenuModule, AsyncPipe, TranslocoDirective],
+  imports: [AppMenuitemComponent, MenuModule, AsyncPipe, TranslocoDirective, Slider, FormsModule, Popover],
   templateUrl: './app.menu.component.html',
   styleUrl: './app.menu.component.scss',
 })
@@ -40,7 +45,9 @@ export class AppMenuComponent implements OnInit {
   private dialogLauncherService = inject(DialogLauncherService);
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
+  private seriesDataService = inject(SeriesDataService);
   private t = inject(TranslocoService);
+  private localStorageService = inject(LocalStorageService);
 
   librarySortField: 'name' | 'id' = 'name';
   librarySortOrder: 'asc' | 'desc' = 'desc';
@@ -48,9 +55,12 @@ export class AppMenuComponent implements OnInit {
   shelfSortOrder: 'asc' | 'desc' = 'asc';
   magicShelfSortField: 'name' | 'id' = 'name';
   magicShelfSortOrder: 'asc' | 'desc' = 'asc';
+  sidebarWidth = 225;
 
 
   ngOnInit(): void {
+    this.sidebarWidth = this.localStorageService.get<number>('sidebarWidth') ?? 225;
+
     this.versionService.getVersion().subscribe((data) => {
       this.versionInfo = data;
     });
@@ -89,11 +99,31 @@ export class AppMenuComponent implements OnInit {
               icon: 'pi pi-fw pi-book',
               routerLink: ['/all-books'],
               bookCount$: of(bookState.books ? bookState.books.length : 0),
+            },
+            {
+              label: this.t.translate('layout.menu.series'),
+              type: 'Series',
+              icon: 'pi pi-fw pi-objects-column',
+              routerLink: ['/series'],
+              bookCount$: this.seriesDataService.allSeries$.pipe(map(series => series.length)),
+            },
+            {
+              label: this.t.translate('layout.menu.notebook'),
+              icon: 'pi pi-fw pi-pencil',
+              routerLink: ['/notebook'],
             }
           ],
         },
       ])
     );
+  }
+
+  onSidebarWidthChange(): void {
+    document.documentElement.style.setProperty('--sidebar-width', this.sidebarWidth + 'px');
+  }
+
+  saveSidebarWidth(): void {
+    this.localStorageService.set('sidebarWidth', this.sidebarWidth);
   }
 
   private initMenus(): void {

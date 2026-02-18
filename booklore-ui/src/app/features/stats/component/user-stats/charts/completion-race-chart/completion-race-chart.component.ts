@@ -6,6 +6,7 @@ import {ChartConfiguration, ChartData} from 'chart.js';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {CompletionRaceResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface BookRace {
   bookId: number;
@@ -25,7 +26,7 @@ const LINE_COLORS = [
 @Component({
   selector: 'app-completion-race-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, Tooltip],
+  imports: [CommonModule, BaseChartDirective, Tooltip, TranslocoDirective],
   templateUrl: './completion-race-chart.component.html',
   styleUrls: ['./completion-race-chart.component.scss']
 })
@@ -38,11 +39,16 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
   public chartOptions: ChartConfiguration<'line'>['options'];
 
   public totalBooks = 0;
-  public fastestCompletion = '';
-  public slowestCompletion = '';
   public avgDaysToFinish = 0;
+  public medianDaysToFinish = 0;
+  public totalSessions = 0;
+  public fastestDays = '';
+  public fastestTitle = '';
+  public slowestDays = '';
+  public slowestTitle = '';
 
   private readonly userStatsService = inject(UserStatsService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
   private readonly chartDataSubject: BehaviorSubject<RaceChartData>;
 
@@ -85,7 +91,7 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
             label: (context) => {
               const progress = (context.parsed.y ?? 0).toFixed(1);
               const day = context.parsed.x;
-              return `Day ${day}: ${progress}% progress`;
+              return this.t.translate('statsUser.completionRace.tooltipDayProgress', {day, progress});
             }
           }
         },
@@ -96,7 +102,7 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
           type: 'linear',
           title: {
             display: true,
-            text: 'Days Since First Session',
+            text: this.t.translate('statsUser.completionRace.axisDaysSinceFirstSession'),
             color: '#ffffff',
             font: {family: "'Inter', sans-serif", size: 12, weight: 'bold'}
           },
@@ -113,7 +119,7 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
           max: 100,
           title: {
             display: true,
-            text: 'Progress (%)',
+            text: this.t.translate('statsUser.completionRace.axisProgress'),
             color: '#ffffff',
             font: {family: "'Inter', sans-serif", size: 12, weight: 'bold'}
           },
@@ -189,16 +195,26 @@ export class CompletionRaceChartComponent implements OnInit, OnDestroy {
     this.totalBooks = races.length;
 
     if (races.length > 0) {
-      const days = races.map(r => r.totalDays);
+      const days = races.map(r => r.totalDays).sort((a, b) => a - b);
       const fastest = races.reduce((a, b) => a.totalDays <= b.totalDays ? a : b);
       const slowest = races.reduce((a, b) => a.totalDays >= b.totalDays ? a : b);
-      this.fastestCompletion = `${fastest.bookTitle.substring(0, 25)}${fastest.bookTitle.length > 25 ? '...' : ''} (${fastest.totalDays}d)`;
-      this.slowestCompletion = `${slowest.bookTitle.substring(0, 25)}${slowest.bookTitle.length > 25 ? '...' : ''} (${slowest.totalDays}d)`;
       this.avgDaysToFinish = Math.round(days.reduce((a, b) => a + b, 0) / days.length);
+      this.medianDaysToFinish = days.length % 2 === 0
+        ? Math.round((days[days.length / 2 - 1] + days[days.length / 2]) / 2)
+        : days[Math.floor(days.length / 2)];
+      this.totalSessions = races.reduce((sum, r) => sum + r.sessions.length, 0);
+      this.fastestDays = `${fastest.totalDays}d`;
+      this.fastestTitle = fastest.bookTitle.length > 25 ? fastest.bookTitle.substring(0, 25) + '...' : fastest.bookTitle;
+      this.slowestDays = `${slowest.totalDays}d`;
+      this.slowestTitle = slowest.bookTitle.length > 25 ? slowest.bookTitle.substring(0, 25) + '...' : slowest.bookTitle;
     } else {
-      this.fastestCompletion = '-';
-      this.slowestCompletion = '-';
       this.avgDaysToFinish = 0;
+      this.medianDaysToFinish = 0;
+      this.totalSessions = 0;
+      this.fastestDays = '-';
+      this.fastestTitle = '';
+      this.slowestDays = '-';
+      this.slowestTitle = '';
     }
 
     const datasets = races.map((race, i) => {

@@ -58,12 +58,6 @@
       color: var(--text-color, #ffffff);
     }
 
-    .stat-value-sm {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--text-color, #ffffff);
-    }
-
     .stat-label {
       font-size: 0.75rem;
       color: var(--text-secondary-color);
@@ -80,7 +74,7 @@
       color: #42a5f5;
     }
 
-    &.type .stat-value-sm {
+    &.type .stat-value {
       color: #9c27b0;
     }
   }
@@ -89,7 +83,8 @@
 .chart-wrapper {
   position: relative;
   height: 350px;
-  width: 100%;
+  aspect-ratio: 1;
+  margin: 0 auto;
 }
 
 .no-data-message {

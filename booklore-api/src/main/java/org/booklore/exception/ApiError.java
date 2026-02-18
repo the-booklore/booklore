@@ -62,7 +62,8 @@ public enum ApiError {
     DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Demo user password change not allowed."),
     PERMISSION_DENIED(HttpStatus.FORBIDDEN, "Permission denied: %s"),
     LIBRARY_PATH_NOT_ACCESSIBLE(HttpStatus.SERVICE_UNAVAILABLE, "Library scan aborted: path not accessible or empty: %s"),
-    FORMAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "File format '%s' is not allowed in library '%s'");
+    FORMAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "File format '%s' is not allowed in library '%s'"),
+    RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Too many failed login attempts. Please try again later.");
 
     private final HttpStatus status;
     private final String message;
