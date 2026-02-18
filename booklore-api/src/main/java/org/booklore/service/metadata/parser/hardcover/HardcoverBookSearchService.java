@@ -81,7 +81,6 @@ public class HardcoverBookSearchService {
                           image {
                             url
                           }
-                          cached_tags
                           publisher {
                             name
                           }
@@ -102,8 +101,7 @@ public class HardcoverBookSearchService {
             return Collections.emptyList();
         }
 
-        List<GraphQLResponse.BookWithEditions> books = response.getData().getBooks();
-        return books != null ? books : Collections.emptyList();
+        return response.getData().getBooks();
     }
 
     public List<GraphQLResponse.Hit> searchBooks(String query) {

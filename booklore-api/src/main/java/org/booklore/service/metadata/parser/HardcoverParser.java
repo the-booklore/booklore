@@ -90,7 +90,7 @@ public class HardcoverParser implements BookParser {
                 continue;
             }
             for (GraphQLResponse.Edition edition : book.getEditions()) {
-                log.info("Processing edition '{}' with id '{}' of book '{}'", edition.getTitle(), edition.getId(), book.getTitle());
+                log.debug("Processing edition '{}' with id '{}' of book '{}'", edition.getTitle(), edition.getId(), book.getTitle());
                 BookMetadata metadata = mapEditionToMetadata(edition, book);
                 if (metadata != null) {
                     results.add(metadata);
@@ -223,7 +223,9 @@ public class HardcoverParser implements BookParser {
         if (edition.getCachedContributors() != null) {
             metadata.setAuthors(edition.getCachedContributors().stream()
                     .map(GraphQLResponse.Contributor::getAuthor)
+                    .filter(Objects::nonNull)
                     .map(GraphQLResponse.Author::getName)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toSet()));
         }
 

@@ -226,9 +226,6 @@ public class GraphQLResponse {
 
         private Image image;
 
-        @JsonProperty("cached_tags")
-        private CachedTags cachedTags;
-
         private Publisher publisher;
 
         @JsonProperty("isbn_10")
