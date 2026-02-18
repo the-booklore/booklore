@@ -39,7 +39,10 @@
     }
 
     @if (!_isSeriesViewActive && hasDigitalFile()) {
-      <p-button [rounded]="true" [icon]="_isAudiobook ? 'pi pi-play' : 'pi pi-book'" class="read-btn" (click)="readBook(book)" [ariaLabel]="_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco)"></p-button>
+      <p-button [rounded]="true" [icon]="readButtonIcon" class="read-btn" (click)="readBook(book)"
+        [pTooltip]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : ''"
+        tooltipPosition="bottom"
+        [ariaLabel]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : (_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco))"></p-button>
     }
 
     @if (isCheckboxEnabled) {
@@ -53,7 +56,7 @@
     }
 
     @if (hasProgress) {
-      <div class="cover-progress-bar-container">
+      <div class="cover-progress-bar-container" [pTooltip]="progressTooltip" tooltipPosition="top">
         @if (_progressPercentage !== null) {
           <p-progressBar
             [value]="_progressPercentage"

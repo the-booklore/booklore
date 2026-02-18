@@ -133,7 +133,8 @@
       "viewDetails": "View book details",
       "readBook": "Read book",
       "playAudiobook": "Play audiobook",
-      "bookMenu": "Book actions menu"
+      "bookMenu": "Book actions menu",
+      "continueReading": "Continue reading"
     }
   },
   "notes": {
