@@ -1,5 +1,6 @@
 package org.booklore.service.kobo;
 
+import lombok.RequiredArgsConstructor;
 import org.booklore.model.dto.kobo.KoboReadingState;
 import org.booklore.model.entity.UserBookProgressEntity;
 import org.booklore.model.enums.KoboReadStatus;
@@ -12,7 +13,10 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 
 @Component
+@RequiredArgsConstructor
 public class KoboReadingStateBuilder {
+
+    private final KoboSettingsService koboSettingsService;
 
     public KoboReadingState.CurrentBookmark buildEmptyBookmark(OffsetDateTime timestamp) {
         return KoboReadingState.CurrentBookmark.builder()
@@ -32,7 +36,8 @@ public class KoboReadingStateBuilder {
     }
 
     private boolean isWebReaderNewer(UserBookProgressEntity progress) {
-        return progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null;
+        return koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync()
+                && progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null;
     }
 
     private KoboReadingState.CurrentBookmark buildBookmarkFromWebReaderProgress(UserBookProgressEntity progress, OffsetDateTime defaultTime) {

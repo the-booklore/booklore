@@ -179,7 +179,8 @@ public class KoboEntitlementService {
     private ChangedReadingState buildChangedReadingState(UserBookProgressEntity progress, String timestamp, OffsetDateTime now) {
         String entitlementId = String.valueOf(progress.getBook().getId());
 
-        KoboReadingState.CurrentBookmark bookmark = (progress.getKoboProgressPercent() != null || progress.getEpubProgressPercent() != null)
+        boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
+        KoboReadingState.CurrentBookmark bookmark = (progress.getKoboProgressPercent() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                 ? readingStateBuilder.buildBookmarkFromProgress(progress, now)
                 : readingStateBuilder.buildEmptyBookmark(now);
 

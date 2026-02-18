@@ -163,6 +163,12 @@ public class KoboLibrarySyncService {
         List<UserBookProgressEntity> booksNeedingSync =
                 userBookProgressRepository.findAllBooksNeedingKoboSync(userId, snapshotId);
 
+        if (!koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync()) {
+            booksNeedingSync = booksNeedingSync.stream()
+                    .filter(p -> needsStatusSync(p) || needsKoboProgressSync(p))
+                    .toList();
+        }
+
         if (booksNeedingSync.isEmpty()) {
             return Collections.emptyList();
         }
@@ -193,16 +199,20 @@ public class KoboLibrarySyncService {
         return sentTime == null || modifiedTime.isAfter(sentTime);
     }
 
-    private boolean needsProgressSync(UserBookProgressEntity progress) {
+    private boolean needsKoboProgressSync(UserBookProgressEntity progress) {
         Instant sentTime = progress.getKoboProgressSentTime();
-
         Instant receivedTime = progress.getKoboProgressReceivedTime();
-        if (receivedTime != null && (sentTime == null || receivedTime.isAfter(sentTime))) {
+        return receivedTime != null && (sentTime == null || receivedTime.isAfter(sentTime));
+    }
+
+    private boolean needsProgressSync(UserBookProgressEntity progress) {
+        if (needsKoboProgressSync(progress)) {
             return true;
         }
 
         if (koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync()
                 && progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null) {
+            Instant sentTime = progress.getKoboProgressSentTime();
             Instant lastReadTime = progress.getLastReadTime();
             if (lastReadTime != null && (sentTime == null || lastReadTime.isAfter(sentTime))) {
                 return true;

@@ -178,8 +178,9 @@ public class KoboReadingStateService {
             Long bookId = Long.parseLong(entitlementId);
             BookLoreUser user = authenticationService.getAuthenticatedUser();
 
+            boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
             return progressRepository.findByUserIdAndBookId(user.getId(), bookId)
-                    .filter(progress -> progress.getKoboProgressPercent() != null || progress.getKoboLocation() != null || progress.getEpubProgressPercent() != null)
+                    .filter(progress -> progress.getKoboProgressPercent() != null || progress.getKoboLocation() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                     .map(progress -> readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress));
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format when constructing reading state: {}", entitlementId);
