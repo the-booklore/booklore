@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
@@ -46,6 +48,12 @@ public class BookdropMetadataService {
     public BookdropFileEntity attachInitialMetadata(Long bookdropFileId) throws JacksonException {
         BookdropFileEntity entity = getOrThrow(bookdropFileId);
         BookMetadata initial = extractInitialMetadata(entity);
+        if (initial == null) {
+            log.warn("Metadata extraction returned null for file: {}. Using filename as fallback.", entity.getFileName());
+            initial = BookMetadata.builder()
+                    .title(FilenameUtils.getBaseName(entity.getFileName()))
+                    .build();
+        }
         extractAndSaveCover(entity);
         String initialJson = objectMapper.writeValueAsString(initial);
         entity.setOriginalMetadata(initialJson);

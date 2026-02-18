@@ -133,7 +133,8 @@
       "viewDetails": "Ver detalles del libro",
       "readBook": "Leer libro",
       "playAudiobook": "Reproducir audiolibro",
-      "bookMenu": "Menú de acciones del libro"
+      "bookMenu": "Menú de acciones del libro",
+      "continueReading": "Continuar leyendo"
     }
   },
   "notes": {
