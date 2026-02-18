@@ -1,5 +1,6 @@
 import {Component, inject, OnInit, OnDestroy} from '@angular/core';
 import {CommonModule} from '@angular/common';
+import {ActivatedRoute, Router} from '@angular/router';
 import {TableLazyLoadEvent, TableModule} from 'primeng/table';
 import {Select} from 'primeng/select';
 import {DatePicker} from 'primeng/datepicker';
@@ -27,6 +28,8 @@ interface UsernameOption {
 })
 export class AuditLogsComponent implements OnInit, OnDestroy {
   private readonly auditLogService = inject(AuditLogService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   logs: AuditLog[] = [];
   totalRecords = 0;
@@ -76,9 +79,10 @@ export class AuditLogsComponent implements OnInit, OnDestroy {
     {label: 'Naming Pattern Changed', value: 'NAMING_PATTERN_CHANGED'},
   ];
 
-  private currentPage = 0;
+  currentPage = 0;
 
   ngOnInit(): void {
+    this.restoreFromQueryParams();
     this.loadUsernames();
     this.loadLogs();
   }
@@ -119,12 +123,15 @@ export class AuditLogsComponent implements OnInit, OnDestroy {
   }
 
   onLazyLoad(event: TableLazyLoadEvent): void {
-    this.currentPage = (event.first ?? 0) / (event.rows ?? this.rows);
+    this.rows = event.rows ?? this.rows;
+    this.currentPage = (event.first ?? 0) / this.rows;
+    this.updateQueryParams();
     this.loadLogs();
   }
 
   onFilterChange(): void {
     this.currentPage = 0;
+    this.updateQueryParams();
     this.loadLogs();
   }
 
@@ -148,6 +155,7 @@ export class AuditLogsComponent implements OnInit, OnDestroy {
     this.selectedUsername = null;
     this.dateRange = null;
     this.currentPage = 0;
+    this.updateQueryParams();
     this.loadLogs();
   }
 
@@ -196,6 +204,37 @@ export class AuditLogsComponent implements OnInit, OnDestroy {
     if (action.includes('CREATED') || action.includes('SUCCESS') || action.includes('UPLOADED')) return 'action-success';
     if (action.includes('OIDC') || action.includes('PERMISSIONS')) return 'action-warning';
     return 'action-info';
+  }
+
+  private restoreFromQueryParams(): void {
+    const params = this.route.snapshot.queryParams;
+    if (params['page']) this.currentPage = +params['page'];
+    if (params['size']) this.rows = +params['size'];
+    if (params['action']) this.selectedAction = params['action'];
+    if (params['username']) this.selectedUsername = params['username'];
+    if (params['from'] || params['to']) {
+      const from = params['from'] ? new Date(params['from'] + 'T00:00:00') : null;
+      const to = params['to'] ? new Date(params['to'] + 'T00:00:00') : null;
+      if (from) this.dateRange = [from, to!];
+    }
+  }
+
+  private updateQueryParams(): void {
+    const queryParams: Record<string, string | null> = {
+      page: this.currentPage > 0 ? String(this.currentPage) : null,
+      size: this.rows !== 25 ? String(this.rows) : null,
+      action: this.selectedAction || null,
+      username: this.selectedUsername || null,
+      from: this.dateRange?.[0] ? this.formatDate(this.dateRange[0]) : null,
+      to: this.dateRange?.[1] ? this.formatDate(this.dateRange[1]) : null,
+    };
+    this.router.navigate([], {queryParams, queryParamsHandling: 'merge', replaceUrl: true});
+  }
+
+  private formatDate(date: Date): string {
+    return date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0');
   }
 
   private formatDateTime(date: Date, endOfDay = false): string {
