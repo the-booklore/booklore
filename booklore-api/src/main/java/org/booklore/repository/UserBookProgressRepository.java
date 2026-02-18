@@ -46,6 +46,10 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
                   ubp.koboProgressSentTime IS NULL
                   OR ubp.koboProgressReceivedTime > ubp.koboProgressSentTime
               ))
+              OR
+              (ubp.epubProgressPercent IS NOT NULL
+                  AND ubp.epubProgress IS NOT NULL
+                  AND (ubp.koboProgressSentTime IS NULL OR ubp.lastReadTime > ubp.koboProgressSentTime))
           )
     """)
     List<UserBookProgressEntity> findAllBooksNeedingKoboSync(

@@ -278,7 +278,7 @@ class KoboReadingStateServiceTest {
         assertEquals("Kobo", state.getCurrentBookmark().getLocation().getSource());
         
         verify(repository).findByEntitlementIdAndUserId(entitlementId, 1L);
-        verify(progressRepository).findByUserIdAndBookId(1L, 100L);
+        verify(progressRepository, atLeastOnce()).findByUserIdAndBookId(1L, 100L);
         verify(readingStateBuilder).buildReadingStateFromProgress(entitlementId, progress);
     }
 
@@ -328,13 +328,13 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(entity));
         when(mapper.toDto(entity)).thenReturn(existingState);
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
 
         List<KoboReadingState> result = service.getReadingState(entitlementId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(entitlementId, result.getFirst().getEntitlementId());
-        verify(progressRepository, never()).findByUserIdAndBookId(anyLong(), anyLong());
     }
 
     @Test

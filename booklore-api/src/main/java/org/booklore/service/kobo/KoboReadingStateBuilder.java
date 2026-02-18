@@ -25,6 +25,29 @@ public class KoboReadingStateBuilder {
     }
 
     public KoboReadingState.CurrentBookmark buildBookmarkFromProgress(UserBookProgressEntity progress, OffsetDateTime defaultTime) {
+        if (isWebReaderNewer(progress)) {
+            return buildBookmarkFromWebReaderProgress(progress, defaultTime);
+        }
+        return buildBookmarkFromKoboProgress(progress, defaultTime);
+    }
+
+    private boolean isWebReaderNewer(UserBookProgressEntity progress) {
+        return progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null;
+    }
+
+    private KoboReadingState.CurrentBookmark buildBookmarkFromWebReaderProgress(UserBookProgressEntity progress, OffsetDateTime defaultTime) {
+        String lastModified = Optional.ofNullable(progress.getLastReadTime())
+                .map(this::formatTimestamp)
+                .or(() -> Optional.ofNullable(defaultTime).map(OffsetDateTime::toString))
+                .orElse(null);
+
+        return KoboReadingState.CurrentBookmark.builder()
+                .progressPercent(Math.round(progress.getEpubProgressPercent()))
+                .lastModified(lastModified)
+                .build();
+    }
+
+    private KoboReadingState.CurrentBookmark buildBookmarkFromKoboProgress(UserBookProgressEntity progress, OffsetDateTime defaultTime) {
         KoboReadingState.CurrentBookmark.Location location = Optional.ofNullable(progress.getKoboLocation())
                 .map(koboLocation -> KoboReadingState.CurrentBookmark.Location.builder()
                         .value(koboLocation)

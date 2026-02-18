@@ -37,6 +37,7 @@ public class KoboLibrarySyncService {
     private final UserBookProgressRepository userBookProgressRepository;
     private final KoboServerProxy koboServerProxy;
     private final ObjectMapper objectMapper;
+    private final KoboSettingsService koboSettingsService;
 
     @Transactional
     public ResponseEntity<?> syncLibrary(BookLoreUser user, String token) {
@@ -193,11 +194,21 @@ public class KoboLibrarySyncService {
     }
 
     private boolean needsProgressSync(UserBookProgressEntity progress) {
-        Instant receivedTime = progress.getKoboProgressReceivedTime();
-        if (receivedTime == null) {
-            return false;
-        }
         Instant sentTime = progress.getKoboProgressSentTime();
-        return sentTime == null || receivedTime.isAfter(sentTime);
+
+        Instant receivedTime = progress.getKoboProgressReceivedTime();
+        if (receivedTime != null && (sentTime == null || receivedTime.isAfter(sentTime))) {
+            return true;
+        }
+
+        if (koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync()
+                && progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null) {
+            Instant lastReadTime = progress.getLastReadTime();
+            if (lastReadTime != null && (sentTime == null || lastReadTime.isAfter(sentTime))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
