@@ -283,9 +283,7 @@ export class MagicShelfComponent implements OnInit {
   fileType: { label: string; value: string }[] = [
     {label: 'PDF', value: 'pdf'},
     {label: 'EPUB', value: 'epub'},
-    {label: 'CBR', value: 'cbr'},
-    {label: 'CBZ', value: 'cbz'},
-    {label: 'CB7', value: 'cb7'},
+    {label: 'CBX', value: 'cbx'},
     {label: 'FB2', value: 'fb2'},
     {label: 'MOBI', value: 'mobi'},
     {label: 'AZW3', value: 'azw3'},
