@@ -17,6 +17,7 @@ app:
   disk-type: ${DISK_TYPE:LOCAL}
 
 server:
+  max-http-header-size: 128KB
   forward-headers-strategy: native
   port: ${BOOKLORE_PORT:6060}
   compression:
