@@ -12,24 +12,35 @@ describe('BookRuleEvaluatorService', () => {
     service = TestBed.inject(BookRuleEvaluatorService);
   });
 
-  const createBook = (overrides: Partial<Book> = {}): Book => ({
-    id: 1,
-    bookType: 'EPUB',
-    libraryId: 1,
-    libraryName: 'Test Library',
-    fileName: 'test.epub',
-    filePath: '/path/to/test.epub',
-    readStatus: ReadStatus.UNREAD,
-    shelves: [],
-    metadata: {
-      bookId: 1,
-      title: 'Test Book',
-      authors: ['Test Author'],
-      categories: ['Fiction'],
-      language: 'en'
-    },
-    ...overrides
-  });
+  const createBook = (overrides: Partial<Book> = {}): Book => {
+    const {bookType, fileSizeKb, ...restOverrides} = overrides as any;
+    
+    return {
+      id: 1,
+      libraryId: 1,
+      libraryName: 'Test Library',
+      fileName: 'test.epub',
+      filePath: '/path/to/test.epub',
+      readStatus: ReadStatus.UNREAD,
+      shelves: [],
+      primaryFile: {
+        id: 1,
+        bookId: 1,
+        bookType: bookType || 'EPUB',
+        fileSizeKb: fileSizeKb,
+        fileName: 'test.epub',
+        filePath: '/path/to/test.epub'
+      },
+      metadata: {
+        bookId: 1,
+        title: 'Test Book',
+        authors: ['Test Author'],
+        categories: ['Fiction'],
+        language: 'en'
+      },
+      ...restOverrides
+    };
+  };
 
   describe('fileType filtering', () => {
     it('should filter EPUB books correctly when rule uses "epub"', () => {

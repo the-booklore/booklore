@@ -70,7 +70,7 @@ export class BookRuleEvaluatorService {
         case 'readStatus':
           return [String(book.readStatus ?? 'UNSET').toLowerCase()];
         case 'fileType':
-          return [String(book['bookType'] ?? '').toLowerCase()];
+          return [String(book.primaryFile?.bookType ?? '').toLowerCase()];
         case 'library':
           return [String(book.libraryId)];
         case 'shelf':
@@ -270,9 +270,9 @@ export class BookRuleEvaluatorService {
       case 'readStatus':
         return book.readStatus ?? 'UNSET';
       case 'fileType':
-        return (book['bookType'] as string)?.toLowerCase() ?? null;
+        return book.primaryFile?.bookType?.toLowerCase() ?? null;
       case 'fileSize':
-        return book.fileSizeKb;
+        return book.primaryFile?.fileSizeKb;
       case 'metadataScore':
         return book.metadataMatchScore;
       case 'personalRating':
