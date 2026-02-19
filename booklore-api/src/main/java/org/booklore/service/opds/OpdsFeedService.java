@@ -583,6 +583,11 @@ public class OpdsFeedService {
             feed.append(" title=\"").append(bookFile.getBookType().name()).append("\"");
         }
 
+        // Add file size in bytes (OPDS spec requires length attribute in bytes)
+        if (bookFile.getFileSizeKb() != null) {
+            feed.append(" length=\"").append(bookFile.getFileSizeKb() * 1024).append("\"");
+        }
+
         feed.append("/>\n");
     }
 

@@ -89,7 +89,7 @@ export class SortService {
     locked: (book) => book.metadata?.allMetadataLocked ?? false,
     lastReadTime: (book) => book.lastReadTime ? new Date(book.lastReadTime).getTime() : null,
     addedOn: (book) => book.addedOn ? new Date(book.addedOn).getTime() : null,
-    fileSizeKb: (book) => book.fileSizeKb || null,
+    fileSizeKb: (book) => book.primaryFile?.fileSizeKb || null,
     fileName: (book) => book.fileName,
     filePath: (book) => book.filePath,
     random: (book) => Math.random(),

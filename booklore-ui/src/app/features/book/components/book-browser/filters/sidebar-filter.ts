@@ -108,7 +108,7 @@ export function doesBookMatchFilter(
         : null;
       return bookYear ? filterValues.some(val => val == bookYear || val == bookYear.toString()) : false;
     case 'fileSize':
-      return filterValues.some(range => isFileSizeInRange(book.fileSizeKb, range as string | number));
+      return filterValues.some(range => isFileSizeInRange(book.primaryFile?.fileSizeKb, range as string | number));
     case 'amazonRating':
       return filterValues.some(range => isRatingInRange(book.metadata?.amazonRating, range as string | number));
     case 'goodreadsRating':

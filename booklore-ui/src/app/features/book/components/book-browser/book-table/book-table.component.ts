@@ -294,7 +294,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
         return book.primaryFile?.fileName ?? '';
 
       case 'fileSizeKb':
-        return this.formatFileSize(book.fileSizeKb);
+        return this.formatFileSize(book.primaryFile?.fileSizeKb);
 
       case 'language':
         return metadata.language ?? '';
