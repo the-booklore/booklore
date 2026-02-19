@@ -515,7 +515,8 @@
                         dateFormat="dd-M-yy"
                         size="small"
                         [showIcon]="true"
-                        iconDisplay="input"
+                        [iconDisplay]="'input'"
+                        appendTo="body"
                         [style]="{ 'width': '125px', 'font-size': '12px' }">
                       </p-datepicker>
                       <p-button rounded icon="pi pi-check" size="small" severity="success" text (onClick)="saveDateFinished(book)" [pTooltip]="t('saveDate')"></p-button>

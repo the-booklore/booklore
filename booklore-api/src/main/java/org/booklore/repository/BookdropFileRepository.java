@@ -34,5 +34,7 @@ public interface BookdropFileRepository extends JpaRepository<BookdropFileEntity
 
     @Query("SELECT f.id FROM BookdropFileEntity f")
     List<Long> findAllIds();
-}
 
+    @Query("SELECT f.filePath FROM BookdropFileEntity f WHERE f.filePath IN :filePaths")
+    List<String> findAllFilePathsIn(@Param("filePaths") List<String> filePaths);
+}

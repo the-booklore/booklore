@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
@@ -34,6 +35,10 @@ public class BookdropEventHandlerService {
     private final BookdropNotificationService bookdropNotificationService;
     private final AppSettingService appSettingService;
     private final BookdropMetadataService bookdropMetadataService;
+
+    private static final long STABILITY_CHECK_INTERVAL_MS = 500;
+    private static final int STABILITY_REQUIRED_CHECKS = 3;
+    private static final long STABILITY_MAX_WAIT_MS = 30_000;
 
     private final BlockingQueue<BookDropFileEvent> fileQueue = new LinkedBlockingQueue<>();
     private volatile boolean running = true;
@@ -100,6 +105,11 @@ public class BookdropEventHandlerService {
                     return;
                 }
 
+                if (!waitForFileStability(file)) {
+                    log.warn("File did not stabilize within timeout, skipping: {}", file);
+                    return;
+                }
+
                 log.info("Handling new bookdrop file: {}", file);
 
                 int queueSize = fileQueue.size();
@@ -157,5 +167,42 @@ public class BookdropEventHandlerService {
 
             bookdropNotificationService.sendBookdropFileSummaryNotification();
         }
+    }
+
+    private boolean waitForFileStability(Path file) {
+        long startTime = System.currentTimeMillis();
+        long lastSize = -1;
+        int stableCount = 0;
+
+        while (System.currentTimeMillis() - startTime < STABILITY_MAX_WAIT_MS) {
+            try {
+                if (!Files.exists(file)) {
+                    return false;
+                }
+
+                long currentSize = Files.size(file);
+
+                if (currentSize == lastSize && currentSize > 0) {
+                    stableCount++;
+                    if (stableCount >= STABILITY_REQUIRED_CHECKS) {
+                        return true;
+                    }
+                } else {
+                    stableCount = 0;
+                }
+
+                lastSize = currentSize;
+                Thread.sleep(STABILITY_CHECK_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            } catch (IOException e) {
+                log.warn("Error checking file size for stability: {}", file, e);
+                return false;
+            }
+        }
+
+        log.warn("File size did not stabilize after {}ms: {}", STABILITY_MAX_WAIT_MS, file);
+        return false;
     }
 }

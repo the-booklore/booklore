@@ -1,18 +1,25 @@
 package org.booklore.service;
 
+import org.booklore.model.dto.KoboSyncSettings;
 import org.booklore.model.dto.kobo.KoboReadingState;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.UserBookProgressEntity;
 import org.booklore.model.enums.KoboReadStatus;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.service.kobo.KoboReadingStateBuilder;
+import org.booklore.service.kobo.KoboSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -20,15 +27,24 @@ import java.time.ZoneOffset;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @DisplayName("KoboReadingStateBuilder Tests")
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class KoboReadingStateBuilderTest {
+
+    @Mock
+    private KoboSettingsService koboSettingsService;
 
     private KoboReadingStateBuilder builder;
 
     @BeforeEach
     void setUp() {
-        builder = new KoboReadingStateBuilder();
+        KoboSyncSettings settings = new KoboSyncSettings();
+        settings.setTwoWayProgressSync(true);
+        when(koboSettingsService.getCurrentUserSettings()).thenReturn(settings);
+        builder = new KoboReadingStateBuilder(koboSettingsService);
     }
 
     @Nested
