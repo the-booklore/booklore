@@ -2441,4 +2441,414 @@ class BookRuleEvaluatorServiceIntegrationTest {
             assertThat(ids).doesNotContain(book300.getId());
         }
     }
+
+    @Nested
+    class FileSizeTests {
+        @Test
+        void greaterThan_matchesBooksAboveSize() {
+            BookEntity largeBook = createBook("Large Book");
+            BookFileEntity largeFile = BookFileEntity.builder()
+                    .book(largeBook)
+                    .fileName("large.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(10000L)
+                    .build();
+            em.persist(largeFile);
+
+            BookEntity smallBook = createBook("Small Book");
+            BookFileEntity smallFile = BookFileEntity.builder()
+                    .book(smallBook)
+                    .fileName("small.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(1000L)
+                    .build();
+            em.persist(smallFile);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_SIZE, RuleOperator.GREATER_THAN, 5000));
+            assertThat(ids).contains(largeBook.getId());
+            assertThat(ids).doesNotContain(smallBook.getId());
+        }
+
+        @Test
+        void lessThan_matchesBooksBelow() {
+            BookEntity largeBook = createBook("Large Book 2");
+            BookFileEntity largeFile = BookFileEntity.builder()
+                    .book(largeBook)
+                    .fileName("large2.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(10000L)
+                    .build();
+            em.persist(largeFile);
+
+            BookEntity smallBook = createBook("Small Book 2");
+            BookFileEntity smallFile = BookFileEntity.builder()
+                    .book(smallBook)
+                    .fileName("small2.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(1000L)
+                    .build();
+            em.persist(smallFile);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_SIZE, RuleOperator.LESS_THAN, 5000));
+            assertThat(ids).contains(smallBook.getId());
+            assertThat(ids).doesNotContain(largeBook.getId());
+        }
+
+        @Test
+        void inBetween_matchesFileSizeRange() {
+            BookEntity tooSmall = createBook("Too Small");
+            BookFileEntity smallFile = BookFileEntity.builder()
+                    .book(tooSmall)
+                    .fileName("toosmall.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(500L)
+                    .build();
+            em.persist(smallFile);
+
+            BookEntity justRight = createBook("Just Right");
+            BookFileEntity midFile = BookFileEntity.builder()
+                    .book(justRight)
+                    .fileName("justright.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(3000L)
+                    .build();
+            em.persist(midFile);
+
+            BookEntity tooLarge = createBook("Too Large");
+            BookFileEntity largeFile = BookFileEntity.builder()
+                    .book(tooLarge)
+                    .fileName("toolarge.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(8000L)
+                    .build();
+            em.persist(largeFile);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_SIZE, RuleOperator.IN_BETWEEN, null, 1000, 5000));
+            assertThat(ids).contains(justRight.getId());
+            assertThat(ids).doesNotContain(tooSmall.getId(), tooLarge.getId());
+        }
+
+        @Test
+        void equals_matchesExactFileSize() {
+            BookEntity exactBook = createBook("Exact Size Book");
+            BookFileEntity exactFile = BookFileEntity.builder()
+                    .book(exactBook)
+                    .fileName("exact.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(2048L)
+                    .build();
+            em.persist(exactFile);
+
+            BookEntity differentBook = createBook("Different Size Book");
+            BookFileEntity differentFile = BookFileEntity.builder()
+                    .book(differentBook)
+                    .fileName("different.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(2049L)
+                    .build();
+            em.persist(differentFile);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_SIZE, RuleOperator.EQUALS, 2048));
+            assertThat(ids).contains(exactBook.getId());
+            assertThat(ids).doesNotContain(differentBook.getId());
+        }
+
+        @Test
+        void booksWithoutFiles_excludedFromResults() {
+            BookEntity noFile = createBook("No File Book");
+
+            BookEntity withFile = createBook("With File Book");
+            BookFileEntity file = BookFileEntity.builder()
+                    .book(withFile)
+                    .fileName("withfile.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(file);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_SIZE, RuleOperator.GREATER_THAN, 1000));
+            assertThat(ids).contains(withFile.getId());
+            assertThat(ids).doesNotContain(noFile.getId());
+        }
+
+        @Test
+        void onlyBookFormatFiles_considered() {
+            BookEntity bookWithEpub = createBook("Book With EPUB");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(bookWithEpub)
+                    .fileName("book.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(3000L)
+                    .build();
+            em.persist(epubFile);
+
+            BookEntity bookWithPdf = createBook("Book With PDF");
+            BookFileEntity pdfFile = BookFileEntity.builder()
+                    .book(bookWithPdf)
+                    .fileName("book.pdf")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.PDF)
+                    .fileSizeKb(500L)
+                    .build();
+            em.persist(pdfFile);
+            em.flush();
+            em.clear();
+
+            // Should only return books with files > 2000 KB
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_SIZE, RuleOperator.GREATER_THAN, 2000));
+            assertThat(ids).contains(bookWithEpub.getId());
+            assertThat(ids).doesNotContain(bookWithPdf.getId());
+        }
+    }
+
+    @Nested
+    class FileTypeTests {
+        @Test
+        void equals_matchesSpecificFileType() {
+            BookEntity epubBook = createBook("EPUB Book");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+
+            BookEntity pdfBook = createBook("PDF Book");
+            BookFileEntity pdfFile = BookFileEntity.builder()
+                    .book(pdfBook)
+                    .fileName("book.pdf")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.PDF)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(pdfFile);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "EPUB"));
+            assertThat(ids).contains(epubBook.getId());
+            assertThat(ids).doesNotContain(pdfBook.getId());
+        }
+
+        @Test
+        void notEquals_excludesSpecificFileType() {
+            BookEntity epubBook = createBook("EPUB Book 2");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book2.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+
+            BookEntity pdfBook = createBook("PDF Book 2");
+            BookFileEntity pdfFile = BookFileEntity.builder()
+                    .book(pdfBook)
+                    .fileName("book2.pdf")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.PDF)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(pdfFile);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.NOT_EQUALS, "EPUB"));
+            assertThat(ids).contains(pdfBook.getId());
+            assertThat(ids).doesNotContain(epubBook.getId());
+        }
+
+        @Test
+        void includesAny_matchesMultipleFileTypes() {
+            BookEntity epubBook = createBook("EPUB Book 3");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book3.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+
+            BookEntity mobiBook = createBook("MOBI Book");
+            BookFileEntity mobiFile = BookFileEntity.builder()
+                    .book(mobiBook)
+                    .fileName("book.mobi")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.MOBI)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(mobiFile);
+
+            BookEntity pdfBook = createBook("PDF Book 3");
+            BookFileEntity pdfFile = BookFileEntity.builder()
+                    .book(pdfBook)
+                    .fileName("book3.pdf")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.PDF)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(pdfFile);
+            em.flush();
+            em.clear();
+
+            // FILE_TYPE uses string representation, so test with actual enum values
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "EPUB"));
+            assertThat(ids).contains(epubBook.getId());
+            
+            List<Long> mobiIds = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "MOBI"));
+            assertThat(mobiIds).contains(mobiBook.getId());
+        }
+
+        @Test
+        void excludesAll_excludesAllSpecifiedFileTypes() {
+            BookEntity epubBook = createBook("EPUB Book 4");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book4.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+
+            BookEntity audiobookBook = createBook("Audiobook");
+            BookFileEntity audiobookFile = BookFileEntity.builder()
+                    .book(audiobookBook)
+                    .fileName("book.m4b")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.AUDIOBOOK)
+                    .fileSizeKb(50000L)
+                    .build();
+            em.persist(audiobookFile);
+            em.flush();
+            em.clear();
+
+            List<Long> epubIds = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.NOT_EQUALS, "EPUB"));
+            assertThat(epubIds).contains(audiobookBook.getId());
+            assertThat(epubIds).doesNotContain(epubBook.getId());
+        }
+
+        @Test
+        void booksWithoutFiles_excludedFromResults() {
+            BookEntity noFile = createBook("No File Book 2");
+
+            BookEntity withFile = createBook("With File Book 2");
+            BookFileEntity file = BookFileEntity.builder()
+                    .book(withFile)
+                    .fileName("withfile2.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(file);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "EPUB"));
+            assertThat(ids).contains(withFile.getId());
+            assertThat(ids).doesNotContain(noFile.getId());
+        }
+
+        @Test
+        void onlyBookFormatFiles_considered() {
+            BookEntity pdfBook = createBook("Book With PDF Format");
+            BookFileEntity pdfFile = BookFileEntity.builder()
+                    .book(pdfBook)
+                    .fileName("book_multi.pdf")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.PDF)
+                    .fileSizeKb(3000L)
+                    .build();
+            em.persist(pdfFile);
+
+            BookEntity epubBook = createBook("Book With EPUB Format");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(3000L)
+                    .build();
+            em.persist(epubFile);
+            em.flush();
+            em.clear();
+
+            // Should only match PDF book file type
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "PDF"));
+            assertThat(ids).contains(pdfBook.getId());
+            assertThat(ids).doesNotContain(epubBook.getId());
+        }
+
+        @Test
+        void allFileTypeEnums_canBeMatched() {
+            // Test all BookFileType enum values can be queried
+            for (BookFileType type : List.of(BookFileType.EPUB, BookFileType.PDF, BookFileType.MOBI, 
+                    BookFileType.AUDIOBOOK, BookFileType.CBX, BookFileType.FB2, BookFileType.AZW3)) {
+                BookEntity book = createBook("Book Type " + type.name());
+                BookFileEntity file = BookFileEntity.builder()
+                        .book(book)
+                        .fileName("book." + type.name().toLowerCase())
+                        .fileSubPath("")
+                        .isBookFormat(true)
+                        .bookType(type)
+                        .fileSizeKb(5000L)
+                        .build();
+                em.persist(file);
+                em.flush();
+                em.clear();
+
+                List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, type.name()));
+                assertThat(ids).as("Matching type %s", type.name()).contains(book.getId());
+            }
+        }
+    }
 }
