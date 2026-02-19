@@ -677,6 +677,13 @@ public class BookRuleEvaluatorService {
 
     private Predicate buildIncludesAny(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
+        
+        // Map file type values for consistency with database enum values
+        if (rule.getField() == RuleField.FILE_TYPE) {
+            ruleList = ruleList.stream()
+                    .map(this::mapFileTypeValue)
+                    .collect(Collectors.toList());
+        }
 
         if (isArrayField(rule.getField())) {
             return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false);
@@ -687,6 +694,13 @@ public class BookRuleEvaluatorService {
 
     private Predicate buildExcludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
+        
+        // Map file type values for consistency with database enum values
+        if (rule.getField() == RuleField.FILE_TYPE) {
+            ruleList = ruleList.stream()
+                    .map(this::mapFileTypeValue)
+                    .collect(Collectors.toList());
+        }
 
         if (isArrayField(rule.getField())) {
             return cb.not(buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false));
@@ -701,6 +715,13 @@ public class BookRuleEvaluatorService {
 
     private Predicate buildIncludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
+        
+        // Map file type values for consistency with database enum values
+        if (rule.getField() == RuleField.FILE_TYPE) {
+            ruleList = ruleList.stream()
+                    .map(this::mapFileTypeValue)
+                    .collect(Collectors.toList());
+        }
 
         if (isArrayField(rule.getField())) {
             return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, true);
@@ -907,7 +928,27 @@ public class BookRuleEvaluatorService {
             }
         }
 
-        return value.toString().toLowerCase();
+        String stringValue = value.toString().toLowerCase();
+        
+        // Map file type values to enum representations (cbr/cbz/cb7 -> cbx, azw -> azw3)
+        if (field == RuleField.FILE_TYPE) {
+            return mapFileTypeValue(stringValue);
+        }
+
+        return stringValue;
+    }
+
+    /**
+     * Maps user-specified file type values to the BookFileType enum values stored in the database.
+     * This matches the frontend mapping logic to ensure consistent filtering behavior.
+     */
+    private String mapFileTypeValue(String uiValue) {
+        String lowerValue = uiValue.toLowerCase();
+        return switch (lowerValue) {
+            case "cbr", "cbz", "cb7" -> "cbx";
+            case "azw" -> "azw3";
+            default -> lowerValue;
+        };
     }
 
     private LocalDateTime parseDate(Object value) {

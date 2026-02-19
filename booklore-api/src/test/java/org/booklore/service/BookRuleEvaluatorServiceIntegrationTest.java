@@ -2850,5 +2850,172 @@ class BookRuleEvaluatorServiceIntegrationTest {
                 assertThat(ids).as("Matching type %s", type.name()).contains(book.getId());
             }
         }
+
+        @Test
+        void fileTypeMapping_cbr_matchesCBX() {
+            BookEntity cbxBook = createBook("CBR File");
+            BookFileEntity cbrFile = BookFileEntity.builder()
+                    .book(cbxBook)
+                    .fileName("book.cbr")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.CBX)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(cbrFile);
+
+            BookEntity epubBook = createBook("EPUB File");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+            em.flush();
+            em.clear();
+
+            // Query for "CBR" should map to "CBX" and match the book
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "CBR"));
+            assertThat(ids).contains(cbxBook.getId());
+            assertThat(ids).doesNotContain(epubBook.getId());
+        }
+
+        @Test
+        void fileTypeMapping_cbz_matchesCBX() {
+            BookEntity cbxBook = createBook("CBZ File");
+            BookFileEntity cbzFile = BookFileEntity.builder()
+                    .book(cbxBook)
+                    .fileName("book.cbz")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.CBX)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(cbzFile);
+            em.flush();
+            em.clear();
+
+            // Query for "CBZ" should map to "CBX" and match the book
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "CBZ"));
+            assertThat(ids).contains(cbxBook.getId());
+        }
+
+        @Test
+        void fileTypeMapping_cb7_matchesCBX() {
+            BookEntity cbxBook = createBook("CB7 File");
+            BookFileEntity cb7File = BookFileEntity.builder()
+                    .book(cbxBook)
+                    .fileName("book.cb7")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.CBX)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(cb7File);
+            em.flush();
+            em.clear();
+
+            // Query for "CB7" should map to "CBX" and match the book
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "CB7"));
+            assertThat(ids).contains(cbxBook.getId());
+        }
+
+        @Test
+        void fileTypeMapping_azw_matchesAZW3() {
+            BookEntity azw3Book = createBook("AZW File");
+            BookFileEntity azwFile = BookFileEntity.builder()
+                    .book(azw3Book)
+                    .fileName("book.azw")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.AZW3)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(azwFile);
+            em.flush();
+            em.clear();
+
+            // Query for "AZW" should map to "AZW3" and match the book
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.EQUALS, "AZW"));
+            assertThat(ids).contains(azw3Book.getId());
+        }
+
+        @Test
+        void fileTypeMapping_includesAny_withCBRandPDF() {
+            BookEntity cbxBook = createBook("CBX Format Book");
+            BookFileEntity cbxFile = BookFileEntity.builder()
+                    .book(cbxBook)
+                    .fileName("comic.cbr")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.CBX)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(cbxFile);
+
+            BookEntity pdfBook = createBook("PDF Format Book");
+            BookFileEntity pdfFile = BookFileEntity.builder()
+                    .book(pdfBook)
+                    .fileName("book.pdf")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.PDF)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(pdfFile);
+
+            BookEntity epubBook = createBook("EPUB Format Book");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+            em.flush();
+            em.clear();
+
+            // Query for includes_any ["CBR", "PDF"] should map CBR to CBX and match both
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.INCLUDES_ANY, List.of("CBR", "PDF")));
+            assertThat(ids).contains(cbxBook.getId(), pdfBook.getId());
+            assertThat(ids).doesNotContain(epubBook.getId());
+        }
+
+        @Test
+        void fileTypeMapping_notEquals_CBR_excludesCBX() {
+            BookEntity cbxBook = createBook("CBX Format Book 2");
+            BookFileEntity cbxFile = BookFileEntity.builder()
+                    .book(cbxBook)
+                    .fileName("comic2.cbr")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.CBX)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(cbxFile);
+
+            BookEntity epubBook = createBook("EPUB Format Book 2");
+            BookFileEntity epubFile = BookFileEntity.builder()
+                    .book(epubBook)
+                    .fileName("book2.epub")
+                    .fileSubPath("")
+                    .isBookFormat(true)
+                    .bookType(BookFileType.EPUB)
+                    .fileSizeKb(5000L)
+                    .build();
+            em.persist(epubFile);
+            em.flush();
+            em.clear();
+
+            // Query for not_equals "CBR" should map to "CBX" and exclude the CBX book
+            List<Long> ids = findMatchingIds(singleRule(RuleField.FILE_TYPE, RuleOperator.NOT_EQUALS, "CBR"));
+            assertThat(ids).contains(epubBook.getId());
+            assertThat(ids).doesNotContain(cbxBook.getId());
+        }
     }
 }
