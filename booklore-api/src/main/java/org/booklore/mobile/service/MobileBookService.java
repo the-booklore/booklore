@@ -305,26 +305,68 @@ public class MobileBookService {
     }
 
     @Transactional(readOnly = true)
-    public MobileFilterOptions getFilterOptions() {
+    public MobileFilterOptions getFilterOptions(Long libraryId, Long shelfId, Long magicShelfId) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
+        Long userId = user.getId();
         Set<Long> accessibleLibraryIds = getAccessibleLibraryIds(user);
 
-        // Base filter: non-deleted digital books in accessible libraries
-        String libraryClause = accessibleLibraryIds != null
-                ? "AND b.library.id IN :libraryIds"
-                : "";
+        // Resolve magic shelf to a set of book IDs if requested
+        Set<Long> magicBookIds = null;
+        if (magicShelfId != null) {
+            magicBookIds = resolveMagicShelfBookIds(magicShelfId, userId);
+            if (magicBookIds.isEmpty()) {
+                return MobileFilterOptions.builder()
+                        .authors(Collections.emptyList())
+                        .languages(Collections.emptyList())
+                        .fileTypes(Collections.emptyList())
+                        .readStatuses(getReadStatusOptions())
+                        .build();
+            }
+        }
+
+        // Validate library access
+        if (libraryId != null && accessibleLibraryIds != null && !accessibleLibraryIds.contains(libraryId)) {
+            throw ApiError.FORBIDDEN.createException("Access denied to library " + libraryId);
+        }
+
+        // Validate shelf access
+        if (shelfId != null) {
+            ShelfEntity shelf = shelfRepository.findById(shelfId)
+                    .orElseThrow(() -> ApiError.SHELF_NOT_FOUND.createException(shelfId));
+            if (!shelf.isPublic() && !shelf.getUser().getId().equals(userId)) {
+                throw ApiError.FORBIDDEN.createException("Access denied to shelf " + shelfId);
+            }
+        }
+
+        // Build scoping clauses
+        String libraryClause = "";
+        String shelfClause = "";
+        String magicBookClause = "";
+
+        if (magicBookIds != null) {
+            magicBookClause = "AND b.id IN :magicBookIds";
+        } else if (shelfId != null) {
+            shelfClause = "AND b.id IN (SELECT sb.id FROM ShelfEntity s JOIN s.books sb WHERE s.id = :shelfId)";
+        }
+
+        if (libraryId != null) {
+            libraryClause = "AND b.library.id = :libraryId";
+        } else if (accessibleLibraryIds != null) {
+            libraryClause = "AND b.library.id IN :libraryIds";
+        }
+
+        // Build the optional WHERE suffix once — each clause already starts with "AND"
+        String scopeClause = buildScopeClause(libraryClause, shelfClause, magicBookClause);
 
         // Authors with book count (top 200 by count)
-        String authorQuery = """
-                SELECT a.name, COUNT(DISTINCT b.id) FROM BookEntity b
-                JOIN b.metadata m JOIN m.authors a
-                WHERE (b.deleted IS NULL OR b.deleted = false)
-                AND (b.isPhysical IS NULL OR b.isPhysical = false)
-                """ + libraryClause + """
-                GROUP BY a.name ORDER BY COUNT(DISTINCT b.id) DESC
-                """;
+        String authorQuery = "SELECT a.name, COUNT(DISTINCT b.id) FROM BookEntity b"
+                + " JOIN b.metadata m JOIN m.authors a"
+                + " WHERE (b.deleted IS NULL OR b.deleted = false)"
+                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + scopeClause
+                + " GROUP BY a.name ORDER BY COUNT(DISTINCT b.id) DESC";
         var authorQ = entityManager.createQuery(authorQuery, Tuple.class);
-        if (accessibleLibraryIds != null) authorQ.setParameter("libraryIds", accessibleLibraryIds);
+        setFilterQueryParams(authorQ, accessibleLibraryIds, libraryId, shelfId, magicBookIds);
         authorQ.setMaxResults(200);
 
         List<MobileFilterOptions.AuthorOption> authors = authorQ.getResultList().stream()
@@ -335,17 +377,15 @@ public class MobileBookService {
                 .toList();
 
         // Languages with book count
-        String langQuery = """
-                SELECT m.language, COUNT(DISTINCT b.id) FROM BookEntity b
-                JOIN b.metadata m
-                WHERE (b.deleted IS NULL OR b.deleted = false)
-                AND (b.isPhysical IS NULL OR b.isPhysical = false)
-                AND m.language IS NOT NULL AND m.language <> ''
-                """ + libraryClause + """
-                GROUP BY m.language ORDER BY COUNT(DISTINCT b.id) DESC
-                """;
+        String langQuery = "SELECT m.language, COUNT(DISTINCT b.id) FROM BookEntity b"
+                + " JOIN b.metadata m"
+                + " WHERE (b.deleted IS NULL OR b.deleted = false)"
+                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND m.language IS NOT NULL AND m.language <> ''"
+                + scopeClause
+                + " GROUP BY m.language ORDER BY COUNT(DISTINCT b.id) DESC";
         var langQ = entityManager.createQuery(langQuery, Tuple.class);
-        if (accessibleLibraryIds != null) langQ.setParameter("libraryIds", accessibleLibraryIds);
+        setFilterQueryParams(langQ, accessibleLibraryIds, libraryId, shelfId, magicBookIds);
 
         List<MobileFilterOptions.LanguageOption> languages = langQ.getResultList().stream()
                 .map(t -> MobileFilterOptions.LanguageOption.builder()
@@ -355,16 +395,15 @@ public class MobileBookService {
                         .build())
                 .toList();
 
-        // Distinct file types present in accessible books
-        String fileTypeQuery = """
-                SELECT DISTINCT bf.bookType FROM BookEntity b
-                JOIN b.bookFiles bf
-                WHERE (b.deleted IS NULL OR b.deleted = false)
-                AND (b.isPhysical IS NULL OR b.isPhysical = false)
-                AND bf.isBookFormat = true
-                """ + libraryClause;
+        // Distinct file types present in scoped books
+        String fileTypeQuery = "SELECT DISTINCT bf.bookType FROM BookEntity b"
+                + " JOIN b.bookFiles bf"
+                + " WHERE (b.deleted IS NULL OR b.deleted = false)"
+                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND bf.isBookFormat = true"
+                + scopeClause;
         var ftQ = entityManager.createQuery(fileTypeQuery, BookFileType.class);
-        if (accessibleLibraryIds != null) ftQ.setParameter("libraryIds", accessibleLibraryIds);
+        setFilterQueryParams(ftQ, accessibleLibraryIds, libraryId, shelfId, magicBookIds);
 
         List<String> fileTypes = ftQ.getResultList().stream()
                 .map(Enum::name)
@@ -372,10 +411,7 @@ public class MobileBookService {
                 .toList();
 
         // Read statuses — return all meaningful values
-        List<String> readStatuses = Arrays.stream(ReadStatus.values())
-                .filter(s -> s != ReadStatus.UNSET)
-                .map(Enum::name)
-                .toList();
+        List<String> readStatuses = getReadStatusOptions();
 
         return MobileFilterOptions.builder()
                 .authors(authors)
@@ -383,6 +419,44 @@ public class MobileBookService {
                 .fileTypes(fileTypes)
                 .readStatuses(readStatuses)
                 .build();
+    }
+
+    private String buildScopeClause(String libraryClause, String shelfClause, String magicBookClause) {
+        var sb = new StringBuilder();
+        if (!libraryClause.isEmpty()) sb.append(" ").append(libraryClause);
+        if (!shelfClause.isEmpty()) sb.append(" ").append(shelfClause);
+        if (!magicBookClause.isEmpty()) sb.append(" ").append(magicBookClause);
+        return sb.toString();
+    }
+
+    private void setFilterQueryParams(jakarta.persistence.Query query, Set<Long> accessibleLibraryIds, Long libraryId, Long shelfId, Set<Long> magicBookIds) {
+        if (libraryId != null) {
+            query.setParameter("libraryId", libraryId);
+        } else if (accessibleLibraryIds != null) {
+            query.setParameter("libraryIds", accessibleLibraryIds);
+        }
+        if (shelfId != null && magicBookIds == null) {
+            query.setParameter("shelfId", shelfId);
+        }
+        if (magicBookIds != null) {
+            query.setParameter("magicBookIds", magicBookIds);
+        }
+    }
+
+    private Set<Long> resolveMagicShelfBookIds(Long magicShelfId, Long userId) {
+        // Reuse MagicShelfBookService which already handles access validation,
+        // rule evaluation, and library filtering.
+        var booksPage = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelfId, 0, 10000);
+        return booksPage.getContent().stream()
+                .map(Book::getId)
+                .collect(Collectors.toSet());
+    }
+
+    private List<String> getReadStatusOptions() {
+        return Arrays.stream(ReadStatus.values())
+                .filter(s -> s != ReadStatus.UNSET)
+                .map(Enum::name)
+                .toList();
     }
 
     @Transactional
