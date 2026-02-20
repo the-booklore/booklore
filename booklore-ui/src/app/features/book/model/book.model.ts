@@ -381,13 +381,6 @@ export interface BookDeletionResponse {
   failedFileDeletions: number[];
 }
 
-export interface BookSyncResponse {
-  books: Book[];
-  deletedIds: number[];
-  syncTimestamp: string;
-  totalBookCount: number;
-}
-
 export enum ReadStatus {
   UNREAD = 'UNREAD',
   READING = 'READING',

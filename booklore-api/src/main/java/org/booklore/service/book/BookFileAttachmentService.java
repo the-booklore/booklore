@@ -76,7 +76,6 @@ public class BookFileAttachmentService {
                 throw ApiError.GENERIC_BAD_REQUEST.createException("Source book " + sourceBook.getId() + " must be in the same library as target");
             }
 
-            // Validate source has exactly 1 book format file
             List<BookFileEntity> sourceBookFiles = sourceBook.getBookFiles().stream()
                     .filter(BookFileEntity::isBookFormat)
                     .collect(Collectors.toList());
@@ -85,23 +84,17 @@ public class BookFileAttachmentService {
                 throw ApiError.GENERIC_BAD_REQUEST.createException("Source book " + sourceBook.getId() + " has no book format files to attach");
             }
 
-            if (sourceBookFiles.size() > 1) {
-                throw ApiError.GENERIC_BAD_REQUEST.createException("Source book " + sourceBook.getId() + " has multiple book format files. Only single-file books can be attached.");
-            }
+            for (BookFileEntity fileToMove : sourceBookFiles) {
+                if (fileToMove.isFolderBased()) {
+                    throw ApiError.GENERIC_BAD_REQUEST.createException("Source book " + sourceBook.getId() + " contains a folder-based audiobook. Folder-based books cannot be attached.");
+                }
 
-            BookFileEntity fileToMove = sourceBookFiles.get(0);
-
-            // Validate not folder-based
-            if (fileToMove.isFolderBased()) {
-                throw ApiError.GENERIC_BAD_REQUEST.createException("Source book " + sourceBook.getId() + " is a folder-based audiobook. Folder-based books cannot be attached.");
-            }
-
-            // Validate source file exists
-            Path sourceFilePath = fileToMove.getFullFilePath();
-            if (!Files.exists(sourceFilePath)) {
-                throw ApiError.GENERIC_BAD_REQUEST.createException(
-                        "Source file not found at expected location: " + sourceFilePath +
-                        ". The file may have been moved, deleted, or the database record is out of sync.");
+                Path sourceFilePath = fileToMove.getFullFilePath();
+                if (!Files.exists(sourceFilePath)) {
+                    throw ApiError.GENERIC_BAD_REQUEST.createException(
+                            "Source file not found at expected location: " + sourceFilePath +
+                            ". The file may have been moved, deleted, or the database record is out of sync.");
+                }
             }
         }
 
@@ -228,70 +221,61 @@ public class BookFileAttachmentService {
 
             // Process each source book
             for (BookEntity sourceBook : sourceBooks) {
-                BookFileEntity fileToMove = sourceBook.getBookFiles().stream()
+                List<BookFileEntity> filesToMove = sourceBook.getBookFiles().stream()
                         .filter(BookFileEntity::isBookFormat)
-                        .findFirst()
-                        .orElseThrow(); // Already validated above
+                        .toList();
 
-                Path sourceFilePath = fileToMove.getFullFilePath();
-                Path sourceDirectory = sourceFilePath.getParent();
+                Set<Path> sourceDirectories = new HashSet<>();
 
-                // Unregister source directory from monitoring to prevent spurious DELETE events
-                if (sourceDirectory != null) {
-                    try {
-                        monitoringRegistrationService.unregisterSpecificPath(sourceDirectory);
-                    } catch (Exception ex) {
-                        log.warn("Failed to unregister source directory from monitoring: {}", sourceDirectory, ex);
+                for (BookFileEntity fileToMove : filesToMove) {
+                    Path sourceFilePath = fileToMove.getFullFilePath();
+                    Path sourceDirectory = sourceFilePath.getParent();
+
+                    if (sourceDirectory != null && sourceDirectories.add(sourceDirectory)) {
+                        try {
+                            monitoringRegistrationService.unregisterSpecificPath(sourceDirectory);
+                        } catch (Exception ex) {
+                            log.warn("Failed to unregister source directory from monitoring: {}", sourceDirectory, ex);
+                        }
+                        pathsToReregister.add(sourceDirectory);
                     }
-                    pathsToReregister.add(sourceDirectory);
+
+                    String extension = getFileExtension(fileToMove.getFileName()).toLowerCase();
+
+                    int existingCount = extensionCounts.getOrDefault(extension, 0);
+                    String newFileName;
+                    if (extension.isEmpty()) {
+                        newFileName = existingCount > 0
+                                ? baseFileName + "_" + existingCount
+                                : baseFileName;
+                    } else {
+                        newFileName = existingCount > 0
+                                ? baseFileName + "_" + existingCount + "." + extension
+                                : baseFileName + "." + extension;
+                    }
+                    extensionCounts.merge(extension, 1, Integer::sum);
+
+                    newFileName = resolveFilenameConflict(targetDirectory, newFileName);
+
+                    Path destinationPath = targetDirectory.resolve(newFileName);
+                    try {
+                        Files.move(sourceFilePath, destinationPath);
+                        log.info("Moved file from {} to {}", sourceFilePath, destinationPath);
+                    } catch (IOException e) {
+                        log.error("Failed to move file from {} to {}", sourceFilePath, destinationPath, e);
+                        throw ApiError.INTERNAL_SERVER_ERROR.createException("Failed to move file: " + e.getMessage());
+                    }
+
+                    fileToMove.setFileSubPath(targetFileSubPath);
+                    fileToMove.setFileName(newFileName);
+
+                    sourceBook.getBookFiles().remove(fileToMove);
+                    fileToMove.setBook(targetBook);
+                    targetBook.getBookFiles().add(fileToMove);
                 }
 
-                // Generate new filename using the base name determined earlier (from pattern or actual primary file)
-                String extension = getFileExtension(fileToMove.getFileName()).toLowerCase();
+                sourceDirectoriesToCleanup.addAll(sourceDirectories);
 
-                // Handle same-extension conflicts by adding suffix (_1, _2, etc.)
-                int existingCount = extensionCounts.getOrDefault(extension, 0);
-                String newFileName;
-                if (extension.isEmpty()) {
-                    // File has no extension
-                    newFileName = existingCount > 0
-                            ? baseFileName + "_" + existingCount
-                            : baseFileName;
-                } else {
-                    newFileName = existingCount > 0
-                            ? baseFileName + "_" + existingCount + "." + extension
-                            : baseFileName + "." + extension;
-                }
-                extensionCounts.merge(extension, 1, Integer::sum);
-
-                // Final conflict check against filesystem (in case of external files)
-                newFileName = resolveFilenameConflict(targetDirectory, newFileName);
-
-                // Move the physical file
-                Path destinationPath = targetDirectory.resolve(newFileName);
-                try {
-                    Files.move(sourceFilePath, destinationPath);
-                    log.info("Moved file from {} to {}", sourceFilePath, destinationPath);
-                } catch (IOException e) {
-                    log.error("Failed to move file from {} to {}", sourceFilePath, destinationPath, e);
-                    throw ApiError.INTERNAL_SERVER_ERROR.createException("Failed to move file: " + e.getMessage());
-                }
-
-                // Update file entity with new path info - properly manage bidirectional relationship
-                fileToMove.setFileSubPath(targetFileSubPath);
-                fileToMove.setFileName(newFileName);
-
-                // Remove from source book's collection and add to target's collection
-                sourceBook.getBookFiles().remove(fileToMove);
-                fileToMove.setBook(targetBook);
-                targetBook.getBookFiles().add(fileToMove);
-
-                // Track source directory for cleanup
-                if (sourceDirectory != null) {
-                    sourceDirectoriesToCleanup.add(sourceDirectory);
-                }
-
-                // Track source book for deletion if requested
                 if (deleteSourceBooks) {
                     long remainingBookFiles = sourceBook.getBookFiles().stream()
                             .filter(BookFileEntity::isBookFormat)
