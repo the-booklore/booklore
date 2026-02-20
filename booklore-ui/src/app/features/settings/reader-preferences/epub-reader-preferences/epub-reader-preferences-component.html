@@ -245,7 +245,7 @@
             <label class="setting-label">{{ t('columnGap') }}</label>
             <div class="font-size-controls">
               <p-button icon="pi pi-minus" size="small" rounded outlined (click)="decreaseGap()"></p-button>
-              <span class="font-size-value">{{ gap }}px</span>
+              <span class="font-size-value">{{ gap * 100 | number : '1.0-0' }}%</span>
               <p-button icon="pi pi-plus" size="small" rounded outlined (click)="increaseGap()"></p-button>
             </div>
           </div>

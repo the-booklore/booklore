@@ -14,4 +14,5 @@ public class KoboSyncSettings {
     private boolean autoAddToShelf;
     private String hardcoverApiKey;
     private boolean hardcoverSyncEnabled;
+    private boolean twoWayProgressSync;
 }

@@ -572,25 +572,25 @@ public class BookRuleEvaluatorService {
     private Predicate buildGreaterThan(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
                 (field, dateValue) -> cb.greaterThan(field.as(LocalDateTime.class), dateValue),
-                (field, numValue) -> cb.gt(field.as(Double.class), numValue));
+                (field, numValue) -> cb.gt(toNumericExpression(field), numValue));
     }
 
     private Predicate buildGreaterThanEqual(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
                 (field, dateValue) -> cb.greaterThanOrEqualTo(field.as(LocalDateTime.class), dateValue),
-                (field, numValue) -> cb.ge(field.as(Double.class), numValue));
+                (field, numValue) -> cb.ge(toNumericExpression(field), numValue));
     }
 
     private Predicate buildLessThan(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
                 (field, dateValue) -> cb.lessThan(field.as(LocalDateTime.class), dateValue),
-                (field, numValue) -> cb.lt(field.as(Double.class), numValue));
+                (field, numValue) -> cb.lt(toNumericExpression(field), numValue));
     }
 
     private Predicate buildLessThanEqual(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin,
                 (field, dateValue) -> cb.lessThanOrEqualTo(field.as(LocalDateTime.class), dateValue),
-                (field, numValue) -> cb.le(field.as(Double.class), numValue));
+                (field, numValue) -> cb.le(toNumericExpression(field), numValue));
     }
 
     private Predicate buildComparisonPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root,
@@ -605,6 +605,7 @@ public class BookRuleEvaluatorService {
         if (value instanceof LocalDateTime) {
             return dateComparator.apply(field, (LocalDateTime) value);
         }
+        if (!(value instanceof Number)) return cb.conjunction();
         return numberComparator.apply(field, ((Number) value).doubleValue());
     }
 
@@ -625,7 +626,9 @@ public class BookRuleEvaluatorService {
             return cb.conjunction();
         }
 
-        return cb.between(field.as(Double.class), ((Number) start).doubleValue(), ((Number) end).doubleValue());
+        @SuppressWarnings("unchecked")
+        Expression<Double> numField = (Expression<Double>) (Expression<?>) field;
+        return cb.between(numField, ((Number) start).doubleValue(), ((Number) end).doubleValue());
     }
 
     private Predicate buildIsEmpty(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
@@ -849,6 +852,13 @@ public class BookRuleEvaluatorService {
             return value;
         }
 
+        if (isNumericField(field)) {
+            try {
+                return Double.parseDouble(value.toString());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
         return value.toString().toLowerCase();
     }
 
@@ -876,6 +886,26 @@ public class BookRuleEvaluatorService {
         }
 
         return Collections.singletonList(value.toString());
+    }
+
+    private static final Set<RuleField> NUMERIC_FIELDS = Set.of(
+            RuleField.METADATA_SCORE, RuleField.FILE_SIZE, RuleField.PAGE_COUNT,
+            RuleField.SERIES_NUMBER, RuleField.SERIES_TOTAL, RuleField.AGE_RATING,
+            RuleField.PERSONAL_RATING, RuleField.READING_PROGRESS, RuleField.AUDIOBOOK_DURATION,
+            RuleField.AMAZON_RATING, RuleField.AMAZON_REVIEW_COUNT,
+            RuleField.GOODREADS_RATING, RuleField.GOODREADS_REVIEW_COUNT,
+            RuleField.HARDCOVER_RATING, RuleField.HARDCOVER_REVIEW_COUNT,
+            RuleField.LUBIMYCZYTAC_RATING, RuleField.RANOBEDB_RATING,
+            RuleField.AUDIBLE_RATING, RuleField.AUDIBLE_REVIEW_COUNT
+    );
+
+    private static boolean isNumericField(RuleField field) {
+        return field != null && NUMERIC_FIELDS.contains(field);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Expression<Number> toNumericExpression(Expression<?> expr) {
+        return (Expression<Number>) expr;
     }
 
     private String escapeLike(String value) {

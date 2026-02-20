@@ -29,6 +29,8 @@ public class AuditService {
         log(action, null, null, description);
     }
 
+    private static final int MAX_DESCRIPTION_LENGTH = 1024;
+
     public void log(AuditAction action, String entityType, Long entityId, String description) {
         try {
             Long userId = null;
@@ -49,13 +51,18 @@ public class AuditService {
 
             String countryCode = geoIpService.resolveCountryCode(ipAddress);
 
+            String safeDescription = description;
+            if (safeDescription != null && safeDescription.length() > MAX_DESCRIPTION_LENGTH) {
+                safeDescription = safeDescription.substring(0, MAX_DESCRIPTION_LENGTH - 3) + "...";
+            }
+
             AuditLogEntity entity = AuditLogEntity.builder()
                     .userId(userId)
                     .username(username)
                     .action(action)
                     .entityType(entityType)
                     .entityId(entityId)
-                    .description(description)
+                    .description(safeDescription)
                     .ipAddress(ipAddress)
                     .countryCode(countryCode)
                     .build();

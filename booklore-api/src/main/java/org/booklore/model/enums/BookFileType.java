@@ -15,7 +15,7 @@ public enum BookFileType {
     FB2(Set.of("fb2")),
     MOBI(Set.of("mobi")),
     AZW3(Set.of("azw3", "azw")),
-    AUDIOBOOK(Set.of("m4b", "m4a", "mp3", "aac", "flac", "opus", "ogg"));
+    AUDIOBOOK(Set.of("m4b", "m4a", "mp3"));
 
     private final Set<String> extensions;
 

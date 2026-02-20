@@ -41,6 +41,8 @@ public class TaskHistoryService {
         auditService.log(AuditAction.TASK_EXECUTED, "Task", null, buildTaskDescription(type, options));
     }
 
+    private static final int MAX_DESCRIPTION_LENGTH = 1024;
+
     private String buildTaskDescription(TaskType type, Map<String, Object> options) {
         String taskName = type != null ? type.getName() : "Unknown";
         StringBuilder sb = new StringBuilder("Started task: ").append(taskName);
@@ -50,7 +52,26 @@ public class TaskHistoryService {
         Object bookIds = options.get("bookIds");
         Object libraryId = options.get("libraryId");
         if (bookIds instanceof Collection<?> ids && !ids.isEmpty()) {
-            sb.append(" (Book IDs: ").append(ids.stream().map(Object::toString).collect(Collectors.joining(", "))).append(")");
+            sb.append(" (").append(ids.size()).append(" books, IDs: ");
+            String truncationSuffix = "...)";
+            Iterator<?> it = ids.iterator();
+            boolean truncated = false;
+            while (it.hasNext()) {
+                String id = it.next().toString();
+                boolean isLast = !it.hasNext();
+                String separator = sb.charAt(sb.length() - 1) == ' ' ? "" : ", ";
+                if (isLast && sb.length() + separator.length() + id.length() + 1 <= MAX_DESCRIPTION_LENGTH) {
+                    sb.append(separator).append(id).append(")");
+                } else if (!isLast && sb.length() + separator.length() + id.length() + truncationSuffix.length() <= MAX_DESCRIPTION_LENGTH) {
+                    sb.append(separator).append(id);
+                } else {
+                    truncated = true;
+                    break;
+                }
+            }
+            if (truncated) {
+                sb.append(truncationSuffix);
+            }
         } else if (libraryId != null) {
             sb.append(" (Library ID: ").append(libraryId).append(")");
         }

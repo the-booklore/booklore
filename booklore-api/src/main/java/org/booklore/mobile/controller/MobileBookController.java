@@ -2,6 +2,7 @@ package org.booklore.mobile.controller;
 
 import org.booklore.mobile.dto.*;
 import org.booklore.mobile.service.MobileBookService;
+import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ReadStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,10 +39,16 @@ public class MobileBookController {
             @Parameter(description = "Filter by library ID") @RequestParam(required = false) Long libraryId,
             @Parameter(description = "Filter by shelf ID") @RequestParam(required = false) Long shelfId,
             @Parameter(description = "Filter by read status") @RequestParam(required = false) ReadStatus status,
-            @Parameter(description = "Search in title, author, series") @RequestParam(required = false) String search) {
+            @Parameter(description = "Search in title, author, series") @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by file type (EBOOK, AUDIOBOOK, PDF, CBX, etc.)") @RequestParam(required = false) BookFileType fileType,
+            @Parameter(description = "Minimum personal rating (1-5)") @RequestParam(required = false) Integer minRating,
+            @Parameter(description = "Maximum personal rating (1-5, 0 for unrated)") @RequestParam(required = false) Integer maxRating,
+            @Parameter(description = "Filter by author name") @RequestParam(required = false) String authors,
+            @Parameter(description = "Filter by language code (e.g. en, fr)") @RequestParam(required = false) String language) {
 
         return ResponseEntity.ok(mobileBookService.getBooks(
-                page, size, sort, dir, libraryId, shelfId, status, search));
+                page, size, sort, dir, libraryId, shelfId, status, search,
+                fileType, minRating, maxRating, authors, language));
     }
 
     @Operation(summary = "Get book details",

@@ -91,6 +91,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected _titleTooltip: string = '';
   protected _hasProgress: boolean = false;
   protected _isAudiobook: boolean = false;
+  protected _progressTooltip: string = '';
+  protected _isContinueReading: boolean = false;
+  protected _readButtonIcon: string = 'pi pi-book';
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
@@ -177,6 +180,31 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this._seriesCountTooltip = this.t.translate('book.card.alt.seriesCollapsed', { count: this.book.seriesCount });
     this._titleTooltip = this.t.translate('book.card.alt.titleTooltip', { title: this._displayTitle });
+
+    const progressParts: string[] = [];
+    if (this._progressPercentage !== null) {
+      progressParts.push(`${this._progressPercentage}% (BookLore)`);
+    }
+    if (this._koProgressPercentage !== null) {
+      progressParts.push(`${this._koProgressPercentage}% (KOReader)`);
+    }
+    if (this._koboProgressPercentage !== null) {
+      progressParts.push(`${this._koboProgressPercentage}% (Kobo)`);
+    }
+    this._progressTooltip = progressParts.join(' | ');
+
+    const maxProgress = Math.max(
+      this._progressPercentage ?? 0,
+      this._koProgressPercentage ?? 0,
+      this._koboProgressPercentage ?? 0
+    );
+    this._isContinueReading = maxProgress > 0 && maxProgress < 100;
+
+    if (this._isAudiobook) {
+      this._readButtonIcon = this._isContinueReading ? 'pi pi-forward' : 'pi pi-play';
+    } else {
+      this._readButtonIcon = this._isContinueReading ? 'pi pi-forward' : 'pi pi-book';
+    }
   }
 
   get hasProgress(): boolean {
@@ -193,6 +221,14 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   get readStatusTooltip(): string {
     return this._readStatusTooltip;
+  }
+
+  get progressTooltip(): string {
+    return this._progressTooltip;
+  }
+
+  get readButtonIcon(): string {
+    return this._readButtonIcon;
   }
 
   get displayTitle(): string | undefined {

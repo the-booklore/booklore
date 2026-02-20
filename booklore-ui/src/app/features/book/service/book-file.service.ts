@@ -136,7 +136,7 @@ export class BookFileService {
     );
   }
 
-  uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
+  uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType): Observable<AdditionalFile> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -146,24 +146,21 @@ export class BookFileService {
     if (isBook) {
       const lower = (file?.name || '').toLowerCase();
       const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.') + 1) : '';
-      const bookType = ext === 'pdf'
-        ? 'PDF'
-        : ext === 'epub'
-          ? 'EPUB'
-          : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
-            ? 'CBX'
-            : (ext === 'm4b' || ext === 'm4a' || ext === 'mp3')
-              ? 'AUDIOBOOK'
-              : null;
+      const EXTENSION_TO_BOOK_TYPE: Record<string, string> = {
+        pdf: 'PDF',
+        epub: 'EPUB',
+        cbz: 'CBX', cbr: 'CBX', cb7: 'CBX',
+        mobi: 'MOBI',
+        azw3: 'AZW3', azw: 'AZW3',
+        fb2: 'FB2',
+        m4b: 'AUDIOBOOK', m4a: 'AUDIOBOOK', mp3: 'AUDIOBOOK',
+      };
+      const bookType = EXTENSION_TO_BOOK_TYPE[ext] ?? null;
 
       if (bookType) {
         formData.append('bookType', bookType);
       }
     }
-    if (description) {
-      formData.append('description', description);
-    }
-
     return this.http.post<AdditionalFile>(`${this.url}/${bookId}/files`, formData).pipe(
       tap((newFile) => {
         const currentState = this.bookStateService.getCurrentBookState();
