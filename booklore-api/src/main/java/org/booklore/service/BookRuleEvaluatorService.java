@@ -42,6 +42,7 @@ public class BookRuleEvaluatorService {
             Join<BookEntity, UserBookProgressEntity> progressJoin = root.join("userBookProgress", JoinType.LEFT);
             Join<BookEntity, BookFileEntity> bookFileJoin = root.join("bookFiles", JoinType.LEFT);
             bookFileJoin.on(cb.isTrue(bookFileJoin.get("isBookFormat")));
+            query.distinct(true);
 
             Predicate userPredicate = cb.or(
                     cb.isNull(progressJoin.get("user").get("id")),
