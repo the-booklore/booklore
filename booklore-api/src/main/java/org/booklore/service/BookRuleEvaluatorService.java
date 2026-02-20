@@ -101,7 +101,13 @@ public class BookRuleEvaluatorService {
             case EQUALS -> buildEquals(rule, cb, root, progressJoin);
             case NOT_EQUALS -> buildNotEquals(rule, cb, root, progressJoin);
             case CONTAINS -> buildContains(rule, cb, root, progressJoin);
-            case DOES_NOT_CONTAIN -> cb.not(buildContains(rule, cb, root, progressJoin));
+            case DOES_NOT_CONTAIN -> {
+                Predicate notContains = cb.not(buildContains(rule, cb, root, progressJoin));
+                if (rule.getField() == RuleField.READ_STATUS) {
+                    yield cb.or(cb.isNull(progressJoin.get("readStatus")), notContains);
+                }
+                yield notContains;
+            }
             case STARTS_WITH -> buildStartsWith(rule, cb, root, progressJoin);
             case ENDS_WITH -> buildEndsWith(rule, cb, root, progressJoin);
             case GREATER_THAN -> buildGreaterThan(rule, cb, root, progressJoin);
@@ -532,7 +538,11 @@ public class BookRuleEvaluatorService {
     }
 
     private Predicate buildNotEquals(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
-        return cb.not(buildEquals(rule, cb, root, progressJoin));
+        Predicate negated = cb.not(buildEquals(rule, cb, root, progressJoin));
+        if (rule.getField() == RuleField.READ_STATUS && !"UNSET".equals(String.valueOf(rule.getValue()))) {
+            return cb.or(cb.isNull(progressJoin.get("readStatus")), negated);
+        }
+        return negated;
     }
 
     private Predicate buildContains(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
@@ -671,7 +681,11 @@ public class BookRuleEvaluatorService {
             return cb.not(buildArrayFieldPredicate(rule.getField(), ruleList, cb, root, false));
         }
 
-        return cb.not(buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin));
+        Predicate negated = cb.not(buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin));
+        if (rule.getField() == RuleField.READ_STATUS && ruleList.stream().noneMatch("UNSET"::equals)) {
+            return cb.or(cb.isNull(progressJoin.get("readStatus")), negated);
+        }
+        return negated;
     }
 
     private Predicate buildIncludesAll(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
