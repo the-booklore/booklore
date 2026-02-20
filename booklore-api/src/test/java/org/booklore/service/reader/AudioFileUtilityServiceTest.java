@@ -39,7 +39,7 @@ class AudioFileUtilityServiceTest {
         // Create audio files
         Files.createFile(tempDir.resolve("track1.mp3"));
         Files.createFile(tempDir.resolve("track2.m4b"));
-        Files.createFile(tempDir.resolve("track3.flac"));
+        Files.createFile(tempDir.resolve("track3.m4a"));
 
         // Create non-audio files
         Files.createFile(tempDir.resolve("readme.txt"));
@@ -51,7 +51,7 @@ class AudioFileUtilityServiceTest {
         assertEquals(3, result.size());
         assertTrue(result.stream().anyMatch(p -> p.getFileName().toString().equals("track1.mp3")));
         assertTrue(result.stream().anyMatch(p -> p.getFileName().toString().equals("track2.m4b")));
-        assertTrue(result.stream().anyMatch(p -> p.getFileName().toString().equals("track3.flac")));
+        assertTrue(result.stream().anyMatch(p -> p.getFileName().toString().equals("track3.m4a")));
     }
 
     @Test
@@ -112,20 +112,16 @@ class AudioFileUtilityServiceTest {
         Files.createFile(tempDir.resolve("track.mp3"));
         Files.createFile(tempDir.resolve("track.m4a"));
         Files.createFile(tempDir.resolve("track.m4b"));
-        Files.createFile(tempDir.resolve("track.aac"));
-        Files.createFile(tempDir.resolve("track.flac"));
-        Files.createFile(tempDir.resolve("track.ogg"));
-        Files.createFile(tempDir.resolve("track.opus"));
 
         List<Path> result = audioFileUtility.listAudioFiles(tempDir);
 
-        assertEquals(7, result.size());
+        assertEquals(3, result.size());
     }
 
     // ==================== isAudioFile tests ====================
 
     @ParameterizedTest
-    @ValueSource(strings = {"track.mp3", "book.m4b", "audio.m4a", "sound.aac", "music.flac", "song.ogg", "voice.opus"})
+    @ValueSource(strings = {"track.mp3", "book.m4b", "audio.m4a"})
     void isAudioFile_returnsTrueForAudioExtensions(String filename) throws IOException {
         Path file = tempDir.resolve(filename);
         Files.createFile(file);
@@ -133,7 +129,7 @@ class AudioFileUtilityServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"TRACK.MP3", "Book.M4B", "Audio.M4A", "SOUND.AAC", "Music.FLAC", "Song.OGG", "Voice.OPUS"})
+    @ValueSource(strings = {"TRACK.MP3", "Book.M4B", "Audio.M4A"})
     void isAudioFile_isCaseInsensitive(String filename) throws IOException {
         Path file = tempDir.resolve(filename);
         Files.createFile(file);
@@ -161,11 +157,7 @@ class AudioFileUtilityServiceTest {
     @CsvSource({
             "track.m4b, audio/mp4",
             "track.m4a, audio/mp4",
-            "track.mp3, audio/mpeg",
-            "track.aac, audio/aac",
-            "track.flac, audio/flac",
-            "track.ogg, audio/ogg",
-            "track.opus, audio/opus"
+            "track.mp3, audio/mpeg"
     })
     void getContentType_returnsCorrectMimeType(String filename, String expectedMimeType) {
         Path file = tempDir.resolve(filename);
@@ -175,8 +167,7 @@ class AudioFileUtilityServiceTest {
     @ParameterizedTest
     @CsvSource({
             "TRACK.M4B, audio/mp4",
-            "TRACK.MP3, audio/mpeg",
-            "Track.Flac, audio/flac"
+            "TRACK.MP3, audio/mpeg"
     })
     void getContentType_isCaseInsensitive(String filename, String expectedMimeType) {
         Path file = tempDir.resolve(filename);
@@ -243,14 +234,10 @@ class AudioFileUtilityServiceTest {
     void getSupportedExtensions_returnsAllExpectedExtensions() {
         var extensions = audioFileUtility.getSupportedExtensions();
 
-        assertEquals(7, extensions.size());
+        assertEquals(3, extensions.size());
         assertTrue(extensions.contains(".mp3"));
         assertTrue(extensions.contains(".m4a"));
         assertTrue(extensions.contains(".m4b"));
-        assertTrue(extensions.contains(".aac"));
-        assertTrue(extensions.contains(".flac"));
-        assertTrue(extensions.contains(".ogg"));
-        assertTrue(extensions.contains(".opus"));
     }
 
     @Test

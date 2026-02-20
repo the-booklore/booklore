@@ -222,6 +222,27 @@
   text-decoration: underline;
 }
 
+.formats-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  @media (min-width: 768px) {
+    justify-content: flex-start;
+  }
+}
+
+.format-pipe {
+  color: var(--text-color-secondary);
+  font-weight: 300;
+  font-size: 1rem;
+  line-height: 1;
+  user-select: none;
+
+}
+
 .author-separator {
   color: var(--text-secondary-color);
 }
@@ -437,6 +458,7 @@
 
 .format-badge {
   display: none;
+  align-items: center;
   font-size: 0.55rem;
   font-weight: 700;
   color: var(--primary-color);
@@ -659,7 +681,7 @@
 }
 
 .description-content.line-clamp-7 {
-  max-height: 75px;
+  max-height: 37px;
 }
 
 .description-content:not(.line-clamp-7) {

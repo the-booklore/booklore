@@ -1,19 +1,19 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit} from '@angular/core';
 
-import { FormsModule } from '@angular/forms';
-import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
-import { Select } from 'primeng/select';
-import { Button } from 'primeng/button';
-import { FileSelectEvent, FileUpload, FileUploadHandlerEvent } from 'primeng/fileupload';
-import { Badge } from 'primeng/badge';
-import { Tooltip } from 'primeng/tooltip';
-import { Subject, takeUntil } from 'rxjs';
-import { BookFileService } from '../../service/book-file.service';
-import { AppSettingsService } from '../../../../shared/service/app-settings.service';
-import { Book, AdditionalFileType } from '../../model/book.model';
-import { MessageService } from 'primeng/api';
-import { filter, take } from 'rxjs/operators';
-import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
+import {FormsModule} from '@angular/forms';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {Select} from 'primeng/select';
+import {Button} from 'primeng/button';
+import {FileSelectEvent, FileUpload, FileUploadHandlerEvent} from 'primeng/fileupload';
+import {Badge} from 'primeng/badge';
+import {Tooltip} from 'primeng/tooltip';
+import {Subject} from 'rxjs';
+import {BookFileService} from '../../service/book-file.service';
+import {AppSettingsService} from '../../../../shared/service/app-settings.service';
+import {AdditionalFileType, Book} from '../../model/book.model';
+import {MessageService} from 'primeng/api';
+import {filter, take} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface FileTypeOption {
   label: string;
@@ -37,7 +37,7 @@ interface UploadingFile {
     Badge,
     Tooltip,
     TranslocoDirective
-],
+  ],
   templateUrl: './additional-file-uploader.component.html',
   styleUrls: ['./additional-file-uploader.component.scss']
 })
@@ -47,9 +47,9 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
   book!: Book;
   files: UploadingFile[] = [];
   fileType: AdditionalFileType = AdditionalFileType.ALTERNATIVE_FORMAT;
-  description: string = '';
   isUploading = false;
   maxFileSizeBytes?: number;
+  maxFileSizeDisplay: string = '100 MB';
 
   fileTypeOptions: FileTypeOption[] = [];
 
@@ -77,7 +77,9 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
       )
       .subscribe(settings => {
         if (settings) {
-          this.maxFileSizeBytes = (settings.maxFileUploadSizeInMb || 100) * 1024 * 1024;
+          const maxSizeMb = settings.maxFileUploadSizeInMb || 100;
+          this.maxFileSizeBytes = maxSizeMb * 1024 * 1024;
+          this.maxFileSizeDisplay = `${maxSizeMb} MB`;
         }
       });
   }
@@ -155,8 +157,7 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
       this.bookFileService.uploadAdditionalFile(
         this.book.id,
         uploadFile.file,
-        this.fileType,
-        this.description || undefined
+        this.fileType
       ).subscribe({
         next: () => {
           uploadFile.status = 'Uploaded';

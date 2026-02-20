@@ -20,7 +20,7 @@ public enum ApiError {
     INVALID_VIEWER_SETTING(HttpStatus.BAD_REQUEST, "Invalid viewer setting for the book"),
     FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Error reading files from path: %s"),
     IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "Image not found or not readable"),
-    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format, only pdf and epub are supported"),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format: %s"),
     LIBRARY_NOT_FOUND(HttpStatus.NOT_FOUND, "Library not found with ID: %d"),
     FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "File size exceeds the limit: %d MB"),
     CACHE_TOO_LARGE(HttpStatus.BAD_REQUEST, "Book archive is too large to cache with current settings"),
