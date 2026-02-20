@@ -436,8 +436,6 @@
     "selectFileType": "Seleccionar tipo de archivo",
     "typeAlternativeFormat": "Formato alternativo",
     "typeSupplementary": "Archivo complementario",
-    "descriptionLabel": "Descripción (Opcional)",
-    "descriptionPlaceholder": "Agregar una descripción para este archivo...",
     "statusUploading": "Subiendo",
     "statusUploaded": "Subido",
     "statusUploadFailed": "Error al subir",
@@ -445,6 +443,8 @@
     "statusReady": "Listo",
     "statusFailed": "Fallido",
     "dragDropText": "Arrastre y suelte un archivo aquí para subir.",
+    "supportedFormats": "Formatos compatibles: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+    "maxFileSize": "Tamaño máximo de archivo: {{ size }} por archivo",
     "uploadForBook": "Subir un archivo adicional para <strong>{{ title }}</strong>.",
     "thisBook": "este libro",
     "toast": {

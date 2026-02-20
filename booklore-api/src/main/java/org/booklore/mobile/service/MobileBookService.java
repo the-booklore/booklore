@@ -4,6 +4,7 @@ import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.ApiError;
 import org.booklore.mobile.dto.MobileBookDetail;
 import org.booklore.mobile.dto.MobileBookSummary;
+import org.booklore.mobile.dto.MobileFilterOptions;
 import org.booklore.mobile.dto.MobilePageResponse;
 import org.booklore.mobile.mapper.MobileBookMapper;
 import org.booklore.mobile.specification.MobileBookSpecification;
@@ -11,6 +12,7 @@ import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.Library;
 import org.booklore.model.entity.*;
+import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.ShelfRepository;
@@ -26,6 +28,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Tuple;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -45,6 +49,7 @@ public class MobileBookService {
     private final AuthenticationService authenticationService;
     private final MobileBookMapper mobileBookMapper;
     private final MagicShelfBookService magicShelfBookService;
+    private final EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public MobilePageResponse<MobileBookSummary> getBooks(
@@ -55,7 +60,12 @@ public class MobileBookService {
             Long libraryId,
             Long shelfId,
             ReadStatus status,
-            String search) {
+            String search,
+            BookFileType fileType,
+            Integer minRating,
+            Integer maxRating,
+            String authors,
+            String language) {
 
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         Long userId = user.getId();
@@ -68,7 +78,8 @@ public class MobileBookService {
         Pageable pageable = PageRequest.of(pageNum, pageSize, sort);
 
         Specification<BookEntity> spec = buildSpecification(
-                accessibleLibraryIds, libraryId, shelfId, status, search, userId);
+                accessibleLibraryIds, libraryId, shelfId, status, search, userId,
+                fileType, minRating, maxRating, authors, language);
 
         Page<BookEntity> bookPage = bookRepository.findAll(spec, pageable);
 
@@ -293,6 +304,87 @@ public class MobileBookService {
         return MobilePageResponse.of(summaries, pageNum, pageSize, booksPage.getTotalElements());
     }
 
+    @Transactional(readOnly = true)
+    public MobileFilterOptions getFilterOptions() {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        Set<Long> accessibleLibraryIds = getAccessibleLibraryIds(user);
+
+        // Base filter: non-deleted digital books in accessible libraries
+        String libraryClause = accessibleLibraryIds != null
+                ? "AND b.library.id IN :libraryIds"
+                : "";
+
+        // Authors with book count (top 200 by count)
+        String authorQuery = """
+                SELECT a.name, COUNT(DISTINCT b.id) FROM BookEntity b
+                JOIN b.metadata m JOIN m.authors a
+                WHERE (b.deleted IS NULL OR b.deleted = false)
+                AND (b.isPhysical IS NULL OR b.isPhysical = false)
+                """ + libraryClause + """
+                GROUP BY a.name ORDER BY COUNT(DISTINCT b.id) DESC
+                """;
+        var authorQ = entityManager.createQuery(authorQuery, Tuple.class);
+        if (accessibleLibraryIds != null) authorQ.setParameter("libraryIds", accessibleLibraryIds);
+        authorQ.setMaxResults(200);
+
+        List<MobileFilterOptions.AuthorOption> authors = authorQ.getResultList().stream()
+                .map(t -> MobileFilterOptions.AuthorOption.builder()
+                        .name(t.get(0, String.class))
+                        .count(t.get(1, Long.class))
+                        .build())
+                .toList();
+
+        // Languages with book count
+        String langQuery = """
+                SELECT m.language, COUNT(DISTINCT b.id) FROM BookEntity b
+                JOIN b.metadata m
+                WHERE (b.deleted IS NULL OR b.deleted = false)
+                AND (b.isPhysical IS NULL OR b.isPhysical = false)
+                AND m.language IS NOT NULL AND m.language <> ''
+                """ + libraryClause + """
+                GROUP BY m.language ORDER BY COUNT(DISTINCT b.id) DESC
+                """;
+        var langQ = entityManager.createQuery(langQuery, Tuple.class);
+        if (accessibleLibraryIds != null) langQ.setParameter("libraryIds", accessibleLibraryIds);
+
+        List<MobileFilterOptions.LanguageOption> languages = langQ.getResultList().stream()
+                .map(t -> MobileFilterOptions.LanguageOption.builder()
+                        .code(t.get(0, String.class))
+                        .label(Locale.forLanguageTag(t.get(0, String.class)).getDisplayLanguage(Locale.ENGLISH))
+                        .count(t.get(1, Long.class))
+                        .build())
+                .toList();
+
+        // Distinct file types present in accessible books
+        String fileTypeQuery = """
+                SELECT DISTINCT bf.bookType FROM BookEntity b
+                JOIN b.bookFiles bf
+                WHERE (b.deleted IS NULL OR b.deleted = false)
+                AND (b.isPhysical IS NULL OR b.isPhysical = false)
+                AND bf.isBookFormat = true
+                """ + libraryClause;
+        var ftQ = entityManager.createQuery(fileTypeQuery, BookFileType.class);
+        if (accessibleLibraryIds != null) ftQ.setParameter("libraryIds", accessibleLibraryIds);
+
+        List<String> fileTypes = ftQ.getResultList().stream()
+                .map(Enum::name)
+                .sorted()
+                .toList();
+
+        // Read statuses — return all meaningful values
+        List<String> readStatuses = Arrays.stream(ReadStatus.values())
+                .filter(s -> s != ReadStatus.UNSET)
+                .map(Enum::name)
+                .toList();
+
+        return MobileFilterOptions.builder()
+                .authors(authors)
+                .languages(languages)
+                .fileTypes(fileTypes)
+                .readStatuses(readStatuses)
+                .build();
+    }
+
     @Transactional
     public void updateReadStatus(Long bookId, ReadStatus status) {
         UserBookProgressEntity progress = validateAccessAndGetProgress(bookId);
@@ -372,7 +464,12 @@ public class MobileBookService {
             Long shelfId,
             ReadStatus status,
             String search,
-            Long userId) {
+            Long userId,
+            BookFileType fileType,
+            Integer minRating,
+            Integer maxRating,
+            String authors,
+            String language) {
 
         List<Specification<BookEntity>> specs = new ArrayList<>();
         specs.add(MobileBookSpecification.notDeleted());
@@ -405,6 +502,26 @@ public class MobileBookService {
 
         if (search != null && !search.trim().isEmpty()) {
             specs.add(MobileBookSpecification.searchText(search));
+        }
+
+        if (fileType != null) {
+            specs.add(MobileBookSpecification.withFileType(fileType));
+        }
+
+        if (minRating != null) {
+            specs.add(MobileBookSpecification.withMinRating(minRating, userId));
+        }
+
+        if (maxRating != null) {
+            specs.add(MobileBookSpecification.withMaxRating(maxRating, userId));
+        }
+
+        if (authors != null && !authors.trim().isEmpty()) {
+            specs.add(MobileBookSpecification.withAuthor(authors.trim()));
+        }
+
+        if (language != null && !language.trim().isEmpty()) {
+            specs.add(MobileBookSpecification.withLanguage(language.trim()));
         }
 
         return MobileBookSpecification.combine(specs.toArray(new Specification[0]));

@@ -31,6 +31,10 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import tools.jackson.databind.ObjectMapper;
 
+import org.booklore.model.entity.BookFileEntity;
+import org.booklore.model.entity.UserBookFileProgressEntity;
+import org.booklore.repository.UserBookFileProgressRepository;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +72,9 @@ class KoboReadingStateServiceTest {
 
     @Mock
     private HardcoverSyncService hardcoverSyncService;
+
+    @Mock
+    private UserBookFileProgressRepository fileProgressRepository;
 
     @InjectMocks
     private KoboReadingStateService service;
@@ -278,7 +285,7 @@ class KoboReadingStateServiceTest {
         assertEquals("Kobo", state.getCurrentBookmark().getLocation().getSource());
         
         verify(repository).findByEntitlementIdAndUserId(entitlementId, 1L);
-        verify(progressRepository).findByUserIdAndBookId(1L, 100L);
+        verify(progressRepository, atLeastOnce()).findByUserIdAndBookId(1L, 100L);
         verify(readingStateBuilder).buildReadingStateFromProgress(entitlementId, progress);
     }
 
@@ -328,13 +335,13 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(entity));
         when(mapper.toDto(entity)).thenReturn(existingState);
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
 
         List<KoboReadingState> result = service.getReadingState(entitlementId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(entitlementId, result.getFirst().getEntitlementId());
-        verify(progressRepository, never()).findByUserIdAndBookId(anyLong(), anyLong());
     }
 
     @Test
@@ -522,5 +529,454 @@ class KoboReadingStateServiceTest {
 
         assertEquals(existingStatus.getStatus(), savedStatus.getStatus());
         assertEquals(timestamp, saved.getLastModifiedString());
+    }
+
+    @Test
+    @DisplayName("Should delete reading state for authenticated user")
+    void testDeleteReadingState() {
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(repository.findByEntitlementIdAndUserId("100", 1L)).thenReturn(Optional.of(entity));
+
+        service.deleteReadingState(100L);
+
+        verify(repository).delete(entity);
+    }
+
+    @Test
+    @DisplayName("Should not throw when deleting non-existent reading state")
+    void testDeleteReadingState_notFound() {
+        when(repository.findByEntitlementIdAndUserId("100", 1L)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> service.deleteReadingState(100L));
+        verify(repository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Should overlay web reader bookmark when two-way sync is ON and web reader data exists")
+    void testGetReadingState_overlayWebReaderBookmark() {
+        testSettings.setTwoWayProgressSync(true);
+        String entitlementId = "100";
+
+        KoboReadingState existingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(30)
+                        .contentSourceProgressPercent(45)
+                        .location(KoboReadingState.CurrentBookmark.Location.builder()
+                                .value("epubcfi(/6/10)")
+                                .type("EpubCfi")
+                                .source("Kobo")
+                                .build())
+                        .lastModified("2025-01-01T00:00:00Z")
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(entity));
+        when(mapper.toDto(entity)).thenReturn(existingState);
+
+        UserBookProgressEntity progress = new UserBookProgressEntity();
+        progress.setEpubProgress("epubcfi(/6/20)");
+        progress.setEpubProgressPercent(65f);
+        progress.setLastReadTime(Instant.parse("2025-06-01T10:00:00Z"));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
+
+        KoboReadingState.CurrentBookmark webBookmark = KoboReadingState.CurrentBookmark.builder()
+                .progressPercent(65)
+                .lastModified("2025-06-01T10:00:00Z")
+                .build();
+        when(readingStateBuilder.buildBookmarkFromProgress(progress)).thenReturn(webBookmark);
+
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
+
+        assertEquals(1, result.size());
+        KoboReadingState.CurrentBookmark bookmark = result.getFirst().getCurrentBookmark();
+        assertEquals(65, bookmark.getProgressPercent());
+        assertEquals(45, bookmark.getContentSourceProgressPercent());
+        assertNotNull(bookmark.getLocation());
+        assertEquals("epubcfi(/6/10)", bookmark.getLocation().getValue());
+    }
+
+    @Test
+    @DisplayName("Should NOT overlay web reader bookmark when two-way sync is OFF")
+    void testGetReadingState_noOverlayWhenToggleOff() {
+        testSettings.setTwoWayProgressSync(false);
+        String entitlementId = "100";
+
+        KoboReadingState existingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(30)
+                        .lastModified("2025-01-01T00:00:00Z")
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(entity));
+        when(mapper.toDto(entity)).thenReturn(existingState);
+
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
+
+        assertEquals(1, result.size());
+        assertEquals(30, result.getFirst().getCurrentBookmark().getProgressPercent());
+        verify(readingStateBuilder, never()).buildBookmarkFromProgress(any());
+    }
+
+    @Test
+    @DisplayName("Should cross-populate epub fields from Kobo when two-way sync is ON")
+    void testSyncKoboProgress_crossPopulateEpubFields() {
+        testSettings.setTwoWayProgressSync(true);
+        String entitlementId = "100";
+
+        BookFileEntity primaryFile = BookFileEntity.builder().id(10L).build();
+        testBook.setBookFiles(List.of(primaryFile));
+
+        UserBookProgressEntity existingProgress = new UserBookProgressEntity();
+        existingProgress.setUser(testUserEntity);
+        existingProgress.setBook(testBook);
+
+        KoboReadingState.CurrentBookmark.Location location = KoboReadingState.CurrentBookmark.Location.builder()
+                .value("epubcfi(/6/8)")
+                .type("EpubCfi")
+                .source("chapter3.xhtml")
+                .build();
+
+        KoboReadingState.CurrentBookmark bookmark = KoboReadingState.CurrentBookmark.builder()
+                .progressPercent(55)
+                .location(location)
+                .lastModified("2025-06-15T12:00:00Z")
+                .build();
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(bookmark)
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(existingProgress));
+        when(fileProgressRepository.findByUserIdAndBookFileId(1L, 10L)).thenReturn(Optional.empty());
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(existingProgress);
+
+        service.saveReadingState(List.of(readingState));
+
+        UserBookProgressEntity saved = captor.getValue();
+        assertEquals(55f, saved.getEpubProgressPercent());
+        assertEquals("chapter3.xhtml", saved.getEpubProgressHref());
+        assertNull(saved.getEpubProgress());
+    }
+
+    @Test
+    @DisplayName("Should NOT cross-populate epub fields when two-way sync is OFF")
+    void testSyncKoboProgress_noCrossPopulateWhenToggleOff() {
+        testSettings.setTwoWayProgressSync(false);
+        String entitlementId = "100";
+
+        UserBookProgressEntity existingProgress = new UserBookProgressEntity();
+        existingProgress.setUser(testUserEntity);
+        existingProgress.setBook(testBook);
+        existingProgress.setEpubProgressPercent(40f);
+        existingProgress.setEpubProgress("epubcfi(/6/4)");
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(70)
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(existingProgress));
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(existingProgress);
+
+        service.saveReadingState(List.of(readingState));
+
+        UserBookProgressEntity saved = captor.getValue();
+        assertEquals(40f, saved.getEpubProgressPercent());
+        assertEquals("epubcfi(/6/4)", saved.getEpubProgress());
+    }
+
+    @Test
+    @DisplayName("Should not cross-populate when web reader has newer progress")
+    void testSyncKoboProgress_skipCrossPopulateWhenWebReaderNewer() {
+        testSettings.setTwoWayProgressSync(true);
+        String entitlementId = "100";
+
+        BookFileEntity primaryFile = BookFileEntity.builder().id(10L).build();
+        testBook.setBookFiles(List.of(primaryFile));
+
+        UserBookFileProgressEntity fileProgress = new UserBookFileProgressEntity();
+        fileProgress.setLastReadTime(Instant.now().plusSeconds(3600));
+
+        UserBookProgressEntity existingProgress = new UserBookProgressEntity();
+        existingProgress.setUser(testUserEntity);
+        existingProgress.setBook(testBook);
+        existingProgress.setEpubProgressPercent(80f);
+        existingProgress.setEpubProgress("epubcfi(/6/20)");
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(50)
+                        .lastModified("2025-01-01T00:00:00Z")
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(existingProgress));
+        when(fileProgressRepository.findByUserIdAndBookFileId(1L, 10L)).thenReturn(Optional.of(fileProgress));
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(existingProgress);
+
+        service.saveReadingState(List.of(readingState));
+
+        UserBookProgressEntity saved = captor.getValue();
+        assertEquals(80f, saved.getEpubProgressPercent());
+        assertEquals("epubcfi(/6/20)", saved.getEpubProgress());
+    }
+
+    @Test
+    @DisplayName("Should construct reading state from web reader progress when toggle ON and no Kobo data")
+    void testGetReadingState_constructFromWebReaderProgress_whenToggleOn() {
+        testSettings.setTwoWayProgressSync(true);
+        String entitlementId = "100";
+
+        UserBookProgressEntity progress = new UserBookProgressEntity();
+        progress.setKoboProgressPercent(null);
+        progress.setKoboLocation(null);
+        progress.setEpubProgressPercent(60f);
+        progress.setEpubProgress("epubcfi(/6/12)");
+
+        KoboReadingState expectedState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(60)
+                        .build())
+                .build();
+
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
+        when(readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress)).thenReturn(expectedState);
+
+        KoboReadingState.CurrentBookmark webBookmark = KoboReadingState.CurrentBookmark.builder()
+                .progressPercent(60)
+                .lastModified("2025-06-01T10:00:00Z")
+                .build();
+        when(readingStateBuilder.buildBookmarkFromProgress(progress)).thenReturn(webBookmark);
+
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
+
+        assertEquals(1, result.size());
+        verify(readingStateBuilder).buildReadingStateFromProgress(entitlementId, progress);
+    }
+
+    @Test
+    @DisplayName("Should NOT construct reading state from web reader progress when toggle OFF")
+    void testGetReadingState_noConstructFromWebReaderProgress_whenToggleOff() {
+        testSettings.setTwoWayProgressSync(false);
+        String entitlementId = "100";
+
+        UserBookProgressEntity progress = new UserBookProgressEntity();
+        progress.setKoboProgressPercent(null);
+        progress.setKoboLocation(null);
+        progress.setEpubProgressPercent(60f);
+
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
+
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
+
+        assertTrue(result.isEmpty());
+        verify(readingStateBuilder, never()).buildReadingStateFromProgress(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should sync location data from Kobo bookmark")
+    void testSyncKoboProgress_locationData() {
+        String entitlementId = "100";
+
+        KoboReadingState.CurrentBookmark.Location location = KoboReadingState.CurrentBookmark.Location.builder()
+                .value("epubcfi(/6/4[chap01ref]!/4/2/1:3)")
+                .type("EpubCfi")
+                .source("Kobo")
+                .build();
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(42)
+                        .location(location)
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(new UserBookProgressEntity());
+
+        service.saveReadingState(List.of(readingState));
+
+        UserBookProgressEntity saved = captor.getValue();
+        assertEquals("epubcfi(/6/4[chap01ref]!/4/2/1:3)", saved.getKoboLocation());
+        assertEquals("EpubCfi", saved.getKoboLocationType());
+        assertEquals("Kobo", saved.getKoboLocationSource());
+        assertEquals(42f, saved.getKoboProgressPercent());
+    }
+
+    @Test
+    @DisplayName("Should set finished date when progress reaches threshold for new book")
+    void testSyncKoboProgress_setsFinishedDate() {
+        testSettings.setProgressMarkAsFinishedThreshold(99f);
+        String entitlementId = "100";
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(100)
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(new UserBookProgressEntity());
+
+        service.saveReadingState(List.of(readingState));
+
+        UserBookProgressEntity saved = captor.getValue();
+        assertEquals(ReadStatus.READ, saved.getReadStatus());
+        assertNotNull(saved.getDateFinished());
+    }
+
+    @Test
+    @DisplayName("Should use configurable thresholds for status derivation")
+    void testSyncKoboProgress_configurableThresholds() {
+        testSettings.setProgressMarkAsReadingThreshold(10f);
+        testSettings.setProgressMarkAsFinishedThreshold(95f);
+        String entitlementId = "100";
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(5)
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(new UserBookProgressEntity());
+
+        service.saveReadingState(List.of(readingState));
+
+        assertEquals(ReadStatus.UNREAD, captor.getValue().getReadStatus());
+    }
+
+    @Test
+    @DisplayName("Should trigger Hardcover sync when progress changes")
+    void testSyncKoboProgress_triggersHardcover() {
+        String entitlementId = "100";
+
+        UserBookProgressEntity existingProgress = new UserBookProgressEntity();
+        existingProgress.setUser(testUserEntity);
+        existingProgress.setBook(testBook);
+        existingProgress.setKoboProgressPercent(30f);
+
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder()
+                        .progressPercent(50)
+                        .build())
+                .build();
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(existingProgress));
+
+        ArgumentCaptor<UserBookProgressEntity> captor = ArgumentCaptor.forClass(UserBookProgressEntity.class);
+        when(progressRepository.save(captor.capture())).thenReturn(existingProgress);
+
+        service.saveReadingState(List.of(readingState));
+
+        verify(hardcoverSyncService).syncProgressToHardcover(eq(100L), eq(50f), eq(1L));
+    }
+
+    @Test
+    @DisplayName("Should handle multiple reading states in a single save call")
+    void testSaveReadingState_multipleStates() {
+        KoboReadingState state1 = KoboReadingState.builder()
+                .entitlementId("100")
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder().progressPercent(25).build())
+                .build();
+        KoboReadingState state2 = KoboReadingState.builder()
+                .entitlementId("200")
+                .currentBookmark(KoboReadingState.CurrentBookmark.builder().progressPercent(75).build())
+                .build();
+
+        BookEntity book2 = new BookEntity();
+        book2.setId(200L);
+
+        KoboReadingStateEntity entity = new KoboReadingStateEntity();
+        when(mapper.toEntity(any())).thenReturn(entity);
+        when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(state1, state2);
+        when(repository.findByEntitlementIdAndUserId(anyString(), eq(1L))).thenReturn(Optional.empty());
+        when(repository.save(any())).thenReturn(entity);
+        when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
+        when(bookRepository.findById(200L)).thenReturn(Optional.of(book2));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
+        when(progressRepository.findByUserIdAndBookId(eq(1L), anyLong())).thenReturn(Optional.empty());
+        when(progressRepository.save(any())).thenReturn(new UserBookProgressEntity());
+
+        assertDoesNotThrow(() -> service.saveReadingState(List.of(state1, state2)));
+
+        verify(progressRepository, times(2)).save(any());
     }
 }

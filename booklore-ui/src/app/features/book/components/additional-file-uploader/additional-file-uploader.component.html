@@ -30,22 +30,11 @@
     [disabled]="isUploading"
   ></p-select>
 
-  <!-- Description Field -->
-  <div class="description-field">
-    <label for="description" class="description-label">{{ t('descriptionLabel') }}</label>
-    <p-textarea
-      [(ngModel)]="description"
-      rows="3"
-      [attr.placeholder]="t('descriptionPlaceholder')"
-      class="full-width"
-      [disabled]="isUploading"
-    ></p-textarea>
-  </div>
-
   <!-- File Upload -->
   <p-fileupload class="file-upload" name="file"
     [customUpload]="true"
     [multiple]="false"
+    accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3,.m4b,.m4a,.mp3"
     (onSelect)="onFilesSelect($event)"
     (uploadHandler)="uploadFiles($event)"
     [disabled]="isUploading">
@@ -133,7 +122,11 @@
       <div class="empty-state">
         <i class="pi pi-cloud-upload empty-icon"></i>
         <p class="empty-text">{{ t('dragDropText') }}</p>
-        <p class="empty-subtext" [innerHTML]="t('uploadForBook', { title: book.metadata?.title || t('thisBook') })"></p>
+        <p class="empty-subtext">
+          <span [innerHTML]="t('supportedFormats')"></span>
+          <br/>
+          {{ t('maxFileSize', { size: maxFileSizeDisplay }) }}
+        </p>
       </div>
     </ng-template>
   </p-fileupload>
