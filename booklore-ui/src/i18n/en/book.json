@@ -262,6 +262,7 @@
       "rescanLibrary": "Re-scan Library",
       "customFetchMetadata": "Custom Fetch Metadata",
       "autoFetchMetadata": "Auto Fetch Metadata",
+      "findDuplicates": "Find Duplicates",
       "deleteLibrary": "Delete Library"
     },
     "shelf": {
@@ -770,6 +771,49 @@
       "selectAll": "Select all books",
       "deselectAll": "Deselect all books",
       "deleteSelected": "Delete selected books"
+    }
+  },
+  "duplicateMerger": {
+    "title": "Find Duplicates",
+    "description": "Detect and merge duplicate books in this library",
+    "presetStrict": "Strict",
+    "presetBalanced": "Balanced",
+    "presetAggressive": "Aggressive",
+    "presetCustom": "Custom",
+    "advanced": "Advanced",
+    "signalIsbn": "ISBN",
+    "signalExternalId": "External ID",
+    "signalTitleAuthor": "Title + Author",
+    "signalDirectory": "Same Directory",
+    "signalFilename": "Filename",
+    "scan": "Scan",
+    "scanning": "Scanning for duplicates...",
+    "scanPrompt": "Select a detection mode and click Scan to find duplicates.",
+    "noDuplicates": "No duplicates found.",
+    "allMerged": "All duplicate groups have been processed.",
+    "deleteSource": "Delete source books",
+    "mergeAll": "Merge All ({{ count }})",
+    "merge": "Merge",
+    "dismiss": "Dismiss",
+    "target": "Target",
+    "helpText": "Each group contains books that appear to be duplicates. Select the target book (the one to keep), then click Merge. The other books' files will be attached to the target as alternative formats.",
+    "groupLabel": "Group {{ index }}",
+    "fileCount": "{{ count }} files",
+    "reason": {
+      "ISBN": "ISBN Match",
+      "EXTERNAL_ID": "External ID Match",
+      "TITLE_AUTHOR": "Title + Author",
+      "DIRECTORY": "Same Directory",
+      "FILENAME": "Filename Match"
+    },
+    "toast": {
+      "scanFailedSummary": "Scan Failed",
+      "scanFailedDetail": "Could not scan for duplicates.",
+      "mergeSuccessSummary": "Merge Complete",
+      "mergeSuccessDetail": "Successfully merged {{ count }} group(s).",
+      "mergeFailedSummary": "Merge Failed",
+      "mergeFailedDetail": "Could not merge this group.",
+      "mergePartialDetail": "{{ success }} merged, {{ failed }} failed."
     }
   }
 }

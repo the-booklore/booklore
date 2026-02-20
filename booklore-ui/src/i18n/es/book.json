@@ -262,6 +262,7 @@
       "rescanLibrary": "Re-escanear biblioteca",
       "customFetchMetadata": "Obtención personalizada de metadatos",
       "autoFetchMetadata": "Obtener metadatos automáticamente",
+      "findDuplicates": "Buscar duplicados",
       "deleteLibrary": "Eliminar biblioteca"
     },
     "shelf": {
@@ -770,6 +771,49 @@
       "selectAll": "Seleccionar todos los libros",
       "deselectAll": "Deseleccionar todos los libros",
       "deleteSelected": "Eliminar libros seleccionados"
+    }
+  },
+  "duplicateMerger": {
+    "title": "Buscar duplicados",
+    "description": "Detectar y fusionar libros duplicados en esta biblioteca",
+    "presetStrict": "Estricto",
+    "presetBalanced": "Equilibrado",
+    "presetAggressive": "Agresivo",
+    "presetCustom": "Personalizado",
+    "advanced": "Avanzado",
+    "signalIsbn": "ISBN",
+    "signalExternalId": "ID externo",
+    "signalTitleAuthor": "Título + Autor",
+    "signalDirectory": "Mismo directorio",
+    "signalFilename": "Nombre de archivo",
+    "scan": "Escanear",
+    "scanning": "Buscando duplicados...",
+    "scanPrompt": "Seleccione un modo de detección y haga clic en Escanear para buscar duplicados.",
+    "noDuplicates": "No se encontraron duplicados.",
+    "allMerged": "Todos los grupos duplicados han sido procesados.",
+    "deleteSource": "Eliminar libros de origen",
+    "mergeAll": "Fusionar todo ({{ count }})",
+    "merge": "Fusionar",
+    "dismiss": "Descartar",
+    "target": "Destino",
+    "helpText": "Cada grupo contiene libros que parecen ser duplicados. Seleccione el libro destino (el que se conserva) y haga clic en Fusionar. Los archivos de los otros libros se adjuntarán al destino como formatos alternativos.",
+    "groupLabel": "Grupo {{ index }}",
+    "fileCount": "{{ count }} archivos",
+    "reason": {
+      "ISBN": "Coincidencia ISBN",
+      "EXTERNAL_ID": "Coincidencia ID externo",
+      "TITLE_AUTHOR": "Título + Autor",
+      "DIRECTORY": "Mismo directorio",
+      "FILENAME": "Coincidencia de nombre"
+    },
+    "toast": {
+      "scanFailedSummary": "Error de escaneo",
+      "scanFailedDetail": "No se pudieron buscar duplicados.",
+      "mergeSuccessSummary": "Fusión completada",
+      "mergeSuccessDetail": "Se fusionaron {{ count }} grupo(s) correctamente.",
+      "mergeFailedSummary": "Error de fusión",
+      "mergeFailedDetail": "No se pudo fusionar este grupo.",
+      "mergePartialDetail": "{{ success }} fusionados, {{ failed }} fallidos."
     }
   }
 }

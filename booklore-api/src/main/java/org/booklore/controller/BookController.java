@@ -7,6 +7,7 @@ import org.booklore.model.dto.BookRecommendation;
 import org.booklore.model.dto.BookViewerSettings;
 import org.booklore.model.dto.request.AttachBookFileRequest;
 import org.booklore.model.dto.request.CreatePhysicalBookRequest;
+import org.booklore.model.dto.request.DuplicateDetectionRequest;
 import org.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import org.booklore.model.dto.request.ReadProgressRequest;
 import org.booklore.model.dto.request.ReadStatusUpdateRequest;
@@ -14,11 +15,13 @@ import org.booklore.model.dto.request.ShelvesAssignmentRequest;
 import org.booklore.model.dto.response.BookDeletionResponse;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
 import org.booklore.model.dto.response.BookSyncResponse;
+import org.booklore.model.dto.response.DuplicateGroup;
 import org.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import org.booklore.model.enums.ResetProgressType;
 import org.booklore.service.book.BookFileAttachmentService;
 import org.booklore.service.book.BookService;
 import org.booklore.service.book.BookUpdateService;
+import org.booklore.service.book.DuplicateDetectionService;
 import org.booklore.service.book.PhysicalBookService;
 import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.progress.ReadingProgressService;
@@ -58,6 +61,7 @@ public class BookController {
     private final BookMetadataService bookMetadataService;
     private final ReadingProgressService readingProgressService;
     private final PhysicalBookService physicalBookService;
+    private final DuplicateDetectionService duplicateDetectionService;
 
     @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions. Supports ETag-based conditional requests.")
     @ApiResponses({
@@ -286,6 +290,15 @@ public class BookController {
         }
         List<PersonalRatingUpdateResponse> updatedBooks = bookUpdateService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Find duplicate books", description = "Detect potential duplicate books in a library using configurable matching strategies.")
+    @ApiResponse(responseCode = "200", description = "Duplicate groups returned successfully")
+    @PostMapping("/duplicates")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<DuplicateGroup>> findDuplicates(
+            @Parameter(description = "Duplicate detection configuration") @RequestBody @Valid DuplicateDetectionRequest request) {
+        return ResponseEntity.ok(duplicateDetectionService.findDuplicates(request));
     }
 
     @Operation(summary = "Attach book files", description = "Attach book files from single-file source books to a target book as alternative formats.")

@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {Observable, throwError} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {catchError, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, DuplicateDetectionRequest, DuplicateGroup} from '../model/book.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
@@ -206,6 +206,10 @@ export class BookFileService {
     ].find((f: AdditionalFile) => f.id === fileId);
     const downloadUrl = `${this.url}/${book.id}/files/${fileId}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile?.fileName ?? 'file');
+  }
+
+  findDuplicates(request: DuplicateDetectionRequest): Observable<DuplicateGroup[]> {
+    return this.http.post<DuplicateGroup[]>(`${this.url}/duplicates`, request);
   }
 
   attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
