@@ -100,6 +100,7 @@ export class LibraryService {
         const curr = this.libraryStateSubject.value;
         const list = curr.libraries?.map(l => (l.id === updated.id ? updated : l)) || [updated];
         this.libraryStateSubject.next({...curr, libraries: list});
+        this.bookService.refreshBooks();
         return updated;
       })
     );

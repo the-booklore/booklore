@@ -70,16 +70,16 @@
       </p-autocomplete>
     </div>
 
-    <!-- Delete Source Book(s) Option -->
+    <!-- Options -->
     <div class="delete-option">
       <p-checkbox
-        [(ngModel)]="deleteSourceBooks"
+        [(ngModel)]="moveFiles"
         [binary]="true"
-        inputId="deleteSourceBooks"
+        inputId="moveFiles"
         [disabled]="isAttaching">
       </p-checkbox>
-      <label for="deleteSourceBooks" class="delete-label">
-        {{ isBulkMode ? t('deleteSourceBulk') : t('deleteSource') }}
+      <label for="moveFiles" class="delete-label">
+        {{ t('moveFilesLabel') }}
       </label>
     </div>
 
@@ -87,12 +87,12 @@
     <div class="warning-message">
       <i class="pi pi-info-circle"></i>
       <div class="warning-text">
-        <p>{{ isBulkMode ? t('warningMoveBulk') : t('warningMove') }}</p>
-        @if (deleteSourceBooks) {
-          <p>{{ isBulkMode ? t('warningDeleteBulk') : t('warningDelete') }}</p>
+        @if (moveFiles) {
+          <p>{{ isBulkMode ? t('warningMoveBulk') : t('warningMove') }}</p>
         } @else {
-          <p>{{ isBulkMode ? t('warningKeepBulk') : t('warningKeep') }}</p>
+          <p>{{ isBulkMode ? t('warningNoMoveBulk') : t('warningNoMove') }}</p>
         }
+        <p>{{ isBulkMode ? t('warningDeleteBulk') : t('warningDelete') }}</p>
       </div>
     </div>
 

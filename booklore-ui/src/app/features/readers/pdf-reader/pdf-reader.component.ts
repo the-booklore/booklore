@@ -45,6 +45,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
   bookData!: string;
   bookId!: number;
   bookFileId?: number;
+  private altBookType?: string;
   private appSettingsSubscription!: Subscription;
   private annotationSaveSubject = new Subject<void>();
   private annotationSaveSubscription!: Subscription;
@@ -70,10 +71,16 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe((params) => {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
+      this.altBookType = this.route.snapshot.queryParamMap.get('bookType') ?? undefined;
 
       this.bookService.getBookByIdFromAPI(this.bookId, false).pipe(
         switchMap((book) => {
-          this.bookFileId = book.primaryFile?.id;
+          if (this.altBookType) {
+            const altFile = book.alternativeFormats?.find(f => f.bookType === this.altBookType);
+            this.bookFileId = altFile?.id;
+          } else {
+            this.bookFileId = book.primaryFile?.id;
+          }
 
           return forkJoin([
             this.bookService.getBookSetting(this.bookId, this.bookFileId!),
@@ -97,7 +104,9 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
           }
           this.canPrint = myself.permissions.canDownload || myself.permissions.admin;
           this.page = pdfMeta.pdfProgress?.page || 1;
-          this.bookData = `${API_CONFIG.BASE_URL}/api/v1/books/${this.bookId}/content`;
+          this.bookData = this.altBookType
+            ? `${API_CONFIG.BASE_URL}/api/v1/books/${this.bookId}/content?bookType=${this.altBookType}`
+            : `${API_CONFIG.BASE_URL}/api/v1/books/${this.bookId}/content`;
           const token = this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
           this.authorization = token ? `Bearer ${token}` : '';
           this.isLoading = false;

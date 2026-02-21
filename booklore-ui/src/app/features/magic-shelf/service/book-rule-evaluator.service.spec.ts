@@ -1449,6 +1449,28 @@ describe('BookRuleEvaluatorService', () => {
     });
   });
 
+  describe('readStatus is_empty / is_not_empty parity', () => {
+    it('should match is_empty when book has no readStatus', () => {
+      const book = createBook({readStatus: undefined});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_empty', null))).toBe(true);
+    });
+
+    it('should not match is_empty when book has a readStatus', () => {
+      const book = createBook({readStatus: ReadStatus.READING});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_empty', null))).toBe(false);
+    });
+
+    it('should not match is_not_empty when book has no readStatus', () => {
+      const book = createBook({readStatus: undefined});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_not_empty', null))).toBe(false);
+    });
+
+    it('should match is_not_empty when book has a readStatus', () => {
+      const book = createBook({readStatus: ReadStatus.READ});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_not_empty', null))).toBe(true);
+    });
+  });
+
   describe('unknown operator', () => {
     it('should return false for an unrecognized operator', () => {
       const book = createBook();

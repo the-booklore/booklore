@@ -47,6 +47,7 @@ public class KoboEntitlementService {
     private final ShelfRepository shelfRepository;
     private final MagicShelfRepository magicShelfRepository;
     private final MagicShelfBookService magicShelfBookService;
+    private final KoboSettingsService koboSettingsService;
 
     public List<NewEntitlement> generateNewEntitlements(Set<Long> bookIds, String token) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(bookIds);
@@ -178,7 +179,8 @@ public class KoboEntitlementService {
     private ChangedReadingState buildChangedReadingState(UserBookProgressEntity progress, String timestamp, OffsetDateTime now) {
         String entitlementId = String.valueOf(progress.getBook().getId());
 
-        KoboReadingState.CurrentBookmark bookmark = progress.getKoboProgressPercent() != null
+        boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
+        KoboReadingState.CurrentBookmark bookmark = (progress.getKoboProgressPercent() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                 ? readingStateBuilder.buildBookmarkFromProgress(progress, now)
                 : readingStateBuilder.buildEmptyBookmark(now);
 
@@ -214,10 +216,21 @@ public class KoboEntitlementService {
         Optional<UserBookProgressEntity> userProgress = progressRepository
                 .findByUserIdAndBookId(authenticationService.getAuthenticatedUser().getId(), book.getId());
 
-        KoboReadingState.CurrentBookmark bookmark = existingState != null && existingState.getCurrentBookmark() != null
+        boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
+
+        KoboReadingState.CurrentBookmark webReaderBookmark = twoWaySync
+                ? userProgress
+                    .filter(progress -> progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null)
+                    .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
+                    .orElse(null)
+                : null;
+
+        KoboReadingState.CurrentBookmark bookmark = webReaderBookmark != null
+                ? webReaderBookmark
+                : existingState != null && existingState.getCurrentBookmark() != null
                 ? existingState.getCurrentBookmark()
                 : userProgress
-                .filter(progress -> progress.getKoboProgressPercent() != null)
+                .filter(progress -> progress.getKoboProgressPercent() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                 .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
                 .orElseGet(() -> readingStateBuilder.buildEmptyBookmark(now));
 

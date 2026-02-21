@@ -61,7 +61,6 @@ public class BookMetadata {
     private Instant coverUpdatedOn;
     private Instant audiobookCoverUpdatedOn;
     private Set<String> authors;
-    @Singular
     private Set<String> categories;
     private Set<String> moods;
     private Set<String> tags;

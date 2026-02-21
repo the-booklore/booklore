@@ -49,16 +49,18 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">{{ t('kobo.autoAddLabel') }}</label>
+                  <label class="setting-label">{{ t('kobo.twoWaySyncLabel') }}</label>
                   <p-toggle-switch
-                    id="autoAddToShelf"
-                    name="autoAddToShelf"
-                    [(ngModel)]="koboSyncSettings.autoAddToShelf"
-                    (ngModelChange)="onAutoAddToggle()">
+                    id="twoWayProgressSync"
+                    name="twoWayProgressSync"
+                    [(ngModel)]="koboSyncSettings.twoWayProgressSync"
+                    (ngModelChange)="onTwoWaySyncToggle()">
                   </p-toggle-switch>
                 </div>
                 <p class="setting-description">
-                  {{ t('kobo.autoAddDesc') }}
+                  {{ t('kobo.twoWaySyncDesc') }}
+                  <br>
+                  <strong>{{ t('kobo.twoWaySyncNote') }}</strong>
                 </p>
               </div>
             </div>
@@ -95,30 +97,18 @@
                       (onClick)="toggleShowToken()"
                       [disabled]="!koboSyncSettings.token">
                     </p-button>
+                    <p-button
+                      icon="pi pi-refresh"
+                      outlined="true"
+                      severity="warn"
+                      size="small"
+                      (onClick)="confirmRegenerateToken()"
+                      [disabled]="!credentialsSaved">
+                    </p-button>
                   </div>
                 </div>
                 <p class="setting-description">
                   {{ t('kobo.tokenDesc') }}
-                </p>
-              </div>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="setting-label-row">
-                  <label class="setting-label">{{ t('kobo.tokenManagement') }}</label>
-                  <p-button
-                    icon="pi pi-refresh"
-                    outlined="true"
-                    severity="warn"
-                    size="small"
-                    [label]="t('kobo.regenerateToken')"
-                    (onClick)="confirmRegenerateToken()"
-                    [disabled]="!credentialsSaved">
-                  </p-button>
-                </div>
-                <p class="setting-description">
-                  {{ t('kobo.tokenManagementDesc') }}
                 </p>
               </div>
             </div>
@@ -167,6 +157,23 @@
                   {{ t('kobo.markAsFinishedDesc') }}
                   <br>
                   <strong>{{ t('kobo.recommended') }}</strong> {{ t('kobo.markAsFinishedRec') }}
+                </p>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">{{ t('kobo.autoAddLabel') }}</label>
+                  <p-toggle-switch
+                    id="autoAddToShelf"
+                    name="autoAddToShelf"
+                    [(ngModel)]="koboSyncSettings.autoAddToShelf"
+                    (ngModelChange)="onAutoAddToggle()">
+                  </p-toggle-switch>
+                </div>
+                <p class="setting-description">
+                  {{ t('kobo.autoAddDesc') }}
                 </p>
               </div>
             </div>
