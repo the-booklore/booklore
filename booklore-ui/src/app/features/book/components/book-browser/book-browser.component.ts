@@ -915,11 +915,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   attachFilesToBook(): void {
-    // Get selected books that are single-file books (no alternative formats)
     const currentState = this.bookService.getCurrentBookState();
     const selectedBookIds = Array.from(this.selectedBooks);
     const sourceBooks = (currentState.books || []).filter(book =>
-      selectedBookIds.includes(book.id) && !book.alternativeFormats?.length
+      selectedBookIds.includes(book.id)
     );
 
     if (sourceBooks.length === 0) {
@@ -957,14 +956,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const currentState = this.bookService.getCurrentBookState();
     const selectedBookIds = Array.from(this.selectedBooks);
-    const eligibleBooks = (currentState.books || []).filter(book =>
-      selectedBookIds.includes(book.id) && !book.alternativeFormats?.length
+    const selectedBooks = (currentState.books || []).filter(book =>
+      selectedBookIds.includes(book.id)
     );
 
-    if (eligibleBooks.length === 0) return false;
+    if (selectedBooks.length === 0) return false;
 
-    // Check if all eligible books are from the same library
-    const libraryIds = new Set(eligibleBooks.map(b => b.libraryId));
+    const libraryIds = new Set(selectedBooks.map(b => b.libraryId));
     return libraryIds.size === 1;
   }
 
