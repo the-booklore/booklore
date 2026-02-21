@@ -21,9 +21,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -310,6 +314,446 @@ class BookRuleEvaluatorFieldCoverageTest {
                     List.of(String.valueOf(shelf1.getId()))));
             assertThat(ids).contains(onOther.getId());
             assertThat(ids).doesNotContain(onExcluded.getId());
+        }
+    }
+
+    @Nested
+    class MultiShelfFilterTests {
+
+        private Rule shelfRule(RuleOperator operator, Object value) {
+            Rule rule = new Rule();
+            rule.setField(RuleField.SHELF);
+            rule.setOperator(operator);
+            rule.setValue(value);
+            return rule;
+        }
+
+        private List<Long> findMatchingIdsPaged(GroupRule group, int pageSize) {
+            Specification<BookEntity> spec = evaluator.toSpecification(group, user.getId());
+            Page<BookEntity> page = bookRepository.findAll(spec, PageRequest.of(0, pageSize));
+            return page.getContent().stream().map(BookEntity::getId).toList();
+        }
+
+        @Test
+        void orGroup_multipleShelfEquals_noDuplicateRows() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Shelf A").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Shelf B").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+
+            BookEntity bookOnBoth = createBook("On Both Shelves");
+            bookOnBoth.setShelves(new HashSet<>(Set.of(shelf1, shelf2)));
+            em.merge(bookOnBoth);
+
+            BookEntity bookOnShelf1 = createBook("On Shelf A Only");
+            bookOnShelf1.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(bookOnShelf1);
+
+            BookEntity bookOnShelf2 = createBook("On Shelf B Only");
+            bookOnShelf2.setShelves(new HashSet<>(Set.of(shelf2)));
+            em.merge(bookOnShelf2);
+
+            BookEntity bookOnNeither = createBook("On No Shelf");
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.OR);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelf1.getId()))),
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelf2.getId())))
+            ));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).containsExactlyInAnyOrder(bookOnBoth.getId(), bookOnShelf1.getId(), bookOnShelf2.getId());
+            assertThat(ids).doesNotContain(bookOnNeither.getId());
+        }
+
+        @Test
+        void orGroup_multipleShelfEquals_paginationNotTruncated() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Page Shelf A").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Page Shelf B").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+
+            List<BookEntity> books = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                BookEntity book = createBook("Multi-shelf Book " + i);
+                book.setShelves(new HashSet<>(Set.of(shelf1, shelf2)));
+                em.merge(book);
+                books.add(book);
+            }
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.OR);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelf1.getId()))),
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelf2.getId())))
+            ));
+
+            List<Long> ids = findMatchingIdsPaged(group, 10);
+            assertThat(ids).hasSize(10);
+        }
+
+        @Test
+        void andGroup_inclusionAndExclusion_excludesCorrectly() {
+            ShelfEntity includeShelf = ShelfEntity.builder().user(user).name("Include Me").build();
+            ShelfEntity excludeShelf = ShelfEntity.builder().user(user).name("Exclude Me").build();
+            em.persist(includeShelf);
+            em.persist(excludeShelf);
+
+            BookEntity onIncludeOnly = createBook("Include Only");
+            onIncludeOnly.setShelves(new HashSet<>(Set.of(includeShelf)));
+            em.merge(onIncludeOnly);
+
+            BookEntity onBoth = createBook("On Both");
+            onBoth.setShelves(new HashSet<>(Set.of(includeShelf, excludeShelf)));
+            em.merge(onBoth);
+
+            BookEntity onExcludeOnly = createBook("Exclude Only");
+            onExcludeOnly.setShelves(new HashSet<>(Set.of(excludeShelf)));
+            em.merge(onExcludeOnly);
+
+            BookEntity onNeither = createBook("On Neither");
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.AND);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(includeShelf.getId()))),
+                    shelfRule(RuleOperator.EXCLUDES_ALL, List.of(String.valueOf(excludeShelf.getId())))
+            ));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).containsExactly(onIncludeOnly.getId());
+            assertThat(ids).doesNotContain(onBoth.getId(), onExcludeOnly.getId(), onNeither.getId());
+        }
+
+        @Test
+        void includesAll_multipleShelvesRequired() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Required A").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Required B").build();
+            ShelfEntity shelf3 = ShelfEntity.builder().user(user).name("Extra C").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+            em.persist(shelf3);
+
+            BookEntity onAll = createBook("On All Three");
+            onAll.setShelves(new HashSet<>(Set.of(shelf1, shelf2, shelf3)));
+            em.merge(onAll);
+
+            BookEntity onFirstTwo = createBook("On First Two");
+            onFirstTwo.setShelves(new HashSet<>(Set.of(shelf1, shelf2)));
+            em.merge(onFirstTwo);
+
+            BookEntity onFirstOnly = createBook("On First Only");
+            onFirstOnly.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(onFirstOnly);
+
+            BookEntity onNone = createBook("On None");
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.SHELF, RuleOperator.INCLUDES_ALL,
+                    List.of(String.valueOf(shelf1.getId()), String.valueOf(shelf2.getId()))));
+            assertThat(ids).containsExactlyInAnyOrder(onAll.getId(), onFirstTwo.getId());
+            assertThat(ids).doesNotContain(onFirstOnly.getId(), onNone.getId());
+        }
+
+        @Test
+        void includesAny_multipleShelvesMatch() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Any A").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Any B").build();
+            ShelfEntity shelf3 = ShelfEntity.builder().user(user).name("Any C").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+            em.persist(shelf3);
+
+            BookEntity onFirst = createBook("On First");
+            onFirst.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(onFirst);
+
+            BookEntity onSecond = createBook("On Second");
+            onSecond.setShelves(new HashSet<>(Set.of(shelf2)));
+            em.merge(onSecond);
+
+            BookEntity onThird = createBook("On Third Only");
+            onThird.setShelves(new HashSet<>(Set.of(shelf3)));
+            em.merge(onThird);
+
+            BookEntity onNone = createBook("On None");
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.SHELF, RuleOperator.INCLUDES_ANY,
+                    List.of(String.valueOf(shelf1.getId()), String.valueOf(shelf2.getId()))));
+            assertThat(ids).containsExactlyInAnyOrder(onFirst.getId(), onSecond.getId());
+            assertThat(ids).doesNotContain(onThird.getId(), onNone.getId());
+        }
+
+        @Test
+        void excludesAll_multipleShelvesExcluded() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Excl A").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Excl B").build();
+            ShelfEntity shelf3 = ShelfEntity.builder().user(user).name("Keep C").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+            em.persist(shelf3);
+
+            BookEntity onExcluded1 = createBook("On Excluded 1");
+            onExcluded1.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(onExcluded1);
+
+            BookEntity onExcluded2 = createBook("On Excluded 2");
+            onExcluded2.setShelves(new HashSet<>(Set.of(shelf2)));
+            em.merge(onExcluded2);
+
+            BookEntity onBothExcluded = createBook("On Both Excluded");
+            onBothExcluded.setShelves(new HashSet<>(Set.of(shelf1, shelf2)));
+            em.merge(onBothExcluded);
+
+            BookEntity onKeep = createBook("On Keep Shelf");
+            onKeep.setShelves(new HashSet<>(Set.of(shelf3)));
+            em.merge(onKeep);
+
+            BookEntity onNone = createBook("On No Shelf");
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.SHELF, RuleOperator.EXCLUDES_ALL,
+                    List.of(String.valueOf(shelf1.getId()), String.valueOf(shelf2.getId()))));
+            assertThat(ids).contains(onKeep.getId(), onNone.getId());
+            assertThat(ids).doesNotContain(onExcluded1.getId(), onExcluded2.getId(), onBothExcluded.getId());
+        }
+
+        @Test
+        void nestedGroups_shelfAndTitleCombined() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Nested Shelf").build();
+            em.persist(shelf1);
+
+            BookEntity matchesBoth = createBook("Magic Book");
+            matchesBoth.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(matchesBoth);
+
+            BookEntity matchesShelfOnly = createBook("Normal Book");
+            matchesShelfOnly.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(matchesShelfOnly);
+
+            BookEntity matchesTitleOnly = createBook("Magic Elsewhere");
+            em.flush();
+            em.clear();
+
+            Rule shelfEq = shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelf1.getId())));
+
+            Rule titleContains = new Rule();
+            titleContains.setField(RuleField.TITLE);
+            titleContains.setOperator(RuleOperator.CONTAINS);
+            titleContains.setValue("Magic");
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.AND);
+            group.setRules(List.of(shelfEq, titleContains));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).containsExactly(matchesBoth.getId());
+            assertThat(ids).doesNotContain(matchesShelfOnly.getId(), matchesTitleOnly.getId());
+        }
+
+        @Test
+        void bookOnManyShelves_paginationReturnsCorrectCount() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Many A").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Many B").build();
+            ShelfEntity shelf3 = ShelfEntity.builder().user(user).name("Many C").build();
+            ShelfEntity shelf4 = ShelfEntity.builder().user(user).name("Many D").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+            em.persist(shelf3);
+            em.persist(shelf4);
+
+            List<BookEntity> books = new ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                BookEntity book = createBook("Many Shelf Book " + i);
+                book.setShelves(new HashSet<>(Set.of(shelf1, shelf2, shelf3, shelf4)));
+                em.merge(book);
+                books.add(book);
+            }
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIdsPaged(
+                    singleRule(RuleField.SHELF, RuleOperator.EQUALS, List.of(String.valueOf(shelf1.getId()))),
+                    5);
+            assertThat(ids).hasSize(5);
+        }
+
+        @Test
+        void orGroup_includesAnyAndExcludesAll() {
+            ShelfEntity shelf1 = ShelfEntity.builder().user(user).name("Or Inc").build();
+            ShelfEntity shelf2 = ShelfEntity.builder().user(user).name("Or Exc").build();
+            em.persist(shelf1);
+            em.persist(shelf2);
+
+            BookEntity onShelf1 = createBook("On Shelf1");
+            onShelf1.setShelves(new HashSet<>(Set.of(shelf1)));
+            em.merge(onShelf1);
+
+            BookEntity onShelf2 = createBook("On Shelf2");
+            onShelf2.setShelves(new HashSet<>(Set.of(shelf2)));
+            em.merge(onShelf2);
+
+            BookEntity onBoth = createBook("On Both");
+            onBoth.setShelves(new HashSet<>(Set.of(shelf1, shelf2)));
+            em.merge(onBoth);
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.AND);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.INCLUDES_ANY, List.of(String.valueOf(shelf1.getId()), String.valueOf(shelf2.getId()))),
+                    shelfRule(RuleOperator.EXCLUDES_ALL, List.of(String.valueOf(shelf2.getId())))
+            ));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).containsExactly(onShelf1.getId());
+            assertThat(ids).doesNotContain(onShelf2.getId(), onBoth.getId());
+        }
+
+        @Test
+        void bugReport2822_orShelfFilter_paginationTruncation() {
+            ShelfEntity shelfA = ShelfEntity.builder().user(user).name("Bug Shelf A").build();
+            ShelfEntity shelfB = ShelfEntity.builder().user(user).name("Bug Shelf B").build();
+            em.persist(shelfA);
+            em.persist(shelfB);
+
+            List<Long> expectedIds = new ArrayList<>();
+            for (int i = 0; i < 20; i++) {
+                BookEntity book = createBook("Bug2822 Book " + i);
+                if (i < 10) {
+                    book.setShelves(new HashSet<>(Set.of(shelfA, shelfB)));
+                } else if (i < 15) {
+                    book.setShelves(new HashSet<>(Set.of(shelfA)));
+                } else {
+                    book.setShelves(new HashSet<>(Set.of(shelfB)));
+                }
+                em.merge(book);
+                expectedIds.add(book.getId());
+            }
+
+            BookEntity unrelated = createBook("Bug2822 Unrelated");
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.OR);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelfA.getId()))),
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(shelfB.getId())))
+            ));
+
+            List<Long> pagedIds = findMatchingIdsPaged(group, 20);
+            assertThat(pagedIds).hasSize(20);
+            assertThat(pagedIds).containsExactlyInAnyOrderElementsOf(expectedIds);
+            assertThat(pagedIds).doesNotContain(unrelated.getId());
+
+            List<Long> allIds = findMatchingIds(group);
+            assertThat(allIds).hasSize(20);
+        }
+
+        @Test
+        void bugReport2822_inclusionExclusion_exclusionActuallyWorks() {
+            ShelfEntity includeShelf = ShelfEntity.builder().user(user).name("Bug Include").build();
+            ShelfEntity excludeShelf = ShelfEntity.builder().user(user).name("Bug Exclude").build();
+            ShelfEntity extraShelf = ShelfEntity.builder().user(user).name("Bug Extra").build();
+            em.persist(includeShelf);
+            em.persist(excludeShelf);
+            em.persist(extraShelf);
+
+            BookEntity shouldAppear = createBook("Bug2822 Include Only");
+            shouldAppear.setShelves(new HashSet<>(Set.of(includeShelf)));
+            em.merge(shouldAppear);
+
+            BookEntity shouldAppear2 = createBook("Bug2822 Include + Extra");
+            shouldAppear2.setShelves(new HashSet<>(Set.of(includeShelf, extraShelf)));
+            em.merge(shouldAppear2);
+
+            BookEntity shouldNotAppear = createBook("Bug2822 Include + Exclude");
+            shouldNotAppear.setShelves(new HashSet<>(Set.of(includeShelf, excludeShelf)));
+            em.merge(shouldNotAppear);
+
+            BookEntity excludeOnly = createBook("Bug2822 Exclude Only");
+            excludeOnly.setShelves(new HashSet<>(Set.of(excludeShelf)));
+            em.merge(excludeOnly);
+
+            BookEntity excludeAndExtra = createBook("Bug2822 Exclude + Extra");
+            excludeAndExtra.setShelves(new HashSet<>(Set.of(excludeShelf, extraShelf)));
+            em.merge(excludeAndExtra);
+
+            BookEntity noShelf = createBook("Bug2822 No Shelf");
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.AND);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(includeShelf.getId()))),
+                    shelfRule(RuleOperator.EXCLUDES_ALL, List.of(String.valueOf(excludeShelf.getId())))
+            ));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).containsExactlyInAnyOrder(shouldAppear.getId(), shouldAppear2.getId());
+            assertThat(ids).doesNotContain(
+                    shouldNotAppear.getId(),
+                    excludeOnly.getId(),
+                    excludeAndExtra.getId(),
+                    noShelf.getId()
+            );
+
+            List<Long> pagedIds = findMatchingIdsPaged(group, 50);
+            assertThat(pagedIds).hasSize(2);
+            assertThat(pagedIds).containsExactlyInAnyOrder(shouldAppear.getId(), shouldAppear2.getId());
+        }
+
+        @Test
+        void stressTest_manyBooksManyShelves_correctCountWithPagination() {
+            ShelfEntity s1 = ShelfEntity.builder().user(user).name("Stress 1").build();
+            ShelfEntity s2 = ShelfEntity.builder().user(user).name("Stress 2").build();
+            ShelfEntity s3 = ShelfEntity.builder().user(user).name("Stress 3").build();
+            ShelfEntity s4 = ShelfEntity.builder().user(user).name("Stress 4").build();
+            ShelfEntity s5 = ShelfEntity.builder().user(user).name("Stress 5").build();
+            em.persist(s1);
+            em.persist(s2);
+            em.persist(s3);
+            em.persist(s4);
+            em.persist(s5);
+
+            for (int i = 0; i < 50; i++) {
+                BookEntity book = createBook("Stress Book " + i);
+                book.setShelves(new HashSet<>(Set.of(s1, s2, s3, s4, s5)));
+                em.merge(book);
+            }
+
+            BookEntity outsideBook = createBook("Stress Outside");
+            em.flush();
+            em.clear();
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.OR);
+            group.setRules(List.of(
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(s1.getId()))),
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(s2.getId()))),
+                    shelfRule(RuleOperator.EQUALS, List.of(String.valueOf(s3.getId())))
+            ));
+
+            List<Long> pagedIds = findMatchingIdsPaged(group, 50);
+            assertThat(pagedIds).hasSize(50);
+
+            List<Long> allIds = findMatchingIds(group);
+            assertThat(allIds).hasSize(50);
+            assertThat(allIds).doesNotContain(outsideBook.getId());
         }
     }
 

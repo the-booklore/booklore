@@ -98,18 +98,18 @@ public class BookRuleEvaluatorService {
         }
 
         return switch (rule.getOperator()) {
-            case EQUALS -> buildEquals(rule, cb, root, progressJoin);
-            case NOT_EQUALS -> buildNotEquals(rule, cb, root, progressJoin);
-            case CONTAINS -> buildContains(rule, cb, root, progressJoin);
+            case EQUALS -> buildEquals(rule, query, cb, root, progressJoin);
+            case NOT_EQUALS -> buildNotEquals(rule, query, cb, root, progressJoin);
+            case CONTAINS -> buildContains(rule, query, cb, root, progressJoin);
             case DOES_NOT_CONTAIN -> {
-                Predicate notContains = cb.not(buildContains(rule, cb, root, progressJoin));
+                Predicate notContains = cb.not(buildContains(rule, query, cb, root, progressJoin));
                 if (rule.getField() == RuleField.READ_STATUS) {
                     yield cb.or(cb.isNull(progressJoin.get("readStatus")), notContains);
                 }
                 yield notContains;
             }
-            case STARTS_WITH -> buildStartsWith(rule, cb, root, progressJoin);
-            case ENDS_WITH -> buildEndsWith(rule, cb, root, progressJoin);
+            case STARTS_WITH -> buildStartsWith(rule, query, cb, root, progressJoin);
+            case ENDS_WITH -> buildEndsWith(rule, query, cb, root, progressJoin);
             case GREATER_THAN -> buildGreaterThan(rule, cb, root, progressJoin);
             case GREATER_THAN_EQUAL_TO -> buildGreaterThanEqual(rule, cb, root, progressJoin);
             case LESS_THAN -> buildLessThan(rule, cb, root, progressJoin);
@@ -117,9 +117,9 @@ public class BookRuleEvaluatorService {
             case IN_BETWEEN -> buildInBetween(rule, cb, root, progressJoin);
             case IS_EMPTY -> buildIsEmpty(rule, query, cb, root, progressJoin);
             case IS_NOT_EMPTY -> cb.not(buildIsEmpty(rule, query, cb, root, progressJoin));
-            case INCLUDES_ANY -> buildIncludesAny(rule, cb, root, progressJoin);
-            case EXCLUDES_ALL -> buildExcludesAll(rule, cb, root, progressJoin);
-            case INCLUDES_ALL -> buildIncludesAll(rule, cb, root, progressJoin);
+            case INCLUDES_ANY -> buildIncludesAny(rule, query, cb, root, progressJoin);
+            case EXCLUDES_ALL -> buildExcludesAll(rule, query, cb, root, progressJoin);
+            case INCLUDES_ALL -> buildIncludesAll(rule, query, cb, root, progressJoin);
             case WITHIN_LAST -> buildWithinLast(rule, cb, root, progressJoin);
             case OLDER_THAN -> buildOlderThan(rule, cb, root, progressJoin);
             case THIS_PERIOD -> buildThisPeriod(rule, cb, root, progressJoin);
@@ -510,11 +510,11 @@ public class BookRuleEvaluatorService {
         return cb.and(notRead, noLowerUnread, hasPriorRead);
     }
 
-    private Predicate buildEquals(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildEquals(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
 
         if (isArrayField(rule.getField())) {
-            return buildArrayFieldPredicate(rule.getField(), ruleList, cb, root, false);
+            return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false);
         }
 
         Expression<?> field = getFieldExpression(rule.getField(), cb, root, progressJoin);
@@ -537,40 +537,46 @@ public class BookRuleEvaluatorService {
         return cb.equal(cb.lower(field.as(String.class)), value.toString().toLowerCase());
     }
 
-    private Predicate buildNotEquals(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
-        Predicate negated = cb.not(buildEquals(rule, cb, root, progressJoin));
+    private Predicate buildNotEquals(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+        Predicate negated = cb.not(buildEquals(rule, query, cb, root, progressJoin));
         if (rule.getField() == RuleField.READ_STATUS && !"UNSET".equals(String.valueOf(rule.getValue()))) {
             return cb.or(cb.isNull(progressJoin.get("readStatus")), negated);
         }
         return negated;
     }
 
-    private Predicate buildContains(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildContains(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         String ruleVal = rule.getValue().toString().toLowerCase();
-        return buildStringPredicate(rule.getField(), root, progressJoin, cb,
+        return buildStringPredicate(rule.getField(), query, root, progressJoin, cb,
                 nameField -> cb.like(cb.lower(nameField), "%" + escapeLike(ruleVal) + "%"));
     }
 
-    private Predicate buildStartsWith(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildStartsWith(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         String ruleVal = rule.getValue().toString().toLowerCase();
-        return buildStringPredicate(rule.getField(), root, progressJoin, cb,
+        return buildStringPredicate(rule.getField(), query, root, progressJoin, cb,
                 nameField -> cb.like(cb.lower(nameField), escapeLike(ruleVal) + "%"));
     }
 
-    private Predicate buildEndsWith(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildEndsWith(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         String ruleVal = rule.getValue().toString().toLowerCase();
-        return buildStringPredicate(rule.getField(), root, progressJoin, cb,
+        return buildStringPredicate(rule.getField(), query, root, progressJoin, cb,
                 nameField -> cb.like(cb.lower(nameField), "%" + escapeLike(ruleVal)));
     }
 
-    private Predicate buildStringPredicate(RuleField field, Root<BookEntity> root,
+    private Predicate buildStringPredicate(RuleField field, CriteriaQuery<?> query, Root<BookEntity> root,
                                            Join<BookEntity, UserBookProgressEntity> progressJoin,
                                            CriteriaBuilder cb,
                                            java.util.function.Function<Expression<String>, Predicate> predicateBuilder) {
         if (isArrayField(field)) {
-            Join<?, ?> arrayJoin = createArrayFieldJoin(field, root);
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<BookEntity> subRoot = subquery.from(BookEntity.class);
+            Join<?, ?> arrayJoin = createArrayFieldJoin(field, subRoot);
             Expression<String> nameField = getArrayFieldNameExpression(field, arrayJoin);
-            return predicateBuilder.apply(nameField);
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(subRoot.get("id"), root.get("id")),
+                    predicateBuilder.apply(nameField)
+            );
+            return cb.exists(subquery);
         }
 
         Expression<?> fieldExpr = getFieldExpression(field, cb, root, progressJoin);
@@ -664,21 +670,21 @@ public class BookRuleEvaluatorService {
         return cb.or(cb.isNull(field), cb.equal(cb.trim(field.as(String.class)), ""));
     }
 
-    private Predicate buildIncludesAny(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildIncludesAny(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
 
         if (isArrayField(rule.getField())) {
-            return buildArrayFieldPredicate(rule.getField(), ruleList, cb, root, false);
+            return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false);
         }
 
         return buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin);
     }
 
-    private Predicate buildExcludesAll(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildExcludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
 
         if (isArrayField(rule.getField())) {
-            return cb.not(buildArrayFieldPredicate(rule.getField(), ruleList, cb, root, false));
+            return cb.not(buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false));
         }
 
         Predicate negated = cb.not(buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin));
@@ -688,11 +694,11 @@ public class BookRuleEvaluatorService {
         return negated;
     }
 
-    private Predicate buildIncludesAll(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
+    private Predicate buildIncludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         List<String> ruleList = toStringList(rule.getValue());
 
         if (isArrayField(rule.getField())) {
-            return buildArrayFieldPredicate(rule.getField(), ruleList, cb, root, true);
+            return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, true);
         }
 
         return buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin);
@@ -813,29 +819,41 @@ public class BookRuleEvaluatorService {
         };
     }
 
-    private Predicate buildArrayFieldPredicate(RuleField field, List<String> values, CriteriaBuilder cb, Root<BookEntity> root, boolean includesAll) {
+    private Predicate buildArrayFieldPredicate(RuleField field, List<String> values, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, boolean includesAll) {
         if (values.isEmpty()) {
             return cb.conjunction();
         }
         if (includesAll) {
             List<Predicate> predicates = values.stream()
                     .map(value -> {
-                        Join<?, ?> arrayJoin = createArrayFieldJoin(field, root);
+                        Subquery<Long> subquery = query.subquery(Long.class);
+                        Root<BookEntity> subRoot = subquery.from(BookEntity.class);
+                        Join<?, ?> arrayJoin = createArrayFieldJoin(field, subRoot);
                         Expression<String> nameField = getArrayFieldNameExpression(field, arrayJoin);
-                        return cb.equal(cb.lower(nameField), value.toLowerCase());
+                        subquery.select(cb.literal(1L)).where(
+                                cb.equal(subRoot.get("id"), root.get("id")),
+                                cb.equal(cb.lower(nameField), value.toLowerCase())
+                        );
+                        return cb.exists(subquery);
                     })
                     .toList();
 
             return cb.and(predicates.toArray(new Predicate[0]));
         } else {
-            Join<?, ?> arrayJoin = createArrayFieldJoin(field, root);
+            Subquery<Long> subquery = query.subquery(Long.class);
+            Root<BookEntity> subRoot = subquery.from(BookEntity.class);
+            Join<?, ?> arrayJoin = createArrayFieldJoin(field, subRoot);
             Expression<String> nameField = getArrayFieldNameExpression(field, arrayJoin);
 
             List<String> lowerValues = values.stream()
                     .map(String::toLowerCase)
                     .collect(Collectors.toList());
 
-            return cb.lower(nameField).in(lowerValues);
+            subquery.select(cb.literal(1L)).where(
+                    cb.equal(subRoot.get("id"), root.get("id")),
+                    cb.lower(nameField).in(lowerValues)
+            );
+            return cb.exists(subquery);
         }
     }
 
