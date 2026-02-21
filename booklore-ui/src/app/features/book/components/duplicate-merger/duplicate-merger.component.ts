@@ -8,18 +8,21 @@ import {SelectButton} from 'primeng/selectbutton';
 import {ProgressBar} from 'primeng/progressbar';
 import {Tag} from 'primeng/tag';
 import {Paginator} from 'primeng/paginator';
-import {Subject, takeUntil} from 'rxjs';
+import {filter, Subject, take, takeUntil} from 'rxjs';
 import {BookFileService} from '../../service/book-file.service';
+import {BookService} from '../../service/book.service';
 import {Book, DuplicateDetectionRequest, DuplicateGroup} from '../../model/book.model';
-import {MessageService} from 'primeng/api';
+import {ConfirmationService, MessageService} from 'primeng/api';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
+import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 
 type PresetMode = 'strict' | 'balanced' | 'aggressive' | 'custom';
 
 interface DisplayGroup extends DuplicateGroup {
   selectedTargetBookId: number;
   dismissed: boolean;
+  selectedForDeletion: Set<number>;
 }
 
 @Component({
@@ -54,7 +57,7 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
   isScanning = false;
   isMerging = false;
   hasScanned = false;
-  deleteSourceBooks = true;
+  moveFiles = false;
   mergeProgress = 0;
   mergeTotal = 0;
 
@@ -66,14 +69,26 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private readonly bookFileService = inject(BookFileService);
+  private readonly bookService = inject(BookService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly dialogRef = inject(DynamicDialogRef);
   private readonly config = inject(DynamicDialogConfig);
   private readonly t = inject(TranslocoService);
   readonly urlHelper = inject(UrlHelperService);
+  private readonly appSettingsService = inject(AppSettingsService);
 
   ngOnInit(): void {
     this.libraryId = this.config.data.libraryId;
+
+    this.appSettingsService.appSettings$.pipe(
+      filter(settings => !!settings),
+      take(1),
+      takeUntil(this.destroy$)
+    ).subscribe(settings => {
+      this.moveFiles = settings!.metadataPersistenceSettings?.moveFilesToLibraryPattern ?? false;
+    });
+
     this.presetOptions = [
       {label: this.t.translate('book.duplicateMerger.presetStrict'), value: 'strict'},
       {label: this.t.translate('book.duplicateMerger.presetBalanced'), value: 'balanced'},
@@ -147,6 +162,7 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
           ...g,
           selectedTargetBookId: g.suggestedTargetBookId,
           dismissed: false,
+          selectedForDeletion: new Set<number>(),
         }));
         this.isScanning = false;
         this.hasScanned = true;
@@ -207,6 +223,32 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
     return this.t.translate(`book.duplicateMerger.reason.${reason}`);
   }
 
+  hasSameFormatConflict(group: DisplayGroup): boolean {
+    const formats = new Set<string>();
+    for (const book of group.books) {
+      if (book.primaryFile?.bookType) {
+        if (formats.has(book.primaryFile.bookType)) return true;
+        formats.add(book.primaryFile.bookType);
+      }
+    }
+    return false;
+  }
+
+  getBookFilePath(book: Book): string {
+    const subPath = book.primaryFile?.fileSubPath;
+    const fileName = book.primaryFile?.fileName || '';
+    if (subPath) return `${subPath}/${fileName}`;
+    return fileName;
+  }
+
+  formatFileSize(sizeKb?: number): string {
+    if (!sizeKb) return '';
+    if (sizeKb < 1024) return `${sizeKb} KB`;
+    const sizeMb = sizeKb / 1024;
+    if (sizeMb < 1024) return `${sizeMb.toFixed(1)} MB`;
+    return `${(sizeMb / 1024).toFixed(2)} GB`;
+  }
+
   getMatchReasonSeverity(reason: string): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
     switch (reason) {
       case 'ISBN':
@@ -221,6 +263,22 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
       default:
         return 'info';
     }
+  }
+
+  onTargetChange(group: DisplayGroup): void {
+    group.selectedForDeletion.delete(group.selectedTargetBookId);
+  }
+
+  toggleDeleteSelection(group: DisplayGroup, bookId: number): void {
+    if (group.selectedForDeletion.has(bookId)) {
+      group.selectedForDeletion.delete(bookId);
+    } else {
+      group.selectedForDeletion.add(bookId);
+    }
+  }
+
+  getDeleteSelectedCount(group: DisplayGroup): number {
+    return group.selectedForDeletion.size;
   }
 
   dismissGroup(group: DisplayGroup): void {
@@ -240,7 +298,7 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
 
     group.dismissed = true;
     try {
-      await this.bookFileService.attachBookFiles(targetId, sourceIds, this.deleteSourceBooks)
+      await this.bookFileService.attachBookFiles(targetId, sourceIds, this.moveFiles)
         .pipe(takeUntil(this.destroy$))
         .toPromise();
     } catch {
@@ -277,7 +335,7 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
       }
 
       try {
-        await this.bookFileService.attachBookFiles(targetId, sourceIds, this.deleteSourceBooks)
+        await this.bookFileService.attachBookFiles(targetId, sourceIds, this.moveFiles)
           .pipe(takeUntil(this.destroy$))
           .toPromise();
         group.dismissed = true;
@@ -304,6 +362,33 @@ export class DuplicateMergerComponent implements OnInit, OnDestroy {
         detail: this.t.translate('book.duplicateMerger.toast.mergePartialDetail', {success: successCount, failed: failCount}),
       });
     }
+  }
+
+  deleteGroup(group: DisplayGroup): void {
+    const idsToDelete = Array.from(group.selectedForDeletion);
+    if (idsToDelete.length === 0) return;
+
+    this.confirmationService.confirm({
+      message: this.t.translate('book.duplicateMerger.confirm.deleteMessage', {count: idsToDelete.length}),
+      header: this.t.translate('book.duplicateMerger.confirm.deleteHeader'),
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: this.t.translate('common.yes'),
+      rejectLabel: this.t.translate('common.no'),
+      acceptButtonProps: {severity: 'danger'},
+      accept: () => {
+        this.bookService.deleteBooks(new Set(idsToDelete)).pipe(
+          takeUntil(this.destroy$)
+        ).subscribe({
+          next: () => {
+            group.books = group.books.filter(b => !group.selectedForDeletion.has(b.id));
+            group.selectedForDeletion.clear();
+            if (group.books.length <= 1) {
+              group.dismissed = true;
+            }
+          }
+        });
+      }
+    });
   }
 
   closeDialog(): void {

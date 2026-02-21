@@ -78,12 +78,12 @@
       <div class="action-bar-right">
         <div class="delete-option">
           <p-checkbox
-            [(ngModel)]="deleteSourceBooks"
+            [(ngModel)]="moveFiles"
             [binary]="true"
-            inputId="deleteSource"
+            inputId="moveFiles"
             [disabled]="isMerging">
           </p-checkbox>
-          <label for="deleteSource">{{ t('deleteSource') }}</label>
+          <label for="moveFiles">{{ 'book.fileAttacher.moveFilesLabel' | transloco }}</label>
         </div>
         @if (activeGroups.length > 0) {
           <p-button
@@ -140,6 +140,9 @@
               <div class="group-header">
                 <span class="group-label">{{ t('groupLabel', { index: pageFirst + $index + 1 }) }}</span>
                 <p-tag [value]="getMatchReasonLabel(group.matchReason)" [severity]="getMatchReasonSeverity(group.matchReason)"></p-tag>
+                @if (hasSameFormatConflict(group)) {
+                  <p-tag [value]="t('sameFormatWarning')" severity="warn" icon="pi pi-exclamation-triangle"></p-tag>
+                }
                 <div class="group-actions">
                   <p-button
                     [label]="t('merge')"
@@ -149,6 +152,17 @@
                     (click)="mergeGroup(group)"
                     [disabled]="isMerging">
                   </p-button>
+                  @if (getDeleteSelectedCount(group) > 0) {
+                    <p-button
+                      [label]="t('deleteSelected', { count: getDeleteSelectedCount(group) })"
+                      icon="pi pi-trash"
+                      size="small"
+                      severity="danger"
+                      [outlined]="true"
+                      (click)="deleteGroup(group)"
+                      [disabled]="isMerging">
+                    </p-button>
+                  }
                   <p-button
                     [label]="t('dismiss')"
                     icon="pi pi-times"
@@ -162,7 +176,16 @@
               </div>
               <div class="group-books">
                 @for (book of group.books; track book.id) {
-                  <div class="book-row" [class.selected-target]="book.id === group.selectedTargetBookId" (click)="group.selectedTargetBookId = book.id">
+                  <div class="book-row" [class.selected-target]="book.id === group.selectedTargetBookId" [class.marked-for-deletion]="group.selectedForDeletion.has(book.id)">
+                    @if (book.id !== group.selectedTargetBookId) {
+                      <p-checkbox
+                        [binary]="true"
+                        [ngModel]="group.selectedForDeletion.has(book.id)"
+                        (onChange)="toggleDeleteSelection(group, book.id)"
+                        [disabled]="isMerging"
+                        class="delete-checkbox">
+                      </p-checkbox>
+                    }
                     <img class="book-cover"
                          [src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)"
                          [alt]="book.metadata?.title || ''"
@@ -179,13 +202,23 @@
                         @if (getFileCount(book) > 1) {
                           <span class="file-count">{{ t('fileCount', { count: getFileCount(book) }) }}</span>
                         }
+                        @if (book.primaryFile?.fileSizeKb) {
+                          <span class="file-detail">{{ formatFileSize(book.primaryFile?.fileSizeKb) }}</span>
+                        }
                       </div>
+                      @if (book.primaryFile?.fileName) {
+                        <div class="book-file-path" [title]="getBookFilePath(book)">
+                          <i class="pi pi-file"></i>
+                          {{ getBookFilePath(book) }}
+                        </div>
+                      }
                     </div>
                     <div class="book-select">
                       <p-radioButton
                         [name]="'target-' + group.suggestedTargetBookId"
                         [value]="book.id"
                         [(ngModel)]="group.selectedTargetBookId"
+                        (onClick)="onTargetChange(group)"
                         [disabled]="isMerging">
                       </p-radioButton>
                       @if (book.id === group.selectedTargetBookId) {

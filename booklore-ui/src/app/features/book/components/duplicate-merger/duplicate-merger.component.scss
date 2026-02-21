@@ -190,6 +190,14 @@
     background: var(--p-highlight-background);
   }
 
+  &.marked-for-deletion {
+    background: color-mix(in srgb, var(--p-red-500) 8%, transparent);
+  }
+
+  .delete-checkbox {
+    flex-shrink: 0;
+  }
+
   .book-cover {
     width: 36px;
     height: 52px;
@@ -243,6 +251,28 @@
       .file-count {
         font-size: 0.75rem;
         color: var(--p-text-muted-color);
+      }
+
+      .file-detail {
+        font-size: 0.75rem;
+        color: var(--p-text-muted-color);
+      }
+    }
+
+    .book-file-path {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--p-text-muted-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 0.125rem;
+
+      i {
+        font-size: 0.6875rem;
+        flex-shrink: 0;
       }
     }
   }

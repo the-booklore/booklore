@@ -16,6 +16,7 @@ import org.booklore.service.file.FileMoveHelper;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.progress.ReadingProgressService;
 import org.booklore.util.PathPatternResolver;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,9 +42,10 @@ public class BookFileAttachmentService {
     private final FileMoveHelper fileMoveHelper;
     private final BookMapper bookMapper;
     private final BookService bookService;
+    private final EntityManager entityManager;
 
     @Transactional
-    public Book attachBookFiles(Long targetBookId, List<Long> sourceBookIds, boolean deleteSourceBooks) {
+    public Book attachBookFiles(Long targetBookId, List<Long> sourceBookIds, boolean moveFiles) {
         BookEntity targetBook = bookRepository.findByIdWithBookFiles(targetBookId)
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(targetBookId));
 
@@ -98,42 +100,76 @@ public class BookFileAttachmentService {
             }
         }
 
-        // === SETUP PHASE - Calculate paths and naming ===
+        if (moveFiles) {
+            attachWithFileMove(targetBook, sourceBooks, targetPrimaryFile);
+        } else {
+            attachWithoutFileMove(targetBook, sourceBooks);
+        }
 
-        // Get file naming pattern and determine if primary file is at pattern location
+        // Return updated target book
+        return getUpdatedBook(targetBookId);
+    }
+
+    private void attachWithoutFileMove(BookEntity targetBook, List<BookEntity> sourceBooks) {
+        List<Long> sourceBooksToDeleteIds = new ArrayList<>();
+
+        for (BookEntity sourceBook : sourceBooks) {
+            List<Long> bookFileIds = sourceBook.getBookFiles().stream()
+                    .filter(BookFileEntity::isBookFormat)
+                    .map(BookFileEntity::getId)
+                    .toList();
+
+            if (!bookFileIds.isEmpty()) {
+                entityManager.createQuery(
+                        "UPDATE BookFileEntity bf SET bf.book.id = :targetId WHERE bf.id IN :fileIds")
+                        .setParameter("targetId", targetBook.getId())
+                        .setParameter("fileIds", bookFileIds)
+                        .executeUpdate();
+            }
+
+            long remainingBookFiles = sourceBook.getBookFiles().size() - bookFileIds.size();
+            if (remainingBookFiles == 0) {
+                sourceBooksToDeleteIds.add(sourceBook.getId());
+            }
+        }
+
+        entityManager.flush();
+        entityManager.clear();
+
+        if (!sourceBooksToDeleteIds.isEmpty()) {
+            List<BookEntity> booksToDelete = bookRepository.findAllById(sourceBooksToDeleteIds);
+            bookRepository.deleteAll(booksToDelete);
+        }
+    }
+
+    private void attachWithFileMove(BookEntity targetBook, List<BookEntity> sourceBooks,
+                                    BookFileEntity targetPrimaryFile) {
         String fileNamingPattern = fileMoveHelper.getFileNamingPattern(targetBook.getLibrary());
         String patternResolvedPath = PathPatternResolver.resolvePattern(targetBook, targetPrimaryFile, fileNamingPattern);
         Path libraryRootPath = Paths.get(targetBook.getLibraryPath().getPath());
         Path patternFullPath = libraryRootPath.resolve(patternResolvedPath);
 
-        // Check if primary file is at the pattern location
         Path actualPrimaryFilePath = targetPrimaryFile.getFullFilePath();
         boolean primaryFileAtPatternLocation = Files.exists(patternFullPath) &&
                 patternFullPath.normalize().equals(actualPrimaryFilePath.normalize());
 
-        // Determine target directory - use pattern directory, fallback to library root if pattern has no directory
         Path targetDirectory = patternFullPath.getParent();
         if (targetDirectory == null) {
-            // Pattern resolved to just a filename with no directory structure
             targetDirectory = libraryRootPath;
         }
         String targetFileSubPath = libraryRootPath.equals(targetDirectory)
                 ? ""
                 : libraryRootPath.relativize(targetDirectory).toString();
 
-        // Use pattern-resolved filename (without extension) as base
         String patternFileName = Paths.get(patternResolvedPath).getFileName().toString();
         int lastDot = patternFileName.lastIndexOf('.');
         String baseFileName = lastDot > 0 ? patternFileName.substring(0, lastDot) : patternFileName;
 
-        // Validate target primary file exists (if not at pattern location)
         if (!primaryFileAtPatternLocation && !Files.exists(actualPrimaryFilePath)) {
             throw ApiError.GENERIC_BAD_REQUEST.createException(
                     "Target book's primary file not found at expected location: " + actualPrimaryFilePath +
                     ". Please ensure the target book's files exist before attaching files.");
         }
-
-        // === FILE OPERATION PHASE - All file operations inside try-finally for monitoring cleanup ===
 
         Long libraryId = targetBook.getLibrary().getId();
         List<BookEntity> sourceBooksToDelete = new ArrayList<>();
@@ -141,7 +177,6 @@ public class BookFileAttachmentService {
         Set<Path> pathsToReregister = new HashSet<>();
 
         try {
-            // Unregister target directory from monitoring
             try {
                 monitoringRegistrationService.unregisterSpecificPath(targetDirectory);
             } catch (Exception ex) {
@@ -149,11 +184,9 @@ public class BookFileAttachmentService {
             }
             pathsToReregister.add(targetDirectory);
 
-            // If primary file is NOT at pattern location, move all existing target book files there first
             if (!primaryFileAtPatternLocation) {
                 log.info("Primary file not at pattern location, organizing target book files first");
 
-                // Unregister source directories for existing files
                 for (BookFileEntity existingFile : targetBook.getBookFiles()) {
                     Path currentPath = existingFile.getFullFilePath();
                     if (Files.exists(currentPath)) {
@@ -170,14 +203,12 @@ public class BookFileAttachmentService {
                     }
                 }
 
-                // Create target directory if needed
                 try {
                     Files.createDirectories(targetDirectory);
                 } catch (IOException e) {
                     throw ApiError.INTERNAL_SERVER_ERROR.createException("Failed to create target directory: " + e.getMessage());
                 }
 
-                // Move all existing target book files to pattern location
                 for (BookFileEntity existingFile : targetBook.getBookFiles()) {
                     Path currentPath = existingFile.getFullFilePath();
                     if (!Files.exists(currentPath)) {
@@ -185,11 +216,8 @@ public class BookFileAttachmentService {
                         continue;
                     }
 
-                    // Generate pattern-resolved filename for this file
                     String resolvedPath = PathPatternResolver.resolvePattern(targetBook, existingFile, fileNamingPattern);
                     String newFileName = Paths.get(resolvedPath).getFileName().toString();
-
-                    // Resolve conflicts if file already exists at destination
                     newFileName = resolveFilenameConflict(targetDirectory, newFileName);
                     Path destinationPath = targetDirectory.resolve(newFileName);
 
@@ -197,8 +225,6 @@ public class BookFileAttachmentService {
                         try {
                             Files.move(currentPath, destinationPath);
                             log.info("Organized file from {} to {}", currentPath, destinationPath);
-
-                            // Update database record
                             existingFile.setFileSubPath(targetFileSubPath);
                             existingFile.setFileName(newFileName);
                         } catch (IOException e) {
@@ -209,8 +235,6 @@ public class BookFileAttachmentService {
                 }
             }
 
-            // Track extension counts for handling same-extension conflicts
-            // Initialize with existing extensions in target book
             Map<String, Integer> extensionCounts = new HashMap<>();
             for (BookFileEntity existingFile : targetBook.getBookFiles()) {
                 if (existingFile.isBookFormat()) {
@@ -219,7 +243,6 @@ public class BookFileAttachmentService {
                 }
             }
 
-            // Process each source book
             for (BookEntity sourceBook : sourceBooks) {
                 List<BookFileEntity> filesToMove = sourceBook.getBookFiles().stream()
                         .filter(BookFileEntity::isBookFormat)
@@ -241,7 +264,6 @@ public class BookFileAttachmentService {
                     }
 
                     String extension = getFileExtension(fileToMove.getFileName()).toLowerCase();
-
                     int existingCount = extensionCounts.getOrDefault(extension, 0);
                     String newFileName;
                     if (extension.isEmpty()) {
@@ -276,23 +298,18 @@ public class BookFileAttachmentService {
 
                 sourceDirectoriesToCleanup.addAll(sourceDirectories);
 
-                if (deleteSourceBooks) {
-                    long remainingBookFiles = sourceBook.getBookFiles().stream()
-                            .filter(BookFileEntity::isBookFormat)
-                            .count();
-
-                    if (remainingBookFiles == 0) {
-                        sourceBooksToDelete.add(sourceBook);
-                    }
+                long remainingBookFiles = sourceBook.getBookFiles().stream()
+                        .filter(BookFileEntity::isBookFormat)
+                        .count();
+                if (remainingBookFiles == 0) {
+                    sourceBooksToDelete.add(sourceBook);
                 }
             }
 
-            // Delete source books after all files are moved
             if (!sourceBooksToDelete.isEmpty()) {
                 bookRepository.deleteAll(sourceBooksToDelete);
             }
 
-            // Cleanup empty source directories
             Set<Path> libraryRoots = targetBook.getLibrary().getLibraryPaths().stream()
                     .map(LibraryPathEntity::getPath)
                     .map(Paths::get)
@@ -303,7 +320,6 @@ public class BookFileAttachmentService {
                 bookService.deleteEmptyParentDirsUpToLibraryFolders(sourceDir, libraryRoots);
             }
         } finally {
-            // Re-register paths for monitoring (only if they still exist)
             for (Path path : pathsToReregister) {
                 if (Files.exists(path) && Files.isDirectory(path)) {
                     try {
@@ -314,9 +330,6 @@ public class BookFileAttachmentService {
                 }
             }
         }
-
-        // Return updated target book
-        return getUpdatedBook(targetBookId);
     }
 
     private Book getUpdatedBook(Long bookId) {

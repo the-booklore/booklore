@@ -288,6 +288,6 @@ public class BookController {
     public ResponseEntity<Book> attachBookFiles(
             @Parameter(description = "ID of the target book to attach the files to") @PathVariable Long targetBookId,
             @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
-        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
+        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isMoveFiles()));
     }
 }
