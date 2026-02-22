@@ -27,7 +27,17 @@
     "ratingTaste": "Rating Taste Comparison",
     "seriesProgress": "Series Progress Tracker",
     "readingDna": "Reading DNA Profile",
-    "readingHabits": "Reading Habits Analysis"
+    "readingHabits": "Reading Habits Analysis",
+    "authorGalaxy": "Author Galaxy",
+    "bookFlow": "Book Flow",
+    "genreEvolution": "Genre Evolution Stream",
+    "formatChord": "Format Chord Diagram",
+    "readingDebt": "Reading Debt Waterfall",
+    "publicationEra": "Publication Era vs Rating",
+    "readingRhythm": "Reading Rhythm Spiral",
+    "readingIntensity": "Reading Intensity Matrix",
+    "moodTime": "Mood x Time-of-Day",
+    "sessionArchetypes": "Session Archetypes"
   },
   "sessionHeatmap": {
     "title": "Reading Session Activity",
@@ -470,5 +480,111 @@
     "statusAbandoned": "Abandoned",
     "statusOther": "Other",
     "trend": "Trend"
+  },
+  "authorGalaxy": {
+    "title": "Author Galaxy",
+    "tooltip": "A force-directed network graph of your top authors. Node size reflects how many books you have by that author, and color represents their average rating. Lines connect authors who share genres, with thicker lines meaning more shared genres. Natural clusters reveal your reading communities.",
+    "description": "Your authors connected by shared genres",
+    "topAuthor": "Top Author",
+    "authors": "Authors",
+    "connections": "Connections",
+    "noData": "Not enough author data to build a galaxy.",
+    "noDataHint": "Add books with author and genre metadata to see connections."
+  },
+  "bookFlow": {
+    "title": "Book Flow",
+    "tooltip": "An alluvial diagram showing how books flow from when they were added (left) through their reading status (middle) to their rating bucket (right). Follow the streams to see patterns in how your acquisitions turn into reads and ratings.",
+    "description": "How books flow from acquisition to status to rating",
+    "totalBooks": "Total Books",
+    "busiestQuarter": "Busiest Quarter",
+    "topStatus": "Top Status",
+    "colAdded": "Added",
+    "colStatus": "Status",
+    "colRating": "Rating",
+    "noData": "No books found in your library.",
+    "noDataHint": "Add some books to see the flow diagram."
+  },
+  "genreEvolution": {
+    "title": "Genre Evolution Stream",
+    "tooltip": "A stacked area chart showing how your genre preferences have evolved over time. Each colored stream represents a genre, and the height shows how many books you finished in that genre each month. The top 8 genres are shown individually, with the rest collapsed into 'Other'.",
+    "description": "How your genre taste has evolved over time",
+    "noData": "No finished books with dates found.",
+    "noDataHint": "Finish some books with genre metadata to see your taste evolution."
+  },
+  "formatChord": {
+    "title": "Format Chord Diagram",
+    "tooltip": "An arc diagram showing connections between reading formats. Each node represents a format (EPUB, PDF, etc.), and arcs connect formats where the same book has progress in both. Thicker arcs mean more books read across both formats.",
+    "description": "Connections between formats you read books in",
+    "formats": "Formats",
+    "connections": "Connections",
+    "mostConnected": "Most Connected",
+    "noData": "Not enough format data to show connections.",
+    "noDataHint": "Read books in multiple formats to see format connections."
+  },
+  "readingDebt": {
+    "title": "Reading Debt Waterfall",
+    "tooltip": "Each month shows books added (red) and books finished (green) over the last 12 months. The yellow line tracks your running backlog, which is the cumulative difference between added and finished. A rising line means your to-read pile is growing.",
+    "description": "Monthly books added vs finished with running backlog",
+    "booksAdded": "Books Added",
+    "booksFinished": "Books Finished",
+    "backlog": "Backlog",
+    "currentBacklog": "Current Backlog",
+    "trendLabel": "Trend",
+    "growing": "Growing",
+    "shrinking": "Shrinking",
+    "noData": "No book activity data found.",
+    "noDataHint": "Add and finish books to see your reading debt trend."
+  },
+  "publicationEra": {
+    "title": "Publication Era vs Rating",
+    "tooltip": "Each line represents a decade of publication, showing how many books from that era you gave each rating range. Compare lines to see which decades you rate highest. Helps reveal whether you prefer classic or contemporary works.",
+    "description": "Which publication decades do you rate highest",
+    "bestDecade": "Best Decade",
+    "avgRating": "Avg Rating",
+    "booksRated": "Books Rated",
+    "noData": "Not enough rated books with publication dates.",
+    "noDataHint": "Rate books that have publication date metadata to see era comparisons."
+  },
+  "readingRhythm": {
+    "title": "Reading Rhythm Spiral",
+    "tooltip": "A spiral visualization where each revolution represents one month. Dots along the spiral represent reading sessions, with size showing duration and color showing the dominant genre. Reveals your annual reading rhythm and seasonal patterns.",
+    "description": "Your reading sessions spiraling through the year",
+    "sessions": "Sessions",
+    "busiestMonth": "Busiest Month",
+    "topGenre": "Top Genre",
+    "noData": "No reading sessions found for this year.",
+    "noDataHint": "Track reading sessions to see your rhythm spiral."
+  },
+  "readingIntensity": {
+    "title": "Reading Intensity Matrix",
+    "tooltip": "A heatmap where each row is one of your most-read books and each column is a day since you started reading it. Brighter cells mean more reading time that day. Bright streaks reveal binge reads, while scattered dots show leisurely reads.",
+    "description": "Daily reading intensity for your most-read books",
+    "books": "Books",
+    "longestStreak": "Longest Streak",
+    "noData": "No reading session data found for this year.",
+    "noDataHint": "Track reading sessions to see your intensity matrix."
+  },
+  "moodTime": {
+    "title": "Mood x Time-of-Day",
+    "tooltip": "A bubble matrix showing when you read books of different moods. The X-axis is the hour of day, the Y-axis lists your top moods, and bubble size represents total reading time. Reveals patterns like reading thrillers at night or self-help in the morning.",
+    "description": "When you read different moods throughout the day",
+    "moods": "Moods",
+    "topMood": "Top Mood",
+    "peakHour": "Peak Hour",
+    "noData": "No mood data found for this year.",
+    "noDataHint": "Add mood tags to books and track reading sessions to see mood patterns."
+  },
+  "sessionArchetypes": {
+    "title": "Session Archetypes",
+    "tooltip": "Each dot is a reading session plotted by time of day (X) and duration in minutes (Y), colored by day of week. Natural clusters reveal your reading patterns, like morning quick reads or evening deep dives.",
+    "description": "Your reading session patterns by time and duration",
+    "sessions": "Sessions",
+    "dominantType": "Dominant Type",
+    "archetype_morning": "Morning Reader",
+    "archetype_afternoon": "Afternoon Reader",
+    "archetype_evening": "Evening Reader",
+    "archetype_night": "Night Owl",
+    "noData": "No reading sessions found for this year.",
+    "noDataHint": "Track reading sessions to discover your session archetypes."
   }
 }

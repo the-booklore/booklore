@@ -27,7 +27,17 @@
     "ratingTaste": "Comparacion de gusto en calificaciones",
     "seriesProgress": "Seguimiento de progreso de series",
     "readingDna": "Perfil de ADN lector",
-    "readingHabits": "Analisis de habitos de lectura"
+    "readingHabits": "Analisis de habitos de lectura",
+    "authorGalaxy": "Galaxia de autores",
+    "bookFlow": "Flujo de libros",
+    "genreEvolution": "Evolucion de generos",
+    "formatChord": "Diagrama de formatos",
+    "readingDebt": "Deuda de lectura",
+    "publicationEra": "Era de publicacion vs calificacion",
+    "readingRhythm": "Espiral de ritmo de lectura",
+    "readingIntensity": "Matriz de intensidad de lectura",
+    "moodTime": "Estado de animo x hora del dia",
+    "sessionArchetypes": "Arquetipos de sesiones"
   },
   "sessionHeatmap": {
     "title": "Actividad de sesiones de lectura",
@@ -470,5 +480,111 @@
     "statusAbandoned": "Abandonado",
     "statusOther": "Otro",
     "trend": "Tendencia"
+  },
+  "authorGalaxy": {
+    "title": "Galaxia de autores",
+    "tooltip": "Un grafo de red de tus principales autores. El tamano del nodo refleja cuantos libros tienes de ese autor, y el color representa su calificacion promedio. Las lineas conectan autores que comparten generos, con lineas mas gruesas significando mas generos compartidos.",
+    "description": "Tus autores conectados por generos compartidos",
+    "topAuthor": "Autor principal",
+    "authors": "Autores",
+    "connections": "Conexiones",
+    "noData": "No hay suficientes datos de autores para construir una galaxia.",
+    "noDataHint": "Agrega libros con metadatos de autor y genero para ver conexiones."
+  },
+  "bookFlow": {
+    "title": "Flujo de libros",
+    "tooltip": "Un diagrama aluvial que muestra como fluyen los libros desde cuando se agregaron (izquierda) a traves de su estado de lectura (centro) hasta su rango de calificacion (derecha). Sigue los flujos para ver patrones en como tus adquisiciones se convierten en lecturas y calificaciones.",
+    "description": "Como fluyen los libros desde la adquisicion al estado y la calificacion",
+    "totalBooks": "Total de libros",
+    "busiestQuarter": "Trimestre mas activo",
+    "topStatus": "Estado principal",
+    "colAdded": "Agregado",
+    "colStatus": "Estado",
+    "colRating": "Calificacion",
+    "noData": "No se encontraron libros en tu biblioteca.",
+    "noDataHint": "Agrega algunos libros para ver el diagrama de flujo."
+  },
+  "genreEvolution": {
+    "title": "Evolucion de generos",
+    "tooltip": "Un grafico de area apilada que muestra como han evolucionado tus preferencias de genero con el tiempo. Cada flujo coloreado representa un genero, y la altura muestra cuantos libros terminaste en ese genero cada mes.",
+    "description": "Como ha evolucionado tu gusto por generos con el tiempo",
+    "noData": "No se encontraron libros terminados con fechas.",
+    "noDataHint": "Termina algunos libros con metadatos de genero para ver tu evolucion de gustos."
+  },
+  "formatChord": {
+    "title": "Diagrama de formatos",
+    "tooltip": "Un diagrama de arcos que muestra conexiones entre formatos de lectura. Cada nodo representa un formato (EPUB, PDF, etc.), y los arcos conectan formatos donde el mismo libro tiene progreso en ambos.",
+    "description": "Conexiones entre los formatos en que lees libros",
+    "formats": "Formatos",
+    "connections": "Conexiones",
+    "mostConnected": "Mas conectado",
+    "noData": "No hay suficientes datos de formato para mostrar conexiones.",
+    "noDataHint": "Lee libros en multiples formatos para ver conexiones de formato."
+  },
+  "readingDebt": {
+    "title": "Deuda de lectura",
+    "tooltip": "Cada mes muestra libros agregados (rojo) y libros terminados (verde) en los ultimos 12 meses. La linea amarilla rastrea tu acumulacion pendiente. Una linea ascendente significa que tu pila por leer esta creciendo.",
+    "description": "Libros agregados vs terminados mensualmente con acumulacion pendiente",
+    "booksAdded": "Libros agregados",
+    "booksFinished": "Libros terminados",
+    "backlog": "Pendientes",
+    "currentBacklog": "Pendientes actuales",
+    "trendLabel": "Tendencia",
+    "growing": "Creciendo",
+    "shrinking": "Reduciendose",
+    "noData": "No se encontraron datos de actividad de libros.",
+    "noDataHint": "Agrega y termina libros para ver tu tendencia de deuda de lectura."
+  },
+  "publicationEra": {
+    "title": "Era de publicacion vs calificacion",
+    "tooltip": "Cada linea representa una decada de publicacion, mostrando cuantos libros de esa era le diste a cada rango de calificacion. Compara lineas para ver que decadas calificas mas alto.",
+    "description": "Que decadas de publicacion calificas mas alto",
+    "bestDecade": "Mejor decada",
+    "avgRating": "Calif. promedio",
+    "booksRated": "Libros calificados",
+    "noData": "No hay suficientes libros calificados con fechas de publicacion.",
+    "noDataHint": "Califica libros que tengan metadatos de fecha de publicacion para ver comparaciones por era."
+  },
+  "readingRhythm": {
+    "title": "Espiral de ritmo de lectura",
+    "tooltip": "Una visualizacion en espiral donde cada revolucion representa un mes. Los puntos a lo largo de la espiral representan sesiones de lectura, con tamano mostrando duracion y color mostrando el genero dominante.",
+    "description": "Tus sesiones de lectura en espiral a traves del ano",
+    "sessions": "Sesiones",
+    "busiestMonth": "Mes mas activo",
+    "topGenre": "Genero principal",
+    "noData": "No se encontraron sesiones de lectura para este ano.",
+    "noDataHint": "Rastrea sesiones de lectura para ver tu espiral de ritmo."
+  },
+  "readingIntensity": {
+    "title": "Matriz de intensidad de lectura",
+    "tooltip": "Un mapa de calor donde cada fila es uno de tus libros mas leidos y cada columna es un dia desde que empezaste a leerlo. Celdas mas brillantes significan mas tiempo de lectura ese dia.",
+    "description": "Intensidad de lectura diaria para tus libros mas leidos",
+    "books": "Libros",
+    "longestStreak": "Racha mas larga",
+    "noData": "No se encontraron datos de sesiones de lectura para este ano.",
+    "noDataHint": "Rastrea sesiones de lectura para ver tu matriz de intensidad."
+  },
+  "moodTime": {
+    "title": "Estado de animo x hora del dia",
+    "tooltip": "Una matriz de burbujas que muestra cuando lees libros de diferentes estados de animo. El eje X es la hora del dia, el eje Y lista tus principales estados de animo, y el tamano de la burbuja representa el tiempo total de lectura.",
+    "description": "Cuando lees diferentes estados de animo durante el dia",
+    "moods": "Estados de animo",
+    "topMood": "Animo principal",
+    "peakHour": "Hora pico",
+    "noData": "No se encontraron datos de estado de animo para este ano.",
+    "noDataHint": "Agrega etiquetas de animo a los libros y rastrea sesiones de lectura."
+  },
+  "sessionArchetypes": {
+    "title": "Arquetipos de sesiones",
+    "tooltip": "Cada punto es una sesion de lectura graficada por hora del dia (X) y duracion en minutos (Y), coloreada por dia de la semana. Los grupos naturales revelan tus patrones de lectura.",
+    "description": "Tus patrones de sesiones de lectura por hora y duracion",
+    "sessions": "Sesiones",
+    "dominantType": "Tipo dominante",
+    "archetype_morning": "Lector matutino",
+    "archetype_afternoon": "Lector vespertino",
+    "archetype_evening": "Lector nocturno",
+    "archetype_night": "Noctambulo",
+    "noData": "No se encontraron sesiones de lectura para este ano.",
+    "noDataHint": "Rastrea sesiones de lectura para descubrir tus arquetipos de sesion."
   }
 }

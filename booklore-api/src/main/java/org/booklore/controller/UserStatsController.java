@@ -171,4 +171,52 @@ public class UserStatsController {
         List<ReadingSessionHeatmapResponse> data = readingSessionService.getReadingDates();
         return ResponseEntity.ok(data);
     }
+
+    @Operation(summary = "Get reading rhythm spiral data", description = "Returns session counts and durations grouped by month and hour for a spiral visualization")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reading rhythm data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/reading-rhythm")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ReadingRhythmResponse>> getReadingRhythm(@RequestParam int year) {
+        List<ReadingRhythmResponse> data = readingSessionService.getReadingRhythm(year);
+        return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get reading intensity matrix", description = "Returns per-day reading durations for top books in a year for heatmap visualization")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reading intensity data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/reading-intensity")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ReadingIntensityResponse>> getReadingIntensity(@RequestParam int year) {
+        List<ReadingIntensityResponse> data = readingSessionService.getReadingIntensity(year);
+        return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get mood-time bubble matrix", description = "Returns reading time grouped by mood and hour of day")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Mood-time data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/mood-time")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<MoodTimeResponse>> getMoodTime(@RequestParam int year) {
+        List<MoodTimeResponse> data = readingSessionService.getMoodTime(year);
+        return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get session scatter data", description = "Returns individual session data points for scatter plot visualization")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Session scatter data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/session-scatter")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<SessionScatterResponse>> getSessionScatter(@RequestParam int year) {
+        List<SessionScatterResponse> data = readingSessionService.getSessionScatter(year);
+        return ResponseEntity.ok(data);
+    }
 }

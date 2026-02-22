@@ -20,6 +20,16 @@ import {CompletionRaceChartComponent} from '../charts/completion-race-chart/comp
 import {ReadingSurvivalChartComponent} from '../charts/reading-survival-chart/reading-survival-chart.component';
 import {ReadingClockChartComponent} from '../charts/reading-clock-chart/reading-clock-chart.component';
 import {BookLengthChartComponent} from '../charts/book-length-chart/book-length-chart.component';
+import {AuthorGalaxyChartComponent} from '../charts/author-galaxy-chart/author-galaxy-chart.component';
+import {BookFlowChartComponent} from '../charts/book-flow-chart/book-flow-chart.component';
+import {GenreEvolutionChartComponent} from '../charts/genre-evolution-chart/genre-evolution-chart.component';
+import {FormatChordChartComponent} from '../charts/format-chord-chart/format-chord-chart.component';
+import {ReadingDebtChartComponent} from '../charts/reading-debt-chart/reading-debt-chart.component';
+import {PublicationEraChartComponent} from '../charts/publication-era-chart/publication-era-chart.component';
+import {ReadingRhythmChartComponent} from '../charts/reading-rhythm-chart/reading-rhythm-chart.component';
+import {ReadingIntensityChartComponent} from '../charts/reading-intensity-chart/reading-intensity-chart.component';
+import {MoodTimeChartComponent} from '../charts/mood-time-chart/mood-time-chart.component';
+import {SessionArchetypesChartComponent} from '../charts/session-archetypes-chart/session-archetypes-chart.component';
 
 export interface UserChartConfig {
   id: string;
@@ -57,6 +67,16 @@ export class UserChartConfigService {
     'series-progress': 'statsUser.chartNames.seriesProgress',
     'reading-dna': 'statsUser.chartNames.readingDna',
     'reading-habits': 'statsUser.chartNames.readingHabits',
+    'author-galaxy': 'statsUser.chartNames.authorGalaxy',
+    'book-flow': 'statsUser.chartNames.bookFlow',
+    'genre-evolution': 'statsUser.chartNames.genreEvolution',
+    'format-chord': 'statsUser.chartNames.formatChord',
+    'reading-debt': 'statsUser.chartNames.readingDebt',
+    'publication-era': 'statsUser.chartNames.publicationEra',
+    'reading-rhythm': 'statsUser.chartNames.readingRhythm',
+    'reading-intensity': 'statsUser.chartNames.readingIntensity',
+    'mood-time': 'statsUser.chartNames.moodTime',
+    'session-archetypes': 'statsUser.chartNames.sessionArchetypes',
   };
 
   private readonly defaultCharts: UserChartConfig[] = [
@@ -79,6 +99,16 @@ export class UserChartConfigService {
     {id: 'series-progress', title: 'Series Progress Tracker', component: SeriesProgressChartComponent, enabled: true, sizeClass: 'chart-medium', order: 16},
     {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 17},
     {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 18},
+    {id: 'author-galaxy', title: 'Author Galaxy', component: AuthorGalaxyChartComponent, enabled: true, sizeClass: 'chart-full', order: 19},
+    {id: 'book-flow', title: 'Book Flow', component: BookFlowChartComponent, enabled: true, sizeClass: 'chart-full', order: 20},
+    {id: 'genre-evolution', title: 'Genre Evolution Stream', component: GenreEvolutionChartComponent, enabled: true, sizeClass: 'chart-full', order: 21},
+    {id: 'format-chord', title: 'Format Chord Diagram', component: FormatChordChartComponent, enabled: true, sizeClass: 'chart-medium', order: 22},
+    {id: 'reading-debt', title: 'Reading Debt Waterfall', component: ReadingDebtChartComponent, enabled: true, sizeClass: 'chart-medium', order: 23},
+    {id: 'publication-era', title: 'Publication Era vs Rating', component: PublicationEraChartComponent, enabled: true, sizeClass: 'chart-medium', order: 24},
+    {id: 'reading-rhythm', title: 'Reading Rhythm Spiral', component: ReadingRhythmChartComponent, enabled: true, sizeClass: 'chart-full', order: 25},
+    {id: 'reading-intensity', title: 'Reading Intensity Matrix', component: ReadingIntensityChartComponent, enabled: true, sizeClass: 'chart-full', order: 26},
+    {id: 'mood-time', title: 'Mood x Time-of-Day', component: MoodTimeChartComponent, enabled: true, sizeClass: 'chart-full', order: 27},
+    {id: 'session-archetypes', title: 'Session Archetypes', component: SessionArchetypesChartComponent, enabled: true, sizeClass: 'chart-medium', order: 28},
   ];
 
   private chartsSubject = new BehaviorSubject<UserChartConfig[]>(this.loadChartConfig());
