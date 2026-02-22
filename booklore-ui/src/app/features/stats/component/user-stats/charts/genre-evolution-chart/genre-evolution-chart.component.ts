@@ -2,14 +2,11 @@ import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {Tooltip} from 'primeng/tooltip';
-import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../../../book/service/book.service';
-import {Book} from '../../../../../book/model/book.model';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
-
-type StackedAreaData = ChartData<'line', number[], string>;
 
 @Component({
   selector: 'app-genre-evolution-chart',
@@ -33,32 +30,22 @@ export class GenreEvolutionChartComponent implements OnInit, OnDestroy {
     '#00bcd4', '#ff5722', '#3f51b5', '#8bc34a'
   ];
 
+  public chartData: ChartData<'line', number[], string> = {labels: [], datasets: []};
+
   public readonly chartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {duration: 400},
     layout: {padding: {top: 10}},
     plugins: {
       legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          color: 'rgba(255, 255, 255, 0.8)',
-          font: {family: "'Inter', sans-serif", size: 11},
-          boxWidth: 12,
-          padding: 15
-        }
+        display: true, position: 'bottom',
+        labels: {color: 'rgba(255, 255, 255, 0.8)', font: {family: "'Inter', sans-serif", size: 11}, boxWidth: 12, padding: 15}
       },
       tooltip: {
-        enabled: true,
-        mode: 'index',
-        intersect: false,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
-        borderWidth: 1,
-        cornerRadius: 6,
-        padding: 10
+        enabled: true, mode: 'index', intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)', titleColor: '#ffffff', bodyColor: '#ffffff',
+        borderColor: '#ffffff', borderWidth: 1, cornerRadius: 6, padding: 10
       },
       datalabels: {display: false}
     },
@@ -68,17 +55,13 @@ export class GenreEvolutionChartComponent implements OnInit, OnDestroy {
         ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 10}, maxRotation: 45}
       },
       y: {
-        stacked: true,
-        beginAtZero: true,
+        stacked: true, beginAtZero: true,
         grid: {color: 'rgba(255, 255, 255, 0.08)'},
         ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 11}, stepSize: 1}
       }
     },
     interaction: {mode: 'index', intersect: false}
   };
-
-  private readonly chartDataSubject = new BehaviorSubject<StackedAreaData>({labels: [], datasets: []});
-  public readonly chartData$: Observable<StackedAreaData> = this.chartDataSubject.asObservable();
 
   ngOnInit(): void {
     this.bookService.bookState$
@@ -118,7 +101,6 @@ export class GenreEvolutionChartComponent implements OnInit, OnDestroy {
     }
 
     if (monthGenreCounts.size === 0) return;
-    this.hasData = true;
 
     const topGenres = [...genreTotals.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -153,7 +135,7 @@ export class GenreEvolutionChartComponent implements OnInit, OnDestroy {
         return mMap.get(genre) || 0;
       }),
       fill: true,
-      backgroundColor: (this.GENRE_COLORS[i] || '#9e9e9e').replace(')', ', 0.4)').replace('#', 'rgba('),
+      backgroundColor: this.hexToRgba(this.GENRE_COLORS[i] || '#9e9e9e', 0.4),
       borderColor: this.GENRE_COLORS[i] || '#9e9e9e',
       borderWidth: 1.5,
       pointRadius: 0,
@@ -161,13 +143,8 @@ export class GenreEvolutionChartComponent implements OnInit, OnDestroy {
       tension: 0.4
     }));
 
-    // Fix backgroundColor for hex colors
-    const fixedDatasets = datasets.map((ds, i) => ({
-      ...ds,
-      backgroundColor: this.hexToRgba(this.GENRE_COLORS[i] || '#9e9e9e', 0.4)
-    }));
-
-    this.chartDataSubject.next({labels: monthLabels, datasets: fixedDatasets});
+    this.chartData = {labels: monthLabels, datasets};
+    this.hasData = true;
   }
 
   private hexToRgba(hex: string, alpha: number): string {

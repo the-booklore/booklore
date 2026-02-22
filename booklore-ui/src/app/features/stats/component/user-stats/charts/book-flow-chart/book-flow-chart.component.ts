@@ -4,7 +4,7 @@ import {Tooltip} from 'primeng/tooltip';
 import {Subject} from 'rxjs';
 import {filter, first, takeUntil} from 'rxjs/operators';
 import {BookService} from '../../../../../book/service/book.service';
-import {Book, ReadStatus} from '../../../../../book/model/book.model';
+import {ReadStatus} from '../../../../../book/model/book.model';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface SankeyNode {
@@ -70,7 +70,7 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
 
   private tryRender(): void {
     if (this.canvasReady && this.dataReady && this.hasData) {
-      this.draw();
+      requestAnimationFrame(() => this.draw());
     }
   }
 
@@ -86,13 +86,13 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
     const statusToRating = new Map<string, Map<string, number>>();
 
     const statusColors: Record<string, string> = {
-      'Read': '#66bb6a', 'Reading': '#42a5f5', 'Unread': '#9e9e9e',
+      'Read': '#66bb6a', 'Reading': '#42a5f5', 'Unread': '#78909c',
       'Paused': '#ffa726', 'Abandoned': '#ef5350', 'Other': '#ab47bc'
     };
 
     const ratingColors: Record<string, string> = {
       'Rated 4-5': '#66bb6a', 'Rated 3': '#ffc107',
-      'Rated 1-2': '#ef5350', 'Unrated': '#9e9e9e'
+      'Rated 1-2': '#ef5350', 'Unrated': '#78909c'
     };
 
     for (const book of books) {
@@ -149,8 +149,8 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
 
     const quarterColors = ['#42a5f5', '#26c6da', '#66bb6a', '#ffa726', '#ab47bc', '#ef5350', '#ec407a', '#7e57c2'];
 
-    const totalHeight = 450;
-    const padding = 8;
+    const totalHeight = 420;
+    const padding = 6;
 
     const createColumnNodes = (
       entries: [string, number][],
@@ -158,13 +158,13 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
       colors: Record<string, string> | string[]
     ): SankeyNode[] => {
       const total = entries.reduce((s, e) => s + e[1], 0);
-      let currentY = 20;
+      let currentY = 30;
       return entries.map(([id, count], i) => {
-        const height = Math.max(12, (count / total) * (totalHeight - entries.length * padding));
+        const height = Math.max(10, (count / total) * (totalHeight - entries.length * padding));
         const node: SankeyNode = {
           id, label: id, column,
           y: currentY, height,
-          color: Array.isArray(colors) ? colors[i % colors.length] : (colors[id] || '#9e9e9e'),
+          color: Array.isArray(colors) ? colors[i % colors.length] : (colors[id] || '#78909c'),
           count
         };
         currentY += height + padding;
@@ -207,21 +207,31 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
   }
 
   private draw(): void {
-    const canvas = this.canvasRef.nativeElement;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const rect = canvas.parentElement!.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
-    canvas.height = 500 * dpr;
+    canvas.height = 480 * dpr;
     canvas.style.width = rect.width + 'px';
-    canvas.style.height = '500px';
+    canvas.style.height = '480px';
     ctx.scale(dpr, dpr);
 
     const width = rect.width;
-    const colX = [50, width * 0.42, width - 130];
-    const nodeWidth = 22;
+    const nodeWidth = 18;
+    const leftMargin = 100;
+    const rightMargin = 110;
+    const colX = [leftMargin, width * 0.45, width - rightMargin];
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.t.translate('statsUser.bookFlow.colAdded'), colX[0] + nodeWidth / 2, 18);
+    ctx.fillText(this.t.translate('statsUser.bookFlow.colStatus'), colX[1] + nodeWidth / 2, 18);
+    ctx.fillText(this.t.translate('statsUser.bookFlow.colRating'), colX[2] + nodeWidth / 2, 18);
 
     const sourceOffsets = new Map<string, number>();
     const targetOffsets = new Map<string, number>();
@@ -247,8 +257,12 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
       ctx.lineTo(x1, y1 + tLinkHeight / 2);
       ctx.bezierCurveTo(cpx, y1 + tLinkHeight / 2, cpx, y0 + linkHeight / 2, x0, y0 + linkHeight / 2);
       ctx.closePath();
-      ctx.fillStyle = link.color.replace(')', ', 0.15)').replace('rgb', 'rgba');
+
+      ctx.fillStyle = link.color + '55';
       ctx.fill();
+      ctx.strokeStyle = link.color + '30';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
 
       sourceOffsets.set(sKey, sOff + linkHeight);
       targetOffsets.set(tKey, tOff + tLinkHeight);
@@ -256,27 +270,27 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
 
     for (const node of this.nodes) {
       const x = colX[node.column];
+
       ctx.fillStyle = node.color;
-      ctx.globalAlpha = 0.9;
+      ctx.globalAlpha = 0.92;
       ctx.beginPath();
-      ctx.roundRect(x, node.y, nodeWidth, node.height, 4);
+      ctx.roundRect(x, node.y, nodeWidth, node.height, 3);
       ctx.fill();
       ctx.globalAlpha = 1;
 
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, node.y, nodeWidth, node.height, 3);
+      ctx.stroke();
+
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       ctx.font = '11px Inter, sans-serif';
-      const labelX = node.column === 2 ? x + nodeWidth + 6 : x - 6;
+      const labelX = node.column === 2 ? x + nodeWidth + 8 : x - 8;
       ctx.textAlign = node.column === 2 ? 'left' : 'right';
       ctx.textBaseline = 'middle';
-      const label = node.label.length > 16 ? node.label.substring(0, 14) + '..' : node.label;
+      const label = node.label.length > 18 ? node.label.substring(0, 16) + '..' : node.label;
       ctx.fillText(`${label} (${node.count})`, labelX, node.y + node.height / 2);
     }
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.font = '12px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(this.t.translate('statsUser.bookFlow.colAdded'), colX[0] + nodeWidth / 2, 10);
-    ctx.fillText(this.t.translate('statsUser.bookFlow.colStatus'), colX[1] + nodeWidth / 2, 10);
-    ctx.fillText(this.t.translate('statsUser.bookFlow.colRating'), colX[2] + nodeWidth / 2, 10);
   }
 }

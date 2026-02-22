@@ -4,7 +4,6 @@ import {Tooltip} from 'primeng/tooltip';
 import {Subject} from 'rxjs';
 import {filter, first, takeUntil} from 'rxjs/operators';
 import {BookService} from '../../../../../book/service/book.service';
-import {Book} from '../../../../../book/model/book.model';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface AuthorNode {
@@ -54,11 +53,7 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
 
   ngOnInit(): void {
     this.bookService.bookState$
-      .pipe(
-        filter(state => state.loaded),
-        first(),
-        takeUntil(this.destroy$)
-      )
+      .pipe(filter(state => state.loaded), first(), takeUntil(this.destroy$))
       .subscribe(() => {
         this.processData();
         this.dataReady = true;
@@ -74,14 +69,12 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    if (this.animationFrame) {
-      cancelAnimationFrame(this.animationFrame);
-    }
+    if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
   }
 
   private tryRender(): void {
     if (this.canvasReady && this.dataReady && this.hasData) {
-      this.runSimulation();
+      requestAnimationFrame(() => this.runSimulation());
     }
   }
 
@@ -126,29 +119,38 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
       '#cddc39', '#8bc34a', '#66bb6a', '#26a69a', '#42a5f5', '#42a5f5'
     ];
 
-    this.nodes = sorted.map(([name, data], i) => {
+    this.nodes = sorted.map(([name, data]) => {
       const avgRating = data.ratedCount > 0 ? data.totalRating / data.ratedCount : 5;
       const colorIdx = Math.min(10, Math.max(0, Math.round(avgRating)));
+      const displayName = name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       return {
         id: name,
-        name: sorted[i][0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+        name: displayName,
         bookCount: data.bookCount,
         avgRating: Math.round(avgRating * 10) / 10,
         genres: data.genres,
-        x: Math.random() * 600 + 100,
-        y: Math.random() * 400 + 50,
-        vx: 0,
-        vy: 0,
-        radius: Math.max(8, Math.min(30, data.bookCount * 4)),
+        x: 0, y: 0,
+        vx: 0, vy: 0,
+        radius: Math.max(6, Math.min(28, 4 + data.bookCount * 3)),
         color: ratingColors[colorIdx]
       };
     });
 
+    // Place nodes in a circle initially for better starting positions
+    const n = this.nodes.length;
+    this.nodes.forEach((node, i) => {
+      const angle = (i / n) * Math.PI * 2;
+      const r = 150 + Math.random() * 50;
+      node.x = 400 + Math.cos(angle) * r;
+      node.y = 250 + Math.sin(angle) * r;
+    });
+
+    // Only create edges for 2+ shared genres to reduce clutter
     this.edges = [];
     for (let i = 0; i < this.nodes.length; i++) {
       for (let j = i + 1; j < this.nodes.length; j++) {
         const shared = [...this.nodes[i].genres].filter(g => this.nodes[j].genres.has(g)).length;
-        if (shared > 0) {
+        if (shared >= 2) {
           this.edges.push({source: this.nodes[i], target: this.nodes[j], sharedGenres: shared});
         }
       }
@@ -160,36 +162,53 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   private runSimulation(): void {
-    const canvas = this.canvasRef.nativeElement;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const rect = canvas.parentElement!.getBoundingClientRect();
-    canvas.width = rect.width * (window.devicePixelRatio || 1);
-    canvas.height = 500 * (window.devicePixelRatio || 1);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = 500 * dpr;
     canvas.style.width = rect.width + 'px';
     canvas.style.height = '500px';
-    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    ctx.scale(dpr, dpr);
 
     const width = rect.width;
     const height = 500;
+    const cx = width / 2;
+    const cy = height / 2;
     let iteration = 0;
+    const maxIterations = 200;
+
+    // Re-center initial positions
+    this.nodes.forEach((node, i) => {
+      const angle = (i / this.nodes.length) * Math.PI * 2;
+      const r = Math.min(width, height) * 0.3 + Math.random() * 30;
+      node.x = cx + Math.cos(angle) * r;
+      node.y = cy + Math.sin(angle) * r;
+      node.vx = 0;
+      node.vy = 0;
+    });
 
     const simulate = () => {
-      if (iteration >= 120) {
+      if (iteration >= maxIterations) {
         this.draw(ctx, width, height);
         return;
       }
 
-      const alpha = 1 - iteration / 120;
+      const alpha = Math.max(0.01, 1 - iteration / maxIterations);
+      const margin = 40;
 
-      // Repulsion between nodes
+      // Strong repulsion between all nodes
       for (let i = 0; i < this.nodes.length; i++) {
         for (let j = i + 1; j < this.nodes.length; j++) {
           const dx = this.nodes[j].x - this.nodes[i].x;
           const dy = this.nodes[j].y - this.nodes[i].y;
           const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-          const force = (200 * alpha) / dist;
+          const minDist = this.nodes[i].radius + this.nodes[j].radius + 30;
+          const force = (500 * alpha) / (dist * dist) * Math.max(1, minDist / dist);
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
           this.nodes[i].vx -= fx;
@@ -199,12 +218,13 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
         }
       }
 
-      // Attraction along edges
+      // Gentle attraction along edges
       for (const edge of this.edges) {
         const dx = edge.target.x - edge.source.x;
         const dy = edge.target.y - edge.source.y;
         const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-        const force = (dist - 120) * 0.01 * alpha * edge.sharedGenres;
+        const idealDist = 100 + 50 / edge.sharedGenres;
+        const force = (dist - idealDist) * 0.003 * alpha;
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
         edge.source.vx += fx;
@@ -213,20 +233,22 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
         edge.target.vy -= fy;
       }
 
-      // Center gravity
+      // Gentle center gravity
       for (const node of this.nodes) {
-        node.vx += (width / 2 - node.x) * 0.005 * alpha;
-        node.vy += (height / 2 - node.y) * 0.005 * alpha;
-        node.vx *= 0.8;
-        node.vy *= 0.8;
+        node.vx += (cx - node.x) * 0.002 * alpha;
+        node.vy += (cy - node.y) * 0.002 * alpha;
+        node.vx *= 0.75;
+        node.vy *= 0.75;
         node.x += node.vx;
         node.y += node.vy;
-        node.x = Math.max(node.radius + 5, Math.min(width - node.radius - 5, node.x));
-        node.y = Math.max(node.radius + 5, Math.min(height - node.radius - 5, node.y));
+        node.x = Math.max(node.radius + margin, Math.min(width - node.radius - margin, node.x));
+        node.y = Math.max(node.radius + margin, Math.min(height - node.radius - margin, node.y));
       }
 
       iteration++;
-      this.draw(ctx, width, height);
+      if (iteration % 3 === 0 || iteration >= maxIterations - 1) {
+        this.draw(ctx, width, height);
+      }
       this.animationFrame = requestAnimationFrame(simulate);
     };
 
@@ -236,37 +258,57 @@ export class AuthorGalaxyChartComponent implements OnInit, OnDestroy, AfterViewI
   private draw(ctx: CanvasRenderingContext2D, width: number, height: number): void {
     ctx.clearRect(0, 0, width, height);
 
-    // Draw edges
+    // Draw edges as subtle curves
     for (const edge of this.edges) {
+      const opacity = Math.min(0.25, 0.06 + edge.sharedGenres * 0.04);
+      const lineWidth = Math.min(2.5, 0.5 + edge.sharedGenres * 0.5);
       ctx.beginPath();
       ctx.moveTo(edge.source.x, edge.source.y);
-      ctx.lineTo(edge.target.x, edge.target.y);
-      ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.3, edge.sharedGenres * 0.08)})`;
-      ctx.lineWidth = Math.min(3, edge.sharedGenres * 0.8);
+      const mx = (edge.source.x + edge.target.x) / 2;
+      const my = (edge.source.y + edge.target.y) / 2 - 15;
+      ctx.quadraticCurveTo(mx, my, edge.target.x, edge.target.y);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+      ctx.lineWidth = lineWidth;
       ctx.stroke();
     }
 
-    // Draw nodes
+    // Draw nodes with glow for larger ones
     for (const node of this.nodes) {
+      if (node.radius > 14) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius + 4, 0, Math.PI * 2);
+        ctx.fillStyle = node.color + '18';
+        ctx.fill();
+      }
+
       ctx.beginPath();
       ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
       ctx.fillStyle = node.color;
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = 0.88;
       ctx.fill();
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
+    }
 
-      // Label for larger nodes
-      if (node.radius >= 12) {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `${Math.max(9, Math.min(12, node.radius * 0.6))}px Inter, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const displayName = node.name.length > 14 ? node.name.substring(0, 12) + '...' : node.name;
-        ctx.fillText(displayName, node.x, node.y + node.radius + 14);
-      }
+    // Draw labels only for top authors (by book count, i.e. larger nodes)
+    const labelNodes = this.nodes
+      .filter(n => n.radius >= 10)
+      .sort((a, b) => b.bookCount - a.bookCount)
+      .slice(0, 15);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (const node of labelNodes) {
+      const fontSize = Math.max(9, Math.min(12, node.radius * 0.5 + 3));
+      ctx.font = `${fontSize}px Inter, sans-serif`;
+      const displayName = node.name.length > 16 ? node.name.substring(0, 14) + '..' : node.name;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillText(displayName, node.x + 1, node.y + node.radius + 5);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillText(displayName, node.x, node.y + node.radius + 4);
     }
   }
 }

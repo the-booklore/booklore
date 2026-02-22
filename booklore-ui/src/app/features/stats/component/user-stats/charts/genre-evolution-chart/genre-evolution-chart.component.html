@@ -16,7 +16,7 @@
   </div>
   @if (hasData) {
     <div class="chart-wrapper">
-      <canvas baseChart [data]="(chartData$ | async) ?? {labels: [], datasets: []}" [options]="chartOptions" [type]="chartType"></canvas>
+      <canvas baseChart [data]="chartData" [options]="chartOptions" [type]="chartType"></canvas>
     </div>
   } @else {
     <div class="no-data-message">

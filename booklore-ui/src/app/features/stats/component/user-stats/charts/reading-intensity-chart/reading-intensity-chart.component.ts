@@ -2,12 +2,14 @@ import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {Tooltip} from 'primeng/tooltip';
-import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {Chart, ChartConfiguration, ChartData, registerables} from 'chart.js';
 import {MatrixController, MatrixElement} from 'chartjs-chart-matrix';
 import {UserStatsService, ReadingIntensityResponse} from '../../../../../settings/user-management/user-stats.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+
+Chart.register(...registerables, MatrixController, MatrixElement);
 
 interface MatrixDataPoint {
   x: number;
@@ -15,8 +17,6 @@ interface MatrixDataPoint {
   v: number;
   bookTitle: string;
 }
-
-type IntensityChartData = ChartData<'matrix', MatrixDataPoint[], string>;
 
 @Component({
   selector: 'app-reading-intensity-chart',
@@ -39,11 +39,16 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
   public longestStreak = '';
 
   private bookTitles: string[] = [];
+  private maxDay = 1;
+  private bookTotal = 1;
+
+  public chartData: ChartData<'matrix', MatrixDataPoint[], string> = {labels: [], datasets: []};
 
   public chartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {padding: {top: 10, left: 10}},
+    animation: {duration: 400},
+    layout: {padding: {top: 10, left: 10, right: 20, bottom: 10}},
     plugins: {
       legend: {display: false},
       tooltip: {
@@ -72,8 +77,9 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
         type: 'linear',
         offset: true,
         grid: {display: false},
-        ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 10}, stepSize: 10},
-        title: {display: true, text: 'Day', color: 'rgba(255, 255, 255, 0.5)'}
+        ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 10}, stepSize: 5},
+        title: {display: true, text: 'Day since start', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}},
+        min: 0
       },
       y: {
         type: 'linear',
@@ -82,22 +88,20 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
         grid: {display: false},
         ticks: {
           color: 'rgba(255, 255, 255, 0.6)',
-          font: {size: 10},
+          font: {size: 9},
+          stepSize: 1,
           callback: (val: any) => {
             const idx = Number(val);
             const title = this.bookTitles[idx];
-            return title ? (title.length > 20 ? title.substring(0, 18) + '..' : title) : '';
+            return title ? (title.length > 25 ? title.substring(0, 23) + '..' : title) : '';
           }
-        }
+        },
+        min: -0.5
       }
     }
   };
 
-  private readonly chartDataSubject = new BehaviorSubject<IntensityChartData>({labels: [], datasets: []});
-  public readonly chartData$: Observable<IntensityChartData> = this.chartDataSubject.asObservable();
-
   ngOnInit(): void {
-    Chart.register(...registerables, MatrixController, MatrixElement);
     this.currentYear = this.initialYear;
     this.loadData(this.currentYear);
   }
@@ -121,14 +125,13 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
   private processData(data: ReadingIntensityResponse[]): void {
     if (!data || data.length === 0) {
       this.hasData = false;
-      this.chartDataSubject.next({labels: [], datasets: []});
+      this.chartData = {labels: [], datasets: []};
       return;
     }
 
-    this.hasData = true;
-
     const bookIds = [...new Set(data.map(d => d.bookId))];
     this.bookCount = bookIds.length;
+    this.bookTotal = bookIds.length;
 
     const bookIdToIndex = new Map<number, number>();
     this.bookTitles = [];
@@ -139,7 +142,6 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
     });
 
     let maxStreak = 0;
-    let maxStreakBook = '';
     for (const bookId of bookIds) {
       const days = data.filter(d => d.bookId === bookId).map(d => d.dayOffset).sort((a, b) => a - b);
       let streak = 1;
@@ -148,23 +150,24 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
         if (days[i] === days[i - 1] + 1) { streak++; best = Math.max(best, streak); }
         else streak = 1;
       }
-      if (best > maxStreak) {
-        maxStreak = best;
-        maxStreakBook = this.bookTitles[bookIdToIndex.get(bookId)!] || '';
-      }
+      if (best > maxStreak) maxStreak = best;
     }
     this.longestStreak = maxStreak > 0 ? `${maxStreak}d` : '';
 
+    this.maxDay = Math.max(...data.map(d => d.dayOffset), 1);
     const maxDuration = Math.max(...data.map(d => d.totalDurationSeconds), 1);
 
     const points: MatrixDataPoint[] = data.map(d => ({
       x: d.dayOffset,
-      y: bookIdToIndex.get(d.bookId) || 0,
+      y: bookIdToIndex.get(d.bookId) ?? 0,
       v: d.totalDurationSeconds,
-      bookTitle: this.bookTitles[bookIdToIndex.get(d.bookId) || 0]
+      bookTitle: this.bookTitles[bookIdToIndex.get(d.bookId) ?? 0]
     }));
 
-    this.chartDataSubject.next({
+    const cellW = Math.max(6, Math.min(16, 800 / (this.maxDay + 1)));
+    const cellH = Math.max(10, Math.min(28, 400 / bookIds.length));
+
+    this.chartData = {
       datasets: [{
         label: 'Reading Intensity',
         data: points,
@@ -173,26 +176,17 @@ export class ReadingIntensityChartComponent implements OnInit, OnDestroy {
           if (!raw) return 'rgba(66, 165, 245, 0.1)';
           const ratio = raw.v / maxDuration;
           if (ratio > 0.7) return 'rgba(255, 152, 0, 0.9)';
-          if (ratio > 0.4) return 'rgba(255, 193, 7, 0.7)';
-          if (ratio > 0.15) return 'rgba(100, 181, 246, 0.6)';
-          return 'rgba(66, 133, 244, 0.3)';
+          if (ratio > 0.4) return 'rgba(255, 193, 7, 0.75)';
+          if (ratio > 0.15) return 'rgba(100, 181, 246, 0.65)';
+          return 'rgba(66, 133, 244, 0.4)';
         },
-        width: (ctx: any) => {
-          const chart = ctx.chart;
-          const area = chart.chartArea;
-          if (!area) return 10;
-          const maxDay = Math.max(...data.map(d => d.dayOffset), 1);
-          return Math.max(4, Math.min(14, (area.width / (maxDay + 1)) * 0.8));
-        },
-        height: (ctx: any) => {
-          const chart = ctx.chart;
-          const area = chart.chartArea;
-          if (!area) return 14;
-          return Math.max(8, Math.min(20, (area.height / bookIds.length) * 0.8));
-        },
+        width: () => cellW,
+        height: () => cellH,
         borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.2)'
+        borderColor: 'rgba(0, 0, 0, 0.3)',
+        borderRadius: 2
       } as any]
-    });
+    };
+    this.hasData = true;
   }
 }

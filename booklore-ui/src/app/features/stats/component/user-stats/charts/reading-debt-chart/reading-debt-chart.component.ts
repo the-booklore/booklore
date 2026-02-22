@@ -2,13 +2,11 @@ import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {Tooltip} from 'primeng/tooltip';
-import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
-import {Chart, ChartConfiguration, ChartData, registerables} from 'chart.js';
+import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../../../book/service/book.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
-
-type DebtChartData = ChartData<'bar', number[], string>;
 
 @Component({
   selector: 'app-reading-debt-chart',
@@ -27,9 +25,12 @@ export class ReadingDebtChartComponent implements OnInit, OnDestroy {
   public currentBacklog = 0;
   public trend = '';
 
+  public chartData: ChartData<'bar', number[], string> = {labels: [], datasets: []};
+
   public chartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {duration: 400},
     layout: {padding: {top: 10}},
     plugins: {
       legend: {
@@ -60,11 +61,7 @@ export class ReadingDebtChartComponent implements OnInit, OnDestroy {
     }
   };
 
-  private readonly chartDataSubject = new BehaviorSubject<DebtChartData>({labels: [], datasets: []});
-  public readonly chartData$: Observable<DebtChartData> = this.chartDataSubject.asObservable();
-
   ngOnInit(): void {
-    Chart.register(...registerables);
     this.bookService.bookState$
       .pipe(filter(state => state.loaded), first(), catchError(() => EMPTY), takeUntil(this.destroy$))
       .subscribe(() => this.processData());
@@ -113,7 +110,6 @@ export class ReadingDebtChartComponent implements OnInit, OnDestroy {
     const finished = months.map(m => monthlyFinished.get(m) || 0);
 
     if (added.every(v => v === 0) && finished.every(v => v === 0)) return;
-    this.hasData = true;
 
     const backlog: number[] = [];
     let running = 0;
@@ -124,7 +120,7 @@ export class ReadingDebtChartComponent implements OnInit, OnDestroy {
     this.currentBacklog = running;
     this.trend = running > (backlog[0] || 0) ? this.t.translate('statsUser.readingDebt.growing') : this.t.translate('statsUser.readingDebt.shrinking');
 
-    this.chartDataSubject.next({
+    this.chartData = {
       labels: monthLabels,
       datasets: [
         {
@@ -160,6 +156,7 @@ export class ReadingDebtChartComponent implements OnInit, OnDestroy {
           order: 1
         } as any
       ]
-    });
+    };
+    this.hasData = true;
   }
 }

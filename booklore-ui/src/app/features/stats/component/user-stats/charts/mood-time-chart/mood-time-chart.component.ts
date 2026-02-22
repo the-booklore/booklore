@@ -2,7 +2,7 @@ import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {Tooltip} from 'primeng/tooltip';
-import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {UserStatsService, MoodTimeResponse} from '../../../../../settings/user-management/user-stats.service';
@@ -13,8 +13,6 @@ interface BubblePoint {
   y: number;
   r: number;
 }
-
-type BubbleChartData = ChartData<'bubble', BubblePoint[], string>;
 
 @Component({
   selector: 'app-mood-time-chart',
@@ -45,10 +43,13 @@ export class MoodTimeChartComponent implements OnInit, OnDestroy {
     '#795548', '#607d8b'
   ];
 
+  public chartData: ChartData<'bubble', BubblePoint[], string> = {labels: [], datasets: []};
+
   public readonly chartOptions: ChartConfiguration<'bubble'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {padding: {top: 10}},
+    animation: {duration: 400},
+    layout: {padding: {top: 10, right: 20}},
     plugins: {
       legend: {
         display: true, position: 'bottom',
@@ -84,7 +85,7 @@ export class MoodTimeChartComponent implements OnInit, OnDestroy {
             return h < 12 ? `${h}am` : `${h - 12}pm`;
           }
         },
-        title: {display: true, text: 'Hour of Day', color: 'rgba(255, 255, 255, 0.5)'}
+        title: {display: true, text: 'Hour of Day', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}}
       },
       y: {
         grid: {color: 'rgba(255, 255, 255, 0.08)'},
@@ -94,13 +95,11 @@ export class MoodTimeChartComponent implements OnInit, OnDestroy {
             const idx = Number(val);
             return this.moods[idx] || '';
           }
-        }
+        },
+        title: {display: true, text: 'Mood', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}}
       }
     }
   };
-
-  private readonly chartDataSubject = new BehaviorSubject<BubbleChartData>({labels: [], datasets: []});
-  public readonly chartData$: Observable<BubbleChartData> = this.chartDataSubject.asObservable();
 
   ngOnInit(): void {
     this.currentYear = this.initialYear;
@@ -126,11 +125,9 @@ export class MoodTimeChartComponent implements OnInit, OnDestroy {
   private processData(data: MoodTimeResponse[]): void {
     if (!data || data.length === 0) {
       this.hasData = false;
-      this.chartDataSubject.next({labels: [], datasets: []});
+      this.chartData = {labels: [], datasets: []};
       return;
     }
-
-    this.hasData = true;
 
     this.moods = [...new Set(data.map(d => d.mood))];
     this.moodCount = this.moods.length;
@@ -169,6 +166,7 @@ export class MoodTimeChartComponent implements OnInit, OnDestroy {
       };
     });
 
-    this.chartDataSubject.next({datasets});
+    this.chartData = {datasets};
+    this.hasData = true;
   }
 }

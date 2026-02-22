@@ -2,13 +2,11 @@ import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {Tooltip} from 'primeng/tooltip';
-import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {UserStatsService, SessionScatterResponse} from '../../../../../settings/user-management/user-stats.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
-
-type ScatterData = ChartData<'scatter', {x: number; y: number}[], string>;
 
 const DAY_COLORS = [
   '#ef5350', '#ff9800', '#ffc107', '#66bb6a', '#42a5f5', '#7e57c2', '#ec407a'
@@ -35,10 +33,13 @@ export class SessionArchetypesChartComponent implements OnInit, OnDestroy {
   public sessionCount = 0;
   public dominantArchetype = '';
 
+  public chartData: ChartData<'scatter', {x: number; y: number}[], string> = {labels: [], datasets: []};
+
   public readonly chartOptions: ChartConfiguration<'scatter'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {padding: {top: 10}},
+    animation: {duration: 400},
+    layout: {padding: {top: 10, right: 20}},
     plugins: {
       legend: {
         display: true, position: 'bottom',
@@ -54,7 +55,7 @@ export class SessionArchetypesChartComponent implements OnInit, OnDestroy {
             const h = Math.floor(hour);
             const m = Math.round((hour - h) * 60);
             const duration = Math.round(ctx.parsed.y ?? 0);
-            return `${h}:${String(m).padStart(2, '0')} - ${duration} min`;
+            return `${ctx.dataset.label}: ${h}:${String(m).padStart(2, '0')} - ${duration} min`;
           }
         }
       },
@@ -73,19 +74,16 @@ export class SessionArchetypesChartComponent implements OnInit, OnDestroy {
             return h < 12 ? `${h}am` : `${h - 12}pm`;
           }
         },
-        title: {display: true, text: 'Time of Day', color: 'rgba(255, 255, 255, 0.5)'}
+        title: {display: true, text: 'Time of Day', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}}
       },
       y: {
         min: 0,
         grid: {color: 'rgba(255, 255, 255, 0.08)'},
         ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 11}},
-        title: {display: true, text: 'Duration (min)', color: 'rgba(255, 255, 255, 0.5)'}
+        title: {display: true, text: 'Duration (min)', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}}
       }
     }
   };
-
-  private readonly chartDataSubject = new BehaviorSubject<ScatterData>({labels: [], datasets: []});
-  public readonly chartData$: Observable<ScatterData> = this.chartDataSubject.asObservable();
 
   ngOnInit(): void {
     this.currentYear = this.initialYear;
@@ -111,11 +109,10 @@ export class SessionArchetypesChartComponent implements OnInit, OnDestroy {
   private processData(data: SessionScatterResponse[]): void {
     if (!data || data.length === 0) {
       this.hasData = false;
-      this.chartDataSubject.next({labels: [], datasets: []});
+      this.chartData = {labels: [], datasets: []};
       return;
     }
 
-    this.hasData = true;
     this.sessionCount = data.length;
 
     const byDay = new Map<number, {x: number; y: number}[]>();
@@ -145,11 +142,12 @@ export class SessionArchetypesChartComponent implements OnInit, OnDestroy {
         backgroundColor: DAY_COLORS[i] + 'AA',
         borderColor: DAY_COLORS[i],
         borderWidth: 1,
-        pointRadius: 4,
-        pointHoverRadius: 6
+        pointRadius: 5,
+        pointHoverRadius: 8
       };
     }).filter(ds => ds.data.length > 0);
 
-    this.chartDataSubject.next({datasets});
+    this.chartData = {datasets};
+    this.hasData = true;
   }
 }

@@ -2,13 +2,11 @@ import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {Tooltip} from 'primeng/tooltip';
-import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {EMPTY, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../../../book/service/book.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
-
-type EraChartData = ChartData<'line', number[], string>;
 
 @Component({
   selector: 'app-publication-era-chart',
@@ -34,10 +32,13 @@ export class PublicationEraChartComponent implements OnInit, OnDestroy {
     '#8bc34a', '#ff9800'
   ];
 
+  public chartData: ChartData<'line', number[], string> = {labels: [], datasets: []};
+
   public readonly chartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {padding: {top: 10}},
+    animation: {duration: 400},
+    layout: {padding: {top: 10, right: 10}},
     plugins: {
       legend: {
         display: true, position: 'bottom',
@@ -59,19 +60,17 @@ export class PublicationEraChartComponent implements OnInit, OnDestroy {
       x: {
         grid: {color: 'rgba(255, 255, 255, 0.08)'},
         ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 11}},
-        title: {display: true, text: '', color: 'rgba(255, 255, 255, 0.5)'}
+        title: {display: true, text: 'Rating Range', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}}
       },
       y: {
+        beginAtZero: true,
         grid: {color: 'rgba(255, 255, 255, 0.08)'},
         ticks: {color: 'rgba(255, 255, 255, 0.6)', font: {size: 11}, stepSize: 1},
-        title: {display: false}
+        title: {display: true, text: 'Books', color: 'rgba(255, 255, 255, 0.5)', font: {size: 11}}
       }
     },
     interaction: {mode: 'index', intersect: false}
   };
-
-  private readonly chartDataSubject = new BehaviorSubject<EraChartData>({labels: [], datasets: []});
-  public readonly chartData$: Observable<EraChartData> = this.chartDataSubject.asObservable();
 
   ngOnInit(): void {
     this.bookService.bookState$
@@ -92,7 +91,6 @@ export class PublicationEraChartComponent implements OnInit, OnDestroy {
     const ratedBooks = books.filter(b => b.metadata?.publishedDate && b.personalRating && b.personalRating > 0);
     if (ratedBooks.length < 3) return;
 
-    this.hasData = true;
     this.totalRated = ratedBooks.length;
 
     const decadeData = new Map<string, Map<number, number>>();
@@ -134,17 +132,18 @@ export class PublicationEraChartComponent implements OnInit, OnDestroy {
         label: decade,
         data: ratingLabels.map((_, idx) => dMap.get(idx) || 0),
         borderColor: this.DECADE_COLORS[i % this.DECADE_COLORS.length],
-        backgroundColor: 'transparent',
+        backgroundColor: this.DECADE_COLORS[i % this.DECADE_COLORS.length] + '20',
         borderWidth: 2.5,
-        pointRadius: 4,
+        pointRadius: 5,
         pointBackgroundColor: this.DECADE_COLORS[i % this.DECADE_COLORS.length],
         pointBorderColor: '#ffffff',
-        pointBorderWidth: 1,
-        tension: 0.4,
+        pointBorderWidth: 1.5,
+        tension: 0.3,
         fill: false
       };
     });
 
-    this.chartDataSubject.next({labels: ratingLabels, datasets});
+    this.chartData = {labels: ratingLabels, datasets};
+    this.hasData = true;
   }
 }
