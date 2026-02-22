@@ -743,12 +743,16 @@
     "publisher": "Editorial:",
     "years": "Años:",
     "numberOfBooks": "Número de libros:",
+    "book": "Libro",
+    "books": "Libros",
+    "synopsis": "Sinopsis",
     "language": "Idioma:",
     "readStatus": "Estado de lectura:",
     "noDescription": "No hay descripción disponible.",
     "showLess": "Mostrar menos",
     "showMore": "Mostrar más",
     "noBooksFound": "No se encontraron libros para esta serie.",
+    "booksInSeries": "Libros en la serie",
     "selected": "seleccionados",
     "loadingSeriesDetails": "Cargando detalles de la serie...",
     "completionOwned": "Tienes {{ owned }} de {{ total }} libros",
@@ -766,7 +770,8 @@
       "avgAmazon": "Prom. Amazon",
       "avgHardcover": "Prom. Hardcover",
       "formats": "Formatos",
-      "totalAudioDuration": "Duración de audio"
+      "totalAudioDuration": "Duración de audio",
+      "owned": "Propios"
     },
     "status": {
       "unread": "NO LEÍDO",

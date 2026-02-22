@@ -19,56 +19,38 @@
             <div class="series-main">
               <div class="series-details">
 
-                <!-- HERO: Stacked covers + Info side by side -->
+                <!-- HERO: Cover + Identity info -->
                 <div class="series-hero">
-
-                  <!-- LEFT: Stacked Covers -->
-                  @if (coverBooks$ | async; as coverBooks) {
-                    <div class="hero-covers">
-                      <div class="stacked-covers" [ngClass]="'covers-' + coverBooks.length">
-                        @for (book of coverBooks; track book.id; let i = $index) {
-                          <img
-                            [src]="getBookThumbnailUrl(book)"
-                            class="cover-img"
-                            [ngClass]="'cover-' + i"
-                            [alt]="book.metadata?.title || ''"
-                            loading="lazy"
-                            decoding="async"/>
-                        }
-                      </div>
+                  @if (coverBook$ | async; as coverBook) {
+                    <div class="hero-cover-section">
+                      <img
+                        [src]="getBookThumbnailUrl(coverBook)"
+                        class="hero-cover-img"
+                        [alt]="coverBook.metadata?.title || ''"
+                        loading="lazy"
+                        decoding="async"/>
                     </div>
                   }
 
-                  <!-- RIGHT: All series info -->
                   <div class="hero-info">
+                    <h2 class="series-title">{{ seriesTitle$ | async }}</h2>
 
-                    <!-- Title + Authors -->
-                    <div class="series-title-block">
-                      <h2 class="series-title">
-                        {{ seriesTitle$ | async }}
-                      </h2>
-                      @if (allAuthors$ | async; as authors) {
-                        <p class="series-authors">
-                          @for (author of authors; track $index; let isLast = $last) {
-                            <a class="author-link" (click)="goToAuthorBooks(author)">
-                              {{ author }}
-                            </a>
-                            @if (!isLast) {
-                              <span>, </span>
-                            }
-                          }
-                        </p>
-                      }
-                    </div>
+                    @if (allAuthors$ | async; as authors) {
+                      <p class="series-authors">
+                        @for (author of authors; track $index; let isLast = $last) {
+                          <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                          @if (!isLast) {<span>, </span>}
+                        }
+                      </p>
+                    }
 
-                    <!-- Categories -->
                     @if (allCategories$ | async; as categories) {
                       @if (categories.length) {
                         <div class="categories-scroll">
                           <div class="categories-list">
                             @for (category of categories; track category) {
                               <a (click)="goToCategory(category)" class="category-link">
-                                <p-tag [value]="category"></p-tag>
+                                <app-tag color="red" size="xs">{{ category }}</app-tag>
                               </a>
                             }
                           </div>
@@ -76,120 +58,64 @@
                       }
                     }
 
-                    <!-- Metadata row -->
-                    <div class="metadata-grid">
-                      <div class="metadata-item">
-                        <span class="metadata-label">{{ t('publisher') }}</span>
-                        @if (allPublishers$ | async; as publishers) {
-                          @if (publishers.length) {
-                            <span class="metadata-value">
-                              @for (pub of publishers; track pub; let isLast = $last) {
-                                <span class="publisher-link" (click)="goToPublisher(pub)">{{ pub }}</span>
-                                @if (!isLast) {, }
-                              }
-                            </span>
-                          } @else {
-                            <span class="metadata-value">-</span>
-                          }
-                        } @else {
-                          <span class="metadata-value">-</span>
+                    <div class="metadata-cards">
+                      @if (allPublishers$ | async; as publishers) {
+                        @if (publishers.length) {
+                          <span class="meta-card meta-card--publisher" (click)="goToPublisher(publishers[0])">
+                            <i class="pi pi-building"></i>
+                            @for (pub of publishers; track pub; let isLast = $last) {
+                              {{ pub }}{{ isLast ? '' : ', ' }}
+                            }
+                          </span>
                         }
-                      </div>
-                      <div class="metadata-item">
-                        <span class="metadata-label">{{ t('years') }}</span>
-                        <span class="metadata-value">{{ (yearsRange$ | async) || '-' }}</span>
-                      </div>
-                      <div class="metadata-item">
-                        <span class="metadata-label">{{ t('numberOfBooks') }}</span>
-                        <span class="metadata-value">{{ books.length || 0 }}</span>
-                      </div>
-                      <div class="metadata-item">
-                        <span class="metadata-label">{{ t('language') }}</span>
-                        <span class="metadata-value">
-                          @if (allLanguages$ | async; as languages) {
-                            {{ languages.length ? languages.join(', ') : '-' }}
-                          } @else {
-                            -
-                          }
+                      }
+                      <span class="meta-card meta-card--books">
+                        <i class="pi pi-book"></i>
+                        {{ books.length }} {{ books.length === 1 ? t('book') : t('books') }}
+                      </span>
+                      @if (yearsRange$ | async; as years) {
+                        <span class="meta-card meta-card--years">
+                          <i class="pi pi-calendar"></i>
+                          {{ years }}
                         </span>
-                      </div>
+                      }
                       @if (seriesStats$ | async; as stats) {
                         @if (stats.totalPages > 0) {
-                          <div class="metadata-item">
-                            <span class="metadata-label">{{ t('stats.totalPages') }}</span>
-                            <span class="metadata-value">{{ stats.totalPages | number }}</span>
-                          </div>
+                          <span class="meta-card meta-card--pages">
+                            <i class="pi pi-file"></i>
+                            {{ stats.totalPages | number }} {{ t('stats.totalPages') }}
+                          </span>
                         }
                         @if (stats.formatCounts.size > 0) {
-                          <div class="metadata-item">
-                            <span class="metadata-label">{{ t('stats.formats') }}</span>
-                            <span class="metadata-value">
-                              @for (entry of stats.formatCounts | keyvalue; track entry.key) {
-                                {{ entry.key }} ({{ entry.value }}){{ $last ? '' : ', ' }}
-                              }
-                            </span>
-                          </div>
+                          <span class="meta-card meta-card--format">
+                            <i class="pi pi-tag"></i>
+                            @for (entry of stats.formatCounts | keyvalue; track entry.key) {
+                              {{ entry.key }}{{ $last ? '' : ', ' }}
+                            }
+                          </span>
                         }
                         @if (stats.totalAudioDurationSeconds > 0) {
-                          <div class="metadata-item">
-                            <span class="metadata-label">{{ t('stats.totalAudioDuration') }}</span>
-                            <span class="metadata-value">{{ formatDuration(stats.totalAudioDurationSeconds) }}</span>
-                          </div>
+                          <span class="meta-card meta-card--audio">
+                            <i class="pi pi-headphones"></i>
+                            {{ formatDuration(stats.totalAudioDurationSeconds) }}
+                          </span>
                         }
+                      }
+                      @if (allLanguages$ | async; as languages) {
+                        @if (languages.length) {
+                          <span class="meta-card meta-card--language">
+                            <i class="pi pi-globe"></i>
+                            {{ languages.join(', ') }}
+                          </span>
+                        }
+                      }
+                      @if (seriesCompletion$ | async; as completion) {
+                        <span class="meta-card meta-card--owned">
+                          <i class="pi pi-check-circle"></i>
+                          {{ completion.owned }}/{{ completion.total }} {{ t('stats.owned') }}
+                        </span>
                       }
                     </div>
-
-                    <!-- Reading progress bar -->
-                    @if (readStatusBreakdown$ | async; as segments) {
-                      @if (segments.length) {
-                        <div class="read-progress-section">
-                          <div class="read-progress-bar">
-                            @for (seg of segments; track seg.status) {
-                              <div class="read-progress-segment"
-                                [ngStyle]="{'width': seg.percent + '%', 'background-color': getStatusColor(seg.status)}"
-                                [pTooltip]="getStatusLabel(seg.status) + ': ' + seg.count">
-                              </div>
-                            }
-                          </div>
-                          <div class="read-progress-legend">
-                            @for (seg of segments; track seg.status) {
-                              <span class="legend-item"
-                                [ngStyle]="{'border-color': getStatusColor(seg.status)}">
-                                <span class="legend-dot"
-                                  [ngStyle]="{'background-color': getStatusColor(seg.status)}"></span>
-                                {{ getStatusLabel(seg.status) }} ({{ seg.count }})
-                              </span>
-                            }
-                            @let readProg = seriesReadProgress$ | async;
-                            @if (readProg) {
-                              <span class="read-percent-label">
-                                {{ t('readPercent', { progress: readProg }) }}
-                              </span>
-                            }
-                          </div>
-                        </div>
-                      }
-                    }
-
-                    <!-- Completion tracker -->
-                    @if (seriesCompletion$ | async; as completion) {
-                      <div class="completion-section">
-                        <span class="completion-label">
-                          {{ t('completionOwned', { owned: completion.owned, total: completion.total }) }}
-                        </span>
-                        <p-progressBar
-                          [value]="completion.percent"
-                          [showValue]="false"
-                          class="completion-bar"
-                          [ngClass]="completion.percent === 100 ? 'progress-complete' : 'progress-incomplete'">
-                        </p-progressBar>
-                        @if (completion.missingNumbers.length > 0) {
-                          <p class="missing-books">
-                            {{ t('missingBooks', { numbers: completion.missingNumbers.join(', ') }) }}
-                          </p>
-                        }
-                      </div>
-                    }
 
                     <!-- Ratings -->
                     @if (seriesStats$ | async; as stats) {
@@ -227,23 +153,20 @@
                       }
                     }
 
-                    <!-- Next Up -->
-                    @if (nextUp$ | async; as nextUp) {
-                      <div class="next-up-card">
-                        <div class="next-up-header">
-                          <i class="pi pi-bookmark"></i>
-                          {{ nextUp.isReading ? t('continueReading') : t('nextUp') }}
-                        </div>
-                        <div class="next-up-body">
+                    <!-- Next Up + Progress (pushed to bottom, aligned with cover) -->
+                    <div class="hero-status">
+                      @if (nextUp$ | async; as nextUp) {
+                        <div class="next-up-card" (click)="readBook(nextUp.book.id)">
                           <img [src]="nextUp.thumbnailUrl"
                             [alt]="nextUp.book.metadata?.title || ''"
                             class="next-up-thumb"
                             loading="lazy"/>
                           <div class="next-up-info">
+                            <span class="next-up-label">
+                              <i class="pi pi-bookmark-fill"></i>
+                              {{ nextUp.isReading ? t('continueReading') : t('nextUp') }}
+                            </span>
                             <span class="next-up-title">{{ nextUp.book.metadata?.title || '' }}</span>
-                            @if (nextUp.book.metadata?.seriesNumber != null) {
-                              <span class="next-up-number">#{{ nextUp.book.metadata?.seriesNumber }}</span>
-                            }
                             @if (nextUp.isReading && nextUp.progressPercent != null) {
                               <div class="next-up-progress-row">
                                 <p-progressBar
@@ -251,40 +174,74 @@
                                   [showValue]="false"
                                   class="next-up-progress">
                                 </p-progressBar>
-                                <span class="next-up-progress-label">{{ nextUp.progressPercent }}%</span>
+                                <span class="next-up-percent">{{ nextUp.progressPercent }}%</span>
                               </div>
                             }
-                            <p-button
-                              size="small"
-                              icon="pi pi-book"
-                              [label]="nextUp.isReading ? t('continueButton') : t('readButton')"
-                              severity="info"
-                              [text]="true"
-                              (click)="readBook(nextUp.book.id)">
-                            </p-button>
                           </div>
                         </div>
-                      </div>
+                      }
+
+                      @if (readStatusBreakdown$ | async; as segments) {
+                        @if (segments.length) {
+                          <div class="read-progress-card">
+                            <div class="read-progress-section">
+                              <div class="read-progress-bar">
+                                @for (seg of segments; track seg.status) {
+                                  <div class="read-progress-segment"
+                                    [ngStyle]="{'width': seg.percent + '%', 'background-color': getStatusColor(seg.status)}"
+                                    [pTooltip]="getStatusLabel(seg.status) + ': ' + seg.count">
+                                  </div>
+                                }
+                              </div>
+                              <div class="read-progress-legend">
+                                @for (seg of segments; track seg.status) {
+                                  <span class="legend-item"
+                                    [ngStyle]="{'border-color': getStatusColor(seg.status)}">
+                                    <span class="legend-dot"
+                                      [ngStyle]="{'background-color': getStatusColor(seg.status)}"></span>
+                                    {{ getStatusLabel(seg.status) }} ({{ seg.count }})
+                                  </span>
+                                }
+                                @let readProg = seriesReadProgress$ | async;
+                                @if (readProg) {
+                                  <span class="read-percent-label">
+                                    {{ t('readPercent', { progress: readProg }) }}
+                                  </span>
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      }
+                    </div>
+
+                  </div>
+                </div>
+
+                <div class="description-section">
+                  <div class="description-header">
+                    <i class="pi pi-align-left"></i>
+                    <span>{{ t('synopsis') }}</span>
+                  </div>
+                  <div class="description-body">
+                    <div #descriptionContent [ngClass]="{ 'line-clamp-7': !isExpanded }"
+                      class="description-content">
+                      <div class="description-html"
+                        [innerHTML]="(firstDescription$ | async) || t('noDescription')"></div>
+                    </div>
+                    @if (isExpanded || isOverflowing) {
+                      <button class="expand-toggle" (click)="toggleExpand()">
+                        {{ isExpanded ? t('showLess') : t('showMore') }}
+                        <i class="pi" [ngClass]="isExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+                      </button>
                     }
-
                   </div>
                 </div>
 
-                <!-- DESCRIPTION -->
-                <div class="description-box">
-                  <div #descriptionContent [ngClass]="{ 'line-clamp-3': !isExpanded, 'line-clamp-none': isExpanded }"
-                    class="description-container">
-                    <div class="readonly-editor"
-                    [innerHTML]="(firstDescription$ | async) || t('noDescription')"></div>
-                  </div>
-                  @if (isExpanded || isOverflowing) {
-                    <p-button [label]="isExpanded ? t('showLess') : t('showMore')"
-                      [icon]="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" iconPos="right" size="small" text
-                      (click)="toggleExpand()">
-                    </p-button>
-                  }
-                </div>
-
+                <h3 class="section-title">
+                  <i class="pi pi-objects-column"></i>
+                  {{ t('booksInSeries') }}
+                </h3>
                 <div class="series-items-grid" #Container
                   [ngStyle]="{'grid-template-columns': 'repeat(auto-fill, minmax(' + gridColumnMinWidth + ', 1fr))'}">
                   @for (book of books; track book; let i = $index) {

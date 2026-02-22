@@ -27,6 +27,7 @@ import {AppSettingsService} from "../../../../shared/service/app-settings.servic
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {Tooltip} from "primeng/tooltip";
 import {Divider} from "primeng/divider";
+import {TagComponent} from "../../../../shared/components/tag/tag.component";
 import {animate, style, transition, trigger} from "@angular/animations";
 import {AfterViewChecked, Component, ElementRef, inject, OnDestroy, ViewChild} from '@angular/core';
 import {BookCardOverlayPreferenceService} from '../book-browser/book-card-overlay-preference.service';
@@ -88,7 +89,8 @@ interface SeriesStats {
     TieredMenu,
     Tooltip,
     Divider,
-    TranslocoDirective
+    TranslocoDirective,
+    TagComponent
   ],
   animations: [
     trigger('slideInOut', [
@@ -166,8 +168,8 @@ export class SeriesPageComponent implements OnDestroy, AfterViewChecked {
     tap(books => this.currentBooks = books)
   );
 
-  coverBooks$: Observable<Book[]> = this.filteredBooks$.pipe(
-    map(books => books.slice(0, 5))
+  coverBook$: Observable<Book | null> = this.filteredBooks$.pipe(
+    map(books => books[0] ?? null)
   );
 
   seriesTitle$: Observable<string> = combineLatest([
