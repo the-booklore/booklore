@@ -42,6 +42,7 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
   public totalBooks = 0;
   public topQuarter = '';
   public topStatus = '';
+  public completionRate = '';
 
   private nodes: SankeyNode[] = [];
   private links: SankeyLink[] = [];
@@ -146,6 +147,9 @@ export class BookFlowChartComponent implements OnInit, OnDestroy, AfterViewInit 
     this.topQuarter = sortedQuarters[0]?.[0] || '';
     const topStatusEntry = [...statusMap.entries()].sort((a, b) => b[1] - a[1])[0];
     this.topStatus = topStatusEntry?.[0] || '';
+
+    const readCount = statusMap.get('Read') || 0;
+    this.completionRate = books.length > 0 ? Math.round((readCount / books.length) * 100) + '%' : '0%';
 
     const quarterColors = ['#42a5f5', '#26c6da', '#66bb6a', '#ffa726', '#ab47bc', '#ef5350', '#ec407a', '#7e57c2'];
 

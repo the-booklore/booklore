@@ -85,12 +85,12 @@ export class UserChartConfigService {
     {id: 'book-length', title: 'Book Length Sweet Spot', component: BookLengthChartComponent, enabled: true, sizeClass: 'chart-medium', order: 14},
     {id: 'rating-taste', title: 'Rating Taste Comparison', component: RatingTasteChartComponent, enabled: true, sizeClass: 'chart-medium', order: 15},
     {id: 'series-progress', title: 'Series Progress Tracker', component: SeriesProgressChartComponent, enabled: true, sizeClass: 'chart-medium', order: 16},
-    {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 17},
-    {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 18},
-    {id: 'book-flow', title: 'Book Flow', component: BookFlowChartComponent, enabled: true, sizeClass: 'chart-full', order: 19},
-    {id: 'reading-debt', title: 'Reading Debt Waterfall', component: ReadingDebtChartComponent, enabled: true, sizeClass: 'chart-medium', order: 20},
-    {id: 'publication-era', title: 'Publication Era vs Rating', component: PublicationEraChartComponent, enabled: true, sizeClass: 'chart-medium', order: 21},
-    {id: 'session-archetypes', title: 'Session Archetypes', component: SessionArchetypesChartComponent, enabled: true, sizeClass: 'chart-medium', order: 22},
+    {id: 'reading-debt', title: 'Reading Debt Waterfall', component: ReadingDebtChartComponent, enabled: true, sizeClass: 'chart-medium', order: 17},
+    {id: 'publication-era', title: 'Publication Era vs Rating', component: PublicationEraChartComponent, enabled: true, sizeClass: 'chart-medium', order: 18},
+    {id: 'session-archetypes', title: 'Session Archetypes', component: SessionArchetypesChartComponent, enabled: true, sizeClass: 'chart-medium', order: 19},
+    {id: 'book-flow', title: 'Book Flow', component: BookFlowChartComponent, enabled: true, sizeClass: 'chart-medium', order: 20},
+    {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 21},
+    {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 22}
   ];
 
   private chartsSubject = new BehaviorSubject<UserChartConfig[]>(this.loadChartConfig());

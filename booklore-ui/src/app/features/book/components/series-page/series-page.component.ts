@@ -10,7 +10,6 @@ import {BookMetadataManageService} from "../../service/book-metadata-manage.serv
 import {BookCardComponent} from "../book-browser/book-card/book-card.component";
 import {CoverScalePreferenceService} from "../book-browser/cover-scale-preference.service";
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from "primeng/tabs";
-import {Tag} from "primeng/tag";
 import {VirtualScrollerModule} from "@iharbeck/ngx-virtual-scroller";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {ProgressBar} from "primeng/progressbar";
@@ -84,7 +83,6 @@ interface SeriesStats {
     Tab,
     TabPanels,
     TabPanel,
-    Tag,
     VirtualScrollerModule,
     TieredMenu,
     Tooltip,

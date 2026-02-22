@@ -482,6 +482,8 @@
     "totalBooks": "Total Books",
     "busiestQuarter": "Busiest Quarter",
     "topStatus": "Top Status",
+    "avgRating": "Avg Rating",
+    "completionRate": "Completion",
     "colAdded": "Added",
     "colStatus": "Status",
     "colRating": "Rating",

@@ -482,6 +482,8 @@
     "totalBooks": "Total de libros",
     "busiestQuarter": "Trimestre mas activo",
     "topStatus": "Estado principal",
+    "avgRating": "Calif. promedio",
+    "completionRate": "Completados",
     "colAdded": "Agregado",
     "colStatus": "Estado",
     "colRating": "Calificacion",
