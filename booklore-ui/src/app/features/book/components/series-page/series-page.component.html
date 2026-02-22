@@ -274,31 +274,77 @@
       <!-- BOOK LIST TAB -->
       <p-tabpanel value="list">
         <div class="book-list-container">
-          @for (book of books; track book.id) {
-            <div class="book-list-row" (click)="readBook(book.id)">
-              <span class="list-series-number">
-                {{ book.metadata?.seriesNumber != null ? '#' + book.metadata?.seriesNumber : '-' }}
-              </span>
+          @for (book of books; track book.id; let i = $index) {
+            <div class="book-list-card">
+              <div class="list-number-col">
+                <span class="list-series-number">
+                  {{ book.metadata?.seriesNumber != null ? '#' + book.metadata?.seriesNumber : '-' }}
+                </span>
+              </div>
               <img [src]="getBookThumbnailUrl(book)"
                 [alt]="book.metadata?.title || ''"
                 class="list-thumb"
                 loading="lazy"/>
               <div class="list-book-info">
                 <span class="list-book-title">{{ book.metadata?.title || '' }}</span>
-                @if (book.metadata?.publishedDate; as date) {
-                  <span class="list-book-year">{{ date }}</span>
+                <div class="list-book-meta">
+                  @if (book.metadata?.authors?.length) {
+                    <span class="list-book-authors">{{ book.metadata!.authors!.join(', ') }}</span>
+                  }
+                  @if (book.metadata?.publishedDate; as date) {
+                    <span class="list-meta-dot">·</span>
+                    <span class="list-book-year">{{ date }}</span>
+                  }
+                  @if (book.metadata?.pageCount; as pages) {
+                    <span class="list-meta-dot">·</span>
+                    <span class="list-book-pages">{{ pages }} {{ t('listPages') }}</span>
+                  }
+                </div>
+                @if (getBookProgress(book); as progress) {
+                  <div class="list-progress-row">
+                    <div class="list-progress-bar">
+                      <div class="list-progress-fill" [ngStyle]="{'width': progress + '%'}"></div>
+                    </div>
+                    <span class="list-progress-text">{{ progress }}%</span>
+                  </div>
+                }
+                @if (book.personalRating) {
+                  <div class="list-rating-row">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      <i class="pi list-star"
+                        [ngClass]="book.personalRating! >= star * 2 ? 'pi-star-fill' : (book.personalRating! >= star * 2 - 1 ? 'pi-star-half-fill' : 'pi-star')">
+                      </i>
+                    }
+                    <span class="list-rating-value">{{ book.personalRating }}/10</span>
+                  </div>
                 }
               </div>
-              @if (book.metadata?.pageCount; as pages) {
-                <span class="list-pages">{{ pages }} {{ t('listPages') }}</span>
-              }
-              <span class="list-status-badge"
-                [ngStyle]="{'background-color': getStatusColor(book.readStatus)}">
-                {{ getStatusLabel(book.readStatus) }}
-              </span>
-              @if (book.primaryFile?.bookType; as bookType) {
-                <p-tag [value]="bookType" class="list-format-tag" severity="secondary"></p-tag>
-              }
+              <div class="list-right-col">
+                <div class="list-badges">
+                  <span class="list-status-badge"
+                    [ngStyle]="{'background-color': getStatusColor(book.readStatus)}">
+                    {{ getStatusLabel(book.readStatus) }}
+                  </span>
+                  @if (book.primaryFile?.bookType; as bookType) {
+                    <span class="list-format-badge"
+                      [style.background-color]="'color-mix(in srgb, var(--book-type-' + bookType.toLowerCase() + '-color) 20%, transparent)'"
+                      [style.border-color]="'var(--book-type-' + bookType.toLowerCase() + '-color)'"
+                      [style.color]="'var(--book-type-' + bookType.toLowerCase() + '-color)'">
+                      {{ bookType }}
+                    </span>
+                  }
+                </div>
+                <div class="list-actions">
+                  <button class="list-action-btn btn-read" (click)="readBook(book.id); $event.stopPropagation()"
+                    [pTooltip]="t('readButton')" tooltipPosition="top">
+                    <i class="pi pi-book"></i>
+                  </button>
+                  <button class="list-action-btn btn-details" (click)="viewBookDetails(book.id); $event.stopPropagation()"
+                    [pTooltip]="t('viewDetails')" tooltipPosition="top">
+                    <i class="pi pi-info-circle"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           }
           @if (books.length === 0) {

@@ -760,6 +760,7 @@
     "nextUp": "Siguiente",
     "continueReading": "Continuar leyendo",
     "readButton": "Leer",
+    "viewDetails": "Ver detalles",
     "continueButton": "Continuar",
     "readPercent": "{{ progress }} leídos",
     "listPages": "páginas",

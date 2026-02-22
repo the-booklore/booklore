@@ -549,6 +549,24 @@ export class SeriesPageComponent implements OnDestroy, AfterViewChecked {
     this.bookService.readBook(bookId);
   }
 
+  viewBookDetails(bookId: number): void {
+    this.router.navigate(['/book', bookId], {
+      queryParams: {tab: 'view'}
+    });
+  }
+
+  getBookProgress(book: Book): number | null {
+    const progress = book.epubProgress?.percentage
+      ?? book.pdfProgress?.percentage
+      ?? book.cbxProgress?.percentage
+      ?? book.audiobookProgress?.percentage
+      ?? book.koreaderProgress?.percentage
+      ?? book.koboProgress?.percentage;
+    if (progress == null || progress <= 0) return null;
+    const pct = progress > 1 ? progress : Math.round(progress * 100);
+    return Math.min(Math.round(pct), 100);
+  }
+
   formatDuration(totalSeconds: number): string {
     if (!totalSeconds || !isFinite(totalSeconds)) return '0:00';
     const h = Math.floor(totalSeconds / 3600);
