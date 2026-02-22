@@ -61,7 +61,10 @@ class BookCoverServiceTest {
     private BookEntity mockBookEntity(Long id, boolean coverLocked) {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Test Title");
-        metadata.setAuthors(Set.of(new AuthorEntity(1L, "Author Name", null)));
+        AuthorEntity author = new AuthorEntity();
+        author.setId(1L);
+        author.setName("Author Name");
+        metadata.setAuthors(Set.of(author));
         metadata.setCoverLocked(coverLocked);
         BookEntity book = new BookEntity();
         book.setId(id);
