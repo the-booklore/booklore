@@ -177,6 +177,12 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     }
   }
 
+  formatCount(count: number | null | undefined): string {
+    if (count == null) return '0';
+    if (count >= 1000) return Math.floor(count / 1000) + 'K';
+    return count.toString();
+  }
+
   getIconSelection(): IconSelection | null {
     if (!this.item.icon) return null;
 

@@ -33,7 +33,7 @@ public class KoboReadingState {
     public static class StatusInfo {
         private String lastModified;
         private KoboReadStatus status;
-        private int timesStartedReading;
+        private Integer timesStartedReading;
         private String lastTimeStartedReading;
         private String lastTimeFinished;
     }

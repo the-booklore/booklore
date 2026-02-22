@@ -1,5 +1,6 @@
 package org.booklore.controller;
 
+import org.booklore.service.AuthorMetadataService;
 import org.booklore.service.book.BookService;
 import org.booklore.service.bookdrop.BookDropService;
 import org.booklore.service.reader.CbxReaderService;
@@ -26,6 +27,7 @@ public class BookMediaController {
     private final BookService bookService;
     private final CbxReaderService cbxReaderService;
     private final BookDropService bookDropService;
+    private final AuthorMetadataService authorMetadataService;
 
     @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Book thumbnail returned successfully")
@@ -65,6 +67,28 @@ public class BookMediaController {
             HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
         cbxReaderService.streamPageImage(bookId, bookType, pageNumber, response.getOutputStream());
+    }
+
+    @Operation(summary = "Get author photo", description = "Retrieve the photo for a specific author.")
+    @ApiResponse(responseCode = "200", description = "Author photo returned successfully")
+    @GetMapping("/author/{authorId}/photo")
+    public ResponseEntity<Resource> getAuthorPhoto(@Parameter(description = "ID of the author") @PathVariable long authorId) {
+        Resource photo = authorMetadataService.getAuthorPhoto(authorId);
+        if (photo == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(photo);
+    }
+
+    @Operation(summary = "Get author thumbnail", description = "Retrieve the thumbnail for a specific author.")
+    @ApiResponse(responseCode = "200", description = "Author thumbnail returned successfully")
+    @GetMapping("/author/{authorId}/thumbnail")
+    public ResponseEntity<Resource> getAuthorThumbnail(@Parameter(description = "ID of the author") @PathVariable long authorId) {
+        Resource thumbnail = authorMetadataService.getAuthorThumbnail(authorId);
+        if (thumbnail == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(thumbnail);
     }
 
     @Operation(summary = "Get bookdrop cover", description = "Retrieve the cover image for a specific bookdrop file.")

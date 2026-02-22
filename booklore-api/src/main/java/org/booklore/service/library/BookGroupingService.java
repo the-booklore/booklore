@@ -138,20 +138,23 @@ public class BookGroupingService {
                 .filter(BookEntity::hasFiles)
                 .toList();
 
-        if (booksWithFiles.size() == 1) {
-            BookEntity book = booksWithFiles.get(0);
-            log.debug("BOOK_PER_FOLDER: Attaching '{}' to single book in folder: '{}'",
-                    file.getFileName(), book.getPrimaryBookFile().getFileName());
-            return book;
+        if (booksWithFiles.isEmpty()) {
+            return null;
         }
 
-        if (booksWithFiles.isEmpty()) {
+        if (booksWithFiles.size() == 1) {
+            BookEntity book = booksWithFiles.get(0);
+            if (isFileNameCompatible(file, book)) {
+                log.debug("BOOK_PER_FOLDER: Attaching '{}' to single book in folder: '{}'",
+                        file.getFileName(), book.getPrimaryBookFile().getFileName());
+                return book;
+            }
             return null;
         }
 
         log.warn("BOOK_PER_FOLDER: Multiple books ({}) in folder '{}', using filename match",
                 booksWithFiles.size(), file.getFileSubPath());
-        return findExactMatch(file, booksWithFiles);
+        return findBestMatch(file, booksWithFiles);
     }
 
     private BookEntity findMatchAutoDetect(LibraryFile file, List<BookEntity> booksInDirectory) {
@@ -165,11 +168,18 @@ public class BookGroupingService {
 
         if (booksWithFiles.size() == 1) {
             BookEntity book = booksWithFiles.get(0);
-            log.debug("AUTO_DETECT: Single book in folder '{}', attaching '{}' to '{}'",
-                    file.getFileSubPath(), file.getFileName(), book.getPrimaryBookFile().getFileName());
-            return book;
+            if (isFileNameCompatible(file, book)) {
+                log.debug("AUTO_DETECT: Single book in folder '{}', attaching '{}' to '{}'",
+                        file.getFileSubPath(), file.getFileName(), book.getPrimaryBookFile().getFileName());
+                return book;
+            }
+            return null;
         }
 
+        return findBestMatch(file, booksWithFiles);
+    }
+
+    private BookEntity findBestMatch(LibraryFile file, List<BookEntity> booksWithFiles) {
         String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
         BookEntity bestMatch = null;
         double bestSimilarity = 0;
@@ -190,10 +200,23 @@ public class BookGroupingService {
         }
 
         if (bestMatch != null) {
-            log.debug("AUTO_DETECT: Fuzzy matched '{}' to '{}' (similarity: {})",
+            log.debug("Fuzzy matched '{}' to '{}' (similarity: {})",
                     file.getFileName(), bestMatch.getPrimaryBookFile().getFileName(), bestSimilarity);
         }
         return bestMatch;
+    }
+
+    private boolean isFileNameCompatible(LibraryFile file, BookEntity book) {
+        BookFileEntity primaryFile = book.getPrimaryBookFile();
+        if (primaryFile == null) {
+            return false;
+        }
+        String fileKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
+        String bookKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+        if (fileKey.equals(bookKey)) {
+            return true;
+        }
+        return BookFileGroupingUtils.calculateSimilarity(fileKey, bookKey) >= 0.85;
     }
 
     private BookEntity findExactMatch(LibraryFile file, List<BookEntity> books) {

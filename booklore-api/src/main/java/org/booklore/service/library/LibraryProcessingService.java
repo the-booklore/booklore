@@ -74,10 +74,12 @@ public class LibraryProcessingService {
 
         validateLibraryPathsAccessible(libraryEntity);
 
-        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity);
+        List<LibraryFile> allLibraryFiles = libraryFileHelper.getAllLibraryFiles(libraryEntity);
+        List<LibraryFile> filteredFiles = libraryFileHelper.filterByAllowedFormats(
+                allLibraryFiles, libraryEntity.getAllowedFormats());
 
         int existingBookCount = libraryEntity.getBookEntities().size();
-        if (existingBookCount > 0 && libraryFiles.isEmpty()) {
+        if (existingBookCount > 0 && allLibraryFiles.isEmpty()) {
             String paths = libraryEntity.getLibraryPaths().stream()
                     .map(LibraryPathEntity::getPath)
                     .collect(Collectors.joining(", "));
@@ -86,23 +88,24 @@ public class LibraryProcessingService {
             throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(paths);
         }
 
-        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity);
+        List<Long> additionalFileIds = detectDeletedAdditionalFiles(allLibraryFiles, libraryEntity);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
             bookDeletionService.deleteRemovedAdditionalFiles(additionalFileIds);
         }
-        List<Long> bookIds = detectDeletedBookIds(libraryFiles, libraryEntity);
+        List<Long> bookIds = detectDeletedBookIds(allLibraryFiles, libraryEntity);
         if (!bookIds.isEmpty()) {
             log.info("Detected {} removed books in library: {}", bookIds.size(), libraryEntity.getName());
-            bookDeletionService.processDeletedLibraryFiles(bookIds, libraryFiles);
+            bookDeletionService.processDeletedLibraryFiles(bookIds, allLibraryFiles);
         }
-        bookRestorationService.restoreDeletedBooks(libraryFiles);
+        bookRestorationService.restoreDeletedBooks(allLibraryFiles);
+        bookDeletionService.purgeDisallowedFormats(libraryEntity);
         entityManager.clear();
         // Re-fetch library entity to get fresh state after entity manager was cleared
         libraryEntity = libraryRepository.findById(context.getLibraryId())
                 .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
 
-        List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
+        List<LibraryFile> newFiles = detectNewBookPaths(filteredFiles, libraryEntity);
 
         // Use BookGroupingService to determine what to attach vs create new
         BookGroupingService.GroupingResult groupingResult = bookGroupingService.groupForRescan(newFiles, libraryEntity);

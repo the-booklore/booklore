@@ -133,7 +133,8 @@
       "viewDetails": "Ver detalles del libro",
       "readBook": "Leer libro",
       "playAudiobook": "Reproducir audiolibro",
-      "bookMenu": "Menú de acciones del libro"
+      "bookMenu": "Menú de acciones del libro",
+      "continueReading": "Continuar leyendo"
     }
   },
   "notes": {
@@ -261,6 +262,7 @@
       "rescanLibrary": "Re-escanear biblioteca",
       "customFetchMetadata": "Obtención personalizada de metadatos",
       "autoFetchMetadata": "Obtener metadatos automáticamente",
+      "findDuplicates": "Buscar duplicados",
       "deleteLibrary": "Eliminar biblioteca"
     },
     "shelf": {
@@ -435,8 +437,6 @@
     "selectFileType": "Seleccionar tipo de archivo",
     "typeAlternativeFormat": "Formato alternativo",
     "typeSupplementary": "Archivo complementario",
-    "descriptionLabel": "Descripción (Opcional)",
-    "descriptionPlaceholder": "Agregar una descripción para este archivo...",
     "statusUploading": "Subiendo",
     "statusUploaded": "Subido",
     "statusUploadFailed": "Error al subir",
@@ -444,6 +444,8 @@
     "statusReady": "Listo",
     "statusFailed": "Fallido",
     "dragDropText": "Arrastre y suelte un archivo aquí para subir.",
+    "supportedFormats": "Formatos compatibles: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+    "maxFileSize": "Tamaño máximo de archivo: {{ size }} por archivo",
     "uploadForBook": "Subir un archivo adicional para <strong>{{ title }}</strong>.",
     "thisBook": "este libro",
     "toast": {
@@ -689,14 +691,13 @@
     "unknownTitle": "Titulo desconocido",
     "selectTargetBook": "Seleccionar libro de destino",
     "searchPlaceholder": "Buscar un libro en la misma biblioteca...",
-    "deleteSource": "Eliminar libro de origen tras adjuntar",
-    "deleteSourceBulk": "Eliminar libros de origen tras adjuntar",
-    "warningMove": "Esto moverá el archivo del libro de origen al libro de destino como formato alternativo.",
-    "warningMoveBulk": "Esto moverá los archivos de los libros seleccionados al libro de destino como formatos alternativos.",
-    "warningDelete": "El registro del libro de origen será eliminado (el archivo se conservará en el libro de destino).",
-    "warningDeleteBulk": "Los registros de los libros de origen serán eliminados (los archivos se conservarán en el libro de destino).",
-    "warningKeep": "El registro del libro de origen permanecerá, pero no tendrá archivos legibles.",
-    "warningKeepBulk": "Los registros de los libros de origen permanecerán, pero no tendrán archivos legibles.",
+    "moveFilesLabel": "Mover archivos al directorio del libro de destino",
+    "warningMove": "El archivo de origen se moverá al directorio del libro de destino y se renombrará.",
+    "warningMoveBulk": "Los archivos de origen se moverán al directorio del libro de destino y se renombrarán.",
+    "warningNoMove": "El archivo de origen permanecerá en su ubicación original en disco.",
+    "warningNoMoveBulk": "Los archivos de origen permanecerán en sus ubicaciones originales en disco.",
+    "warningDelete": "El registro del libro de origen será eliminado (los archivos se conservan en el libro de destino).",
+    "warningDeleteBulk": "Los registros de los libros de origen serán eliminados (los archivos se conservan en el libro de destino).",
     "attachFile": "Adjuntar archivo",
     "attachFilesBulk": "Adjuntar archivos",
     "unknownFile": "Archivo desconocido",
@@ -769,6 +770,54 @@
       "selectAll": "Seleccionar todos los libros",
       "deselectAll": "Deseleccionar todos los libros",
       "deleteSelected": "Eliminar libros seleccionados"
+    }
+  },
+  "duplicateMerger": {
+    "title": "Buscar duplicados",
+    "description": "Detectar y fusionar libros duplicados en esta biblioteca",
+    "presetStrict": "Estricto",
+    "presetBalanced": "Equilibrado",
+    "presetAggressive": "Agresivo",
+    "presetCustom": "Personalizado",
+    "advanced": "Avanzado",
+    "signalIsbn": "ISBN",
+    "signalExternalId": "ID externo",
+    "signalTitleAuthor": "Título + Autor",
+    "signalDirectory": "Mismo directorio",
+    "signalFilename": "Nombre de archivo",
+    "scan": "Escanear",
+    "scanning": "Buscando duplicados...",
+    "scanPrompt": "Seleccione un modo de detección y haga clic en Escanear para buscar duplicados.",
+    "noDuplicates": "No se encontraron duplicados.",
+    "allMerged": "Todos los grupos duplicados han sido procesados.",
+    "mergeAll": "Fusionar todo ({{ count }})",
+    "merge": "Fusionar",
+    "deleteSelected": "Eliminar ({{ count }})",
+    "dismiss": "Descartar",
+    "target": "Destino",
+    "sameFormatWarning": "Mismo formato",
+    "helpText": "Cada grupo contiene libros que parecen ser duplicados. Seleccione el libro destino (el que se conserva) y haga clic en Fusionar para combinar archivos. Para eliminar duplicados específicos, marque los que desea eliminar y haga clic en Eliminar.",
+    "groupLabel": "Grupo {{ index }}",
+    "fileCount": "{{ count }} archivos",
+    "reason": {
+      "ISBN": "Coincidencia ISBN",
+      "EXTERNAL_ID": "Coincidencia ID externo",
+      "TITLE_AUTHOR": "Título + Autor",
+      "DIRECTORY": "Mismo directorio",
+      "FILENAME": "Coincidencia de nombre"
+    },
+    "confirm": {
+      "deleteHeader": "Confirmar eliminación",
+      "deleteMessage": "Esto eliminará permanentemente {{ count }} libro(s) y sus archivos del disco. Esta acción no se puede deshacer."
+    },
+    "toast": {
+      "scanFailedSummary": "Error de escaneo",
+      "scanFailedDetail": "No se pudieron buscar duplicados.",
+      "mergeSuccessSummary": "Fusión completada",
+      "mergeSuccessDetail": "Se fusionaron {{ count }} grupo(s) correctamente.",
+      "mergeFailedSummary": "Error de fusión",
+      "mergeFailedDetail": "No se pudo fusionar este grupo.",
+      "mergePartialDetail": "{{ success }} fusionados, {{ failed }} fallidos."
     }
   }
 }

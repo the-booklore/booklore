@@ -59,7 +59,7 @@ public class EmailProviderV2Service {
         BookLoreUser user = authService.getAuthenticatedUser();
         EmailProviderV2Entity entity = mapper.toEntity(request);
         entity.setUserId(user.getId());
-        entity.setShared(user.getPermissions().isAdmin() && request.isShared());
+        entity.setShared(user.getPermissions().isAdmin() && Boolean.TRUE.equals(request.getShared()));
         EmailProviderV2Entity savedEntity = repository.save(entity);
 
         if (preferenceRepository.findByUserId(user.getId()).isEmpty()) {
@@ -79,7 +79,7 @@ public class EmailProviderV2Service {
 
         mapper.updateEntityFromRequest(request, existingProvider);
         if (user.getPermissions().isAdmin()) {
-            existingProvider.setShared(request.isShared());
+            existingProvider.setShared(Boolean.TRUE.equals(request.getShared()));
         }
         EmailProviderV2Entity updatedEntity = repository.save(existingProvider);
         auditService.log(AuditAction.EMAIL_PROVIDER_UPDATED, "EmailProvider", id, "Updated email provider: " + updatedEntity.getHost() + ":" + updatedEntity.getPort());

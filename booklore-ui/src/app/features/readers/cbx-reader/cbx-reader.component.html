@@ -77,8 +77,8 @@
           }
         } @else {
           <div class="infinite-scroll-wrapper" [class.long-strip-wrapper]="scrollMode === CbxScrollMode.LONG_STRIP">
-            @for (url of infiniteScrollImageUrls; track url; let i = $index) {
-              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image" (click)="onImageClick()" (dblclick)="onImageDoubleClick()" (load)="onPageImageLoad($event, infiniteScrollPages[i])"/>
+            @for (pageIdx of infiniteScrollPages; track pageIdx; let i = $index) {
+              <img [src]="getPageImageUrl(pageIdx)" alt="Page {{ pageIdx + 1 }}" class="page-image" (click)="onImageClick()" (dblclick)="onImageDoubleClick()" (load)="onPageImageLoad($event, pageIdx)"/>
             }
             @if (isLoadingMore) {
               <div class="loading-more">

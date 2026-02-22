@@ -45,11 +45,14 @@ public class FileService {
 
     // @formatter:off
     private static final String IMAGES_DIR                    = "images";
+    private static final String AUTHOR_IMAGES_DIR             = "author-images";
     private static final String BACKGROUNDS_DIR               = "backgrounds";
     private static final String ICONS_DIR                     = "icons";
     private static final String SVG_DIR                       = "svg";
     private static final String THUMBNAIL_FILENAME            = "thumbnail.jpg";
     private static final String COVER_FILENAME                = "cover.jpg";
+    private static final String AUTHOR_PHOTO_FILENAME         = "photo.jpg";
+    private static final String AUTHOR_THUMBNAIL_FILENAME     = "thumbnail.jpg";
     private static final String AUDIOBOOK_THUMBNAIL_FILENAME  = "audiobook-thumbnail.jpg";
     private static final String AUDIOBOOK_COVER_FILENAME      = "audiobook-cover.jpg";
     private static final String JPEG_MIME_TYPE                = "image/jpeg";
@@ -86,6 +89,18 @@ public class FileService {
 
     public String getAudiobookCoverFile(long bookId) {
         return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId), AUDIOBOOK_COVER_FILENAME).toString();
+    }
+
+    public String getAuthorImagesFolder(long authorId) {
+        return Paths.get(appProperties.getPathConfig(), AUTHOR_IMAGES_DIR, String.valueOf(authorId)).toString();
+    }
+
+    public String getAuthorPhotoFile(long authorId) {
+        return Paths.get(appProperties.getPathConfig(), AUTHOR_IMAGES_DIR, String.valueOf(authorId), AUTHOR_PHOTO_FILENAME).toString();
+    }
+
+    public String getAuthorThumbnailFile(long authorId) {
+        return Paths.get(appProperties.getPathConfig(), AUTHOR_IMAGES_DIR, String.valueOf(authorId), AUTHOR_THUMBNAIL_FILENAME).toString();
     }
 
     public String getBackgroundsFolder(Long userId) {
@@ -289,6 +304,116 @@ public class FileService {
         } catch (Exception e) {
             log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
+    // ========================================
+    // AUTHOR PHOTO OPERATIONS
+    // ========================================
+
+    public void createAuthorThumbnailFromUrl(long authorId, String imageUrl) {
+        try {
+            BufferedImage originalImage = downloadImageFromUrl(imageUrl);
+            if (originalImage == null) {
+                log.warn("Skipping author thumbnail creation for author {}: download/decode failed", authorId);
+                return;
+            }
+            boolean success = saveAuthorImages(originalImage, authorId);
+            if (!success) {
+                log.warn("Failed to save author images for author ID: {}", authorId);
+            }
+            originalImage.flush();
+            log.info("Author images created and saved from URL for author ID: {}", authorId);
+        } catch (Exception e) {
+            log.warn("Failed to create author thumbnail from URL for author {}: {}", authorId, e.getMessage());
+        }
+    }
+
+    public boolean saveAuthorImages(BufferedImage sourceImage, long authorId) throws IOException {
+        BufferedImage rgbImage = null;
+        BufferedImage resized = null;
+        BufferedImage thumb = null;
+        try {
+            String folderPath = getAuthorImagesFolder(authorId);
+            File folder = new File(folderPath);
+            if (!folder.exists() && !folder.mkdirs()) {
+                throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
+            }
+
+            rgbImage = new BufferedImage(
+                    sourceImage.getWidth(),
+                    sourceImage.getHeight(),
+                    BufferedImage.TYPE_INT_RGB
+            );
+            Graphics2D g = rgbImage.createGraphics();
+            g.drawImage(sourceImage, 0, 0, Color.WHITE, null);
+            g.dispose();
+
+            double scale = Math.min(
+                    (double) MAX_ORIGINAL_WIDTH / rgbImage.getWidth(),
+                    (double) MAX_ORIGINAL_HEIGHT / rgbImage.getHeight()
+            );
+            if (scale < 1.0) {
+                resized = resizeImage(rgbImage, (int) (rgbImage.getWidth() * scale), (int) (rgbImage.getHeight() * scale));
+                rgbImage.flush();
+                rgbImage = resized;
+            }
+
+            File photoFile = new File(folder, AUTHOR_PHOTO_FILENAME);
+            boolean photoSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, photoFile);
+
+            double targetRatio = (double) THUMBNAIL_WIDTH / THUMBNAIL_HEIGHT;
+            double sourceRatio = (double) rgbImage.getWidth() / rgbImage.getHeight();
+            int cropWidth, cropHeight, cropX, cropY;
+            if (sourceRatio > targetRatio) {
+                cropHeight = rgbImage.getHeight();
+                cropWidth = (int) (cropHeight * targetRatio);
+                cropX = (rgbImage.getWidth() - cropWidth) / 2;
+                cropY = 0;
+            } else {
+                cropWidth = rgbImage.getWidth();
+                cropHeight = (int) (cropWidth / targetRatio);
+                cropX = 0;
+                cropY = (rgbImage.getHeight() - cropHeight) / 2;
+            }
+            BufferedImage cropped = rgbImage.getSubimage(cropX, cropY, cropWidth, cropHeight);
+            thumb = resizeImage(cropped, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+
+            File thumbnailFile = new File(folder, AUTHOR_THUMBNAIL_FILENAME);
+            boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+
+            return photoSaved && thumbnailSaved;
+        } finally {
+            if (rgbImage != null) {
+                rgbImage.flush();
+            }
+            if (resized != null && resized != rgbImage) {
+                resized.flush();
+            }
+            if (thumb != null) {
+                thumb.flush();
+            }
+        }
+    }
+
+    public void deleteAuthorImages(long authorId) {
+        String authorImageFolder = getAuthorImagesFolder(authorId);
+        Path folderPath = Paths.get(authorImageFolder);
+        try {
+            if (Files.exists(folderPath) && Files.isDirectory(folderPath)) {
+                try (Stream<Path> walk = Files.walk(folderPath)) {
+                    walk.sorted(Comparator.reverseOrder())
+                            .forEach(path -> {
+                                try {
+                                    Files.delete(path);
+                                } catch (IOException e) {
+                                    log.error("Failed to delete file: {} - {}", path, e.getMessage());
+                                }
+                            });
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error deleting author images for author {}: {}", authorId, e.getMessage());
         }
     }
 

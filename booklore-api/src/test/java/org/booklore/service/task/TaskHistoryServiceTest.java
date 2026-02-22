@@ -13,6 +13,8 @@ import org.mockito.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -286,5 +288,128 @@ class TaskHistoryServiceTest {
         TasksHistoryResponse response = taskHistoryService.getLatestTasksForEachType();
         assertNotNull(response);
         assertTrue(response.getTaskHistories().isEmpty());
+    }
+
+    // --- buildTaskDescription tests (via createTask audit log capture) ---
+
+    private String captureAuditDescription(TaskType type, Map<String, Object> options) {
+        taskHistoryService.createTask("test-task", type, 1L, options);
+        ArgumentCaptor<String> descCaptor = ArgumentCaptor.forClass(String.class);
+        verify(auditService).log(any(), any(), any(), descCaptor.capture());
+        reset(auditService);
+        return descCaptor.getValue();
+    }
+
+    @Test
+    void testBuildTaskDescription_withSmallBookIdsList() {
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", Set.of(10L, 20L, 30L));
+
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, options);
+
+        assertTrue(desc.startsWith("Started task:"));
+        assertTrue(desc.contains("3 books, IDs:"));
+        assertTrue(desc.contains("10"));
+        assertTrue(desc.contains("20"));
+        assertTrue(desc.contains("30"));
+        assertTrue(desc.endsWith(")"));
+        assertFalse(desc.contains("..."));
+    }
+
+    @Test
+    void testBuildTaskDescription_withSingleBookId() {
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", Set.of(42L));
+
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, options);
+
+        assertTrue(desc.contains("1 books, IDs: 42)"));
+    }
+
+    @Test
+    void testBuildTaskDescription_withLibraryId() {
+        Map<String, Object> options = new HashMap<>();
+        options.put("libraryId", 7L);
+
+        String desc = captureAuditDescription(TaskType.REFRESH_LIBRARY_METADATA, options);
+
+        assertTrue(desc.contains("Library ID: 7"));
+    }
+
+    @Test
+    void testBuildTaskDescription_withEmptyBookIds() {
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", Collections.emptySet());
+
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, options);
+
+        assertFalse(desc.contains("books"));
+        assertFalse(desc.contains("Library ID"));
+    }
+
+    @Test
+    void testBuildTaskDescription_withNullOptions() {
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, null);
+
+        assertEquals("Started task: Refresh Metadata", desc);
+    }
+
+    @Test
+    void testBuildTaskDescription_withEmptyOptions() {
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, new HashMap<>());
+
+        assertEquals("Started task: Refresh Metadata", desc);
+    }
+
+    @Test
+    void testBuildTaskDescription_withNullType() {
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", Set.of(1L));
+
+        String desc = captureAuditDescription(null, options);
+
+        assertTrue(desc.startsWith("Started task: Unknown"));
+    }
+
+    @Test
+    void testBuildTaskDescription_bookIdsPrefersOverLibraryId() {
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", Set.of(1L, 2L));
+        options.put("libraryId", 5L);
+
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, options);
+
+        assertTrue(desc.contains("2 books, IDs:"));
+        assertFalse(desc.contains("Library ID"));
+    }
+
+    @Test
+    void testBuildTaskDescription_largeBookIdsListTruncated() {
+        Set<Long> ids = LongStream.rangeClosed(1, 500)
+                .boxed()
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", ids);
+
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, options);
+
+        assertTrue(desc.length() <= 1024, "Description length " + desc.length() + " exceeds 1024");
+        assertTrue(desc.contains("500 books, IDs:"));
+        assertTrue(desc.endsWith("...)"));
+    }
+
+    @Test
+    void testBuildTaskDescription_veryLargeBookIdsListStaysWithinLimit() {
+        Set<Long> ids = LongStream.rangeClosed(1, 2000)
+                .boxed()
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<String, Object> options = new HashMap<>();
+        options.put("bookIds", ids);
+
+        String desc = captureAuditDescription(TaskType.REFRESH_METADATA_MANUAL, options);
+
+        assertTrue(desc.length() <= 1024, "Description length " + desc.length() + " exceeds 1024");
+        assertTrue(desc.contains("2000 books, IDs:"));
+        assertTrue(desc.endsWith("...)"));
     }
 }
