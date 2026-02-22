@@ -113,14 +113,21 @@ export class SessionArchetypesChartComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.sessionCount = data.length;
+    const durations = data.map(s => s.durationMinutes).sort((a, b) => a - b);
+    const q1 = durations[Math.floor(durations.length * 0.25)];
+    const q3 = durations[Math.floor(durations.length * 0.75)];
+    const iqr = q3 - q1;
+    const upperFence = q3 + 1.5 * iqr;
+    const filtered = data.filter(s => s.durationMinutes <= upperFence);
+
+    this.sessionCount = filtered.length;
 
     const byDay = new Map<number, {x: number; y: number}[]>();
     for (let d = 1; d <= 7; d++) byDay.set(d, []);
 
     const quadrants = {morning: 0, afternoon: 0, evening: 0, night: 0};
 
-    for (const s of data) {
+    for (const s of filtered) {
       const points = byDay.get(s.dayOfWeek) || [];
       points.push({x: s.hourOfDay, y: s.durationMinutes});
       byDay.set(s.dayOfWeek, points);

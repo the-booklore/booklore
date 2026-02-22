@@ -26,15 +26,9 @@ import {CompletionRaceChartComponent} from './charts/completion-race-chart/compl
 import {ReadingSurvivalChartComponent} from './charts/reading-survival-chart/reading-survival-chart.component';
 import {ReadingClockChartComponent} from './charts/reading-clock-chart/reading-clock-chart.component';
 import {BookLengthChartComponent} from './charts/book-length-chart/book-length-chart.component';
-import {AuthorGalaxyChartComponent} from './charts/author-galaxy-chart/author-galaxy-chart.component';
 import {BookFlowChartComponent} from './charts/book-flow-chart/book-flow-chart.component';
-import {GenreEvolutionChartComponent} from './charts/genre-evolution-chart/genre-evolution-chart.component';
-import {FormatChordChartComponent} from './charts/format-chord-chart/format-chord-chart.component';
 import {ReadingDebtChartComponent} from './charts/reading-debt-chart/reading-debt-chart.component';
 import {PublicationEraChartComponent} from './charts/publication-era-chart/publication-era-chart.component';
-import {ReadingRhythmChartComponent} from './charts/reading-rhythm-chart/reading-rhythm-chart.component';
-import {ReadingIntensityChartComponent} from './charts/reading-intensity-chart/reading-intensity-chart.component';
-import {MoodTimeChartComponent} from './charts/mood-time-chart/mood-time-chart.component';
 import {SessionArchetypesChartComponent} from './charts/session-archetypes-chart/session-archetypes-chart.component';
 import {UserChartConfig, UserChartConfigService} from './service/user-chart-config.service';
 
@@ -65,15 +59,9 @@ import {UserChartConfig, UserChartConfigService} from './service/user-chart-conf
     ReadingSurvivalChartComponent,
     ReadingClockChartComponent,
     BookLengthChartComponent,
-    AuthorGalaxyChartComponent,
     BookFlowChartComponent,
-    GenreEvolutionChartComponent,
-    FormatChordChartComponent,
     ReadingDebtChartComponent,
     PublicationEraChartComponent,
-    ReadingRhythmChartComponent,
-    ReadingIntensityChartComponent,
-    MoodTimeChartComponent,
     SessionArchetypesChartComponent,
     TranslocoDirective
   ],

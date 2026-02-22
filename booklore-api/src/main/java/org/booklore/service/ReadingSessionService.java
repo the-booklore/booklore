@@ -419,55 +419,6 @@ public class ReadingSessionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReadingRhythmResponse> getReadingRhythm(int year) {
-        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
-        Long userId = authenticatedUser.getId();
-
-        return readingSessionRepository.findReadingRhythmByUserAndYear(userId, year, getTimezoneOffset())
-                .stream()
-                .map(dto -> ReadingRhythmResponse.builder()
-                        .month(dto.getMonth())
-                        .hourOfDay(dto.getHourOfDay())
-                        .sessionCount(dto.getSessionCount())
-                        .totalDurationSeconds(dto.getTotalDurationSeconds())
-                        .topGenre(dto.getTopGenre())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<ReadingIntensityResponse> getReadingIntensity(int year) {
-        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
-        Long userId = authenticatedUser.getId();
-
-        return readingSessionRepository.findReadingIntensityByUserAndYear(userId, year, getTimezoneOffset())
-                .stream()
-                .map(dto -> ReadingIntensityResponse.builder()
-                        .bookId(dto.getBookId())
-                        .bookTitle(dto.getBookTitle())
-                        .dayOffset(dto.getDayOffset())
-                        .totalDurationSeconds(dto.getTotalDurationSeconds())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<MoodTimeResponse> getMoodTime(int year) {
-        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
-        Long userId = authenticatedUser.getId();
-
-        return readingSessionRepository.findMoodTimeByUserAndYear(userId, year, getTimezoneOffset())
-                .stream()
-                .map(dto -> MoodTimeResponse.builder()
-                        .mood(dto.getMood())
-                        .hourOfDay(dto.getHourOfDay())
-                        .totalDurationSeconds(dto.getTotalDurationSeconds())
-                        .sessionCount(dto.getSessionCount())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
     public List<SessionScatterResponse> getSessionScatter(int year) {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();

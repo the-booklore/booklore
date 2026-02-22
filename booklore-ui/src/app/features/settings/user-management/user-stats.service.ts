@@ -70,28 +70,6 @@ export interface CompletionRaceResponse {
   endProgress: number;
 }
 
-export interface ReadingRhythmResponse {
-  month: number;
-  hourOfDay: number;
-  sessionCount: number;
-  totalDurationSeconds: number;
-  topGenre: string;
-}
-
-export interface ReadingIntensityResponse {
-  bookId: number;
-  bookTitle: string;
-  dayOffset: number;
-  totalDurationSeconds: number;
-}
-
-export interface MoodTimeResponse {
-  mood: string;
-  hourOfDay: number;
-  totalDurationSeconds: number;
-  sessionCount: number;
-}
-
 export interface SessionScatterResponse {
   hourOfDay: number;
   durationMinutes: number;
@@ -178,27 +156,6 @@ export class UserStatsService {
   getReadingDates(): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
       `${this.readingSessionsUrl}/reading-dates`
-    );
-  }
-
-  getReadingRhythm(year: number): Observable<ReadingRhythmResponse[]> {
-    return this.http.get<ReadingRhythmResponse[]>(
-      `${this.readingSessionsUrl}/reading-rhythm`,
-      {params: {year: year.toString()}}
-    );
-  }
-
-  getReadingIntensity(year: number): Observable<ReadingIntensityResponse[]> {
-    return this.http.get<ReadingIntensityResponse[]>(
-      `${this.readingSessionsUrl}/reading-intensity`,
-      {params: {year: year.toString()}}
-    );
-  }
-
-  getMoodTime(year: number): Observable<MoodTimeResponse[]> {
-    return this.http.get<MoodTimeResponse[]>(
-      `${this.readingSessionsUrl}/mood-time`,
-      {params: {year: year.toString()}}
     );
   }
 
