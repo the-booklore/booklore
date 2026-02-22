@@ -27,12 +27,14 @@
 .topbar-content {
   display: flex;
   align-items: center;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   gap: 1rem;
 }
 
 .topbar-search {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
 
   @media (max-width: 768px) {
     display: block;

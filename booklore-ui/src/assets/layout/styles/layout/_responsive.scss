@@ -108,3 +108,9 @@
     }
   }
 }
+
+@media (max-width: 480px) {
+  .layout-topbar {
+    padding: 0 0.5rem;
+  }
+}

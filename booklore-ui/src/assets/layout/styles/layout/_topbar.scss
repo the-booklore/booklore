@@ -95,7 +95,7 @@
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 
     &.notification-box {
-      width: 30rem;
+      width: min(30rem, calc(100vw - 1rem));
       background-color: var(--card-background);
       border: 0.25px solid var(--primary-color);
       border-radius: 4px;
