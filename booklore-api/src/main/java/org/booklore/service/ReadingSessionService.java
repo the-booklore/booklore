@@ -126,7 +126,7 @@ public class ReadingSessionService {
         Long userId = authenticatedUser.getId();
 
         LocalDate date = LocalDate.of(year, 1, 1)
-                .with(WeekFields.of(DayOfWeek.MONDAY, 1).weekOfYear(), week);
+                .with(WeekFields.ISO.weekOfYear(), week);
         LocalDateTime startOfWeek = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay();
         LocalDateTime endOfWeek = date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).plusDays(1).atStartOfDay();
 

@@ -30,6 +30,7 @@ export class ReadingSessionService {
   private currentSession: ReadingSession | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private activitySubscription: Subscription | null = null;
+  private hiddenAt: number | null = null;
 
   private readonly IDLE_TIMEOUT_MS = 5 * 60 * 1000;
   private readonly MIN_SESSION_DURATION_SECONDS = 30;
@@ -49,10 +50,28 @@ export class ReadingSessionService {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.currentSession) {
         this.log('Tab hidden, pausing session');
+        this.hiddenAt = Date.now();
         this.pauseIdleDetection();
       } else if (!document.hidden && this.currentSession) {
-        this.log('Tab visible, resuming session');
-        this.resumeIdleDetection();
+        if (this.hiddenAt && Date.now() - this.hiddenAt > this.IDLE_TIMEOUT_MS) {
+          this.log('Tab was hidden too long, ending session');
+          this.stopIdleDetection();
+          const cappedEndTime = new Date(this.hiddenAt + this.IDLE_TIMEOUT_MS);
+          this.currentSession.endTime = cappedEndTime;
+          const durationMs = cappedEndTime.getTime() - this.currentSession.startTime.getTime();
+          this.currentSession.durationSeconds = Math.floor(durationMs / 1000);
+          if (this.currentSession.startProgress != null && this.currentSession.endProgress != null) {
+            this.currentSession.progressDelta = this.currentSession.endProgress - this.currentSession.startProgress;
+          }
+          if (this.currentSession.durationSeconds >= this.MIN_SESSION_DURATION_SECONDS) {
+            this.sendSessionToBackend(this.currentSession);
+          }
+          this.currentSession = null;
+        } else {
+          this.log('Tab visible, resuming session');
+          this.resumeIdleDetection();
+        }
+        this.hiddenAt = null;
       }
     });
   }
@@ -124,7 +143,10 @@ export class ReadingSessionService {
       return;
     }
 
-    const endTime = new Date();
+    let endTime = new Date();
+    if (this.hiddenAt && endTime.getTime() - this.hiddenAt > this.IDLE_TIMEOUT_MS) {
+      endTime = new Date(this.hiddenAt + this.IDLE_TIMEOUT_MS);
+    }
     const durationMs = endTime.getTime() - this.currentSession.startTime.getTime();
     const durationSeconds = Math.floor(durationMs / 1000);
 
