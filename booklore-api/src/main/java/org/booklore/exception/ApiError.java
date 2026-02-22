@@ -20,7 +20,7 @@ public enum ApiError {
     INVALID_VIEWER_SETTING(HttpStatus.BAD_REQUEST, "Invalid viewer setting for the book"),
     FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Error reading files from path: %s"),
     IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "Image not found or not readable"),
-    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format, only pdf and epub are supported"),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format: %s"),
     LIBRARY_NOT_FOUND(HttpStatus.NOT_FOUND, "Library not found with ID: %d"),
     FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "File size exceeds the limit: %d MB"),
     CACHE_TOO_LARGE(HttpStatus.BAD_REQUEST, "Book archive is too large to cache with current settings"),
@@ -63,7 +63,8 @@ public enum ApiError {
     PERMISSION_DENIED(HttpStatus.FORBIDDEN, "Permission denied: %s"),
     LIBRARY_PATH_NOT_ACCESSIBLE(HttpStatus.SERVICE_UNAVAILABLE, "Library scan aborted: path not accessible or empty: %s"),
     FORMAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "File format '%s' is not allowed in library '%s'"),
-    RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Too many failed login attempts. Please try again later.");
+    RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Too many failed login attempts. Please try again later."),
+    AUTHOR_NOT_FOUND(HttpStatus.NOT_FOUND, "Author not found with ID: %d");
 
     private final HttpStatus status;
     private final String message;

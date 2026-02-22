@@ -1,1 +1,17 @@
-{}
+{
+  "tabs": {
+    "reader": "Reader",
+    "view": "Ansicht",
+    "metadata1": "Metadaten 1",
+    "metadata2": "Metadaten 2",
+    "application": "Anwendung",
+    "users": "Benutzer",
+    "email": "E-Mail",
+    "patterns": "Muster",
+    "authentication": "Authentifizierung",
+    "tasks": "Aufgaben",
+    "auditLogs": "Audit-Protokolle",
+    "opds": "OPDS",
+    "devices": "Geräte"
+  }
+}

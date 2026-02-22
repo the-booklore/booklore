@@ -2,7 +2,7 @@ import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core'
 import {ActivatedRoute, Router} from '@angular/router';
 import {CommonModule} from '@angular/common';
 import {forkJoin, Subject} from 'rxjs';
-import {filter, first, map, switchMap, takeUntil, timeout} from 'rxjs/operators';
+import {debounceTime, filter, first, map, switchMap, takeUntil, timeout} from 'rxjs/operators';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
@@ -55,6 +55,7 @@ import {BookNoteV2} from '../../../shared/service/book-note-v2.service';
 })
 export class CbxReaderComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private progressSaveSubject$ = new Subject<void>();
 
   bookType!: BookType;
   bookId!: number;
@@ -155,6 +156,11 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.footerService.forceVisible$
       .pipe(takeUntil(this.destroy$))
       .subscribe(visible => this.isFooterVisible = visible);
+
+    this.progressSaveSubject$.pipe(
+      debounceTime(2000),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.updateProgress());
 
     this.subscribeToHeaderEvents();
     this.subscribeToSidebarEvents();
@@ -777,7 +783,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
         const newPage = this.infiniteScrollPages[i];
         if (newPage !== this.currentPage) {
           this.currentPage = newPage;
-          this.updateProgress();
+          this.progressSaveSubject$.next();
           this.updateSessionProgress();
           this.updateFooterPage();
         }
@@ -786,12 +792,8 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getPageImageUrl(pageIndex: number): string {
+  getPageImageUrl(pageIndex: number): string {
     return this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex], this.altBookType);
-  }
-
-  get infiniteScrollImageUrls(): string[] {
-    return this.infiniteScrollPages.map(pageIndex => this.getPageImageUrl(pageIndex));
   }
 
   private updateViewerSetting(): void {
@@ -833,7 +835,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
     this.currentPage = targetIndex;
 
-    if (this.scrollMode === CbxScrollMode.INFINITE) {
+    if (this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) {
       this.ensurePageLoaded(targetIndex);
       this.scrollToPage(targetIndex);
       this.updateProgress();
@@ -860,7 +862,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.ensurePageLoaded(pageIndex);
 
     setTimeout(() => {
-      const container = document.querySelector('.image-container.infinite-scroll') as HTMLElement;
+      const container = document.querySelector('.image-container.infinite-scroll, .image-container.long-strip') as HTMLElement;
       if (!container) return;
 
       const images = container.querySelectorAll('.page-image');

@@ -21,14 +21,6 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
 
     List<UserBookProgressEntity> findByUserIdAndBookIdIn(Long userId, Set<Long> bookIds);
 
-    @Query("SELECT MAX(COALESCE(ubp.lastReadTime, ubp.readStatusModifiedTime)) " +
-           "FROM UserBookProgressEntity ubp WHERE ubp.user.id = :userId")
-    Instant getMaxProgressTimestamp(@Param("userId") Long userId);
-
-    @Query("SELECT ubp.book.id FROM UserBookProgressEntity ubp WHERE ubp.user.id = :userId " +
-           "AND (ubp.lastReadTime > :since OR ubp.readStatusModifiedTime > :since)")
-    Set<Long> findBookIdsWithProgressChangedSince(@Param("userId") Long userId, @Param("since") Instant since);
-
     @Query("""
         SELECT ubp FROM UserBookProgressEntity ubp
         WHERE ubp.user.id = :userId
@@ -46,6 +38,10 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
                   ubp.koboProgressSentTime IS NULL
                   OR ubp.koboProgressReceivedTime > ubp.koboProgressSentTime
               ))
+              OR
+              (ubp.epubProgressPercent IS NOT NULL
+                  AND ubp.epubProgress IS NOT NULL
+                  AND (ubp.koboProgressSentTime IS NULL OR ubp.lastReadTime > ubp.koboProgressSentTime))
           )
     """)
     List<UserBookProgressEntity> findAllBooksNeedingKoboSync(

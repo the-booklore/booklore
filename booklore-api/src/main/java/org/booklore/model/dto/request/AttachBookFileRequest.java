@@ -11,5 +11,5 @@ public class AttachBookFileRequest {
     @NotNull
     @NotEmpty
     private List<Long> sourceBookIds;
-    private boolean deleteSourceBooks;
+    private boolean moveFiles;
 }

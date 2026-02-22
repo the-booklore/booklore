@@ -32,15 +32,19 @@ public class LibraryFileHelper {
 
     private static final int MIN_AUDIO_FILES_FOR_FOLDER_AUDIOBOOK = 2;
 
-    public List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity) throws IOException {
+    public List<LibraryFile> getAllLibraryFiles(LibraryEntity libraryEntity) throws IOException {
         List<LibraryFile> allFiles = new ArrayList<>();
         for (LibraryPathEntity pathEntity : libraryEntity.getLibraryPaths()) {
             allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity));
         }
-        return filterByAllowedFormats(allFiles, libraryEntity.getAllowedFormats());
+        return allFiles;
     }
 
-    private List<LibraryFile> filterByAllowedFormats(List<LibraryFile> files, List<BookFileType> allowedFormats) {
+    public List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity) throws IOException {
+        return filterByAllowedFormats(getAllLibraryFiles(libraryEntity), libraryEntity.getAllowedFormats());
+    }
+
+    List<LibraryFile> filterByAllowedFormats(List<LibraryFile> files, List<BookFileType> allowedFormats) {
         if (allowedFormats == null || allowedFormats.isEmpty()) {
             return files;
         }

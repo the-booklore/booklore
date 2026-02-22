@@ -1,0 +1,73 @@
+{
+  "title": "Postavke autentifikacije",
+  "description": "Konfigurirajte metode autentifikacije za vašu Booklore instancu. Interna autentifikacija je uvijek omogućena, a po želji možete omogućiti OIDC za vanjske pružatelje autentifikacije.",
+  "methods": {
+    "sectionTitle": "Metode autentifikacije",
+    "sectionDesc": "Odaberite koje su metode autentifikacije dostupne korisnicima za prijavu."
+  },
+  "internal": {
+    "label": "Interna autentifikacija",
+    "status": "Uvijek omogućeno",
+    "description": "Ugrađena autentifikacija korisničkim imenom i lozinkom. Ovo je zadana metoda i ne može se onemogućiti."
+  },
+  "oidc": {
+    "label": "OIDC autentifikacija",
+    "experimental": "Eksperimentalno",
+    "description": "OpenID Connect za jedinstvenu prijavu s vanjskim pružateljima (Authentik, Keycloak itd.).",
+    "configHint": "Konfigurirajte postavke ispod za omogućavanje.",
+    "enabled": "Omogućeno",
+    "disabled": "Onemogućeno"
+  },
+  "providerConfig": {
+    "sectionTitle": "Konfiguracija OIDC pružatelja",
+    "sectionDesc": "Konfigurirajte postavke OIDC pružatelja. Sva polja su obavezna za omogućavanje OIDC autentifikacije.",
+    "providerName": "Naziv pružatelja",
+    "providerPlaceholder": "npr. Authentik, Keycloak",
+    "clientId": "ID klijenta",
+    "clientIdPlaceholder": "Vaš OIDC ID klijenta",
+    "issuerUri": "URI izdavatelja",
+    "issuerPlaceholder": "npr. https://auth.example.com/realms/booklore",
+    "scope": "Opseg",
+    "scopeHint": "Obavezni opsezi za OIDC prijavu. Moraju biti podržani od vašeg pružatelja.",
+    "claimMappings": "Mapiranja zahtjeva",
+    "claimDesc": "Mapirajte OIDC token zahtjeve na Booklore korisnička polja. Moraju odgovarati zahtjevima tokena vašeg pružatelja.",
+    "usernameClaim": "Zahtjev korisničkog imena",
+    "usernamePlaceholder": "npr. preferred_username",
+    "emailClaim": "Zahtjev e-maila",
+    "emailPlaceholder": "npr. email",
+    "nameClaim": "Zahtjev prikaznog imena",
+    "namePlaceholder": "npr. name"
+  },
+  "provisioning": {
+    "sectionTitle": "Upravljanje korisnicima",
+    "sectionDesc": "Konfigurirajte kako se novi OIDC korisnici kreiraju i koje dozvole dobivaju.",
+    "autoLabel": "Automatsko kreiranje korisnika",
+    "autoEnabled": "Omogućeno",
+    "autoDisabled": "Onemogućeno",
+    "autoDesc": "Kada je omogućeno, novi korisnici se automatski kreiraju pri prvoj OIDC prijavi s dozvolu ispod. Kada je onemogućeno, korisnici moraju biti ručno kreirani u Booklore-u prije nego što se mogu prijaviti putem OIDC-a.",
+    "defaultPerms": "Zadane dozvole",
+    "readBooks": "Čitanje knjiga",
+    "defaultLibraryAccess": "Zadani pristup knjižnici",
+    "selectLibraries": "Odaberite knjižnice kojima novi korisnici mogu pristupiti"
+  },
+  "perms": {
+    "uploadBooks": "Učitavanje knjiga",
+    "downloadBooks": "Preuzimanje knjiga",
+    "editMetadata": "Uređivanje metapodataka knjiga",
+    "manageLibrary": "Upravljanje knjižnicom",
+    "emailBook": "Slanje knjige e-poštom",
+    "deleteBook": "Brisanje knjige",
+    "koreaderSync": "KOReader sinkronizacija",
+    "koboSync": "Kobo sinkronizacija",
+    "accessOpds": "Pristup OPDS-u"
+  },
+  "toast": {
+    "saved": "Spremljeno",
+    "oidcUpdated": "OIDC postavka ažurirana.",
+    "oidcError": "Ažuriranje OIDC postavke nije uspjelo.",
+    "providerSaved": "Postavke OIDC pružatelja spremljene.",
+    "providerError": "Spremanje postavki OIDC pružatelja nije uspjelo.",
+    "provisionSaved": "Postavke automatskog kreiranja OIDC korisnika spremljene.",
+    "provisionError": "Spremanje postavki automatskog kreiranja OIDC korisnika nije uspjelo."
+  }
+}

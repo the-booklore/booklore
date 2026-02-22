@@ -241,7 +241,9 @@ export class LibraryCreatorComponent implements OnInit {
     };
 
     if (this.mode === 'edit') {
-      this.libraryService.updateLibrary(library, this.library?.id).subscribe({
+      this.libraryService.updateLibrary(library, this.library?.id).pipe(
+        switchMap(() => this.libraryService.refreshLibrary(this.library!.id!))
+      ).subscribe({
         next: () => {
           this.messageService.add({severity: 'success', summary: this.t.translate('libraryCreator.creator.toast.updatedSummary'), detail: this.t.translate('libraryCreator.creator.toast.updatedDetail')});
           this.dynamicDialogRef.close();

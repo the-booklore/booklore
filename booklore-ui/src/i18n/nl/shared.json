@@ -1,1 +1,154 @@
-{}
+{
+  "bookUploader": {
+    "title": "Boeken uploaden",
+    "description": "Upload uw boeken naar een bibliotheek of bookdrop-map",
+    "uploadDestination": "Uploadbestemming",
+    "librarySelection": "Bibliotheekkeuze",
+    "libraryLabel": "Bibliotheek",
+    "selectLibrary": "Bibliotheek selecteren",
+    "subpathLabel": "Subpad",
+    "selectSubpath": "Subpad selecteren",
+    "selectFiles": "Bestanden selecteren",
+    "chooseBtn": "Kiezen",
+    "chooseTooltip": "Bestanden kiezen om te uploaden",
+    "uploadBtn": "Uploaden",
+    "uploadTooltip": "Geselecteerde bestanden uploaden",
+    "clearBtn": "Wissen",
+    "clearTooltip": "Geselecteerde bestanden wissen",
+    "uploadHint": "Klik op \"Kiezen\" om bestanden te selecteren of sleep ze hieronder",
+    "uploading": "Uploaden...",
+    "complete": "Voltooid",
+    "filesCount": "{{ uploaded }}/{{ total }} bestanden",
+    "failedCount": "({{ count }} mislukt)",
+    "dragDropTitle": "Bestanden slepen en neerzetten",
+    "supportedFormats": "Ondersteunde formaten: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+    "maxFileSize": "Maximale bestandsgrootte: {{ size }} per bestand",
+    "fileTooLargeTooltip": "Bestand te groot",
+    "uploadFailedTooltip": "Upload mislukt",
+    "statusTooLarge": "Te groot",
+    "statusReady": "Gereed",
+    "statusUploading": "Uploaden",
+    "statusUploaded": "Geüpload",
+    "statusFailed": "Mislukt",
+    "destinationLibrary": "Bibliotheek",
+    "destinationBookdrop": "Bookdrop",
+    "toast": {
+      "noDestinationSummary": "Geen bestemming geselecteerd",
+      "noDestinationDetail": "Selecteer een bibliotheek en subpad voordat u bestanden toevoegt.",
+      "fileTooLargeSummary": "Bestand te groot",
+      "fileTooLargeDetail": "{{ fileName }} overschrijdt de maximale bestandsgrootte van {{ maxSize }}",
+      "missingDataSummary": "Ontbrekende gegevens",
+      "missingDataDetail": "Selecteer een bibliotheek en pad voordat u uploadt.",
+      "uploadFailedDefault": "Upload mislukt door onbekende fout."
+    }
+  },
+  "changePassword": {
+    "title": "Wachtwoord wijzigen",
+    "subtitle": "Werk uw wachtwoord bij om uw account veilig te houden",
+    "currentPasswordLabel": "Huidig wachtwoord",
+    "currentPasswordPlaceholder": "Voer uw huidige wachtwoord in",
+    "newPasswordLabel": "Nieuw wachtwoord",
+    "newPasswordPlaceholder": "Voer uw nieuwe wachtwoord in",
+    "confirmPasswordLabel": "Nieuw wachtwoord bevestigen",
+    "confirmPasswordPlaceholder": "Bevestig uw nieuwe wachtwoord",
+    "updateBtn": "Wachtwoord bijwerken",
+    "validation": {
+      "passwordsMismatch": "Nieuwe wachtwoorden komen niet overeen",
+      "allFieldsRequired": "Alle velden zijn verplicht.",
+      "passwordsDoNotMatch": "Nieuwe wachtwoorden komen niet overeen.",
+      "sameAsCurrentPassword": "Nieuw wachtwoord mag niet hetzelfde zijn als het huidige wachtwoord."
+    },
+    "toast": {
+      "success": "Wachtwoord succesvol gewijzigd!",
+      "failedSummary": "Wachtwoord wijzigen mislukt",
+      "failedDetailDefault": "Er is een onbekende fout opgetreden."
+    }
+  },
+  "directoryPicker": {
+    "title": "Mappen selecteren",
+    "description": "Kies een of meer mappen uit uw bestandssysteem",
+    "currentPath": "Huidig pad:",
+    "searchPlaceholder": "Mappen zoeken...",
+    "goUpTooltip": "Eén niveau omhoog",
+    "selectAllBtn": "Alles selecteren",
+    "selectAllTooltip": "Alle zichtbare mappen selecteren",
+    "deselectAllBtn": "Alles deselecteren",
+    "deselectAllTooltip": "Alle selecties opheffen",
+    "selectCurrentBtn": "Huidige selecteren",
+    "selectCurrentTooltip": "De huidige map selecteren",
+    "foldersSelected": "{{ count }} map geselecteerd",
+    "foldersSelectedPlural": "{{ count }} mappen geselecteerd",
+    "loadingDirectories": "Mappen laden...",
+    "noMatchesFound": "Geen overeenkomsten gevonden",
+    "directoryEmpty": "Map is leeg",
+    "noMatchesDescription": "Geen mappen komen overeen met uw zoekcriteria.<br/>Probeer uw zoektermen aan te passen.",
+    "emptyDescription": "Deze map bevat geen submappen.",
+    "folderAvailable": "{{ count }} map beschikbaar",
+    "foldersAvailable": "{{ count }} mappen beschikbaar",
+    "folderWillBeSelected": "{{ count }} map wordt geselecteerd",
+    "foldersWillBeSelected": "{{ count }} mappen worden geselecteerd",
+    "selectDirectoriesBtn": "Mappen selecteren"
+  },
+  "liveNotification": {
+    "defaultMessage": "Geen recente meldingen..."
+  },
+  "metadataProgress": {
+    "taskStalled": "Taak vastgelopen of backend niet beschikbaar",
+    "taskCancelled": "Taak geannuleerd door gebruiker",
+    "cancellationScheduledSummary": "Annulering ingepland",
+    "cancellationScheduledDetail": "Taakannulering is succesvol ingepland",
+    "cancelFailedSummary": "Annulering mislukt",
+    "cancelFailedDetail": "Kon de taak niet annuleren. Probeer het opnieuw.",
+    "taskTitle": "Metadata-ophaaltaak",
+    "tagReview": "Beoordelen",
+    "tagAuto": "Automatisch",
+    "bookProgress": "Boek <strong>{{ current }}</strong> van {{ total }}",
+    "reviewBtn": "Beoordelen",
+    "discardBtn": "Negeren",
+    "dismissBtn": "Sluiten",
+    "discardTooltip": "Huidige metadata behouden, nieuwe opgehaalde metadata negeren",
+    "cancelBtn": "Annuleren",
+    "cancelTooltip": "Deze taak annuleren",
+    "statusInProgress": "Bezig",
+    "statusCompleted": "Voltooid",
+    "statusError": "Fout",
+    "statusCancelled": "Geannuleerd"
+  },
+  "reader": {
+    "failedToLoadPages": "Kan pagina's niet laden",
+    "failedToLoadBook": "Kan het boek niet laden"
+  },
+  "settingsHelper": {
+    "settingsSavedSummary": "Instellingen opgeslagen",
+    "settingsSavedDetail": "De instellingen zijn succesvol opgeslagen!",
+    "saveErrorDetail": "Er is een fout opgetreden bij het opslaan van de instellingen."
+  },
+  "setup": {
+    "title": "Welkom bij Booklore",
+    "subtitle": "Stel uw eerste beheerdersaccount in om te beginnen",
+    "usernameLabel": "Gebruikersnaam",
+    "usernamePlaceholder": "Kies een gebruikersnaam",
+    "fullNameLabel": "Volledige naam",
+    "fullNamePlaceholder": "Voer uw volledige naam in",
+    "emailLabel": "E-mailadres",
+    "emailPlaceholder": "Voer uw e-mailadres in",
+    "passwordLabel": "Wachtwoord",
+    "passwordPlaceholder": "Maak een veilig wachtwoord",
+    "confirmPasswordLabel": "Wachtwoord bevestigen",
+    "confirmPasswordPlaceholder": "Voer uw wachtwoord opnieuw in",
+    "createAccountBtn": "Beheerdersaccount aanmaken",
+    "creatingAccountBtn": "Account aanmaken...",
+    "successMessage": "Beheerdersaccount succesvol aangemaakt! Doorsturen...",
+    "validation": {
+      "usernameRequired": "Gebruikersnaam is vereist",
+      "nameRequired": "Naam is vereist",
+      "emailRequired": "Geldig e-mailadres is vereist",
+      "passwordMinLength": "Minimaal 6 tekens vereist",
+      "confirmPasswordRequired": "Wachtwoordbevestiging is vereist",
+      "passwordsMismatch": "Wachtwoorden komen niet overeen"
+    },
+    "toast": {
+      "createFailedDefault": "Kon beheerdersgebruiker niet aanmaken. Probeer het opnieuw."
+    }
+  }
+}

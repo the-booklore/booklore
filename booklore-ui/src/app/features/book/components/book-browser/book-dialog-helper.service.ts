@@ -17,6 +17,7 @@ import {Book} from '../../model/book.model';
 import {AdditionalFileUploaderComponent} from '../additional-file-uploader/additional-file-uploader.component';
 import {BookFileAttacherComponent} from '../book-file-attacher/book-file-attacher.component';
 import {AddPhysicalBookDialogComponent} from '../add-physical-book-dialog/add-physical-book-dialog.component';
+import {DuplicateMergerComponent} from '../duplicate-merger/duplicate-merger.component';
 
 @Injectable({providedIn: 'root'})
 export class BookDialogHelperService {
@@ -161,6 +162,16 @@ export class BookDialogHelperService {
       styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
       data: {
         sourceBooks: sourceBooks,
+      },
+    });
+  }
+
+  openDuplicateMergerDialog(libraryId: number): DynamicDialogRef | null {
+    return this.openDialog(DuplicateMergerComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.XL} ${DialogStyle.MINIMAL}`,
+      data: {
+        libraryId: libraryId,
       },
     });
   }

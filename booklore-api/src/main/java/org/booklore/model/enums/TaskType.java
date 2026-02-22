@@ -35,6 +35,14 @@ public enum TaskType {
             "Sync Library Files",
             "Scans your library folders to detect new books and removes entries for files that no longer exist."
     ),
+    BOOKDROP_PERIODIC_SCANNING(
+            false,
+            false,
+            true,
+            false,
+            "Bookdrop Periodic Scanning",
+            "Scans the bookdrop ingest folder for newly added files and queues them for bookdrop processing."
+    ),
     CLEANUP_TEMP_METADATA(
             false,
             false,

@@ -41,6 +41,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.WeekFields;
@@ -57,6 +58,11 @@ public class ReadingSessionService {
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
     private final UserBookProgressRepository userBookProgressRepository;
+
+    private String getTimezoneOffset() {
+        ZoneOffset offset = ZoneId.systemDefault().getRules().getOffset(Instant.now());
+        return offset.getId().equals("Z") ? "+00:00" : offset.getId();
+    }
 
     @Transactional
     public void recordSession(ReadingSessionRequest request) {
@@ -91,7 +97,7 @@ public class ReadingSessionService {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        return readingSessionRepository.findSessionCountsByUserAndYear(userId, year)
+        return readingSessionRepository.findSessionCountsByUserAndYear(userId, year, getTimezoneOffset())
                 .stream()
                 .map(dto -> ReadingSessionHeatmapResponse.builder()
                         .date(dto.getDate())
@@ -105,7 +111,7 @@ public class ReadingSessionService {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        return readingSessionRepository.findSessionCountsByUserAndYearAndMonth(userId, year, month)
+        return readingSessionRepository.findSessionCountsByUserAndYearAndMonth(userId, year, month, getTimezoneOffset())
                 .stream()
                 .map(dto -> ReadingSessionHeatmapResponse.builder()
                         .date(dto.getDate())
@@ -158,7 +164,7 @@ public class ReadingSessionService {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        return readingSessionRepository.findPeakReadingHoursByUser(userId, year, month)
+        return readingSessionRepository.findPeakReadingHoursByUser(userId, year, month, getTimezoneOffset())
                 .stream()
                 .map(dto -> PeakReadingHoursResponse.builder()
                         .hourOfDay(dto.getHourOfDay())
@@ -175,7 +181,7 @@ public class ReadingSessionService {
 
         String[] dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
-        return readingSessionRepository.findFavoriteReadingDaysByUser(userId, year, month)
+        return readingSessionRepository.findFavoriteReadingDaysByUser(userId, year, month, getTimezoneOffset())
                 .stream()
                 .map(dto -> FavoriteReadingDaysResponse.builder()
                         .dayOfWeek(dto.getDayOfWeek())
@@ -414,7 +420,7 @@ public class ReadingSessionService {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        return readingSessionRepository.findAllSessionCountsByUser(userId)
+        return readingSessionRepository.findAllSessionCountsByUser(userId, getTimezoneOffset())
                 .stream()
                 .map(dto -> ReadingSessionHeatmapResponse.builder()
                         .date(dto.getDate())

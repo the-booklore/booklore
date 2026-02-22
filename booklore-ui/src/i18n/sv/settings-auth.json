@@ -1,0 +1,73 @@
+{
+  "title": "Autentiseringsinställningar",
+  "description": "Konfigurera autentiseringsmetoder för din Booklore-instans. Intern autentisering är alltid aktiverad, och du kan valfritt aktivera OIDC för externa autentiseringsleverantörer.",
+  "methods": {
+    "sectionTitle": "Autentiseringsmetoder",
+    "sectionDesc": "Välj vilka autentiseringsmetoder som är tillgängliga för användare att logga in med."
+  },
+  "internal": {
+    "label": "Intern autentisering",
+    "status": "Alltid aktiverad",
+    "description": "Inbyggd autentisering med användarnamn och lösenord. Detta är standardmetoden och kan inte inaktiveras."
+  },
+  "oidc": {
+    "label": "OIDC-autentisering",
+    "experimental": "Experimentell",
+    "description": "OpenID Connect för enkel inloggning med externa leverantörer (Authentik, Keycloak osv.).",
+    "configHint": "Konfigurera inställningarna nedan för att aktivera.",
+    "enabled": "Aktiverad",
+    "disabled": "Inaktiverad"
+  },
+  "providerConfig": {
+    "sectionTitle": "OIDC-leverantörskonfiguration",
+    "sectionDesc": "Konfigurera dina OIDC-leverantörsinställningar. Alla fält krävs för att aktivera OIDC-autentisering.",
+    "providerName": "Leverantörsnamn",
+    "providerPlaceholder": "t.ex. Authentik, Keycloak",
+    "clientId": "Klient-ID",
+    "clientIdPlaceholder": "Ditt OIDC-klient-ID",
+    "issuerUri": "Utfärdar-URI",
+    "issuerPlaceholder": "t.ex. https://auth.example.com/realms/booklore",
+    "scope": "Scope",
+    "scopeHint": "Obligatoriska scopes för OIDC-inloggning. Måste stödjas av din leverantör.",
+    "claimMappings": "Claim-mappningar",
+    "claimDesc": "Mappa OIDC-token-claims till Booklore-användarfält. Dessa måste matcha din leverantörs token-claims.",
+    "usernameClaim": "Användarnamns-claim",
+    "usernamePlaceholder": "t.ex. preferred_username",
+    "emailClaim": "E-post-claim",
+    "emailPlaceholder": "t.ex. email",
+    "nameClaim": "Visningsnamn-claim",
+    "namePlaceholder": "t.ex. name"
+  },
+  "provisioning": {
+    "sectionTitle": "Användarprovisionering",
+    "sectionDesc": "Konfigurera hur nya OIDC-användare skapas och vilka behörigheter de får.",
+    "autoLabel": "Automatisk användarprovisionering",
+    "autoEnabled": "Aktiverad",
+    "autoDisabled": "Inaktiverad",
+    "autoDesc": "När aktiverad skapas nya användare automatiskt vid första OIDC-inloggningen med behörigheterna nedan. När inaktiverad måste användare skapas manuellt i Booklore innan de kan logga in via OIDC.",
+    "defaultPerms": "Standardbehörigheter",
+    "readBooks": "Läsa böcker",
+    "defaultLibraryAccess": "Standard biblioteksåtkomst",
+    "selectLibraries": "Välj bibliotek som nya användare kan komma åt"
+  },
+  "perms": {
+    "uploadBooks": "Ladda upp böcker",
+    "downloadBooks": "Ladda ner böcker",
+    "editMetadata": "Redigera bokmetadata",
+    "manageLibrary": "Hantera bibliotek",
+    "emailBook": "Skicka bok via e-post",
+    "deleteBook": "Radera bok",
+    "koreaderSync": "KOReader-synk",
+    "koboSync": "Kobo-synk",
+    "accessOpds": "Åtkomst till OPDS"
+  },
+  "toast": {
+    "saved": "Sparat",
+    "oidcUpdated": "OIDC-inställning uppdaterad.",
+    "oidcError": "Kunde inte uppdatera OIDC-inställning.",
+    "providerSaved": "OIDC-leverantörsinställningar sparade.",
+    "providerError": "Kunde inte spara OIDC-leverantörsinställningar.",
+    "provisionSaved": "OIDC-autoprovisioneringsinställningar sparade.",
+    "provisionError": "Kunde inte spara OIDC-autoprovisioneringsinställningar."
+  }
+}

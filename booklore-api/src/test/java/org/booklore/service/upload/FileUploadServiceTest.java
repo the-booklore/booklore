@@ -134,7 +134,7 @@ class FileUploadServiceTest {
                 .isThrownBy(() -> service.uploadFileBookDrop(file))
                 .satisfies(ex -> {
                     assertThat(ex.getStatus()).isEqualTo(ApiError.INVALID_FILE_FORMAT.getStatus());
-                    assertThat(ex.getMessage()).contains("Invalid file format, only pdf and epub are supported");
+                    assertThat(ex.getMessage()).contains("Invalid file format");
                 });
     }
 

@@ -30,6 +30,8 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -131,6 +133,7 @@ public class BookMetadataUpdater {
                     }
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.saveMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
+                    updateFileNameIfConverted(primaryFile, file.toPath());
                     String newHash = file.isDirectory()
                             ? FileFingerprint.generateFolderHash(bookEntity.getFullFilePath())
                             : FileFingerprint.generateHash(bookEntity.getFullFilePath());
@@ -712,6 +715,20 @@ public class BookMetadataUpdater {
 
     private String nullIfBlank(String value) {
         return StringUtils.hasText(value) ? value : null;
+    }
+
+    void updateFileNameIfConverted(BookFileEntity bookFile, Path originalPath) {
+        if (Files.exists(originalPath)) {
+            return;
+        }
+        String fileName = bookFile.getFileName();
+        String baseName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+        String cbzFileName = baseName + ".cbz";
+        Path cbzPath = originalPath.resolveSibling(cbzFileName);
+        if (Files.exists(cbzPath)) {
+            log.info("File converted from {} to {}, updating book file record", fileName, cbzFileName);
+            bookFile.setFileName(cbzFileName);
+        }
     }
 
     private boolean isLocalOrPrivateUrl(String url) {

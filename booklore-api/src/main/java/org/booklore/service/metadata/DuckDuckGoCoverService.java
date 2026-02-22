@@ -136,6 +136,32 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
         return allImages;
     }
 
+    public List<CoverImage> searchImages(String searchTerm) {
+        String searchParams = "&iar=images";
+        String jsonParams = "&iar=images";
+
+        String encodedQuery = URLEncoder.encode(searchTerm, StandardCharsets.UTF_8);
+        String searchUrl = SEARCH_BASE_URL + encodedQuery + searchParams;
+        Connection.Response response = getResponse(searchUrl);
+        Document doc = parseResponse(response);
+        Map<String, String> cookies = response.cookies();
+        Pattern tokenPattern = Pattern.compile("vqd=\"(\\d+-\\d+)\"");
+        Matcher matcher = tokenPattern.matcher(doc.html());
+        if (!matcher.find()) {
+            log.error("Could not find search token for image search");
+            return Collections.emptyList();
+        }
+        String searchToken = matcher.group(1);
+        List<CoverImage> images = fetchImagesFromApi(searchTerm, searchToken, cookies, searchUrl, jsonParams);
+
+        for (int i = 0; i < images.size(); i++) {
+            CoverImage img = images.get(i);
+            images.set(i, new CoverImage(img.getUrl(), img.getWidth(), img.getHeight(), i + 1));
+        }
+
+        return images;
+    }
+
     private List<CoverImage> fetchImagesFromApi(String query, String searchToken, Map<String, String> cookies, String referrerUrl, String jsonParams) {
         List<CoverImage> priority = new ArrayList<>();
         List<CoverImage> others = new ArrayList<>();
