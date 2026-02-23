@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -17,18 +16,14 @@ class KoboUrlBuilderTest {
 
     @BeforeEach
     void setUp() {
-        // Mock the request attributes
         mockRequest = new MockHttpServletRequest();
         mockRequest.setScheme("http");
         mockRequest.setServerName("localhost");
-        mockRequest.setServerPort(8080);
+        mockRequest.setServerPort(6060);
         mockRequest.setContextPath("");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(mockRequest));
 
-        // Manually instantiate KoboUrlBuilder
         koboUrlBuilder = new KoboUrlBuilder();
-        // Set the @Value field using ReflectionTestUtils
-        ReflectionTestUtils.setField(koboUrlBuilder, "serverPort", 8080);
     }
 
     @AfterEach
@@ -44,9 +39,18 @@ class KoboUrlBuilderTest {
         String result = koboUrlBuilder.downloadUrl(token, bookId);
 
         assertNotNull(result);
-        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"),
-                "URL should contain the expected path segments");
-        assertTrue(result.startsWith("http://"), "URL should start with http://");
+        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"));
+        assertTrue(result.startsWith("http://"));
+    }
+
+    @Test
+    void testDownloadUrlPreservesPort() {
+        String token = "testToken";
+        Long bookId = 123L;
+
+        String result = koboUrlBuilder.downloadUrl(token, bookId);
+
+        assertTrue(result.startsWith("http://localhost:6060/"));
     }
 
     @Test
@@ -56,12 +60,11 @@ class KoboUrlBuilderTest {
         String result = koboUrlBuilder.imageUrlTemplate(token);
 
         assertNotNull(result);
-        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/"),
-                "URL should contain the expected path segments");
-        assertTrue(result.contains("{ImageId}"), "URL should contain ImageId placeholder");
-        assertTrue(result.contains("{Width}"), "URL should contain Width placeholder");
-        assertTrue(result.contains("{Height}"), "URL should contain Height placeholder");
-        assertTrue(result.contains("image.jpg"), "URL should end with image.jpg");
+        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/"));
+        assertTrue(result.contains("{ImageId}"));
+        assertTrue(result.contains("{Width}"));
+        assertTrue(result.contains("{Height}"));
+        assertTrue(result.contains("image.jpg"));
     }
 
     @Test
@@ -71,59 +74,51 @@ class KoboUrlBuilderTest {
         String result = koboUrlBuilder.imageUrlQualityTemplate(token);
 
         assertNotNull(result);
-        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/"),
-                "URL should contain the expected path segments");
-        assertTrue(result.contains("{ImageId}"), "URL should contain ImageId placeholder");
-        assertTrue(result.contains("{Width}"), "URL should contain Width placeholder");
-        assertTrue(result.contains("{Height}"), "URL should contain Height placeholder");
-        assertTrue(result.contains("{Quality}"), "URL should contain Quality placeholder");
-        assertTrue(result.contains("{IsGreyscale}"), "URL should contain IsGreyscale placeholder");
-        assertTrue(result.contains("image.jpg"), "URL should end with image.jpg");
+        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/"));
+        assertTrue(result.contains("{ImageId}"));
+        assertTrue(result.contains("{Width}"));
+        assertTrue(result.contains("{Height}"));
+        assertTrue(result.contains("{Quality}"));
+        assertTrue(result.contains("{IsGreyscale}"));
+        assertTrue(result.contains("image.jpg"));
     }
 
     @Test
-    void testDownloadUrlWithXForwardedPort() {
-        // Set X-Forwarded-Port header
-        mockRequest.addHeader("X-Forwarded-Port", "443");
-
+    void testLibrarySyncUrl() {
         String token = "testToken";
-        Long bookId = 123L;
 
-        String result = koboUrlBuilder.downloadUrl(token, bookId);
+        String result = koboUrlBuilder.librarySyncUrl(token);
 
         assertNotNull(result);
-        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"),
-                "URL should contain the expected path segments");
-    }
-
-    @Test
-    void testDownloadUrlWithInvalidXForwardedPort() {
-        // Set invalid X-Forwarded-Port header
-        mockRequest.addHeader("X-Forwarded-Port", "invalid");
-
-        String token = "testToken";
-        Long bookId = 123L;
-
-        String result = koboUrlBuilder.downloadUrl(token, bookId);
-
-        assertNotNull(result);
-        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"),
-                "URL should contain the expected path segments even with invalid port header");
+        assertTrue(result.contains("/api/kobo/" + token + "/v1/library/sync"));
     }
 
     @Test
     void testUrlBuilderWithIpAddress() {
-        // Test with IP address instead of localhost
         mockRequest.setServerName("192.168.1.100");
-        mockRequest.addHeader("X-Forwarded-Port", "8443");
+        mockRequest.setServerPort(6060);
 
         String token = "testToken";
         Long bookId = 123L;
 
         String result = koboUrlBuilder.downloadUrl(token, bookId);
 
-        assertNotNull(result);
-        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"),
-                "URL should contain the expected path segments");
+        assertTrue(result.startsWith("http://192.168.1.100:6060/"));
+        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"));
+    }
+
+    @Test
+    void testUrlBuilderWithDomainName() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("books.example.com");
+        mockRequest.setServerPort(443);
+
+        String token = "testToken";
+        Long bookId = 123L;
+
+        String result = koboUrlBuilder.downloadUrl(token, bookId);
+
+        assertTrue(result.startsWith("https://books.example.com"));
+        assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"));
     }
 }
