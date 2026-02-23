@@ -1,8 +1,8 @@
 {
-  "offline": "U bent offline",
-  "loading": "Booklore laden\u2026",
-  "loadingDescription": "Even geduld terwijl we alles gereedmaken.",
-  "offlineLoadingDescription": "BookLore heeft een verbinding met de server nodig om te laden.",
-  "offlineDescription": "Controleer uw netwerk en probeer het opnieuw.",
-  "connectionLost": "Uw verbinding is verbroken. Sommige functies werken mogelijk niet."
+  "offline": "",
+  "loading": "",
+  "loadingDescription": "",
+  "offlineLoadingDescription": "",
+  "offlineDescription": "",
+  "connectionLost": ""
 }

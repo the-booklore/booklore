@@ -1,54 +1,55 @@
 {
   "topbar": {
-    "bookdrop": "Bookdrop",
-    "createNewLibrary": "Nieuwe bibliotheek aanmaken",
-    "uploadBook": "Boek uploaden",
-    "charts": "Grafieken",
-    "metadataManager": "Metadata-beheerder",
-    "settings": "Instellingen",
-    "documentation": "Documentatie",
-    "profile": "Profiel",
-    "logout": "Uitloggen",
-    "language": "Taal",
-    "supportBookLore": "BookLore ondersteunen",
-    "notificationAriaLabel": "Gecombineerd meldingsicoon",
-    "createLibrary": "Bibliotheek aanmaken",
-    "stats": "Statistieken",
-    "libraryStats": "Bibliotheekstatistieken",
-    "readingStats": "Leesstatistieken"
+    "bookdrop": "",
+    "createNewLibrary": "",
+    "uploadBook": "",
+    "charts": "",
+    "metadataManager": "",
+    "settings": "",
+    "documentation": "",
+    "profile": "",
+    "logout": "",
+    "language": "",
+    "supportBookLore": "",
+    "notificationAriaLabel": "",
+    "createLibrary": "",
+    "stats": "",
+    "libraryStats": "",
+    "readingStats": ""
   },
   "menu": {
-    "home": "Home",
-    "dashboard": "Dashboard",
-    "allBooks": "Alle boeken",
-    "libraries": "Bibliotheken",
-    "shelves": "Planken",
-    "magicShelves": "Magische planken",
-    "unshelved": "Niet ingedeeld",
-    "series": "Reeksen",
-    "notebook": "Notitieboek",
-    "update": "(Update)"
+    "home": "",
+    "dashboard": "",
+    "allBooks": "",
+    "libraries": "",
+    "shelves": "",
+    "magicShelves": "",
+    "unshelved": "",
+    "series": "",
+    "authors": "",
+    "notebook": "",
+    "update": ""
   },
   "changelog": {
-    "title": "Wat is er nieuw",
-    "description": "Laatste updates en verbeteringen",
-    "loading": "Wijzigingslogboek laden...",
-    "empty": "Geen updates beschikbaar."
+    "title": "",
+    "description": "",
+    "loading": "",
+    "empty": ""
   },
   "theme": {
-    "primary": "Primair",
-    "surface": "Oppervlak"
+    "primary": "",
+    "surface": ""
   },
   "uploadDialog": {
-    "chooseFile": "Kies bestand:",
-    "selectImage": "Afbeelding selecteren",
-    "fileNote": "Ondersteunde formaten: JPEG, PNG \u2022 Maximale bestandsgrootte: 5 MB",
-    "or": "OF",
-    "imageUrl": "Afbeeldings-URL:",
-    "urlPlaceholder": "Plak hier de afbeeldings-URL",
-    "urlNote": "Ondersteunde formaten: JPEG, PNG \u2022 Maximale bestandsgrootte: 5 MB",
-    "errorNoInput": "Selecteer een bestand of plak een URL.",
-    "errorUploadFailed": "Kon afbeelding niet uploaden.",
-    "errorUploadRetry": "Upload mislukt. Probeer het opnieuw."
+    "chooseFile": "",
+    "selectImage": "",
+    "fileNote": "",
+    "or": "",
+    "imageUrl": "",
+    "urlPlaceholder": "",
+    "urlNote": "",
+    "errorNoInput": "",
+    "errorUploadFailed": "",
+    "errorUploadRetry": ""
   }
 }

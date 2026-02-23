@@ -1,64 +1,64 @@
 {
-  "loading": "Luisterboek laden...",
-  "untitled": "Zonder titel",
-  "unknownAuthor": "Onbekende auteur",
-  "coverAlt": "Omslag",
+  "loading": "",
+  "untitled": "",
+  "unknownAuthor": "",
+  "coverAlt": "",
   "header": {
-    "backTooltip": "Terug",
-    "bookmarksTooltip": "Bladwijzers",
-    "chaptersTracksTooltip": "Hoofdstukken/Nummers"
+    "backTooltip": "",
+    "bookmarksTooltip": "",
+    "chaptersTracksTooltip": ""
   },
   "trackInfo": {
-    "trackOf": "Nummer {{ current }} van {{ total }}",
-    "chapterOf": "Hoofdstuk {{ current }} van {{ total }}"
+    "trackOf": "",
+    "chapterOf": ""
   },
   "controls": {
-    "previousTrackTooltip": "Vorig nummer",
-    "previousChapterTooltip": "Vorig hoofdstuk",
-    "rewindTooltip": "-30s",
-    "forwardTooltip": "+30s",
-    "nextTrackTooltip": "Volgend nummer",
-    "nextChapterTooltip": "Volgend hoofdstuk"
+    "previousTrackTooltip": "",
+    "previousChapterTooltip": "",
+    "rewindTooltip": "",
+    "forwardTooltip": "",
+    "nextTrackTooltip": "",
+    "nextChapterTooltip": ""
   },
   "extra": {
-    "addBookmark": "Bladwijzer toevoegen",
-    "sleepTimer": "Slaaptimer",
-    "endOfChapter": "Einde van hoofdstuk"
+    "addBookmark": "",
+    "sleepTimer": "",
+    "endOfChapter": ""
   },
   "details": {
-    "narratedBy": "Ingesproken door {{ narrator }}",
-    "kbps": "{{ bitrate }} kbps",
-    "totalDuration": "{{ duration }} totaal"
+    "narratedBy": "",
+    "kbps": "",
+    "totalDuration": ""
   },
   "sidebar": {
-    "tracks": "Nummers",
-    "chapters": "Hoofdstukken"
+    "tracks": "",
+    "chapters": ""
   },
   "bookmarks": {
-    "title": "Bladwijzers",
-    "empty": "Nog geen bladwijzers",
-    "emptyHint": "Voeg een bladwijzer toe om uw positie op te slaan",
-    "deleteTooltip": "Verwijderen",
-    "bookmarkAt": "Bladwijzer op {{ time }}"
+    "title": "",
+    "empty": "",
+    "emptyHint": "",
+    "deleteTooltip": "",
+    "bookmarkAt": ""
   },
   "sleepTimerMenu": {
-    "minutes15": "15 minuten",
-    "minutes30": "30 minuten",
-    "minutes45": "45 minuten",
-    "minutes60": "60 minuten",
-    "endOfChapter": "Einde van hoofdstuk",
-    "cancelTimer": "Timer annuleren"
+    "minutes15": "",
+    "minutes30": "",
+    "minutes45": "",
+    "minutes60": "",
+    "endOfChapter": "",
+    "cancelTimer": ""
   },
   "toast": {
-    "loadFailed": "Kon luisterboek niet laden",
-    "audioLoadFailed": "Kon audio niet laden",
-    "sleepTimerSet": "Afspelen stopt over {{ minutes }} minuten",
-    "sleepTimerEndOfChapter": "Afspelen stopt aan het einde van het hoofdstuk",
-    "sleepTimerStopped": "Afspelen gestopt door slaaptimer",
-    "bookmarkAdded": "Bladwijzer toegevoegd",
-    "bookmarkExists": "Bladwijzer bestaat al",
-    "bookmarkExistsDetail": "Er bestaat al een bladwijzer op deze positie",
-    "bookmarkFailed": "Kon bladwijzer niet toevoegen",
-    "bookmarkDeleted": "Bladwijzer verwijderd"
+    "loadFailed": "",
+    "audioLoadFailed": "",
+    "sleepTimerSet": "",
+    "sleepTimerEndOfChapter": "",
+    "sleepTimerStopped": "",
+    "bookmarkAdded": "",
+    "bookmarkExists": "",
+    "bookmarkExistsDetail": "",
+    "bookmarkFailed": "",
+    "bookmarkDeleted": ""
   }
 }

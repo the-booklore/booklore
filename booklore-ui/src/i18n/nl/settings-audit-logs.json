@@ -1,19 +1,19 @@
 {
-  "title": "Auditlogboeken",
-  "description": "Bekijk een overzicht van beheerdersrelevante acties die in het systeem zijn uitgevoerd.",
-  "sectionTitle": "Activiteitenlogboek",
-  "filterPlaceholder": "Filteren op actie",
-  "userFilterPlaceholder": "Filteren op gebruiker",
-  "dateRangePlaceholder": "Filteren op datumbereik",
-  "clearFilters": "Alle filters wissen",
-  "autoRefresh": "Automatisch verversen (10s)",
-  "pageReport": "{first} tot {last} van {totalRecords} vermeldingen weergegeven",
-  "empty": "Geen auditlogboeken gevonden",
+  "title": "",
+  "description": "",
+  "sectionTitle": "",
+  "filterPlaceholder": "",
+  "userFilterPlaceholder": "",
+  "dateRangePlaceholder": "",
+  "clearFilters": "",
+  "autoRefresh": "",
+  "pageReport": "",
+  "empty": "",
   "columns": {
-    "timestamp": "Wanneer",
-    "user": "Gebruiker",
-    "action": "Actie",
-    "description": "Beschrijving",
-    "ip": "IP-adres"
+    "timestamp": "",
+    "user": "",
+    "action": "",
+    "description": "",
+    "ip": ""
   }
 }
