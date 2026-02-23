@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {UserService} from '../../../settings/user-management/user.service';
 import {Book, BookRecommendation} from '../../../book/model/book.model';
 import {BehaviorSubject, Observable, Subject} from 'rxjs';
-import {distinctUntilChanged, filter, map, shareReplay, switchMap, take, takeUntil,} from 'rxjs/operators';
+import {distinctUntilChanged, filter, map, shareReplay, switchMap, take, takeUntil, tap,} from 'rxjs/operators';
 import {BookService} from '../../../book/service/book.service';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {Tab, TabList, TabPanel, TabPanels, Tabs,} from 'primeng/tabs';
@@ -49,6 +49,7 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
   private _tab: string = 'view';
   canEditMetadata: boolean = false;
   admin: boolean = false;
+  isPhysical: boolean = false;
 
   private appSettings$ = this.appSettingsService.appSettings$;
   private currentBookId$ = new BehaviorSubject<number | null>(null);
@@ -113,6 +114,7 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
           )
         )
       ),
+      tap(book => this.isPhysical = book.isPhysical ?? false),
       takeUntil(this.destroy$),
       shareReplay({bufferSize: 1, refCount: true})
     );
