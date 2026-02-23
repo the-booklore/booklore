@@ -71,6 +71,10 @@ export class AuthorCardComponent implements OnChanges {
   }
 
   onCardClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('.menu-button-container')) {
+      return;
+    }
     if (event.ctrlKey || event.metaKey) {
       event.preventDefault();
       event.stopPropagation();
@@ -103,7 +107,6 @@ export class AuthorCardComponent implements OnChanges {
   }
 
   onMenuToggle(event: Event, menu: TieredMenu): void {
-    event.stopPropagation();
     if (!this.menuInitialized) {
       this.menuInitialized = true;
       this.initMenu();

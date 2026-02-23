@@ -70,6 +70,12 @@ export interface CompletionRaceResponse {
   endProgress: number;
 }
 
+export interface SessionScatterResponse {
+  hourOfDay: number;
+  durationMinutes: number;
+  dayOfWeek: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -150,6 +156,13 @@ export class UserStatsService {
   getReadingDates(): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
       `${this.readingSessionsUrl}/reading-dates`
+    );
+  }
+
+  getSessionScatter(year: number): Observable<SessionScatterResponse[]> {
+    return this.http.get<SessionScatterResponse[]>(
+      `${this.readingSessionsUrl}/session-scatter`,
+      {params: {year: year.toString()}}
     );
   }
 }
