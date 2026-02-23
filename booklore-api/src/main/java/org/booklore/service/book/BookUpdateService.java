@@ -25,6 +25,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -381,12 +382,9 @@ public class BookUpdateService {
         }
 
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        if (user == null) {
-            throw ApiError.FORBIDDEN.createException("You are not authorized to update purchase dates.");
-        }
-        List<BookEntity> books = bookRepository.findAllById(bookIds);
+        List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(new HashSet<>(bookIds));
         if (books.size() != bookIds.size()) {
-            if (bookIds != null && bookIds.size() == 1) {
+            if (bookIds.size() == 1) {
                 throw ApiError.BOOK_NOT_FOUND.createException(bookIds.getFirst());
             }
             throw ApiError.GENERIC_NOT_FOUND.createException("One or more books not found");
@@ -410,6 +408,7 @@ public class BookUpdateService {
             book.setPurchaseDate(purchaseDate);
         }
         bookRepository.saveAll(books);
+        log.info("Updated purchase date for book(s): {}", bookIds);
 
         var writeSettings = appSettingService.getAppSettings().getMetadataPersistenceSettings().getSaveToOriginalFile();
         if (writeSettings.isAnyFormatEnabled()) {
@@ -437,7 +436,7 @@ public class BookUpdateService {
 
         metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
             try {
-                java.io.File file = new java.io.File(book.getFullFilePath().toUri());
+                File file = new File(book.getFullFilePath().toUri());
                 writer.saveMetadataToFile(file, book.getMetadata(), null, new MetadataClearFlags());
                 String newHash = FileFingerprint.generateHash(book.getFullFilePath());
                 primaryFile.setCurrentHash(newHash);

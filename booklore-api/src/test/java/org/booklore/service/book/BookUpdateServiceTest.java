@@ -11,8 +11,13 @@ import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ReadStatus;
 import org.booklore.repository.*;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
+import org.booklore.service.metadata.writer.MetadataWriterFactory;
 import org.booklore.service.progress.ReadingProgressService;
 import org.booklore.service.restriction.ContentRestrictionService;
+import org.booklore.model.dto.settings.AppSettings;
+import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -55,11 +60,11 @@ class BookUpdateServiceTest {
     @Mock
     private ContentRestrictionService contentRestrictionService;
     @Mock
-    private org.booklore.service.metadata.writer.MetadataWriterFactory metadataWriterFactory;
+    private MetadataWriterFactory metadataWriterFactory;
     @Mock
-    private org.booklore.service.appsettings.AppSettingService appSettingService;
+    private AppSettingService appSettingService;
     @Mock
-    private org.booklore.service.metadata.sidecar.SidecarMetadataWriter sidecarMetadataWriter;
+    private SidecarMetadataWriter sidecarMetadataWriter;
 
     @InjectMocks
     private BookUpdateService bookUpdateService;
@@ -68,12 +73,12 @@ class BookUpdateServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        org.booklore.model.dto.settings.MetadataPersistenceSettings.SaveToOriginalFile saveSettings =
-                org.booklore.model.dto.settings.MetadataPersistenceSettings.SaveToOriginalFile.builder().build();
-        org.booklore.model.dto.settings.MetadataPersistenceSettings persistenceSettings =
-                new org.booklore.model.dto.settings.MetadataPersistenceSettings();
+        MetadataPersistenceSettings.SaveToOriginalFile saveSettings =
+                MetadataPersistenceSettings.SaveToOriginalFile.builder().build();
+        MetadataPersistenceSettings persistenceSettings =
+                new MetadataPersistenceSettings();
         persistenceSettings.setSaveToOriginalFile(saveSettings);
-        org.booklore.model.dto.settings.AppSettings mockAppSettings = mock(org.booklore.model.dto.settings.AppSettings.class);
+        AppSettings mockAppSettings = mock(AppSettings.class);
         when(mockAppSettings.getMetadataPersistenceSettings()).thenReturn(persistenceSettings);
         when(appSettingService.getAppSettings()).thenReturn(mockAppSettings);
 
@@ -123,7 +128,7 @@ class BookUpdateServiceTest {
     void updatePurchaseDate_shouldUpdatePurchaseDateForAuthorizedUser() {
         mockUser(false, Set.of(10L));
         BookEntity book = buildBook(1L, 10L, Instant.parse("2024-01-01T00:00:00Z"));
-        when(bookRepository.findAllById(List.of(1L))).thenReturn(List.of(book));
+        when(bookQueryService.findAllWithMetadataByIds(Set.of(1L))).thenReturn(List.of(book));
         when(contentRestrictionService.applyRestrictions(anyList(), eq(99L))).thenAnswer(inv -> inv.getArgument(0));
 
         Instant newDate = Instant.parse("2024-02-01T00:00:00Z");
@@ -137,7 +142,7 @@ class BookUpdateServiceTest {
     void updatePurchaseDate_shouldThrowWhenBookInUnauthorizedLibrary() {
         mockUser(false, Set.of(1L));
         BookEntity book = buildBook(1L, 2L, Instant.now());
-        when(bookRepository.findAllById(List.of(1L))).thenReturn(List.of(book));
+        when(bookQueryService.findAllWithMetadataByIds(Set.of(1L))).thenReturn(List.of(book));
 
         APIException ex = assertThrows(APIException.class,
                 () -> bookUpdateService.updatePurchaseDate(List.of(1L), Instant.now()));
@@ -159,11 +164,11 @@ class BookUpdateServiceTest {
     }
 
     @Test
-    void updatePurchaseDate_shouldFallbackToAddedOnWhenNull() {
+    void updatePurchaseDate_shouldSetNullWhenPurchaseDateIsNull() {
         mockUser(true, Set.of());
         Instant addedOn = Instant.parse("2023-11-01T00:00:00Z");
         BookEntity book = buildBook(42L, 5L, addedOn);
-        when(bookRepository.findAllById(List.of(42L))).thenReturn(List.of(book));
+        when(bookQueryService.findAllWithMetadataByIds(Set.of(42L))).thenReturn(List.of(book));
 
         bookUpdateService.updatePurchaseDate(List.of(42L), null);
 
@@ -183,14 +188,14 @@ class BookUpdateServiceTest {
                 () -> bookUpdateService.updatePurchaseDate(Collections.emptyList(), Instant.now()));
         assertEquals(HttpStatus.BAD_REQUEST, exEmpty.getStatus());
 
-        verify(bookRepository, never()).findAllById(any());
+        verify(bookQueryService, never()).findAllWithMetadataByIds(any());
         verify(bookRepository, never()).saveAll(any());
     }
 
     @Test
     void updatePurchaseDate_shouldThrowNotFoundWhenMissingBook() {
         mockUser(true, Set.of());
-        when(bookRepository.findAllById(List.of(999L))).thenReturn(Collections.emptyList());
+        when(bookQueryService.findAllWithMetadataByIds(Set.of(999L))).thenReturn(Collections.emptyList());
 
         APIException ex = assertThrows(APIException.class,
                 () -> bookUpdateService.updatePurchaseDate(List.of(999L), Instant.now()));

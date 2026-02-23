@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -470,7 +471,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
             String purchaseDate = xpath.evaluate("//*[local-name()='purchase_date' and namespace-uri()='http://booklore.org/metadata/1.0/']/text()", doc);
             if (StringUtils.isNotBlank(purchaseDate)) {
                 try {
-                    builder.purchaseDate(java.time.Instant.parse(purchaseDate.trim()));
+                    builder.purchaseDate(Instant.parse(purchaseDate.trim()));
                 } catch (Exception ignored) {
                 }
             }

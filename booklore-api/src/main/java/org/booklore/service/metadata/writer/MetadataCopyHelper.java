@@ -163,9 +163,11 @@ public class MetadataCopyHelper {
     }
 
     public void copyPurchaseDate(boolean clear, Consumer<Instant> consumer) {
-        if (clear) consumer.accept(null);
-        else if (metadata.getBook() != null && metadata.getBook().getPurchaseDate() != null)
+        if (clear) {
+            consumer.accept(null);
+        } else if (metadata.getBook() != null && metadata.getBook().getPurchaseDate() != null) {
             consumer.accept(metadata.getBook().getPurchaseDate());
+        }
     }
 
     public void copyAuthors(boolean clear, Consumer<Set<String>> consumer) {

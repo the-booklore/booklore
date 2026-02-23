@@ -291,8 +291,10 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       case 'addedOn':
         return book.addedOn ? this.datePipe.transform(book.addedOn, 'dd-MMM-yyyy') ?? '' : '';
 
-      case 'purchaseDate':
-        return book.purchaseDate ? this.datePipe.transform(book.purchaseDate, 'dd-MMM-yyyy') ?? '' : '';
+      case 'purchaseDate': {
+        const pDate = book.purchaseDate ?? book.addedOn;
+        return pDate ? this.datePipe.transform(pDate, 'dd-MMM-yyyy') ?? '' : '';
+      }
 
       case 'fileName':
         return book.primaryFile?.fileName ?? '';
