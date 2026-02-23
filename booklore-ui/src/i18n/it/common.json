@@ -1,1 +1,25 @@
-{}
+{
+  "save": "Salva",
+  "cancel": "Annulla",
+  "delete": "Elimina",
+  "close": "Chiudi",
+  "confirm": "Conferma",
+  "search": "Cerca",
+  "loading": "Caricamento...",
+  "error": "Errore",
+  "success": "Successo",
+  "yes": "Sì",
+  "no": "No",
+  "ok": "OK",
+  "retry": "Riprova",
+  "back": "Indietro",
+  "next": "Avanti",
+  "submit": "Invia",
+  "remove": "Rimuovi",
+  "edit": "Modifica",
+  "info": "Informazioni",
+  "select": "Seleziona",
+  "dismiss": "Ignora",
+  "discard": "Scarta",
+  "review": "Rivedi"
+}

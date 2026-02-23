@@ -35,6 +35,7 @@ import {BookMetadataHostService} from '../../../../../shared/service/book-metada
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
+import {AuthorService} from '../../../../author-browser/service/author.service';
 
 
 @Component({
@@ -57,6 +58,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   private bookService = inject(BookService);
   private bookFileService = inject(BookFileService);
   private taskHelperService = inject(TaskHelperService);
+  private authorService = inject(AuthorService);
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
@@ -740,7 +742,20 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   }
 
   goToAuthorBooks(author: string): void {
-    this.handleMetadataClick('author', author);
+    this.authorService.getAuthorByName(author).subscribe({
+      next: (authorDetails) => {
+        const navigate = () => this.router.navigate(['/author', authorDetails.id]);
+        if (this.metadataCenterViewMode === 'dialog') {
+          this.dialogRef?.close();
+          setTimeout(navigate, 200);
+        } else {
+          navigate();
+        }
+      },
+      error: () => {
+        this.handleMetadataClick('author', author);
+      }
+    });
   }
 
   goToCategory(category: string): void {

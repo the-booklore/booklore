@@ -2,7 +2,7 @@
 #
 # Weblate Setup Script for BookLore
 #
-# Creates the Weblate project and all 25 translation components via the API.
+# Creates the Weblate project and all translation components via the API.
 # Run once after creating your Hosted Weblate account.
 #
 # Prerequisites:
@@ -13,7 +13,7 @@
 #   WEBLATE_TOKEN=your-api-token ./scripts/weblate-setup.sh
 #
 
-set -euo pipefail
+set -uo pipefail
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 WEBLATE_URL="${WEBLATE_URL:-https://hosted.weblate.org}"
@@ -31,9 +31,9 @@ FILE_BASE="booklore-ui/src/i18n"
 SOURCE_LANG="en"
 
 # All languages the project supports
-LANGUAGES="en es de fr it nl pl pt ru"
+LANGUAGES="en es de fr hr it ja nl pl pt ru sv zh"
 
-# All 25 translation domain files (without .json extension)
+# All translation domain files (without .json extension)
 COMPONENTS=(
   common
   auth
@@ -51,6 +51,7 @@ COMPONENTS=(
   settings-opds
   settings-tasks
   settings-auth
+  settings-audit-logs
   settings-device
   settings-profile
   app
@@ -59,11 +60,23 @@ COMPONENTS=(
   library-creator
   bookdrop
   metadata
+  book
+  magic-shelf
+  notebook
+  reader-audiobook
+  reader-cbx
+  reader-ebook
+  reader-pdf
+  series-browser
+  stats-library
+  stats-user
 )
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 auth_header="Authorization: Token ${TOKEN}"
 content_type="Content-Type: application/json"
+
+LANG_REGEX="^(en|es|de|fr|hr|it|ja|nl|pl|pt|ru|sv|zh)$"
 
 api_post() {
   local endpoint="$1"
@@ -81,13 +94,43 @@ api_post() {
   if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
     echo "  OK (${http_code})"
     return 0
-  elif [[ "$http_code" == "400" ]] && echo "$body" | grep -q "already exists"; then
+  elif echo "$body" | grep -q "already exists"; then
     echo "  Already exists, skipping"
+    return 0
+  elif [[ "$http_code" == "403" ]] && echo "$body" | grep -q "billing\|limit"; then
+    echo "  Already exists (billing limit), skipping"
     return 0
   else
     echo "  FAILED (${http_code}): ${body}"
     return 1
   fi
+}
+
+api_patch() {
+  local endpoint="$1"
+  local data="$2"
+  local response
+  response=$(curl -s -w "\n%{http_code}" -X PATCH "${API}${endpoint}" \
+    -H "${auth_header}" \
+    -H "${content_type}" \
+    -d "${data}")
+  local http_code
+  http_code=$(echo "$response" | tail -1)
+  local body
+  body=$(echo "$response" | sed '$d')
+
+  if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+    echo "  OK (${http_code})"
+    return 0
+  else
+    echo "  FAILED (${http_code}): ${body}"
+    return 1
+  fi
+}
+
+api_get() {
+  local endpoint="$1"
+  curl -s -X GET "${API}${endpoint}" -H "${auth_header}"
 }
 
 # Pretty name from slug: settings-email -> Settings Email
@@ -109,7 +152,15 @@ api_post "/projects/" "$(cat <<EOF
 EOF
 )"
 
-# ─── Step 2: Create Components ───────────────────────────────────────────────
+# ─── Step 2: Pull latest from repository ─────────────────────────────────────
+echo ""
+echo "=== Pulling latest from repository ==="
+echo ""
+api_post "/components/${PROJECT_SLUG}/common/repository/" '{"operation": "pull"}' || true
+echo "Waiting for Weblate to process the pull..."
+sleep 10
+
+# ─── Step 3: Create Components ───────────────────────────────────────────────
 echo ""
 echo "=== Creating ${#COMPONENTS[@]} translation components ==="
 echo ""
@@ -141,7 +192,8 @@ for comp in "${COMPONENTS[@]}"; do
   "new_lang": "none",
   "manage_units": false,
   "check_flags": "python-brace-format",
-  "language_regex": "^(en|es|de|fr|it|nl|pl|pt|ru)$"
+  "language_regex": "${LANG_REGEX}",
+  "license": "AGPL-3.0-only"
 }
 EOF
 )"
@@ -162,11 +214,23 @@ EOF
   "new_lang": "none",
   "manage_units": false,
   "check_flags": "python-brace-format",
-  "language_regex": "^(en|es|de|fr|it|nl|pl|pt|ru)$"
+  "language_regex": "${LANG_REGEX}",
+  "license": "AGPL-3.0-only"
 }
 EOF
 )"
   fi
+done
+
+# ─── Step 4: Update language_regex on all components ─────────────────────────
+echo ""
+echo "=== Updating language_regex on all components ==="
+echo ""
+
+for comp in "${COMPONENTS[@]}"; do
+  name=$(pretty_name "$comp")
+  echo "Updating component: ${name} (${comp})"
+  api_patch "/components/${PROJECT_SLUG}/${comp}/" "{\"language_regex\": \"${LANG_REGEX}\"}"
 done
 
 echo ""

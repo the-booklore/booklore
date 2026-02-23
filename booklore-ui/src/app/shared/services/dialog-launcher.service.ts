@@ -73,7 +73,7 @@ export class DialogLauncherService {
   openGithubSupportDialog(): DynamicDialogRef | null {
     return this.openDialog(GithubSupportDialog, {
       showHeader: false,
-      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
+      styleClass: `${DialogSize.MD} ${DialogStyle.MINIMAL}`,
     });
   }
 

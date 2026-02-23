@@ -84,7 +84,7 @@
                      [style.width.%]="session.width"
                      [style.top]="session.totalLevels > 1 ? 'calc(' + session.level + ' / ' + session.totalLevels + ' * 100% + ' + session.level * 2 + 'px)' : '0'"
                      [style.height]="session.totalLevels > 1 ? 'calc((1 / ' + session.totalLevels + ' * 100%) - ' + (session.totalLevels - 1) * 2 / session.totalLevels + 'px)' : '100%'"
-                     [pTooltip]="getTooltipContent(session)"
+                     [pTooltip]="session.tooltipContent"
                      [escape]="false"
                      tooltipPosition="top"
                      tooltipStyleClass="session-timeline-tooltip"

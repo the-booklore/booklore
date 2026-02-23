@@ -14,7 +14,9 @@ export class CustomReuseStrategy implements RouteReuseStrategy {
     'unshelved-books',
     'library/:libraryId/books',
     'shelf/:shelfId/books',
-    'magic-shelf/:magicShelfId/books'
+    'magic-shelf/:magicShelfId/books',
+    'authors',
+    'series'
   ];
 
   private readonly BOOK_DETAILS_PATH = 'book/:bookId';
@@ -27,10 +29,6 @@ export class CustomReuseStrategy implements RouteReuseStrategy {
   private isBookBrowserRoute(route: ActivatedRouteSnapshot): boolean {
     const path = route.routeConfig?.path;
     return this.BOOK_BROWSER_PATHS.includes(path || '');
-  }
-
-  private isBookDetailsRoute(route: ActivatedRouteSnapshot): boolean {
-    return route.routeConfig?.path === this.BOOK_DETAILS_PATH;
   }
 
   shouldDetach(route: ActivatedRouteSnapshot): boolean {

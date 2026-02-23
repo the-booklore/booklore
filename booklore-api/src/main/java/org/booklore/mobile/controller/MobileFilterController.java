@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @AllArgsConstructor
@@ -23,7 +24,10 @@ public class MobileFilterController {
             description = "Returns available authors, languages, file types, and read statuses for filtering books.")
     @ApiResponse(responseCode = "200", description = "Filter options retrieved successfully")
     @GetMapping("/filter-options")
-    public ResponseEntity<MobileFilterOptions> getFilterOptions() {
-        return ResponseEntity.ok(mobileBookService.getFilterOptions());
+    public ResponseEntity<MobileFilterOptions> getFilterOptions(
+            @RequestParam(required = false) Long libraryId,
+            @RequestParam(required = false) Long shelfId,
+            @RequestParam(required = false) Long magicShelfId) {
+        return ResponseEntity.ok(mobileBookService.getFilterOptions(libraryId, shelfId, magicShelfId));
     }
 }

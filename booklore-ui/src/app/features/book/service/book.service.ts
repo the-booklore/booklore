@@ -1,8 +1,8 @@
 import {inject, Injectable} from '@angular/core';
-import {first, from, Observable, of, throwError} from 'rxjs';
+import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, switchMap, tap} from 'rxjs/operators';
-import {Book, BookDeletionResponse, BookRecommendation, BookSetting, BookStatusUpdateResponse, BookSyncResponse, BookType, CreatePhysicalBookRequest, PersonalRatingUpdateResponse, ReadStatus} from '../model/book.model';
+import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
+import {Book, BookDeletionResponse, BookRecommendation, BookSetting, BookStatusUpdateResponse, BookType, CreatePhysicalBookRequest, PersonalRatingUpdateResponse, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
@@ -12,7 +12,6 @@ import {Router} from '@angular/router';
 import {BookStateService} from './book-state.service';
 import {BookSocketService} from './book-socket.service';
 import {BookPatchService} from './book-patch.service';
-import {BookCacheService} from './book-cache.service';
 import {TranslocoService} from '@jsverse/transloco';
 
 @Injectable({
@@ -29,7 +28,6 @@ export class BookService {
   private bookStateService = inject(BookStateService);
   private bookSocketService = inject(BookSocketService);
   private bookPatchService = inject(BookPatchService);
-  private bookCacheService = inject(BookCacheService);
   private readonly t = inject(TranslocoService);
 
   private loading$: Observable<Book[]> | null = null;
@@ -41,7 +39,6 @@ export class BookService {
       if (token === null) {
         this.bookStateService.resetBookState();
         this.loading$ = null;
-        this.bookCacheService.clear();
       } else {
         const current = this.bookStateService.getCurrentBookState();
         if (current.loaded && !current.books) {
@@ -61,7 +58,7 @@ export class BookService {
   bookState$ = this.bookStateService.bookState$.pipe(
     tap(state => {
       if (!state.loaded && !state.error && !this.loading$) {
-        this.loading$ = this.fetchBooksWithCache().pipe(
+        this.loading$ = this.fetchBooks().pipe(
           shareReplay(1),
           finalize(() => (this.loading$ = null))
         );
@@ -74,52 +71,14 @@ export class BookService {
     return this.bookStateService.getCurrentBookState();
   }
 
-  private fetchBooksWithCache(): Observable<Book[]> {
-    return from(this.bookCacheService.getAll()).pipe(
-      switchMap(cachedBooks => from(this.bookCacheService.getSyncTimestamp()).pipe(
-        map(syncTs => ({cachedBooks, syncTs}))
-      )),
-      switchMap(({cachedBooks, syncTs}) => {
-        if (cachedBooks.length > 0 && syncTs) {
-          this.bookStateService.updateBookState({
-            books: cachedBooks,
-            loaded: true,
-            error: null,
-          });
-
-          this.deltaSync(syncTs);
-          return of(cachedBooks);
-        }
-        return this.fetchBooksFullAndCache();
-      }),
-      catchError(error => {
-        return this.fetchBooksFullAndCache().pipe(
-          catchError(fetchError => {
-            const curr = this.bookStateService.getCurrentBookState();
-            this.bookStateService.updateBookState({
-              books: curr.books,
-              loaded: true,
-              error: fetchError.message,
-            });
-            throw fetchError;
-          })
-        );
-      })
-    );
-  }
-
-  private fetchBooksFullAndCache(): Observable<Book[]> {
-    return this.http.get<Book[]>(this.url, {observe: 'response'}).pipe(
-      map(response => {
-        const bookList = response.body || [];
+  private fetchBooks(): Observable<Book[]> {
+    return this.http.get<Book[]>(this.url).pipe(
+      map(bookList => {
         this.bookStateService.updateBookState({
           books: bookList,
           loaded: true,
           error: null,
         });
-        const serverDate = response.headers.get('Date');
-        const syncTs = serverDate ? new Date(serverDate).toISOString() : new Date().toISOString();
-        this.writeBooksToCache(bookList, syncTs);
         return bookList;
       }),
       catchError(error => {
@@ -134,72 +93,14 @@ export class BookService {
     );
   }
 
-  private deltaSync(syncTs: string): void {
-    const params = new HttpParams().set('since', syncTs);
-    this.http.get<BookSyncResponse>(`${this.url}/delta`, {params}).pipe(
-      tap(delta => {
-        const currentState = this.bookStateService.getCurrentBookState();
-        let books = [...(currentState.books || [])];
-
-        if (delta.deletedIds?.length) {
-          const deletedSet = new Set(delta.deletedIds);
-          books = books.filter(b => !deletedSet.has(b.id));
-          this.bookCacheService.deleteMany(delta.deletedIds);
-        }
-
-        if (delta.books?.length) {
-          const updatedMap = new Map(delta.books.map(b => [b.id, b]));
-          books = books.map(b => updatedMap.get(b.id) ?? b);
-          const existingIds = new Set(books.map(b => b.id));
-          for (const book of delta.books) {
-            if (!existingIds.has(book.id)) {
-              books.push(book);
-            }
-          }
-          this.bookCacheService.putAll(delta.books);
-        }
-
-        if (delta.totalBookCount !== books.length) {
-          this.refreshBooks();
-          return;
-        }
-
-        this.bookStateService.updateBookState({
-          books,
-          loaded: true,
-          error: null,
-        });
-
-        if (delta.syncTimestamp) {
-          this.bookCacheService.setSyncTimestamp(delta.syncTimestamp);
-        }
-      }),
-      catchError(() => {
-        this.refreshBooks();
-        return of(null);
-      })
-    ).subscribe();
-  }
-
-  private writeBooksToCache(books: Book[], syncTimestamp: string): void {
-    this.bookCacheService.clear().then(() => {
-      this.bookCacheService.putAll(books);
-      this.bookCacheService.setSyncTimestamp(syncTimestamp);
-    });
-  }
-
   refreshBooks(): void {
-    this.http.get<Book[]>(this.url, {observe: 'response'}).pipe(
-      tap(response => {
-        const bookList = response.body || [];
+    this.http.get<Book[]>(this.url).pipe(
+      tap(bookList => {
         this.bookStateService.updateBookState({
           books: bookList,
           loaded: true,
           error: null,
         });
-        const serverDate = response.headers.get('Date');
-        const syncTs = serverDate ? new Date(serverDate).toISOString() : new Date().toISOString();
-        this.writeBooksToCache(bookList, syncTs);
       }),
       catchError(error => {
         this.bookStateService.updateBookState({

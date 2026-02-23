@@ -211,17 +211,21 @@ export class BookRuleEvaluatorService {
         }
         return Number(value) >= Number(ruleStart) && Number(value) <= Number(ruleEnd);
 
-      case 'is_empty':
-        if (value == null) return true;
-        if (typeof value === 'string') return value.trim() === '';
-        if (Array.isArray(value)) return value.length === 0;
+      case 'is_empty': {
+        const emptyVal = rule.field === 'readStatus' ? book.readStatus : value;
+        if (emptyVal == null) return true;
+        if (typeof emptyVal === 'string') return emptyVal.trim() === '';
+        if (Array.isArray(emptyVal)) return emptyVal.length === 0;
         return false;
+      }
 
-      case 'is_not_empty':
-        if (value == null) return false;
-        if (typeof value === 'string') return value.trim() !== '';
-        if (Array.isArray(value)) return value.length > 0;
+      case 'is_not_empty': {
+        const notEmptyVal = rule.field === 'readStatus' ? book.readStatus : value;
+        if (notEmptyVal == null) return false;
+        if (typeof notEmptyVal === 'string') return notEmptyVal.trim() !== '';
+        if (Array.isArray(notEmptyVal)) return notEmptyVal.length > 0;
         return true;
+      }
 
       case 'includes_all': {
         const bookList = getArrayField(rule.field);

@@ -1,0 +1,62 @@
+{
+  "creator": {
+    "titleNew": "Nova knjižnica",
+    "titleEdit": "Uredi knjižnicu",
+    "subtitle": "Konfigurirajte svoju kolekciju knjiga",
+    "libraryDetails": "Detalji knjižnice",
+    "nameLabel": "Naziv",
+    "namePlaceholder": "Moja knjižnica",
+    "iconLabel": "Ikona (neobavezno)",
+    "chooseIcon": "Odaberite ikonu",
+    "customSvg": "Prilagođeni SVG",
+    "bookFolders": "Mape s knjigama",
+    "addFolder": "Dodaj mapu",
+    "emptyFoldersHint": "Dodajte mape koje sadrže vaše datoteke knjiga",
+    "options": "Opcije",
+    "watchFolders": "Praćenje mapa",
+    "watchFoldersTooltip": "Automatski otkriva nove knjige dodane u mape",
+    "metadataSource": "Izvor metapodataka",
+    "metadataSourceTooltip": "Odaberite odakle čitati metapodatke prilikom skeniranja knjiga",
+    "metadataSourcePlaceholder": "Odaberite izvor",
+    "metadataSourceEmbedded": "Samo ugrađeni",
+    "metadataSourceSidecar": "Samo prateći",
+    "metadataSourcePreferSidecar": "Preferiraj prateće",
+    "metadataSourcePreferEmbedded": "Preferiraj ugrađene",
+    "metadataSourceNone": "Ništa",
+    "formatPriority": "Prioritet formata",
+    "formatPriorityTooltip": "Povucite za promjenu redoslijeda preferiranog formata kada knjiga ima više datoteka",
+    "allowedFormats": "Dopušteni formati",
+    "allowedFormatsTooltip": "Odaberite koje formate knjiga uključiti u skeniranje",
+    "allowAll": "Dopusti sve",
+    "formatWarning": "{{count}} postojećih knjiga neće se pojaviti u budućim skeniranjima",
+    "deselectedFormatsWarning": "Neoznačeni formati neće se pojaviti u budućim skeniranjima",
+    "validation": {
+      "enterName": "Unesite naziv knjižnice",
+      "selectIcon": "Odaberite ikonu",
+      "addFolder": "Dodajte barem jednu mapu",
+      "readyCreate": "Spremno za kreiranje",
+      "readyUpdate": "Spremno za ažuriranje"
+    },
+    "buttonCreate": "Kreiraj",
+    "buttonUpdate": "Ažuriraj",
+    "toast": {
+      "nameExistsSummary": "Naziv knjižnice već postoji",
+      "nameExistsDetail": "Ovaj naziv knjižnice je već zauzet.",
+      "updatedSummary": "Knjižnica ažurirana",
+      "updatedDetail": "Knjižnica je uspješno ažurirana.",
+      "updateFailedSummary": "Ažuriranje nije uspjelo",
+      "updateFailedDetail": "Došlo je do pogreške prilikom ažuriranja knjižnice. Pokušajte ponovo.",
+      "createdSummary": "Knjižnica kreirana",
+      "createdDetail": "Knjižnica je uspješno kreirana.",
+      "createdLargeDetail": "Knjižnica kreirana s {{count}} datoteka. Učitavanje u tijeku...",
+      "createFailedSummary": "Kreiranje nije uspjelo",
+      "createFailedDetail": "Došlo je do pogreške prilikom kreiranja knjižnice. Pokušajte ponovo."
+    }
+  },
+  "loading": {
+    "title": "Učitavanje knjižnice",
+    "processing": "Obrada:",
+    "complete": "Učitavanje knjižnice završeno!",
+    "openLibrary": "Otvori knjižnicu"
+  }
+}

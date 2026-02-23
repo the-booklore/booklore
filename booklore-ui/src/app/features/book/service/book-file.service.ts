@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {Observable, throwError} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {catchError, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, DuplicateDetectionRequest, DuplicateGroup} from '../model/book.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
@@ -208,21 +208,21 @@ export class BookFileService {
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile?.fileName ?? 'file');
   }
 
-  attachBookFiles(targetBookId: number, sourceBookIds: number[], deleteSourceBooks: boolean): Observable<Book> {
+  findDuplicates(request: DuplicateDetectionRequest): Observable<DuplicateGroup[]> {
+    return this.http.post<DuplicateGroup[]>(`${this.url}/duplicates`, request);
+  }
+
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], moveFiles: boolean): Observable<Book> {
     return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
       sourceBookIds,
-      deleteSourceBooks
+      moveFiles
     }).pipe(
       tap(updatedBook => {
         const currentState = this.bookStateService.getCurrentBookState();
+        const sourceIdSet = new Set(sourceBookIds);
         let updatedBooks = (currentState.books || []).map(book =>
           book.id === targetBookId ? updatedBook : book
-        );
-
-        if (deleteSourceBooks) {
-          const sourceIdSet = new Set(sourceBookIds);
-          updatedBooks = updatedBooks.filter(book => !sourceIdSet.has(book.id));
-        }
+        ).filter(book => !sourceIdSet.has(book.id));
 
         this.bookStateService.updateBookState({
           ...currentState,

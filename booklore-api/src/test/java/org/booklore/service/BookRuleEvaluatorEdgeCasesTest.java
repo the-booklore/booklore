@@ -530,6 +530,266 @@ class BookRuleEvaluatorEdgeCasesTest {
     }
 
     @Nested
+    class ReadStatusNullProgressTests {
+
+        private BookEntity createBookWithReadStatus(String title, ReadStatus status) {
+            BookEntity book = createBook(title);
+            UserBookProgressEntity progress = UserBookProgressEntity.builder()
+                    .user(user).book(book).readStatus(status).build();
+            em.persist(progress);
+            return book;
+        }
+
+        @Test
+        void excludesAll_withNoProgress_includesBookWithoutProgress() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            BookEntity abandonedBook = createBookWithReadStatus("Abandoned Book", ReadStatus.ABANDONED);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.EXCLUDES_ALL,
+                    List.of("READ", "ABANDONED", "WONT_READ")));
+            assertThat(ids).contains(noProgress.getId());
+            assertThat(ids).doesNotContain(readBook.getId(), abandonedBook.getId());
+        }
+
+        @Test
+        void excludesAll_withUnsetInList_excludesNoProgressBooks() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.EXCLUDES_ALL,
+                    List.of("UNSET")));
+            assertThat(ids).contains(readBook.getId());
+            assertThat(ids).doesNotContain(noProgress.getId());
+        }
+
+        @Test
+        void excludesAll_withUnsetAndOtherStatuses_excludesNoProgressBooks() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            BookEntity readingBook = createBookWithReadStatus("Reading Book", ReadStatus.READING);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.EXCLUDES_ALL,
+                    List.of("READ", "UNSET")));
+            assertThat(ids).contains(readingBook.getId());
+            assertThat(ids).doesNotContain(noProgress.getId(), readBook.getId());
+        }
+
+        @Test
+        void notEquals_withNoProgress_includesBookWithoutProgress() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.NOT_EQUALS, "READ"));
+            assertThat(ids).contains(noProgress.getId());
+            assertThat(ids).doesNotContain(readBook.getId());
+        }
+
+        @Test
+        void notEquals_unset_withNoProgress_excludesBookWithoutProgress() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.NOT_EQUALS, "UNSET"));
+            assertThat(ids).contains(readBook.getId());
+            assertThat(ids).doesNotContain(noProgress.getId());
+        }
+
+        @Test
+        void doesNotContain_withNoProgress_includesBookWithoutProgress() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.DOES_NOT_CONTAIN, "READ"));
+            assertThat(ids).contains(noProgress.getId());
+            assertThat(ids).doesNotContain(readBook.getId());
+        }
+
+        @Test
+        void equals_withNoProgress_doesNotMatchNonUnsetStatus() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.EQUALS, "READ"));
+            assertThat(ids).contains(readBook.getId());
+            assertThat(ids).doesNotContain(noProgress.getId());
+        }
+
+        @Test
+        void equals_unset_withNoProgress_matchesNoProgressBook() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.EQUALS, "UNSET"));
+            assertThat(ids).contains(noProgress.getId());
+            assertThat(ids).doesNotContain(readBook.getId());
+        }
+
+        @Test
+        void includesAny_withoutUnset_doesNotMatchNoProgress() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            BookEntity readingBook = createBookWithReadStatus("Reading Book", ReadStatus.READING);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.INCLUDES_ANY,
+                    List.of("READ", "READING")));
+            assertThat(ids).contains(readBook.getId(), readingBook.getId());
+            assertThat(ids).doesNotContain(noProgress.getId());
+        }
+
+        @Test
+        void includesAny_withUnset_matchesNoProgress() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.INCLUDES_ANY,
+                    List.of("UNSET", "READ")));
+            assertThat(ids).contains(noProgress.getId(), readBook.getId());
+        }
+
+        @Test
+        void isEmpty_readStatus_noProgress_matchesNoProgressBook() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.IS_EMPTY, null));
+            assertThat(ids).contains(noProgress.getId());
+            assertThat(ids).doesNotContain(readBook.getId());
+        }
+
+        @Test
+        void isNotEmpty_readStatus_noProgress_doesNotMatch() {
+            BookEntity noProgress = createBook("No Progress");
+            BookEntity readBook = createBookWithReadStatus("Read Book", ReadStatus.READ);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.IS_NOT_EMPTY, null));
+            assertThat(ids).contains(readBook.getId());
+            assertThat(ids).doesNotContain(noProgress.getId());
+        }
+
+        @Test
+        void isNotEmpty_readStatus_withProgress_matches() {
+            BookEntity readingBook = createBookWithReadStatus("Reading Book", ReadStatus.READING);
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.IS_NOT_EMPTY, null));
+            assertThat(ids).contains(readingBook.getId());
+        }
+
+        @Test
+        void excludesAll_readStatus_combinedWithTitleRule() {
+            BookEntity noProgressMatch = createBook("Magic Title");
+            BookEntity readMatch = createBookWithReadStatus("Magic Read", ReadStatus.READ);
+            BookEntity noProgressNoTitle = createBook("Other Book");
+            em.flush();
+            em.clear();
+
+            Rule titleRule = new Rule();
+            titleRule.setField(RuleField.TITLE);
+            titleRule.setOperator(RuleOperator.CONTAINS);
+            titleRule.setValue("magic");
+
+            Rule statusRule = new Rule();
+            statusRule.setField(RuleField.READ_STATUS);
+            statusRule.setOperator(RuleOperator.EXCLUDES_ALL);
+            statusRule.setValue(List.of("READ", "ABANDONED"));
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.AND);
+            group.setRules(List.of(titleRule, statusRule));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).contains(noProgressMatch.getId());
+            assertThat(ids).doesNotContain(readMatch.getId(), noProgressNoTitle.getId());
+        }
+
+        @Test
+        void notEquals_readStatus_combinedWithMetadataRule() {
+            BookEntity noProgressEn = createBook("English Book");
+            noProgressEn.getMetadata().setLanguage("en");
+            em.merge(noProgressEn.getMetadata());
+
+            BookEntity readEn = createBookWithReadStatus("Read English", ReadStatus.READ);
+            readEn.getMetadata().setLanguage("en");
+            em.merge(readEn.getMetadata());
+
+            BookEntity noProgressFr = createBook("French Book");
+            noProgressFr.getMetadata().setLanguage("fr");
+            em.merge(noProgressFr.getMetadata());
+            em.flush();
+            em.clear();
+
+            Rule langRule = new Rule();
+            langRule.setField(RuleField.LANGUAGE);
+            langRule.setOperator(RuleOperator.EQUALS);
+            langRule.setValue("en");
+
+            Rule statusRule = new Rule();
+            statusRule.setField(RuleField.READ_STATUS);
+            statusRule.setOperator(RuleOperator.NOT_EQUALS);
+            statusRule.setValue("READ");
+
+            GroupRule group = new GroupRule();
+            group.setJoin(JoinType.AND);
+            group.setRules(List.of(langRule, statusRule));
+
+            List<Long> ids = findMatchingIds(group);
+            assertThat(ids).contains(noProgressEn.getId());
+            assertThat(ids).doesNotContain(readEn.getId(), noProgressFr.getId());
+        }
+
+        @Test
+        void excludesAll_noProgress_withOtherUserProgress_bookExcludedByUserFilter() {
+            BookLoreUserEntity user2 = BookLoreUserEntity.builder()
+                    .username("otheruser2")
+                    .passwordHash("hash2")
+                    .isDefaultPassword(true)
+                    .name("Other User 2")
+                    .build();
+            em.persist(user2);
+
+            BookEntity book = createBook("Multi User Book");
+            UserBookProgressEntity otherProgress = UserBookProgressEntity.builder()
+                    .user(user2).book(book).readStatus(ReadStatus.READ).build();
+            em.persist(otherProgress);
+
+            BookEntity noProgressBook = createBook("No Progress Book");
+            em.flush();
+            em.clear();
+
+            List<Long> ids = findMatchingIds(singleRule(RuleField.READ_STATUS, RuleOperator.EXCLUDES_ALL,
+                    List.of("READ", "ABANDONED")));
+            assertThat(ids).doesNotContain(book.getId());
+            assertThat(ids).contains(noProgressBook.getId());
+        }
+    }
+
+    @Nested
     class ComparisonWithNullFieldValueTests {
         @Test
         void greaterThan_onNullField_doesNotMatch() {
