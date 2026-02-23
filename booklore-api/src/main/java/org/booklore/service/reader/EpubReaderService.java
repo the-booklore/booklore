@@ -65,9 +65,18 @@ public class EpubReaderService {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);
+            factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);
             factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
             factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
             factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setExpandEntityReferences(false);
+            try {
+                factory.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_DTD, "");
+                factory.setAttribute(javax.xml.XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+            } catch (IllegalArgumentException ignored) {
+                // Some XML parser implementations do not support these JAXP attributes;
+                // the features above already provide the primary XXE protections.
+            }
             return factory.newDocumentBuilder();
         } catch (ParserConfigurationException e) {
             throw new RuntimeException("Failed to create DocumentBuilder", e);

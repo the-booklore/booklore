@@ -39,6 +39,21 @@ export class IconService {
   private iconCache = inject(IconCacheService);
   private sanitizer = inject(DomSanitizer);
 
+  /**
+   * Strips known-dangerous SVG constructs before trusting the content with DomSanitizer.
+   * Removes inline <script> elements, event-handler attributes (on*=), and javascript: URIs.
+   * This is a defence-in-depth measure; SVG icons should only originate from the Booklore API.
+   * For comprehensive protection against all SVG attack vectors, consider adding DOMPurify.
+   */
+  private sanitizeSvgContent(content: string): string {
+    return content
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<script[^>]*\/>/gi, '')
+      .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+      .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+      .replace(/javascript\s*:/gi, 'invalid:');
+  }
+
   preloadAllIcons(): Observable<void> {
     if (this.preloadCache$) {
       return this.preloadCache$;
@@ -47,7 +62,7 @@ export class IconService {
     this.preloadCache$ = this.http.get<IconContentMap>(`${this.baseUrl}/all/content`).pipe(
       tap((iconsMap) => {
         Object.entries(iconsMap).forEach(([iconName, content]) => {
-          const sanitized = this.sanitizer.bypassSecurityTrustHtml(content);
+          const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(content));
           this.iconCache.cacheIcon(iconName, content, sanitized);
         });
       }),
@@ -70,7 +85,7 @@ export class IconService {
         responseType: 'text'
       }).pipe(
         tap(content => {
-          const sanitized = this.sanitizer.bypassSecurityTrustHtml(content);
+          const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(content));
           this.iconCache.cacheIcon(iconName, content, sanitized);
         }),
         shareReplay({bufferSize: 1, refCount: true}),
@@ -119,7 +134,7 @@ export class IconService {
           if (result.success) {
             const iconData = icons.find(icon => icon.svgName === result.iconName);
             if (iconData) {
-              const sanitized = this.sanitizer.bypassSecurityTrustHtml(iconData.svgData);
+              const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(iconData.svgData));
               this.iconCache.cacheIcon(iconData.svgName, iconData.svgData, sanitized);
             }
           }

@@ -30,15 +30,27 @@ public class AuthRateLimitService {
     // --- Login rate limiting ---
 
     public void checkLoginRateLimit(String ip) {
-        checkRateLimit("login:" + ip, AuditAction.LOGIN_RATE_LIMITED, "Login rate limited for IP: " + ip);
+        checkRateLimit("login:ip:" + ip, AuditAction.LOGIN_RATE_LIMITED, "Login rate limited for IP: " + ip);
+    }
+
+    public void checkLoginRateLimitByUsername(String username) {
+        checkRateLimit("login:user:" + username, AuditAction.LOGIN_RATE_LIMITED, "Login rate limited for username: " + username);
     }
 
     public void recordFailedLoginAttempt(String ip) {
-        recordFailedAttempt("login:" + ip);
+        recordFailedAttempt("login:ip:" + ip);
+    }
+
+    public void recordFailedLoginAttemptByUsername(String username) {
+        recordFailedAttempt("login:user:" + username);
     }
 
     public void resetLoginAttempts(String ip) {
-        resetAttempts("login:" + ip);
+        resetAttempts("login:ip:" + ip);
+    }
+
+    public void resetLoginAttemptsByUsername(String username) {
+        resetAttempts("login:user:" + username);
     }
 
     // --- Refresh token rate limiting ---

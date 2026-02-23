@@ -58,6 +58,8 @@ public class FileService {
     private static final String JPEG_MIME_TYPE                = "image/jpeg";
     private static final String PNG_MIME_TYPE                 = "image/png";
     private static final long   MAX_FILE_SIZE_BYTES           = 5L * 1024 * 1024;
+    // 150 MP covers legitimate book covers and author photos with a comfortable safety margin.
+    private static final long   MAX_IMAGE_PIXELS              = 150_000_000L;
     private static final int    THUMBNAIL_WIDTH               = 250;
     private static final int    THUMBNAIL_HEIGHT              = 350;
     private static final int    SQUARE_THUMBNAIL_SIZE         = 250;
@@ -173,6 +175,16 @@ public class FileService {
         try (InputStream is = new ByteArrayInputStream(imageData)) {
             BufferedImage image = ImageIO.read(is);
             if (image != null) {
+                // Guard against decompression bomb: a tiny compressed file that expands to a
+                // massive in-memory bitmap can cause OutOfMemoryError. Reject images whose
+                // decoded pixel area exceeds MAX_IMAGE_PIXELS.
+                long pixelCount = (long) image.getWidth() * image.getHeight();
+                if (pixelCount > MAX_IMAGE_PIXELS) {
+                    image.flush();
+                    log.warn("Rejected image: decoded pixel count {} exceeds limit {} — possible decompression bomb",
+                            pixelCount, MAX_IMAGE_PIXELS);
+                    return null;
+                }
                 return image;
             }
         } catch (Exception e) {
@@ -217,6 +229,17 @@ public class FileService {
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
+            java.net.URL url = new java.net.URL(imageUrl);
+            // Quick check to avoid `file://` or other protocols
+            if (!"http".equalsIgnoreCase(url.getProtocol()) && !"https".equalsIgnoreCase(url.getProtocol())) {
+                 throw new IOException("Only HTTP and HTTPS protocols are allowed");
+            }
+            java.net.InetAddress inetAddress = java.net.InetAddress.getByName(url.getHost());
+            if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
+                inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
+                throw new SecurityException("URL points to a local or private internal network address, which is not allowed for security reasons.");
+            }
+
             HttpHeaders headers = new HttpHeaders();
             headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
             headers.set(HttpHeaders.ACCEPT, "image/*");

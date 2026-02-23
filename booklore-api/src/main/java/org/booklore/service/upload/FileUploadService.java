@@ -262,7 +262,13 @@ public class FileUploadService {
         if (originalFileName == null) {
             throw new IllegalArgumentException("File must have a name");
         }
-        return originalFileName;
+        // Prevent Path Traversal by extracting only the base file name
+        String cleanPath = org.springframework.util.StringUtils.cleanPath(originalFileName);
+        String baseFileName = org.springframework.util.StringUtils.getFilename(cleanPath);
+        if (baseFileName == null || baseFileName.isEmpty() || baseFileName.equals("..")) {
+            throw new SecurityException("Invalid filename");
+        }
+        return baseFileName;
     }
 
     private BookFileExtension getFileExtension(String fileName) {

@@ -437,6 +437,13 @@ public class CbxReaderService {
         if (normalized.startsWith("__MACOSX/") || normalized.contains("/__MACOSX/")) {
             return false;
         }
+        // Prevent path traversal: reject any entry whose path contains ".." as a component.
+        // Checks split-by-/ to catch "foo/..", ".." alone, and not just "../" (with trailing slash).
+        for (String component : normalized.split("/", -1)) {
+            if ("..".equals(component)) {
+                return false;
+            }
+        }
         String baseName = baseName(normalized).toLowerCase();
         if (baseName.startsWith("._") || baseName.startsWith(".")) {
             return false;
