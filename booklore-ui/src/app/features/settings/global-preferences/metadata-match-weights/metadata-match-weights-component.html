@@ -1,65 +1,67 @@
-<div class="settings-card">
-  <div class="section-header">
-    <h3 class="section-title">
-      <i class="pi pi-sliders-h"></i>
-      Metadata Match Weights
-    </h3>
-    <p class="section-description">
-      Configure how important each metadata field is when computing match scores. Higher weights make fields more influential in determining the overall match quality.
-    </p>
-  </div>
-
-  <div class="section-body">
-    <div class="setting-item action-item">
-      <div class="action-row">
-        <div class="action-info">
-          <span class="action-label">Recalculate Metadata Scores</span>
-          <span class="action-description">Recomputes match scores for all books based on the latest weights.</span>
-        </div>
-        <p-button
-          type="button"
-          icon="pi pi-refresh"
-          label="Recalculate"
-          [disabled]="isRecalculating"
-          (click)="recalculate()"
-          outlined>
-        </p-button>
-      </div>
+<ng-container *transloco="let t; prefix: 'settingsMeta.matchWeights'">
+  <div class="settings-card">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="pi pi-sliders-h"></i>
+        {{ t('sectionTitle') }}
+      </h3>
+      <p class="section-description">
+        {{ t('sectionDesc') }}
+      </p>
     </div>
 
-    <div class="setting-item weights-item">
-      <div class="weights-header">
-        <span class="weights-icon pi pi-sliders-v"></span>
-        <h4 class="weights-label">Field Weights</h4>
-      </div>
-
-      <form [formGroup]="form" class="weights-form">
-        <div class="weights-grid">
-          @for (key of orderedKeys; track key) {
-            <div class="weight-field">
-              <label class="field-label">{{ labelMap[key] }}</label>
-              <p-inputNumber
-                size="small"
-                [formControlName]="key"
-                [min]="0"
-                [max]="10"
-                fluid
-                [showButtons]="true"/>
-            </div>
-          }
-        </div>
-        <div class="form-actions">
+    <div class="section-body">
+      <div class="setting-item action-item">
+        <div class="action-row">
+          <div class="action-info">
+            <span class="action-label">{{ t('recalculateLabel') }}</span>
+            <span class="action-description">{{ t('recalculateDesc') }}</span>
+          </div>
           <p-button
             type="button"
-            severity="success"
-            label="Save Weights"
-            icon="pi pi-save"
-            outlined
-            [disabled]="isSaving"
-            (click)="save()">
+            icon="pi pi-refresh"
+            [label]="t('recalculateBtn')"
+            [disabled]="isRecalculating"
+            (click)="recalculate()"
+            outlined>
           </p-button>
         </div>
-      </form>
+      </div>
+
+      <div class="setting-item weights-item">
+        <div class="weights-header">
+          <span class="weights-icon pi pi-sliders-v"></span>
+          <h4 class="weights-label">{{ t('fieldWeights') }}</h4>
+        </div>
+
+        <form [formGroup]="form" class="weights-form">
+          <div class="weights-grid">
+            @for (key of orderedKeys; track key) {
+              <div class="weight-field">
+                <label class="field-label">{{ labelMap[key] }}</label>
+                <p-inputNumber
+                  size="small"
+                  [formControlName]="key"
+                  [min]="0"
+                  [max]="10"
+                  fluid
+                  [showButtons]="true"/>
+              </div>
+            }
+          </div>
+          <div class="form-actions">
+            <p-button
+              type="button"
+              severity="success"
+              [label]="t('saveWeights')"
+              icon="pi pi-save"
+              outlined
+              [disabled]="isSaving"
+              (click)="save()">
+            </p-button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
-</div>
+</ng-container>

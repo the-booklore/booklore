@@ -122,9 +122,73 @@ public class ComicMetadataEntity {
     @Builder.Default
     private Boolean storyArcLocked = Boolean.FALSE;
 
+    @Column(name = "story_arc_number_locked")
+    @Builder.Default
+    private Boolean storyArcNumberLocked = Boolean.FALSE;
+
+    @Column(name = "alternate_series_locked")
+    @Builder.Default
+    private Boolean alternateSeriesLocked = Boolean.FALSE;
+
+    @Column(name = "alternate_issue_locked")
+    @Builder.Default
+    private Boolean alternateIssueLocked = Boolean.FALSE;
+
+    @Column(name = "imprint_locked")
+    @Builder.Default
+    private Boolean imprintLocked = Boolean.FALSE;
+
+    @Column(name = "format_locked")
+    @Builder.Default
+    private Boolean formatLocked = Boolean.FALSE;
+
+    @Column(name = "black_and_white_locked")
+    @Builder.Default
+    private Boolean blackAndWhiteLocked = Boolean.FALSE;
+
+    @Column(name = "manga_locked")
+    @Builder.Default
+    private Boolean mangaLocked = Boolean.FALSE;
+
+    @Column(name = "reading_direction_locked")
+    @Builder.Default
+    private Boolean readingDirectionLocked = Boolean.FALSE;
+
+    @Column(name = "web_link_locked")
+    @Builder.Default
+    private Boolean webLinkLocked = Boolean.FALSE;
+
+    @Column(name = "notes_locked")
+    @Builder.Default
+    private Boolean notesLocked = Boolean.FALSE;
+
     @Column(name = "creators_locked")
     @Builder.Default
     private Boolean creatorsLocked = Boolean.FALSE;
+
+    @Column(name = "pencillers_locked")
+    @Builder.Default
+    private Boolean pencillersLocked = Boolean.FALSE;
+
+    @Column(name = "inkers_locked")
+    @Builder.Default
+    private Boolean inkersLocked = Boolean.FALSE;
+
+    @Column(name = "colorists_locked")
+    @Builder.Default
+    private Boolean coloristsLocked = Boolean.FALSE;
+
+    @Column(name = "letterers_locked")
+    @Builder.Default
+    private Boolean letterersLocked = Boolean.FALSE;
+
+    @Column(name = "cover_artists_locked")
+    @Builder.Default
+    private Boolean coverArtistsLocked = Boolean.FALSE;
+
+    @Column(name = "editors_locked")
+    @Builder.Default
+    private Boolean editorsLocked = Boolean.FALSE;
 
     @Column(name = "characters_locked")
     @Builder.Default
@@ -143,7 +207,23 @@ public class ComicMetadataEntity {
         this.volumeNameLocked = lock;
         this.volumeNumberLocked = lock;
         this.storyArcLocked = lock;
+        this.storyArcNumberLocked = lock;
+        this.alternateSeriesLocked = lock;
+        this.alternateIssueLocked = lock;
+        this.imprintLocked = lock;
+        this.formatLocked = lock;
+        this.blackAndWhiteLocked = lock;
+        this.mangaLocked = lock;
+        this.readingDirectionLocked = lock;
+        this.webLinkLocked = lock;
+        this.notesLocked = lock;
         this.creatorsLocked = lock;
+        this.pencillersLocked = lock;
+        this.inkersLocked = lock;
+        this.coloristsLocked = lock;
+        this.letterersLocked = lock;
+        this.coverArtistsLocked = lock;
+        this.editorsLocked = lock;
         this.charactersLocked = lock;
         this.teamsLocked = lock;
         this.locationsLocked = lock;
@@ -154,7 +234,23 @@ public class ComicMetadataEntity {
                 && Boolean.TRUE.equals(this.volumeNameLocked)
                 && Boolean.TRUE.equals(this.volumeNumberLocked)
                 && Boolean.TRUE.equals(this.storyArcLocked)
+                && Boolean.TRUE.equals(this.storyArcNumberLocked)
+                && Boolean.TRUE.equals(this.alternateSeriesLocked)
+                && Boolean.TRUE.equals(this.alternateIssueLocked)
+                && Boolean.TRUE.equals(this.imprintLocked)
+                && Boolean.TRUE.equals(this.formatLocked)
+                && Boolean.TRUE.equals(this.blackAndWhiteLocked)
+                && Boolean.TRUE.equals(this.mangaLocked)
+                && Boolean.TRUE.equals(this.readingDirectionLocked)
+                && Boolean.TRUE.equals(this.webLinkLocked)
+                && Boolean.TRUE.equals(this.notesLocked)
                 && Boolean.TRUE.equals(this.creatorsLocked)
+                && Boolean.TRUE.equals(this.pencillersLocked)
+                && Boolean.TRUE.equals(this.inkersLocked)
+                && Boolean.TRUE.equals(this.coloristsLocked)
+                && Boolean.TRUE.equals(this.letterersLocked)
+                && Boolean.TRUE.equals(this.coverArtistsLocked)
+                && Boolean.TRUE.equals(this.editorsLocked)
                 && Boolean.TRUE.equals(this.charactersLocked)
                 && Boolean.TRUE.equals(this.teamsLocked)
                 && Boolean.TRUE.equals(this.locationsLocked);

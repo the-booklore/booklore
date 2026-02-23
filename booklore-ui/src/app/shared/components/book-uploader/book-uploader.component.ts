@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, ViewChild} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit, ViewChild} from '@angular/core';
 import {FileSelectEvent, FileUpload, FileUploadHandlerEvent} from 'primeng/fileupload';
 import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
@@ -16,10 +16,12 @@ import {HttpClient, HttpEventType, HttpRequest} from '@angular/common/http';
 import {Tooltip} from 'primeng/tooltip';
 import {AppSettingsService} from '../../service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AppSettings} from '../../model/app-settings.model';
 import {SelectButton} from 'primeng/selectbutton';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {ProgressBar} from 'primeng/progressbar';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface UploadingFile {
   file: File;
@@ -40,7 +42,8 @@ interface UploadingFile {
     Badge,
     Tooltip,
     SelectButton,
-    ProgressBar
+    ProgressBar,
+    TranslocoDirective
   ],
   templateUrl: './book-uploader.component.html',
   styleUrl: './book-uploader.component.scss'
@@ -59,14 +62,16 @@ export class BookUploaderComponent implements OnInit {
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly http = inject(HttpClient);
   private readonly ref = inject(DynamicDialogRef);
+  private readonly t = inject(TranslocoService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly libraryState$: Observable<LibraryState> = this.libraryService.libraryState$;
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
   maxFileSizeBytes?: number;
   maxFileSizeDisplay: string = '100 MB';
   stateOptions = [
-    {label: 'Library', value: 'library'},
-    {label: 'Bookdrop', value: 'bookdrop'}
+    {label: this.t.translate('shared.bookUploader.destinationLibrary'), value: 'library'},
+    {label: this.t.translate('shared.bookUploader.destinationBookdrop'), value: 'bookdrop'}
   ];
   value = 'library';
 
@@ -82,7 +87,7 @@ export class BookUploaderComponent implements OnInit {
         this.maxFileSizeDisplay = `${maxSizeMb} MB`;
       });
 
-    this.libraryState$.subscribe(state => {
+    this.libraryState$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(state => {
       if (state?.libraries?.length !== 1 || this.selectedLibrary) {
         return;
       }
@@ -124,8 +129,8 @@ export class BookUploaderComponent implements OnInit {
     if (this.value === 'library' && (!this.selectedLibrary || !this.selectedPath)) {
       this.messageService.add({
         severity: 'error',
-        summary: 'No Destination Selected',
-        detail: 'Please select a library and subpath before adding files.',
+        summary: this.t.translate('shared.bookUploader.toast.noDestinationSummary'),
+        detail: this.t.translate('shared.bookUploader.toast.noDestinationDetail'),
         life: 5000
       });
       // We need to clear the files input explicitely, otherwise the files remain selected in the file upload component
@@ -150,8 +155,8 @@ export class BookUploaderComponent implements OnInit {
         });
         this.messageService.add({
           severity: 'error',
-          summary: 'File Too Large',
-          detail: `${file.name} exceeds the maximum file size of ${this.formatSize(this.maxFileSizeBytes)}`,
+          summary: this.t.translate('shared.bookUploader.toast.fileTooLargeSummary'),
+          detail: this.t.translate('shared.bookUploader.toast.fileTooLargeDetail', {fileName: file.name, maxSize: this.formatSize(this.maxFileSizeBytes)}),
           life: 5000
         });
       } else {
@@ -179,8 +184,8 @@ export class BookUploaderComponent implements OnInit {
     if (this.value === 'library' && (!this.selectedLibrary || !this.selectedPath)) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Missing Data',
-        detail: 'Please select a library and path before uploading.',
+        summary: this.t.translate('shared.bookUploader.toast.missingDataSummary'),
+        detail: this.t.translate('shared.bookUploader.toast.missingDataDetail'),
         life: 4000
       });
       return;
@@ -251,7 +256,7 @@ export class BookUploaderComponent implements OnInit {
         error: (err) => {
           uploadFile.status = 'Failed';
           uploadFile.progress = 0;
-          uploadFile.errorMessage = err?.error?.message || 'Upload failed due to unknown error.';
+          uploadFile.errorMessage = err?.error?.message || this.t.translate('shared.bookUploader.toast.uploadFailedDefault');
           if (--pending === 0) {
             setTimeout(() => {
               this.uploadBatch(files, startIndex + batchSize, batchSize, destination, libraryId, pathId);
@@ -305,17 +310,17 @@ export class BookUploaderComponent implements OnInit {
 
   getFileStatusLabel(uploadFile: UploadingFile): string {
     if (uploadFile.status === 'Failed' && uploadFile.errorMessage?.includes('exceeds maximum size')) {
-      return 'Too Large';
+      return this.t.translate('shared.bookUploader.statusTooLarge');
     }
     switch (uploadFile.status) {
       case 'Pending':
-        return 'Ready';
+        return this.t.translate('shared.bookUploader.statusReady');
       case 'Uploading':
-        return 'Uploading';
+        return this.t.translate('shared.bookUploader.statusUploading');
       case 'Uploaded':
-        return 'Uploaded';
+        return this.t.translate('shared.bookUploader.statusUploaded');
       case 'Failed':
-        return 'Failed';
+        return this.t.translate('shared.bookUploader.statusFailed');
       default:
         return uploadFile.status;
     }

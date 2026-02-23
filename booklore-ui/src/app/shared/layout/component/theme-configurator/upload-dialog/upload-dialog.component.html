@@ -1,9 +1,10 @@
+<ng-container *transloco="let t; prefix: 'layout.uploadDialog'">
 <div class="upload-dialog-content">
   <div class="upload-section">
     <div class="file-selector">
-      <label class="file-label">Choose File:</label>
+      <label class="file-label">{{ t('chooseFile') }}</label>
       <p-button
-        label="Select Image"
+        [label]="t('selectImage')"
         icon="pi pi-upload"
         (click)="fileInput.click()"
         outlined
@@ -16,26 +17,26 @@
       accept=".jpg,.jpeg,.png,image/jpeg,image/png"
       (change)="onFileSelected($event)"
       style="display: none;">
-    <small class="file-note">Supported formats: JPEG, PNG • Maximum file size: 5 MB</small>
+    <small class="file-note">{{ t('fileNote') }}</small>
     @if (uploadFile) {
       <small class="selected-file">{{ uploadFile.name }}</small>
     }
   </div>
 
   <p-divider align="center" type="solid">
-    <span class="or-text">OR</span>
+    <span class="or-text">{{ t('or') }}</span>
   </p-divider>
 
   <div class="url-section">
-    <label for="urlInput" class="url-label">Image URL:</label>
+    <label for="urlInput" class="url-label">{{ t('imageUrl') }}</label>
     <input
       id="urlInput"
       type="text"
       [(ngModel)]="uploadImageUrl"
-      placeholder="Paste image URL here"
+      [placeholder]="t('urlPlaceholder')"
       class="url-input"
       pInputText>
-    <small class="url-note">Supported formats: JPEG, PNG • Maximum file size: 5 MB</small>
+    <small class="url-note">{{ t('urlNote') }}</small>
   </div>
 
   @if (uploadError) {
@@ -44,16 +45,17 @@
 
   <div class="dialog-footer">
     <p-button
-      label="Cancel"
+      [label]="'common.cancel' | transloco"
       icon="pi pi-times"
       (click)="cancel()"
       severity="secondary"
       outlined>
     </p-button>
     <p-button
-      label="Submit"
+      [label]="'common.submit' | transloco"
       icon="pi pi-check"
       (click)="submit()">
     </p-button>
   </div>
 </div>
+</ng-container>

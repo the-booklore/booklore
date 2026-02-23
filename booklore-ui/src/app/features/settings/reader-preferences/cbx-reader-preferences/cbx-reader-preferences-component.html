@@ -1,123 +1,125 @@
-<div class="cbx-preferences-container">
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Page Spread</label>
-        <div class="button-group">
-          @for (spread of cbxSpreads; track spread) {
-            <button
-              type="button"
-              class="option-button"
-              [class.selected]="selectedCbxSpread === spread.key"
-              (click)="selectedCbxSpread = spread.key">
-              <i [class]="spread.icon"></i>
-              <span class="option-text">{{ spread.name }}</span>
-            </button>
-          }
+<ng-container *transloco="let t; prefix: 'settingsReader.cbx'">
+  <div class="cbx-preferences-container">
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('pageSpread') }}</label>
+          <div class="button-group">
+            @for (spread of cbxSpreads; track spread) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedCbxSpread === spread.key"
+                (click)="selectedCbxSpread = spread.key">
+                <i [class]="spread.icon"></i>
+                <span class="option-text">{{ t(spread.translationKey) }}</span>
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('pageSpreadDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Configure how comic book pages are displayed - single page or double page spread.
-      </p>
     </div>
-  </div>
 
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Page Layout</label>
-        <div class="button-group">
-          @for (mode of cbxViewModes; track mode) {
-            <button
-              type="button"
-              class="option-button"
-              [class.selected]="selectedCbxViewMode === mode.key"
-              (click)="selectedCbxViewMode = mode.key">
-              <i [class]="mode.icon"></i>
-              <span class="option-text">{{ mode.name }}</span>
-            </button>
-          }
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('pageLayout') }}</label>
+          <div class="button-group">
+            @for (mode of cbxViewModes; track mode) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedCbxViewMode === mode.key"
+                (click)="selectedCbxViewMode = mode.key">
+                <i [class]="mode.icon"></i>
+                <span class="option-text">{{ t(mode.translationKey) }}</span>
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('pageLayoutDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Choose how comic pages are displayed while reading.
-      </p>
     </div>
-  </div>
 
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Fit Mode</label>
-        <div class="button-group">
-          @for (mode of cbxFitModes; track mode) {
-            <button
-              type="button"
-              class="option-button"
-              [class.selected]="selectedCbxFitMode === mode.key"
-              (click)="selectedCbxFitMode = mode.key"
-              [pTooltip]="mode.name"
-              tooltipPosition="bottom">
-              <i [class]="mode.icon"></i>
-              <span class="option-text">{{ mode.name }}</span>
-            </button>
-          }
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('fitMode') }}</label>
+          <div class="button-group">
+            @for (mode of cbxFitModes; track mode) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedCbxFitMode === mode.key"
+                (click)="selectedCbxFitMode = mode.key"
+                [pTooltip]="t(mode.translationKey)"
+                tooltipPosition="bottom">
+                <i [class]="mode.icon"></i>
+                <span class="option-text">{{ t(mode.translationKey) }}</span>
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('fitModeDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Select how images should be scaled to fit the reader window.
-      </p>
     </div>
-  </div>
 
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Scroll Mode</label>
-        <div class="button-group">
-          @for (mode of cbxScrollModes; track mode) {
-            <button
-              type="button"
-              class="option-button"
-              [class.selected]="selectedCbxScrollMode === mode.key"
-              (click)="selectedCbxScrollMode = mode.key">
-              <i [class]="mode.icon"></i>
-              <span class="option-text">{{ mode.name }}</span>
-            </button>
-          }
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('scrollMode') }}</label>
+          <div class="button-group">
+            @for (mode of cbxScrollModes; track mode) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedCbxScrollMode === mode.key"
+                (click)="selectedCbxScrollMode = mode.key">
+                <i [class]="mode.icon"></i>
+                <span class="option-text">{{ t(mode.translationKey) }}</span>
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('scrollModeDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Choose between paginated or infinite scroll reading experience.
-      </p>
     </div>
-  </div>
 
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Background Color</label>
-        <div class="theme-selector">
-          @for (color of cbxBackgroundColors; track color) {
-            <button
-              type="button"
-              class="theme-option"
-              [class.selected]="selectedCbxBackgroundColor === color.key"
-              [style.background-color]="color.color"
-              (click)="selectedCbxBackgroundColor = color.key"
-              [attr.aria-label]="color.name"
-              [pTooltip]="color.name"
-              tooltipPosition="bottom">
-              @if (selectedCbxBackgroundColor === color.key) {
-                <i class="pi pi-check"></i>
-              }
-            </button>
-          }
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('backgroundColor') }}</label>
+          <div class="theme-selector">
+            @for (color of cbxBackgroundColors; track color) {
+              <button
+                type="button"
+                class="theme-option"
+                [class.selected]="selectedCbxBackgroundColor === color.key"
+                [style.background-color]="color.color"
+                (click)="selectedCbxBackgroundColor = color.key"
+                [attr.aria-label]="t(color.translationKey)"
+                [pTooltip]="t(color.translationKey)"
+                tooltipPosition="bottom">
+                @if (selectedCbxBackgroundColor === color.key) {
+                  <i class="pi pi-check"></i>
+                }
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('backgroundColorDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Set the background color for the comic reader.
-      </p>
     </div>
   </div>
-</div>
+</ng-container>

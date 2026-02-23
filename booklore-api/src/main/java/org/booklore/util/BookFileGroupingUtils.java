@@ -59,7 +59,7 @@ public class BookFileGroupingUtils {
     // Known book file extensions - only strip these, not arbitrary dots in folder names
     private static final Set<String> KNOWN_EXTENSIONS = Set.of(
             "pdf", "epub", "cbz", "cbr", "cb7", "mobi", "azw3", "azw", "fb2",
-            "m4b", "m4a", "mp3", "aac", "flac", "opus", "ogg"
+            "m4b", "m4a", "mp3"
     );
 
     public String extractGroupingKey(String fileName) {

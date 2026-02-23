@@ -8,19 +8,21 @@ import {Button} from 'primeng/button';
 import {Tag} from 'primeng/tag';
 import {Tooltip} from 'primeng/tooltip';
 import {DatePipe, JsonPipe} from '@angular/common';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-sidecar-viewer',
   standalone: true,
   templateUrl: './sidecar-viewer.component.html',
   styleUrls: ['./sidecar-viewer.component.scss'],
-  imports: [Button, Tag, Tooltip, JsonPipe, DatePipe]
+  imports: [Button, Tag, Tooltip, JsonPipe, DatePipe, TranslocoDirective]
 })
 export class SidecarViewerComponent implements OnInit, OnDestroy {
   @Input() book$!: Observable<Book>;
 
   private sidecarService = inject(SidecarService);
   private messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
   private destroy$ = new Subject<void>();
 
   sidecarContent: SidecarMetadata | null = null;
@@ -95,8 +97,8 @@ export class SidecarViewerComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Export Successful',
-          detail: 'Sidecar metadata file has been created.'
+          summary: this.t.translate('metadata.sidecar.toast.exportSuccessSummary'),
+          detail: this.t.translate('metadata.sidecar.toast.exportSuccessDetail')
         });
         this.loadSidecarData(this.currentBookId!);
         this.exporting = false;
@@ -104,8 +106,8 @@ export class SidecarViewerComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Export Failed',
-          detail: 'Failed to create sidecar metadata file.'
+          summary: this.t.translate('metadata.sidecar.toast.exportFailedSummary'),
+          detail: this.t.translate('metadata.sidecar.toast.exportFailedDetail')
         });
         this.exporting = false;
         console.error('Export failed:', err);
@@ -123,8 +125,8 @@ export class SidecarViewerComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Import Successful',
-          detail: 'Metadata has been imported from sidecar file.'
+          summary: this.t.translate('metadata.sidecar.toast.importSuccessSummary'),
+          detail: this.t.translate('metadata.sidecar.toast.importSuccessDetail')
         });
         this.loadSidecarData(this.currentBookId!);
         this.importing = false;
@@ -132,8 +134,8 @@ export class SidecarViewerComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Import Failed',
-          detail: 'Failed to import metadata from sidecar file.'
+          summary: this.t.translate('metadata.sidecar.toast.importFailedSummary'),
+          detail: this.t.translate('metadata.sidecar.toast.importFailedDetail')
         });
         this.importing = false;
         console.error('Import failed:', err);
@@ -159,17 +161,17 @@ export class SidecarViewerComponent implements OnInit, OnDestroy {
   getSyncStatusLabel(): string {
     switch (this.syncStatus) {
       case 'IN_SYNC':
-        return 'In Sync';
+        return this.t.translate('metadata.sidecar.syncStatusInSync');
       case 'OUTDATED':
-        return 'Outdated';
+        return this.t.translate('metadata.sidecar.syncStatusOutdated');
       case 'CONFLICT':
-        return 'Conflict';
+        return this.t.translate('metadata.sidecar.syncStatusConflict');
       case 'MISSING':
-        return 'Missing';
+        return this.t.translate('metadata.sidecar.syncStatusMissing');
       case 'NOT_APPLICABLE':
-        return 'N/A';
+        return this.t.translate('metadata.sidecar.syncStatusNA');
       default:
-        return 'Unknown';
+        return this.t.translate('metadata.sidecar.syncStatusUnknown');
     }
   }
 

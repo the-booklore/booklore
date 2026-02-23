@@ -10,11 +10,12 @@ import {BookdropService, PatternExtractResult} from '../../service/bookdrop.serv
 import {MessageService} from 'primeng/api';
 import {NgClass} from '@angular/common';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 interface PatternPlaceholder {
   name: string;
-  description: string;
-  example: string;
+  descriptionKey: string;
+  exampleKey: string;
 }
 
 interface PreviewResult {
@@ -23,6 +24,22 @@ interface PreviewResult {
   preview: Record<string, string>;
   errorMessage?: string;
 }
+
+const PLACEHOLDER_KEY_MAP: Record<string, string> = {
+  '*': 'wildcard',
+  'SeriesName': 'seriesName',
+  'Title': 'title',
+  'Subtitle': 'subtitle',
+  'Authors': 'authors',
+  'SeriesNumber': 'seriesNumber',
+  'Published': 'published',
+  'Publisher': 'publisher',
+  'Language': 'language',
+  'SeriesTotal': 'seriesTotal',
+  'ISBN10': 'isbn10',
+  'ISBN13': 'isbn13',
+  'ASIN': 'asin',
+};
 
 @Component({
   selector: 'app-bookdrop-pattern-extract-dialog',
@@ -36,6 +53,8 @@ interface PreviewResult {
     ProgressSpinner,
     NgClass,
     Tooltip,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
   templateUrl: './bookdrop-pattern-extract-dialog.component.html',
   styleUrl: './bookdrop-pattern-extract-dialog.component.scss'
@@ -46,6 +65,7 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   private readonly config = inject(DynamicDialogConfig);
   private readonly bookdropService = inject(BookdropService);
   private readonly messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
 
   @ViewChild('patternInput', {static: false}) patternInput?: ElementRef<HTMLInputElement>;
 
@@ -57,7 +77,6 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   isExtracting = false;
   previewResults: PreviewResult[] = [];
 
-  patternPlaceholderText = 'e.g., {SeriesName} - Ch {SeriesNumber}';
   spinnerStyle = {width: '24px', height: '24px'};
 
   patternForm = new FormGroup({
@@ -65,32 +84,32 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   });
 
   availablePlaceholders: PatternPlaceholder[] = [
-    {name: '*', description: 'Wildcard - skips any text (not a metadata field)', example: 'anything'},
-    {name: 'SeriesName', description: 'Series or comic name', example: 'Chronicles of Earth'},
-    {name: 'Title', description: 'Book title', example: 'The Lost City'},
-    {name: 'Subtitle', description: 'Book subtitle', example: 'A Tale of Adventure'},
-    {name: 'Authors', description: 'Author name(s)', example: 'John Smith'},
-    {name: 'SeriesNumber', description: 'Book number in series', example: '25'},
-    {name: 'Published', description: 'Full date with format', example: '{Published:yyyy-MM-dd}'},
-    {name: 'Publisher', description: 'Publisher name', example: 'Epic Press'},
-    {name: 'Language', description: 'Language code', example: 'en'},
-    {name: 'SeriesTotal', description: 'Total books in series', example: '50'},
-    {name: 'ISBN10', description: 'ISBN-10 identifier', example: '1234567890'},
-    {name: 'ISBN13', description: 'ISBN-13 identifier', example: '1234567890123'},
-    {name: 'ASIN', description: 'Amazon ASIN', example: 'B012345678'},
+    {name: '*', descriptionKey: 'placeholders.wildcard', exampleKey: 'placeholderExamples.wildcard'},
+    {name: 'SeriesName', descriptionKey: 'placeholders.seriesName', exampleKey: 'placeholderExamples.seriesName'},
+    {name: 'Title', descriptionKey: 'placeholders.title', exampleKey: 'placeholderExamples.title'},
+    {name: 'Subtitle', descriptionKey: 'placeholders.subtitle', exampleKey: 'placeholderExamples.subtitle'},
+    {name: 'Authors', descriptionKey: 'placeholders.authors', exampleKey: 'placeholderExamples.authors'},
+    {name: 'SeriesNumber', descriptionKey: 'placeholders.seriesNumber', exampleKey: 'placeholderExamples.seriesNumber'},
+    {name: 'Published', descriptionKey: 'placeholders.published', exampleKey: 'placeholderExamples.published'},
+    {name: 'Publisher', descriptionKey: 'placeholders.publisher', exampleKey: 'placeholderExamples.publisher'},
+    {name: 'Language', descriptionKey: 'placeholders.language', exampleKey: 'placeholderExamples.language'},
+    {name: 'SeriesTotal', descriptionKey: 'placeholders.seriesTotal', exampleKey: 'placeholderExamples.seriesTotal'},
+    {name: 'ISBN10', descriptionKey: 'placeholders.isbn10', exampleKey: 'placeholderExamples.isbn10'},
+    {name: 'ISBN13', descriptionKey: 'placeholders.isbn13', exampleKey: 'placeholderExamples.isbn13'},
+    {name: 'ASIN', descriptionKey: 'placeholders.asin', exampleKey: 'placeholderExamples.asin'},
   ];
 
   commonPatterns = [
-    {label: 'Author - Title', pattern: '{Authors} - {Title}'},
-    {label: 'Title - Author', pattern: '{Title} - {Authors}'},
-    {label: 'Title (Year)', pattern: '{Title} ({Published:yyyy})'},
-    {label: 'Author - Title (Year)', pattern: '{Authors} - {Title} ({Published:yyyy})'},
-    {label: 'Series #Number', pattern: '{SeriesName} #{SeriesNumber}'},
-    {label: 'Series - Chapter Number', pattern: '{SeriesName} - Chapter {SeriesNumber}'},
-    {label: 'Series - Vol Number', pattern: '{SeriesName} - Vol {SeriesNumber}'},
-    {label: '[Tag] Series - Chapter Number', pattern: '[*] {SeriesName} - Chapter {SeriesNumber}'},
-    {label: 'Title by Author', pattern: '{Title} by {Authors}'},
-    {label: 'Series vX (of Total)', pattern: '{SeriesName} v{SeriesNumber} (of {SeriesTotal})'},
+    {labelKey: 'commonPatternLabels.authorTitle', pattern: '{Authors} - {Title}'},
+    {labelKey: 'commonPatternLabels.titleAuthor', pattern: '{Title} - {Authors}'},
+    {labelKey: 'commonPatternLabels.titleYear', pattern: '{Title} ({Published:yyyy})'},
+    {labelKey: 'commonPatternLabels.authorTitleYear', pattern: '{Authors} - {Title} ({Published:yyyy})'},
+    {labelKey: 'commonPatternLabels.seriesNumber', pattern: '{SeriesName} #{SeriesNumber}'},
+    {labelKey: 'commonPatternLabels.seriesChapter', pattern: '{SeriesName} - Chapter {SeriesNumber}'},
+    {labelKey: 'commonPatternLabels.seriesVol', pattern: '{SeriesName} - Vol {SeriesNumber}'},
+    {labelKey: 'commonPatternLabels.tagSeriesChapter', pattern: '[*] {SeriesName} - Chapter {SeriesNumber}'},
+    {labelKey: 'commonPatternLabels.titleByAuthor', pattern: '{Title} by {Authors}'},
+    {labelKey: 'commonPatternLabels.seriesVTotal', pattern: '{SeriesName} v{SeriesNumber} (of {SeriesTotal})'},
   ];
 
   ngOnInit(): void {
@@ -104,23 +123,23 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
     const patternControl = this.patternForm.get('pattern');
     const currentPattern = patternControl?.value ?? '';
     const inputElement = this.patternInput?.nativeElement;
-    
+
     const textToInsert = placeholderName === '*' ? '*' : `{${placeholderName}}`;
-    
-    const patternToModify = placeholderName === '*' 
-      ? currentPattern 
+
+    const patternToModify = placeholderName === '*'
+      ? currentPattern
       : this.removeExistingPlaceholder(currentPattern, placeholderName);
-    
+
     if (inputElement) {
       const cursorPosition = this.calculateCursorPosition(inputElement, currentPattern, patternToModify);
       const newPattern = this.insertTextAtCursor(patternToModify, textToInsert, cursorPosition);
-      
+
       patternControl?.setValue(newPattern);
       this.focusInputAfterInsertion(inputElement, cursorPosition, textToInsert.length);
     } else {
       patternControl?.setValue(patternToModify + textToInsert);
     }
-    
+
     this.previewPattern();
   }
 
@@ -131,7 +150,7 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
 
   private calculateCursorPosition(inputElement: HTMLInputElement, originalPattern: string, modifiedPattern: string): number {
     let cursorPosition = inputElement.selectionStart ?? modifiedPattern.length;
-    
+
     if (originalPattern !== modifiedPattern) {
       const existingPlaceholderRegex = new RegExp(`\\{\\w+(?::[^}]*)?\\}`, 'g');
       const matchBefore = originalPattern.substring(0, cursorPosition).match(existingPlaceholderRegex);
@@ -140,7 +159,7 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
       }
       cursorPosition = Math.max(0, cursorPosition);
     }
-    
+
     return cursorPosition;
   }
 
@@ -218,8 +237,11 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
         this.isExtracting = false;
         this.messageService.add({
           severity: 'success',
-          summary: 'Extraction Complete',
-          detail: `Successfully extracted metadata from ${result.successfullyExtracted} of ${result.totalFiles} files.`,
+          summary: this.t.translate('bookdrop.patternExtract.toast.extractionCompleteSummary'),
+          detail: this.t.translate('bookdrop.patternExtract.toast.extractionCompleteDetail', {
+            success: result.successfullyExtracted,
+            total: result.totalFiles
+          }),
         });
         this.dialogRef.close(result);
       },
@@ -228,8 +250,8 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
         console.error('Pattern extraction failed:', err);
         this.messageService.add({
           severity: 'error',
-          summary: 'Extraction Failed',
-          detail: 'An error occurred during pattern extraction.',
+          summary: this.t.translate('bookdrop.patternExtract.toast.extractionFailedSummary'),
+          detail: this.t.translate('bookdrop.patternExtract.toast.extractionFailedDetail'),
         });
       },
     });
@@ -253,7 +275,13 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   getPlaceholderTooltip(placeholder: PatternPlaceholder): string {
-    return `${placeholder.description} (e.g., ${placeholder.example})`;
+    const description = this.t.translate(`bookdrop.patternExtract.${placeholder.descriptionKey}`);
+    const example = this.t.translate(`bookdrop.patternExtract.${placeholder.exampleKey}`);
+    return `${description} (e.g., ${example})`;
+  }
+
+  getCommonPatternLabel(labelKey: string): string {
+    return this.t.translate(`bookdrop.patternExtract.${labelKey}`);
   }
 
   getPreviewClass(preview: PreviewResult): Record<string, boolean> {
@@ -272,10 +300,10 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   getErrorMessage(preview: PreviewResult): string {
-    return preview.errorMessage || 'Pattern did not match';
+    return preview.errorMessage || this.t.translate('bookdrop.patternExtract.patternDidNotMatch');
   }
 
   getErrorTooltip(preview: PreviewResult): string {
-    return preview.success ? '' : (preview.errorMessage || 'Pattern did not match filename structure');
+    return preview.success ? '' : (preview.errorMessage || this.t.translate('bookdrop.patternExtract.patternDidNotMatchStructure'));
   }
 }

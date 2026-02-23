@@ -10,7 +10,7 @@ import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rul
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
 import {EntityType} from '../book-browser.component';
 import {Filter, FILTER_CONFIGS, FILTER_EXTRACTORS, FilterType, FilterValue, NUMERIC_ID_FILTER_TYPES, SortMode} from './book-filter.config';
-import {filterBooksByFilters} from '../filters/SidebarFilter';
+import {filterBooksByFilters} from '../filters/sidebar-filter';
 import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
 const MAX_FILTER_ITEMS = 100;
@@ -204,7 +204,7 @@ export class BookFilterService {
     if (!magicShelf.filterJson) return [];
     try {
       const groupRule = JSON.parse(magicShelf.filterJson) as GroupRule;
-      return books.filter(book => this.bookRuleEvaluatorService.evaluateGroup(book, groupRule));
+      return books.filter(book => this.bookRuleEvaluatorService.evaluateGroup(book, groupRule, books));
     } catch {
       console.warn('Invalid filterJson for MagicShelf');
       return [];

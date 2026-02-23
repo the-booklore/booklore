@@ -33,9 +33,7 @@
   }
 
   @if (isSlideshowActive) {
-    <div class="slideshow-indicator">
-      <span class="slideshow-badge">Slideshow</span>
-    </div>
+    <div class="slideshow-progress" [class.above-footer]="isFooterVisible" [style.animation-duration.ms]="slideshowInterval"></div>
   }
 
   <div class="image-container"
@@ -72,15 +70,15 @@
             <div class="end-of-comic-action">
               <button class="next-book-action-button" (click)="navigateToNextBook()">
                 <span class="action-icon">📖</span>
-                <span class="action-text">Continue to Next Book</span>
+                <span class="action-text">{{ 'readerCbx.reader.continueToNextBook' | transloco }}</span>
                 <span class="book-title">{{ getBookDisplayTitle(nextBookInSeries) }}</span>
               </button>
             </div>
           }
         } @else {
           <div class="infinite-scroll-wrapper" [class.long-strip-wrapper]="scrollMode === CbxScrollMode.LONG_STRIP">
-            @for (url of infiniteScrollImageUrls; track url; let i = $index) {
-              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image" (click)="onImageClick()" (dblclick)="onImageDoubleClick()" (load)="onPageImageLoad($event, infiniteScrollPages[i])"/>
+            @for (pageIdx of infiniteScrollPages; track pageIdx; let i = $index) {
+              <img [src]="getPageImageUrl(pageIdx)" alt="Page {{ pageIdx + 1 }}" class="page-image" (click)="onImageClick()" (dblclick)="onImageDoubleClick()" (load)="onPageImageLoad($event, pageIdx)"/>
             }
             @if (isLoadingMore) {
               <div class="loading-more">
@@ -91,7 +89,7 @@
               <div class="end-of-comic-action">
                 <button class="next-book-action-button" (click)="navigateToNextBook()">
                   <span class="action-icon">📖</span>
-                  <span class="action-text">Continue to Next Book</span>
+                  <span class="action-text">{{ 'readerCbx.reader.continueToNextBook' | transloco }}</span>
                   <span class="book-title">{{ getBookDisplayTitle(nextBookInSeries) }}</span>
                 </button>
               </div>
@@ -100,14 +98,14 @@
         }
       } @else {
         <div class="no-pages">
-          <p>No pages available.</p>
+          <p>{{ 'readerCbx.reader.noPagesAvailable' | transloco }}</p>
         </div>
       }
     } @else {
       <div class="loader-overlay">
         <div class="loader-content">
           <div class="spinner"></div>
-          <p class="loader-text">Loading book...</p>
+          <p class="loader-text">{{ 'readerCbx.reader.loadingBook' | transloco }}</p>
         </div>
       </div>
     }

@@ -31,10 +31,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v6
 
-      - name: Set Up JDK 21
+      - name: Set Up JDK 25
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
           cache: gradle
 
@@ -141,15 +141,6 @@ jobs:
           fetch-depth: 0
 
       # ----------------------------------------
-      # Environment setup
-      # ----------------------------------------
-      - name: Set Up QEMU for Multi-Arch Builds
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set Up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # ----------------------------------------
       # Image tagging
       # ----------------------------------------
       - name: Generate Image Tag
@@ -165,6 +156,58 @@ jobs:
 
           echo "image_tag=$image_tag" >> $GITHUB_ENV
           echo "Image tag: $image_tag"
+
+      # ----------------------------------------
+      # Native Angular build
+      # ----------------------------------------
+      - name: Set Up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm ci --force
+
+      - name: Build Angular App
+        working-directory: ./booklore-ui
+        run: npx ng build --configuration=production
+
+      # ----------------------------------------
+      # Native Gradle build
+      # ----------------------------------------
+      - name: Set Up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Copy Angular Dist to Spring Boot Resources
+        run: cp -r booklore-ui/dist/booklore/browser/. booklore-api/src/main/resources/static/
+
+      - name: Inject Version into application.yaml
+        env:
+          APP_VERSION: ${{ env.image_tag }}
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.52.2/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq eval '.app.version = strenv(APP_VERSION)' -i booklore-api/src/main/resources/application.yaml
+
+      - name: Build Spring Boot JAR
+        working-directory: ./booklore-api
+        run: ./gradlew clean build -x test --no-daemon --parallel --build-cache
+
+      # ----------------------------------------
+      # Environment setup
+      # ----------------------------------------
+      - name: Set Up QEMU for Multi-Arch Builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       # ----------------------------------------
       # Docker login (pushes & internal PRs only)
@@ -192,6 +235,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile.ci
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |

@@ -135,4 +135,64 @@ public class UserStatsController {
         List<BookCompletionHeatmapResponse> heatmapData = readingSessionService.getBookCompletionHeatmap();
         return ResponseEntity.ok(heatmapData);
     }
+
+    @Operation(summary = "Get page turner scores", description = "Returns engagement/grip scores for completed books based on reading session patterns")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page turner scores retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/page-turner-scores")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<PageTurnerScoreResponse>> getPageTurnerScores() {
+        List<PageTurnerScoreResponse> scores = readingSessionService.getPageTurnerScores();
+        return ResponseEntity.ok(scores);
+    }
+
+    @Operation(summary = "Get completion race data", description = "Returns reading session progress data for completed books in a given year, for visualizing completion races")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Completion race data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/completion-race")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<CompletionRaceResponse>> getCompletionRace(@RequestParam int year) {
+        List<CompletionRaceResponse> data = readingSessionService.getCompletionRace(year);
+        return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get book distribution statistics", description = "Returns rating, progress, and read status distributions for the authenticated user's library")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book distributions retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/book-distributions")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<BookDistributionsResponse> getBookDistributions() {
+        BookDistributionsResponse data = readingSessionService.getBookDistributions();
+        return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get all reading dates", description = "Returns daily reading session counts across all time for the authenticated user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reading dates retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/reading-dates")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ReadingSessionHeatmapResponse>> getReadingDates() {
+        List<ReadingSessionHeatmapResponse> data = readingSessionService.getReadingDates();
+        return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get session scatter data", description = "Returns individual session data points for scatter plot visualization")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Session scatter data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/session-scatter")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<SessionScatterResponse>> getSessionScatter(@RequestParam int year) {
+        List<SessionScatterResponse> data = readingSessionService.getSessionScatter(year);
+        return ResponseEntity.ok(data);
+    }
 }

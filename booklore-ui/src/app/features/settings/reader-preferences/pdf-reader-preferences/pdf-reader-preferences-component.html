@@ -1,51 +1,53 @@
-<div class="pdf-preferences-container">
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Page Spread</label>
-        <div class="button-group">
-          @for (spread of spreads; track spread) {
-            <button
-              type="button"
-              class="option-button"
-              [class.selected]="selectedSpread === spread.key"
-              (click)="selectedSpread = spread.key"
-              [pTooltip]="spread.name"
-              tooltipPosition="bottom">
-              <i [class]="spread.icon"></i>
-              <span class="option-text">{{ spread.name }}</span>
-            </button>
-          }
+<ng-container *transloco="let t; prefix: 'settingsReader.pdf'">
+  <div class="pdf-preferences-container">
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('pageSpread') }}</label>
+          <div class="button-group">
+            @for (spread of spreads; track spread) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedSpread === spread.key"
+                (click)="selectedSpread = spread.key"
+                [pTooltip]="t(spread.translationKey)"
+                tooltipPosition="bottom">
+                <i [class]="spread.icon"></i>
+                <span class="option-text">{{ t(spread.translationKey) }}</span>
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('pageSpreadDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Choose how PDF pages are displayed - single page or double page spread view.
-      </p>
     </div>
-  </div>
 
-  <div class="setting-item">
-    <div class="setting-info">
-      <div class="setting-label-row">
-        <label class="setting-label">Page Zoom</label>
-        <div class="button-group">
-          @for (zoom of zooms; track zoom) {
-            <button
-              type="button"
-              class="option-button"
-              [class.selected]="selectedZoom === zoom.key"
-              (click)="selectedZoom = zoom.key"
-              [pTooltip]="zoom.name"
-              tooltipPosition="bottom">
-              <i [class]="zoom.icon"></i>
-              <span class="option-text">{{ zoom.name }}</span>
-            </button>
-          }
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">{{ t('pageZoom') }}</label>
+          <div class="button-group">
+            @for (zoom of zooms; track zoom) {
+              <button
+                type="button"
+                class="option-button"
+                [class.selected]="selectedZoom === zoom.key"
+                (click)="selectedZoom = zoom.key"
+                [pTooltip]="t(zoom.translationKey)"
+                tooltipPosition="bottom">
+                <i [class]="zoom.icon"></i>
+                <span class="option-text">{{ t(zoom.translationKey) }}</span>
+              </button>
+            }
+          </div>
         </div>
+        <p class="setting-description">
+          {{ t('pageZoomDesc') }}
+        </p>
       </div>
-      <p class="setting-description">
-        Set the default zoom level for PDF documents to enhance readability.
-      </p>
     </div>
   </div>
-</div>
+</ng-container>

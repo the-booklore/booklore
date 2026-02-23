@@ -13,7 +13,7 @@
       [text]="true"
       severity="secondary"
       (click)="ref.close()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
@@ -104,7 +104,7 @@
           optionValue="id"
           placeholder="Select library"
           (onChange)="onDefaultLibraryChange()"
-          styleClass="select-library"
+          class="select-library"
           size="small"
           appendTo="body"
         ></p-select>
@@ -116,7 +116,7 @@
             optionValue="id"
             placeholder="Select path"
             (onChange)="onDefaultLibraryPathChange()"
-            styleClass="select-path"
+            class="select-path"
             size="small"
             appendTo="body"
           ></p-select>
@@ -175,7 +175,7 @@
                   placeholder="Select"
                   (onChange)="onLibraryChange(preview)"
                   [disabled]="preview.isMoved"
-                  styleClass="select-full-width"
+                  class="select-full-width"
                   appendTo="body"
                   size="small"
                 ></p-select>
@@ -190,7 +190,7 @@
                     placeholder="Select"
                     (onChange)="onLibraryPathChange(preview)"
                     [disabled]="preview.isMoved"
-                    styleClass="select-full-width"
+                    class="select-full-width"
                     appendTo="body"
                     size="small"
                   ></p-select>

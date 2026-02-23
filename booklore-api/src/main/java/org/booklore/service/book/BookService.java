@@ -18,13 +18,15 @@ import org.booklore.repository.BookFileRepository;
 import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.progress.ReadingProgressService;
+import org.booklore.service.FileStreamingService;
 import org.booklore.util.FileService;
 import org.booklore.util.FileUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpStatus;
@@ -34,7 +36,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -42,6 +43,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 
 @Slf4j
 @AllArgsConstructor
@@ -64,6 +67,8 @@ public class BookService {
     private final BookUpdateService bookUpdateService;
     private final EbookViewerPreferenceRepository ebookViewerPreferencesRepository;
     private final SidecarMetadataWriter sidecarMetadataWriter;
+    private final FileStreamingService fileStreamingService;
+    private final AuditService auditService;
 
 
     public List<Book> getBookDTOs(boolean includeDescription) {
@@ -73,9 +78,7 @@ public class BookService {
         List<Book> books = isAdmin
                 ? bookQueryService.getAllBooks(includeDescription)
                 : bookQueryService.getAllBooksByLibraryIds(
-                user.getAssignedLibraries().stream()
-                        .map(Library::getId)
-                        .collect(Collectors.toSet()),
+                getUserLibraryIds(user),
                 includeDescription,
                 user.getId()
         );
@@ -92,10 +95,17 @@ public class BookService {
                     progressMap.get(book.getId()),
                     fileProgressMap.get(book.getId())
             );
-            book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
+            Set<Shelf> filtered = filterShelvesByUserId(book.getShelves(), user.getId());
+            book.setShelves(!includeDescription && filtered != null && filtered.isEmpty() ? null : filtered);
         });
 
         return books;
+    }
+
+    private Set<Long> getUserLibraryIds(BookLoreUser user) {
+        return user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(Collectors.toSet());
     }
 
     public List<Book> getBooksByIds(Set<Long> bookIds, boolean withDescription) {
@@ -293,11 +303,11 @@ public class BookService {
         bookDownloadService.downloadAllBookFiles(bookId, response);
     }
 
-    public ResponseEntity<ByteArrayResource> getBookContent(long bookId) throws IOException {
+    public ResponseEntity<Resource> getBookContent(long bookId) {
         return getBookContent(bookId, null);
     }
 
-    public ResponseEntity<ByteArrayResource> getBookContent(long bookId, String bookType) throws IOException {
+    public ResponseEntity<Resource> getBookContent(long bookId, String bookType) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         String filePath;
         if (bookType != null) {
@@ -310,11 +320,45 @@ public class BookService {
         } else {
             filePath = FileUtils.getBookFullPath(bookEntity);
         }
-        try (FileInputStream inputStream = new FileInputStream(filePath)) {
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(new ByteArrayResource(inputStream.readAllBytes()));
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw ApiError.FILE_NOT_FOUND.createException(filePath);
         }
+        Resource resource = new FileSystemResource(file);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(file.length())
+                .body(resource);
+    }
+
+    public void streamBookContent(long bookId, String bookType, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        String filePath;
+        if (bookType != null) {
+            BookFileType requestedType = BookFileType.valueOf(bookType.toUpperCase());
+            BookFileEntity bookFile = bookEntity.getBookFiles().stream()
+                    .filter(bf -> bf.getBookType() == requestedType)
+                    .findFirst()
+                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("No file of type " + bookType + " found for book"));
+            filePath = bookFile.getFullFilePath().toString();
+        } else {
+            filePath = FileUtils.getBookFullPath(bookEntity);
+        }
+
+        Path path = Paths.get(filePath);
+        String fileName = path.getFileName().toString();
+        String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1) : "";
+        String contentType = switch (extension.toLowerCase()) {
+            case "pdf" -> "application/pdf";
+            case "epub" -> "application/epub+zip";
+            case "mobi", "azw3" -> "application/x-mobipocket-ebook";
+            case "cbz" -> "application/vnd.comicbook+zip";
+            case "cbr" -> "application/vnd.comicbook-rar";
+            case "fb2" -> "application/x-fictionbook+xml";
+            default -> "application/octet-stream";
+        };
+
+        fileStreamingService.streamWithRangeSupport(path, contentType, request, response);
     }
 
     @Transactional
@@ -365,6 +409,7 @@ public class BookService {
         }
 
         bookRepository.deleteAll(books);
+        auditService.log(AuditAction.BOOK_DELETED, "Deleted " + ids.size() + " book(s)");
         BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
         return failedFileDeletions.isEmpty()
                 ? ResponseEntity.ok(response)

@@ -37,8 +37,11 @@ public class ReadingSessionController {
             @ApiResponse(responseCode = "404", description = "Book not found")
     })
     @GetMapping("/book/{bookId}")
-    public ResponseEntity<Page<ReadingSessionResponse>> getReadingSessionsForBook(@PathVariable Long bookId, @RequestParam(defaultValue = "0") int page) {
-        Page<ReadingSessionResponse> sessions = readingSessionService.getReadingSessionsForBook(bookId, page);
+    public ResponseEntity<Page<ReadingSessionResponse>> getReadingSessionsForBook(
+            @PathVariable Long bookId, 
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        Page<ReadingSessionResponse> sessions = readingSessionService.getReadingSessionsForBook(bookId, page, size);
         return ResponseEntity.ok(sessions);
     }
 }

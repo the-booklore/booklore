@@ -1,13 +1,13 @@
 package org.booklore.service.metadata.sidecar;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.model.dto.sidecar.SidecarMetadata;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.enums.SidecarSyncStatus;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,8 +23,9 @@ public class SidecarMetadataReader {
 
     public SidecarMetadataReader(SidecarMetadataMapper mapper) {
         this.mapper = mapper;
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper = JsonMapper.builder()
+                .findAndAddModules()
+                .build();
     }
 
     public Optional<SidecarMetadata> readSidecarMetadata(Path bookPath) {

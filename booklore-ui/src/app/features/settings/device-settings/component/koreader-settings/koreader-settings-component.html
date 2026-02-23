@@ -1,14 +1,15 @@
+<ng-container *transloco="let t; prefix: 'settingsDevice'">
 <p-toast position="top-right"></p-toast>
 
 <div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-mobile"></i>
-      KOReader Sync Configuration
+      {{ t('koreader.title') }}
       <app-external-doc-link docType="koReader"></app-external-doc-link>
     </h2>
     <p class="settings-description">
-      Configure KOReader integration to sync your reading progress between your device and Booklore library.
+      {{ t('koreader.description') }}
     </p>
   </div>
 
@@ -18,10 +19,10 @@
         <div class="section-header">
           <h3 class="section-title">
             <i class="pi pi-sync"></i>
-            Sync Configuration
+            {{ t('koreader.syncConfig') }}
           </h3>
           <p class="section-description">
-            Enable and configure synchronization between your Booklore library and KOReader device.
+            {{ t('koreader.syncConfigDesc') }}
           </p>
         </div>
 
@@ -30,7 +31,7 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">Enable KOReader Sync</label>
+                  <label class="setting-label">{{ t('koreader.enableSync') }}</label>
                   <p-toggle-switch
                     name="syncEnabled"
                     [(ngModel)]="koReaderSyncEnabled"
@@ -40,7 +41,7 @@
                   </p-toggle-switch>
                 </div>
                 <p class="setting-description">
-                  Turn on synchronization to automatically sync your reading progress.
+                  {{ t('koreader.enableSyncDesc') }}
                 </p>
               </div>
             </div>
@@ -48,7 +49,7 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">Sync reading progress with Booklore eBook Reader</label>
+                  <label class="setting-label">{{ t('koreader.syncWithBooklore') }}</label>
                   <p-toggle-switch
                     name="syncWithBookloreReader"
                     [(ngModel)]="syncWithBookloreReader"
@@ -57,8 +58,7 @@
                     [disabled]="!credentialsSaved || !koReaderSyncEnabled">
                   </p-toggle-switch>
                 </div>
-                <p class="setting-description">
-                  Enable bidirectional sync between Booklore's eBook reader and KOReader. <strong>Note:</strong> Progress sync is approximate and may update by chapter rather than exact page or location.
+                <p class="setting-description" [innerHTML]="t('koreader.syncWithBookloreDesc')">
                 </p>
               </div>
             </div>
@@ -66,7 +66,7 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">KOReader API Path</label>
+                  <label class="setting-label">{{ t('koreader.apiPath') }}</label>
                   <div class="token-input-group">
                     <input
                       pInputText
@@ -85,7 +85,7 @@
                   </div>
                 </div>
                 <p class="setting-description">
-                  The API endpoint path for your KOReader sync service.
+                  {{ t('koreader.apiPathDesc') }}
                 </p>
               </div>
             </div>
@@ -93,7 +93,7 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">KOReader Username</label>
+                  <label class="setting-label">{{ t('koreader.username') }}</label>
                   <div class="token-input-group">
                     <input
                       pInputText
@@ -116,11 +116,11 @@
                   </div>
                 </div>
                 <p class="setting-description">
-                  Your username for authenticating with the KOReader sync service.
+                  {{ t('koreader.usernameDesc') }}
                 </p>
                 @if (editMode && usernameModel.invalid && usernameModel.touched) {
                   <small class="error-message">
-                    Username is required.
+                    {{ t('koreader.usernameRequired') }}
                   </small>
                 }
               </div>
@@ -129,7 +129,7 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">KOReader Password</label>
+                  <label class="setting-label">{{ t('koreader.password') }}</label>
                   <div class="token-input-group">
                     <input
                       pInputText
@@ -162,11 +162,11 @@
                   </div>
                 </div>
                 <p class="setting-description">
-                  Your password for authenticating with the KOReader sync service.
+                  {{ t('koreader.passwordDesc') }}
                 </p>
                 @if (editMode && passwordModel.invalid && passwordModel.touched) {
                   <small class="error-message">
-                    Password must be at least 6 characters.
+                    {{ t('koreader.passwordMinLength') }}
                   </small>
                 }
               </div>
@@ -175,19 +175,19 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">Settings Management</label>
+                  <label class="setting-label">{{ t('koreader.settingsManagement') }}</label>
                   <p-button
                     [icon]="!editMode ? 'pi pi-save' : 'pi pi-pencil'"
                     outlined="true"
                     [severity]="!editMode ? 'success' : 'warn'"
-                    [label]="!editMode ? 'Save' : 'Edit'"
+                    [label]="!editMode ? ('common.save' | transloco) : ('common.edit' | transloco)"
                     size="small"
                     (onClick)="onEditSave()"
                     [disabled]="!editMode && !canSave">
                   </p-button>
                 </div>
                 <p class="setting-description">
-                  Save your credentials or edit existing settings.
+                  {{ t('koreader.settingsManagementDesc') }}
                 </p>
               </div>
             </div>
@@ -201,14 +201,15 @@
       <div class="access-denied-card">
         <i class="pi pi-lock"></i>
         <div class="access-denied-content">
-          <h3>Access Restricted</h3>
+          <h3>{{ t('accessRestricted') }}</h3>
           <p>
-            Access to KOReader sync is restricted.
+            {{ t('koreader.accessDenied') }}
             <br>
-            Please contact your administrator to request permission.
+            {{ t('contactAdmin') }}
           </p>
         </div>
       </div>
     </div>
   }
 </div>
+</ng-container>

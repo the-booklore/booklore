@@ -1,0 +1,73 @@
+{
+  "title": "Authentifizierungseinstellungen",
+  "description": "Konfigurieren Sie Authentifizierungsmethoden für Ihre Booklore-Instanz. Die interne Authentifizierung ist immer aktiviert. Zusätzlich können Sie OIDC für externe Authentifizierungsanbieter aktivieren.",
+  "methods": {
+    "sectionTitle": "Authentifizierungsmethoden",
+    "sectionDesc": "Wählen Sie, welche Authentifizierungsmethoden den Benutzern zur Anmeldung zur Verfügung stehen."
+  },
+  "internal": {
+    "label": "Interne Authentifizierung",
+    "status": "Immer aktiviert",
+    "description": "Integrierte Authentifizierung mit Benutzername und Passwort. Dies ist die Standardmethode und kann nicht deaktiviert werden."
+  },
+  "oidc": {
+    "label": "OIDC-Authentifizierung",
+    "experimental": "Experimentell",
+    "description": "OpenID Connect für Single Sign-On mit externen Anbietern (Authentik, Keycloak usw.).",
+    "configHint": "Konfigurieren Sie die Einstellungen unten, um OIDC zu aktivieren.",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert"
+  },
+  "providerConfig": {
+    "sectionTitle": "OIDC-Anbieterkonfiguration",
+    "sectionDesc": "Konfigurieren Sie Ihre OIDC-Anbietereinstellungen. Alle Felder sind erforderlich, um die OIDC-Authentifizierung zu aktivieren.",
+    "providerName": "Anbietername",
+    "providerPlaceholder": "z.B. Authentik, Keycloak",
+    "clientId": "Client-ID",
+    "clientIdPlaceholder": "Ihre OIDC-Client-ID",
+    "issuerUri": "Issuer-URI",
+    "issuerPlaceholder": "z.B. https://auth.example.com/realms/booklore",
+    "scope": "Scope",
+    "scopeHint": "Erforderliche Scopes für die OIDC-Anmeldung. Müssen von Ihrem Anbieter unterstützt werden.",
+    "claimMappings": "Claim-Zuordnungen",
+    "claimDesc": "Ordnen Sie OIDC-Token-Claims den Booklore-Benutzerfeldern zu. Diese müssen mit den Token-Claims Ihres Anbieters übereinstimmen.",
+    "usernameClaim": "Benutzername-Claim",
+    "usernamePlaceholder": "z.B. preferred_username",
+    "emailClaim": "E-Mail-Claim",
+    "emailPlaceholder": "z.B. email",
+    "nameClaim": "Anzeigename-Claim",
+    "namePlaceholder": "z.B. name"
+  },
+  "provisioning": {
+    "sectionTitle": "Benutzerbereitstellung",
+    "sectionDesc": "Konfigurieren Sie, wie neue OIDC-Benutzer erstellt werden und welche Berechtigungen sie erhalten.",
+    "autoLabel": "Automatische Benutzerbereitstellung",
+    "autoEnabled": "Aktiviert",
+    "autoDisabled": "Deaktiviert",
+    "autoDesc": "Wenn aktiviert, werden neue Benutzer bei der ersten OIDC-Anmeldung automatisch mit den unten aufgeführten Berechtigungen erstellt. Wenn deaktiviert, müssen Benutzer manuell in Booklore erstellt werden, bevor sie sich über OIDC anmelden können.",
+    "defaultPerms": "Standardberechtigungen",
+    "readBooks": "Bücher lesen",
+    "defaultLibraryAccess": "Standard-Bibliothekszugriff",
+    "selectLibraries": "Bibliotheken auswählen, auf die neue Benutzer zugreifen können"
+  },
+  "perms": {
+    "uploadBooks": "Bücher hochladen",
+    "downloadBooks": "Bücher herunterladen",
+    "editMetadata": "Buchmetadaten bearbeiten",
+    "manageLibrary": "Bibliothek verwalten",
+    "emailBook": "Buch per E-Mail senden",
+    "deleteBook": "Buch löschen",
+    "koreaderSync": "KOReader-Synchronisierung",
+    "koboSync": "Kobo-Synchronisierung",
+    "accessOpds": "OPDS-Zugriff"
+  },
+  "toast": {
+    "saved": "Gespeichert",
+    "oidcUpdated": "OIDC-Einstellung aktualisiert.",
+    "oidcError": "OIDC-Einstellung konnte nicht aktualisiert werden.",
+    "providerSaved": "OIDC-Anbietereinstellungen gespeichert.",
+    "providerError": "OIDC-Anbietereinstellungen konnten nicht gespeichert werden.",
+    "provisionSaved": "OIDC-Auto-Provisioning-Einstellungen gespeichert.",
+    "provisionError": "OIDC-Auto-Provisioning-Einstellungen konnten nicht gespeichert werden."
+  }
+}

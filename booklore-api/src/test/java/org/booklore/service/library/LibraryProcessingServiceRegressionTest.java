@@ -1,5 +1,6 @@
 package org.booklore.service.library;
 
+import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.entity.LibraryPathEntity;
@@ -88,13 +89,14 @@ class LibraryProcessingServiceRegressionTest {
         libraryEntity.setBookEntities(List.of(filelessBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(
-            org.booklore.model.dto.settings.LibraryFile.builder()
+        when(libraryFileHelper.getAllLibraryFiles(libraryEntity)).thenReturn(List.of(
+            LibraryFile.builder()
                 .libraryPathEntity(pathEntity)
                 .fileName("other.epub")
                 .fileSubPath("")
                 .build()
         ));
+        when(libraryFileHelper.filterByAllowedFormats(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
         when(bookGroupingService.groupForRescan(anyList(), any(LibraryEntity.class)))
                 .thenReturn(new BookGroupingService.GroupingResult(Collections.emptyMap(), Collections.emptyMap()));

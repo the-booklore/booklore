@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-library-loading',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslocoDirective],
   templateUrl: './library-loading.component.html',
   styleUrl: './library-loading.component.scss'
 })

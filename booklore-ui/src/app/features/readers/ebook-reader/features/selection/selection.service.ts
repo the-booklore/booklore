@@ -107,6 +107,10 @@ export class ReaderSelectionService {
 
     if (action.type === 'select') {
       this.clearPreview();
+      if (this.currentSelection?.text) {
+        navigator.clipboard.writeText(this.currentSelection.text);
+      }
+      this.viewManager.clearSelection();
       this.emitState();
     } else if (action.type === 'search' && action.searchText) {
       this.clearPreview();

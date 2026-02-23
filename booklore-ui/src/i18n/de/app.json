@@ -1,0 +1,8 @@
+{
+  "offline": "Sie sind offline",
+  "loading": "BookLore wird geladen\u2026",
+  "loadingDescription": "Bitte warten Sie, während wir alles vorbereiten.",
+  "offlineLoadingDescription": "BookLore benötigt eine Verbindung zum Server, um zu laden.",
+  "offlineDescription": "Überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.",
+  "connectionLost": "Ihre Verbindung wurde unterbrochen. Einige Funktionen funktionieren möglicherweise nicht."
+}

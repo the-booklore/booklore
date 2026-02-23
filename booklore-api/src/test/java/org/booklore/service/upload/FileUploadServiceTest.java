@@ -20,6 +20,7 @@ import org.booklore.service.file.FileMovingHelper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.enums.BookFileExtension;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import org.booklore.service.audit.AuditService;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -76,6 +77,8 @@ class FileUploadServiceTest {
 
     @Mock
     MonitoringRegistrationService monitoringRegistrationService;
+    @Mock
+    AuditService auditService;
 
     AppProperties appProperties;
     FileUploadService service;
@@ -93,7 +96,7 @@ class FileUploadServiceTest {
 
         service = new FileUploadService(
                 libraryRepository, bookRepository, bookAdditionalFileRepository,
-                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper, monitoringRegistrationService
+                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper, monitoringRegistrationService, auditService
         );
     }
 
@@ -131,7 +134,7 @@ class FileUploadServiceTest {
                 .isThrownBy(() -> service.uploadFileBookDrop(file))
                 .satisfies(ex -> {
                     assertThat(ex.getStatus()).isEqualTo(ApiError.INVALID_FILE_FORMAT.getStatus());
-                    assertThat(ex.getMessage()).contains("Invalid file format, only pdf and epub are supported");
+                    assertThat(ex.getMessage()).contains("Invalid file format");
                 });
     }
 

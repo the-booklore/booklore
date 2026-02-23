@@ -1,12 +1,13 @@
+<ng-container *transloco="let t; prefix: 'settingsLibMeta'">
 <div class="main-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-database"></i>
-      Library Metadata Configuration
+      {{ t('title') }}
       <app-external-doc-link docType="fetchConfig"></app-external-doc-link>
     </h2>
     <p class="settings-description">
-      Configure metadata fetch behavior for your libraries. Set global defaults and create library-specific overrides to control how book metadata is retrieved from different providers.
+      {{ t('description') }}
     </p>
   </div>
 
@@ -15,22 +16,17 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-globe"></i>
-          Default Metadata Settings
+          {{ t('defaultSettings.sectionTitle') }}
         </h3>
         <p class="section-description">
-          Set global default provider priorities for book metadata fields. These settings apply to all libraries unless overridden below.
-          BookLore tries providers from left to right (1st → 2nd → 3rd → 4th priority) for each book field until it finds data.
-          The system checks your 1st priority provider first - if that provider doesn't have the specific field (like description or author),
-          it automatically moves to your 2nd priority, then 3rd, and finally 4th. Leave a priority empty to skip it entirely.
-          For example, if Amazon (1st) has no description but Google Books (2nd) does, Google's description will be used.
-          Use the Enable checkboxes to completely disable fetching for specific fields - disabled fields will be skipped entirely regardless of provider settings.
+          {{ t('defaultSettings.sectionDesc') }}
         </p>
       </div>
 
       <div class="settings-card">
         <app-metadata-advanced-fetch-options
           [currentMetadataOptions]="defaultMetadataOptions"
-          [submitButtonLabel]="'Save Default Settings'"
+          [submitButtonLabel]="t('defaultSettings.saveButton')"
           (metadataOptionsSubmitted)="onDefaultMetadataOptionsSubmitted($event)">
         </app-metadata-advanced-fetch-options>
       </div>
@@ -40,11 +36,10 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-book"></i>
-          Library-Specific Overrides
+          {{ t('libraryOverrides.sectionTitle') }}
         </h3>
         <p class="section-description">
-          Override the default priority settings for specific libraries. For example, you might prefer Amazon for fiction but Google Books for technical books. Each library can have its own provider priority order while falling back to defaults for unspecified fields.
-          You can also enable or disable specific metadata fields per library - useful if certain libraries don't need specific data types like descriptions or covers.
+          {{ t('libraryOverrides.sectionDesc') }}
         </p>
       </div>
 
@@ -62,36 +57,36 @@
                       @if (hasLibraryOverride(library.id!)) {
                         <span class="override-indicator custom">
                           <i class="pi pi-check-circle"></i>
-                          Custom Settings
+                          {{ t('libraryOverrides.customSettings') }}
                         </span>
                       } @else {
                         <span class="default-indicator default">
                           <i class="pi pi-globe"></i>
-                          Default Settings
+                          {{ t('libraryOverrides.defaultSettings') }}
                         </span>
                       }
                     </div>
                     <div class="sidecar-actions">
                       <p-button
                         icon="pi pi-upload"
-                        label="Export Sidecar"
+                        [label]="t('libraryOverrides.exportSidecar')"
                         size="small"
                         severity="secondary"
                         [outlined]="true"
                         [loading]="isSidecarExporting(library.id!)"
                         (onClick)="exportSidecarForLibrary(library.id!, $event)"
-                        pTooltip="Generate .metadata.json files for all books in this library"
+                        [pTooltip]="t('libraryOverrides.exportTooltip')"
                         tooltipPosition="top"
                       />
                       <p-button
                         icon="pi pi-download"
-                        label="Import Sidecar"
+                        [label]="t('libraryOverrides.importSidecar')"
                         size="small"
                         severity="secondary"
                         [outlined]="true"
                         [loading]="isSidecarImporting(library.id!)"
                         (onClick)="importSidecarForLibrary(library.id!, $event)"
-                        pTooltip="Import metadata from existing .metadata.json files in this library"
+                        [pTooltip]="t('libraryOverrides.importTooltip')"
                         tooltipPosition="top"
                       />
                     </div>
@@ -102,7 +97,7 @@
                     @if (activePanel === i) {
                       <app-metadata-advanced-fetch-options
                         [currentMetadataOptions]="getLibraryOptions(library.id!)"
-                        [submitButtonLabel]="'Save ' + library.name + ' Settings'"
+                        [submitButtonLabel]="t('libraryOverrides.saveLibraryButton', {name: library.name})"
                         (metadataOptionsSubmitted)="onLibraryMetadataOptionsSubmitted(library.id!, $event)">
                       </app-metadata-advanced-fetch-options>
                     }
@@ -116,3 +111,4 @@
     </div>
   </div>
 </div>
+</ng-container>

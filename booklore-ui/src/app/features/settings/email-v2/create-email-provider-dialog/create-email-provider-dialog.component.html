@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'settingsEmail.provider.create'">
 <div class="email-provider-creator">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-envelope header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Create Email Provider</h2>
-      <p class="panel-description">Configure a new email provider for sending notifications</p>
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
     </div>
     <p-button
       icon="pi pi-times"
@@ -14,8 +15,7 @@
       [text]="true"
       [rounded]="true"
       class="close-button"
-      pTooltip="Close"
-      tooltipPosition="left"/>
+      />
   </div>
 
   <form [formGroup]="emailProviderForm" (ngSubmit)="createEmailProvider()">
@@ -23,7 +23,7 @@
       <div class="form-group highlight-group">
         <label for="providerName" class="form-label">
           <i class="pi pi-tag label-icon"></i>
-          Provider Name
+          {{ t('providerName') }}
           <span class="required-indicator">*</span>
         </label>
         <div class="input-wrapper">
@@ -33,16 +33,16 @@
             pInputText
             formControlName="name"
             class="input-full"
-            placeholder="e.g., Gmail SMTP, SendGrid"
+            [placeholder]="t('providerNamePlaceholder')"
             [class.filled]="emailProviderForm.get('name')?.value"
-           
+
           />
           @if (emailProviderForm.get('name')?.value && emailProviderForm.get('name')?.valid) {
             <i class="pi pi-check-circle input-icon success"></i>
           }
         </div>
         @if (emailProviderForm.get('name')?.invalid && (emailProviderForm.get('name')?.dirty || emailProviderForm.get('name')?.touched)) {
-          <small class="field-error">Provider name is required.</small>
+          <small class="field-error">{{ t('providerNameRequired') }}</small>
         }
       </div>
 
@@ -51,7 +51,7 @@
       <div class="form-group highlight-group">
         <label for="host" class="form-label">
           <i class="pi pi-server label-icon"></i>
-          Host
+          {{ t('host') }}
           <span class="required-indicator">*</span>
         </label>
         <div class="input-wrapper">
@@ -61,7 +61,7 @@
             pInputText
             formControlName="host"
             class="input-full"
-            placeholder="e.g., smtp.gmail.com"
+            [placeholder]="t('hostPlaceholder')"
             [class.filled]="emailProviderForm.get('host')?.value"
           />
           @if (emailProviderForm.get('host')?.value && emailProviderForm.get('host')?.valid) {
@@ -69,14 +69,14 @@
           }
         </div>
         @if (emailProviderForm.get('host')?.invalid && (emailProviderForm.get('host')?.dirty || emailProviderForm.get('host')?.touched)) {
-          <small class="field-error">Host is required.</small>
+          <small class="field-error">{{ t('hostRequired') }}</small>
         }
       </div>
 
       <div class="form-group highlight-group">
         <label for="port" class="form-label">
           <i class="pi pi-hashtag label-icon"></i>
-          Port
+          {{ t('port') }}
           <span class="required-indicator">*</span>
         </label>
         <div class="input-wrapper">
@@ -86,7 +86,7 @@
             pInputText
             formControlName="port"
             class="input-full"
-            placeholder="e.g., 587, 465"
+            [placeholder]="t('portPlaceholder')"
             [class.filled]="emailProviderForm.get('port')?.value"
           />
           @if (emailProviderForm.get('port')?.value && emailProviderForm.get('port')?.valid) {
@@ -94,7 +94,7 @@
           }
         </div>
         @if (emailProviderForm.get('port')?.invalid && (emailProviderForm.get('port')?.dirty || emailProviderForm.get('port')?.touched)) {
-          <small class="field-error">Port is required and must be a number.</small>
+          <small class="field-error">{{ t('portRequired') }}</small>
         }
       </div>
 
@@ -103,7 +103,7 @@
       <div class="form-group highlight-group">
         <label for="username" class="form-label">
           <i class="pi pi-user label-icon"></i>
-          Username
+          {{ t('username') }}
         </label>
         <input
           id="username"
@@ -111,14 +111,14 @@
           pInputText
           formControlName="username"
           class="input-full"
-          placeholder="Enter username"
+          [placeholder]="t('usernamePlaceholder')"
         />
       </div>
 
       <div class="form-group highlight-group">
         <label for="password" class="form-label">
           <i class="pi pi-lock label-icon"></i>
-          Password
+          {{ t('password') }}
         </label>
         <input
           id="password"
@@ -126,14 +126,14 @@
           pInputText
           formControlName="password"
           class="input-full"
-          placeholder="Enter password"
+          [placeholder]="t('passwordPlaceholder')"
         />
       </div>
 
       <div class="form-group highlight-group">
         <label for="fromAddress" class="form-label">
           <i class="pi pi-at label-icon"></i>
-          From Address
+          {{ t('fromAddress') }}
         </label>
         <input
           id="fromAddress"
@@ -141,7 +141,7 @@
           pInputText
           formControlName="fromAddress"
           class="input-full"
-          placeholder="e.g., noreply@example.com"
+          [placeholder]="t('fromAddressPlaceholder')"
         />
       </div>
 
@@ -151,8 +151,8 @@
         <div class="checkbox-row">
           <p-checkbox formControlName="auth" [binary]="true" inputId="auth"></p-checkbox>
           <label for="auth" class="checkbox-label">
-            <span class="checkbox-title">Enable Authentication</span>
-            <span class="checkbox-description">Require username and password for SMTP</span>
+            <span class="checkbox-title">{{ t('enableAuth') }}</span>
+            <span class="checkbox-description">{{ t('enableAuthDesc') }}</span>
           </label>
         </div>
       </div>
@@ -161,8 +161,8 @@
         <div class="checkbox-row">
           <p-checkbox formControlName="startTls" [binary]="true" inputId="startTls"></p-checkbox>
           <label for="startTls" class="checkbox-label">
-            <span class="checkbox-title">Enable StartTLS</span>
-            <span class="checkbox-description">Use TLS encryption for secure connection</span>
+            <span class="checkbox-title">{{ t('enableStartTls') }}</span>
+            <span class="checkbox-description">{{ t('enableStartTlsDesc') }}</span>
           </label>
         </div>
       </div>
@@ -173,25 +173,25 @@
         @if (emailProviderForm.invalid) {
           <div class="validation-message error">
             <i class="pi pi-exclamation-circle"></i>
-            <span>Please fill in all required fields</span>
+            <span>{{ t('requiredFieldsError') }}</span>
           </div>
         } @else {
           <div class="validation-message success">
             <i class="pi pi-check-circle"></i>
-            <span>Ready to create provider</span>
+            <span>{{ t('readyToCreate') }}</span>
           </div>
         }
       </div>
       <div class="footer-actions">
         <p-button
-          label="Cancel"
+          [label]="'common.cancel' | transloco"
           severity="secondary"
           [outlined]="true"
           (onClick)="closeDialog()"
           type="button"
         />
         <p-button
-          label="Create Provider"
+          [label]="t('createBtn')"
           icon="pi pi-plus"
           severity="success"
           type="submit"
@@ -201,3 +201,4 @@
     </div>
   </form>
 </div>
+</ng-container>

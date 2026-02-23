@@ -1,13 +1,5 @@
 package org.booklore.service.reader;
 
-import org.booklore.exception.ApiError;
-import org.booklore.model.dto.response.PdfBookInfo;
-import org.booklore.model.dto.response.PdfOutlineItem;
-import org.booklore.model.entity.BookEntity;
-import org.booklore.model.entity.BookFileEntity;
-import org.booklore.model.enums.BookFileType;
-import org.booklore.repository.BookRepository;
-import org.booklore.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
@@ -18,6 +10,14 @@ import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocume
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.booklore.exception.ApiError;
+import org.booklore.model.dto.response.PdfBookInfo;
+import org.booklore.model.dto.response.PdfOutlineItem;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookFileEntity;
+import org.booklore.model.enums.BookFileType;
+import org.booklore.repository.BookRepository;
+import org.booklore.util.FileUtils;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -27,7 +27,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -57,8 +60,8 @@ public class PdfReaderService {
         }
     }
 
-    public List<Integer> getAvailablePages(Long bookId) {
-        return getAvailablePages(bookId, null);
+    public void getAvailablePages(Long bookId) {
+        getAvailablePages(bookId, null);
     }
 
     public List<Integer> getAvailablePages(Long bookId, String bookType) {
@@ -72,10 +75,6 @@ public class PdfReaderService {
             log.error("Failed to read PDF for book {}", bookId, e);
             throw ApiError.FILE_READ_ERROR.createException("Failed to read PDF: " + e.getMessage());
         }
-    }
-
-    public PdfBookInfo getBookInfo(Long bookId) {
-        return getBookInfo(bookId, null);
     }
 
     public PdfBookInfo getBookInfo(Long bookId, String bookType) {

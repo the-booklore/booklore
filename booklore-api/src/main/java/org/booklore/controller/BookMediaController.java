@@ -1,9 +1,9 @@
 package org.booklore.controller;
 
+import org.booklore.service.AuthorMetadataService;
 import org.booklore.service.book.BookService;
 import org.booklore.service.bookdrop.BookDropService;
 import org.booklore.service.reader.CbxReaderService;
-import org.booklore.service.reader.PdfReaderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,9 +25,9 @@ import java.io.IOException;
 public class BookMediaController {
 
     private final BookService bookService;
-    private final PdfReaderService pdfReaderService;
     private final CbxReaderService cbxReaderService;
     private final BookDropService bookDropService;
+    private final AuthorMetadataService authorMetadataService;
 
     @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Book thumbnail returned successfully")
@@ -57,18 +57,6 @@ public class BookMediaController {
         return ResponseEntity.ok(bookService.getAudiobookCover(bookId));
     }
 
-    @Operation(summary = "Get PDF page as image", description = "Retrieve a specific page from a PDF book as an image.")
-    @ApiResponse(responseCode = "200", description = "PDF page image returned successfully")
-    @GetMapping("/book/{bookId}/pdf/pages/{pageNumber}")
-    public void getPdfPage(
-            @Parameter(description = "ID of the book") @PathVariable Long bookId,
-            @Parameter(description = "Page number to retrieve") @PathVariable int pageNumber,
-            @Parameter(description = "Optional book type for alternative format (e.g., PDF, CBX)") @RequestParam(required = false) String bookType,
-            HttpServletResponse response) throws IOException {
-        response.setContentType(MediaType.IMAGE_JPEG_VALUE);
-        pdfReaderService.streamPageImage(bookId, bookType, pageNumber, response.getOutputStream());
-    }
-
     @Operation(summary = "Get CBX page as image", description = "Retrieve a specific page from a CBX book as an image.")
     @ApiResponse(responseCode = "200", description = "CBX page image returned successfully")
     @GetMapping("/book/{bookId}/cbx/pages/{pageNumber}")
@@ -79,6 +67,28 @@ public class BookMediaController {
             HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);
         cbxReaderService.streamPageImage(bookId, bookType, pageNumber, response.getOutputStream());
+    }
+
+    @Operation(summary = "Get author photo", description = "Retrieve the photo for a specific author.")
+    @ApiResponse(responseCode = "200", description = "Author photo returned successfully")
+    @GetMapping("/author/{authorId}/photo")
+    public ResponseEntity<Resource> getAuthorPhoto(@Parameter(description = "ID of the author") @PathVariable long authorId) {
+        Resource photo = authorMetadataService.getAuthorPhoto(authorId);
+        if (photo == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(photo);
+    }
+
+    @Operation(summary = "Get author thumbnail", description = "Retrieve the thumbnail for a specific author.")
+    @ApiResponse(responseCode = "200", description = "Author thumbnail returned successfully")
+    @GetMapping("/author/{authorId}/thumbnail")
+    public ResponseEntity<Resource> getAuthorThumbnail(@Parameter(description = "ID of the author") @PathVariable long authorId) {
+        Resource thumbnail = authorMetadataService.getAuthorThumbnail(authorId);
+        if (thumbnail == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(thumbnail);
     }
 
     @Operation(summary = "Get bookdrop cover", description = "Retrieve the cover image for a specific bookdrop file.")

@@ -1,0 +1,64 @@
+{
+  "loading": "Luisterboek laden...",
+  "untitled": "Zonder titel",
+  "unknownAuthor": "Onbekende auteur",
+  "coverAlt": "Omslag",
+  "header": {
+    "backTooltip": "Terug",
+    "bookmarksTooltip": "Bladwijzers",
+    "chaptersTracksTooltip": "Hoofdstukken/Nummers"
+  },
+  "trackInfo": {
+    "trackOf": "Nummer {{ current }} van {{ total }}",
+    "chapterOf": "Hoofdstuk {{ current }} van {{ total }}"
+  },
+  "controls": {
+    "previousTrackTooltip": "Vorig nummer",
+    "previousChapterTooltip": "Vorig hoofdstuk",
+    "rewindTooltip": "-30s",
+    "forwardTooltip": "+30s",
+    "nextTrackTooltip": "Volgend nummer",
+    "nextChapterTooltip": "Volgend hoofdstuk"
+  },
+  "extra": {
+    "addBookmark": "Bladwijzer toevoegen",
+    "sleepTimer": "Slaaptimer",
+    "endOfChapter": "Einde van hoofdstuk"
+  },
+  "details": {
+    "narratedBy": "Ingesproken door {{ narrator }}",
+    "kbps": "{{ bitrate }} kbps",
+    "totalDuration": "{{ duration }} totaal"
+  },
+  "sidebar": {
+    "tracks": "Nummers",
+    "chapters": "Hoofdstukken"
+  },
+  "bookmarks": {
+    "title": "Bladwijzers",
+    "empty": "Nog geen bladwijzers",
+    "emptyHint": "Voeg een bladwijzer toe om uw positie op te slaan",
+    "deleteTooltip": "Verwijderen",
+    "bookmarkAt": "Bladwijzer op {{ time }}"
+  },
+  "sleepTimerMenu": {
+    "minutes15": "15 minuten",
+    "minutes30": "30 minuten",
+    "minutes45": "45 minuten",
+    "minutes60": "60 minuten",
+    "endOfChapter": "Einde van hoofdstuk",
+    "cancelTimer": "Timer annuleren"
+  },
+  "toast": {
+    "loadFailed": "Kon luisterboek niet laden",
+    "audioLoadFailed": "Kon audio niet laden",
+    "sleepTimerSet": "Afspelen stopt over {{ minutes }} minuten",
+    "sleepTimerEndOfChapter": "Afspelen stopt aan het einde van het hoofdstuk",
+    "sleepTimerStopped": "Afspelen gestopt door slaaptimer",
+    "bookmarkAdded": "Bladwijzer toegevoegd",
+    "bookmarkExists": "Bladwijzer bestaat al",
+    "bookmarkExistsDetail": "Er bestaat al een bladwijzer op deze positie",
+    "bookmarkFailed": "Kon bladwijzer niet toevoegen",
+    "bookmarkDeleted": "Bladwijzer verwijderd"
+  }
+}

@@ -193,12 +193,24 @@ export type VisibleFilterType =
   | 'personalRating' | 'publisher' | 'matchScore' | 'library' | 'shelf'
   | 'shelfStatus' | 'tag' | 'publishedDate' | 'fileSize' | 'amazonRating'
   | 'goodreadsRating' | 'hardcoverRating' | 'language' | 'pageCount' | 'mood'
-  | 'ageRating' | 'contentRating';
+  | 'ageRating' | 'contentRating'
+  | 'narrator'
+  | 'comicCharacter' | 'comicTeam' | 'comicLocation' | 'comicCreator';
 
 export const DEFAULT_VISIBLE_FILTERS: VisibleFilterType[] = [
   'author', 'category', 'series', 'bookType', 'readStatus',
   'personalRating', 'library', 'tag', 'ageRating', 'contentRating',
   'matchScore', 'publisher', 'publishedDate', 'fileSize'
+];
+
+// Translation key for each filter option — use book.filter.labels.<value>
+export const ALL_FILTER_OPTION_VALUES: VisibleFilterType[] = [
+  'author', 'category', 'series', 'bookType', 'readStatus',
+  'personalRating', 'library', 'tag', 'ageRating', 'contentRating',
+  'matchScore', 'publisher', 'publishedDate', 'fileSize', 'shelf',
+  'shelfStatus', 'language', 'pageCount', 'mood', 'amazonRating',
+  'goodreadsRating', 'hardcoverRating', 'narrator',
+  'comicCharacter', 'comicTeam', 'comicLocation', 'comicCreator'
 ];
 
 export const ALL_FILTER_OPTIONS: { label: string; value: VisibleFilterType }[] = [
@@ -223,7 +235,19 @@ export const ALL_FILTER_OPTIONS: { label: string; value: VisibleFilterType }[] =
   {label: 'Mood', value: 'mood'},
   {label: 'Amazon Rating', value: 'amazonRating'},
   {label: 'Goodreads Rating', value: 'goodreadsRating'},
-  {label: 'Hardcover Rating', value: 'hardcoverRating'}
+  {label: 'Hardcover Rating', value: 'hardcoverRating'},
+  {label: 'Narrator', value: 'narrator'},
+  {label: 'Comic Character', value: 'comicCharacter'},
+  {label: 'Comic Team', value: 'comicTeam'},
+  {label: 'Comic Location', value: 'comicLocation'},
+  {label: 'Comic Creator', value: 'comicCreator'}
+];
+
+export const DEFAULT_VISIBLE_SORT_FIELDS: string[] = [
+  'title', 'seriesName', 'fileName', 'filePath',
+  'author', 'authorSurnameVorname', 'seriesNumber',
+  'lastReadTime', 'personalRating', 'addedOn',
+  'fileSizeKb', 'locked', 'publisher', 'publishedDate', 'pageCount', 'random'
 ];
 
 export interface UserSettings {
@@ -238,6 +262,7 @@ export interface UserSettings {
   sidebarMagicShelfSorting: SidebarMagicShelfSorting;
   filterMode: BookFilterMode;
   visibleFilters?: VisibleFilterType[];
+  visibleSortFields?: string[];
   metadataCenterViewMode: 'route' | 'dialog';
   enableSeriesView: boolean;
   entityViewPreferences: EntityViewPreferences;

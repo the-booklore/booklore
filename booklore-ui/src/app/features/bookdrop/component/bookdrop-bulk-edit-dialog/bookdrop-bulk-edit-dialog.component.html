@@ -1,13 +1,14 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.bulkEdit'">
 <div class="bulk-edit-container">
   <div class="info-banner">
     <i class="pi pi-info-circle"></i>
-    <span>Select which fields to apply to <strong>{{ fileCount }}</strong> selected file(s). Only checked fields will be updated.</span>
+    <span [innerHTML]="t('infoBanner', { fileCount: fileCount })"></span>
   </div>
 
   <p-divider></p-divider>
 
   <div class="fields-section">
-    <h4>Text Fields</h4>
+    <h4>{{ t('textFieldsTitle') }}</h4>
     <div class="field-grid">
       @for (field of textFields; track field.name) {
         <div class="field-row">
@@ -15,7 +16,7 @@
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
             (ngModelChange)="toggleField(field.name)"
-            [ariaLabel]="'Enable ' + field.label">
+            [ariaLabel]="t('enableField', { label: field.label })">
           </p-checkbox>
           <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <input
@@ -32,7 +33,7 @@
   <p-divider></p-divider>
 
   <div class="fields-section">
-    <h4>Number Fields</h4>
+    <h4>{{ t('numberFieldsTitle') }}</h4>
     <div class="field-grid">
       @for (field of numberFields; track field.name) {
         <div class="field-row">
@@ -40,7 +41,7 @@
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
             (ngModelChange)="toggleField(field.name)"
-            [ariaLabel]="'Enable ' + field.label">
+            [ariaLabel]="t('enableField', { label: field.label })">
           </p-checkbox>
           <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <input
@@ -59,9 +60,9 @@
 
   <div class="fields-section">
     <div class="section-header">
-      <h4>Array Fields</h4>
+      <h4>{{ t('arrayFieldsTitle') }}</h4>
       <div class="merge-toggle">
-        <span class="merge-label" id="merge-mode-label">Mode:</span>
+        <span class="merge-label" id="merge-mode-label">{{ t('modeLabel') }}</span>
         <p-selectButton
           [options]="mergeOptions"
           [(ngModel)]="mergeArrays"
@@ -71,7 +72,7 @@
         </p-selectButton>
       </div>
     </div>
-    <p class="helper-text"><i class="pi pi-info-circle"></i> Type and press Enter to add each item.</p>
+    <p class="helper-text"><i class="pi pi-info-circle"></i> {{ t('helperText') }}</p>
     <div class="field-grid">
       @for (field of chipFields; track field.name) {
         <div class="field-row">
@@ -79,7 +80,7 @@
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
             (ngModelChange)="toggleField(field.name)"
-            [ariaLabel]="'Enable ' + field.label">
+            [ariaLabel]="t('enableField', { label: field.label })">
           </p-checkbox>
           <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <p-autoComplete
@@ -102,13 +103,13 @@
 
   <div class="dialog-footer">
     <p-button
-      label="Cancel"
+      [label]="'common.cancel' | transloco"
       icon="pi pi-times"
       severity="secondary"
       (click)="cancel()">
     </p-button>
     <p-button
-      label="Apply to Selected"
+      [label]="t('applyToSelected')"
       icon="pi pi-check"
       severity="success"
       [disabled]="!hasEnabledFields"
@@ -116,3 +117,4 @@
     </p-button>
   </div>
 </div>
+</ng-container>

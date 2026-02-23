@@ -418,6 +418,9 @@ public class BookMetadataEntity {
         this.abridgedLocked = lock;
         this.ageRatingLocked = lock;
         this.contentRatingLocked = lock;
+        if (this.comicMetadata != null) {
+            this.comicMetadata.applyLockToAllFields(lock);
+        }
     }
 
     public boolean areAllFieldsLocked() {
@@ -463,6 +466,7 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.abridgedLocked)
                 && Boolean.TRUE.equals(this.ageRatingLocked)
                 && Boolean.TRUE.equals(this.contentRatingLocked)
+                && (this.comicMetadata == null || this.comicMetadata.areAllFieldsLocked())
                 ;
     }
 }

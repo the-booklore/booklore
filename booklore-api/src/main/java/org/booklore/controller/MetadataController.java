@@ -8,6 +8,7 @@ import org.booklore.model.MetadataUpdateWrapper;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.request.*;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.enums.MetadataProvider;
 import org.booklore.model.enums.MetadataReplaceMode;
 import org.booklore.repository.BookRepository;
 import org.booklore.service.metadata.BookMetadataService;
@@ -27,6 +28,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 
 @RestController
 @RequestMapping("/api/v1/books")
@@ -40,6 +43,7 @@ public class MetadataController {
     private final MetadataMatchService metadataMatchService;
     private final BookRepository bookRepository;
     private final MetadataManagementService metadataManagementService;
+    private final AuditService auditService;
 
     @Operation(summary = "Get prospective metadata for a book", description = "Fetch prospective metadata for a book by its ID. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "200", description = "Prospective metadata returned successfully")
@@ -77,6 +81,7 @@ public class MetadataController {
 
         bookMetadataUpdater.setBookMetadata(context);
         bookRepository.save(bookEntity);
+        auditService.log(AuditAction.METADATA_UPDATED, "Book", bookId, "Updated metadata for book: " + bookEntity.getMetadata().getTitle());
         BookMetadata bookMetadata = bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
         return ResponseEntity.ok(bookMetadata);
     }
@@ -135,6 +140,20 @@ public class MetadataController {
     public ResponseEntity<Void> deleteMetadata(@Parameter(description = "Delete metadata request") @Validated @RequestBody DeleteMetadataRequest request) {
         metadataManagementService.deleteMetadata(request.getMetadataType(), request.getValuesToDelete());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Get detailed metadata from provider", description = "Fetch full metadata details for a specific item from a provider. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "200", description = "Detailed metadata returned successfully")
+    @GetMapping("/metadata/detail/{provider}/{providerItemId}")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    public ResponseEntity<BookMetadata> getDetailedProviderMetadata(
+            @Parameter(description = "Metadata provider") @PathVariable MetadataProvider provider,
+            @Parameter(description = "Provider-specific item ID") @PathVariable String providerItemId) {
+        BookMetadata metadata = bookMetadataService.getDetailedProviderMetadata(provider, providerItemId);
+        if (metadata == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(metadata);
     }
 }
 

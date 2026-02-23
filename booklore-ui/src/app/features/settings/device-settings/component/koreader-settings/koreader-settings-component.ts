@@ -11,6 +11,7 @@ import {UserService} from '../../../user-management/user.service';
 import {filter, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../../../shared/components/external-doc-link/external-doc-link.component';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   standalone: true,
@@ -21,8 +22,10 @@ import {ExternalDocLinkComponent} from '../../../../../shared/components/externa
     ToggleSwitch,
     Button,
     ToastModule,
-    ExternalDocLinkComponent
-],
+    ExternalDocLinkComponent,
+    TranslocoDirective,
+    TranslocoPipe
+  ],
   providers: [MessageService],
   templateUrl: './koreader-settings-component.html',
   styleUrls: ['./koreader-settings-component.scss']
@@ -40,6 +43,7 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
   private readonly messageService = inject(MessageService);
   private readonly koreaderService = inject(KoreaderService);
   private readonly userService = inject(UserService);
+  private readonly t = inject(TranslocoService);
 
   private readonly destroy$ = new Subject<void>();
   hasPermission = false;
@@ -72,8 +76,8 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
         if (err.status !== 404) {
           this.messageService.add({
             severity: 'error',
-            summary: 'Load Error',
-            detail: 'Unable to retrieve KOReader account. Please try again.'
+            summary: this.t.translate('common.error'),
+            detail: this.t.translate('settingsDevice.koreader.loadError')
           });
         }
       }
@@ -98,10 +102,10 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
     this.koreaderService.toggleSync(enabled).subscribe({
       next: () => {
         this.koReaderSyncEnabled = enabled;
-        this.messageService.add({severity: 'success', summary: 'Sync Updated', detail: `KOReader sync has been ${enabled ? 'enabled' : 'disabled'}.`});
+        this.messageService.add({severity: 'success', summary: this.t.translate('settingsDevice.koreader.syncUpdated'), detail: enabled ? this.t.translate('settingsDevice.koreader.syncEnabled') : this.t.translate('settingsDevice.koreader.syncDisabled')});
       },
       error: () => {
-        this.messageService.add({severity: 'error', summary: 'Update Failed', detail: 'Unable to update KOReader sync setting. Please try again.'});
+        this.messageService.add({severity: 'error', summary: this.t.translate('settingsDevice.koreader.syncUpdateFailed'), detail: this.t.translate('settingsDevice.koreader.syncUpdateError')});
       }
     });
   }
@@ -112,15 +116,15 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
         this.syncWithBookloreReader = enabled;
         this.messageService.add({
           severity: 'success',
-          summary: 'Sync Updated',
-          detail: `Booklore eBook Reader sync has been ${enabled ? 'enabled' : 'disabled'}.`
+          summary: this.t.translate('settingsDevice.koreader.syncUpdated'),
+          detail: enabled ? this.t.translate('settingsDevice.koreader.bookloreReaderEnabled') : this.t.translate('settingsDevice.koreader.bookloreReaderDisabled')
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Update Failed',
-          detail: 'Unable to update Booklore eBook Reader sync setting. Please try again.'
+          summary: this.t.translate('settingsDevice.koreader.syncUpdateFailed'),
+          detail: this.t.translate('settingsDevice.koreader.bookloreReaderError')
         });
       }
     });
@@ -136,10 +140,10 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: () => {
           this.credentialsSaved = true;
-          this.messageService.add({severity: 'success', summary: 'Saved', detail: 'KOReader account saved successfully.'});
+          this.messageService.add({severity: 'success', summary: this.t.translate('settingsDevice.koreader.saved'), detail: this.t.translate('settingsDevice.koreader.credentialsSaved')});
         },
         error: () =>
-          this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to save KOReader credentials. Please try again.'})
+          this.messageService.add({severity: 'error', summary: this.t.translate('common.error'), detail: this.t.translate('settingsDevice.koreader.credentialsError')})
       });
   }
 
@@ -151,15 +155,15 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
     navigator.clipboard.writeText(text).then(() => {
       this.messageService.add({
         severity: 'success',
-        summary: 'Copied',
-        detail: `${label} copied to clipboard`
+        summary: this.t.translate('settingsDevice.copied'),
+        detail: this.t.translate('settingsDevice.copiedDetail', {label})
       });
     }).catch(err => {
       console.error('Copy failed', err);
       this.messageService.add({
         severity: 'error',
-        summary: 'Copy Failed',
-        detail: `Unable to copy ${label.toLowerCase()} to clipboard`
+        summary: this.t.translate('settingsDevice.copyFailed'),
+        detail: this.t.translate('settingsDevice.copyFailedDetail', {label})
       });
     });
   }

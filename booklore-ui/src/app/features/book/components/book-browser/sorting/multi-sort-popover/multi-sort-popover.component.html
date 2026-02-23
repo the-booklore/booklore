@@ -1,6 +1,7 @@
+<ng-container *transloco="let t; prefix: 'book.sorting'">
 <div class="multi-sort-container">
   <div class="multi-sort-header">
-    <span class="header-title">Sort Order</span>
+    <span class="header-title">{{ t('sortOrder') }}</span>
   </div>
 
   <div
@@ -28,7 +29,7 @@
             type="button"
             class="remove-btn"
             (click)="onRemove(i)"
-            pTooltip="Remove"
+            [pTooltip]="t('removeTooltip')"
             tooltipPosition="top"
             [disabled]="sortCriteria.length === 1">
             <i class="pi pi-times"></i>
@@ -45,7 +46,7 @@
         [(ngModel)]="selectedField"
         optionLabel="label"
         optionValue="field"
-        placeholder="Add sort field..."
+        [placeholder]="t('addSortFieldPlaceholder')"
         [style]="{ width: '100%' }"
         size="small"
         appendTo="body"
@@ -53,4 +54,18 @@
       </p-select>
     </div>
   }
+
+  @if (showSaveButton) {
+    <div class="save-sort-section">
+      <p-button
+        icon="pi pi-save"
+        [label]="t('saveAsDefault')"
+        size="small"
+        [outlined]="true"
+        [style]="{ width: '100%' }"
+        (onClick)="onSave()">
+      </p-button>
+    </div>
+  }
 </div>
+</ng-container>

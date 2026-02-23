@@ -23,7 +23,9 @@ import org.booklore.repository.BookRepository;
 import org.booklore.service.NotificationService;
 import org.booklore.service.book.BookQueryService;
 import org.booklore.service.metadata.extractor.CbxMetadataExtractor;
+import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.service.metadata.parser.BookParser;
+import org.booklore.service.metadata.parser.DetailedMetadataProvider;
 import org.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +59,7 @@ public class BookMetadataService {
     private final BookQueryService bookQueryService;
     private final Map<MetadataProvider, BookParser> parserMap;
     private final CbxMetadataExtractor cbxMetadataExtractor;
+    private final MetadataExtractorFactory metadataExtractorFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
     private final PlatformTransactionManager transactionManager;
 
@@ -81,6 +84,14 @@ public class BookMetadataService {
         return getParser(provider).fetchMetadata(book, request);
     }
 
+
+    public BookMetadata getDetailedProviderMetadata(MetadataProvider provider, String providerItemId) {
+        BookParser parser = getParser(provider);
+        if (parser instanceof DetailedMetadataProvider detailedProvider) {
+            return detailedProvider.fetchDetailedMetadata(providerItemId);
+        }
+        return null;
+    }
 
     private BookParser getParser(MetadataProvider provider) {
         BookParser parser = parserMap.get(provider);
@@ -138,6 +149,16 @@ public class BookMetadataService {
         return cbxMetadataExtractor.extractMetadata(new File(FileUtils.getBookFullPath(bookEntity)));
     }
 
+    public BookMetadata getFileMetadata(long bookId) {
+        log.info("Extracting file metadata for book ID: {}", bookId);
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        var primaryFile = bookEntity.getPrimaryBookFile();
+        if (primaryFile == null) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("Book has no file to extract metadata from");
+        }
+        return metadataExtractorFactory.extractMetadata(primaryFile.getBookType(), new File(FileUtils.getBookFullPath(bookEntity)));
+    }
+
     @Transactional
     public void bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories, boolean mergeMoods, boolean mergeTags) {
         MetadataClearFlags clearFlags = metadataClearFlagsMapper.toClearFlags(request);
@@ -188,7 +209,7 @@ public class BookMetadataService {
                     .build();
 
             bookMetadataUpdater.setBookMetadata(context);
-            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBook(book));
+            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBookWithDescription(book, true));
             return null;
         });
     }

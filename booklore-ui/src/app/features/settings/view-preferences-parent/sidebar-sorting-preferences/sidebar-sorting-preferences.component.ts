@@ -5,12 +5,14 @@ import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-sidebar-sorting-preferences',
   imports: [
     Select,
-    FormsModule
+    FormsModule,
+    TranslocoDirective
   ],
   templateUrl: './sidebar-sorting-preferences.component.html',
   styleUrl: './sidebar-sorting-preferences.component.scss'
@@ -18,10 +20,10 @@ import {filter, takeUntil} from 'rxjs/operators';
 export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
   readonly sortingOptions = [
-    {label: 'Name | Ascending', value: {field: 'name', order: 'asc'}},
-    {label: 'Name | Descending', value: {field: 'name', order: 'desc'}},
-    {label: 'Creation Date | Ascending', value: {field: 'id', order: 'asc'}},
-    {label: 'Creation Date | Descending', value: {field: 'id', order: 'desc'}},
+    {label: 'Name | Ascending', value: {field: 'name', order: 'asc'}, translationKey: 'nameAsc'},
+    {label: 'Name | Descending', value: {field: 'name', order: 'desc'}, translationKey: 'nameDesc'},
+    {label: 'Creation Date | Ascending', value: {field: 'id', order: 'asc'}, translationKey: 'creationAsc'},
+    {label: 'Creation Date | Descending', value: {field: 'id', order: 'desc'}, translationKey: 'creationDesc'},
   ];
 
   selectedLibrarySorting: SidebarLibrarySorting = {field: 'id', order: 'asc'};
@@ -30,6 +32,7 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   userData$: Observable<UserState> = this.userService.userState$;
@@ -69,8 +72,8 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
     this.userService.updateUserSetting(this.currentUser.id, rootKey, updatedValue);
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Updated',
-      detail: 'Your preferences have been saved successfully.',
+      summary: this.t.translate('settingsView.sidebarSort.prefsUpdated'),
+      detail: this.t.translate('settingsView.sidebarSort.prefsUpdatedDetail'),
       life: 1500
     });
   }

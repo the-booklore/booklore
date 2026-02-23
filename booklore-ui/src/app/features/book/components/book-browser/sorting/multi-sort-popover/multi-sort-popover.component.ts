@@ -1,9 +1,11 @@
-import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {Component, EventEmitter, inject, Input, Output} from '@angular/core';
 import {SortDirection, SortOption} from '../../../../model/sort.model';
-import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList} from '@angular/cdk/drag-drop';
+import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
 import {Tooltip} from 'primeng/tooltip';
+import {Button} from 'primeng/button';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-multi-sort-popover',
@@ -14,20 +16,21 @@ import {Tooltip} from 'primeng/tooltip';
     CdkDragHandle,
     Select,
     FormsModule,
-    Tooltip
+    Tooltip,
+    Button,
+    TranslocoDirective
   ],
   templateUrl: './multi-sort-popover.component.html',
   styleUrl: './multi-sort-popover.component.scss'
 })
 export class MultiSortPopoverComponent {
+  private readonly t = inject(TranslocoService);
   @Input() sortCriteria: SortOption[] = [];
   @Input() availableSortOptions: SortOption[] = [];
+  @Input() showSaveButton = false;
 
   @Output() criteriaChange = new EventEmitter<SortOption[]>();
-  @Output() addCriterion = new EventEmitter<string>();
-  @Output() removeCriterion = new EventEmitter<number>();
-  @Output() toggleDirection = new EventEmitter<number>();
-  @Output() reorder = new EventEmitter<CdkDragDrop<SortOption[]>>();
+  @Output() saveSortConfig = new EventEmitter<SortOption[]>();
 
   selectedField: string | null = null;
 
@@ -37,22 +40,41 @@ export class MultiSortPopoverComponent {
   }
 
   onDrop(event: CdkDragDrop<SortOption[]>): void {
-    this.reorder.emit(event);
+    const criteria = [...this.sortCriteria];
+    moveItemInArray(criteria, event.previousIndex, event.currentIndex);
+    this.sortCriteria = criteria;
+    this.criteriaChange.emit(this.sortCriteria);
   }
 
   onToggleDirection(index: number): void {
-    this.toggleDirection.emit(index);
+    this.sortCriteria = this.sortCriteria.map((c, i) =>
+      i === index
+        ? {...c, direction: c.direction === SortDirection.ASCENDING ? SortDirection.DESCENDING : SortDirection.ASCENDING}
+        : c
+    );
+    this.criteriaChange.emit(this.sortCriteria);
   }
 
   onRemove(index: number): void {
-    this.removeCriterion.emit(index);
+    this.sortCriteria = this.sortCriteria.filter((_, i) => i !== index);
+    this.criteriaChange.emit(this.sortCriteria);
   }
 
   onAddField(): void {
-    if (this.selectedField) {
-      this.addCriterion.emit(this.selectedField);
-      this.selectedField = null;
-    }
+    if (!this.selectedField) return;
+    const option = this.availableSortOptions.find(o => o.field === this.selectedField);
+    if (!option) return;
+    this.sortCriteria = [...this.sortCriteria, {
+      label: option.label,
+      field: option.field,
+      direction: SortDirection.ASCENDING
+    }];
+    this.selectedField = null;
+    this.criteriaChange.emit(this.sortCriteria);
+  }
+
+  onSave(): void {
+    this.saveSortConfig.emit(this.sortCriteria);
   }
 
   getDirectionIcon(direction: SortDirection): string {
@@ -60,7 +82,9 @@ export class MultiSortPopoverComponent {
   }
 
   getDirectionTooltip(direction: SortDirection): string {
-    return direction === SortDirection.ASCENDING ? 'Ascending - click to change' : 'Descending - click to change';
+    return direction === SortDirection.ASCENDING
+      ? this.t.translate('book.sorting.ascendingTooltip')
+      : this.t.translate('book.sorting.descendingTooltip');
   }
 
   protected readonly SortDirection = SortDirection;

@@ -49,6 +49,21 @@ html {
   scrollbar-color: rgba(128, 128, 128, 0.5) rgba(0, 0, 0, 0.1);
 }
 
+.chart-info-tooltip.p-tooltip {
+  --p-tooltip-max-width: 25rem;
+}
+
+.chart-info-icon {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.9rem;
+  cursor: help;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
 .p-toast {
   top: 4rem !important;
 }
@@ -63,4 +78,9 @@ html {
 
 .p-inputchips input.p-inputtext {
   width: 100% !important;
+}
+
+.footer-menu .p-tieredmenu-submenu {
+  top: auto !important;
+  bottom: 0;
 }

@@ -194,6 +194,7 @@ export interface BookMetadata {
   tags?: string[];
   provider?: string;
   providerBookId?: string;
+  externalUrl?: string;
   thumbnailUrl?: string | null;
   reviews?: BookReview[];
   titleLocked?: boolean;
@@ -239,6 +240,7 @@ export interface BookMetadata {
   contentRating?: string | null;
   ageRatingLocked?: boolean;
   contentRatingLocked?: boolean;
+  allMetadataLocked?: boolean;
 
   [key: string]: unknown;
 }
@@ -403,4 +405,31 @@ export interface CreatePhysicalBookRequest {
   language?: string;
   pageCount?: number;
   categories?: string[];
+}
+
+export interface BookStatusUpdateResponse {
+  bookId: number;
+  readStatus: ReadStatus;
+  readStatusModifiedTime: string;
+  dateFinished?: string;
+}
+
+export interface PersonalRatingUpdateResponse {
+  bookId: number;
+  personalRating?: number;
+}
+
+export interface DuplicateDetectionRequest {
+  libraryId: number;
+  matchByIsbn: boolean;
+  matchByExternalId: boolean;
+  matchByTitleAuthor: boolean;
+  matchByDirectory: boolean;
+  matchByFilename: boolean;
+}
+
+export interface DuplicateGroup {
+  suggestedTargetBookId: number;
+  matchReason: string;
+  books: Book[];
 }

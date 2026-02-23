@@ -28,4 +28,8 @@ public interface BookMetadataMapper {
     @Mapping(target = "tags", ignore = true)
     BookMetadata toBookMetadataWithoutRelations(BookMetadataEntity bookMetadataEntity, @Context boolean includeDescription);
 
+    default BookMetadata toBookMetadata(BookMetadataEntity bookMetadataEntity) {
+        return toBookMetadata(bookMetadataEntity, true);
+    }
+
 }

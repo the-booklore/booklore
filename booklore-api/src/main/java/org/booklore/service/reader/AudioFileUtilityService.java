@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 public class AudioFileUtilityService {
 
     private static final Set<String> AUDIO_EXTENSIONS = Set.of(
-            ".mp3", ".m4a", ".m4b", ".aac", ".flac", ".ogg", ".opus"
+            ".mp3", ".m4a", ".m4b"
     );
 
     /**
@@ -55,14 +55,6 @@ public class AudioFileUtilityService {
             return "audio/mp4";
         } else if (fileName.endsWith(".mp3")) {
             return "audio/mpeg";
-        } else if (fileName.endsWith(".aac")) {
-            return "audio/aac";
-        } else if (fileName.endsWith(".flac")) {
-            return "audio/flac";
-        } else if (fileName.endsWith(".ogg")) {
-            return "audio/ogg";
-        } else if (fileName.endsWith(".opus")) {
-            return "audio/opus";
         }
         return "application/octet-stream";
     }

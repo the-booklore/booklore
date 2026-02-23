@@ -172,12 +172,12 @@ public class BookCoverService {
         var audiobookFile = bookEntity.getBookFiles().stream()
                 .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
                 .findFirst()
-                .orElseThrow(ApiError.FAILED_TO_REGENERATE_COVER::createException);
+                .orElseThrow(() -> ApiError.FAILED_TO_REGENERATE_COVER.createException("no audiobook file found"));
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(audiobookFile.getBookType());
         boolean success = processor.generateAudiobookCover(bookEntity);
         if (!success) {
-            throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
+            throw ApiError.FAILED_TO_REGENERATE_COVER.createException("no embedded cover image found in the audiobook file");
         }
         updateAudiobookCoverMetadata(bookEntity);
         bookRepository.save(bookEntity);
@@ -233,13 +233,13 @@ public class BookCoverService {
 
         BookFileEntity ebookFile = findEbookFile(bookEntity);
         if (ebookFile == null) {
-            throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
+            throw ApiError.FAILED_TO_REGENERATE_COVER.createException("no ebook file found for the book");
         }
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(ebookFile.getBookType());
         boolean success = processor.generateCover(bookEntity, ebookFile);
         if (!success) {
-            throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
+            throw ApiError.FAILED_TO_REGENERATE_COVER.createException("no embedded cover image found in the file");
         }
         updateBookCoverMetadata(bookEntity);
         bookRepository.save(bookEntity);

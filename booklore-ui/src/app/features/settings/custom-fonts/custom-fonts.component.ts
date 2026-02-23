@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Button} from 'primeng/button';
 import {MessageService} from 'primeng/api';
@@ -11,11 +11,12 @@ import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {FontUploadDialogComponent} from './font-upload-dialog/font-upload-dialog.component';
 import {Skeleton} from 'primeng/skeleton';
 import {DialogSize, DialogStyle} from '../../../shared/services/dialog-launcher.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-custom-fonts',
   standalone: true,
-  imports: [CommonModule, Button, ConfirmDialog, Tooltip, Skeleton],
+  imports: [CommonModule, Button, ConfirmDialog, Tooltip, Skeleton, TranslocoDirective],
   templateUrl: './custom-fonts.component.html',
   styleUrls: ['./custom-fonts.component.scss'],
   providers: [ConfirmationService, DialogService]
@@ -27,6 +28,8 @@ export class CustomFontsComponent implements OnInit {
   uploadDialogRef: DynamicDialogRef | null = null;
 
   readonly maxFonts = 10;
+
+  private t = inject(TranslocoService);
 
   constructor(
     private customFontService: CustomFontService,
@@ -60,8 +63,8 @@ export class CustomFontsComponent implements OnInit {
       console.error('Failed to load fonts:', error);
       this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load custom fonts'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsReader.fonts.loadError')
       });
       this.isLoading = false;
       this.fontsLoadedInBrowser = true;
@@ -72,8 +75,8 @@ export class CustomFontsComponent implements OnInit {
     if (this.customFonts.length >= this.maxFonts) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Quota Exceeded',
-        detail: `Maximum ${this.maxFonts} fonts allowed per user`
+        summary: this.t.translate('settingsReader.fonts.quotaExceeded'),
+        detail: this.t.translate('settingsReader.fonts.quotaExceededDetail', {max: this.maxFonts})
       });
       return;
     }
@@ -98,8 +101,8 @@ export class CustomFontsComponent implements OnInit {
 
   deleteFont(font: CustomFont): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the font "${font.fontName}"?`,
-      header: 'Delete Font',
+      message: this.t.translate('settingsReader.fonts.deleteFontConfirm', {name: font.fontName}),
+      header: this.t.translate('settingsReader.fonts.deleteFontHeader'),
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.customFontService.deleteFont(font.id).subscribe({
@@ -107,16 +110,16 @@ export class CustomFontsComponent implements OnInit {
             this.customFonts = this.customFonts.filter(f => f.id !== font.id);
             this.messageService.add({
               severity: 'success',
-              summary: 'Success',
-              detail: `Font "${font.fontName}" deleted successfully`
+              summary: this.t.translate('common.success'),
+              detail: this.t.translate('settingsReader.fonts.deleteSuccess', {name: font.fontName})
             });
           },
           error: (error) => {
             console.error('Failed to delete font:', error);
             this.messageService.add({
               severity: 'error',
-              summary: 'Delete Failed',
-              detail: 'Failed to delete font'
+              summary: this.t.translate('settingsReader.fonts.deleteFailed'),
+              detail: this.t.translate('settingsReader.fonts.deleteError')
             });
           }
         });

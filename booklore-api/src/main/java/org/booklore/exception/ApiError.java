@@ -20,7 +20,7 @@ public enum ApiError {
     INVALID_VIEWER_SETTING(HttpStatus.BAD_REQUEST, "Invalid viewer setting for the book"),
     FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Error reading files from path: %s"),
     IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "Image not found or not readable"),
-    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format, only pdf and epub are supported"),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format: %s"),
     LIBRARY_NOT_FOUND(HttpStatus.NOT_FOUND, "Library not found with ID: %d"),
     FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "File size exceeds the limit: %d MB"),
     CACHE_TOO_LARGE(HttpStatus.BAD_REQUEST, "Book archive is too large to cache with current settings"),
@@ -34,7 +34,7 @@ public enum ApiError {
     SCHEDULE_REFRESH_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to schedule metadata refresh job. Error: %s"),
     ANOTHER_METADATA_JOB_RUNNING(HttpStatus.CONFLICT, "A metadata refresh job is currently running. Please wait for it to complete before initiating a new one."),
     METADATA_SOURCE_NOT_IMPLEMENT_OR_DOES_NOT_EXIST(HttpStatus.BAD_REQUEST, "Metadata source not implement or does not exist"),
-    FAILED_TO_REGENERATE_COVER(HttpStatus.BAD_REQUEST, "Failed to regenerate cover"),
+    FAILED_TO_REGENERATE_COVER(HttpStatus.BAD_REQUEST, "Failed to regenerate cover: %s"),
     NO_COVER_IN_FILE(HttpStatus.BAD_REQUEST, "No embedded cover image found in the audiobook file"),
     FAILED_TO_DOWNLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "Error while downloading file, bookId: %s"),
     INVALID_REFRESH_TYPE(HttpStatus.BAD_REQUEST, "The refresh type is invalid"),
@@ -62,7 +62,9 @@ public enum ApiError {
     DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Demo user password change not allowed."),
     PERMISSION_DENIED(HttpStatus.FORBIDDEN, "Permission denied: %s"),
     LIBRARY_PATH_NOT_ACCESSIBLE(HttpStatus.SERVICE_UNAVAILABLE, "Library scan aborted: path not accessible or empty: %s"),
-    FORMAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "File format '%s' is not allowed in library '%s'");
+    FORMAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "File format '%s' is not allowed in library '%s'"),
+    RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Too many failed login attempts. Please try again later."),
+    AUTHOR_NOT_FOUND(HttpStatus.NOT_FOUND, "Author not found with ID: %d");
 
     private final HttpStatus status;
     private final String message;

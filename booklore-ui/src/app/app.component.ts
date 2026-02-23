@@ -6,6 +6,7 @@ import {parseLogNotification} from './shared/websocket/model/log-notification.mo
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {Toast} from 'primeng/toast';
 import {RouterOutlet} from '@angular/router';
+import {TranslocoDirective, TranslocoPipe} from '@jsverse/transloco';
 import {AuthInitializationService} from './core/security/auth-initialization-service';
 import {AppConfigService} from './shared/service/app-config.service';
 import {MetadataBatchProgressNotification} from './shared/model/metadata-batch-progress.model';
@@ -22,12 +23,12 @@ import {scan, withLatestFrom} from 'rxjs/operators';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   standalone: true,
-  imports: [ConfirmDialog, Toast, RouterOutlet]
+  imports: [ConfirmDialog, Toast, RouterOutlet, TranslocoDirective, TranslocoPipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
 
   loading = true;
-  offline = !navigator.onLine;
+  offline = false;
   private subscriptions: Subscription[] = [];
   private subscriptionsInitialized = false;
 
@@ -60,8 +61,16 @@ export class AppComponent implements OnInit, OnDestroy {
   };
 
   private onOffline = () => {
-    this.offline = true;
+    this.checkServerReachable().then(reachable => {
+      this.offline = !reachable;
+    });
   };
+
+  private checkServerReachable(): Promise<boolean> {
+    return fetch('/api/public/settings', {method: 'HEAD', cache: 'no-store'})
+      .then(() => true)
+      .catch(() => false);
+  }
 
   reload(): void {
     window.location.reload();

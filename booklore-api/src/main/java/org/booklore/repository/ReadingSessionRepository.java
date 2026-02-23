@@ -1,6 +1,7 @@
 package org.booklore.repository;
 
 import org.booklore.model.dto.*;
+
 import org.booklore.model.entity.ReadingSessionEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,29 +16,35 @@ import java.util.List;
 @Repository
 public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEntity, Long> {
 
-    @Query("""
-            SELECT CAST(rs.startTime AS LocalDate) as date, COUNT(rs) as count
-            FROM ReadingSessionEntity rs
-            WHERE rs.user.id = :userId
-            AND YEAR(rs.startTime) = :year
-            GROUP BY CAST(rs.startTime AS LocalDate)
+    @Query(value = """
+            SELECT DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as date,
+                   COUNT(*) as count
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :year
+            GROUP BY DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset))
             ORDER BY date
-            """)
-    List<ReadingSessionCountDto> findSessionCountsByUserAndYear(@Param("userId") Long userId, @Param("year") int year);
+            """, nativeQuery = true)
+    List<ReadingSessionCountDto> findSessionCountsByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("tzOffset") String tzOffset);
 
-    @Query("""
-            SELECT CAST(rs.startTime AS LocalDate) as date, COUNT(rs) as count
-            FROM ReadingSessionEntity rs
-            WHERE rs.user.id = :userId
-            AND YEAR(rs.startTime) = :year
-            AND MONTH(rs.startTime) = :month
-            GROUP BY CAST(rs.startTime AS LocalDate)
+    @Query(value = """
+            SELECT DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as date,
+                   COUNT(*) as count
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :year
+            AND MONTH(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :month
+            GROUP BY DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset))
             ORDER BY date
-            """)
+            """, nativeQuery = true)
     List<ReadingSessionCountDto> findSessionCountsByUserAndYearAndMonth(
             @Param("userId") Long userId,
             @Param("year") int year,
-            @Param("month") int month);
+            @Param("month") int month,
+            @Param("tzOffset") String tzOffset);
 
         @Query("""
                         SELECT
@@ -76,39 +83,41 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             """)
     List<ReadingSpeedDto> findReadingSpeedByUserAndYear(@Param("userId") Long userId, @Param("year") int year);
 
-    @Query("""
+    @Query(value = """
             SELECT
-                HOUR(rs.startTime) as hourOfDay,
-                COUNT(rs) as sessionCount,
-                SUM(rs.durationSeconds) as totalDurationSeconds
-            FROM ReadingSessionEntity rs
-            WHERE rs.user.id = :userId
-            AND (:year IS NULL OR YEAR(rs.startTime) = :year)
-            AND (:month IS NULL OR MONTH(rs.startTime) = :month)
-            GROUP BY HOUR(rs.startTime)
+                HOUR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as hourOfDay,
+                COUNT(*) as sessionCount,
+                SUM(duration_seconds) as totalDurationSeconds
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND (:year IS NULL OR YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :year)
+            AND (:month IS NULL OR MONTH(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :month)
+            GROUP BY HOUR(CONVERT_TZ(start_time, '+00:00', :tzOffset))
             ORDER BY hourOfDay
-            """)
+            """, nativeQuery = true)
     List<PeakReadingHourDto> findPeakReadingHoursByUser(
             @Param("userId") Long userId,
             @Param("year") Integer year,
-            @Param("month") Integer month);
+            @Param("month") Integer month,
+            @Param("tzOffset") String tzOffset);
 
-    @Query("""
+    @Query(value = """
             SELECT
-                DAYOFWEEK(rs.startTime) as dayOfWeek,
-                COUNT(rs) as sessionCount,
-                COALESCE(SUM(rs.durationSeconds), 0) as totalDurationSeconds
-            FROM ReadingSessionEntity rs
-            WHERE rs.user.id = :userId
-            AND (:year IS NULL OR YEAR(rs.startTime) = :year)
-            AND (:month IS NULL OR MONTH(rs.startTime) = :month)
-            GROUP BY DAYOFWEEK(rs.startTime)
+                DAYOFWEEK(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as dayOfWeek,
+                COUNT(*) as sessionCount,
+                COALESCE(SUM(duration_seconds), 0) as totalDurationSeconds
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND (:year IS NULL OR YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :year)
+            AND (:month IS NULL OR MONTH(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :month)
+            GROUP BY DAYOFWEEK(CONVERT_TZ(start_time, '+00:00', :tzOffset))
             ORDER BY dayOfWeek
-            """)
+            """, nativeQuery = true)
     List<FavoriteReadingDayDto> findFavoriteReadingDaysByUser(
             @Param("userId") Long userId,
             @Param("year") Integer year,
-            @Param("month") Integer month);
+            @Param("month") Integer month,
+            @Param("tzOffset") String tzOffset);
 
     @Query("""
             SELECT
@@ -136,4 +145,72 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             @Param("userId") Long userId,
             @Param("bookId") Long bookId,
             Pageable pageable);
+
+    @Query("""
+            SELECT
+                b.id as bookId,
+                COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
+                b.metadata.pageCount as pageCount,
+                ubp.personalRating as personalRating,
+                COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) as dateFinished,
+                rs.startTime as startTime,
+                rs.endTime as endTime,
+                rs.durationSeconds as durationSeconds
+            FROM ReadingSessionEntity rs
+            JOIN rs.book b
+            JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
+            WHERE rs.user.id = :userId
+            AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
+            AND COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) IS NOT NULL
+            ORDER BY b.id, rs.startTime ASC
+            """)
+    List<PageTurnerSessionDto> findPageTurnerSessionsByUser(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT
+                b.id as bookId,
+                COALESCE(b.metadata.title, 'Unknown Book') as bookTitle,
+                rs.startTime as sessionDate,
+                rs.endProgress as endProgress
+            FROM ReadingSessionEntity rs
+            JOIN rs.book b
+            JOIN UserBookProgressEntity ubp ON ubp.book.id = b.id AND ubp.user.id = rs.user.id
+            WHERE rs.user.id = :userId
+            AND ubp.readStatus = org.booklore.model.enums.ReadStatus.READ
+            AND YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) = :year
+            AND rs.endProgress IS NOT NULL
+            ORDER BY b.id, rs.startTime ASC
+            """)
+    List<CompletionRaceSessionDto> findCompletionRaceSessionsByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year);
+
+    @Query(value = """
+            SELECT DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as date,
+                   COUNT(*) as count
+            FROM reading_sessions
+            WHERE user_id = :userId
+            GROUP BY DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset))
+            ORDER BY date
+            """, nativeQuery = true)
+    List<ReadingSessionCountDto> findAllSessionCountsByUser(
+            @Param("userId") Long userId,
+            @Param("tzOffset") String tzOffset);
+
+    @Query(value = """
+            SELECT
+                HOUR(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset))
+                    + MINUTE(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) / 60.0 as hourOfDay,
+                rs.duration_seconds / 60.0 as durationMinutes,
+                DAYOFWEEK(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) as dayOfWeek
+            FROM reading_sessions rs
+            WHERE rs.user_id = :userId
+            AND YEAR(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) = :year
+            ORDER BY rs.start_time DESC
+            LIMIT 500
+            """, nativeQuery = true)
+    List<SessionScatterDto> findSessionScatterByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("tzOffset") String tzOffset);
 }

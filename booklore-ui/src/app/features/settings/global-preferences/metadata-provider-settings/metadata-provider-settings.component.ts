@@ -11,6 +11,7 @@ import {AppSettingKey} from '../../../../shared/model/app-settings.model';
 import {Select} from 'primeng/select';
 import {ExternalDocLinkComponent} from '../../../../shared/components/external-doc-link/external-doc-link.component';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-provider-settings',
@@ -22,7 +23,8 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
     FormsModule,
     Select,
     ExternalDocLinkComponent,
-    ToggleSwitchModule
+    ToggleSwitchModule,
+    TranslocoDirective
   ],
   templateUrl: './metadata-provider-settings.component.html',
   styleUrl: './metadata-provider-settings.component.scss'
@@ -100,6 +102,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private t = inject(TranslocoService);
 
   private appSettings$ = this.appSettingsService.appSettings$;
 
@@ -180,14 +183,14 @@ export class MetadataProviderSettingsComponent implements OnInit {
       next: () =>
         this.messageService.add({
           severity: 'success',
-          summary: 'Saved',
-          detail: 'Metadata provider settings saved.'
+          summary: this.t.translate('common.success'),
+          detail: this.t.translate('settingsMeta.providers.saveSuccess')
         }),
       error: () =>
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to save metadata provider settings.'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsMeta.providers.saveError')
         })
     });
   }

@@ -16,6 +16,7 @@ import {ContentRestrictionService} from '../content-restriction.service';
 import {BookService} from '../../../book/service/book.service';
 import {filter, take} from 'rxjs/operators';
 import {Book} from '../../../book/model/book.model';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-content-restrictions-editor',
@@ -25,7 +26,9 @@ import {Book} from '../../../book/model/book.model';
     FormsModule,
     Button,
     Select,
-    Tooltip
+    Tooltip,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './content-restrictions-editor.component.html',
   styleUrls: ['./content-restrictions-editor.component.scss']
@@ -38,6 +41,7 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
   private contentRestrictionService = inject(ContentRestrictionService);
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
+  private t = inject(TranslocoService);
 
   restrictions: ContentRestriction[] = [];
   availableCategories: string[] = [];
@@ -51,16 +55,16 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
   };
 
   restrictionTypes = [
-    {label: 'Category/Genre', value: ContentRestrictionType.CATEGORY},
-    {label: 'Tag', value: ContentRestrictionType.TAG},
-    {label: 'Mood', value: ContentRestrictionType.MOOD},
-    {label: 'Age Rating', value: ContentRestrictionType.AGE_RATING},
-    {label: 'Content Rating', value: ContentRestrictionType.CONTENT_RATING}
+    {label: 'Category/Genre', value: ContentRestrictionType.CATEGORY, translationKey: 'settingsUsers.contentRestrictions.types.category'},
+    {label: 'Tag', value: ContentRestrictionType.TAG, translationKey: 'settingsUsers.contentRestrictions.types.tag'},
+    {label: 'Mood', value: ContentRestrictionType.MOOD, translationKey: 'settingsUsers.contentRestrictions.types.mood'},
+    {label: 'Age Rating', value: ContentRestrictionType.AGE_RATING, translationKey: 'settingsUsers.contentRestrictions.types.ageRating'},
+    {label: 'Content Rating', value: ContentRestrictionType.CONTENT_RATING, translationKey: 'settingsUsers.contentRestrictions.types.contentRating'}
   ];
 
   restrictionModes = [
-    {label: 'Exclude (Hide matching)', value: ContentRestrictionMode.EXCLUDE},
-    {label: 'Allow Only (Show only matching)', value: ContentRestrictionMode.ALLOW_ONLY}
+    {label: 'Exclude (Hide matching)', value: ContentRestrictionMode.EXCLUDE, translationKey: 'settingsUsers.contentRestrictions.modes.exclude'},
+    {label: 'Allow Only (Show only matching)', value: ContentRestrictionMode.ALLOW_ONLY, translationKey: 'settingsUsers.contentRestrictions.modes.allowOnly'}
   ];
 
   ageRatingOptions = AGE_RATING_OPTIONS;
@@ -88,8 +92,8 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load content restrictions'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsUsers.contentRestrictions.loadError')
         });
       }
     });
@@ -138,8 +142,8 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
     if (!this.newRestriction.value || !this.newRestriction.restrictionType || !this.newRestriction.mode) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'Please select all fields'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsUsers.contentRestrictions.selectAllFields')
       });
       return;
     }
@@ -152,8 +156,8 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
     if (exists) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'This restriction already exists'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsUsers.contentRestrictions.alreadyExists')
       });
       return;
     }
@@ -172,15 +176,15 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
         this.newRestriction.value = '';
         this.messageService.add({
           severity: 'success',
-          summary: 'Success',
-          detail: 'Content restriction added'
+          summary: this.t.translate('common.success'),
+          detail: this.t.translate('settingsUsers.contentRestrictions.addSuccess')
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to add content restriction'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsUsers.contentRestrictions.addError')
         });
       }
     });
@@ -195,15 +199,15 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
         this.restrictionsChanged.emit(this.restrictions);
         this.messageService.add({
           severity: 'success',
-          summary: 'Success',
-          detail: 'Content restriction removed'
+          summary: this.t.translate('common.success'),
+          detail: this.t.translate('settingsUsers.contentRestrictions.removeSuccess')
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to remove content restriction'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsUsers.contentRestrictions.removeError')
         });
       }
     });
@@ -211,11 +215,13 @@ export class ContentRestrictionsEditorComponent implements OnInit, OnChanges {
 
   getRestrictionTypeLabel(type: ContentRestrictionType): string {
     const found = this.restrictionTypes.find(t => t.value === type);
-    return found?.label || type;
+    return found ? this.t.translate(found.translationKey) : type;
   }
 
   getModeLabel(mode: ContentRestrictionMode): string {
-    return mode === ContentRestrictionMode.EXCLUDE ? 'Exclude' : 'Allow Only';
+    return mode === ContentRestrictionMode.EXCLUDE
+      ? this.t.translate('settingsUsers.contentRestrictions.modes.exclude')
+      : this.t.translate('settingsUsers.contentRestrictions.modes.allowOnly');
   }
 
   getModeClass(mode: ContentRestrictionMode): string {

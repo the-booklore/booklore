@@ -7,6 +7,7 @@ import org.booklore.model.dto.BookRecommendation;
 import org.booklore.model.dto.BookViewerSettings;
 import org.booklore.model.dto.request.AttachBookFileRequest;
 import org.booklore.model.dto.request.CreatePhysicalBookRequest;
+import org.booklore.model.dto.request.DuplicateDetectionRequest;
 import org.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import org.booklore.model.dto.request.PurchaseDateUpdateRequest;
 import org.booklore.model.dto.request.ReadProgressRequest;
@@ -14,11 +15,13 @@ import org.booklore.model.dto.request.ReadStatusUpdateRequest;
 import org.booklore.model.dto.request.ShelvesAssignmentRequest;
 import org.booklore.model.dto.response.BookDeletionResponse;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
+import org.booklore.model.dto.response.DuplicateGroup;
 import org.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import org.booklore.model.enums.ResetProgressType;
 import org.booklore.service.book.BookFileAttachmentService;
 import org.booklore.service.book.BookService;
 import org.booklore.service.book.BookUpdateService;
+import org.booklore.service.book.DuplicateDetectionService;
 import org.booklore.service.book.PhysicalBookService;
 import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.progress.ReadingProgressService;
@@ -28,18 +31,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -56,6 +58,7 @@ public class BookController {
     private final BookMetadataService bookMetadataService;
     private final ReadingProgressService readingProgressService;
     private final PhysicalBookService physicalBookService;
+    private final DuplicateDetectionService duplicateDetectionService;
 
     @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
     @ApiResponse(responseCode = "200", description = "List of books returned successfully")
@@ -122,14 +125,27 @@ public class BookController {
         return ResponseEntity.ok(bookMetadataService.getComicInfoMetadata(bookId));
     }
 
-    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading.")
-    @ApiResponse(responseCode = "200", description = "Book content returned successfully")
+    @Operation(summary = "Get file metadata", description = "Extract embedded metadata from the book file.")
+    @ApiResponse(responseCode = "200", description = "File metadata returned successfully")
+    @GetMapping("/{bookId}/file-metadata")
+    public ResponseEntity<?> getFileMetadata(
+            @Parameter(description = "ID of the book") @PathVariable long bookId) {
+        return ResponseEntity.ok(bookMetadataService.getFileMetadata(bookId));
+    }
+
+    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading. Supports HTTP Range requests for partial content streaming.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Full book content returned"),
+            @ApiResponse(responseCode = "206", description = "Partial content returned for Range request")
+    })
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<ByteArrayResource> getBookContent(
+    public void getBookContent(
             @Parameter(description = "ID of the book") @PathVariable long bookId,
-            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType) throws IOException {
-        return bookService.getBookContent(bookId, bookType);
+            @Parameter(description = "Optional book type for alternative format (e.g., EPUB, PDF, MOBI)") @RequestParam(required = false) String bookType,
+            HttpServletRequest request,
+            HttpServletResponse response) throws java.io.IOException {
+        bookService.streamBookContent(bookId, bookType, request, response);
     }
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")
@@ -262,6 +278,15 @@ public class BookController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Find duplicate books", description = "Detect potential duplicate books in a library using configurable matching strategies.")
+    @ApiResponse(responseCode = "200", description = "Duplicate groups returned successfully")
+    @PostMapping("/duplicates")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<DuplicateGroup>> findDuplicates(
+            @Parameter(description = "Duplicate detection configuration") @RequestBody @Valid DuplicateDetectionRequest request) {
+        return ResponseEntity.ok(duplicateDetectionService.findDuplicates(request));
+    }
+
     @Operation(summary = "Attach book files", description = "Attach book files from single-file source books to a target book as alternative formats.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Book files attached successfully"),
@@ -274,6 +299,6 @@ public class BookController {
     public ResponseEntity<Book> attachBookFiles(
             @Parameter(description = "ID of the target book to attach the files to") @PathVariable Long targetBookId,
             @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
-        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
+        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isMoveFiles()));
     }
 }

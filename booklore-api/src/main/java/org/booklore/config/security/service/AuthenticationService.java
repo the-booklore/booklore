@@ -26,6 +26,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
+import org.booklore.util.RequestUtils;
 
 @Slf4j
 @AllArgsConstructor
@@ -39,6 +42,8 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final DefaultSettingInitializer defaultSettingInitializer;
+    private final AuditService auditService;
+    private final AuthRateLimitService authRateLimitService;
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -87,12 +92,22 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
-        BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername()));
+        String ip = RequestUtils.getCurrentRequest().getRemoteAddr();
+        authRateLimitService.checkLoginRateLimit(ip);
+
+        BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> {
+            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for unknown user: " + loginRequest.getUsername());
+            authRateLimitService.recordFailedLoginAttempt(ip);
+            return ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername());
+        });
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
+            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for user: " + loginRequest.getUsername());
+            authRateLimitService.recordFailedLoginAttempt(ip);
             throw ApiError.INVALID_CREDENTIALS.createException();
         }
 
+        authRateLimitService.resetLoginAttempts(ip);
         return loginUser(user);
     }
 
@@ -125,6 +140,7 @@ public class AuthenticationService {
                 .build();
 
         refreshTokenRepository.save(refreshTokenEntity);
+        auditService.log(AuditAction.LOGIN_SUCCESS, "User", user.getId(), "Login successful for user: " + user.getUsername());
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", accessToken,
@@ -134,9 +150,16 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> refreshToken(String token) {
-        RefreshTokenEntity storedToken = refreshTokenRepository.findByToken(token).orElseThrow(() -> ApiError.INVALID_CREDENTIALS.createException("Refresh token not found"));
+        String ip = RequestUtils.getCurrentRequest().getRemoteAddr();
+        authRateLimitService.checkRefreshRateLimit(ip);
+
+        RefreshTokenEntity storedToken = refreshTokenRepository.findByToken(token).orElseThrow(() -> {
+            authRateLimitService.recordFailedRefreshAttempt(ip);
+            return ApiError.INVALID_CREDENTIALS.createException("Refresh token not found");
+        });
 
         if (storedToken.isRevoked() || storedToken.getExpiryDate().isBefore(Instant.now()) || !jwtUtils.validateToken(token)) {
+            authRateLimitService.recordFailedRefreshAttempt(ip);
             throw ApiError.INVALID_CREDENTIALS.createException("Invalid or expired refresh token");
         }
 
@@ -155,6 +178,8 @@ public class AuthenticationService {
                 .build();
 
         refreshTokenRepository.save(newRefreshTokenEntity);
+
+        authRateLimitService.resetRefreshAttempts(ip);
 
         return ResponseEntity.ok(Map.of(
                 "accessToken", jwtUtils.generateAccessToken(user),

@@ -10,6 +10,7 @@ import {Tab, TabList, TabPanel, TabPanels, Tabs,} from 'primeng/tabs';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Button} from 'primeng/button';
 import {BookMetadataHostService} from '../../../../shared/service/book-metadata-host.service';
+import {TranslocoDirective} from '@jsverse/transloco';
 import {MetadataViewerComponent} from './metadata-viewer/metadata-viewer.component';
 import {MetadataEditorComponent} from './metadata-editor/metadata-editor.component';
 import {MetadataSearcherComponent} from './metadata-searcher/metadata-searcher.component';
@@ -29,7 +30,8 @@ import {SidecarViewerComponent} from './sidecar-viewer/sidecar-viewer.component'
     MetadataEditorComponent,
     MetadataSearcherComponent,
     SidecarViewerComponent,
-    Button
+    Button,
+    TranslocoDirective
   ],
   styleUrls: ['./book-metadata-center.component.scss'],
 })
@@ -105,13 +107,14 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
         this.bookService.bookState$.pipe(
           map(state => state.books?.find(b => b.id === bookId)),
           filter((book): book is Book => !!book && !!book.metadata),
+          distinctUntilChanged(),
           switchMap(book =>
             this.bookService.getBookByIdFromAPI(book.id, true)
           )
         )
       ),
       takeUntil(this.destroy$),
-      shareReplay(1)
+      shareReplay({bufferSize: 1, refCount: true})
     );
 
     this.currentBookId$
@@ -143,23 +146,17 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
   }
 
   private fetchBookRecommendationsIfNeeded(bookId: number): void {
-    this.appSettings$
-      .pipe(
-        filter(settings => settings != null),
-        take(1)
-      )
-      .subscribe(settings => {
-        if (settings!.similarBookRecommendation ?? false) {
-          this.bookService
-            .getBookRecommendations(bookId)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(recommendations => {
-              this.recommendedBooks = recommendations.sort(
-                (a, b) => (b.similarityScore ?? 0) - (a.similarityScore ?? 0)
-              );
-            });
-        }
-      });
+    this.appSettings$.pipe(
+      filter(settings => settings != null),
+      take(1),
+      filter(settings => settings!.similarBookRecommendation ?? false),
+      switchMap(() => this.bookService.getBookRecommendations(bookId)),
+      takeUntil(this.destroy$)
+    ).subscribe(recommendations => {
+      this.recommendedBooks = recommendations.sort(
+        (a, b) => (b.similarityScore ?? 0) - (a.similarityScore ?? 0)
+      );
+    });
   }
 
   ngOnDestroy(): void {

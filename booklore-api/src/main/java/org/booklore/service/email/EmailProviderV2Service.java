@@ -13,6 +13,8 @@ import org.booklore.repository.UserEmailProviderPreferenceRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.model.enums.AuditAction;
+import org.booklore.service.audit.AuditService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +29,7 @@ public class EmailProviderV2Service {
     private final UserEmailProviderPreferenceRepository preferenceRepository;
     private final EmailProviderV2Mapper mapper;
     private final AuthenticationService authService;
+    private final AuditService auditService;
 
     public List<EmailProviderV2> getEmailProviders() {
         BookLoreUser user = authService.getAuthenticatedUser();
@@ -56,7 +59,7 @@ public class EmailProviderV2Service {
         BookLoreUser user = authService.getAuthenticatedUser();
         EmailProviderV2Entity entity = mapper.toEntity(request);
         entity.setUserId(user.getId());
-        entity.setShared(user.getPermissions().isAdmin() && request.isShared());
+        entity.setShared(user.getPermissions().isAdmin() && Boolean.TRUE.equals(request.getShared()));
         EmailProviderV2Entity savedEntity = repository.save(entity);
 
         if (preferenceRepository.findByUserId(user.getId()).isEmpty()) {
@@ -64,6 +67,7 @@ public class EmailProviderV2Service {
         }
 
         Long defaultProviderId = getDefaultProviderIdForUser(user.getId());
+        auditService.log(AuditAction.EMAIL_PROVIDER_CREATED, "EmailProvider", savedEntity.getId(), "Created email provider: " + savedEntity.getHost() + ":" + savedEntity.getPort());
         return mapper.toDTO(savedEntity, defaultProviderId);
     }
 
@@ -75,9 +79,10 @@ public class EmailProviderV2Service {
 
         mapper.updateEntityFromRequest(request, existingProvider);
         if (user.getPermissions().isAdmin()) {
-            existingProvider.setShared(request.isShared());
+            existingProvider.setShared(Boolean.TRUE.equals(request.getShared()));
         }
         EmailProviderV2Entity updatedEntity = repository.save(existingProvider);
+        auditService.log(AuditAction.EMAIL_PROVIDER_UPDATED, "EmailProvider", id, "Updated email provider: " + updatedEntity.getHost() + ":" + updatedEntity.getPort());
 
         Long defaultProviderId = getDefaultProviderIdForUser(user.getId());
         return mapper.toDTO(updatedEntity, defaultProviderId);
@@ -118,6 +123,7 @@ public class EmailProviderV2Service {
         }
 
         repository.deleteById(id);
+        auditService.log(AuditAction.EMAIL_PROVIDER_DELETED, "EmailProvider", id, "Deleted email provider");
     }
 
     private Long getDefaultProviderIdForUser(Long userId) {

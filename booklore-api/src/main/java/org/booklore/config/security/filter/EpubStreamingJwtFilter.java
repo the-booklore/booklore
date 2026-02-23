@@ -24,6 +24,11 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.regex.Pattern;
 
+/**
+ * JWT filter for EPUB streaming endpoints that supports both:
+ * 1. Authorization header (Bearer token) - for fetch() requests
+ * 2. Query parameter (token) - for browser-initiated requests (fonts, images in CSS)
+ */
 @Component
 @AllArgsConstructor
 public class EpubStreamingJwtFilter extends OncePerRequestFilter {
@@ -38,6 +43,7 @@ public class EpubStreamingJwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
+        // Only filter requests to EPUB file streaming endpoint
         return !EPUB_STREAMING_ENDPOINT_PATTERN.matcher(path).matches();
     }
 
@@ -45,6 +51,7 @@ public class EpubStreamingJwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
+        // Try Authorization header first, then fall back to query parameter
         String token = extractTokenFromHeader(request);
         if (token == null) {
             token = request.getParameter("token");

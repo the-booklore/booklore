@@ -12,6 +12,7 @@ import {InputIcon} from 'primeng/inputicon';
 import {Button} from 'primeng/button';
 import {IconField} from 'primeng/iconfield';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective, TranslocoPipe} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-directory-picker-v2',
@@ -27,7 +28,9 @@ import {Tooltip} from 'primeng/tooltip';
     Button,
     InputIcon,
     IconField,
-    Tooltip
+    Tooltip,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   styleUrls: ['./directory-picker.component.scss']
 })

@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'book.fileAttacher'">
 <div class="book-file-attacher-container">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-link header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Attach {{ isBulkMode ? 'Files' : 'File' }} to Another Book</h2>
-      <p class="panel-description">Move {{ isBulkMode ? 'these books\' files' : 'this book\'s file' }} to another book as alternative format{{ isBulkMode ? 's' : '' }}</p>
+      <h2 class="panel-title">{{ isBulkMode ? t('titleBulk') : t('title') }}</h2>
+      <p class="panel-description">{{ isBulkMode ? t('descriptionBulk') : t('description') }}</p>
     </div>
     <p-button
       icon="pi pi-times"
@@ -13,18 +14,18 @@
       [text]="true"
       severity="secondary"
       (click)="closeDialog()"
-      styleClass="close-button">
+      class="close-button">
     </p-button>
   </div>
 
   <div class="dialog-content">
     <!-- Source Book(s) Info -->
     <div class="source-info">
-      <h3 class="section-title">Source Book{{ isBulkMode ? 's' : '' }} ({{ sourceBooks.length }})</h3>
+      <h3 class="section-title">{{ isBulkMode ? t('sourceBooksLabel', { count: sourceBooks.length }) : t('sourceBookLabel', { count: sourceBooks.length }) }}</h3>
       <div class="source-books-list">
         @for (book of sourceBooks; track book.id) {
           <div class="book-info-card">
-            <div class="book-title">{{ book.metadata?.title || 'Unknown Title' }}</div>
+            <div class="book-title">{{ book.metadata?.title || t('unknownTitle') }}</div>
             @if (book.metadata?.authors?.length) {
               <div class="book-authors">{{ book.metadata?.authors?.join(', ') }}</div>
             }
@@ -39,7 +40,7 @@
 
     <!-- Target Book Selection -->
     <div class="target-selection">
-      <h3 class="section-title">Select Target Book</h3>
+      <h3 class="section-title">{{ t('selectTargetBook') }}</h3>
       <p-autocomplete
         [(ngModel)]="targetBook"
         [suggestions]="filteredBooks"
@@ -49,12 +50,12 @@
         optionLabel="metadata.title"
         [dropdown]="true"
         [showClear]="true"
-        placeholder="Search for a book in the same library..."
-        styleClass="full-width"
+        [placeholder]="t('searchPlaceholder')"
+        class="full-width"
         [disabled]="isAttaching">
         <ng-template let-book pTemplate="item">
           <div class="book-suggestion">
-            <div class="suggestion-title">{{ book.metadata?.title || 'Unknown Title' }}</div>
+            <div class="suggestion-title">{{ book.metadata?.title || t('unknownTitle') }}</div>
             @if (book.metadata?.authors?.length) {
               <div class="suggestion-authors">{{ book.metadata.authors.join(', ') }}</div>
             }
@@ -69,16 +70,16 @@
       </p-autocomplete>
     </div>
 
-    <!-- Delete Source Book(s) Option -->
+    <!-- Options -->
     <div class="delete-option">
       <p-checkbox
-        [(ngModel)]="deleteSourceBooks"
+        [(ngModel)]="moveFiles"
         [binary]="true"
-        inputId="deleteSourceBooks"
+        inputId="moveFiles"
         [disabled]="isAttaching">
       </p-checkbox>
-      <label for="deleteSourceBooks" class="delete-label">
-        Delete source book{{ isBulkMode ? 's' : '' }} after attachment
+      <label for="moveFiles" class="delete-label">
+        {{ t('moveFilesLabel') }}
       </label>
     </div>
 
@@ -86,26 +87,26 @@
     <div class="warning-message">
       <i class="pi pi-info-circle"></i>
       <div class="warning-text">
-        <p>This will move {{ isBulkMode ? 'the files from the selected books' : 'the file from the source book' }} to the target book as alternative format{{ isBulkMode ? 's' : '' }}.</p>
-        @if (deleteSourceBooks) {
-          <p>The source book{{ isBulkMode ? ' records' : ' record' }} will be deleted (file{{ isBulkMode ? 's' : '' }} will be preserved in target book).</p>
+        @if (moveFiles) {
+          <p>{{ isBulkMode ? t('warningMoveBulk') : t('warningMove') }}</p>
         } @else {
-          <p>The source book{{ isBulkMode ? ' records' : ' record' }} will remain but will have no readable files.</p>
+          <p>{{ isBulkMode ? t('warningNoMoveBulk') : t('warningNoMove') }}</p>
         }
+        <p>{{ isBulkMode ? t('warningDeleteBulk') : t('warningDelete') }}</p>
       </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="action-buttons">
       <p-button
-        label="Cancel"
+        [label]="'common.cancel' | transloco"
         [outlined]="true"
         severity="secondary"
         (click)="closeDialog()"
         [disabled]="isAttaching">
       </p-button>
       <p-button
-        label="Attach {{ isBulkMode ? 'Files' : 'File' }}"
+        [label]="isBulkMode ? t('attachFilesBulk') : t('attachFile')"
         icon="pi pi-link"
         (click)="attach()"
         [disabled]="!canAttach()"
@@ -114,3 +115,4 @@
     </div>
   </div>
 </div>
+</ng-container>

@@ -6,12 +6,13 @@ import {ToggleSwitch} from 'primeng/toggleswitch';
 import {MessageService} from 'primeng/api';
 
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
-import {BookService} from '../../book/service/book.service';
+import {BookMetadataManageService} from '../../book/service/book-metadata-manage.service';
 import {AppSettingKey, AppSettings, CoverCroppingSettings} from '../../../shared/model/app-settings.model';
 import {filter, take} from 'rxjs/operators';
 import {InputText} from 'primeng/inputtext';
 import {Slider} from 'primeng/slider';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-global-preferences',
@@ -22,7 +23,9 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
     FormsModule,
     InputText,
     Slider,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './global-preferences.component.html',
   styleUrl: './global-preferences.component.scss'
@@ -43,8 +46,9 @@ export class GlobalPreferencesComponent implements OnInit {
   };
 
   private appSettingsService = inject(AppSettingsService);
-  private bookService = inject(BookService);
+  private bookMetadataManageService = inject(BookMetadataManageService);
   private messageService = inject(MessageService);
+  private t = inject(TranslocoService);
 
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
   maxFileUploadSizeInMb?: number;
@@ -87,27 +91,27 @@ export class GlobalPreferencesComponent implements OnInit {
 
   saveFileSize() {
     if (!this.maxFileUploadSizeInMb || this.maxFileUploadSizeInMb <= 0) {
-      this.showMessage('error', 'Invalid Input', 'Please enter a valid max file upload size in MB.');
+      this.showMessage('error', this.t.translate('settingsApp.fileManagement.invalidInput'), this.t.translate('settingsApp.fileManagement.invalidInputDetail'));
       return;
     }
     this.saveSetting(AppSettingKey.MAX_FILE_UPLOAD_SIZE_IN_MB, this.maxFileUploadSizeInMb);
   }
 
   regenerateCovers(): void {
-    this.bookService.regenerateCovers().subscribe({
+    this.bookMetadataManageService.regenerateCovers().subscribe({
       next: () =>
-        this.showMessage('success', 'Cover Regeneration Started', 'Book covers are being regenerated.'),
+        this.showMessage('success', this.t.translate('settingsApp.covers.regenerateStarted'), this.t.translate('settingsApp.covers.regenerateStartedDetail')),
       error: () =>
-        this.showMessage('error', 'Error', 'Failed to start cover regeneration.')
+        this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsApp.covers.regenerateError'))
     });
   }
 
   private saveSetting(key: string, value: unknown): void {
     this.appSettingsService.saveSettings([{key, newValue: value}]).subscribe({
       next: () =>
-        this.showMessage('success', 'Settings Saved', 'The settings were successfully saved!'),
+        this.showMessage('success', this.t.translate('settingsApp.settingsSaved'), this.t.translate('settingsApp.settingsSavedDetail')),
       error: () =>
-        this.showMessage('error', 'Error', 'There was an error saving the settings.')
+        this.showMessage('error', this.t.translate('common.error'), this.t.translate('settingsApp.settingsError'))
     });
   }
 

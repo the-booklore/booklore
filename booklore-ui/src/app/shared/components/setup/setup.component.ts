@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
 import {SetupService} from './setup.service';
@@ -6,6 +6,7 @@ import {InputText} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
 import {Message} from 'primeng/message';
 import {passwordMatchValidator} from '../../validators/password-match.validator';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-setup',
@@ -16,7 +17,8 @@ import {passwordMatchValidator} from '../../validators/password-match.validator'
     ReactiveFormsModule,
     InputText,
     Button,
-    Message
+    Message,
+    TranslocoDirective
   ]
 })
 export class SetupComponent {
@@ -24,6 +26,7 @@ export class SetupComponent {
   loading = false;
   error: string | null = null;
   success = false;
+  private readonly t = inject(TranslocoService);
 
   constructor(
     private fb: FormBuilder,
@@ -55,7 +58,7 @@ export class SetupComponent {
       error: (err) => {
         this.loading = false;
         this.error =
-          err?.error?.message || 'Failed to create admin user. Try again.';
+          err?.error?.message || this.t.translate('shared.setup.toast.createFailedDefault');
       },
     });
   }

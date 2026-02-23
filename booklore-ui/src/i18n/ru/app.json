@@ -1,0 +1,8 @@
+{
+  "offline": "Вы не в сети",
+  "loading": "Загрузка Booklore\u2026",
+  "loadingDescription": "Пожалуйста, подождите, пока мы всё подготовим.",
+  "offlineLoadingDescription": "BookLore требует подключение к серверу для загрузки.",
+  "offlineDescription": "Проверьте сеть и попробуйте снова.",
+  "connectionLost": "Соединение потеряно. Некоторые функции могут не работать."
+}

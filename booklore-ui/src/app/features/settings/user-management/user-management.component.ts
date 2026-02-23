@@ -18,6 +18,7 @@ import {Subject} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogLauncherService} from '../../../shared/services/dialog-launcher.service';
 import {ContentRestrictionsEditorComponent} from './content-restrictions-editor/content-restrictions-editor.component';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 interface UserWithEditing extends User {
   isEditing?: boolean;
@@ -39,7 +40,9 @@ interface UserWithEditing extends User {
     LowerCasePipe,
     TitleCasePipe,
     Tooltip,
-    ContentRestrictionsEditorComponent
+    ContentRestrictionsEditorComponent,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss'],
@@ -50,6 +53,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   private userService = inject(UserService);
   private libraryService = inject(LibraryService);
   private messageService = inject(MessageService);
+  private t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   users: UserWithEditing[] = [];
@@ -108,8 +112,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to fetch users',
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsUsers.fetchError'),
         });
       },
     });
@@ -152,38 +156,38 @@ export class UserManagementComponent implements OnInit, OnDestroy {
           this.loadUsers();
           this.messageService.add({
             severity: 'success',
-            summary: 'Success',
-            detail: 'User updated successfully',
+            summary: this.t.translate('common.success'),
+            detail: this.t.translate('settingsUsers.updateSuccess'),
           });
         },
         error: () => {
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to update user',
+            summary: this.t.translate('common.error'),
+            detail: this.t.translate('settingsUsers.updateError'),
           });
         },
       });
   }
 
   deleteUser(user: User) {
-    if (confirm(`Are you sure you want to delete ${user.username}?`)) {
+    if (confirm(this.t.translate('settingsUsers.deleteConfirm', {username: user.username}))) {
       this.userService.deleteUser(user.id).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Success',
-            detail: `User ${user.username} deleted successfully`,
+            summary: this.t.translate('common.success'),
+            detail: this.t.translate('settingsUsers.deleteSuccess', {username: user.username}),
           });
           this.loadUsers();
         },
         error: (err) => {
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
+            summary: this.t.translate('common.error'),
             detail:
               err.error?.message ||
-              `Failed to delete user ${user.username}`,
+              this.t.translate('settingsUsers.deleteError', {username: user.username}),
           });
         },
       });
@@ -200,12 +204,12 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   submitPasswordChange() {
     if (!this.newPassword || !this.confirmNewPassword) {
-      this.passwordError = 'Both fields are required';
+      this.passwordError = this.t.translate('settingsUsers.passwordDialog.bothRequired');
       return;
     }
 
     if (this.newPassword !== this.confirmNewPassword) {
-      this.passwordError = 'Passwords do not match';
+      this.passwordError = this.t.translate('settingsUsers.passwordDialog.mismatch');
       return;
     }
 
@@ -216,8 +220,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
           next: () => {
             this.messageService.add({
               severity: 'success',
-              summary: 'Success',
-              detail: 'Password changed successfully',
+              summary: this.t.translate('common.success'),
+              detail: this.t.translate('settingsUsers.passwordDialog.success'),
             });
             this.isPasswordDialogVisible = false;
           },

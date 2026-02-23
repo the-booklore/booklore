@@ -1,230 +1,231 @@
-<div class="settings-card">
-  <div class="section-header">
-    <h3 class="section-title">
-      <i class="pi pi-save"></i>
-      Metadata Persistence
-    </h3>
-    <p class="section-description">
-      Configure how metadata is written to original files and how files are moved or renamed when metadata changes.
-    </p>
-  </div>
-
-  <div class="section-notice">
-    <div class="warning-notice">
-      <i class="pi pi-exclamation-triangle"></i>
-      <div>
-        <strong>Network Storage Warning:</strong> These features directly modify and move book files on disk (including rewriting metadata and renaming files). They are designed for local file systems only. Using them on NAS or cloud-backed storage is untested and may lead to file corruption,
-        incomplete writes, or permanent data loss. Github issues related to network storage will not be supported.
-      </div>
-    </div>
-    <div class="info-notice unsupported-formats-note">
-      <i class="pi pi-info-circle"></i>
-      <div>
-        <strong>Note:</strong> Writing metadata is <b>not supported</b> for FB2, AZW3, and MOBI formats.
-      </div>
-    </div>
-  </div>
-
-  <div class="section-body">
-    <div class="setting-item">
-      <div class="setting-header">
-        <p-toggleswitch
-          [ngModel]="metadataPersistence.saveToOriginalFile.epub.enabled"
-          (onChange)="onSaveToOriginalFileToggle('epub')">
-        </p-toggleswitch>
-        <label class="setting-label">Write Metadata to EPUB</label>
-      </div>
-      <p class="setting-description">Write metadata directly into EPUB files when editing book information.</p>
-      @if (metadataPersistence.saveToOriginalFile.epub.enabled) {
-        <div class="setting-options">
-          <div class="filesize-input">
-            <label>Max file size:</label>
-            <input
-              type="number"
-              [(ngModel)]="metadataPersistence.saveToOriginalFile.epub.maxFileSizeInMb"
-              (change)="onFilesizeChange('epub')"
-              min="1"
-              max="1000"
-              class="filesize-field">
-            <span class="filesize-unit">MB</span>
-            <i
-              class="pi pi-info-circle"
-              pTooltip="Only files up to this size will be updated. Larger files are ignored."
-              tooltipPosition="right">
-            </i>
-          </div>
-        </div>
-      }
-    </div>
-
-    <div class="setting-item">
-      <div class="setting-header">
-        <p-toggleswitch
-          [ngModel]="metadataPersistence.saveToOriginalFile.cbx.enabled"
-          (onChange)="onSaveToOriginalFileToggle('cbx')">
-        </p-toggleswitch>
-        <label class="setting-label">Write Metadata to CBX</label>
-      </div>
-      <p class="setting-description">Write metadata directly into CBX files when editing book information.</p>
-      @if (metadataPersistence.saveToOriginalFile.cbx.enabled) {
-        <div class="setting-options">
-          <div class="filesize-input">
-            <label>Max file size:</label>
-            <input
-              type="number"
-              [(ngModel)]="metadataPersistence.saveToOriginalFile.cbx.maxFileSizeInMb"
-              (change)="onFilesizeChange('cbx')"
-              min="1"
-              max="1000"
-              class="filesize-field">
-            <span class="filesize-unit">MB</span>
-            <i
-              class="pi pi-info-circle"
-              pTooltip="Only files up to this size will be updated. Larger files are ignored."
-              tooltipPosition="right">
-            </i>
-          </div>
-        </div>
-      }
-    </div>
-
-    <div class="setting-item">
-      <div class="setting-header">
-        <p-toggleswitch
-          [ngModel]="metadataPersistence.saveToOriginalFile.pdf.enabled"
-          (onChange)="onSaveToOriginalFileToggle('pdf')">
-        </p-toggleswitch>
-        <label class="setting-label">Write Metadata to PDF</label>
-      </div>
-      <p class="setting-description">
-        Write metadata directly into PDF files when editing book information.
-        <span class="setting-note">PDFs do not support embedded covers. Only Title, Authors, Publisher, Categories, Description, Language, and Published Date can be updated.</span>
+<ng-container *transloco="let t; prefix: 'settingsMeta.persistence'">
+  <div class="settings-card">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="pi pi-save"></i>
+        {{ t('sectionTitle') }}
+      </h3>
+      <p class="section-description">
+        {{ t('sectionDesc') }}
       </p>
-      @if (metadataPersistence.saveToOriginalFile.pdf.enabled) {
-        <div class="setting-options">
-          <div class="filesize-input">
-            <label>Max file size:</label>
-            <input
-              type="number"
-              [(ngModel)]="metadataPersistence.saveToOriginalFile.pdf.maxFileSizeInMb"
-              (change)="onFilesizeChange('pdf')"
-              min="1"
-              max="1000"
-              class="filesize-field">
-            <span class="filesize-unit">MB</span>
-            <i
-              class="pi pi-info-circle"
-              pTooltip="Only files up to this size will be updated. Larger files are ignored."
-              tooltipPosition="right">
-            </i>
-          </div>
-        </div>
-      }
     </div>
 
-    <div class="setting-item">
-      <div class="setting-header">
-        <p-toggleswitch
-          [ngModel]="metadataPersistence.saveToOriginalFile.audiobook.enabled"
-          (onChange)="onSaveToOriginalFileToggle('audiobook')">
-        </p-toggleswitch>
-        <label class="setting-label">Write Metadata to Audiobooks</label>
+    <div class="section-notice">
+      <div class="warning-notice">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div>
+          <strong>{{ t('networkWarningTitle') }}</strong> {{ t('networkWarning') }}
+        </div>
       </div>
-      <p class="setting-description">
-        Write metadata directly into audiobook files (M4B, M4A, MP3, etc.) when editing book information.
-        <span class="setting-note">Supports title, authors, narrator, description, publisher, categories, series, language, and cover art. For folder-based audiobooks, cover is saved as cover.jpg in the folder.</span>
-      </p>
-      @if (metadataPersistence.saveToOriginalFile.audiobook.enabled) {
-        <div class="setting-options">
-          <div class="filesize-input">
-            <label>Max file size:</label>
-            <input
-              type="number"
-              [(ngModel)]="metadataPersistence.saveToOriginalFile.audiobook.maxFileSizeInMb"
-              (change)="onFilesizeChange('audiobook')"
-              min="1"
-              max="2000"
-              class="filesize-field">
-            <span class="filesize-unit">MB</span>
-            <i
-              class="pi pi-info-circle"
-              pTooltip="Only files up to this size will be updated. Larger files are ignored."
-              tooltipPosition="right">
-            </i>
-          </div>
+      <div class="info-notice unsupported-formats-note">
+        <i class="pi pi-info-circle"></i>
+        <div>
+          <strong>Note:</strong> <span [innerHTML]="t('unsupportedNote')"></span>
         </div>
-      }
+      </div>
     </div>
 
-    @if ((appSettings$ | async)?.diskType === 'LOCAL') {
+    <div class="section-body">
       <div class="setting-item">
         <div class="setting-header">
           <p-toggleswitch
-            [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
-            (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+            [ngModel]="metadataPersistence.saveToOriginalFile.epub.enabled"
+            (onChange)="onSaveToOriginalFileToggle('epub')">
           </p-toggleswitch>
-          <label class="setting-label">Auto-Move Files on Metadata Update</label>
+          <label class="setting-label">{{ t('writeEpub') }}</label>
         </div>
-        <p class="setting-description">Automatically move and rename files according to their library's naming pattern when metadata is updated.</p>
+        <p class="setting-description">{{ t('writeEpubDesc') }}</p>
+        @if (metadataPersistence.saveToOriginalFile.epub.enabled) {
+          <div class="setting-options">
+            <div class="filesize-input">
+              <label>{{ t('maxFileSize') }}</label>
+              <input
+                type="number"
+                [(ngModel)]="metadataPersistence.saveToOriginalFile.epub.maxFileSizeInMb"
+                (change)="onFilesizeChange('epub')"
+                min="1"
+                max="1000"
+                class="filesize-field">
+              <span class="filesize-unit">MB</span>
+              <i
+                class="pi pi-info-circle"
+                [pTooltip]="t('maxFileSizeTooltip')"
+                tooltipPosition="right">
+              </i>
+            </div>
+          </div>
+        }
       </div>
-    }
-  </div>
 
-  <div class="section-header sidecar-section-header">
-    <h3 class="section-title">
-      <i class="pi pi-file"></i>
-      Sidecar JSON Files
-    </h3>
-    <p class="section-description">
-      Create external .metadata.json files alongside your books for portable metadata storage and backup.
-    </p>
-  </div>
-
-  <div class="section-body">
-    <div class="setting-item">
-      <div class="setting-header">
-        <p-toggleswitch
-          [ngModel]="metadataPersistence.sidecarSettings?.enabled"
-          (onChange)="onSidecarToggle('enabled')">
-        </p-toggleswitch>
-        <label class="setting-label">Enable Sidecar JSON</label>
+      <div class="setting-item">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile.cbx.enabled"
+            (onChange)="onSaveToOriginalFileToggle('cbx')">
+          </p-toggleswitch>
+          <label class="setting-label">{{ t('writeCbx') }}</label>
+        </div>
+        <p class="setting-description">{{ t('writeCbxDesc') }}</p>
+        @if (metadataPersistence.saveToOriginalFile.cbx.enabled) {
+          <div class="setting-options">
+            <div class="filesize-input">
+              <label>{{ t('maxFileSize') }}</label>
+              <input
+                type="number"
+                [(ngModel)]="metadataPersistence.saveToOriginalFile.cbx.maxFileSizeInMb"
+                (change)="onFilesizeChange('cbx')"
+                min="1"
+                max="1000"
+                class="filesize-field">
+              <span class="filesize-unit">MB</span>
+              <i
+                class="pi pi-info-circle"
+                [pTooltip]="t('maxFileSizeTooltip')"
+                tooltipPosition="right">
+              </i>
+            </div>
+          </div>
+        }
       </div>
-      <p class="setting-description">Enable sidecar JSON metadata files. When enabled, metadata can be written to <code>BookName.metadata.json</code> files alongside your books.</p>
+
+      <div class="setting-item">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile.pdf.enabled"
+            (onChange)="onSaveToOriginalFileToggle('pdf')">
+          </p-toggleswitch>
+          <label class="setting-label">{{ t('writePdf') }}</label>
+        </div>
+        <p class="setting-description">
+          {{ t('writePdfDesc') }}
+          <span class="setting-note">{{ t('writePdfNote') }}</span>
+        </p>
+        @if (metadataPersistence.saveToOriginalFile.pdf.enabled) {
+          <div class="setting-options">
+            <div class="filesize-input">
+              <label>{{ t('maxFileSize') }}</label>
+              <input
+                type="number"
+                [(ngModel)]="metadataPersistence.saveToOriginalFile.pdf.maxFileSizeInMb"
+                (change)="onFilesizeChange('pdf')"
+                min="1"
+                max="1000"
+                class="filesize-field">
+              <span class="filesize-unit">MB</span>
+              <i
+                class="pi pi-info-circle"
+                [pTooltip]="t('maxFileSizeTooltip')"
+                tooltipPosition="right">
+              </i>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-header">
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile.audiobook.enabled"
+            (onChange)="onSaveToOriginalFileToggle('audiobook')">
+          </p-toggleswitch>
+          <label class="setting-label">{{ t('writeAudiobook') }}</label>
+        </div>
+        <p class="setting-description">
+          {{ t('writeAudiobookDesc') }}
+          <span class="setting-note">{{ t('writeAudiobookNote') }}</span>
+        </p>
+        @if (metadataPersistence.saveToOriginalFile.audiobook.enabled) {
+          <div class="setting-options">
+            <div class="filesize-input">
+              <label>{{ t('maxFileSize') }}</label>
+              <input
+                type="number"
+                [(ngModel)]="metadataPersistence.saveToOriginalFile.audiobook.maxFileSizeInMb"
+                (change)="onFilesizeChange('audiobook')"
+                min="1"
+                max="2000"
+                class="filesize-field">
+              <span class="filesize-unit">MB</span>
+              <i
+                class="pi pi-info-circle"
+                [pTooltip]="t('maxFileSizeTooltip')"
+                tooltipPosition="right">
+              </i>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if ((appSettings$ | async)?.diskType === 'LOCAL') {
+        <div class="setting-item">
+          <div class="setting-header">
+            <p-toggleswitch
+              [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
+              (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+            </p-toggleswitch>
+            <label class="setting-label">{{ t('autoMove') }}</label>
+          </div>
+          <p class="setting-description">{{ t('autoMoveDesc') }}</p>
+        </div>
+      }
     </div>
 
-    @if (metadataPersistence.sidecarSettings?.enabled) {
-      <div class="setting-item nested-setting">
+    <div class="section-header sidecar-section-header">
+      <h3 class="section-title">
+        <i class="pi pi-file"></i>
+        {{ t('sidecarTitle') }}
+      </h3>
+      <p class="section-description">
+        {{ t('sidecarDesc') }}
+      </p>
+    </div>
+
+    <div class="section-body">
+      <div class="setting-item">
         <div class="setting-header">
           <p-toggleswitch
-            [ngModel]="metadataPersistence.sidecarSettings?.writeOnUpdate"
-            (onChange)="onSidecarToggle('writeOnUpdate')">
+            [ngModel]="metadataPersistence.sidecarSettings?.enabled"
+            (onChange)="onSidecarToggle('enabled')">
           </p-toggleswitch>
-          <label class="setting-label">Write on Metadata Update</label>
+          <label class="setting-label">{{ t('enableSidecar') }}</label>
         </div>
-        <p class="setting-description">Automatically update the sidecar JSON file whenever book metadata is edited.</p>
+        <p class="setting-description" [innerHTML]="t('enableSidecarDesc')"></p>
       </div>
 
-      <div class="setting-item nested-setting">
-        <div class="setting-header">
-          <p-toggleswitch
-            [ngModel]="metadataPersistence.sidecarSettings?.writeOnScan"
-            (onChange)="onSidecarToggle('writeOnScan')">
-          </p-toggleswitch>
-          <label class="setting-label">Write on Initial Scan</label>
+      @if (metadataPersistence.sidecarSettings?.enabled) {
+        <div class="setting-item nested-setting">
+          <div class="setting-header">
+            <p-toggleswitch
+              [ngModel]="metadataPersistence.sidecarSettings?.writeOnUpdate"
+              (onChange)="onSidecarToggle('writeOnUpdate')">
+            </p-toggleswitch>
+            <label class="setting-label">{{ t('writeOnUpdate') }}</label>
+          </div>
+          <p class="setting-description">{{ t('writeOnUpdateDesc') }}</p>
         </div>
-        <p class="setting-description">Create sidecar JSON files when books are first added to the library during scanning.</p>
-      </div>
 
-      <div class="setting-item nested-setting">
-        <div class="setting-header">
-          <p-toggleswitch
-            [ngModel]="metadataPersistence.sidecarSettings?.includeCoverFile"
-            (onChange)="onSidecarToggle('includeCoverFile')">
-          </p-toggleswitch>
-          <label class="setting-label">Include Cover Image File</label>
+        <div class="setting-item nested-setting">
+          <div class="setting-header">
+            <p-toggleswitch
+              [ngModel]="metadataPersistence.sidecarSettings?.writeOnScan"
+              (onChange)="onSidecarToggle('writeOnScan')">
+            </p-toggleswitch>
+            <label class="setting-label">{{ t('writeOnScan') }}</label>
+          </div>
+          <p class="setting-description">{{ t('writeOnScanDesc') }}</p>
         </div>
-        <p class="setting-description">Also save the cover image as <code>BookName.cover.jpg</code> alongside the sidecar JSON file.</p>
-      </div>
-    }
+
+        <div class="setting-item nested-setting">
+          <div class="setting-header">
+            <p-toggleswitch
+              [ngModel]="metadataPersistence.sidecarSettings?.includeCoverFile"
+              (onChange)="onSidecarToggle('includeCoverFile')">
+            </p-toggleswitch>
+            <label class="setting-label">{{ t('includeCover') }}</label>
+          </div>
+          <p class="setting-description" [innerHTML]="t('includeCoverDesc')"></p>
+        </div>
+      }
+    </div>
   </div>
-</div>
+</ng-container>

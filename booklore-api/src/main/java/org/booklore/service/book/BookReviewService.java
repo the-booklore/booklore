@@ -16,6 +16,7 @@ import org.booklore.service.metadata.BookReviewUpdateService;
 import org.booklore.service.metadata.MetadataRefreshService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class BookReviewService {
@@ -67,7 +69,8 @@ public class BookReviewService {
                         .map(mapper::toDto)
                         .collect(Collectors.toList());
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("Failed to auto-fetch reviews for book {}: {}", bookId, e.getMessage());
         }
 
         return existingReviews;

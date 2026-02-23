@@ -10,6 +10,7 @@ import {UserService} from '../user.service';
 import {MessageService} from 'primeng/api';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {passwordMatchValidator} from '../../../../shared/validators/password-match.validator';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 
 @Component({
@@ -21,7 +22,9 @@ import {passwordMatchValidator} from '../../../../shared/validators/password-mat
     FormsModule,
     Checkbox,
     MultiSelectModule,
-    Button
+    Button,
+    TranslocoDirective,
+    TranslocoPipe
   ],
   templateUrl: './create-user-dialog.component.html',
   styleUrl: './create-user-dialog.component.scss'
@@ -35,6 +38,7 @@ export class CreateUserDialogComponent implements OnInit {
   private userService = inject(UserService);
   private messageService = inject(MessageService);
   private ref = inject(DynamicDialogRef);
+  private t = inject(TranslocoService);
 
   ngOnInit() {
     this.libraries = this.libraryService.getLibrariesFromState();
@@ -90,8 +94,8 @@ export class CreateUserDialogComponent implements OnInit {
     if (this.userForm.invalid) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Validation Error',
-        detail: 'Please correct errors before submitting.'
+        summary: this.t.translate('common.error'),
+        detail: this.t.translate('settingsUsers.createDialog.validationError')
       });
       return;
     }
@@ -108,18 +112,18 @@ export class CreateUserDialogComponent implements OnInit {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'User Created',
-          detail: 'The user has been successfully created.'
+          summary: this.t.translate('common.success'),
+          detail: this.t.translate('settingsUsers.createDialog.createSuccess')
         });
         this.ref.close(true);
       },
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'User Creation Failed',
+          summary: this.t.translate('common.error'),
           detail: err?.error?.message
-            ? `Unable to create user: ${err.error.message}`
-            : 'An unexpected error occurred while creating the user. Please try again later.'
+            ? this.t.translate('settingsUsers.createDialog.createFailed', {message: err.error.message})
+            : this.t.translate('settingsUsers.createDialog.createError')
         });
       }
     });
