@@ -800,7 +800,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   getDisplayFormat(): string | null {
     if (!this.book?.primaryFile) {
-      return 'PHYSICAL';
+      return 'PHY';
     }
     if (this.forceEbookMode && this.book.primaryFile?.bookType === 'AUDIOBOOK') {
       const ebookType = this.getEbookType(this.book);

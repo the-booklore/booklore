@@ -108,27 +108,28 @@
 
 .heart-orbit-1 {
   background: #f472b6;
-  box-shadow: 0 0 6px #f472b6;
+  box-shadow: 0 0 10px #f472b6, 0 0 4px #f472b6;
   animation: orbit-1 2.5s linear infinite;
 }
 
 .heart-orbit-2 {
   background: #a78bfa;
-  box-shadow: 0 0 6px #a78bfa;
+  box-shadow: 0 0 10px #a78bfa, 0 0 4px #a78bfa;
   animation: orbit-2 3.2s linear infinite reverse;
 }
 
 .heart-orbit-3 {
   background: #38bdf8;
-  box-shadow: 0 0 6px #38bdf8;
+  box-shadow: 0 0 10px #38bdf8, 0 0 4px #38bdf8;
   animation: orbit-3 4s linear infinite;
 }
 
 .heart-icon {
   z-index: 10;
-  color: #ec4899 !important;
+  color: #e8366d !important;
+  font-size: 1.05rem;
   animation: heart-float 2.5s ease-in-out infinite;
-  filter: drop-shadow(0 0 4px rgba(236, 72, 153, 0.5));
+  filter: drop-shadow(0 0 6px rgba(232, 54, 109, 0.8));
   transition: filter 0.3s;
 }
 
@@ -203,8 +204,8 @@
 }
 
 @keyframes heart-float {
-  0%, 100% { transform: translateY(2px); }
-  50% { transform: translateY(-2px); }
+  0%, 100% { transform: translateY(1px); }
+  50% { transform: translateY(-1px); }
 }
 
 @keyframes heartbeat {
