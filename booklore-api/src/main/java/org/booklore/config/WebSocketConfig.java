@@ -32,15 +32,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        String allowedOrigins = env.getProperty("app.cors.allowed-origins", "").trim();
+        String allowedOrigins = env.getProperty("app.cors.allowed-origins", "*").trim();
         var endpoint = registry.addEndpoint("/ws");
-        if (allowedOrigins.isEmpty()) {
-            // No explicit origins configured: enforce same-origin check (Spring WebSocket default)
-            log.info("WebSocket endpoint registered at /ws (same-origin only)");
-        } else if ("*".equals(allowedOrigins)) {
+        if ("*".equals(allowedOrigins)) {
             endpoint.setAllowedOriginPatterns("*");
             log.warn("WebSocket endpoint is configured to allow all origins (*). " +
-                    "Set 'app.cors.allowed-origins' to specific origins in production.");
+                    "This is the default for backward compatibility, but it's recommended to set 'app.cors.allowed-origins' to an explicit list.");
+        } else if (allowedOrigins.isEmpty()) {
+            // No explicit origins configured: enforce same-origin check (Spring WebSocket default)
+            log.info("WebSocket endpoint registered at /ws (same-origin only)");
         } else {
             String[] origins = java.util.Arrays.stream(allowedOrigins.split("\\s*,\\s*"))
                     .filter(s -> !s.isEmpty())

@@ -26,6 +26,8 @@ interface SvgIconBatchResponse {
 
 type IconContentMap = Record<string, string>;
 
+import DOMPurify from 'dompurify';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -40,11 +42,14 @@ export class IconService {
   private sanitizer = inject(DomSanitizer);
 
   /**
-   * Returns the SVG content. SVGs originate from the Booklore API and are trusted.
-   * If the trust model changes, consider adding a library like DOMPurify here.
+   * Sanitizes SVG content using DOMPurify.
    */
   private sanitizeSvgContent(content: string): string {
-    return content;
+    return DOMPurify.sanitize(content, {
+      USE_PROFILES: { svg: true },
+      FORBID_TAGS: ['script', 'style', 'foreignObject'],
+      FORBID_ATTR: ['on*']
+    });
   }
 
   preloadAllIcons(): Observable<void> {

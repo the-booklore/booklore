@@ -43,19 +43,32 @@ import java.util.stream.Stream;
 @Service
 public class FileService {
 
+    private static final ThreadLocal<String> TARGET_HOST_THREAD_LOCAL = new ThreadLocal<>();
+
+    public static String getTargetHost() {
+        return TARGET_HOST_THREAD_LOCAL.get();
+    }
+
+    public static void setTargetHost(String host) {
+        TARGET_HOST_THREAD_LOCAL.set(host);
+    }
+
+    public static void clearTargetHost() {
+        TARGET_HOST_THREAD_LOCAL.remove();
+    }
+
+    static {
+        // Enable restricted headers to allow 'Host' header override for DNS rebinding protection
+        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+    }
+
     private final AppProperties appProperties;
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
+    private final RestTemplate noRedirectRestTemplate;
 
-    RestTemplate noRedirectRestTemplate = new RestTemplate(
-        new SimpleClientHttpRequestFactory() {
-            @Override
-            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
-                super.prepareConnection(connection, httpMethod);
-                connection.setInstanceFollowRedirects(false);
-            }
-        }
-    );
+    private static final int MAX_REDIRECTS = 5;
+
 
     private static final double TARGET_COVER_ASPECT_RATIO = 1.5;
     private static final int SMART_CROP_COLOR_TOLERANCE = 30;
@@ -157,6 +170,7 @@ public class FileService {
         return Paths.get(appProperties.getPathConfig(), "tools", "kepubify").toString();
     }
 
+
     // ========================================
     // VALIDATION
     // ========================================
@@ -253,20 +267,27 @@ public class FileService {
     }
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
-        try {
-            URI uri = URI.create(imageUrl);
+        String currentUrl = imageUrl;
+        int redirectCount = 0;
+
+        while (redirectCount <= MAX_REDIRECTS) {
+            URI uri = URI.create(currentUrl);
             URL url = uri.toURL();
 
-            // Quick check to avoid `file://` or other protocols
             if (!"http".equalsIgnoreCase(url.getProtocol()) && !"https".equalsIgnoreCase(url.getProtocol())) {
                  throw new IOException("Only HTTP and HTTPS protocols are allowed");
             }
 
-            InetAddress[] inetAddresses = InetAddress.getAllByName(url.getHost());
+            // Resolve host to IP to prevent DNS rebinding (TOCTOU)
+            String host = url.getHost();
+            InetAddress[] inetAddresses = InetAddress.getAllByName(host);
+            if (inetAddresses.length == 0) {
+                throw new IOException("Could not resolve host: " + host);
+            }
             for (InetAddress inetAddress : inetAddresses) {
                 if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
                     inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
-                    throw new SecurityException("URL points to a local or private internal network address");
+                    throw new SecurityException("URL points to a local or private internal network address: " + host);
                 }
             }
 
@@ -277,22 +298,27 @@ public class FileService {
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
             ResponseEntity<byte[]> response = noRedirectRestTemplate.exchange(
-                    imageUrl,
+                    currentUrl,
                     HttpMethod.GET,
                     entity,
                     byte[].class
             );
 
-            // Validate and convert
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return readImage(response.getBody());
+            } else if (response.getStatusCode().is3xxRedirection()) {
+                String location = response.getHeaders().getFirst(HttpHeaders.LOCATION);
+                if (location == null) {
+                    throw new IOException("Redirection response without Location header");
+                }
+                currentUrl = uri.resolve(location).toString();
+                redirectCount++;
             } else {
                 throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
             }
-        } catch (Exception e) {
-            log.error("Failed to download image from URL: {} - {}", imageUrl, e.getMessage());
-            throw new IOException("Failed to download image from URL: " + imageUrl + " - " + e.getMessage(), e);
         }
+
+        throw new IOException("Too many redirects (max " + MAX_REDIRECTS + ")");
     }
 
     // ========================================

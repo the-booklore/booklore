@@ -18,6 +18,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import javax.imageio.ImageIO;
@@ -61,8 +62,9 @@ class FileServiceTest {
                 .build();
         lenient().when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
-        fileService = new FileService(appProperties, mock(RestTemplate.class), appSettingService);
-        fileService.noRedirectRestTemplate = mock(RestTemplate.class);
+        RestTemplate mockRestTemplate = mock(RestTemplate.class);
+        RestTemplate mockNoRedirectRestTemplate = mock(RestTemplate.class);
+        fileService = new FileService(appProperties, mockRestTemplate, appSettingService, mockNoRedirectRestTemplate);
     }
 
     @Nested
@@ -1177,8 +1179,7 @@ class FileServiceTest {
                     .build();
             lenient().when(appSettingServiceForNetwork.getAppSettings()).thenReturn(appSettings);
 
-            fileService = new FileService(appProperties, restTemplate, appSettingServiceForNetwork);
-            fileService.noRedirectRestTemplate = restTemplate;
+            fileService = new FileService(appProperties, restTemplate, appSettingServiceForNetwork, restTemplate);
         }
 
         @Nested
@@ -1189,18 +1190,17 @@ class FileServiceTest {
             @DisplayName("downloads and returns valid image")
             @Timeout(5)
             void downloadImageFromUrl_validImage_returnsBufferedImage() throws IOException {
-                String imageUrl = "http://example.com/image.jpg";
+                String imageUrl = "http://1.1.1.1/image.jpg";
                 BufferedImage testImage = createTestImage(100, 100);
                 byte[] imageBytes = imageToBytes(testImage);
 
                 RestTemplate mockRestTemplate = mock(RestTemplate.class);
                 AppSettingService mockAppSettingService = mock(AppSettingService.class);
-                FileService testFileService = new FileService(appProperties, mockRestTemplate, mockAppSettingService);
-                testFileService.noRedirectRestTemplate = mockRestTemplate;
+                FileService testFileService = new FileService(appProperties, mockRestTemplate, mockAppSettingService, mockRestTemplate);
 
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(imageBytes);
                 when(mockRestTemplate.exchange(
-                        eq(imageUrl),
+                        anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)
@@ -1217,10 +1217,10 @@ class FileServiceTest {
             @DisplayName("throws exception when response body is null")
             @Timeout(5)
             void downloadImageFromUrl_nullBody_throwsException() {
-                String imageUrl = "http://example.com/image.jpg";
+                String imageUrl = "http://1.1.1.1/image.jpg";
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(null);
                 when(restTemplate.exchange(
-                        eq(imageUrl),
+                        anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)
@@ -1234,11 +1234,11 @@ class FileServiceTest {
             @DisplayName("returns null when ImageIO cannot read bytes")
             @Timeout(5)
             void downloadImageFromUrl_invalidImageData_returnsNull() throws IOException {
-                String imageUrl = "http://example.com/image.jpg";
+                String imageUrl = "http://1.1.1.1/image.jpg";
                 byte[] invalidBytes = "not an image".getBytes();
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(invalidBytes);
                 when(restTemplate.exchange(
-                        eq(imageUrl),
+                        anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)
@@ -1252,10 +1252,10 @@ class FileServiceTest {
             @DisplayName("throws exception on HTTP error status")
             @Timeout(5)
             void downloadImageFromUrl_httpError_throwsException() {
-                String imageUrl = "http://example.com/image.jpg";
+                String imageUrl = "http://1.1.1.1/image.jpg";
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.notFound().build();
                 when(restTemplate.exchange(
-                        eq(imageUrl),
+                        anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)
@@ -1274,14 +1274,14 @@ class FileServiceTest {
             @DisplayName("downloads and saves cover images successfully")
             @Timeout(5)
             void createThumbnailFromUrl_validImage_createsCoverAndThumbnail() throws IOException {
-                String imageUrl = "http://example.com/cover.jpg";
+                String imageUrl = "http://1.1.1.1/cover.jpg";
                 long bookId = 42L;
                 BufferedImage testImage = createTestImage(800, 1200); // Portrait image
                 byte[] imageBytes = imageToBytes(testImage);
 
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(imageBytes);
                 when(restTemplate.exchange(
-                        eq(imageUrl),
+                        anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)
@@ -1307,7 +1307,7 @@ class FileServiceTest {
                 long bookId = 42L;
 
                 when(restTemplate.exchange(
-                        eq(imageUrl),
+                        anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)

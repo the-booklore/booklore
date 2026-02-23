@@ -5,6 +5,7 @@ import org.booklore.config.security.service.OpdsUserDetailsService;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import org.booklore.util.FileService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -24,13 +25,26 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.util.Collections;
 
 @Slf4j
 @AllArgsConstructor
@@ -240,20 +254,77 @@ public class SecurityConfig {
         return auth.build();
     }
 
+    @Bean("noRedirectRestTemplate")
+    public RestTemplate noRedirectRestTemplate() {
+        return new RestTemplate(
+                new SimpleClientHttpRequestFactory() {
+                    @Override
+                    protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
+                        super.prepareConnection(connection, httpMethod);
+                        connection.setInstanceFollowRedirects(false);
+                        if (connection instanceof HttpsURLConnection httpsConnection) {
+                            String targetHost = FileService.getTargetHost();
+                            if (targetHost != null) {
+                                // Set original host for SNI (even if connecting to IP)
+                                SSLSocketFactory defaultFactory = httpsConnection.getSSLSocketFactory();
+                                httpsConnection.setSSLSocketFactory(new SniSSLSocketFactory(defaultFactory, targetHost));
+
+                                httpsConnection.setHostnameVerifier((hostname, session) -> true);
+                            }
+                        }
+                    }
+                }
+        );
+    }
+
+    private static class SniSSLSocketFactory extends SSLSocketFactory {
+        private final SSLSocketFactory delegate;
+        private final String targetHost;
+
+        public SniSSLSocketFactory(SSLSocketFactory delegate, String targetHost) {
+            this.delegate = delegate;
+            this.targetHost = targetHost;
+        }
+
+        @Override
+        public String[] getDefaultCipherSuites() { return delegate.getDefaultCipherSuites(); }
+        @Override
+        public String[] getSupportedCipherSuites() { return delegate.getSupportedCipherSuites(); }
+
+        @Override
+        public Socket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
+            // Pass targetHost instead of host (which is the IP) so the internal SSLSession gets the correct peer host
+            Socket socket = delegate.createSocket(s, targetHost, port, autoClose);
+            if (socket instanceof SSLSocket sslSocket) {
+                SNIHostName serverName = new SNIHostName(targetHost);
+                SSLParameters params = sslSocket.getSSLParameters();
+                params.setServerNames(Collections.singletonList(serverName));
+                // Explicitly set EndpointIdentificationAlgorithm so Java verifies the certificate against targetHost
+                params.setEndpointIdentificationAlgorithm("HTTPS");
+                sslSocket.setSSLParameters(params);
+            }
+            return socket;
+        }
+
+        @Override public Socket createSocket(String host, int port) throws IOException { return delegate.createSocket(host, port); }
+        @Override public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException { return delegate.createSocket(host, port, localHost, localPort); }
+        @Override public Socket createSocket(InetAddress host, int port) throws IOException { return delegate.createSocket(host, port); }
+        @Override public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException { return delegate.createSocket(address, port, localAddress, localPort); }
+    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        String allowedOriginsStr = env.getProperty("app.cors.allowed-origins", "").trim();
-        if (allowedOriginsStr.isEmpty()) {
-            log.info("CORS is configured to allow same-origin requests only.");
-            // By NOT setting allowed origins or patterns, we effectively restrict to same-origin.
-        } else if ("*".equals(allowedOriginsStr)) {
+        String allowedOriginsStr = env.getProperty("app.cors.allowed-origins", "*").trim();
+        if ("*".equals(allowedOriginsStr)) {
             log.warn(
-                "CORS is configured to allow all origins (*). In production, set 'app.cors.allowed-origins' " +
-                "to an explicit origin list to prevent Cross-Origin Resource Sharing attacks."
+                "CORS is configured to allow all origins (*). This is the default to maintain backward compatibility, " +
+                "but it's recommended to set 'app.cors.allowed-origins' to an explicit origin list."
             );
             configuration.setAllowedOriginPatterns(List.of("*"));
+        } else if (allowedOriginsStr.isEmpty()) {
+            log.info("CORS is configured to allow same-origin requests only.");
         } else {
             List<String> origins = Arrays.stream(ALLOWED.split(allowedOriginsStr))
                     .filter(s -> !s.isEmpty())
