@@ -6,7 +6,9 @@ import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.CompletionRaceSessionDto;
 import org.booklore.model.dto.request.ReadingSessionRequest;
 import org.booklore.model.dto.PageTurnerSessionDto;
+import org.booklore.model.dto.ProgressPercentDto;
 import org.booklore.model.dto.response.BookCompletionHeatmapResponse;
+import org.booklore.model.dto.response.BookDistributionsResponse;
 import org.booklore.model.dto.response.CompletionRaceResponse;
 import org.booklore.model.dto.response.CompletionTimelineResponse;
 import org.booklore.model.dto.response.FavoriteReadingDaysResponse;
@@ -427,6 +429,80 @@ public class ReadingSessionService {
                         .count(dto.getCount())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public BookDistributionsResponse getBookDistributions() {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        // Rating distribution
+        List<BookDistributionsResponse.RatingBucket> ratingBuckets = userBookProgressRepository.findRatingDistributionByUser(userId)
+                .stream()
+                .map(dto -> BookDistributionsResponse.RatingBucket.builder()
+                        .rating(dto.getRating())
+                        .count(dto.getCount())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Status distribution
+        List<BookDistributionsResponse.StatusBucket> statusBuckets = userBookProgressRepository.findStatusDistributionByUser(userId)
+                .stream()
+                .map(dto -> BookDistributionsResponse.StatusBucket.builder()
+                        .status(dto.getStatus().name())
+                        .count(dto.getCount())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Progress distribution — coalesce to max across sources, then bucket
+        List<ProgressPercentDto> progressRows = userBookProgressRepository.findAllProgressPercentsByUser(userId);
+        long[] bucketCounts = new long[6]; // Not Started, Just Started, Getting Into It, Halfway Through, Almost Done, Completed
+
+        for (ProgressPercentDto row : progressRows) {
+            float maxPercent = maxProgress(row);
+            int pct = Math.round(maxPercent * 100);
+            if (pct <= 0) bucketCounts[0]++;
+            else if (pct <= 25) bucketCounts[1]++;
+            else if (pct <= 50) bucketCounts[2]++;
+            else if (pct <= 75) bucketCounts[3]++;
+            else if (pct < 100) bucketCounts[4]++;
+            else bucketCounts[5]++;
+        }
+
+        String[][] bucketDefs = {
+                {"Not Started", "0", "0"},
+                {"Just Started", "1", "25"},
+                {"Getting Into It", "26", "50"},
+                {"Halfway Through", "51", "75"},
+                {"Almost Done", "76", "99"},
+                {"Completed", "100", "100"}
+        };
+
+        List<BookDistributionsResponse.ProgressBucket> progressBuckets = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            progressBuckets.add(BookDistributionsResponse.ProgressBucket.builder()
+                    .range(bucketDefs[i][0])
+                    .min(Integer.parseInt(bucketDefs[i][1]))
+                    .max(Integer.parseInt(bucketDefs[i][2]))
+                    .count(bucketCounts[i])
+                    .build());
+        }
+
+        return BookDistributionsResponse.builder()
+                .ratingDistribution(ratingBuckets)
+                .progressDistribution(progressBuckets)
+                .statusDistribution(statusBuckets)
+                .build();
+    }
+
+    private float maxProgress(ProgressPercentDto row) {
+        float max = 0f;
+        if (row.getKoreaderProgressPercent() != null) max = Math.max(max, row.getKoreaderProgressPercent());
+        if (row.getKoboProgressPercent() != null) max = Math.max(max, row.getKoboProgressPercent());
+        if (row.getEpubProgressPercent() != null) max = Math.max(max, row.getEpubProgressPercent());
+        if (row.getPdfProgressPercent() != null) max = Math.max(max, row.getPdfProgressPercent());
+        if (row.getCbxProgressPercent() != null) max = Math.max(max, row.getCbxProgressPercent());
+        return max;
     }
 
     private double linearRegressionSlope(List<Double> values) {

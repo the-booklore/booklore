@@ -160,6 +160,18 @@ public class UserStatsController {
         return ResponseEntity.ok(data);
     }
 
+    @Operation(summary = "Get book distribution statistics", description = "Returns rating, progress, and read status distributions for the authenticated user's library")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book distributions retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/book-distributions")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<BookDistributionsResponse> getBookDistributions() {
+        BookDistributionsResponse data = readingSessionService.getBookDistributions();
+        return ResponseEntity.ok(data);
+    }
+
     @Operation(summary = "Get all reading dates", description = "Returns daily reading session counts across all time for the authenticated user")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Reading dates retrieved successfully"),
