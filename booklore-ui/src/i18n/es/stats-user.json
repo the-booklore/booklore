@@ -27,7 +27,11 @@
     "ratingTaste": "Comparacion de gusto en calificaciones",
     "seriesProgress": "Seguimiento de progreso de series",
     "readingDna": "Perfil de ADN lector",
-    "readingHabits": "Analisis de habitos de lectura"
+    "readingHabits": "Analisis de habitos de lectura",
+    "bookFlow": "Flujo de libros",
+    "readingDebt": "Deuda de lectura",
+    "publicationEra": "Era de publicacion vs calificacion",
+    "sessionArchetypes": "Arquetipos de sesiones"
   },
   "sessionHeatmap": {
     "title": "Actividad de sesiones de lectura",
@@ -470,5 +474,57 @@
     "statusAbandoned": "Abandonado",
     "statusOther": "Otro",
     "trend": "Tendencia"
+  },
+  "bookFlow": {
+    "title": "Flujo de libros",
+    "tooltip": "Un diagrama aluvial que muestra como fluyen los libros desde cuando se agregaron (izquierda) a traves de su estado de lectura (centro) hasta su rango de calificacion (derecha). Sigue los flujos para ver patrones en como tus adquisiciones se convierten en lecturas y calificaciones.",
+    "description": "Como fluyen los libros desde la adquisicion al estado y la calificacion",
+    "totalBooks": "Total de libros",
+    "busiestQuarter": "Trimestre mas activo",
+    "topStatus": "Estado principal",
+    "avgRating": "Calif. promedio",
+    "completionRate": "Completados",
+    "colAdded": "Agregado",
+    "colStatus": "Estado",
+    "colRating": "Calificacion",
+    "noData": "No se encontraron libros en tu biblioteca.",
+    "noDataHint": "Agrega algunos libros para ver el diagrama de flujo."
+  },
+  "readingDebt": {
+    "title": "Deuda de lectura",
+    "tooltip": "Cada mes muestra libros agregados (rojo) y libros terminados (verde) en los ultimos 12 meses. La linea amarilla rastrea tu acumulacion pendiente. Una linea ascendente significa que tu pila por leer esta creciendo.",
+    "description": "Libros agregados vs terminados mensualmente con acumulacion pendiente",
+    "booksAdded": "Libros agregados",
+    "booksFinished": "Libros terminados",
+    "backlog": "Pendientes",
+    "currentBacklog": "Pendientes actuales",
+    "trendLabel": "Tendencia",
+    "growing": "Creciendo",
+    "shrinking": "Reduciendose",
+    "noData": "No se encontraron datos de actividad de libros.",
+    "noDataHint": "Agrega y termina libros para ver tu tendencia de deuda de lectura."
+  },
+  "publicationEra": {
+    "title": "Era de publicacion vs calificacion",
+    "tooltip": "Cada linea representa una decada de publicacion, mostrando cuantos libros de esa era le diste a cada rango de calificacion. Compara lineas para ver que decadas calificas mas alto.",
+    "description": "Que decadas de publicacion calificas mas alto",
+    "bestDecade": "Mejor decada",
+    "avgRating": "Calif. promedio",
+    "booksRated": "Libros calificados",
+    "noData": "No hay suficientes libros calificados con fechas de publicacion.",
+    "noDataHint": "Califica libros que tengan metadatos de fecha de publicacion para ver comparaciones por era."
+  },
+  "sessionArchetypes": {
+    "title": "Arquetipos de sesiones",
+    "tooltip": "Cada punto es una sesion de lectura graficada por hora del dia (X) y duracion en minutos (Y), coloreada por dia de la semana. Los grupos naturales revelan tus patrones de lectura.",
+    "description": "Tus patrones de sesiones de lectura por hora y duracion",
+    "sessions": "Sesiones",
+    "dominantType": "Tipo dominante",
+    "archetype_morning": "Lector matutino",
+    "archetype_afternoon": "Lector vespertino",
+    "archetype_evening": "Lector nocturno",
+    "archetype_night": "Noctambulo",
+    "noData": "No se encontraron sesiones de lectura para este ano.",
+    "noDataHint": "Rastrea sesiones de lectura para descubrir tus arquetipos de sesion."
   }
 }

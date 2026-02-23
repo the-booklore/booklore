@@ -7,19 +7,7 @@ import org.booklore.model.dto.CompletionRaceSessionDto;
 import org.booklore.model.dto.request.ReadingSessionRequest;
 import org.booklore.model.dto.PageTurnerSessionDto;
 import org.booklore.model.dto.ProgressPercentDto;
-import org.booklore.model.dto.response.BookCompletionHeatmapResponse;
-import org.booklore.model.dto.response.BookDistributionsResponse;
-import org.booklore.model.dto.response.CompletionRaceResponse;
-import org.booklore.model.dto.response.CompletionTimelineResponse;
-import org.booklore.model.dto.response.FavoriteReadingDaysResponse;
-import org.booklore.model.dto.response.GenreStatisticsResponse;
-import org.booklore.model.dto.response.PageTurnerScoreResponse;
-import org.booklore.model.dto.response.PeakReadingHoursResponse;
-
-import org.booklore.model.dto.response.ReadingSessionHeatmapResponse;
-import org.booklore.model.dto.response.ReadingSessionResponse;
-import org.booklore.model.dto.response.ReadingSessionTimelineResponse;
-import org.booklore.model.dto.response.ReadingSpeedResponse;
+import org.booklore.model.dto.response.*;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.model.entity.CategoryEntity;
@@ -503,6 +491,21 @@ public class ReadingSessionService {
         if (row.getPdfProgressPercent() != null) max = Math.max(max, row.getPdfProgressPercent());
         if (row.getCbxProgressPercent() != null) max = Math.max(max, row.getCbxProgressPercent());
         return max;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessionScatterResponse> getSessionScatter(int year) {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        return readingSessionRepository.findSessionScatterByUserAndYear(userId, year, getTimezoneOffset())
+                .stream()
+                .map(dto -> SessionScatterResponse.builder()
+                        .hourOfDay(dto.getHourOfDay())
+                        .durationMinutes(dto.getDurationMinutes())
+                        .dayOfWeek(dto.getDayOfWeek())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private double linearRegressionSlope(List<Double> values) {

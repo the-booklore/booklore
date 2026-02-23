@@ -1,8 +1,6 @@
 package org.booklore.repository;
 
 import org.booklore.model.dto.*;
-import org.booklore.model.dto.CompletionRaceSessionDto;
-import org.booklore.model.dto.PageTurnerSessionDto;
 
 import org.booklore.model.entity.ReadingSessionEntity;
 import org.springframework.data.domain.Page;
@@ -197,5 +195,22 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             """, nativeQuery = true)
     List<ReadingSessionCountDto> findAllSessionCountsByUser(
             @Param("userId") Long userId,
+            @Param("tzOffset") String tzOffset);
+
+    @Query(value = """
+            SELECT
+                HOUR(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset))
+                    + MINUTE(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) / 60.0 as hourOfDay,
+                rs.duration_seconds / 60.0 as durationMinutes,
+                DAYOFWEEK(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) as dayOfWeek
+            FROM reading_sessions rs
+            WHERE rs.user_id = :userId
+            AND YEAR(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) = :year
+            ORDER BY rs.start_time DESC
+            LIMIT 500
+            """, nativeQuery = true)
+    List<SessionScatterDto> findSessionScatterByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year,
             @Param("tzOffset") String tzOffset);
 }

@@ -183,4 +183,16 @@ public class UserStatsController {
         List<ReadingSessionHeatmapResponse> data = readingSessionService.getReadingDates();
         return ResponseEntity.ok(data);
     }
+
+    @Operation(summary = "Get session scatter data", description = "Returns individual session data points for scatter plot visualization")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Session scatter data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/session-scatter")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<SessionScatterResponse>> getSessionScatter(@RequestParam int year) {
+        List<SessionScatterResponse> data = readingSessionService.getSessionScatter(year);
+        return ResponseEntity.ok(data);
+    }
 }
