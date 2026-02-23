@@ -28,6 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 public class SecurityConfig {
 
+    private static final Pattern ALLOWED = Pattern.compile("\\s*,\\s*");
     private final OpdsUserDetailsService opdsUserDetailsService;
     private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
     private final Environment env;
@@ -242,18 +244,21 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        String allowedOrigins = env.getProperty("app.cors.allowed-origins", "").trim();
-        if (allowedOrigins.isEmpty()) {
+        String allowedOriginsStr = env.getProperty("app.cors.allowed-origins", "").trim();
+        if (allowedOriginsStr.isEmpty()) {
             log.info("CORS is configured to allow same-origin requests only.");
-            // Do not set allowed origins to effectively disable cross-origin requests
-        } else if ("*".equals(allowedOrigins)) {
+            // By NOT setting allowed origins or patterns, we effectively restrict to same-origin.
+        } else if ("*".equals(allowedOriginsStr)) {
             log.warn(
                 "CORS is configured to allow all origins (*). In production, set 'app.cors.allowed-origins' " +
                 "to an explicit origin list to prevent Cross-Origin Resource Sharing attacks."
             );
             configuration.setAllowedOriginPatterns(List.of("*"));
         } else {
-            configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
+            List<String> origins = Arrays.stream(ALLOWED.split(allowedOriginsStr))
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            configuration.setAllowedOriginPatterns(origins);
         }
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));

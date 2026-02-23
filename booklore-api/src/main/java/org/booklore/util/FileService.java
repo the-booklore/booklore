@@ -11,22 +11,30 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -39,11 +47,10 @@ public class FileService {
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
 
-    // visible for testing
     RestTemplate noRedirectRestTemplate = new RestTemplate(
-        new org.springframework.http.client.SimpleClientHttpRequestFactory() {
+        new SimpleClientHttpRequestFactory() {
             @Override
-            protected void prepareConnection(java.net.HttpURLConnection connection, String httpMethod) throws IOException {
+            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
                 super.prepareConnection(connection, httpMethod);
                 connection.setInstanceFollowRedirects(false);
             }
@@ -183,27 +190,34 @@ public class FileService {
         if (imageData == null || imageData.length == 0) {
             throw new IOException("Image data is null or empty");
         }
-        try (InputStream is = new ByteArrayInputStream(imageData)) {
-            BufferedImage image = ImageIO.read(is);
-            if (image != null) {
-                // Guard against decompression bomb: a tiny compressed file that expands to a
-                // massive in-memory bitmap can cause OutOfMemoryError. Reject images whose
-                // decoded pixel area exceeds MAX_IMAGE_PIXELS.
-                long pixelCount = (long) image.getWidth() * image.getHeight();
-                if (pixelCount > MAX_IMAGE_PIXELS) {
-                    image.flush();
-                    log.warn("Rejected image: decoded pixel count {} exceeds limit {} — possible decompression bomb",
-                            pixelCount, MAX_IMAGE_PIXELS);
-                    return null;
+
+        try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(imageData))) {
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
+            if (readers.hasNext()) {
+                ImageReader reader = readers.next();
+                try {
+                    reader.setInput(iis);
+                    int width = reader.getWidth(0);
+                    int height = reader.getHeight(0);
+
+                    long pixelCount = (long) width * height;
+                    if (pixelCount > MAX_IMAGE_PIXELS) {
+                        log.warn("Rejected image: dimensions {}x{} ({} pixels) exceed limit {} — possible decompression bomb",
+                                width, height, pixelCount, MAX_IMAGE_PIXELS);
+                        return null;
+                    }
+
+                    return reader.read(0);
+                } finally {
+                    reader.dispose();
                 }
-                return image;
             }
         } catch (Exception e) {
-            log.warn("ImageIO/TwelveMonkeys decode failed (possibly unsupported format like AVIF/HEIC): {}", e.getMessage());
+            log.warn("ImageIO decode failed (possibly unsupported format): {}", e.getMessage());
             return null;
         }
 
-        log.warn("Unable to decode image - likely unsupported format (AVIF, HEIC, or SVG)");
+        log.warn("Unable to decode image - likely unsupported format");
         return null;
     }
 
@@ -240,19 +254,19 @@ public class FileService {
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
-            java.net.URI uri = java.net.URI.create(imageUrl);
-            java.net.URL url = uri.toURL();
+            URI uri = URI.create(imageUrl);
+            URL url = uri.toURL();
 
             // Quick check to avoid `file://` or other protocols
             if (!"http".equalsIgnoreCase(url.getProtocol()) && !"https".equalsIgnoreCase(url.getProtocol())) {
                  throw new IOException("Only HTTP and HTTPS protocols are allowed");
             }
 
-            java.net.InetAddress[] inetAddresses = java.net.InetAddress.getAllByName(url.getHost());
-            for (java.net.InetAddress inetAddress : inetAddresses) {
+            InetAddress[] inetAddresses = InetAddress.getAllByName(url.getHost());
+            for (InetAddress inetAddress : inetAddresses) {
                 if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
                     inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
-                    throw new SecurityException("URL points to a local or private internal network address, which is not allowed for security reasons.");
+                    throw new SecurityException("URL points to a local or private internal network address");
                 }
             }
 

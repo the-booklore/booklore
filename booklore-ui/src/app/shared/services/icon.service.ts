@@ -1,10 +1,10 @@
-import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable, of} from 'rxjs';
-import {finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {API_CONFIG} from '../../core/config/api-config';
-import {IconCacheService} from './icon-cache.service';
-import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { finalize, map, shareReplay, tap } from 'rxjs/operators';
+import { API_CONFIG } from '../../core/config/api-config';
+import { IconCacheService } from './icon-cache.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 interface SvgIconData {
   svgName: string;
@@ -40,14 +40,10 @@ export class IconService {
   private sanitizer = inject(DomSanitizer);
 
   /**
-   * Strips known-dangerous SVG constructs before trusting the content with DomSanitizer.
-   * Removes inline <script> elements, event-handler attributes (on*=), and javascript: URIs.
-   * This is a defence-in-depth measure; SVG icons should only originate from the Booklore API.
-   * For comprehensive protection against all SVG attack vectors, consider adding DOMPurify.
+   * Returns the SVG content. SVGs originate from the Booklore API and are trusted.
+   * If the trust model changes, consider adding a library like DOMPurify here.
    */
   private sanitizeSvgContent(content: string): string {
-    // The SVGs are provided by our own backend and we trust them.
-    // We removed regex sanitization here as it's insufficient and creates false confidence.
     return content;
   }
 
@@ -64,7 +60,7 @@ export class IconService {
         });
       }),
       map(() => void 0),
-      shareReplay({bufferSize: 1, refCount: false}),
+      shareReplay({ bufferSize: 1, refCount: false }),
       finalize(() => this.preloadCache$ = null)
     );
 
@@ -85,7 +81,7 @@ export class IconService {
           const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(content));
           this.iconCache.cacheIcon(iconName, content, sanitized);
         }),
-        shareReplay({bufferSize: 1, refCount: true}),
+        shareReplay({ bufferSize: 1, refCount: true }),
         finalize(() => this.requestCache.delete(iconName))
       );
 
@@ -125,7 +121,7 @@ export class IconService {
   }
 
   saveBatchSvgIcons(icons: SvgIconData[]): Observable<SvgIconBatchResponse> {
-    return this.http.post<SvgIconBatchResponse>(`${this.baseUrl}/batch`, {icons}).pipe(
+    return this.http.post<SvgIconBatchResponse>(`${this.baseUrl}/batch`, { icons }).pipe(
       tap((response) => {
         response.results.forEach(result => {
           if (result.success) {

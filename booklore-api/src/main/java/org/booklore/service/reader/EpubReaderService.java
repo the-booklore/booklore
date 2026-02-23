@@ -65,8 +65,7 @@ public class EpubReaderService {
 
     private static final ThreadLocal<DocumentBuilder> DOCUMENT_BUILDER = ThreadLocal.withInitial(() -> {
         try {
-            DocumentBuilderFactory factory = SecureXmlUtils.createSecureDocumentBuilderFactory(true);
-            return factory.newDocumentBuilder();
+            return SecureXmlUtils.createSecureDocumentBuilder(true);
         } catch (ParserConfigurationException e) {
             throw new RuntimeException("Failed to create DocumentBuilder", e);
         }
