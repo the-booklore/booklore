@@ -5,7 +5,7 @@ export interface HeaderFooterVisibilityState {
 
 export class ReaderHeaderFooterVisibilityManager {
   private isPinned = false;
-  private mouseY = 0;
+  private mouseY: number;
 
   private readonly HEADER_HEIGHT = 20;
   private readonly FOOTER_HEIGHT = 40;
@@ -18,6 +18,7 @@ export class ReaderHeaderFooterVisibilityManager {
   private onStateChangeCallback?: (state: HeaderFooterVisibilityState) => void;
 
   constructor(private windowHeight: number) {
+    this.mouseY = windowHeight / 2;
   }
 
   onStateChange(callback: (state: HeaderFooterVisibilityState) => void): void {
