@@ -22,6 +22,7 @@ RUN apk update && apk add --no-cache su-exec
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN printf '#!/bin/sh\nif [ "$(id -u)" = "0" ]; then\n  exec entrypoint.sh java -jar /app/app.jar "$@"\nelse\n  exec java -jar /app/app.jar "$@"\nfi\n' > /start.sh && chmod +x /start.sh
 COPY booklore-api/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
 
 ARG BOOKLORE_PORT=6060
