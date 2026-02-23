@@ -1,1 +1,90 @@
-{}
+{
+    "header": {
+        "titleEdit": "Uredi pametno polico",
+        "titleCreate": "Graditelj pametnih polic",
+        "description": "Ustvarite pametne police s pravili po meri za samodejno organizacijo vaših knjig"
+    },
+    "form": {
+        "shelfName": "Ime pametne police",
+        "namePlaceholder": "npr. Romantične komedije, Akcijski trilerji, Manjkajoči metapodatki",
+        "shelfIcon": "Ikona police",
+        "clickToChange": "Kliknite za spremembo",
+        "removeIcon": "Odstrani ikono",
+        "selectIcon": "Izberi ikono",
+        "public": "Javno"
+    },
+    "actions": {
+        "cancel": "Prekliči",
+        "saveFilter": "Shrani filter",
+        "addRule": "Dodaj pravilo",
+        "addGroup": "Dodaj skupino"
+    },
+    "group": {
+        "condition": "Pogoj:"
+    },
+    "placeholders": {
+        "field": "Polje",
+        "operator": "Operator",
+        "startYear": "Začetno leto",
+        "endYear": "Končno leto",
+        "startDate": "Začetni datum",
+        "endDate": "Končni datum",
+        "startValue": "Začetna vrednost",
+        "endValue": "Končna vrednost",
+        "value": "Vrednost",
+        "selectStatuses": "Izberi statuse",
+        "selectFileTypes": "Izberi vrste datotek",
+        "selectLibraries": "Izberi knjižnice",
+        "selectShelves": "Izberi police",
+        "selectContentRatings": "Izberi ocene vsebine"
+    },
+    "fields": {
+        "library": "Knjižnica",
+        "shelf": "Polica",
+        "readStatus": "Status branja",
+        "lastReadTime": "Zadnjič brano",
+        "title": "Naslov",
+        "authors": "Avtorji",
+        "categories": "Žanri",
+        "moods": "Vzdušja",
+        "tags": "Oznake",
+        "publisher": "Založba",
+        "publishedDate": "Datum objave",
+        "personalRating": "Osebna ocena",
+        "pageCount": "Število strani",
+        "language": "Jezik",
+        "seriesName": "Ime zbirke",
+        "seriesNumber": "Številka v zbirki",
+        "fileSize": "Velikost datoteke",
+        "fileType": "Vrsta datoteke",
+        "subtitle": "Podnaslov",
+        "amazonRating": "Ocena Amazon",
+        "amazonReviewCount": "Amazon - št. mnenj",
+        "goodreadsRating": "Ocena Goodreads",
+        "goodreadsReviewCount": "Goodreads - št. mnenj",
+        "hardcoverRating": "Ocena Hardcover",
+        "hardcoverReviewCount": "Hardcover - št. mnenj",
+        "ranobedbRating": "Ocena Ranobedb",
+        "addedOn": "Dodano dne",
+        "lubimyczytacRating": "Ocena Lubimyczytac",
+        "description": "Opis",
+        "narrator": "Pripovedovalec",
+        "ageRating": "Starostna omejitev",
+        "contentRating": "Ocena vsebine",
+        "audibleRating": "Ocena Audible",
+        "audibleReviewCount": "Audible - št. mnenj",
+        "abridged": "Skrajšano",
+        "audiobookDuration": "Trajanje"
+    },
+    "operators": {
+        "equals": "je enako",
+        "empty": "je prazno",
+        "notEmpty": "ni prazno",
+        "contains": "vsebuje",
+        "startsWith": "se začne z",
+        "endsWith": "se konča z",
+        "greaterThan": "več kot",
+        "lessThan": "manj kot",
+        "between": "je med"
+    }
+}
