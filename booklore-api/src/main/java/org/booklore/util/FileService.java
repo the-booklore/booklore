@@ -39,6 +39,17 @@ public class FileService {
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
 
+    // visible for testing
+    RestTemplate noRedirectRestTemplate = new RestTemplate(
+        new org.springframework.http.client.SimpleClientHttpRequestFactory() {
+            @Override
+            protected void prepareConnection(java.net.HttpURLConnection connection, String httpMethod) throws IOException {
+                super.prepareConnection(connection, httpMethod);
+                connection.setInstanceFollowRedirects(false);
+            }
+        }
+    );
+
     private static final double TARGET_COVER_ASPECT_RATIO = 1.5;
     private static final int SMART_CROP_COLOR_TOLERANCE = 30;
     private static final double SMART_CROP_MARGIN_PERCENT = 0.02;
@@ -58,8 +69,8 @@ public class FileService {
     private static final String JPEG_MIME_TYPE                = "image/jpeg";
     private static final String PNG_MIME_TYPE                 = "image/png";
     private static final long   MAX_FILE_SIZE_BYTES           = 5L * 1024 * 1024;
-    // 150 MP covers legitimate book covers and author photos with a comfortable safety margin.
-    private static final long   MAX_IMAGE_PIXELS              = 150_000_000L;
+    // 20 MP covers legitimate book covers and author photos with a comfortable safety margin.
+    private static final long   MAX_IMAGE_PIXELS              = 20_000_000L;
     private static final int    THUMBNAIL_WIDTH               = 250;
     private static final int    THUMBNAIL_HEIGHT              = 350;
     private static final int    SQUARE_THUMBNAIL_SIZE         = 250;
@@ -229,15 +240,20 @@ public class FileService {
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
-            java.net.URL url = new java.net.URL(imageUrl);
+            java.net.URI uri = java.net.URI.create(imageUrl);
+            java.net.URL url = uri.toURL();
+
             // Quick check to avoid `file://` or other protocols
             if (!"http".equalsIgnoreCase(url.getProtocol()) && !"https".equalsIgnoreCase(url.getProtocol())) {
                  throw new IOException("Only HTTP and HTTPS protocols are allowed");
             }
-            java.net.InetAddress inetAddress = java.net.InetAddress.getByName(url.getHost());
-            if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
-                inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
-                throw new SecurityException("URL points to a local or private internal network address, which is not allowed for security reasons.");
+
+            java.net.InetAddress[] inetAddresses = java.net.InetAddress.getAllByName(url.getHost());
+            for (java.net.InetAddress inetAddress : inetAddresses) {
+                if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
+                    inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
+                    throw new SecurityException("URL points to a local or private internal network address, which is not allowed for security reasons.");
+                }
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -246,7 +262,7 @@ public class FileService {
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<byte[]> response = restTemplate.exchange(
+            ResponseEntity<byte[]> response = noRedirectRestTemplate.exchange(
                     imageUrl,
                     HttpMethod.GET,
                     entity,

@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @AllArgsConstructor
 @EnableMethodSecurity
 @Configuration
@@ -240,11 +243,11 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         String allowedOrigins = env.getProperty("app.cors.allowed-origins", "").trim();
-        if (allowedOrigins.isEmpty() || "*".equals(allowedOrigins)) {
-            // SECURITY NOTE: An empty 'app.cors.allowed-origins' falls back to wildcard (*), which allows
-            // any origin to make credentialed cross-origin requests. For production deployments, set this
-            // to a comma-separated list of explicitly allowed origins (e.g. "https://app.example.com").
-            org.slf4j.LoggerFactory.getLogger(SecurityConfig.class).warn(
+        if (allowedOrigins.isEmpty()) {
+            log.info("CORS is configured to allow same-origin requests only.");
+            // Do not set allowed origins to effectively disable cross-origin requests
+        } else if ("*".equals(allowedOrigins)) {
+            log.warn(
                 "CORS is configured to allow all origins (*). In production, set 'app.cors.allowed-origins' " +
                 "to an explicit origin list to prevent Cross-Origin Resource Sharing attacks."
             );

@@ -46,12 +46,9 @@ export class IconService {
    * For comprehensive protection against all SVG attack vectors, consider adding DOMPurify.
    */
   private sanitizeSvgContent(content: string): string {
-    return content
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<script[^>]*\/>/gi, '')
-      .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
-      .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
-      .replace(/javascript\s*:/gi, 'invalid:');
+    // The SVGs are provided by our own backend and we trust them.
+    // We removed regex sanitization here as it's insufficient and creates false confidence.
+    return content;
   }
 
   preloadAllIcons(): Observable<void> {

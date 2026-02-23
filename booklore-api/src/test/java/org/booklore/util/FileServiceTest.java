@@ -62,6 +62,7 @@ class FileServiceTest {
         lenient().when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
         fileService = new FileService(appProperties, mock(RestTemplate.class), appSettingService);
+        fileService.noRedirectRestTemplate = mock(RestTemplate.class);
     }
 
     @Nested
@@ -1177,6 +1178,7 @@ class FileServiceTest {
             lenient().when(appSettingServiceForNetwork.getAppSettings()).thenReturn(appSettings);
 
             fileService = new FileService(appProperties, restTemplate, appSettingServiceForNetwork);
+            fileService.noRedirectRestTemplate = restTemplate;
         }
 
         @Nested
@@ -1194,6 +1196,7 @@ class FileServiceTest {
                 RestTemplate mockRestTemplate = mock(RestTemplate.class);
                 AppSettingService mockAppSettingService = mock(AppSettingService.class);
                 FileService testFileService = new FileService(appProperties, mockRestTemplate, mockAppSettingService);
+                testFileService.noRedirectRestTemplate = mockRestTemplate;
 
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(imageBytes);
                 when(mockRestTemplate.exchange(

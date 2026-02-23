@@ -23,6 +23,7 @@ public class AuthRateLimitService {
     public AuthRateLimitService(AuditService auditService) {
         this.auditService = auditService;
         this.attemptCache = Caffeine.newBuilder()
+                .maximumSize(10000)
                 .expireAfterWrite(Duration.ofMinutes(15))
                 .build();
     }
@@ -34,7 +35,8 @@ public class AuthRateLimitService {
     }
 
     public void checkLoginRateLimitByUsername(String username) {
-        checkRateLimit("login:user:" + username, AuditAction.LOGIN_RATE_LIMITED, "Login rate limited for username: " + username);
+        String normalizedUsername = username != null ? username.trim().toLowerCase() : "";
+        checkRateLimit("login:user:" + normalizedUsername, AuditAction.LOGIN_RATE_LIMITED, "Login rate limited for username: " + normalizedUsername);
     }
 
     public void recordFailedLoginAttempt(String ip) {
@@ -42,7 +44,8 @@ public class AuthRateLimitService {
     }
 
     public void recordFailedLoginAttemptByUsername(String username) {
-        recordFailedAttempt("login:user:" + username);
+        String normalizedUsername = username != null ? username.trim().toLowerCase() : "";
+        recordFailedAttempt("login:user:" + normalizedUsername);
     }
 
     public void resetLoginAttempts(String ip) {
@@ -50,7 +53,8 @@ public class AuthRateLimitService {
     }
 
     public void resetLoginAttemptsByUsername(String username) {
-        resetAttempts("login:user:" + username);
+        String normalizedUsername = username != null ? username.trim().toLowerCase() : "";
+        resetAttempts("login:user:" + normalizedUsername);
     }
 
     // --- Refresh token rate limiting ---

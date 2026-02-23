@@ -42,8 +42,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             log.warn("WebSocket endpoint is configured to allow all origins (*). " +
                     "Set 'app.cors.allowed-origins' to specific origins in production.");
         } else {
-            endpoint.setAllowedOriginPatterns(allowedOrigins.split(","));
-            log.info("WebSocket endpoint registered at /ws with allowed origins: {}", allowedOrigins);
+            String[] origins = java.util.Arrays.stream(allowedOrigins.split("\\s*,\\s*"))
+                    .filter(s -> !s.isEmpty())
+                    .toArray(String[]::new);
+            endpoint.setAllowedOriginPatterns(origins);
+            log.info("WebSocket endpoint registered at /ws with allowed origins: {}", java.util.Arrays.toString(origins));
         }
     }
 
