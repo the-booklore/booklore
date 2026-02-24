@@ -1,6 +1,6 @@
 {
     "title": "OPDS-configuratie",
-    "description": "",
+    "description": "Beheer uw OPDS-inloggegevens en bepaal hoe uw boekcollectie wordt gedeeld met lees-apps. Standaard worden alle bibliotheken waartoe u toegang hebt opgenomen in de OPDS-feed.",
     "server": {
         "sectionTitle": "Serverinstellingen",
         "sectionDesc": "Schakel OPDS- en Komga API-services in of uit om de toegang tot uw boekcollectie te beheren.",
@@ -59,7 +59,7 @@
     "deleteHeader": "",
     "accessRestricted": "Toegang beperkt",
     "accessDenied": "",
-    "contactAdmin": "",
+    "contactAdmin": "Neem contact op met uw beheerder om toestemming aan te vragen.",
     "loadError": "",
     "createSuccess": "",
     "createError": "",
