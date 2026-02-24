@@ -13,7 +13,7 @@ jobs:
       base_ref: ${{ steps.get_base.outputs.base_ref }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 2
       - name: Get Base Ref
@@ -41,10 +41,10 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set Up JDK 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -59,14 +59,14 @@ jobs:
         continue-on-error: true
 
       - name: Publish Backend Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2
         if: always()
         with:
           files: booklore-api/build/test-results/**/*.xml
           check_name: Backend Test Results
 
       - name: Upload Backend Test Reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()
         with:
           name: backend-test-reports
@@ -94,18 +94,27 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set Up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: booklore-ui/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: ./booklore-ui
-        run: npm ci --force
+        run: npm ci
+
+      - name: Audit Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm audit --audit-level=high
+
+      - name: Validate Dependency Tree
+        working-directory: ./booklore-ui
+        run: npm ls --depth=0
+
 
       - name: Execute Frontend Tests
         id: frontend_tests
@@ -116,14 +125,14 @@ jobs:
         continue-on-error: true
 
       - name: Publish Frontend Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2
         if: always()
         with:
           files: booklore-ui/test-results/vitest-results.xml
           check_name: Frontend Test Results
 
       - name: Upload Frontend Test Reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()
         with:
           name: frontend-test-reports
@@ -148,28 +157,28 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
       - name: Authenticate to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Authenticate to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
       - name: Set Up QEMU for Multi-Architecture Builds
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
 
       - name: Set Up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Retrieve Latest Master Version Tag
         id: get_version
@@ -238,15 +247,24 @@ jobs:
       # Native Angular build
       # ----------------------------------------
       - name: Set Up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: booklore-ui/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: ./booklore-ui
-        run: npm ci --force
+        run: npm ci
+
+      - name: Audit Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm audit --audit-level=high
+
+      - name: Validate Dependency Tree
+        working-directory: ./booklore-ui
+        run: npm ls --depth=0
+
 
       - name: Build Angular App
         working-directory: ./booklore-ui
@@ -256,7 +274,7 @@ jobs:
       # Native Gradle build
       # ----------------------------------------
       - name: Set Up JDK 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -281,7 +299,7 @@ jobs:
       # Docker build & push
       # ----------------------------------------
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: Dockerfile.ci
@@ -303,7 +321,7 @@ jobs:
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
       - name: Update GitHub Release Draft
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@6db134d15f3909ccc9eefd369f02bd1e9cffdf97 # v6
         with:
           tag: ${{ env.new_tag }}
           name: "Release ${{ env.new_tag }}"

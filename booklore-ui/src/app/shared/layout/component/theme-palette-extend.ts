@@ -1,4 +1,4 @@
-import Aura from '@primeng/themes/aura';
+import Aura from '@primeuix/themes/aura';
 
 type ColorPalette = Record<string, string>;
 

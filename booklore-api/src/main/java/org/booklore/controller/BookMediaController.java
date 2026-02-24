@@ -1,6 +1,7 @@
 package org.booklore.controller;
 
 import org.booklore.service.AuthorMetadataService;
+import org.booklore.config.security.annotation.CheckBookAccess;
 import org.booklore.service.book.BookService;
 import org.booklore.service.bookdrop.BookDropService;
 import org.booklore.service.reader.CbxReaderService;
@@ -32,6 +33,7 @@ public class BookMediaController {
     @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Book thumbnail returned successfully")
     @GetMapping("/book/{bookId}/thumbnail")
+    @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Resource> getBookThumbnail(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getBookThumbnail(bookId));
     }
@@ -39,6 +41,7 @@ public class BookMediaController {
     @Operation(summary = "Get book cover", description = "Retrieve the cover image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Book cover returned successfully")
     @GetMapping("/book/{bookId}/cover")
+    @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Resource> getBookCover(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getBookCover(bookId));
     }
@@ -46,6 +49,7 @@ public class BookMediaController {
     @Operation(summary = "Get audiobook thumbnail", description = "Retrieve the audiobook thumbnail image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Audiobook thumbnail returned successfully")
     @GetMapping("/book/{bookId}/audiobook-thumbnail")
+    @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Resource> getAudiobookThumbnail(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getAudiobookThumbnail(bookId));
     }
@@ -53,6 +57,7 @@ public class BookMediaController {
     @Operation(summary = "Get audiobook cover", description = "Retrieve the audiobook cover image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Audiobook cover returned successfully")
     @GetMapping("/book/{bookId}/audiobook-cover")
+    @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Resource> getAudiobookCover(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getAudiobookCover(bookId));
     }
@@ -60,6 +65,7 @@ public class BookMediaController {
     @Operation(summary = "Get CBX page as image", description = "Retrieve a specific page from a CBX book as an image.")
     @ApiResponse(responseCode = "200", description = "CBX page image returned successfully")
     @GetMapping("/book/{bookId}/cbx/pages/{pageNumber}")
+    @CheckBookAccess(bookIdParam = "bookId")
     public void getCbxPage(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,
             @Parameter(description = "Page number to retrieve") @PathVariable int pageNumber,

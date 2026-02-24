@@ -1,5 +1,6 @@
 package org.booklore.controller;
 
+import jakarta.validation.Valid;
 import org.booklore.exception.ErrorResponse;
 import org.booklore.model.dto.request.InitialUserRequest;
 import org.booklore.model.dto.response.SuccessResponse;
@@ -35,7 +36,7 @@ public class SetupController {
     @ApiResponse(responseCode = "200", description = "Admin user created successfully")
     @PostMapping
     public ResponseEntity<?> setupFirstUser(
-            @Parameter(description = "Initial user request") @RequestBody InitialUserRequest request) {
+            @Parameter(description = "Initial user request") @RequestBody @Valid InitialUserRequest request) {
         if (userProvisioningService.isInitialUserAlreadyProvisioned()) {
             return ResponseEntity.status(403).body(new ErrorResponse(403, "Setup is disabled after the first user is created."));
         }

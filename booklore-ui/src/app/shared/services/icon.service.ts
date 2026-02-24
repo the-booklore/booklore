@@ -1,10 +1,11 @@
-import {inject, Injectable} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable, of} from 'rxjs';
-import {finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {API_CONFIG} from '../../core/config/api-config';
-import {IconCacheService} from './icon-cache.service';
-import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { finalize, map, shareReplay, tap } from 'rxjs/operators';
+import { API_CONFIG } from '../../core/config/api-config';
+import { IconCacheService } from './icon-cache.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 
 interface SvgIconData {
   svgName: string;
@@ -25,7 +26,6 @@ interface SvgIconBatchResponse {
 }
 
 type IconContentMap = Record<string, string>;
-
 @Injectable({
   providedIn: 'root'
 })
@@ -39,6 +39,16 @@ export class IconService {
   private iconCache = inject(IconCacheService);
   private sanitizer = inject(DomSanitizer);
 
+  /**
+   * Sanitizes SVG content using DOMPurify.
+   */
+  private sanitizeSvgContent(content: string): string {
+    return DOMPurify.sanitize(content, {
+      USE_PROFILES: { svg: true },
+      FORBID_TAGS: ['script', 'style', 'foreignObject']
+    });
+  }
+
   preloadAllIcons(): Observable<void> {
     if (this.preloadCache$) {
       return this.preloadCache$;
@@ -47,12 +57,12 @@ export class IconService {
     this.preloadCache$ = this.http.get<IconContentMap>(`${this.baseUrl}/all/content`).pipe(
       tap((iconsMap) => {
         Object.entries(iconsMap).forEach(([iconName, content]) => {
-          const sanitized = this.sanitizer.bypassSecurityTrustHtml(content);
+          const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(content));
           this.iconCache.cacheIcon(iconName, content, sanitized);
         });
       }),
       map(() => void 0),
-      shareReplay({bufferSize: 1, refCount: false}),
+      shareReplay({ bufferSize: 1, refCount: false }),
       finalize(() => this.preloadCache$ = null)
     );
 
@@ -70,10 +80,10 @@ export class IconService {
         responseType: 'text'
       }).pipe(
         tap(content => {
-          const sanitized = this.sanitizer.bypassSecurityTrustHtml(content);
+          const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(content));
           this.iconCache.cacheIcon(iconName, content, sanitized);
         }),
-        shareReplay({bufferSize: 1, refCount: true}),
+        shareReplay({ bufferSize: 1, refCount: true }),
         finalize(() => this.requestCache.delete(iconName))
       );
 
@@ -113,13 +123,13 @@ export class IconService {
   }
 
   saveBatchSvgIcons(icons: SvgIconData[]): Observable<SvgIconBatchResponse> {
-    return this.http.post<SvgIconBatchResponse>(`${this.baseUrl}/batch`, {icons}).pipe(
+    return this.http.post<SvgIconBatchResponse>(`${this.baseUrl}/batch`, { icons }).pipe(
       tap((response) => {
         response.results.forEach(result => {
           if (result.success) {
             const iconData = icons.find(icon => icon.svgName === result.iconName);
             if (iconData) {
-              const sanitized = this.sanitizer.bypassSecurityTrustHtml(iconData.svgData);
+              const sanitized = this.sanitizer.bypassSecurityTrustHtml(this.sanitizeSvgContent(iconData.svgData));
               this.iconCache.cacheIcon(iconData.svgName, iconData.svgData, sanitized);
             }
           }

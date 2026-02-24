@@ -2,6 +2,13 @@ app:
   path-config: '/app/data'
   bookdrop-folder: '/bookdrop'
   version: 'development'
+
+  cors:
+    # Comma-separated list of allowed CORS origins.
+    # Leave empty (default) to allow same-origin requests only.
+    # Example: ALLOWED_ORIGINS=https://app.example.com,https://mobile.example.com
+    allowed-origins: ${ALLOWED_ORIGINS:*}
+
   remote-auth:
     enabled: ${REMOTE_AUTH_ENABLED:false}
     create-new-users: ${REMOTE_AUTH_CREATE_NEW_USERS:true}

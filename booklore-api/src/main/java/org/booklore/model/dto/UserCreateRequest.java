@@ -1,14 +1,27 @@
 package org.booklore.model.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.Set;
 
 @Data
 public class UserCreateRequest {
+
+    @NotBlank
     private String username;
+
+    @NotBlank
+    @Size(min = 8, max = 72, message = "Password must be at least 8 characters long")
     private String password;
+
+    @NotBlank
     private String name;
+
+    @NotBlank
+    @Email
     private String email;
 
     private boolean permissionUpload;
