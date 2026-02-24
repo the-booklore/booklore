@@ -47,8 +47,7 @@ export class IconService {
   private sanitizeSvgContent(content: string): string {
     return DOMPurify.sanitize(content, {
       USE_PROFILES: { svg: true },
-      FORBID_TAGS: ['script', 'style', 'foreignObject'],
-      FORBID_ATTR: ['on*']
+      FORBID_TAGS: ['script', 'style', 'foreignObject']
     });
   }
 

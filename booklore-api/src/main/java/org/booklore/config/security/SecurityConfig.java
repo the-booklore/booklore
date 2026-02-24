@@ -325,14 +325,13 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         String allowedOriginsStr = env.getProperty("app.cors.allowed-origins", "*").trim();
-        if ("*".equals(allowedOriginsStr)) {
+        if ("*".equals(allowedOriginsStr) || allowedOriginsStr.isEmpty()) {
             log.warn(
-                "CORS is configured to allow all origins (*). This is the default to maintain backward compatibility, " +
-                "but it's recommended to set 'app.cors.allowed-origins' to an explicit origin list."
+                "CORS is configured to allow all origins (*) because 'app.cors.allowed-origins' is '{}'. " +
+                "This maintains backward compatibility, but it's recommended to set it to an explicit origin list.",
+                allowedOriginsStr.isEmpty() ? "empty" : "*"
             );
             configuration.setAllowedOriginPatterns(List.of("*"));
-        } else if (allowedOriginsStr.isEmpty()) {
-            log.info("CORS is configured to allow same-origin requests only.");
         } else {
             List<String> origins = Arrays.stream(ALLOWED.split(allowedOriginsStr))
                     .filter(s -> !s.isEmpty())

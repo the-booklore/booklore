@@ -216,9 +216,8 @@ public class FileService {
 
                     long pixelCount = (long) width * height;
                     if (pixelCount > MAX_IMAGE_PIXELS) {
-                        log.warn("Rejected image: dimensions {}x{} ({} pixels) exceed limit {} — possible decompression bomb",
-                                width, height, pixelCount, MAX_IMAGE_PIXELS);
-                        return null;
+                        throw new IOException(String.format("Rejected image: dimensions %dx%d (%d pixels) exceed limit %d — possible decompression bomb",
+                                width, height, pixelCount, MAX_IMAGE_PIXELS));
                     }
 
                     return reader.read(0);
@@ -226,13 +225,13 @@ public class FileService {
                     reader.dispose();
                 }
             }
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
-            log.warn("ImageIO decode failed (possibly unsupported format): {}", e.getMessage());
-            return null;
+            throw new IOException("ImageIO decode failed (possibly unsupported format): " + e.getMessage(), e);
         }
 
-        log.warn("Unable to decode image - likely unsupported format");
-        return null;
+        throw new IOException("Unable to decode image, likely unsupported format");
     }
 
     public static BufferedImage resizeImage(BufferedImage originalImage, int width, int height) {
@@ -267,6 +266,18 @@ public class FileService {
     }
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
+        try {
+            return downloadImageFromUrlInternal(imageUrl);
+        } catch (Exception e) {
+            log.warn("Failed to download image from {}: {}", imageUrl, e.getMessage());
+            if (e instanceof IOException ioException) {
+                throw ioException;
+            }
+            throw new IOException("Failed to download image from " + imageUrl + ": " + e.getMessage(), e);
+        }
+    }
+
+    private BufferedImage downloadImageFromUrlInternal(String imageUrl) throws IOException {
         String currentUrl = imageUrl;
         int redirectCount = 0;
 
@@ -289,9 +300,8 @@ public class FileService {
                     throw new IOException("Could not resolve host: " + host);
                 }
                 for (InetAddress inetAddress : inetAddresses) {
-                    if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
-                        inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
-                        throw new SecurityException("URL points to a local or private internal network address: " + host);
+                    if (isInternalAddress(inetAddress)) {
+                        throw new SecurityException("URL points to a local or private internal network address: " + host + " (" + inetAddress.getHostAddress() + ")");
                     }
                 }
                 String ipAddress = inetAddresses[0].getHostAddress();
@@ -305,7 +315,13 @@ public class FileService {
                 String path = uri.getRawPath();
                 if (path == null || path.isEmpty()) path = "/";
                 String query = uri.getRawQuery();
-                String requestUrl = uri.getScheme() + "://" + ipAddress + portSuffix + path + (query != null ? "?" + query : "");
+
+                // Handle IPv6 address formatting in URL
+                String hostInUrl = ipAddress;
+                if (ipAddress.contains(":")) {
+                    hostInUrl = "[" + ipAddress + "]";
+                }
+                String requestUrl = uri.getScheme() + "://" + hostInUrl + portSuffix + path + (query != null ? "?" + query : "");
 
                 HttpHeaders headers = new HttpHeaders();
                 // Set original 'Host' header for server-side virtual hosting
@@ -344,6 +360,43 @@ public class FileService {
         }
 
         throw new IOException("Too many redirects (max " + MAX_REDIRECTS + ")");
+    }
+
+    private boolean isInternalAddress(InetAddress address) {
+        if (address.isLoopbackAddress() || address.isLinkLocalAddress() ||
+            address.isSiteLocalAddress() || address.isAnyLocalAddress()) {
+            return true;
+        }
+
+        byte[] addr = address.getAddress();
+        // Check for IPv6 Unique Local Address (fc00::/7)
+        if (addr.length == 16) {
+            if ((addr[0] & 0xFE) == (byte) 0xFC) {
+                return true;
+            }
+        }
+
+        // Handle IPv4-mapped IPv6 addresses (::ffff:127.0.0.1)
+        if (isIpv4MappedAddress(addr)) {
+            try {
+                byte[] ipv4Bytes = new byte[4];
+                System.arraycopy(addr, 12, ipv4Bytes, 0, 4);
+                InetAddress ipv4Addr = InetAddress.getByAddress(ipv4Bytes);
+                return isInternalAddress(ipv4Addr);
+            } catch (java.net.UnknownHostException e) {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isIpv4MappedAddress(byte[] addr) {
+        if (addr.length != 16) return false;
+        for (int i = 0; i < 10; i++) {
+            if (addr[i] != 0) return false;
+        }
+        return (addr[10] == (byte) 0xFF) && (addr[11] == (byte) 0xFF);
     }
 
     // ========================================
