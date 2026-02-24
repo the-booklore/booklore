@@ -5,6 +5,7 @@ import com.github.junrar.rarfile.FileHeader;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
+import jakarta.xml.bind.ValidationEvent;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.sax.SAXSource;
@@ -462,8 +463,8 @@ public class CbxMetadataWriter implements MetadataWriter {
 
         Unmarshaller unmarshaller = JAXB_CONTEXT.createUnmarshaller();
         unmarshaller.setEventHandler(event -> {
-            if (event.getSeverity() == jakarta.xml.bind.ValidationEvent.WARNING ||
-                event.getSeverity() == jakarta.xml.bind.ValidationEvent.ERROR) {
+            if (event.getSeverity() == ValidationEvent.WARNING ||
+                event.getSeverity() == ValidationEvent.ERROR) {
                 log.warn("JAXB Parsing Issue: {} [Line: {}, Col: {}]",
                     event.getMessage(),
                     event.getLocator().getLineNumber(),
