@@ -1,6 +1,6 @@
 {
     "title": "Bestandsnaampatronen",
-    "description": "",
+    "description": "Configureer automatische bestandsorganisatie met metadata-plaatshouders. Patronen worden toegepast bij het uploaden, verplaatsen van bestanden of na metadata-updates.",
     "warning": {
         "title": "",
         "text": ""
