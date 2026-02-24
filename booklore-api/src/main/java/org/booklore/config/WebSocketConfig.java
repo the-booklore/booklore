@@ -10,6 +10,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.util.Arrays;
+
 @Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
@@ -42,11 +44,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             // No explicit origins configured: enforce same-origin check (Spring WebSocket default)
             log.info("WebSocket endpoint registered at /ws (same-origin only)");
         } else {
-            String[] origins = java.util.Arrays.stream(allowedOrigins.split("\\s*,\\s*"))
+            String[] origins = Arrays.stream(allowedOrigins.split("\\s*,\\s*"))
                     .filter(s -> !s.isEmpty())
                     .toArray(String[]::new);
             endpoint.setAllowedOriginPatterns(origins);
-            log.info("WebSocket endpoint registered at /ws with allowed origins: {}", java.util.Arrays.toString(origins));
+            log.info("WebSocket endpoint registered at /ws with allowed origins: {}", Arrays.toString(origins));
         }
     }
 

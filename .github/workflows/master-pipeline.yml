@@ -99,13 +99,15 @@ jobs:
       - name: Set Up Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: booklore-ui/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: ./booklore-ui
         run: npm ci --force
+
+      - name: Audit Frontend Dependencies\n        working-directory: ./booklore-ui\n        run: npm audit --production --audit-level=high
 
       - name: Execute Frontend Tests
         id: frontend_tests
@@ -240,13 +242,15 @@ jobs:
       - name: Set Up Node.js
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: booklore-ui/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: ./booklore-ui
         run: npm ci --force
+
+      - name: Audit Frontend Dependencies\n        working-directory: ./booklore-ui\n        run: npm audit --production --audit-level=high
 
       - name: Build Angular App
         working-directory: ./booklore-ui
