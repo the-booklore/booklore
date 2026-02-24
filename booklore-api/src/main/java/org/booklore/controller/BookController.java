@@ -68,6 +68,15 @@ public class BookController {
         return ResponseEntity.ok(bookService.getBookDTOs(withDescription));
     }
 
+    @Operation(summary = "Search books by title or ISBN", description = "Search for books using fuzzy title matching or ISBN. At least one search parameter must be provided. Returns matching books with cover, title, and hash.")
+    @ApiResponse(responseCode = "200", description = "Search results returned successfully")
+    @GetMapping("/search")
+    public ResponseEntity<List<org.booklore.model.dto.response.BookSearchResult>> searchBooks(
+            @Parameter(description = "Title to search for") @RequestParam(required = false) String title,
+            @Parameter(description = "ISBN to search for (ISBN-10 or ISBN-13)") @RequestParam(required = false) String isbn) {
+        return ResponseEntity.ok(bookService.fuzzySearch(title, isbn));
+    }
+
     @Operation(summary = "Get a book by ID", description = "Retrieve details of a specific book by its ID.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Book details returned successfully"),
@@ -303,12 +312,4 @@ public class BookController {
         return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isMoveFiles()));
     }
 
-    @Operation(summary = "Search books by title or ISBN", description = "Search for books using fuzzy title matching or ISBN. At least one search parameter must be provided. Returns matching books with cover, title, and hash.")
-    @ApiResponse(responseCode = "200", description = "Search results returned successfully")
-    @GetMapping("/search")
-    public ResponseEntity<List<org.booklore.model.dto.response.BookSearchResult>> searchBooks(
-            @Parameter(description = "Title to search for") @RequestParam(required = false) String title,
-            @Parameter(description = "ISBN to search for (ISBN-10 or ISBN-13)") @RequestParam(required = false) String isbn) {
-        return ResponseEntity.ok(bookService.fuzzySearch(title, isbn));
-    }
 }
