@@ -269,7 +269,15 @@ public class SecurityConfig {
                                 SSLSocketFactory defaultFactory = httpsConnection.getSSLSocketFactory();
                                 httpsConnection.setSSLSocketFactory(new SniSSLSocketFactory(defaultFactory, targetHost));
 
-                                httpsConnection.setHostnameVerifier((hostname, session) -> true);
+                                httpsConnection.setHostnameVerifier((hostname, session) -> {
+                                    String expectedHost = FileService.getTargetHost();
+                                    if (expectedHost != null) {
+                                        // Verify certificate against the original expected hostname, even if connecting via IP
+                                        return HttpsURLConnection.getDefaultHostnameVerifier().verify(expectedHost, session);
+                                    }
+                                    // Fallback: use default verifier for the hostname we connected to
+                                    return HttpsURLConnection.getDefaultHostnameVerifier().verify(hostname, session);
+                                });
                             }
                         }
                     }

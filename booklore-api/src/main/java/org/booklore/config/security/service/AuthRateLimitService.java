@@ -35,7 +35,7 @@ public class AuthRateLimitService {
     }
 
     public void checkLoginRateLimitByUsername(String username) {
-        String normalizedUsername = username != null ? username.trim().toLowerCase() : "";
+        String normalizedUsername = normalizeUsername(username);
         checkRateLimit("login:user:" + normalizedUsername, AuditAction.LOGIN_RATE_LIMITED, "Login rate limited for username: " + normalizedUsername);
     }
 
@@ -44,7 +44,7 @@ public class AuthRateLimitService {
     }
 
     public void recordFailedLoginAttemptByUsername(String username) {
-        String normalizedUsername = username != null ? username.trim().toLowerCase() : "";
+        String normalizedUsername = normalizeUsername(username);
         recordFailedAttempt("login:user:" + normalizedUsername);
     }
 
@@ -53,7 +53,7 @@ public class AuthRateLimitService {
     }
 
     public void resetLoginAttemptsByUsername(String username) {
-        String normalizedUsername = username != null ? username.trim().toLowerCase() : "";
+        String normalizedUsername = normalizeUsername(username);
         resetAttempts("login:user:" + normalizedUsername);
     }
 
@@ -87,5 +87,9 @@ public class AuthRateLimitService {
 
     private void resetAttempts(String key) {
         attemptCache.invalidate(key);
+    }
+
+    private String normalizeUsername(String username) {
+        return username != null ? username.trim().toLowerCase() : "";
     }
 }

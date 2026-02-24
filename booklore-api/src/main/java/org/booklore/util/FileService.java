@@ -270,52 +270,77 @@ public class FileService {
         String currentUrl = imageUrl;
         int redirectCount = 0;
 
-        while (redirectCount <= MAX_REDIRECTS) {
-            URI uri = URI.create(currentUrl);
-            URL url = uri.toURL();
+        try {
+            while (redirectCount <= MAX_REDIRECTS) {
+                URI uri = URI.create(currentUrl);
+                // Protocol validation
+                if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
+                    throw new IOException("Only HTTP and HTTPS protocols are allowed");
+                }
 
-            if (!"http".equalsIgnoreCase(url.getProtocol()) && !"https".equalsIgnoreCase(url.getProtocol())) {
-                 throw new IOException("Only HTTP and HTTPS protocols are allowed");
-            }
+                String host = uri.getHost();
+                if (host == null) {
+                    throw new IOException("Invalid URL: no host found in " + currentUrl);
+                }
 
-            // Resolve host to IP to prevent DNS rebinding (TOCTOU)
-            String host = url.getHost();
-            InetAddress[] inetAddresses = InetAddress.getAllByName(host);
-            if (inetAddresses.length == 0) {
-                throw new IOException("Could not resolve host: " + host);
-            }
-            for (InetAddress inetAddress : inetAddresses) {
-                if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
-                    inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
-                    throw new SecurityException("URL points to a local or private internal network address: " + host);
+                // Resolve host to IP to prevent DNS rebinding (TOCTOU)
+                InetAddress[] inetAddresses = InetAddress.getAllByName(host);
+                if (inetAddresses.length == 0) {
+                    throw new IOException("Could not resolve host: " + host);
+                }
+                for (InetAddress inetAddress : inetAddresses) {
+                    if (inetAddress.isLoopbackAddress() || inetAddress.isLinkLocalAddress() ||
+                        inetAddress.isSiteLocalAddress() || inetAddress.isAnyLocalAddress()) {
+                        throw new SecurityException("URL points to a local or private internal network address: " + host);
+                    }
+                }
+                String ipAddress = inetAddresses[0].getHostAddress();
+
+                // Set target host for SNI / Hostname verification in RestTemplate/SSLSocketFactory
+                setTargetHost(host);
+
+                // Build request URL with IP address to ensure we connect to the validated address.
+                // We keep the original URI's path and query.
+                String portSuffix = (uri.getPort() != -1) ? ":" + uri.getPort() : "";
+                String path = uri.getRawPath();
+                if (path == null || path.isEmpty()) path = "/";
+                String query = uri.getRawQuery();
+                String requestUrl = uri.getScheme() + "://" + ipAddress + portSuffix + path + (query != null ? "?" + query : "");
+
+                HttpHeaders headers = new HttpHeaders();
+                // Set original 'Host' header for server-side virtual hosting
+                headers.set(HttpHeaders.HOST, host);
+                headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
+                headers.set(HttpHeaders.ACCEPT, "image/*");
+
+                HttpEntity<String> entity = new HttpEntity<>(headers);
+
+                log.debug("Downloading image via IP-based URL: {} (Original host: {})", requestUrl, host);
+
+                ResponseEntity<byte[]> response = noRedirectRestTemplate.exchange(
+                        requestUrl,
+                        HttpMethod.GET,
+                        entity,
+                        byte[].class
+                );
+
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    return readImage(response.getBody());
+                } else if (response.getStatusCode().is3xxRedirection()) {
+                    String location = response.getHeaders().getFirst(HttpHeaders.LOCATION);
+                    if (location == null) {
+                        throw new IOException("Redirection response without Location header");
+                    }
+                    // Resolve location against CURRENT URL (which has the hostname)
+                    currentUrl = uri.resolve(location).toString();
+                    redirectCount++;
+                } else {
+                    throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
                 }
             }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
-            headers.set(HttpHeaders.ACCEPT, "image/*");
-
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<byte[]> response = noRedirectRestTemplate.exchange(
-                    currentUrl,
-                    HttpMethod.GET,
-                    entity,
-                    byte[].class
-            );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return readImage(response.getBody());
-            } else if (response.getStatusCode().is3xxRedirection()) {
-                String location = response.getHeaders().getFirst(HttpHeaders.LOCATION);
-                if (location == null) {
-                    throw new IOException("Redirection response without Location header");
-                }
-                currentUrl = uri.resolve(location).toString();
-                redirectCount++;
-            } else {
-                throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
-            }
+        } finally {
+            // Ensure thread-local is cleared to prevent leakage to subsequent requests (container thread reuse)
+            clearTargetHost();
         }
 
         throw new IOException("Too many redirects (max " + MAX_REDIRECTS + ")");

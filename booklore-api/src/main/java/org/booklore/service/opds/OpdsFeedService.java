@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -472,7 +473,7 @@ public class OpdsFeedService {
 
         String queryString = request.getQueryString();
         if (queryString != null) {
-            java.util.Arrays.stream(queryString.split("&"))
+            Arrays.stream(queryString.split("&"))
                     .filter(param -> !param.startsWith("page=") && !param.startsWith("size="))
                     .forEach(param -> result.append(param).append("&"));
         }
