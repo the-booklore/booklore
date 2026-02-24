@@ -335,6 +335,7 @@ public class SecurityConfig {
         } else {
             List<String> origins = Arrays.stream(ALLOWED.split(allowedOriginsStr))
                     .filter(s -> !s.isEmpty())
+                    .map(String::trim)
                     .toList();
             configuration.setAllowedOriginPatterns(origins);
         }
