@@ -1,6 +1,6 @@
 {
     "title": "Gebruikersbeheer",
-    "description": "",
+    "description": "Beheer Booklore-gebruikers, hun rechten en bibliotheektoegang. Configureer gebruikersrollen en mogelijkheden voor uw boekcollectie.",
     "currentUsers": {
         "sectionTitle": "",
         "sectionDesc": "",
