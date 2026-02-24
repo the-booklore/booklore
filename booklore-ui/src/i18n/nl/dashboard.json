@@ -1,7 +1,7 @@
 {
     "main": {
         "pageTitle": "",
-        "welcomeTitle": "",
+        "welcomeTitle": "Welkom bij BookLore!",
         "welcomeSubtitle": "Laten we je eerste bibliotheek maken",
         "welcomeDescription": "Een bibliotheek is waar je boeken leven. Start vandaag met je digitale collectie te bouwen!",
         "createLibrary": "Maak jouw bibliotheek",
@@ -14,7 +14,7 @@
         "continueReading": "Lees Verder",
         "recentlyAdded": "Recent toegevoegd",
         "discoverNew": "Ontdek Iets Nieuws",
-        "magicShelf": "",
+        "magicShelf": "Magische plank",
         "default": ""
     },
     "settings": {
@@ -41,26 +41,26 @@
         },
         "sortFields": {
             "title": "",
-            "fileName": "",
-            "filePath": "",
-            "addedOn": "",
-            "author": "",
-            "authorSurnameVorname": "",
-            "seriesName": "",
-            "seriesNumber": "",
-            "personalRating": "",
-            "publisher": "",
-            "publishedDate": "",
-            "lastReadTime": "",
-            "readStatus": "",
-            "dateFinished": "",
-            "readingProgress": "",
-            "bookType": "",
-            "pageCount": ""
+            "fileName": "Bestandsnaam",
+            "filePath": "Bestandspad",
+            "addedOn": "Datum toegevoegd",
+            "author": "Auteur",
+            "authorSurnameVorname": "Auteur (Achternaam)",
+            "seriesName": "Reeksnaam",
+            "seriesNumber": "Reeksnummer",
+            "personalRating": "Persoonlijke beoordeling",
+            "publisher": "Uitgever",
+            "publishedDate": "Publicatiedatum",
+            "lastReadTime": "Laatst gelezen",
+            "readStatus": "Leesstatus",
+            "dateFinished": "Datum voltooid",
+            "readingProgress": "Leesvoortgang",
+            "bookType": "Boektype",
+            "pageCount": "Pagina's"
         },
         "sortDirections": {
-            "asc": "",
-            "desc": ""
+            "asc": "Oplopend",
+            "desc": "Aflopend"
         }
     }
 }
