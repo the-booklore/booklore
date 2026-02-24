@@ -1,17 +1,17 @@
 {
-    "title": "Konfiguracija metapodatkov knjižnice",
-    "description": "Konfigurirajte vedenje pridobivanja metapodatkov za svoje knjižnice. Nastavite globalne privzete vrednosti in ustvarite specifične povozitve za posamezne knjižnice, da nadzirate, kako se metapodatki knjig pridobivajo od različnih ponudnikov.",
+    "title": "Nastavitve metapodatkov knjižnice",
+    "description": "Nastavi način pridobivanja metapodatkov za svoje knjižnice. Določi splošne privzete nastavitve in ustvari specifične povozitve za posamezne knjižnice, da nadzoruješ, kako se podatki o knjigah pridobivajo od različnih ponudnikov.",
     "defaultSettings": {
         "sectionTitle": "Privzete nastavitve metapodatkov",
-        "sectionDesc": "Nastavite globalne privzete prioritete ponudnikov za polja metapodatkov knjig. Te nastavitve veljajo za vse knjižnice, razen če so spodaj povožene. BookLore preizkusi ponudnike od leve proti desni (1. → 2. → 3. → 4. prioriteta) za vsako polje knjige, dokler ne najde podatkov. Sistem najprej preveri vašega ponudnika prve prioritete – če ta ponudnik nima določenega polja (kot je opis ali avtor), se samodejno premakne na drugo prioriteto, nato na tretjo in končno na četrto. Pustite prioriteto prazno, da jo popolnoma preskočite. Na primer, če Amazon (1.) nima opisa, Google Books (2.) pa ga ima, bo uporabljen Googlov opis. Uporabite potrditvena polja 'Omogoči', da popolnoma onemogočite pridobivanje določenih polj – onemogočena polja bodo v celoti preskočena ne glede na nastavitve ponudnika.",
+        "sectionDesc": "Določi splošno prioriteto ponudnikov za polja metapodatkov o knjigah. Te nastavitve veljajo za vse knjižnice, razen če jih spodaj ne povoziš. BookLore preverja ponudnike od leve proti desni (1. → 2. → 3. → 4. prioriteta) za vsako polje posebej, dokler ne najde podatkov. Sistem najprej preveri tvojega prvega ponudnika – če ta nima specifičnega polja (npr. opisa ali avtorja), samodejno preide na drugega, nato na tretjega in končno na četrtega. Če želiš prioriteto preskočiti, pusti polje prazno. Na primer: če Amazon (1.) nima opisa, Google Books (2.) pa ga ima, bo uporabljen Googlov opis. S potrditvenimi polji 'Omogoči' lahko popolnoma izklopiš pridobivanje za določena polja – onemogočena polja bodo preskočena ne glede na nastavitve ponudnikov.",
         "saveButton": "Shrani privzete nastavitve",
         "saveSuccess": "Privzete možnosti metapodatkov so bile uspešno shranjene.",
         "saveFailed": "Shranjevanje ni uspelo",
-        "saveError": "Privzetih možnosti metapodatkov ni bilo mogoče shraniti. Prosimo, poskusite znova."
+        "saveError": "Privzetih možnosti metapodatkov ni bilo mogoče shraniti. Poskusi znova."
     },
     "libraryOverrides": {
-        "sectionTitle": "Specifične povozitve za knjižnice",
-        "sectionDesc": "Povozite privzete nastavitve prioritete za določene knjižnice. Na primer, morda imate raje Amazon za leposlovje, za tehnične knjige pa Google Books. Vsaka knjižnica ima lahko svoj vrstni red prioritete ponudnikov, hkrati pa uporablja privzete vrednosti za neopredeljena polja. Prav tako lahko omogočite ali onemogočite določena polja metapodatkov na knjižnico – uporabno, če določene knjižnice ne potrebujejo specifičnih vrst podatkov, kot so opisi ali naslovnice.",
+        "sectionTitle": "Povozitve za specifične knjižnice",
+        "sectionDesc": "Povoci privzete nastavitve prioritete za določene knjižnice. Na primer, za leposlovje imaš morda raje Amazon, za strokovne knjige pa Google Books. Vsaka knjižnica ima lahko svoj vrstni red prioritete ponudnikov, hkrati pa uporabi privzete vrednosti za nedoločena polja. Prav tako lahko omogočiš ali onemogočiš določena polja metapodatkov na nivoju knjižnice – uporabno, če določene knjižnice ne potrebujejo specifičnih podatkov, kot so opisi ali naslovnice.",
         "customSettings": "Nastavitve po meri",
         "defaultSettings": "Privzete nastavitve",
         "exportSidecar": "Izvozi Sidecar",
@@ -19,16 +19,16 @@
         "exportTooltip": "Ustvari datoteke .metadata.json za vse knjige v tej knjižnici",
         "importTooltip": "Uvozi metapodatke iz obstoječih datotek .metadata.json v tej knjižnici",
         "saveLibraryButton": "Shrani nastavitve za {{name}}",
-        "saveSuccess": "Možnosti metapodatkov knjižnice so bile uspešno shranjene.",
+        "saveSuccess": "Možnosti metapodatkov za knjižnico so bile uspešno shranjene.",
         "saveFailed": "Shranjevanje ni uspelo",
-        "saveError": "Možnosti metapodatkov knjižnice ni bilo mogoče shraniti. Prosimo, poskusite znova.",
-        "exportSuccess": "Izvožene sidecar datoteke za {{count}} knjig.",
-        "exportComplete": "Izvoz dokončan",
+        "saveError": "Možnosti metapodatkov za knjižnico ni bilo mogoče shraniti. Poskusi znova.",
+        "exportSuccess": "Sidecar datoteke so bile izvožene za {{count}} knjig.",
+        "exportComplete": "Izvoz končan",
         "exportFailed": "Izvoz ni uspel",
-        "exportError": "Sidecar datotek ni bilo mogoče izvoziti. Prosimo, poskusite znova.",
-        "importSuccess": "Uvoženi metapodatki iz {{count}} sidecar datotek.",
-        "importComplete": "Uvoz dokončan",
+        "exportError": "Sidecar datotek ni bilo mogoče izvoziti. Poskusi znova.",
+        "importSuccess": "Metapodatki so bili uvoženi iz {{count}} Sidecar datotek.",
+        "importComplete": "Uvoz končan",
         "importFailed": "Uvoz ni uspel",
-        "importError": "Uvoz iz sidecar datotek ni uspel. Prosimo, poskusite znova."
+        "importError": "Uvoz iz Sidecar datotek ni uspel. Poskusi znova."
     }
 }
