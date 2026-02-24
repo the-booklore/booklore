@@ -51,7 +51,7 @@ function deepMerge(base: Record<string, any>, override: Record<string, any>): Re
     if (override[key] && typeof override[key] === 'object' && !Array.isArray(override[key])
       && base[key] && typeof base[key] === 'object' && !Array.isArray(base[key])) {
       result[key] = deepMerge(base[key], override[key]);
-    } else {
+    } else if (override[key] !== '') {
       result[key] = override[key];
     }
   }
