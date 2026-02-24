@@ -28,9 +28,12 @@ import java.util.List;
 @Component
 public class KoboAuthFilter extends OncePerRequestFilter {
 
+    private static final String DEVICE_ID_HEADER = "X-Kobo-Deviceid";
+
     private final KoboUserSettingsRepository koboUserSettingsRepository;
     private final UserRepository userRepository;
     private final BookLoreUserTransformer bookLoreUserTransformer;
+    private final org.booklore.service.kobo.KoboAccessTokenStore koboAccessTokenStore;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -79,6 +82,11 @@ public class KoboAuthFilter extends OncePerRequestFilter {
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
         authentication.setDetails(new UserAuthenticationDetails(request, user.getId()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String deviceId = request.getHeader(DEVICE_ID_HEADER);
+        if (deviceId != null) {
+            koboAccessTokenStore.store(deviceId, token);
+        }
 
         filterChain.doFilter(request, response);
     }

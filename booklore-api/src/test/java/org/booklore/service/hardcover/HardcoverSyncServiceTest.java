@@ -3,6 +3,7 @@ package org.booklore.service.hardcover;
 import org.booklore.model.dto.HardcoverSyncSettings;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.repository.BookMetadataRepository;
 import org.booklore.repository.BookRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +37,9 @@ class HardcoverSyncServiceTest {
     private BookRepository bookRepository;
 
     @Mock
+    private BookMetadataRepository bookMetadataRepository;
+
+    @Mock
     private RestClient restClient;
 
     @Mock
@@ -59,7 +63,7 @@ class HardcoverSyncServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         // Create service with mocked dependencies
-        service = new HardcoverSyncService(hardcoverSyncSettingsService, bookRepository);
+        service = new HardcoverSyncService(hardcoverSyncSettingsService, bookRepository, bookMetadataRepository);
         
         // Inject our mocked restClient using reflection
         Field restClientField = HardcoverSyncService.class.getDeclaredField("restClient");
@@ -452,10 +456,10 @@ class HardcoverSyncServiceTest {
     void findEditionById_nullResponse_shouldReturnNull() throws Exception {
         when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class))).thenReturn(null);
 
-        Method method = HardcoverSyncService.class.getDeclaredMethod("findEditionById", Integer.class);
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findEditionById", Integer.class, String.class);
         method.setAccessible(true);
 
-        Object result = method.invoke(service, 123);
+        Object result = method.invoke(service, 123, "test-api-key");
         assertNull(result);
     }
 
@@ -472,10 +476,10 @@ class HardcoverSyncServiceTest {
 
         when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class))).thenReturn(response);
 
-        Method method = HardcoverSyncService.class.getDeclaredMethod("findEditionById", Integer.class);
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findEditionById", Integer.class, String.class);
         method.setAccessible(true);
 
-        Object result = method.invoke(service, 77);
+        Object result = method.invoke(service, 77, "test-api-key");
         assertNotNull(result);
         assertEquals(77, readPrivateIntField(result, "id"));
         assertEquals(250, readPrivateIntField(result, "pages"));
@@ -487,10 +491,10 @@ class HardcoverSyncServiceTest {
         when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class)))
                 .thenReturn(Map.of("data", Map.of("books", List.of())));
 
-        Method method = HardcoverSyncService.class.getDeclaredMethod("findHardcoverBookById", Integer.class);
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findHardcoverBookById", Integer.class, String.class);
         method.setAccessible(true);
 
-        Object result = method.invoke(service, 123);
+        Object result = method.invoke(service, 123, "test-api-key");
         assertNull(result);
     }
 
@@ -516,20 +520,15 @@ class HardcoverSyncServiceTest {
                 .thenReturn(bookResponse)
                 .thenReturn(editionResponse);
 
-        Method method = HardcoverSyncService.class.getDeclaredMethod("findHardcoverBookById", Integer.class);
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findHardcoverBookById", Integer.class, String.class);
         method.setAccessible(true);
 
-        Object result = method.invoke(service, 123);
+        Object result = method.invoke(service, 123, "test-api-key");
         assertNotNull(result);
-        assertEquals("123", readPrivateStringField(result, "bookId"));
-        assertEquals(88, readPrivateIntField(result, "editionId"));
-        assertEquals(320, readPrivateIntField(result, "pages"));
-    }
-
-    private String readPrivateStringField(Object target, String fieldName) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (String) field.get(target);
+        HardcoverSyncService.HardcoverBookInfo bookInfo = (HardcoverSyncService.HardcoverBookInfo) result;
+        assertEquals("123", bookInfo.bookId());
+        assertEquals(88, bookInfo.editionId());
+        assertEquals(320, bookInfo.pages());
     }
 
     private Integer readPrivateIntField(Object target, String fieldName) throws Exception {

@@ -88,10 +88,9 @@ public class KoboServerProxy {
 
     private ResponseEntity<JsonNode> executeProxyRequest(HttpServletRequest request, Object body, String path, boolean includeSyncToken, BookloreSyncToken syncToken) {
         try {
-            String koboBaseUrl = "https://storeapi.kobo.com";
 
             String queryString = request.getQueryString();
-            String uriString = koboBaseUrl + path;
+            String uriString = "https://storeapi.kobo.com" + path;
             if (queryString != null && !queryString.isBlank()) {
                 uriString += "?" + queryString;
             }
@@ -99,12 +98,22 @@ public class KoboServerProxy {
             URI uri = URI.create(uriString);
             log.debug("Kobo proxy URL: {}", uri);
 
-            String bodyString = body != null ? objectMapper.writeValueAsString(body) : "{}";
+            String method = request.getMethod();
+            boolean hasBody = body != null && !"GET".equalsIgnoreCase(method) && !"HEAD".equalsIgnoreCase(method);
+            HttpRequest.BodyPublisher bodyPublisher;
+            if (hasBody) {
+                bodyPublisher = HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body));
+            } else {
+                bodyPublisher = HttpRequest.BodyPublishers.noBody();
+            }
+
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(uri)
                     .timeout(Duration.ofMinutes(1))
-                    .method(request.getMethod(), HttpRequest.BodyPublishers.ofString(bodyString))
-                    .header(HttpHeaders.CONTENT_TYPE, "application/json");
+                    .method(method, bodyPublisher);
+            if (hasBody) {
+                builder.header(HttpHeaders.CONTENT_TYPE, "application/json");
+            }
 
             Collections.list(request.getHeaderNames()).forEach(headerName -> {
                 if (!HEADERS_OUT_EXCLUDE.contains(headerName.toLowerCase()) &&

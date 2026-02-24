@@ -42,6 +42,7 @@ public class KoboInitializationService {
             objectNode.put("image_url_template", koboUrlBuilder.imageUrlTemplate(token));
             objectNode.put("image_url_quality_template", koboUrlBuilder.imageUrlQualityTemplate(token));
             objectNode.put("library_sync", koboUrlBuilder.librarySyncUrl(token));
+            objectNode.put("reading_services_host", koboUrlBuilder.readingServicesHost());
         }
 
         return ResponseEntity.ok()

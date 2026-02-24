@@ -48,4 +48,10 @@ public class KoboUrlBuilder {
                 .build()
                 .toUriString();
     }
+
+    public String readingServicesHost() {
+        return baseBuilder()
+                .build()
+                .toUriString();
+    }
 }

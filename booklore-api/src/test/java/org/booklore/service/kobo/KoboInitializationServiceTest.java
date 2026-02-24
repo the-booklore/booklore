@@ -44,6 +44,7 @@ class KoboInitializationServiceTest {
         when(koboUrlBuilder.imageUrlTemplate("test-token")).thenReturn("http://localhost:8080/kobo/test-token/image/{ImageId}/{Width}/{Height}/false/image.jpg");
         when(koboUrlBuilder.imageUrlQualityTemplate("test-token")).thenReturn("http://localhost:8080/kobo/test-token/image/{ImageId}/{Width}/{Height}/{Quality}/{IsGreyscale}/image.jpg");
         when(koboUrlBuilder.librarySyncUrl("test-token")).thenReturn("http://localhost:8080/kobo/test-token/v1/library/sync");
+        when(koboUrlBuilder.readingServicesHost()).thenReturn("http://localhost:8080");
     }
 
     @Nested
