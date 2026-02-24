@@ -29,7 +29,7 @@
         "sectionTitle": "Filhantering",
         "maxUploadSize": "Max filuppladdningsstorlek",
         "maxUploadPlaceholder": "Max storlek",
-        "maxUploadDesc": "Definierar den maximalt tillåtna storleken (i MB) för varje uppladdad fil. Gäller EPUB-, PDF-, CBZ-, CBR- och CB7-format.",
+        "maxUploadDesc": "Definierar den maximalt tillåtna storleken (i MB) för varje uppladdad fil. Gäller alla filformat som stöds.",
         "restartWarning": "Ändringar träder i kraft efter omstart av servern",
         "invalidInput": "Ogiltig inmatning",
         "invalidInputDetail": "Ange en giltig max filuppladdningsstorlek i MB."
