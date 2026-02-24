@@ -5,6 +5,7 @@ import { finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { API_CONFIG } from '../../core/config/api-config';
 import { IconCacheService } from './icon-cache.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 
 interface SvgIconData {
   svgName: string;
@@ -25,9 +26,6 @@ interface SvgIconBatchResponse {
 }
 
 type IconContentMap = Record<string, string>;
-
-import DOMPurify from 'dompurify';
-
 @Injectable({
   providedIn: 'root'
 })
