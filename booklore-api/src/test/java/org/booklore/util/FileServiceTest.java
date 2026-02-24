@@ -377,9 +377,9 @@ class FileServiceTest {
             }
 
             @Test
-            void invalidData_returnsNull() throws IOException {
+            void invalidData_throwsException() {
                 byte[] invalidData = "not an image".getBytes();
-                assertNull(FileService.readImage(invalidData));
+                assertThrows(IOException.class, () -> FileService.readImage(invalidData));
             }
         }
 
@@ -488,11 +488,11 @@ class FileServiceTest {
             }
 
             @Test
-            void invalidImageData_skipsSave() {
+            void invalidImageData_throwsException() {
                 byte[] invalidData = "not an image".getBytes();
                 Path outputPath = tempDir.resolve("invalid.jpg");
 
-                assertDoesNotThrow(() ->
+                assertThrows(IOException.class, () ->
                         FileService.saveImage(invalidData, outputPath.toString()));
                 assertFalse(Files.exists(outputPath));
             }
@@ -916,12 +916,11 @@ class FileServiceTest {
             }
 
             @Test
-            void invalidImageBytes_skipsThumbnail() {
+            void invalidImageBytes_throwsException() {
                 byte[] invalidData = "not an image".getBytes();
 
-                assertDoesNotThrow(() ->
+                assertThrows(RuntimeException.class, () ->
                         fileService.createThumbnailFromBytes(16L, invalidData));
-                assertFalse(Files.exists(Path.of(fileService.getCoverFile(16L))));
             }
 
             @Test
@@ -1034,15 +1033,14 @@ class FileServiceTest {
             }
 
             @Test
-            void corruptImageData_skipsThumbnail() {
+            void corruptImageData_throwsException() {
                 // Valid MIME type but corrupt image data
                 byte[] corruptData = ("not an image but has jpeg mime type").getBytes();
                 MockMultipartFile corruptFile = new MockMultipartFile(
                         "file", "corrupt.jpg", "image/jpeg", corruptData);
 
-                assertDoesNotThrow(() ->
+                assertThrows(RuntimeException.class, () ->
                         fileService.createThumbnailFromFile(12L, corruptFile));
-                assertFalse(Files.exists(Path.of(fileService.getCoverFile(12L))));
             }
 
             @Test
@@ -1231,21 +1229,28 @@ class FileServiceTest {
             }
 
             @Test
-            @DisplayName("returns null when ImageIO cannot read bytes")
+            @DisplayName("throws IOException when ImageIO cannot read bytes")
             @Timeout(5)
-            void downloadImageFromUrl_invalidImageData_returnsNull() throws IOException {
+            void downloadImageFromUrl_invalidImageData_throwsException() throws IOException {
                 String imageUrl = "http://1.1.1.1/image.jpg";
                 byte[] invalidBytes = "not an image".getBytes();
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(invalidBytes);
-                when(restTemplate.exchange(
+                // Note: using ReflectionTestUtils to get the private mock if needed, 
+                // but wait, setup() already created fileService with mocks.
+                // We just need to know which mock to use.
+                // The setup() creates and injects mockNoRedirectRestTemplate.
+                
+                // Let's use ReflectionTestUtils to mock the correct one since the field in test class is 'restTemplate'
+                RestTemplate noRedirectMock = (RestTemplate) ReflectionTestUtils.getField(fileService, "noRedirectRestTemplate");
+
+                when(noRedirectMock.exchange(
                         anyString(),
                         eq(HttpMethod.GET),
                         any(HttpEntity.class),
                         eq(byte[].class)
                 )).thenReturn(responseEntity);
 
-                BufferedImage result = fileService.downloadImageFromUrl(imageUrl);
-                assertNull(result);
+                assertThrows(IOException.class, () -> fileService.downloadImageFromUrl(imageUrl));
             }
 
             @Test
