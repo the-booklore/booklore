@@ -29,7 +29,7 @@
     "sectionTitle": "Gestión de archivos",
     "maxUploadSize": "Tamaño máximo de carga de archivo",
     "maxUploadPlaceholder": "Tamaño máximo",
-    "maxUploadDesc": "Define el tamaño máximo permitido (en MB) para cada archivo cargado. Se aplica a los formatos EPUB, PDF, CBZ, CBR y CB7.",
+    "maxUploadDesc": "Define el tamaño máximo permitido (en MB) para cada archivo cargado. Se aplica a todos los formatos de archivo compatibles.",
     "restartWarning": "Los cambios surtirán efecto después de reiniciar el servidor",
     "invalidInput": "Entrada inválida",
     "invalidInputDetail": "Introduce un tamaño máximo de carga de archivo válido en MB."

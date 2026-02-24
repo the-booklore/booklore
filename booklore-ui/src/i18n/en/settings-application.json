@@ -29,7 +29,7 @@
     "sectionTitle": "File Management",
     "maxUploadSize": "Max File Upload Size",
     "maxUploadPlaceholder": "Max size",
-    "maxUploadDesc": "Defines the maximum allowed size (in MB) for each uploaded file. Applies to EPUB, PDF, CBZ, CBR, and CB7 formats.",
+    "maxUploadDesc": "Defines the maximum allowed size (in MB) for each uploaded file. Applies to all supported file formats.",
     "restartWarning": "Changes will take effect after restarting the server",
     "invalidInput": "Invalid Input",
     "invalidInputDetail": "Please enter a valid max file upload size in MB."
