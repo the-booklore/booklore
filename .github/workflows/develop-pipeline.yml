@@ -97,7 +97,12 @@ jobs:
 
       - name: Audit Frontend Dependencies
         working-directory: ./booklore-ui
-        run: npm audit --production --audit-level=high
+        run: npm audit --audit-level=high
+
+      - name: Validate Dependency Tree
+        working-directory: ./booklore-ui
+        run: npm ls --depth=0
+
 
       - name: Execute Frontend Tests
         id: frontend_tests
@@ -177,7 +182,12 @@ jobs:
 
       - name: Audit Frontend Dependencies
         working-directory: ./booklore-ui
-        run: npm audit --production --audit-level=high
+        run: npm audit --audit-level=high
+
+      - name: Validate Dependency Tree
+        working-directory: ./booklore-ui
+        run: npm ls --depth=0
+
 
       - name: Build Angular App
         working-directory: ./booklore-ui

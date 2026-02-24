@@ -105,9 +105,16 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: ./booklore-ui
-        run: npm ci --force
+        run: npm ci
 
-      - name: Audit Frontend Dependencies\n        working-directory: ./booklore-ui\n        run: npm audit --production --audit-level=high
+      - name: Audit Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm audit --audit-level=high
+
+      - name: Validate Dependency Tree
+        working-directory: ./booklore-ui
+        run: npm ls --depth=0
+
 
       - name: Execute Frontend Tests
         id: frontend_tests
@@ -248,9 +255,16 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: ./booklore-ui
-        run: npm ci --force
+        run: npm ci
 
-      - name: Audit Frontend Dependencies\n        working-directory: ./booklore-ui\n        run: npm audit --production --audit-level=high
+      - name: Audit Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm audit --audit-level=high
+
+      - name: Validate Dependency Tree
+        working-directory: ./booklore-ui
+        run: npm ls --depth=0
+
 
       - name: Build Angular App
         working-directory: ./booklore-ui
