@@ -6,13 +6,16 @@ import org.booklore.mapper.custom.BookLoreUserTransformer;
 import org.booklore.model.dto.*;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.entity.ShelfEntity;
 import org.booklore.model.entity.UserPermissionsEntity;
 import org.booklore.repository.BookOpdsRepository;
+import org.booklore.repository.BookRepository;
 import org.booklore.repository.ShelfRepository;
 import org.booklore.repository.UserRepository;
 import org.booklore.service.library.LibraryService;
 import org.booklore.service.opds.OpdsBookService;
+import org.booklore.service.restriction.ContentRestrictionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,11 +39,13 @@ import static org.mockito.Mockito.*;
 class OpdsBookServiceTest {
 
     @Mock private BookOpdsRepository bookOpdsRepository;
+    @Mock private BookRepository bookRepository;
     @Mock private BookMapper bookMapper;
     @Mock private UserRepository userRepository;
     @Mock private BookLoreUserTransformer bookLoreUserTransformer;
     @Mock private ShelfRepository shelfRepository;
     @Mock private LibraryService libraryService;
+    @Mock private ContentRestrictionService contentRestrictionService;
 
     @InjectMocks private OpdsBookService opdsBookService;
 
@@ -49,6 +54,8 @@ class OpdsBookServiceTest {
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
+        when(contentRestrictionService.applyRestrictions(anyList(), anyLong()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @AfterEach
@@ -526,6 +533,278 @@ class OpdsBookServiceTest {
 
         assertThat(result).isNotNull();
         verify(bookOpdsRepository).findBookIdsByShelfIds(eq(Set.of(10L)), any());
+    }
+
+    // ==================== validateBookContentAccess ====================
+
+    @Test
+    void validateBookContentAccess_throwsForbidden_whenUserIdIsNull() {
+        assertThatThrownBy(() ->
+                opdsBookService.validateBookContentAccess(1L, null)
+        ).hasMessageContaining("Authentication required");
+    }
+
+    @Test
+    void validateBookContentAccess_allowsAdmin() {
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(true);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        opdsBookService.validateBookContentAccess(99L, 1L);
+
+        verify(bookRepository, never()).findById(anyLong());
+        verify(contentRestrictionService, never()).applyRestrictions(anyList(), eq(1L));
+    }
+
+    @Test
+    void validateBookContentAccess_throwsForbidden_whenNoLibraryAccess() {
+        BookLoreUserEntity userEntity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(userEntity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(userEntity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        when(bookLoreUserTransformer.toDTO(userEntity)).thenReturn(user);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(5L).watch(false).build()));
+
+        BookEntity book = mock(BookEntity.class);
+        LibraryEntity library = mock(LibraryEntity.class);
+        when(library.getId()).thenReturn(99L);
+        when(book.getLibrary()).thenReturn(library);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+
+        assertThatThrownBy(() ->
+                opdsBookService.validateBookContentAccess(1L, 2L)
+        ).hasMessageContaining("You are not authorized to access this book.");
+    }
+
+    @Test
+    void validateBookContentAccess_throwsForbidden_whenContentRestricted() {
+        BookLoreUserEntity userEntity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(userEntity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(userEntity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        when(bookLoreUserTransformer.toDTO(userEntity)).thenReturn(user);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(5L).watch(false).build()));
+
+        BookEntity book = mock(BookEntity.class);
+        LibraryEntity library = mock(LibraryEntity.class);
+        when(library.getId()).thenReturn(5L);
+        when(book.getLibrary()).thenReturn(library);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+
+        when(contentRestrictionService.applyRestrictions(eq(List.of(book)), eq(2L)))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() ->
+                opdsBookService.validateBookContentAccess(1L, 2L)
+        ).hasMessageContaining("You are not authorized to access this book.");
+    }
+
+    @Test
+    void validateBookContentAccess_allowsAccess_whenBookPassesRestrictions() {
+        BookLoreUserEntity userEntity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(userEntity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(userEntity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        when(bookLoreUserTransformer.toDTO(userEntity)).thenReturn(user);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(5L).watch(false).build()));
+
+        BookEntity book = mock(BookEntity.class);
+        LibraryEntity library = mock(LibraryEntity.class);
+        when(library.getId()).thenReturn(5L);
+        when(book.getLibrary()).thenReturn(library);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+
+        when(contentRestrictionService.applyRestrictions(eq(List.of(book)), eq(2L)))
+                .thenReturn(List.of(book));
+
+        opdsBookService.validateBookContentAccess(1L, 2L);
+
+        verify(contentRestrictionService).applyRestrictions(eq(List.of(book)), eq(2L));
+    }
+
+    // ==================== Content restriction filtering in feeds ====================
+
+    @Test
+    void getBooksPage_appliesContentRestrictions_forNonAdmin() {
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(user.getId()).thenReturn(1L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        BookEntity allowedEntity = mock(BookEntity.class);
+        BookEntity restrictedEntity = mock(BookEntity.class);
+        when(allowedEntity.getId()).thenReturn(1L);
+        when(restrictedEntity.getId()).thenReturn(2L);
+
+        Book allowedBook = Book.builder().id(1L).build();
+        when(bookMapper.toBook(allowedEntity)).thenReturn(allowedBook);
+
+        when(bookOpdsRepository.findBookIdsByLibraryIds(anySet(), any()))
+                .thenReturn(new PageImpl<>(List.of(1L, 2L)));
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet()))
+                .thenReturn(List.of(allowedEntity, restrictedEntity));
+
+        when(contentRestrictionService.applyRestrictions(anyList(), eq(1L)))
+                .thenReturn(List.of(allowedEntity));
+
+        Page<Book> result = opdsBookService.getBooksPage(1L, null, null, null, 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().getId()).isEqualTo(1L);
+        verify(contentRestrictionService).applyRestrictions(anyList(), eq(1L));
+    }
+
+    @Test
+    void getBooksPage_skipsContentRestrictions_forAdmin() {
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(true);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
+
+        when(bookOpdsRepository.findBookIds(any())).thenReturn(Page.empty());
+
+        opdsBookService.getBooksPage(1L, null, null, null, 0, 10);
+
+        verify(contentRestrictionService, never()).applyRestrictions(anyList(), eq(1L));
+    }
+
+    @Test
+    void getRecentBooksPage_appliesContentRestrictions_forNonAdmin() {
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(entity));
+        BookLoreUser user = mock(BookLoreUser.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        BookEntity bookEntity = mock(BookEntity.class);
+        when(bookEntity.getId()).thenReturn(1L);
+        Book book = Book.builder().id(1L).build();
+        when(bookMapper.toBook(bookEntity)).thenReturn(book);
+
+        when(bookOpdsRepository.findRecentBookIdsByLibraryIds(anySet(), any()))
+                .thenReturn(new PageImpl<>(List.of(1L)));
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet()))
+                .thenReturn(List.of(bookEntity));
+
+        opdsBookService.getRecentBooksPage(2L, 0, 10);
+
+        verify(contentRestrictionService).applyRestrictions(anyList(), eq(2L));
+    }
+
+    @Test
+    void getRecentBooksPage_skipsContentRestrictions_forAdmin() {
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+        BookLoreUser user = mock(BookLoreUser.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(true);
+
+        when(bookOpdsRepository.findRecentBookIds(any())).thenReturn(Page.empty());
+
+        opdsBookService.getRecentBooksPage(1L, 0, 10);
+
+        verify(contentRestrictionService, never()).applyRestrictions(anyList(), eq(1L));
+    }
+
+    @Test
+    void getRandomBooks_appliesContentRestrictions() {
+        OpdsBookService spy = Mockito.spy(opdsBookService);
+        doReturn(List.of(Library.builder().id(1L).watch(false).build()))
+                .when(spy).getAccessibleLibraries(2L);
+
+        BookEntity allowedEntity = mock(BookEntity.class);
+        BookEntity restrictedEntity = mock(BookEntity.class);
+
+        when(bookOpdsRepository.findRandomBookIdsByLibraryIds(anyList())).thenReturn(List.of(1L, 2L));
+        when(bookOpdsRepository.findAllWithMetadataByIds(anyList()))
+                .thenReturn(List.of(allowedEntity, restrictedEntity));
+
+        when(contentRestrictionService.applyRestrictions(anyList(), eq(2L)))
+                .thenReturn(List.of(allowedEntity));
+
+        Book book = Book.builder().id(1L).build();
+        when(bookMapper.toBook(allowedEntity)).thenReturn(book);
+
+        List<Book> result = spy.getRandomBooks(2L, 5);
+
+        assertThat(result).hasSize(1);
+        verify(contentRestrictionService).applyRestrictions(anyList(), eq(2L));
+    }
+
+    @Test
+    void getBooksPage_contentRestrictions_filtersFromPage() {
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(3L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(user.getId()).thenReturn(3L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        BookEntity book1 = mock(BookEntity.class);
+        BookEntity book2 = mock(BookEntity.class);
+        BookEntity book3 = mock(BookEntity.class);
+        when(book1.getId()).thenReturn(1L);
+        when(book2.getId()).thenReturn(2L);
+        when(book3.getId()).thenReturn(3L);
+
+        when(bookMapper.toBook(book1)).thenReturn(Book.builder().id(1L).build());
+        when(bookMapper.toBook(book3)).thenReturn(Book.builder().id(3L).build());
+
+        when(bookOpdsRepository.findBookIdsByLibraryIds(anySet(), any()))
+                .thenReturn(new PageImpl<>(List.of(1L, 2L, 3L)));
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet()))
+                .thenReturn(List.of(book1, book2, book3));
+
+        when(contentRestrictionService.applyRestrictions(anyList(), eq(3L)))
+                .thenReturn(List.of(book1, book3));
+
+        Page<Book> result = opdsBookService.getBooksPage(3L, null, null, null, 0, 10);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent()).extracting(Book::getId).containsExactly(1L, 3L);
     }
 
 }
