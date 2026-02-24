@@ -1,1 +1,24 @@
-{}
+{
+    "pageTitle": "Beležnica",
+    "pageDescription": "Vsi vaši poudarki, zapiski in zaznamki iz celotne knjižnice na enem mestu.",
+    "searchPlaceholder": "Išči med anotacijami...",
+    "filterAll": "Vse",
+    "filterHighlights": "Poudarki",
+    "filterNotes": "Zapiski",
+    "filterBookmarks": "Zaznamki",
+    "filterByBook": "Filtriraj po knjigi",
+    "allBooks": "Vse knjige",
+    "sortNewest": "Najnovejše najprej",
+    "sortOldest": "Najstarejše najprej",
+    "export": "Izvozi",
+    "exportMarkdown": "Izvozi kot Markdown",
+    "noEntries": "Ni še anotacij",
+    "noEntriesHint": "Med branjem začnite poudarjati besedilo in pisati zapiske!",
+    "noResults": "Noben rezultat se ne ujema s filtri",
+    "chapter": "Poglavje",
+    "highlight": "Poudarek",
+    "note": "Zapisek",
+    "bookmark": "Zaznamek",
+    "annotation": "anotacija",
+    "annotations": "anotacij"
+}

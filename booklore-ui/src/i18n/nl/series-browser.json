@@ -1,25 +1,25 @@
 {
-  "pageTitle": "Reeksen",
-  "browseAllSeries": "Alle reeksen bekijken",
-  "searchPlaceholder": "Zoeken op reeksnaam of auteur...",
-  "readNext": "Volgende lezen",
-  "booksRead": "boeken gelezen",
-  "noSeriesFound": "Geen reeksen gevonden die overeenkomen met uw zoekopdracht of filters.",
-  "noSeriesInCategory": "Geen reeksen gevonden in deze categorie.",
-  "cardSize": "Kaartgrootte",
+  "pageTitle": "",
+  "browseAllSeries": "",
+  "searchPlaceholder": "",
+  "readNext": "",
+  "booksRead": "",
+  "noSeriesFound": "",
+  "noSeriesInCategory": "",
+  "cardSize": "",
   "filters": {
-    "all": "Alle",
-    "notStarted": "Niet gestart",
-    "inProgress": "Bezig",
-    "completed": "Voltooid",
-    "abandoned": "Opgegeven"
+    "all": "",
+    "notStarted": "",
+    "inProgress": "",
+    "completed": "",
+    "abandoned": ""
   },
   "sort": {
-    "nameAsc": "Naam (A-Z)",
-    "nameDesc": "Naam (Z-A)",
-    "bookCount": "Aantal boeken",
-    "progress": "Voortgang",
-    "recentlyRead": "Recent gelezen",
-    "recentlyAdded": "Recent toegevoegd"
+    "nameAsc": "",
+    "nameDesc": "",
+    "bookCount": "",
+    "progress": "",
+    "recentlyRead": "",
+    "recentlyAdded": ""
   }
 }

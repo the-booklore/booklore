@@ -1,1 +1,8 @@
-{}
+{
+    "offline": "Nimate povezave",
+    "loading": "Nalaganje BookLore…",
+    "loadingDescription": "Prosimo, počakajte, da pripravimo vse potrebno.",
+    "offlineLoadingDescription": "BookLore za nalaganje potrebuje povezavo s strežnikom.",
+    "offlineDescription": "Preverite omrežno povezavo in poskusite znova.",
+    "connectionLost": "Povezava je bila prekinjena. Nekatere funkcije morda ne bodo delovale."
+}

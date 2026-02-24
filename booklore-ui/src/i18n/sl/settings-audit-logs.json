@@ -1,1 +1,19 @@
-{}
+{
+    "title": "Revizijski dnevniki",
+    "description": "Oglejte si zapis administrativno pomembnih dejanj, izvedenih v sistemu.",
+    "sectionTitle": "Dnevnik aktivnosti",
+    "filterPlaceholder": "Filtriraj po dejanju",
+    "userFilterPlaceholder": "Filtriraj po uporabniku",
+    "dateRangePlaceholder": "Filtriraj po časovnem obdobju",
+    "clearFilters": "Počisti vse filtre",
+    "autoRefresh": "Samodejno osveževanje (10 s)",
+    "pageReport": "Prikazano od {first} do {last} od skupno {totalRecords} zapisov",
+    "empty": "Revizijskih dnevnikov ni mogoče najti",
+    "columns": {
+        "timestamp": "Kdaj",
+        "user": "Uporabnik",
+        "action": "Dejanje",
+        "description": "Opis",
+        "ip": "IP naslov"
+    }
+}

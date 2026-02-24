@@ -1,10 +1,10 @@
 {
   "toolbar": {
-    "switchToLightMode": "Wisselen naar lichte modus",
-    "switchToDarkMode": "Wisselen naar donkere modus",
-    "closePdfReader": "PDF-lezer sluiten"
+    "switchToLightMode": "",
+    "switchToDarkMode": "",
+    "closePdfReader": ""
   },
   "toast": {
-    "failedToLoadBook": "Kon het boek niet laden"
+    "failedToLoadBook": ""
   }
 }

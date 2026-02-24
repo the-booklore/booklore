@@ -1,1 +1,66 @@
-{}
+{
+    "main": {
+        "pageTitle": "Nadzorna plošča",
+        "welcomeTitle": "Dobrodošli v BookLore!",
+        "welcomeSubtitle": "Ustvarimo vašo prvo knjižnico",
+        "welcomeDescription": "Knjižnica je prostor, kjer živijo vse vaše knjige. Začnite graditi svojo digitalno zbirko še danes!",
+        "createLibrary": "Ustvari knjižnico",
+        "customizeDashboard": "Prilagodi nadzorno ploščo"
+    },
+    "scroller": {
+        "noBooksFound": "Za ta drsnik ni bilo najdenih knjig.",
+        "loadError": "Nalaganje knjig ni uspelo! Prosimo, poskusite osvežiti stran.",
+        "continueListening": "Nadaljuj s poslušanjem",
+        "continueReading": "Nadaljuj z branjem",
+        "recentlyAdded": "Zadnje dodano",
+        "discoverNew": "Odkrijte nekaj novega",
+        "magicShelf": "Magična polica",
+        "default": "Drsnik"
+    },
+    "settings": {
+        "title": "Konfiguracija nadzorne plošče",
+        "description": "Dodajte do 5 drsnikov iz različnih zbirk knjig in prilagodite njihovo delovanje",
+        "type": "Vrsta",
+        "selectType": "Izberi vrsto",
+        "magicShelf": "Magična polica",
+        "selectMagicShelf": "Izberi magično polico",
+        "sortField": "Polje za razvrščanje",
+        "selectField": "Izberi polje",
+        "direction": "Smer",
+        "selectDirection": "Izberi smer",
+        "maxItems": "Največje št. elementov",
+        "addScroller": "Dodaj drsnik",
+        "resetToDefault": "Ponastavi na privzeto",
+        "scrollerTypes": {
+            "lastRead": "Nadaljuj z branjem",
+            "lastListened": "Nadaljuj s poslušanjem",
+            "latestAdded": "Zadnje dodano",
+            "random": "Odkrijte nekaj novega",
+            "magicShelf": "Magična polica",
+            "default": "Drsnik"
+        },
+        "sortFields": {
+            "title": "Naslov",
+            "fileName": "Ime datoteke",
+            "filePath": "Pot datoteke",
+            "addedOn": "Datum dodajanja",
+            "author": "Avtor",
+            "authorSurnameVorname": "Avtor (Priimek)",
+            "seriesName": "Ime zbirke",
+            "seriesNumber": "Številka v zbirki",
+            "personalRating": "Osebna ocena",
+            "publisher": "Založba",
+            "publishedDate": "Datum izdaje",
+            "lastReadTime": "Zadnjič brano",
+            "readStatus": "Status branja",
+            "dateFinished": "Datum dokončanja",
+            "readingProgress": "Napredek branja",
+            "bookType": "Vrsta knjige",
+            "pageCount": "Strani"
+        },
+        "sortDirections": {
+            "asc": "Naraščajoče",
+            "desc": "Padajoče"
+        }
+    }
+}

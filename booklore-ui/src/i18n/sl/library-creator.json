@@ -1,1 +1,61 @@
-{}
+{
+    "creator": {
+        "titleNew": "Nova knjižnica",
+        "titleEdit": "Uredi knjižnico",
+        "subtitle": "Konfigurirajte svojo zbirko knjig",
+        "libraryDetails": "Podrobnosti knjižnice",
+        "nameLabel": "Ime",
+        "namePlaceholder": "Moja knjižnica",
+        "iconLabel": "Ikona (neobvezno)",
+        "chooseIcon": "Izberi ikono",
+        "customSvg": "SVG po meri",
+        "bookFolders": "Mape s knjigami",
+        "addFolder": "Dodaj mapo",
+        "emptyFoldersHint": "Dodajte mape, ki vsebujejo vaše datoteke knjig",
+        "options": "Možnosti",
+        "watchFolders": "Spremljaj mape",
+        "watchFoldersTooltip": "Samodejno zaznaj nove knjige, dodane v mape",
+        "metadataSource": "Vir metapodatkov",
+        "metadataSourceTooltip": "Izberite, od kod naj se berejo metapodatki pri iskanju knjig",
+        "metadataSourcePlaceholder": "Izberi vir",
+        "metadataSourceEmbedded": "Samo vgrajeni",
+        "metadataSourceSidecar": "Samo stranske datoteke (Sidecar)",
+        "metadataSourcePreferSidecar": "Prednost stranskim datotekam",
+        "metadataSourcePreferEmbedded": "Prednost vgrajenim",
+        "metadataSourceNone": "Brez",
+        "formatPriority": "Prioriteta formatov",
+        "formatPriorityTooltip": "Povlecite za spremembo vrstnega reda želenih formatov, ko ima knjiga več datotek",
+        "allowedFormats": "Dovoljeni formati",
+        "allowedFormatsTooltip": "Izberite, kateri formati knjig naj bodo vključeni v iskanje",
+        "allowAll": "Dovoli vse",
+        "formatWarning": "{{count}} obstoječih knjig se ne bo več pojavilo v prihodnjih iskanjih",
+        "deselectedFormatsWarning": "Odstranjeni formati se ne bodo pojavili v prihodnjih iskanjih",
+        "validation": {
+            "enterName": "Vnesite ime knjižnice",
+            "selectIcon": "Izberite ikono",
+            "addFolder": "Dodajte vsaj eno mapo",
+            "readyCreate": "Pripravljeno na ustvarjanje",
+            "readyUpdate": "Pripravljeno na posodobitev"
+        },
+        "buttonCreate": "Ustvari",
+        "buttonUpdate": "Posodobi",
+        "toast": {
+            "nameExistsSummary": "Ime knjižnice že obstaja",
+            "nameExistsDetail": "To ime knjižnice je že zasedeno.",
+            "updatedSummary": "Knjižnica posodobljena",
+            "updatedDetail": "Knjižnica je bila uspešno posodobljena.",
+            "updateFailedSummary": "Posodobitev ni uspela",
+            "updateFailedDetail": "Pri posodabljanju knjižnice je prišlo do napake. Poskusite znova.",
+            "createdSummary": "Knjižnica ustvarjena",
+            "createdDetail": "Knjižnica je bila uspešno ustvarjena.",
+            "createdLargeDetail": "Knjižnica ustvarjena s {{count}} datotekami. Nalaganje poteka ...",
+            "createFailedSummary": "Ustvarjanje ni uspelo",
+            "createFailedDetail": "Pri ustvarjanju knjižnice je prišlo do napake. Poskusite znova."
+        }
+    },
+    "loading": {
+        "title": "Nalaganje knjižnice",
+        "processing": "Obdelava:",
+        "complete": "Dokončano!"
+    }
+}

@@ -1,1 +1,69 @@
-{}
+{
+    "title": "Upravitelj sistemskih opravil",
+    "description": "Upravljajte avtomatizirana sistemska opravila za vzdrževanje knjižnice, osveževanje metapodatkov in čiščenje predpomnilnika. Načrtujte ponavljajoče se operacije z uporabo <a href=\"https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"cron-link\">Spring cron izrazov</a>.",
+    "systemTasks": {
+        "sectionTitle": "Sistemska opravila",
+        "sectionDesc": "Ročno izvajajte opravila, spremljajte napredek v realnem času in konfigurirajte načrtovano avtomatizacijo."
+    },
+    "loading": "Nalaganje opravil...",
+    "emptyTitle": "Na voljo ni nobenih opravil",
+    "status": {
+        "running": "Se izvaja",
+        "stale": "Zastalo",
+        "neverRun": "Nikoli izvedeno",
+        "justNow": "Ravnokar"
+    },
+    "cron": {
+        "noSchedule": "Ni urnika",
+        "edit": "Uredi",
+        "placeholder": "npr., 0 2 * * *",
+        "validationPrefix": "Cron izraz mora imeti natanko 6 polj (sekunde, minute, ure, dan, mesec, dan v tednu)",
+        "invalidField": "Neveljavno polje {{name}}: {{value}}",
+        "updateSuccess": "Konfiguracija načrtovanega opravila je bila uspešno posodobljena.",
+        "updateError": "Posodobitev konfiguracije načrtovanega opravila ni uspela."
+    },
+    "buttons": {
+        "run": "Zaženi",
+        "rerun": "Ponovno zaženi"
+    },
+    "metadataReplace": {
+        "label": "Način zamenjave metapodatkov:",
+        "selectMode": "Izberite način",
+        "replaceMissing": "Posodobi samo manjkajoče metapodatke (priporočeno)",
+        "replaceAll": "Zamenjaj vse metapodatke (prepiši obstoječe)",
+        "replaceMissingDesc": "Posodobi samo knjige, ki jim manjkajo informacije o metapodatkih. Obstoječi metapodatki bodo ohranjeni.",
+        "replaceAllDesc": "Zamenja vse metapodatke za vse knjige, tudi če že imajo metapodatke. Uporabljajte previdno, saj bo to prepisalo obstoječe podatke."
+    },
+    "progress": {
+        "staleWarning": "To opravilo je videti obtičalo. Že več kot 5 minut ni bilo prejetih posodobitev.",
+        "statusLabel": "Status:",
+        "progressLabel": "Napredek:",
+        "startedLabel": "Začeto:",
+        "processing": "Obdelava...",
+        "stuckMessage": "Opravilo je videti obtičalo (ni prejetih posodobitev)"
+    },
+    "toast": {
+        "taskQueued": "Opravilo v čakalni vrsti",
+        "taskQueuedDetail": "Opravilo {{name}} je bilo dodano v vrsto in se bo izvajalo v ozadju.",
+        "taskCompleted": "Opravilo dokončano",
+        "taskCompletedDetail": "Opravilo {{name}} je bilo uspešno zaključeno.",
+        "taskFailed": "Opravilo ni uspelo",
+        "taskFailedDetail": "Opravilo {{name}} se ni uspešno zaključilo.",
+        "taskStarted": "Opravilo zagnano",
+        "taskStartedDetail": "Opravilo {{name}} je bilo uspešno zagnano.",
+        "startError": "Zaganjanje opravila {{name}} ni uspelo.",
+        "alreadyRunning": "Opravilo se že izvaja",
+        "alreadyRunningDetail": "To opravilo je že v teku ali v čakalni vrsti.",
+        "taskCancelled": "Opravilo preklicano",
+        "cancelledDetail": "Opravilo je bilo uspešno preklicano.",
+        "cancelFailed": "Preklic ni uspel",
+        "cancelError": "Opravila ni bilo mogoče preklicati. Morda je že zaključeno ali pa je spodletelo.",
+        "cancelNoId": "Opravila ni mogoče preklicati brez ID-ja.",
+        "loadError": "Nalaganje opravil ni uspelo",
+        "metadataScheduled": "Posodobitev metapodatkov načrtovana",
+        "metadataScheduledDetail": "Posodobitev metapodatkov za izbrane knjige je bila uspešno načrtovana.",
+        "metadataAlreadyRunningDetail": "Osveževanje metapodatkov že poteka. Prosimo, počakajte, da se zaključi, preden začnete novega.",
+        "metadataFailed": "Posodobitev metapodatkov ni uspela",
+        "metadataFailedDetail": "Prišlo je do nepričakovane napake pri načrtovanju posodobitve metapodatkov. Prosimo, poskusite pozneje ali se obrnite na podporo, če se težava ponavlja."
+    }
+}
