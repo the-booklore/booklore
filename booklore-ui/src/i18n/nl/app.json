@@ -1,8 +1,8 @@
 {
-  "offline": "",
-  "loading": "",
-  "loadingDescription": "",
-  "offlineLoadingDescription": "",
-  "offlineDescription": "",
-  "connectionLost": ""
+    "offline": "Je bent offline",
+    "loading": "",
+    "loadingDescription": "",
+    "offlineLoadingDescription": "",
+    "offlineDescription": "",
+    "connectionLost": ""
 }
