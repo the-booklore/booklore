@@ -531,6 +531,35 @@ class KoboEntitlementServiceTest {
             assertEquals(1, result.size());
             assertTrue(result.getFirst() instanceof ChangedProductMetadata);
         }
+
+        @Test
+        @DisplayName("Should generate changed product metadata for non-removed CBX books when conversion is enabled")
+        void generateChangedEntitlements_changedCbxBookIncludedWhenConversionEnabled() {
+            BookEntity book = createCbxBookEntity(1L);
+
+            when(bookQueryService.findAllWithMetadataByIds(Set.of(1L))).thenReturn(List.of(book));
+            when(koboCompatibilityService.isBookSupportedForKobo(book)).thenReturn(true);
+            when(koboUrlBuilder.downloadUrl("token1", 1L)).thenReturn("http://test.com/download/1");
+            when(appSettingService.getAppSettings()).thenReturn(createAppSettingsWithKoboSettings());
+
+            List<? extends Entitlement> result = koboEntitlementService.generateChangedEntitlements(Set.of(1L), "token1", false);
+
+            assertEquals(1, result.size());
+            assertTrue(result.getFirst() instanceof ChangedProductMetadata);
+        }
+
+        @Test
+        @DisplayName("Should exclude CBX books from changed product metadata when conversion is disabled")
+        void generateChangedEntitlements_changedCbxBookExcludedWhenConversionDisabled() {
+            BookEntity book = createCbxBookEntity(1L);
+
+            when(bookQueryService.findAllWithMetadataByIds(Set.of(1L))).thenReturn(List.of(book));
+            when(koboCompatibilityService.isBookSupportedForKobo(book)).thenReturn(false);
+
+            List<? extends Entitlement> result = koboEntitlementService.generateChangedEntitlements(Set.of(1L), "token1", false);
+
+            assertTrue(result.isEmpty());
+        }
     }
 
     @Nested

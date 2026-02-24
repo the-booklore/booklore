@@ -92,7 +92,7 @@ public class KoboEntitlementService {
                     .collect(Collectors.toList());
         }
         return books.stream()
-                .filter(bookEntity -> bookEntity.getPrimaryBookFile() != null && bookEntity.getPrimaryBookFile().getBookType() == BookFileType.EPUB)
+                .filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(book -> ChangedProductMetadata.builder()
                         .changedProductMetadata(BookEntitlementContainer.builder()
                                 .bookEntitlement(buildBookEntitlement(book, false))

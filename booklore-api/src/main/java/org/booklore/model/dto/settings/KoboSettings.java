@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 public class KoboSettings {
     private boolean convertToKepub;
     private int conversionLimitInMb;
-    private boolean convertCbxToEpub;
+    @Builder.Default
+    private boolean convertCbxToEpub = true;
     private int conversionLimitInMbForCbx;
     private boolean forceEnableHyphenation;
     private int conversionImageCompressionPercentage;
