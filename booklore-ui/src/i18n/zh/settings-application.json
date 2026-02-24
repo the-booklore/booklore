@@ -29,7 +29,7 @@
         "sectionTitle": "文件管理",
         "maxUploadSize": "最大文件上传大小",
         "maxUploadPlaceholder": "最大大小",
-        "maxUploadDesc": "定义每个上传文件的最大允许大小（以 MB 为单位）。适用于 EPUB、PDF、CBZ、CBR 和 CB7 格式。",
+        "maxUploadDesc": "定义每个上传文件的最大允许大小（以 MB 为单位）。适用于所有支持的格式。",
         "restartWarning": "更改将在重启服务器后生效",
         "invalidInput": "无效输入",
         "invalidInputDetail": "请输入有效的最大文件上传大小（以 MB 为单位）。"
