@@ -5,9 +5,9 @@
     "close": "Zapri",
     "confirm": "Potrdi",
     "search": "Išči",
-    "loading": "Nalaganje ...",
+    "loading": "Nalaganje...",
     "error": "Napaka",
-    "success": "Uspeh",
+    "success": "Uspešno",
     "yes": "Da",
     "no": "Ne",
     "ok": "V redu",
@@ -19,7 +19,7 @@
     "edit": "Uredi",
     "info": "Informacije",
     "select": "Izberi",
-    "dismiss": "Opusti",
+    "dismiss": "Prezri",
     "discard": "Zavrzi",
     "review": "Preglej"
 }
