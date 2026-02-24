@@ -28,6 +28,9 @@ server:
     relaxed-query-chars: '[,],%,{,},|'
 
 spring:
+  jackson:
+    deserialization:
+      fail-on-null-for-primitives: false
   servlet:
     multipart:
       enabled: false
