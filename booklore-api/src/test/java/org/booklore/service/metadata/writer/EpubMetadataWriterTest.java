@@ -16,16 +16,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -181,6 +188,379 @@ class EpubMetadataWriterTest {
 
             assertTrue(Math.abs(lines2 - lines1) <= 2, "Line count should be stable");
             assertTrue(!contentAfterSecondSave.contains("\n\n"), "Should not contain double newlines");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB3 Creator Metadata Tests")
+    class Epub3CreatorTests {
+
+        @Test
+        @DisplayName("Should use meta refines for file-as in EPUB3")
+        void epub3_shouldUseMetaRefines_forFileAs() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Test Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub3-creator-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            Document doc = parseOpf(epubFile);
+            NodeList creators = doc.getElementsByTagNameNS("http://purl.org/dc/elements/1.1/", "creator");
+            assertThat(creators.getLength()).isGreaterThan(0);
+
+            Element creator = (Element) creators.item(0);
+            assertThat(creator.getTextContent()).isEqualTo("Test Author");
+            assertThat(creator.getAttribute("id")).isNotEmpty();
+
+            // Should NOT have opf:file-as or opf:role attributes
+            String fileAsAttr = creator.getAttributeNS("http://www.idpf.org/2007/opf", "file-as");
+            String roleAttr = creator.getAttributeNS("http://www.idpf.org/2007/opf", "role");
+            assertThat(fileAsAttr).isEmpty();
+            assertThat(roleAttr).isEmpty();
+
+            // Should have meta refines elements instead
+            String creatorId = creator.getAttribute("id");
+            String opfContent2 = readOpfContent(epubFile);
+            assertThat(opfContent2).contains("refines=\"#" + creatorId + "\"");
+            assertThat(opfContent2).contains("property=\"file-as\"");
+            assertThat(opfContent2).contains("property=\"role\"");
+        }
+
+        @Test
+        @DisplayName("Should include role with marc:relators scheme in EPUB3")
+        void epub3_shouldIncludeRoleScheme() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Test Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub3-role-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("scheme=\"marc:relators\"");
+            assertThat(content).contains(">aut<");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB2 Creator Metadata Tests")
+    class Epub2CreatorTests {
+
+        @Test
+        @DisplayName("Should use opf:file-as attribute on dc:creator in EPUB2")
+        void epub2_shouldUseOpfAttributes() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="2.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                            <dc:title>Test Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub2-creator-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("opf:file-as=");
+            assertThat(content).contains("opf:role=");
+            // Should NOT have meta refines for creators
+            assertThat(content).doesNotContain("property=\"file-as\"");
+            assertThat(content).doesNotContain("property=\"role\"");
+        }
+
+        @Test
+        @DisplayName("Should preserve EPUB2 structure without EPUB3 constructs")
+        void epub2_shouldNotContainEpub3Constructs() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="2.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                            <dc:title>EPUB2 Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setSubtitle("A Subtitle");
+            metadata.setSeriesName("Test Series");
+            metadata.setSeriesNumber(3.0f);
+            metadata.setPageCount(200);
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub2-no-epub3-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            // EPUB2 should not have prefix attribute on package
+            assertThat(content).doesNotContain("prefix=");
+            // EPUB2 should not have property= metas for series
+            assertThat(content).doesNotContain("property=\"belongs-to-collection\"");
+            assertThat(content).doesNotContain("property=\"collection-type\"");
+            assertThat(content).doesNotContain("property=\"group-position\"");
+            // EPUB2 should not have property= metas for subtitles
+            assertThat(content).doesNotContain("property=\"title-type\"");
+        }
+    }
+
+    @Nested
+    @DisplayName("Mimetype ZIP Entry Tests")
+    class MimetypeZipTests {
+
+        @Test
+        @DisplayName("Should store mimetype as first uncompressed entry in ZIP")
+        void saveMetadata_shouldStoreMimetypeFirst() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Original Title</dc:title>
+                        </metadata>
+                    </package>""";
+
+            File epubFile = createEpubWithOpf(opfContent, "test-mimetype-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            try (ZipFile zf = new ZipFile(epubFile)) {
+                Enumeration<? extends ZipEntry> entries = zf.entries();
+                assertThat(entries.hasMoreElements()).isTrue();
+
+                ZipEntry firstEntry = entries.nextElement();
+                assertThat(firstEntry.getName()).isEqualTo("mimetype");
+                assertThat(firstEntry.getMethod()).isEqualTo(ZipEntry.STORED);
+
+                // Verify mimetype content
+                try (InputStream is = zf.getInputStream(firstEntry)) {
+                    String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                    assertThat(content).isEqualTo("application/epub+zip");
+                }
+            }
+        }
+
+        @Test
+        @DisplayName("Should not duplicate mimetype entry in ZIP")
+        void saveMetadata_shouldNotDuplicateMimetype() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Original Title</dc:title>
+                        </metadata>
+                    </package>""";
+
+            File epubFile = createEpubWithOpf(opfContent, "test-no-dup-mimetype-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            try (ZipFile zf = new ZipFile(epubFile)) {
+                int mimetypeCount = 0;
+                Enumeration<? extends ZipEntry> entries = zf.entries();
+                while (entries.hasMoreElements()) {
+                    if ("mimetype".equals(entries.nextElement().getName())) {
+                        mimetypeCount++;
+                    }
+                }
+                assertThat(mimetypeCount).isEqualTo(1);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB3 Series Metadata Tests")
+    class Epub3SeriesTests {
+
+        @Test
+        @DisplayName("Should use belongs-to-collection for series in EPUB3")
+        void epub3_shouldUseBelongsToCollection() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Series Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setSeriesName("The Dark Tower");
+            metadata.setSeriesNumber(3.0f);
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub3-series-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("property=\"belongs-to-collection\"");
+            assertThat(content).contains("The Dark Tower");
+            assertThat(content).contains("property=\"collection-type\"");
+            assertThat(content).contains("series");
+            assertThat(content).contains("property=\"group-position\"");
+            assertThat(content).contains(">3<");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB2 Series Metadata Tests")
+    class Epub2SeriesTests {
+
+        @Test
+        @DisplayName("Should use calibre:series convention for series in EPUB2")
+        void epub2_shouldUseCalibreSeries() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="2.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                            <dc:title>Series Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setSeriesName("Wheel of Time");
+            metadata.setSeriesNumber(5.0f);
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub2-series-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("name=\"calibre:series\"");
+            assertThat(content).contains("content=\"Wheel of Time\"");
+            assertThat(content).contains("name=\"calibre:series_index\"");
+            assertThat(content).contains("content=\"5\"");
+            // Should NOT contain EPUB3 series constructs
+            assertThat(content).doesNotContain("belongs-to-collection");
+            assertThat(content).doesNotContain("collection-type");
+            assertThat(content).doesNotContain("group-position");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB3 Subtitle Tests")
+    class Epub3SubtitleTests {
+
+        @Test
+        @DisplayName("Should add subtitle as separate dc:title with title-type refinement in EPUB3")
+        void epub3_shouldAddSubtitleWithRefinement() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Main Title</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setTitle("Main Title");
+            metadata.setSubtitle("A Great Subtitle");
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub3-subtitle-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("A Great Subtitle");
+            assertThat(content).contains("property=\"title-type\"");
+            assertThat(content).contains(">subtitle<");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB2 Subtitle Tests")
+    class Epub2SubtitleTests {
+
+        @Test
+        @DisplayName("Should store subtitle via booklore:subtitle metadata in EPUB2 without modifying dc:title")
+        void epub2_shouldStoreSubtitleInBookloreMeta() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="2.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                            <dc:title>Main Title</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setTitle("Main Title");
+            metadata.setSubtitle("A Great Subtitle");
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub2-subtitle-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            // Title should remain unchanged (not appended with subtitle)
+            assertThat(content).contains(">Main Title<");
+            assertThat(content).doesNotContain("Main Title: A Great Subtitle");
+            // Subtitle should be stored via booklore:subtitle metadata
+            assertThat(content).contains("name=\"booklore:subtitle\"");
+            assertThat(content).contains("content=\"A Great Subtitle\"");
+            // Should NOT have EPUB3 title-type refinement
+            assertThat(content).doesNotContain("property=\"title-type\"");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB3 Booklore Metadata Tests")
+    class Epub3BookloreMetadataTests {
+
+        @Test
+        @DisplayName("Should use property attribute for booklore metadata in EPUB3")
+        void epub3_shouldUsePropertyAttribute() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Test Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setPageCount(350);
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub3-booklore-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("property=\"booklore:page_count\"");
+            assertThat(content).contains(">350<");
+            assertThat(content).contains("prefix=");
+            assertThat(content).contains("booklore:");
+        }
+    }
+
+    @Nested
+    @DisplayName("EPUB2 Booklore Metadata Tests")
+    class Epub2BookloreMetadataTests {
+
+        @Test
+        @DisplayName("Should use name/content attributes for booklore metadata in EPUB2")
+        void epub2_shouldUseNameContentAttributes() throws Exception {
+            String opfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="2.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                            <dc:title>Test Book</dc:title>
+                        </metadata>
+                    </package>""";
+
+            metadata.setPageCount(350);
+
+            File epubFile = createEpubWithOpf(opfContent, "test-epub2-booklore-" + System.nanoTime() + ".epub");
+            writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags());
+
+            String content = readOpfContent(epubFile);
+            assertThat(content).contains("name=\"booklore:page_count\"");
+            assertThat(content).contains("content=\"350\"");
+            // Should NOT have EPUB3 prefix attribute
+            assertThat(content).doesNotContain("prefix=");
+            // Should NOT use property= form
+            assertThat(content).doesNotContain("property=\"booklore:");
+        }
+    }
+
+    private Document parseOpf(File epubFile) throws Exception {
+        try (ZipFile zf = new ZipFile(epubFile)) {
+            ZipEntry ze = zf.getEntry("OEBPS/content.opf");
+            try (InputStream is = zf.getInputStream(ze)) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setNamespaceAware(true);
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                return builder.parse(is);
+            }
         }
     }
 
