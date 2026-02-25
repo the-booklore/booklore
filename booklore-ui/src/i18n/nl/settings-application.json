@@ -1,45 +1,45 @@
 {
-  "title": "",
-  "description": "",
-  "covers": {
-    "sectionTitle": "",
-    "regenerate": "",
-    "regenerateBtn": "",
-    "regenerateDesc": "",
-    "regenerateStarted": "",
-    "regenerateStartedDetail": "",
-    "regenerateError": "",
-    "verticalCropping": "",
-    "verticalCroppingDesc": "",
-    "horizontalCropping": "",
-    "horizontalCroppingDesc": "",
-    "aspectRatio": "",
-    "aspectRatioDesc": "",
-    "smartCropping": "",
-    "smartCroppingDesc": ""
-  },
-  "search": {
-    "sectionTitle": "",
-    "autoBookSearch": "",
-    "autoBookSearchDesc": "",
-    "similarBook": "",
-    "similarBookDesc": ""
-  },
-  "fileManagement": {
-    "sectionTitle": "",
-    "maxUploadSize": "",
-    "maxUploadPlaceholder": "",
-    "maxUploadDesc": "",
-    "restartWarning": "",
-    "invalidInput": "",
-    "invalidInputDetail": ""
-  },
-  "telemetry": {
-    "sectionTitle": "",
-    "enableTelemetry": "",
-    "telemetryDesc": ""
-  },
-  "settingsSaved": "",
-  "settingsSavedDetail": "",
-  "settingsError": ""
+    "title": "Globale voorkeuren",
+    "description": "Configureer globale instellingen voor uw Booklore-instantie, waaronder omslagafbeeldingbeheer, zoekvoorkeuren en uploadlimieten.",
+    "covers": {
+        "sectionTitle": "",
+        "regenerate": "",
+        "regenerateBtn": "",
+        "regenerateDesc": "",
+        "regenerateStarted": "",
+        "regenerateStartedDetail": "",
+        "regenerateError": "",
+        "verticalCropping": "",
+        "verticalCroppingDesc": "",
+        "horizontalCropping": "",
+        "horizontalCroppingDesc": "",
+        "aspectRatio": "",
+        "aspectRatioDesc": "",
+        "smartCropping": "",
+        "smartCroppingDesc": ""
+    },
+    "search": {
+        "sectionTitle": "",
+        "autoBookSearch": "",
+        "autoBookSearchDesc": "",
+        "similarBook": "",
+        "similarBookDesc": "Schakelt vergelijkbare boekaanbevelingen in of uit op basis van uw bibliotheek."
+    },
+    "fileManagement": {
+        "sectionTitle": "Bestandsbeheer",
+        "maxUploadSize": "Max. uploadgrootte",
+        "maxUploadPlaceholder": "Max. grootte",
+        "maxUploadDesc": "",
+        "restartWarning": "Wijzigingen worden van kracht na het herstarten van de server",
+        "invalidInput": "",
+        "invalidInputDetail": ""
+    },
+    "telemetry": {
+        "sectionTitle": "",
+        "enableTelemetry": "",
+        "telemetryDesc": ""
+    },
+    "settingsSaved": "",
+    "settingsSavedDetail": "",
+    "settingsError": ""
 }
