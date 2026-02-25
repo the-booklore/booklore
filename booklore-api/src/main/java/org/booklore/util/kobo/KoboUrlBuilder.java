@@ -1,9 +1,12 @@
 package org.booklore.util.kobo;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.util.RequestUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
@@ -17,8 +20,28 @@ public class KoboUrlBuilder {
                 .replacePath("")
                 .replaceQuery(null);
 
+        UriComponents built = builder.build();
+        if (built.getPort() == -1 && !hasForwardedHeaders()) {
+            int localPort = RequestUtils.getCurrentRequest().getLocalPort();
+            if (!isDefaultPort(built.getScheme(), localPort)) {
+                builder.port(localPort);
+            }
+        }
+
         log.debug("Final base URL: {}", builder.build().toUriString());
         return builder;
+    }
+
+    private boolean hasForwardedHeaders() {
+        HttpServletRequest request = RequestUtils.getCurrentRequest();
+        return request.getHeader("X-Forwarded-Host") != null
+                || request.getHeader("X-Forwarded-Port") != null
+                || request.getHeader("X-Forwarded-Proto") != null
+                || request.getHeader("Forwarded") != null;
+    }
+
+    private boolean isDefaultPort(String scheme, int port) {
+        return ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
     }
 
     public String downloadUrl(String token, Long bookId) {
