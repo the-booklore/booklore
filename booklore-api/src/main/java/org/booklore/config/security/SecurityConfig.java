@@ -124,9 +124,22 @@ public class SecurityConfig {
 
     @Bean
     @Order(3)
+    public SecurityFilterChain readingSessionsSecurityChain(HttpSecurity http, KoreaderAuthFilter koreaderAuthFilter) throws Exception {
+        http
+                .securityMatcher("/api/v1/reading-sessions/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .addFilterBefore(koreaderAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(dualJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(4)
     public SecurityFilterChain koreaderSecurityChain(HttpSecurity http, KoreaderAuthFilter koreaderAuthFilter) throws Exception {
         http
-                .securityMatcher("/api/koreader/**", "/api/v1/reading-sessions/**")
+                .securityMatcher("/api/koreader/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
@@ -135,7 +148,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(3)
+    @Order(5)
     public SecurityFilterChain koboSecurityChain(HttpSecurity http, KoboAuthFilter koboAuthFilter) throws Exception {
         http
                 .securityMatcher("/api/kobo/**")
@@ -147,7 +160,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(4)
+    @Order(6)
     public SecurityFilterChain coverJwtApiSecurityChain(HttpSecurity http, CoverJwtFilter coverJwtFilter) throws Exception {
         http
                 .securityMatcher("/api/v1/media/**")
@@ -166,7 +179,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(5)
+    @Order(7)
     public SecurityFilterChain customFontSecurityChain(HttpSecurity http, CustomFontJwtFilter customFontJwtFilter) throws Exception {
         http
                 .securityMatcher("/api/v1/custom-fonts/*/file")
@@ -181,7 +194,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(6)
+    @Order(8)
     public SecurityFilterChain epubStreamingSecurityChain(HttpSecurity http, EpubStreamingJwtFilter epubStreamingJwtFilter) throws Exception {
         http
                 .securityMatcher("/api/v1/epub/*/file/**")
@@ -196,7 +209,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(7)
+    @Order(9)
     public SecurityFilterChain audiobookStreamingSecurityChain(HttpSecurity http, AudiobookStreamingJwtFilter audiobookStreamingJwtFilter) throws Exception {
         http
                 .securityMatcher("/api/v1/audiobook/*/stream/**", "/api/v1/audiobook/*/track/*/stream/**", "/api/v1/audiobook/*/cover")
@@ -211,7 +224,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(8)
+    @Order(10)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
         List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
         http
@@ -233,7 +246,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(9)
+    @Order(11)
     public SecurityFilterChain staticResourcesSecurityChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
