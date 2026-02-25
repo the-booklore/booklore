@@ -426,6 +426,7 @@ export class BookdropFileReviewComponent implements OnInit {
         severity: 'success',
         outlined: true
       },
+      acceptIcon: 'pi pi-check',
       accept: () => this.finalizeImport(),
     });
   }
