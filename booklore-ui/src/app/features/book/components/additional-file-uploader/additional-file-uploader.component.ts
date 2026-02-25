@@ -1,4 +1,4 @@
-import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {ChangeDetectorRef, Component, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 
 import {FormsModule} from '@angular/forms';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -48,11 +48,14 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
   files: UploadingFile[] = [];
   fileType: AdditionalFileType = AdditionalFileType.ALTERNATIVE_FORMAT;
   isUploading = false;
+  readonly AdditionalFileType = AdditionalFileType;
+  private static readonly BOOK_FORMAT_ACCEPT = '.pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3,.m4b,.m4a,.mp3';
   maxFileSizeBytes?: number;
   maxFileSizeDisplay: string = '100 MB';
 
   fileTypeOptions: FileTypeOption[] = [];
 
+  @ViewChild(FileUpload) private fileUpload!: FileUpload;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -87,6 +90,19 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  onFileTypeChange(): void {
+    this.files = [];
+    if (this.fileUpload) {
+      this.fileUpload.clear();
+    }
+  }
+
+  get acceptedFormats(): string {
+    return this.fileType === AdditionalFileType.ALTERNATIVE_FORMAT
+      ? AdditionalFileUploaderComponent.BOOK_FORMAT_ACCEPT
+      : '';
   }
 
   hasPendingFiles(): boolean {
