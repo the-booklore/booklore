@@ -1,14 +1,14 @@
 {
     "title": "Gebruikersprofiel",
     "description": "Beheer uw accountgegevens en beveiligingsinstellingen",
-    "basicInfo": "",
-    "username": "",
-    "usernamePlaceholder": "",
-    "fullName": "",
-    "fullNamePlaceholder": "",
-    "email": "",
-    "emailPlaceholder": "",
-    "editProfile": "",
+    "basicInfo": "Basisgegevens",
+    "username": "Gebruikersnaam",
+    "usernamePlaceholder": "Gebruikersnaam...",
+    "fullName": "Volledige naam",
+    "fullNamePlaceholder": "Voer volledige naam in...",
+    "email": "E-mail",
+    "emailPlaceholder": "Voer e-mail in...",
+    "editProfile": "Profiel bewerken",
     "saveChanges": "Wijzigingen opslaan",
     "security": "Beveiligingsinstellingen",
     "currentPassword": "Huidig wachtwoord",
@@ -28,7 +28,7 @@
         "noChanges": "Geen wijzigingen gedetecteerd.",
         "profileUpdated": "Profiel succesvol bijgewerkt",
         "profileUpdateFailed": "Kon profiel niet bijwerken",
-        "passwordChanged": "",
-        "passwordChangeFailed": ""
+        "passwordChanged": "Wachtwoord succesvol gewijzigd",
+        "passwordChangeFailed": "Kon wachtwoord niet wijzigen"
     }
 }
