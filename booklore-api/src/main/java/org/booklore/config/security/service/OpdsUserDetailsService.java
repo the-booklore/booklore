@@ -22,7 +22,7 @@ public class OpdsUserDetailsService implements UserDetailsService {
     @Override
     public OpdsUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         OpdsUserV2Entity userV2 = opdsUserV2Repository.findByUsername(username)
-                .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(username));
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
         OpdsUserV2 mappedCredential = opdsUserV2Mapper.toDto(userV2);
         return new OpdsUserDetails(mappedCredential);
     }

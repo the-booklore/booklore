@@ -196,7 +196,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     const totalGaps = (columns - 1) * this.MOBILE_GAP;
     const availableWidth = this.screenWidth - totalGaps - this.MOBILE_PADDING;
     const cardWidth = Math.floor(availableWidth / columns);
-    const coverHeight = Math.floor(cardWidth * this.CARD_ASPECT_RATIO);
+    const coverHeight = this.isAudiobookOnlyLibrary ? cardWidth : Math.floor(cardWidth * this.CARD_ASPECT_RATIO);
     const cardHeight = coverHeight + this.MOBILE_TITLE_BAR_HEIGHT;
     return {width: cardWidth, height: cardHeight};
   }
@@ -209,22 +209,30 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.isMobile) {
       return this.mobileCardSize;
     }
-    return this.coverScalePreferenceService.currentCardSize;
+    const base = this.coverScalePreferenceService.currentCardSize;
+    if (this.isAudiobookOnlyLibrary) {
+      const squareSide = Math.round(base.width * 1.1);
+      return { width: squareSide, height: squareSide + 31 };
+    }
+    return base;
   }
 
   get gridColumnMinWidth(): string {
     if (this.isMobile) {
       return `${this.mobileCardSize.width}px`;
     }
+    if (this.isAudiobookOnlyLibrary) {
+      return `${this.currentCardSize.width}px`;
+    }
     return this.coverScalePreferenceService.gridColumnMinWidth;
   }
 
   getCardHeight(_book: Book): number {
-    // Use uniform height for all book types to ensure smooth virtual scrolling.
-    // Mixed heights cause choppy/jumpy scrolling because the virtual scroller
-    // cannot accurately estimate positions when item heights vary.
     if (this.isMobile) {
       return this.mobileCardSize.height;
+    }
+    if (this.isAudiobookOnlyLibrary) {
+      return this.currentCardSize.height;
     }
     return this.coverScalePreferenceService.getCardHeight(_book);
   }
@@ -265,6 +273,12 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
     return filterSummary.length > 50
       ? this.t.translate('book.browser.labels.activeFilters', {count: filterEntries.length})
       : filterSummary;
+  }
+
+  get isAudiobookOnlyLibrary(): boolean {
+    if (!this.entity || this.entityType !== EntityType.LIBRARY) return false;
+    const library = this.entity as Library;
+    return !!library.allowedFormats && library.allowedFormats.length === 1 && library.allowedFormats[0] === 'AUDIOBOOK';
   }
 
   get seriesViewEnabled(): boolean {

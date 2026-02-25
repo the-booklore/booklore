@@ -500,31 +500,31 @@
       "unset": "Non défini"
     },
     "matchScore": {
-      "outstanding": "Exceptionnel (95\u2013100%)",
-      "excellent": "Excellent (90\u201394%)",
-      "great": "Très bon (80\u201389%)",
-      "good": "Bon (70\u201379%)",
-      "fair": "Moyen (50\u201369%)",
-      "weak": "Faible (30\u201349%)",
-      "poor": "Insuffisant (0\u201329%)"
+      "outstanding": "Exceptionnel (95–100%)",
+      "excellent": "Excellent (90–94%)",
+      "great": "Très bon (80–89%)",
+      "good": "Bon (70–79%)",
+      "fair": "Moyen (50–69%)",
+      "weak": "Faible (30–49%)",
+      "poor": "Insuffisant (0–29%)"
     },
     "fileSize": {
       "lt1mb": "< 1 Mo",
-      "1to10mb": "1\u201310 Mo",
-      "10to50mb": "10\u201350 Mo",
-      "50to100mb": "50\u2013100 Mo",
-      "250to500mb": "250\u2013500 Mo",
-      "05to1gb": "0,5\u20131 Go",
-      "1to2gb": "1\u20132 Go",
+      "1to10mb": "1–10 Mo",
+      "10to50mb": "10–50 Mo",
+      "50to100mb": "50–100 Mo",
+      "250to500mb": "250–500 Mo",
+      "05to1gb": "0,5–1 Go",
+      "1to2gb": "1–2 Go",
       "5plusGb": "5+ Go"
     },
     "pageCount": {
       "lt50": "< 50 pages",
-      "50to100": "50\u2013100 pages",
-      "100to200": "100\u2013200 pages",
-      "200to400": "200\u2013400 pages",
-      "400to600": "400\u2013600 pages",
-      "600to1000": "600\u20131000 pages",
+      "50to100": "50–100 pages",
+      "100to200": "100–200 pages",
+      "200to400": "200–400 pages",
+      "400to600": "400–600 pages",
+      "600to1000": "600–1000 pages",
       "1000plus": "1000+ pages"
     },
     "ageRating": {
@@ -691,19 +691,18 @@
     "unknownTitle": "Titre inconnu",
     "selectTargetBook": "Sélectionner le livre cible",
     "searchPlaceholder": "Rechercher un livre dans la même bibliothèque...",
-    "deleteSource": "Supprimer le livre source après la jonction",
-    "deleteSourceBulk": "Supprimer les livres sources après la jonction",
-    "warningMove": "Cela déplacera le fichier du livre source vers le livre cible comme format alternatif.",
-    "warningMoveBulk": "Cela déplacera les fichiers des livres sélectionnés vers le livre cible comme formats alternatifs.",
-    "warningDelete": "L'enregistrement du livre source sera supprimé (le fichier sera conservé dans le livre cible).",
-    "warningDeleteBulk": "Les enregistrements des livres sources seront supprimés (les fichiers seront conservés dans le livre cible).",
-    "warningKeep": "L'enregistrement du livre source sera conservé mais n'aura plus de fichiers lisibles.",
-    "warningKeepBulk": "Les enregistrements des livres sources seront conservés mais n'auront plus de fichiers lisibles.",
+    "warningMove": "Le fichier source sera déplacé vers le répertoire du livre cible et renommé en conséquence.",
+    "warningMoveBulk": "Les fichiers sources seront déplacés vers le répertoire du livre cible et renommés en conséquence.",
+    "warningDelete": "L'enregistrement du livre source sera supprimé (les fichiers sont conservés dans le livre cible).",
+    "warningDeleteBulk": "Les enregistrements des livres sources seront supprimés (les fichiers sont conservés dans le livre cible).",
     "attachFile": "Joindre le fichier",
     "attachFilesBulk": "Joindre les fichiers",
     "unknownFile": "Fichier inconnu",
     "unknownFormat": "Inconnu",
-    "unknownFilename": "Nom de fichier inconnu"
+    "unknownFilename": "Nom de fichier inconnu",
+    "moveFilesLabel": "Déplacer les fichiers vers le répertoire du livre cible",
+    "warningNoMove": "Le fichier source restera à son emplacement d'origine sur le disque.",
+    "warningNoMoveBulk": "Les fichiers sources resteront à leurs emplacements d'origine sur le disque."
   },
   "searcher": {
     "placeholder": "Titre, auteur, série, genre ou ISBN...",
@@ -791,12 +790,11 @@
     "scanPrompt": "Sélectionnez un mode de détection et cliquez sur Analyser pour trouver les doublons.",
     "noDuplicates": "Aucun doublon trouvé.",
     "allMerged": "Tous les groupes de doublons ont été traités.",
-    "deleteSource": "Supprimer les livres sources",
     "mergeAll": "Tout fusionner ({{ count }})",
     "merge": "Fusionner",
     "dismiss": "Ignorer",
     "target": "Cible",
-    "helpText": "Chaque groupe contient des livres qui semblent être des doublons. Sélectionnez le livre cible (celui à conserver), puis cliquez sur Fusionner. Les fichiers des autres livres seront joints au livre cible comme formats alternatifs.",
+    "helpText": "Chaque groupe contient des livres qui semblent être des doublons. Sélectionnez le livre cible (celui à conserver), puis cliquez sur Fusionner pour combiner les fichiers. Pour supprimer des doublons spécifiques, cochez ceux que vous souhaitez retirer et cliquez sur Supprimer.",
     "groupLabel": "Groupe {{ index }}",
     "fileCount": "{{ count }} fichiers",
     "reason": {
@@ -814,6 +812,12 @@
       "mergeFailedSummary": "Échec de la fusion",
       "mergeFailedDetail": "Impossible de fusionner ce groupe.",
       "mergePartialDetail": "{{ success }} fusionné(s), {{ failed }} échoué(s)."
+    },
+    "deleteSelected": "Supprimer ({{ count }})",
+    "sameFormatWarning": "Même format",
+    "confirm": {
+      "deleteHeader": "Confirmer la suppression",
+      "deleteMessage": "Cela supprimera définitivement {{ count }} livre(s) et leurs fichiers du disque. Cette action est irréversible."
     }
   }
 }

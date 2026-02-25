@@ -9,6 +9,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.dto.ComicMetadata;
 import org.booklore.util.ArchiveUtils;
+import org.booklore.util.UnrarHelper;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -22,6 +23,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.List;
@@ -108,7 +110,15 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
                     log.warn("Failed to extract metadata from CBR", e);
                     return BookMetadata.builder().title(baseName).build();
                 }
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                if (UnrarHelper.isAvailable()) {
+                    log.info("junrar failed for {}, falling back to unrar CLI: {}", file.getName(), e.getMessage());
+                    try {
+                        return extractMetadataFromRarViaCli(file.toPath(), baseName);
+                    } catch (Exception ex) {
+                        log.warn("unrar CLI fallback also failed for {}", file.getName(), ex);
+                    }
+                }
             }
         }
         return BookMetadata.builder().title(baseName).build();
@@ -749,7 +759,16 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
                     log.warn("Failed to extract cover image from CBR", e);
                     return generatePlaceholderCover(250, 350);
                 }
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                if (UnrarHelper.isAvailable()) {
+                    log.info("junrar failed for {}, falling back to unrar CLI for cover: {}", file.getName(), e.getMessage());
+                    try {
+                        byte[] coverBytes = extractCoverFromRarViaCli(file.toPath());
+                        if (coverBytes != null) return coverBytes;
+                    } catch (Exception ex) {
+                        log.warn("unrar CLI cover fallback also failed for {}", file.getName(), ex);
+                    }
+                }
             }
         }
 
@@ -1126,5 +1145,64 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         if (n.endsWith("/")) return false;
         String lower = n.toLowerCase();
         return "comicinfo.xml".equals(lower) || lower.endsWith("/comicinfo.xml");
+    }
+
+    private BookMetadata extractMetadataFromRarViaCli(Path rarPath, String baseName) throws Exception {
+        List<String> entries = UnrarHelper.listEntries(rarPath);
+        String comicInfoEntry = entries.stream()
+                .filter(CbxMetadataExtractor::isComicInfoName)
+                .findFirst()
+                .orElse(null);
+        if (comicInfoEntry == null) {
+            return BookMetadata.builder().title(baseName).build();
+        }
+        byte[] xmlBytes = UnrarHelper.extractEntryBytes(rarPath, comicInfoEntry);
+        if (xmlBytes == null || xmlBytes.length == 0) {
+            return BookMetadata.builder().title(baseName).build();
+        }
+        try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+            Document document = buildSecureDocument(is);
+            return mapDocumentToMetadata(document, baseName);
+        }
+    }
+
+    private byte[] extractCoverFromRarViaCli(Path rarPath) throws Exception {
+        List<String> entries = UnrarHelper.listEntries(rarPath);
+
+        String comicInfoEntry = entries.stream()
+                .filter(CbxMetadataExtractor::isComicInfoName)
+                .findFirst()
+                .orElse(null);
+        if (comicInfoEntry != null) {
+            byte[] xmlBytes = UnrarHelper.extractEntryBytes(rarPath, comicInfoEntry);
+            if (xmlBytes != null && xmlBytes.length > 0) {
+                try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+                    Document document = buildSecureDocument(is);
+                    String imageName = findFrontCoverImageName(document);
+                    if (imageName != null) {
+                        String match = entries.stream()
+                                .filter(e -> e.equalsIgnoreCase(imageName) || baseName(e).equalsIgnoreCase(baseName(imageName)))
+                                .findFirst()
+                                .orElse(null);
+                        if (match != null) {
+                            byte[] bytes = UnrarHelper.extractEntryBytes(rarPath, match);
+                            if (canDecode(bytes)) return bytes;
+                        }
+                    }
+                }
+            }
+        }
+
+        List<String> imageEntries = entries.stream()
+                .filter(this::isImageEntry)
+                .sorted(this::naturalCompare)
+                .toList();
+        List<String> sorted = new ArrayList<>(imageEntries);
+        sorted.sort((a, b) -> Boolean.compare(!likelyCoverName(baseName(a)), !likelyCoverName(baseName(b))));
+        for (String entry : sorted) {
+            byte[] bytes = UnrarHelper.extractEntryBytes(rarPath, entry);
+            if (canDecode(bytes)) return bytes;
+        }
+        return null;
     }
 }

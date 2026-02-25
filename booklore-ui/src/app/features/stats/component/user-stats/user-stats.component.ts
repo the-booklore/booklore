@@ -26,6 +26,10 @@ import {CompletionRaceChartComponent} from './charts/completion-race-chart/compl
 import {ReadingSurvivalChartComponent} from './charts/reading-survival-chart/reading-survival-chart.component';
 import {ReadingClockChartComponent} from './charts/reading-clock-chart/reading-clock-chart.component';
 import {BookLengthChartComponent} from './charts/book-length-chart/book-length-chart.component';
+import {BookFlowChartComponent} from './charts/book-flow-chart/book-flow-chart.component';
+import {ReadingDebtChartComponent} from './charts/reading-debt-chart/reading-debt-chart.component';
+import {PublicationEraChartComponent} from './charts/publication-era-chart/publication-era-chart.component';
+import {SessionArchetypesChartComponent} from './charts/session-archetypes-chart/session-archetypes-chart.component';
 import {UserChartConfig, UserChartConfigService} from './service/user-chart-config.service';
 
 @Component({
@@ -55,6 +59,10 @@ import {UserChartConfig, UserChartConfigService} from './service/user-chart-conf
     ReadingSurvivalChartComponent,
     ReadingClockChartComponent,
     BookLengthChartComponent,
+    BookFlowChartComponent,
+    ReadingDebtChartComponent,
+    PublicationEraChartComponent,
+    SessionArchetypesChartComponent,
     TranslocoDirective
   ],
   templateUrl: './user-stats.component.html',

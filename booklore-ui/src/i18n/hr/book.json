@@ -691,19 +691,18 @@
     "unknownTitle": "Nepoznati naslov",
     "selectTargetBook": "Odaberite ciljnu knjigu",
     "searchPlaceholder": "Pretraži knjigu u istoj knjižnici...",
-    "deleteSource": "Obriši izvornu knjigu nakon prilaganja",
-    "deleteSourceBulk": "Obriši izvorne knjige nakon prilaganja",
-    "warningMove": "Ovo će premjestiti datoteku iz izvorne knjige u ciljnu knjigu kao alternativni format.",
-    "warningMoveBulk": "Ovo će premjestiti datoteke iz odabranih knjiga u ciljnu knjigu kao alternativne formate.",
-    "warningDelete": "Zapis izvorne knjige će biti obrisan (datoteka će biti sačuvana u ciljnoj knjizi).",
-    "warningDeleteBulk": "Zapisi izvornih knjiga će biti obrisani (datoteke će biti sačuvane u ciljnoj knjizi).",
-    "warningKeep": "Zapis izvorne knjige će ostati, ali neće imati čitljivih datoteka.",
-    "warningKeepBulk": "Zapisi izvornih knjiga će ostati, ali neće imati čitljivih datoteka.",
+    "warningMove": "Izvorna datoteka bit će premještena u direktorij ciljne knjige i preimenovana.",
+    "warningMoveBulk": "Izvorne datoteke bit će premještene u direktorij ciljne knjige i preimenovane.",
+    "warningDelete": "Zapis izvorne knjige bit će uklonjen (datoteke su sačuvane u ciljnoj knjizi).",
+    "warningDeleteBulk": "Zapisi izvornih knjiga bit će uklonjeni (datoteke su sačuvane u ciljnoj knjizi).",
     "attachFile": "Priloži datoteku",
     "attachFilesBulk": "Priloži datoteke",
     "unknownFile": "Nepoznata datoteka",
     "unknownFormat": "Nepoznato",
-    "unknownFilename": "Nepoznati naziv datoteke"
+    "unknownFilename": "Nepoznati naziv datoteke",
+    "moveFilesLabel": "Premjesti datoteke u direktorij ciljne knjige",
+    "warningNoMove": "Izvorna datoteka ostat će na izvornoj lokaciji na disku.",
+    "warningNoMoveBulk": "Izvorne datoteke ostat će na izvornim lokacijama na disku."
   },
   "searcher": {
     "placeholder": "Naslov, autor, serijal, žanr ili ISBN...",
@@ -791,12 +790,11 @@
     "scanPrompt": "Odaberite način detekcije i kliknite Skeniraj za pronalaženje duplikata.",
     "noDuplicates": "Nema pronađenih duplikata.",
     "allMerged": "Sve grupe duplikata su obrađene.",
-    "deleteSource": "Obriši izvorne knjige",
     "mergeAll": "Spoji sve ({{ count }})",
     "merge": "Spoji",
     "dismiss": "Odbaci",
     "target": "Cilj",
-    "helpText": "Svaka grupa sadrži knjige koje izgledaju kao duplikati. Odaberite ciljnu knjigu (onu koju želite zadržati), zatim kliknite Spoji. Datoteke ostalih knjiga bit će priložene cilju kao alternativni formati.",
+    "helpText": "Svaka grupa sadrži knjige koje izgledaju kao duplikati. Odaberite ciljnu knjigu (onu koju želite zadržati), zatim kliknite Spoji za kombiniranje datoteka. Za brisanje određenih duplikata, označite one koje želite ukloniti i kliknite Obriši.",
     "groupLabel": "Grupa {{ index }}",
     "fileCount": "{{ count }} datoteka",
     "reason": {
@@ -814,6 +812,12 @@
       "mergeFailedSummary": "Spajanje nije uspjelo",
       "mergeFailedDetail": "Spajanje ove grupe nije uspjelo.",
       "mergePartialDetail": "{{ success }} spojeno, {{ failed }} neuspjelo."
+    },
+    "deleteSelected": "Obriši ({{ count }})",
+    "sameFormatWarning": "Isti format",
+    "confirm": {
+      "deleteHeader": "Potvrdi brisanje",
+      "deleteMessage": "Ovo će trajno obrisati {{ count }} knjigu/e i njihove datoteke s diska. Ova radnja se ne može poništiti."
     }
   }
 }

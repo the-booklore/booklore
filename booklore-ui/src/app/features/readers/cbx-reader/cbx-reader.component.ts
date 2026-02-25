@@ -1026,14 +1026,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   navigateToPreviousBook(): void {
     if (this.previousBookInSeries) {
       this.endReadingSession();
-      this.router.navigate(['/cbx-reader/book', this.previousBookInSeries.id]);
+      this.router.navigate(['/cbx-reader/book', this.previousBookInSeries.id], {replaceUrl: true});
     }
   }
 
   navigateToNextBook(): void {
     if (this.nextBookInSeries) {
       this.endReadingSession();
-      this.router.navigate(['/cbx-reader/book', this.nextBookInSeries.id]);
+      this.router.navigate(['/cbx-reader/book', this.nextBookInSeries.id], {replaceUrl: true});
     }
   }
 

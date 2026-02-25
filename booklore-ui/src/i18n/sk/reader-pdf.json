@@ -1,0 +1,10 @@
+{
+    "toolbar": {
+        "switchToLightMode": "Prepnúť do svetlého režimu",
+        "switchToDarkMode": "",
+        "closePdfReader": ""
+    },
+    "toast": {
+        "failedToLoadBook": ""
+    }
+}

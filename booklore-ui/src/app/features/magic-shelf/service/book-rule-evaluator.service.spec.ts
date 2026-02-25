@@ -677,9 +677,13 @@ describe('BookRuleEvaluatorService', () => {
       expect(service.evaluateGroup(book, rule('audiobookDuration', 'is_empty', null))).toBe(true);
     });
 
-    it('should filter by isPhysical', () => {
-      const book = createBook({isPhysical: true});
-      expect(service.evaluateGroup(book, rule('isPhysical', 'equals', true))).toBe(true);
+    it('should filter by isPhysical with string value from UI', () => {
+      const physical = createBook({isPhysical: true});
+      const digital = createBook({isPhysical: false});
+      expect(service.evaluateGroup(physical, rule('isPhysical', 'equals', 'true'))).toBe(true);
+      expect(service.evaluateGroup(digital, rule('isPhysical', 'equals', 'true'))).toBe(false);
+      expect(service.evaluateGroup(digital, rule('isPhysical', 'equals', 'false'))).toBe(true);
+      expect(service.evaluateGroup(physical, rule('isPhysical', 'not_equals', 'true'))).toBe(false);
     });
 
     it('should filter by lubimyczytacRating', () => {

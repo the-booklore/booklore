@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -252,7 +254,7 @@ public class LibraryFileEventProcessor {
     }
 
     private FolderAnalysis analyzeFolderForAudiobook(Path folderPath) {
-        int audioFileCount = 0;
+        List<Path> audioFiles = new ArrayList<>();
         boolean hasNonAudioBook = false;
 
         try (var stream = Files.walk(folderPath)) {
@@ -263,7 +265,7 @@ public class LibraryFileEventProcessor {
                 var ext = BookFileExtension.fromFileName(fileName);
                 if (ext.isPresent()) {
                     if (ext.get().getType() == BookFileType.AUDIOBOOK) {
-                        audioFileCount++;
+                        audioFiles.add(file);
                     } else {
                         hasNonAudioBook = true;
                     }
@@ -273,12 +275,15 @@ public class LibraryFileEventProcessor {
             log.warn("[ERROR] Analyzing folder '{}': {}", folderPath, e.getMessage());
         }
 
-        return new FolderAnalysis(audioFileCount, hasNonAudioBook);
+        boolean isSeriesFolder = audioFiles.size() >= MIN_AUDIO_FILES_FOR_FOLDER_AUDIOBOOK
+                && FileUtils.isSeriesFolder(audioFiles);
+
+        return new FolderAnalysis(audioFiles.size(), hasNonAudioBook, isSeriesFolder);
     }
 
-    private record FolderAnalysis(int audioFileCount, boolean hasNonAudioBook) {
+    private record FolderAnalysis(int audioFileCount, boolean hasNonAudioBook, boolean isSeriesFolder) {
         boolean isFolderBasedAudiobook() {
-            return audioFileCount >= MIN_AUDIO_FILES_FOR_FOLDER_AUDIOBOOK && !hasNonAudioBook;
+            return audioFileCount >= MIN_AUDIO_FILES_FOR_FOLDER_AUDIOBOOK && !hasNonAudioBook && !isSeriesFolder;
         }
     }
 

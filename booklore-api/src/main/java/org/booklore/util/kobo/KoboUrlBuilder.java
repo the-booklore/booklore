@@ -1,53 +1,47 @@
 package org.booklore.util.kobo;
 
-import org.booklore.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.booklore.util.RequestUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.regex.Pattern;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class KoboUrlBuilder {
 
-    private static final Pattern IP_ADDRESS_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
-    @Value("${server.port}")
-    private int serverPort;
-
     public UriComponentsBuilder baseBuilder() {
-        HttpServletRequest request = RequestUtils.getCurrentRequest();
-
         UriComponentsBuilder builder = ServletUriComponentsBuilder
                 .fromCurrentContextPath()
                 .replacePath("")
-                .replaceQuery(null)
-                .port(-1);
+                .replaceQuery(null);
 
-        String host = builder.build().getHost();
-
-        if (host == null) host = "";
-
-        String xfPort = request.getHeader("X-Forwarded-Port");
-        try {
-            int port = Integer.parseInt(xfPort);
-
-            if (IP_ADDRESS_PATTERN.matcher(host).matches() || "localhost".equals(host)) {
-                builder.port(port);
+        UriComponents built = builder.build();
+        if (built.getPort() == -1 && !hasForwardedHeaders()) {
+            int localPort = RequestUtils.getCurrentRequest().getLocalPort();
+            if (!isDefaultPort(built.getScheme(), localPort)) {
+                builder.port(localPort);
             }
-            log.info("Applied X-Forwarded-Port: {}", port);
-        } catch (NumberFormatException e) {
-            builder.port(serverPort);
-            log.debug("Invalid X-Forwarded-Port header: {}", xfPort);
         }
 
         log.debug("Final base URL: {}", builder.build().toUriString());
         return builder;
+    }
+
+    private boolean hasForwardedHeaders() {
+        HttpServletRequest request = RequestUtils.getCurrentRequest();
+        return request.getHeader("X-Forwarded-Host") != null
+                || request.getHeader("X-Forwarded-Port") != null
+                || request.getHeader("X-Forwarded-Proto") != null
+                || request.getHeader("Forwarded") != null;
+    }
+
+    private boolean isDefaultPort(String scheme, int port) {
+        return ("http".equals(scheme) && port == 80) || ("https".equals(scheme) && port == 443);
     }
 
     public String downloadUrl(String token, Long bookId) {

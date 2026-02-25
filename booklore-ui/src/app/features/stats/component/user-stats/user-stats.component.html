@@ -126,6 +126,18 @@
           @case ('book-length') {
             <app-book-length-chart></app-book-length-chart>
           }
+          @case ('book-flow') {
+            <app-book-flow-chart></app-book-flow-chart>
+          }
+          @case ('reading-debt') {
+            <app-reading-debt-chart></app-reading-debt-chart>
+          }
+          @case ('publication-era') {
+            <app-publication-era-chart></app-publication-era-chart>
+          }
+          @case ('session-archetypes') {
+            <app-session-archetypes-chart [initialYear]="currentYear"></app-session-archetypes-chart>
+          }
         }
       </div>
     }

@@ -30,6 +30,7 @@ export class BookRuleEvaluatorService {
     const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
+      if (typeof val === 'boolean') return String(val);
       if (typeof val === 'string') {
         const date = new Date(val);
         if (!isNaN(date.getTime())) return date;

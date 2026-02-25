@@ -1,5 +1,6 @@
 package org.booklore.service.upload;
 
+import lombok.RequiredArgsConstructor;
 import org.booklore.config.AppProperties;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.AdditionalFileMapper;
@@ -21,7 +22,7 @@ import org.booklore.service.file.FileMovingHelper;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.util.PathPatternResolver;
-import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -262,7 +263,13 @@ public class FileUploadService {
         if (originalFileName == null) {
             throw new IllegalArgumentException("File must have a name");
         }
-        return originalFileName;
+        // Prevent Path Traversal by extracting only the base file name
+        String cleanPath = StringUtils.cleanPath(originalFileName);
+        String baseFileName = StringUtils.getFilename(cleanPath);
+        if (baseFileName == null || baseFileName.isEmpty() || baseFileName.equals("..")) {
+            throw new IllegalArgumentException("Invalid filename");
+        }
+        return baseFileName;
     }
 
     private BookFileExtension getFileExtension(String fileName) {

@@ -17,8 +17,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 0.5rem;
-  padding: 0.5rem 0.5rem;
+  gap: 0.25rem;
+  padding: 0.35rem 0.35rem;
   border-radius: 0.75rem 0.75rem 0 0;
   margin-bottom: 0.5rem;
   background-color: var(--card-background);
@@ -60,6 +60,7 @@
   margin: 0;
 
   @media (max-width: 767px) {
+    font-size: 1rem;
     padding-left: 0.25rem;
   }
 }
@@ -87,7 +88,7 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex-shrink: 0;
 
   @media (min-width: 768px) {
@@ -99,7 +100,7 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 
   @media (min-width: 768px) {
     gap: 1.5rem;
@@ -392,7 +393,6 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 5rem;
   border: 1px solid var(--border-color);
   width: 2.5rem;
   height: 2.5rem;
@@ -404,6 +404,11 @@
   background-color: var(--card-background);
   cursor: pointer;
 
+  @media (max-width: 767px) {
+    width: 2rem;
+    height: 2rem;
+  }
+
   &:hover {
     border-color: var(--primary-color);
   }
@@ -412,6 +417,10 @@
     color: var(--primary-color);
     font-size: 1.25rem;
     font-weight: 100;
+
+    @media (max-width: 767px) {
+      font-size: 1rem;
+    }
   }
 }
 
@@ -433,6 +442,10 @@
   line-height: 2.5rem;
   font-size: 1rem;
   box-sizing: border-box;
+
+  @media (max-width: 767px) {
+    min-width: 0;
+  }
 }
 
 // Filter overlay (mobile sidebar)

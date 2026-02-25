@@ -2,6 +2,7 @@
   margin-left: 0.5rem;
   position: relative;
   width: 100%;
+  min-width: 0;
 
   @media (min-width: 768px) {
     margin-left: 1.25rem;

@@ -6,6 +6,7 @@ import org.booklore.model.entity.CategoryEntity;
 import org.booklore.model.entity.TagEntity;
 import org.booklore.util.ArchiveUtils;
 import org.booklore.util.FileService;
+import org.booklore.util.UnrarHelper;
 import com.github.junrar.Archive;
 import com.github.junrar.exception.RarException;
 import com.github.junrar.rarfile.FileHeader;
@@ -263,9 +264,37 @@ public class CbxConversionService {
                     log.warn("Error extracting image {}: {}", fileHeader.getFileName(), e.getMessage());
                 }
             }
+        } catch (Exception e) {
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI: {}", cbrFile.getName(), e.getMessage());
+                return extractImagesFromRarViaCli(cbrFile, extractedImagesDir);
+            }
+            if (e instanceof IOException ioe) throw ioe;
+            if (e instanceof RarException re) throw re;
+            throw new IOException("Failed to read RAR archive: " + e.getMessage(), e);
         }
 
         log.debug("Found {} image entries in CBR file", imagePaths.size());
+        imagePaths.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
+        return imagePaths;
+    }
+
+    private List<Path> extractImagesFromRarViaCli(File cbrFile, Path extractedImagesDir) throws IOException {
+        List<Path> imagePaths = new ArrayList<>();
+        List<String> entries = UnrarHelper.listEntries(cbrFile.toPath());
+        for (String entryName : entries) {
+            if (!isImageFile(entryName)) continue;
+            try {
+                byte[] bytes = UnrarHelper.extractEntryBytes(cbrFile.toPath(), entryName);
+                validateImageSize(entryName, bytes.length);
+                Path outputPath = extractedImagesDir.resolve(extractFileName(entryName));
+                Files.write(outputPath, bytes);
+                imagePaths.add(outputPath);
+            } catch (Exception e) {
+                log.warn("Error extracting image via CLI {}: {}", entryName, e.getMessage());
+            }
+        }
+        log.debug("Found {} image entries in CBR file (via unrar CLI)", imagePaths.size());
         imagePaths.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
         return imagePaths;
     }
