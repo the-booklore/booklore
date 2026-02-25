@@ -60,6 +60,7 @@ public class NotificationService {
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("Error sending message to users with permissions {}: {}", permissionSet, e.getMessage(), e);
         }
     }
