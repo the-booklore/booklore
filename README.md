@@ -26,8 +26,8 @@ Organize, read, annotate, sync across devices, and share, all without relying on
 <p align="center">
   <a href="https://booklore.org/">🌐 Website</a> ·
   <a href="https://booklore.org/docs/getting-started">📖 Docs</a> ·
-  <a href="#🎮-live-demo">🎮 Demo</a> ·
-  <a href="#🚀-quick-start">🚀 Quick Start</a> ·
+  <a href="#-live-demo">🎮 Demo</a> ·
+  <a href="#-quick-start">🚀 Quick Start</a> ·
   <a href="https://discord.gg/Ee5hd458Uz">💬 Discord</a>
 </p>
 
