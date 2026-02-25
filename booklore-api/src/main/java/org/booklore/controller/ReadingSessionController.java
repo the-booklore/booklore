@@ -1,7 +1,8 @@
 package org.booklore.controller;
 
+import org.booklore.model.dto.request.ReadingSessionBatchRequest;
 import org.booklore.model.dto.request.ReadingSessionRequest;
-import org.booklore.model.dto.response.ReadingSessionCreatedResponse;
+import org.booklore.model.dto.response.ReadingSessionBatchResponse;
 import org.booklore.model.dto.response.ReadingSessionResponse;
 import org.booklore.service.ReadingSessionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,12 +27,9 @@ public class ReadingSessionController {
             @ApiResponse(responseCode = "400", description = "Invalid payload")
     })
     @PostMapping
-    public ResponseEntity<ReadingSessionCreatedResponse> recordReadingSession(@RequestBody @Valid ReadingSessionRequest request) {
-        Long sessionId = readingSessionService.recordSession(request);
-        ReadingSessionCreatedResponse response = ReadingSessionCreatedResponse.builder()
-                .sessionId(sessionId)
-                .build();
-        return ResponseEntity.accepted().body(response);
+    public ResponseEntity<Void> recordReadingSession(@RequestBody @Valid ReadingSessionRequest request) {
+        readingSessionService.recordSession(request);
+        return ResponseEntity.accepted().build();
     }
 
     @Operation(summary = "Get reading sessions for a book", description = "Returns paginated reading sessions for a specific book for the authenticated user")
@@ -47,5 +45,18 @@ public class ReadingSessionController {
             @RequestParam(defaultValue = "5") int size) {
         Page<ReadingSessionResponse> sessions = readingSessionService.getReadingSessionsForBook(bookId, page, size);
         return ResponseEntity.ok(sessions);
+    }
+
+    @Operation(summary = "Record multiple reading sessions", description = "Batch insert reading sessions for a book")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reading sessions recorded successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid payload"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @PostMapping("/batch")
+    public ResponseEntity<ReadingSessionBatchResponse> recordBatchSessions(
+            @Valid @RequestBody ReadingSessionBatchRequest request) {
+        ReadingSessionBatchResponse response = readingSessionService.recordSessionsBatch(request);
+        return ResponseEntity.ok(response);
     }
 }
