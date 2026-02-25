@@ -17,9 +17,9 @@
     "submit": "Verzenden",
     "remove": "Verwijderen",
     "edit": "Bewerken",
-    "info": "",
-    "select": "",
-    "dismiss": "",
-    "discard": "",
-    "review": ""
+    "info": "Info",
+    "select": "Selecteren",
+    "dismiss": "Sluiten",
+    "discard": "Verwerpen",
+    "review": "Beoordelen"
 }
