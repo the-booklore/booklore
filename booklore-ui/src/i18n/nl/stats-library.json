@@ -1,13 +1,13 @@
 {
     "main": {
         "title": "Bibliotheek statistieken",
-        "selectLibrary": "",
-        "totalBooks": "",
-        "books": "",
-        "totalAuthors": "",
-        "authors": "",
-        "totalSeries": "",
-        "series": "",
+        "selectLibrary": "Selecteer een bibliotheek",
+        "totalBooks": "Totaal boeken",
+        "books": "Boeken",
+        "totalAuthors": "Totaal auteurs",
+        "authors": "Auteurs",
+        "totalSeries": "Totaal reeksen",
+        "series": "Reeksen",
         "totalPublishers": "",
         "publishers": "",
         "totalSize": "",
@@ -208,13 +208,13 @@
         "insightHiddenGem": "",
         "insightBiggestBacklog": "",
         "insightTop3Concentration": "",
-        "insightLongestReads": "",
-        "insightMostVersatile": "",
-        "insightUntouchedAuthor": "",
-        "insightOverallProgress": ""
+        "insightLongestReads": "Langste lectuur: {{ name }} (gem. {{ pages }} pagina's/boek)",
+        "insightMostVersatile": "Meest veelzijdig: {{ name }} ({{ count }} genres)",
+        "insightUntouchedAuthor": "Onaangeroerde auteur: {{ name }} ({{ count }} ongelezen boeken)",
+        "insightOverallProgress": "Totale voortgang: {{ percent }}% pagina's gelezen over alle auteurs"
     },
     "libraryFilter": {
-        "allLibraries": "",
-        "libraryFallback": ""
+        "allLibraries": "Alle bibliotheken",
+        "libraryFallback": "Bibliotheek {{ id }}"
     }
 }
