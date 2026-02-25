@@ -45,10 +45,10 @@
 }
 
 .filter-type-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.25rem;
-  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -56,8 +56,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 1;
-  max-width: 175px;
+  flex: 1;
+  min-width: 0;
 }
 
 .active-filter-count {
