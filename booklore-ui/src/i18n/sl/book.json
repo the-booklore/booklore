@@ -453,7 +453,8 @@
             "fileTooLargeDetail": "{{ fileName }} presega omejitev {{ maxSize }}",
             "fileTooLargeError": "Datoteka presega največjo dovoljeno velikost {{ maxSize }}",
             "uploadFailedUnknown": "Nalaganje ni uspelo zaradi neznane napake."
-        }
+        },
+        "supplementaryAllFormats": "Za dodatne datoteke so podprte vse oblike zapisa datotek."
     },
     "filter": {
         "title": "Filtri",
