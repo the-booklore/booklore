@@ -114,6 +114,7 @@ class MetadataMatchServiceTest {
                 .isbn13(0).isbn10(0).language(0).pageCount(0).categories(0)
                 .amazonRating(0).amazonReviewCount(0).goodreadsRating(0)
                 .goodreadsReviewCount(0).hardcoverRating(0).hardcoverReviewCount(0)
-                .doubanRating(0).doubanReviewCount(0).ranobedbRating(0).coverImage(0);
+                .doubanRating(0).doubanReviewCount(0).ranobedbRating(0)
+                .audibleRating(0).audibleReviewCount(0).coverImage(0);
     }
 }

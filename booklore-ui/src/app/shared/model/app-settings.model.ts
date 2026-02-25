@@ -25,6 +25,8 @@ export interface MetadataMatchWeights {
   doubanReviewCount: number;
   lubimyczytacRating: number;
   ranobedbRating: number;
+  audibleRating: number;
+  audibleReviewCount: number;
   coverImage: number;
 }
 
