@@ -516,6 +516,46 @@ class BookMetadataUpdaterTest {
     }
 
     @Test
+    void setBookMetadata_shouldUpdateAudibleFields() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setAsin("B0EXAMPLE1");
+        newMetadata.setAudibleId("B0EXAMPLE1");
+        newMetadata.setAudibleRating(4.5);
+        newMetadata.setAudibleReviewCount(1200);
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("B0EXAMPLE1", bookEntity.getMetadata().getAsin());
+        assertEquals("B0EXAMPLE1", bookEntity.getMetadata().getAudibleId());
+        assertEquals(4.5, bookEntity.getMetadata().getAudibleRating());
+        assertEquals(1200, bookEntity.getMetadata().getAudibleReviewCount());
+    }
+
+    @Test
     void setBookMetadata_withReplaceMissingMode_shouldNotReplaceExistingTitle() {
         // This test verifies the old behavior that was causing the bug
         // REPLACE_MISSING mode should NOT replace existing title
