@@ -77,6 +77,10 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
     this.showHardcoverApiKey = !this.showHardcoverApiKey;
   }
 
+  triggerHardcoverImport() {
+    this.hardcoverImport();
+  }
+
   onHardcoverSyncToggle() {
     const message = this.hardcoverSyncEnabled
       ? this.t.translate('settingsDevice.hardcover.syncEnabledMsg')
@@ -86,6 +90,24 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
 
   onHardcoverApiKeyChange() {
     this.updateHardcoverSettings(this.t.translate('settingsDevice.hardcover.apiKeyUpdated'));
+  }
+
+  private hardcoverImport() {
+    this.hardcoverSyncSettingsService.startImport({
+      hardcoverSyncEnabled: this.hardcoverSyncEnabled,
+      hardcoverApiKey: this.hardcoverApiKey
+    }).subscribe({
+      next: () => {
+        this.messageService.add({severity: 'success', summary: "noice"});
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: "niet goed",
+          detail: "niet goed"
+        });
+      }
+    })
   }
 
   private updateHardcoverSettings(successMessage: string) {
