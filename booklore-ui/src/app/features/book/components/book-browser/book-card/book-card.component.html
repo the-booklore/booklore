@@ -2,7 +2,7 @@
      [class.selected]="isSelected"
      (click)="onCardClick($event)">
 
-  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive, 'loaded': isImageLoaded, 'audiobook-cover': _isAudiobook, 'square-library-cover': useSquareCovers }">
+  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive || !hasDigitalFile(), 'loaded': isImageLoaded, 'audiobook-cover': _isAudiobook, 'square-library-cover': useSquareCovers }">
     <img
       [src]="coverImageUrl"
       class="book-cover"
