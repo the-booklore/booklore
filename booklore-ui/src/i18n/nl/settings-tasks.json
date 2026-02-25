@@ -1,6 +1,6 @@
 {
     "title": "Systeem taakbeheer",
-    "description": "",
+    "description": "Beheer geautomatiseerde systeemtaken voor bibliotheeonderhoud, metadata-verversing en cache-opschoning. Plan terugkerende bewerkingen met behulp van <a href=\"https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"cron-link\">Spring cron-expressies</a>.",
     "systemTasks": {
         "sectionTitle": "Systeemtaken",
         "sectionDesc": "Voer taken handmatig uit, bewaak de voortgang in realtime en configureer geplande automatisering."
@@ -60,10 +60,10 @@
         "cancelError": "Kon de taak niet annuleren. De taak is mogelijk al voltooid of mislukt.",
         "cancelNoId": "Kan taak niet annuleren zonder ID.",
         "loadError": "Kon taken niet laden",
-        "metadataScheduled": "Metadata Update Gepland",
-        "metadataScheduledDetail": "",
-        "metadataAlreadyRunningDetail": "",
-        "metadataFailed": "",
-        "metadataFailedDetail": ""
+        "metadataScheduled": "Metadata-update ingepland",
+        "metadataScheduledDetail": "De metadata-update voor de geselecteerde boeken is succesvol ingepland.",
+        "metadataAlreadyRunningDetail": "Er wordt al een metadata-verversionstaak uitgevoerd. Wacht tot deze is voltooid voordat u een nieuwe start.",
+        "metadataFailed": "Metadata-update mislukt",
+        "metadataFailedDetail": "Er is een onverwachte fout opgetreden bij het inplannen van de metadata-update. Probeer het later opnieuw of neem contact op met ondersteuning als het probleem aanhoudt."
     }
 }
