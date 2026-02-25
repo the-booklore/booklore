@@ -11,7 +11,7 @@
     },
     "libraryOverrides": {
         "sectionTitle": "Bibliotheekspecifieke overschrijvingen",
-        "sectionDesc": "",
+        "sectionDesc": "Overschrijf de standaard prioriteitsinstellingen voor specifieke bibliotheken. U kunt bijvoorbeeld de voorkeur geven aan Amazon voor fictie maar Google Books voor technische boeken. Elke bibliotheek kan zijn eigen providerprioriteit hebben terwijl standaardwaarden worden gebruikt voor niet-gespecificeerde velden. U kunt ook specifieke metadatavelden per bibliotheek in- of uitschakelen.",
         "customSettings": "Aangepaste instellingen",
         "defaultSettings": "Standaardinstellingen",
         "exportSidecar": "Sidecar exporteren",
@@ -27,8 +27,8 @@
         "exportFailed": "Export mislukt",
         "exportError": "Kon sidecar-bestanden niet exporteren. Probeer het opnieuw.",
         "importSuccess": "Metagegevens geïmporteerd uit {{count}} sidecar-bestanden.",
-        "importComplete": "",
-        "importFailed": "",
-        "importError": ""
+        "importComplete": "Import voltooid",
+        "importFailed": "Import mislukt",
+        "importError": "Kon niet importeren uit sidecar-bestanden. Probeer het opnieuw."
     }
 }
