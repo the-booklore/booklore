@@ -15,6 +15,7 @@ import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookRepository;
 import org.booklore.util.FileUtils;
+import org.booklore.util.UnrarHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
@@ -396,7 +397,14 @@ public class CbxReaderService {
                 }
             }
         } catch (Exception e) {
-            throw new IOException("Failed to read RAR archive: " + e.getMessage(), e);
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI: {}", cbxPath.getFileName(), e.getMessage());
+                entries = UnrarHelper.listEntries(cbxPath).stream()
+                        .filter(this::isImageFile)
+                        .collect(Collectors.toCollection(ArrayList::new));
+            } else {
+                throw new IOException("Failed to read RAR archive: " + e.getMessage(), e);
+            }
         }
         sortNaturally(entries);
         return entries;
@@ -411,6 +419,11 @@ public class CbxReaderService {
                 }
             }
         } catch (Exception e) {
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI: {}", cbxPath.getFileName(), e.getMessage());
+                UnrarHelper.extractEntry(cbxPath, entryName, outputStream);
+                return;
+            }
             throw new IOException("Failed to extract from RAR archive: " + e.getMessage(), e);
         }
         throw new FileNotFoundException("Entry not found in RAR archive: " + entryName);

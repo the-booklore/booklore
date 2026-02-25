@@ -56,7 +56,7 @@ LABEL org.opencontainers.image.title="BookLore" \
 
 ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+UseCompactObjectHeaders -XX:MaxRAMPercentage=75.0"
 
-RUN apk update && apk add --no-cache su-exec && \
+RUN apk update && apk add --no-cache su-exec unrar && \
     mkdir -p /bookdrop
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
