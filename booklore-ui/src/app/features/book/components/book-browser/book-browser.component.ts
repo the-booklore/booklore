@@ -822,6 +822,11 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   lockUnlockMetadata(): void {
     this.dynamicDialogRef = this.dialogHelperService.openLockUnlockMetadataDialog(this.selectedBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(() => {
+        this.bookSelectionService.deselectAll();
+      });
+    }
   }
 
   autoFetchMetadata(): void {
@@ -837,11 +842,21 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   bulkEditMetadata(): void {
-    this.dialogHelperService.openBulkMetadataEditDialog(this.selectedBooks);
+    this.dynamicDialogRef = this.dialogHelperService.openBulkMetadataEditDialog(this.selectedBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(() => {
+        this.bookSelectionService.deselectAll();
+      });
+    }
   }
 
   multiBookEditMetadata(): void {
-    this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
+    this.dynamicDialogRef = this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(() => {
+        this.bookSelectionService.deselectAll();
+      });
+    }
   }
 
   regenerateCoversForSelected(): void {
