@@ -119,6 +119,127 @@ class KoboUrlBuilderTest {
         String result = koboUrlBuilder.downloadUrl(token, bookId);
 
         assertTrue(result.startsWith("https://books.example.com"));
+        assertFalse(result.contains(":443"));
         assertTrue(result.contains("/api/kobo/" + token + "/v1/books/" + bookId + "/download"));
+    }
+
+    @Test
+    void testHostHeaderWithoutPort_restoresLocalPort() {
+        // Kobo devices send "Host: 192.168.1.100" without port.
+        // Tomcat resolves missing port to 80 (HTTP default), which Spring strips.
+        // The fix should restore the actual listening port from request.getLocalPort().
+        mockRequest.setServerName("192.168.1.100");
+        mockRequest.setServerPort(80);
+        mockRequest.setLocalPort(6060);
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("http://192.168.1.100:6060/"));
+        assertTrue(result.contains("/api/kobo/testToken/v1/books/123/download"));
+    }
+
+    @Test
+    void testHostHeaderWithoutPort_imageUrls() {
+        mockRequest.setServerName("192.168.1.100");
+        mockRequest.setServerPort(80);
+        mockRequest.setLocalPort(6060);
+
+        assertTrue(koboUrlBuilder.imageUrlTemplate("t").startsWith("http://192.168.1.100:6060/"));
+        assertTrue(koboUrlBuilder.imageUrlQualityTemplate("t").startsWith("http://192.168.1.100:6060/"));
+        assertTrue(koboUrlBuilder.librarySyncUrl("t").startsWith("http://192.168.1.100:6060/"));
+    }
+
+    @Test
+    void testReverseProxy_xForwardedProto_doesNotOverridePort() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("books.example.com");
+        mockRequest.setServerPort(443);
+        mockRequest.setLocalPort(6060);
+        mockRequest.addHeader("X-Forwarded-Proto", "https");
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("https://books.example.com/"));
+        assertFalse(result.contains(":6060"));
+    }
+
+    @Test
+    void testReverseProxy_xForwardedHost_doesNotOverridePort() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("books.example.com");
+        mockRequest.setServerPort(443);
+        mockRequest.setLocalPort(6060);
+        mockRequest.addHeader("X-Forwarded-Host", "books.example.com");
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("https://books.example.com/"));
+        assertFalse(result.contains(":6060"));
+    }
+
+    @Test
+    void testReverseProxy_xForwardedPort_doesNotOverridePort() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("books.example.com");
+        mockRequest.setServerPort(443);
+        mockRequest.setLocalPort(6060);
+        mockRequest.addHeader("X-Forwarded-Port", "443");
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("https://books.example.com/"));
+        assertFalse(result.contains(":6060"));
+    }
+
+    @Test
+    void testReverseProxy_forwardedHeader_doesNotOverridePort() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("books.example.com");
+        mockRequest.setServerPort(443);
+        mockRequest.setLocalPort(6060);
+        mockRequest.addHeader("Forwarded", "proto=https;host=books.example.com");
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("https://books.example.com/"));
+        assertFalse(result.contains(":6060"));
+    }
+
+    @Test
+    void testReverseProxy_nonStandardPort_preserved() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("books.example.com");
+        mockRequest.setServerPort(8443);
+        mockRequest.setLocalPort(6060);
+        mockRequest.addHeader("X-Forwarded-Port", "8443");
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("https://books.example.com:8443/"));
+    }
+
+    @Test
+    void testServerOnPort80_noPortAdded() {
+        mockRequest.setServerName("192.168.1.100");
+        mockRequest.setServerPort(80);
+        mockRequest.setLocalPort(80);
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("http://192.168.1.100/"));
+        assertFalse(result.contains(":80"));
+    }
+
+    @Test
+    void testServerOnPort443_noPortAdded() {
+        mockRequest.setScheme("https");
+        mockRequest.setServerName("192.168.1.100");
+        mockRequest.setServerPort(443);
+        mockRequest.setLocalPort(443);
+
+        String result = koboUrlBuilder.downloadUrl("testToken", 123L);
+
+        assertTrue(result.startsWith("https://192.168.1.100/"));
+        assertFalse(result.contains(":443"));
     }
 }
