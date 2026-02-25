@@ -6,6 +6,8 @@ import org.booklore.model.dto.response.AudiobookTrack;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.repository.BookFileRepository;
+import org.booklore.service.metadata.extractor.AudiobookMetadataExtractor;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -36,6 +38,12 @@ class AudioMetadataServiceTest {
 
     @Mock
     AudioFileUtilityService audioFileUtility;
+
+    @Mock
+    AudiobookMetadataExtractor audiobookMetadataExtractor;
+
+    @Mock
+    BookFileRepository bookFileRepository;
 
     @InjectMocks
     AudioMetadataService audioMetadataService;

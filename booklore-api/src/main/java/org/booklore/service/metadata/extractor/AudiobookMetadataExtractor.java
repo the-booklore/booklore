@@ -1,10 +1,12 @@
 package org.booklore.service.metadata.extractor;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.dto.AudiobookMetadata;
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.service.reader.FfprobeService;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -22,6 +24,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,7 +35,10 @@ import java.util.logging.Logger;
 
 @Slf4j
 @Component
+@AllArgsConstructor
 public class AudiobookMetadataExtractor implements FileMetadataExtractor {
+
+    private final FfprobeService ffprobeService;
 
     static {
         Logger.getLogger("org.jaudiotagger").setLevel(Level.WARNING);
@@ -210,6 +216,16 @@ public class AudiobookMetadataExtractor implements FileMetadataExtractor {
         }
     }
 
+    public List<AudiobookMetadata.ChapterInfo> extractChaptersFromFile(File audioFile) {
+        try {
+            AudioFile f = AudioFileIO.read(audioFile);
+            return extractChapters(audioFile, f, f.getAudioHeader());
+        } catch (Exception e) {
+            log.warn("Failed to extract chapters from {}: {}", audioFile.getName(), e.getMessage());
+            return null;
+        }
+    }
+
     private List<AudiobookMetadata.ChapterInfo> extractChapters(File audioFile, AudioFile taggedFile, AudioHeader header) {
         List<AudiobookMetadata.ChapterInfo> chapters = extractId3v2Chapters(taggedFile);
         if (chapters != null && !chapters.isEmpty()) {
@@ -322,8 +338,14 @@ public class AudiobookMetadataExtractor implements FileMetadataExtractor {
         List<AudiobookMetadata.ChapterInfo> chapters = new ArrayList<>();
 
         try {
+            Path ffprobeBinary = ffprobeService.getFfprobeBinary();
+            if (ffprobeBinary == null) {
+                log.debug("ffprobe binary not available, skipping chapter extraction for {}", audioFile.getName());
+                return null;
+            }
+
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffprobe",
+                    ffprobeBinary.toAbsolutePath().toString(),
                     "-v", "quiet",
                     "-print_format", "json",
                     "-show_chapters",
