@@ -29,7 +29,7 @@ public class KoreaderAuthFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
         
-        if (!path.startsWith("/api/koreader/") && !path.equals("/api/v1/reading-sessions")) {
+        if (!path.startsWith("/api/koreader/") && !path.startsWith("/api/v1/reading-sessions")) {
             chain.doFilter(request, response);
             return;
         }

@@ -64,6 +64,9 @@ public class ReadingSessionService {
         BookLoreUserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
         BookEntity book = bookRepository.findById(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
 
+        // Validate book access
+        validateBookAccess(book, authenticatedUser);
+
         ReadingSessionEntity session = ReadingSessionEntity.builder()
                 .user(userEntity)
                 .book(book)
@@ -96,6 +99,9 @@ public class ReadingSessionService {
         // Validate book exists and user has access
         BookEntity book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+
+        // Validate book access
+        validateBookAccess(book, authenticatedUser);
 
         // Validate all session times
         for (ReadingSessionItemRequest sessionItem : request.getSessions()) {
@@ -586,5 +592,20 @@ public class ReadingSessionService {
         if (denominator == 0) return 0.0;
 
         return (n * sumXY - sumX * sumY) / denominator;
+    }
+
+    private void validateBookAccess(BookEntity book, BookLoreUser user) {
+        // Admins bypass all access checks
+        if (user.getPermissions() != null && user.getPermissions().isAdmin()) {
+            return;
+        }
+
+        // Check if user has access to the library containing the book
+        boolean hasLibraryAccess = user.getAssignedLibraries().stream()
+                .anyMatch(library -> library.getId().equals(book.getLibrary().getId()));
+
+        if (!hasLibraryAccess) {
+            throw ApiError.FORBIDDEN.createException("You are not authorized to access this book.");
+        }
     }
 }

@@ -126,7 +126,7 @@ public class SecurityConfig {
     @Order(3)
     public SecurityFilterChain koreaderSecurityChain(HttpSecurity http, KoreaderAuthFilter koreaderAuthFilter) throws Exception {
         http
-                .securityMatcher("/api/koreader/**", "/api/v1/reading-sessions")
+                .securityMatcher("/api/koreader/**", "/api/v1/reading-sessions/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
