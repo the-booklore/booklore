@@ -2,7 +2,7 @@ package org.booklore.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.connector.ClientAbortException;
+import java.io.IOException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -76,7 +76,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleAsyncRequestNotUsableException(AsyncRequestNotUsableException ex) {
-        if (ex.getCause() instanceof ClientAbortException) {
+        if (ex.getCause() instanceof IOException) {
             log.info("Request was canceled by client: {}", ex.getMessage());
         } else {
             log.error("Unexpected error occurred during async request handling: ", ex);

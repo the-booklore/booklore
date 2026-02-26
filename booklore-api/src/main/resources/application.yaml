@@ -31,8 +31,12 @@ server:
     enabled: true
     mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml,application/xml,application/atom+xml
     min-response-size: 1024
-  tomcat:
-    relaxed-query-chars: '[,],%,{,},|'
+  jetty:
+    threads:
+      max: 200
+      min: 8
+      idle-timeout: 60000
+    connection-idle-timeout: 30000
 
 spring:
   jackson:
