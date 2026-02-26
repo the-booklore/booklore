@@ -1025,6 +1025,120 @@ class FileMoveServiceTest {
     }
 
     @Nested
+    @DisplayName("bulkMoveFiles - Physical Book Cases")
+    class BulkMoveFilesPhysicalBook {
+
+        @Test
+        @DisplayName("moves physical book by updating library association without file operations")
+        void movesPhysicalBook() {
+            BookEntity book = new BookEntity();
+            book.setId(100L);
+            book.setLibrary(library);
+            book.setLibraryPath(libraryPath);
+            book.setBookFiles(new ArrayList<>());
+            book.setIsPhysical(Boolean.TRUE);
+
+            LibraryEntity targetLibrary = new LibraryEntity();
+            targetLibrary.setId(2L);
+            LibraryPathEntity targetPath = new LibraryPathEntity();
+            targetPath.setId(20L);
+            targetPath.setPath("/target");
+            targetPath.setLibrary(targetLibrary);
+            targetLibrary.setLibraryPaths(List.of(targetPath));
+
+            when(bookRepository.findById(100L)).thenReturn(Optional.of(book));
+            when(bookRepository.findByIdWithBookFiles(100L)).thenReturn(Optional.of(book));
+            when(libraryRepository.findById(2L)).thenReturn(Optional.of(targetLibrary));
+            when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+            FileMoveRequest request = new FileMoveRequest();
+            FileMoveRequest.Move move = new FileMoveRequest.Move();
+            move.setBookId(100L);
+            move.setTargetLibraryId(2L);
+            move.setTargetLibraryPathId(20L);
+            request.setMoves(List.of(move));
+
+            service.bulkMoveFiles(request);
+
+            verify(bookRepository).updateLibrary(100L, 2L, null);
+            verify(notificationService).sendMessage(eq(Topic.BOOK_UPDATE), any());
+            verify(fileMoveHelper, never()).moveFileWithBackup(any());
+        }
+
+        @Test
+        @DisplayName("does not move non-physical book with no files")
+        void doesNotMoveNonPhysicalBookWithNoFiles() {
+            BookEntity book = new BookEntity();
+            book.setId(100L);
+            book.setLibrary(library);
+            book.setLibraryPath(libraryPath);
+            book.setBookFiles(new ArrayList<>());
+            book.setIsPhysical(Boolean.FALSE);
+
+            LibraryEntity targetLibrary = new LibraryEntity();
+            targetLibrary.setId(2L);
+            LibraryPathEntity targetPath = new LibraryPathEntity();
+            targetPath.setId(20L);
+            targetPath.setPath("/target");
+            targetPath.setLibrary(targetLibrary);
+            targetLibrary.setLibraryPaths(List.of(targetPath));
+
+            when(bookRepository.findById(100L)).thenReturn(Optional.of(book));
+            when(bookRepository.findByIdWithBookFiles(100L)).thenReturn(Optional.of(book));
+            when(libraryRepository.findById(2L)).thenReturn(Optional.of(targetLibrary));
+            when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+            FileMoveRequest request = new FileMoveRequest();
+            FileMoveRequest.Move move = new FileMoveRequest.Move();
+            move.setBookId(100L);
+            move.setTargetLibraryId(2L);
+            move.setTargetLibraryPathId(20L);
+            request.setMoves(List.of(move));
+
+            service.bulkMoveFiles(request);
+
+            verify(bookRepository, never()).updateLibrary(anyLong(), anyLong(), any());
+            verify(notificationService, never()).sendMessage(any(), any());
+        }
+
+        @Test
+        @DisplayName("clears entity manager and sends notification after physical book move")
+        void clearsEntityManagerAndSendsNotificationForPhysicalBook() {
+            BookEntity book = new BookEntity();
+            book.setId(100L);
+            book.setLibrary(library);
+            book.setLibraryPath(libraryPath);
+            book.setBookFiles(new ArrayList<>());
+            book.setIsPhysical(Boolean.TRUE);
+
+            LibraryEntity targetLibrary = new LibraryEntity();
+            targetLibrary.setId(2L);
+            LibraryPathEntity targetPath = new LibraryPathEntity();
+            targetPath.setId(20L);
+            targetPath.setPath("/target");
+            targetPath.setLibrary(targetLibrary);
+            targetLibrary.setLibraryPaths(List.of(targetPath));
+
+            when(bookRepository.findById(100L)).thenReturn(Optional.of(book));
+            when(bookRepository.findByIdWithBookFiles(100L)).thenReturn(Optional.of(book));
+            when(libraryRepository.findById(2L)).thenReturn(Optional.of(targetLibrary));
+            when(monitoringRegistrationService.getPathsForLibraries(anySet())).thenReturn(Collections.emptySet());
+
+            FileMoveRequest request = new FileMoveRequest();
+            FileMoveRequest.Move move = new FileMoveRequest.Move();
+            move.setBookId(100L);
+            move.setTargetLibraryId(2L);
+            move.setTargetLibraryPathId(20L);
+            request.setMoves(List.of(move));
+
+            service.bulkMoveFiles(request);
+
+            verify(entityManager).clear();
+            verify(notificationService).sendMessage(eq(Topic.BOOK_UPDATE), any());
+        }
+    }
+
+    @Nested
     @DisplayName("bulkMoveFiles - Monitoring Cases")
     class BulkMoveFilesMonitoring {
 

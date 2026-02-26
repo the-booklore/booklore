@@ -120,6 +120,14 @@ public class FileMoveService {
             LibraryPathEntity libraryPathEntity = optionalLibraryPathEntity.get();
 
             if (bookEntity.getBookFiles() == null || bookEntity.getBookFiles().isEmpty()) {
+                if (Boolean.TRUE.equals(bookEntity.getIsPhysical())) {
+                    transactionTemplate.executeWithoutResult(status ->
+                            bookRepository.updateLibrary(bookEntity.getId(), targetLibrary.getId(), null));
+                    entityManager.clear();
+                    BookEntity fresh = bookRepository.findById(bookId).orElseThrow();
+                    notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBookWithDescription(fresh, false));
+                    return;
+                }
                 log.warn("Book has no files to move: bookId={}", bookId);
                 return;
             }
