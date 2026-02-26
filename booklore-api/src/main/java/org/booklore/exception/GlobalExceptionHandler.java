@@ -3,6 +3,8 @@ package org.booklore.exception;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
+
+import org.eclipse.jetty.io.EofException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -76,7 +78,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleAsyncRequestNotUsableException(AsyncRequestNotUsableException ex) {
-        if (ex.getCause() instanceof org.eclipse.jetty.io.EofException) {
+        if (ex.getCause() instanceof EofException) {
             log.info("Request was canceled by client: {}", ex.getMessage());
         } else {
             log.error("Unexpected error occurred during async request handling: ", ex);
