@@ -32,10 +32,11 @@ server:
     min-response-size: 1024
   jetty:
     threads:
-      max: 200
-      min: 8
-      idle-timeout: 60000ms
-    connection-idle-timeout: 30000ms
+      min: 4
+      max: 50
+      idle-timeout: 30000
+    connection-idle-timeout: 30000
+    max-http-form-post-size: 2MB
   max-http-request-header-size: 128KB
 
 spring:

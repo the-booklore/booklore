@@ -1,9 +1,12 @@
 package org.booklore.config;
 
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ServerConnector;
 import org.springframework.boot.jetty.JettyWebServerFactory;
+import org.springframework.boot.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,5 +53,23 @@ public class JettyConfig {
                 }
             }
         });
+    }
+
+    @Bean
+    public JettyServerCustomizer jettyMemoryCustomizer() {
+        return server -> {
+            for (Connector connector : server.getConnectors()) {
+                if (connector instanceof ServerConnector sc) {
+                    // Reduce per-connection buffer allocation
+                    HttpConnectionFactory factory = sc.getConnectionFactory(HttpConnectionFactory.class);
+                    if (factory != null) {
+                        HttpConfiguration config = factory.getHttpConfiguration();
+                        config.setOutputBufferSize(16 * 1024);      // default 32KB
+                        config.setRequestHeaderSize(8 * 1024);       // default 8KB
+                        config.setResponseHeaderSize(4 * 1024);      // default 8KB
+                    }
+                }
+            }
+        };
     }
 }
