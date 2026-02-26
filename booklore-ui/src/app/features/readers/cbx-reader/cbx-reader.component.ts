@@ -997,6 +997,8 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   private handleSwipeGesture() {
+    if (this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) return;
+
     const delta = this.touchEndX - this.touchStartX;
     if (Math.abs(delta) >= 50) {
       // In RTL mode, swipe directions are reversed

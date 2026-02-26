@@ -68,6 +68,95 @@ class BookMetadataEntityTest {
     }
 
     @Test
+    void updateSearchText_trimsLeadingAndTrailingWhitespace() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("  The Snowman  ");
+        metadata.setSubtitle("  A Mystery  ");
+        metadata.setPublisher("  Harvill Secker  ");
+        metadata.setSeriesName("  Harry Hole  ");
+        metadata.setLanguage("  en  ");
+        metadata.setIsbn13("  9780099520276  ");
+        metadata.setIsbn10("  0099520273  ");
+        metadata.setAsin("  B003GK21A8  ");
+        metadata.setGoodreadsId("  12345  ");
+        metadata.setHardcoverId("  hc-1  ");
+        metadata.setHardcoverBookId("  hcb-1  ");
+        metadata.setGoogleId("  g-1  ");
+        metadata.setComicvineId("  cv-1  ");
+        metadata.setLubimyczytacId("  lub-1  ");
+        metadata.setRanobedbId("  ran-1  ");
+        metadata.setAudibleId("  aud-1  ");
+        metadata.setContentRating("  PG-13  ");
+        metadata.setNarrator("  John Smith  ");
+
+        metadata.updateSearchText();
+
+        assertEquals("The Snowman", metadata.getTitle());
+        assertEquals("A Mystery", metadata.getSubtitle());
+        assertEquals("Harvill Secker", metadata.getPublisher());
+        assertEquals("Harry Hole", metadata.getSeriesName());
+        assertEquals("en", metadata.getLanguage());
+        assertEquals("9780099520276", metadata.getIsbn13());
+        assertEquals("0099520273", metadata.getIsbn10());
+        assertEquals("B003GK21A8", metadata.getAsin());
+        assertEquals("12345", metadata.getGoodreadsId());
+        assertEquals("hc-1", metadata.getHardcoverId());
+        assertEquals("hcb-1", metadata.getHardcoverBookId());
+        assertEquals("g-1", metadata.getGoogleId());
+        assertEquals("cv-1", metadata.getComicvineId());
+        assertEquals("lub-1", metadata.getLubimyczytacId());
+        assertEquals("ran-1", metadata.getRanobedbId());
+        assertEquals("aud-1", metadata.getAudibleId());
+        assertEquals("PG-13", metadata.getContentRating());
+        assertEquals("John Smith", metadata.getNarrator());
+    }
+
+    @Test
+    void updateSearchText_blanksAndWhitespaceOnlyBecomeNull() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Valid Title");
+        metadata.setSubtitle("   ");
+        metadata.setPublisher("");
+        metadata.setSeriesName("  \t  ");
+        metadata.setLanguage("  ");
+        metadata.setNarrator("\t");
+
+        metadata.updateSearchText();
+
+        assertEquals("Valid Title", metadata.getTitle());
+        assertNull(metadata.getSubtitle());
+        assertNull(metadata.getPublisher());
+        assertNull(metadata.getSeriesName());
+        assertNull(metadata.getLanguage());
+        assertNull(metadata.getNarrator());
+    }
+
+    @Test
+    void updateSearchText_preservesNulls() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Valid Title");
+
+        metadata.updateSearchText();
+
+        assertEquals("Valid Title", metadata.getTitle());
+        assertNull(metadata.getSubtitle());
+        assertNull(metadata.getPublisher());
+        assertNull(metadata.getSeriesName());
+        assertNull(metadata.getNarrator());
+    }
+
+    @Test
+    void updateSearchText_doesNotTrimDescription() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Valid Title");
+        metadata.setDescription("  Some description with leading/trailing spaces  ");
+
+        metadata.updateSearchText();
+
+        assertEquals("  Some description with leading/trailing spaces  ", metadata.getDescription());
+    }
+
+    @Test
     void searchSimulation_withDiacritics() {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("The Bat");

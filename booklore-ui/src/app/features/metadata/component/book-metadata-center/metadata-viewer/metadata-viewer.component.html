@@ -1012,8 +1012,42 @@
       (downloadFile)="onDownloadFile($event)"
       (downloadAllFiles)="onDownloadAllFiles($event)"
       (deleteBookFile)="onDeleteBookFile($event)"
-      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)">
+      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)"
+      (detachBookFile)="onDetachBookFile($event)">
     </app-metadata-tabs>
+
+    <p-dialog
+      [header]="t('confirm.detachFileHeader')"
+      [(visible)]="showDetachDialog"
+      [modal]="true"
+      [closable]="true"
+      [style]="{ width: '450px' }"
+      [breakpoints]="{ '575px': '95vw' }">
+      <div class="detach-dialog-content">
+        <p>{{ t('confirm.detachFileMessage', { fileName: detachFileName }) }}</p>
+        <div class="detach-dialog-option">
+          <p-checkbox
+            [(ngModel)]="detachCopyMetadata"
+            [binary]="true"
+            inputId="copyMetadata">
+          </p-checkbox>
+          <label for="copyMetadata">{{ t('confirm.detachFileCopyMetadata') }}</label>
+        </div>
+      </div>
+      <ng-template #footer>
+        <p-button
+          [label]="'common.cancel' | transloco"
+          severity="secondary"
+          (onClick)="showDetachDialog = false">
+        </p-button>
+        <p-button
+          [label]="t('confirm.detachFileBtn')"
+          severity="warn"
+          icon="pi pi-external-link"
+          (onClick)="confirmDetach()">
+        </p-button>
+      </ng-template>
+    </p-dialog>
   </div>
 } @else {
   <div class="loading-state" *transloco="let t; prefix: 'metadata.viewer'">
