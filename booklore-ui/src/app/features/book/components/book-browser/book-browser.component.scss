@@ -214,26 +214,27 @@
 .desktop-search-wrapper {
   display: none;
   position: relative;
+  align-items: center;
 
   @media (min-width: 768px) {
-    display: block;
+    display: flex;
   }
 }
 
 .search-popover-content {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   width: 100%;
 }
 
 .search-input-full {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .search-clear-btn {
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
 }
 
 // Footer bar
