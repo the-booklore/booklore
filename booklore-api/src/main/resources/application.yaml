@@ -34,8 +34,8 @@ server:
     threads:
       max: 200
       min: 8
-      idle-timeout: 60000
-    connection-idle-timeout: 30000
+      idle-timeout: 60000ms
+    connection-idle-timeout: 30000ms
   max-http-request-header-size: 128KB
 
 spring:

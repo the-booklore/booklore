@@ -8,26 +8,44 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.core.env.Environment;
+
 @Configuration
 public class JettyConfig {
 
     /**
-     * Allows the same query-string characters that Tomcat permitted via
-     * {@code server.tomcat.relaxed-query-chars: '[,],%,{,},|'}.
+     * Configures Jetty's {@link UriCompliance} mode.
      * <p>
-     * {@link UriCompliance#LEGACY} enables Jetty's pre-RFC-strict behaviour,
-     * permitting brackets, braces, pipes, and percent-encoded sequences that
-     * are technically outside RFC 3986 but widely used in practice (e.g.,
-     * {@code filter[title]=foo} style query parameters).
+     * By default, this uses {@link UriCompliance#RFC3986} for strict, standards-
+     * compliant URI parsing. To relax the rules (for example, to allow the same
+     * query-string characters that Tomcat permitted via
+     * {@code server.tomcat.relaxed-query-chars: '[,],%,{,},|'}), set the
+     * property {@code booklore.jetty.uri-compliance} to {@code LEGACY}.
+     * <p>
+     * WARNING: {@link UriCompliance#LEGACY} relaxes URI parsing beyond just
+     * query strings and can widen the accepted character/encoding set for the
+     * whole request target. This can have security implications (for example,
+     * ambiguous encodings or inconsistent normalization between components).
+     * Use {@code LEGACY} only if you fully understand and accept these risks.
      */
     @Bean
-    public WebServerFactoryCustomizer<JettyWebServerFactory> jettyUriComplianceCustomizer() {
+    public WebServerFactoryCustomizer<JettyWebServerFactory> jettyUriComplianceCustomizer(Environment environment) {
         return factory -> factory.addServerCustomizers(server -> {
+            // Determine desired URI compliance mode from configuration, defaulting to RFC3986.
+            String complianceProperty = environment.getProperty("booklore.jetty.uri-compliance", "RFC3986");
+            UriCompliance compliance;
+            if ("LEGACY".equalsIgnoreCase(complianceProperty)) {
+                compliance = UriCompliance.LEGACY;
+            } else {
+                // Fall back to strict RFC 3986 compliance for safety.
+                compliance = UriCompliance.RFC3986;
+            }
+
             for (var connector : server.getConnectors()) {
                 if (connector instanceof ServerConnector serverConnector) {
                     var httpFactory = serverConnector.getConnectionFactory(HttpConnectionFactory.class);
                     if (httpFactory != null) {
-                        httpFactory.getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
+                        httpFactory.getHttpConfiguration().setUriCompliance(compliance);
                     }
                 }
             }
