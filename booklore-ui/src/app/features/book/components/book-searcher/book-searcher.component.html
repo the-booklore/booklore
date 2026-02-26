@@ -7,11 +7,21 @@
       pInputText
       [(ngModel)]="searchQuery"
       (input)="onSearchInputChange()"
+      (keydown)="onSearchKeydown($event)"
       (focus)="isSearchFocused = true"
       (blur)="onSearchBlur()"
       [placeholder]="t('placeholder')"
       class="search-input"
     />
+    @if (searchMode === 'button') {
+      <p-button
+        icon="pi pi-search"
+        (click)="triggerSearch()"
+        [text]="true"
+        [rounded]="true"
+        class="search-trigger-btn">
+      </p-button>
+    }
     @if (searchQuery) {
       <p-button
         icon="pi pi-times"

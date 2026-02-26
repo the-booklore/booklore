@@ -59,6 +59,7 @@ import {AppSettingsService} from '../../../../shared/service/app-settings.servic
 import {MultiSortPopoverComponent} from './sorting/multi-sort-popover/multi-sort-popover.component';
 import {SortService} from '../../service/sort.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/service/search-preference.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -123,6 +124,11 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   private localStorageService = inject(LocalStorageService);
   private scrollService = inject(BookBrowserScrollService);
   private readonly t = inject(TranslocoService);
+  private readonly searchPrefService = inject(SearchPreferenceService);
+
+  get searchMode(): SearchTriggerMode {
+    return this.searchPrefService.mode;
+  }
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -766,12 +772,24 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSearchTermChange(term: string): void {
-    this.searchTerm$.next(term);
+    if (this.searchMode === 'instant') {
+      this.searchTerm$.next(term);
+    }
+  }
+
+  triggerSearch(): void {
+    this.searchTerm$.next(this.bookTitle);
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && this.searchMode === 'enter') {
+      this.triggerSearch();
+    }
   }
 
   clearSearch(): void {
     this.bookTitle = '';
-    this.onSearchTermChange('');
+    this.searchTerm$.next('');
     this.resetFilters();
   }
 

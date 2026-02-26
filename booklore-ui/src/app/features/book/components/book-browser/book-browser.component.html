@@ -215,8 +215,18 @@
                 [placeholder]="t('placeholder.search')"
                 [(ngModel)]="bookTitle"
                 (ngModelChange)="onSearchTermChange($event)"
+                (keydown)="onSearchKeydown($event)"
                 class="search-input-full"
               />
+              @if (searchMode === 'button') {
+                <p-button
+                  icon="pi pi-search"
+                  [text]="true"
+                  size="small"
+                  [rounded]="true"
+                  (click)="triggerSearch()"
+                ></p-button>
+              }
               <p-button
                 icon="pi pi-times"
                 [text]="true"
@@ -237,8 +247,18 @@
             [placeholder]="t('placeholder.search')"
             [(ngModel)]="bookTitle"
             (ngModelChange)="onSearchTermChange($event)"
+            (keydown)="onSearchKeydown($event)"
             class="search-input"
           />
+          @if (searchMode === 'button') {
+            <p-button
+              icon="pi pi-search"
+              [text]="true"
+              size="small"
+              [rounded]="true"
+              (click)="triggerSearch()"
+            ></p-button>
+          }
           @if (bookTitle) {
             <p-button
               icon="pi pi-times"

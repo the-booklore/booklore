@@ -1,0 +1,50 @@
+<ng-container *transloco="let t; prefix: 'settingsView.search'">
+  <div class="settings-card">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="pi pi-search"></i>
+        {{ t('sectionTitle') }}
+      </h3>
+      <p class="section-description">
+        {{ t('sectionDesc') }}
+      </p>
+    </div>
+
+    <div class="section-body">
+      <div class="setting-item">
+        <div class="setting-header-standalone">
+          <label class="setting-label">{{ t('searchTrigger') }}</label>
+        </div>
+        <p class="setting-description">{{ t('searchTriggerDesc') }}</p>
+        <div class="setting-options">
+          <div class="button-group">
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedMode === 'instant'"
+              (click)="onModeChange('instant')">
+              <i class="pi pi-bolt"></i>
+              <span class="option-text">{{ t('modeInstant') }}</span>
+            </button>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedMode === 'enter'"
+              (click)="onModeChange('enter')">
+              <i class="pi pi-sign-in"></i>
+              <span class="option-text">{{ t('modeEnter') }}</span>
+            </button>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedMode === 'button'"
+              (click)="onModeChange('button')">
+              <i class="pi pi-search"></i>
+              <span class="option-text">{{ t('modeButton') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

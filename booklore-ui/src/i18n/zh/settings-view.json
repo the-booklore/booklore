@@ -121,5 +121,16 @@
     "sidebarWidthDesc": "控制导航侧边栏和书籍筛选面板的宽度。",
     "saved": "偏好已更新",
     "savedDetail": "您的侧边栏宽度偏好已保存。"
+  },
+  "search": {
+    "sectionTitle": "Search Preferences",
+    "sectionDesc": "Configure how search is triggered in the book browser and header search bar.",
+    "searchTrigger": "Search Trigger Mode",
+    "searchTriggerDesc": "'Instant' searches as you type with a debounce delay. 'Search on Enter' waits until you press Enter. 'Search button' adds a button to manually trigger the search.",
+    "modeInstant": "Instant (debounced)",
+    "modeEnter": "Search on Enter",
+    "modeButton": "Search button",
+    "prefsUpdated": "Preferences Updated",
+    "prefsUpdatedDetail": "Your search trigger preference has been saved."
   }
 }

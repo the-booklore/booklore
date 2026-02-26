@@ -6,6 +6,7 @@ import {ViewPreferencesComponent} from './view-preferences/view-preferences.comp
 import {SidebarSortingPreferencesComponent} from './sidebar-sorting-preferences/sidebar-sorting-preferences.component';
 import {MetaCenterViewModeComponent} from './meta-center-view-mode/meta-center-view-mode-component';
 import {FilterPreferencesComponent} from './filter-preferences/filter-preferences.component';
+import {SearchPreferencesComponent} from './search-preferences/search-preferences.component';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {Slider} from 'primeng/slider';
 import {MessageService} from 'primeng/api';
@@ -22,6 +23,7 @@ import {LocalStorageService} from '../../../shared/service/local-storage.service
     SidebarSortingPreferencesComponent,
     MetaCenterViewModeComponent,
     FilterPreferencesComponent,
+    SearchPreferencesComponent,
     TranslocoDirective,
     Slider,
   ],

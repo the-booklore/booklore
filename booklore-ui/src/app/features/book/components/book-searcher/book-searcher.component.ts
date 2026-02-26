@@ -14,6 +14,7 @@ import {IconField} from 'primeng/iconfield';
 import {InputIcon} from 'primeng/inputicon';
 import {HeaderFilter} from '../book-browser/filters/HeaderFilter';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/service/search-preference.service';
 
 @Component({
   selector: 'app-book-searcher',
@@ -42,7 +43,12 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   protected urlHelper = inject(UrlHelperService);
   private readonly t = inject(TranslocoService);
+  private readonly searchPrefService = inject(SearchPreferenceService);
   private headerFilter = new HeaderFilter(this.#searchSubject.asObservable());
+
+  get searchMode(): SearchTriggerMode {
+    return this.searchPrefService.mode;
+  }
 
   ngOnInit(): void {
     this.#subscription = this.bookService.bookState$.pipe(
@@ -77,6 +83,18 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   }
 
   onSearchInputChange(): void {
+    if (this.searchMode === 'instant') {
+      this.#searchSubject.next(this.searchQuery.trim());
+    }
+  }
+
+  onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && this.searchMode === 'enter') {
+      this.triggerSearch();
+    }
+  }
+
+  triggerSearch(): void {
     this.#searchSubject.next(this.searchQuery.trim());
   }
 
