@@ -417,6 +417,9 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
     }
 
     private LocalDate convertToLocalDate(String timestamp) {
+        if (timestamp == null || timestamp.isBlank() || "null".equals(timestamp)) {
+            return null;
+        }
         try {
             long millis = Long.parseLong(timestamp);
             return Instant.ofEpochMilli(millis)
