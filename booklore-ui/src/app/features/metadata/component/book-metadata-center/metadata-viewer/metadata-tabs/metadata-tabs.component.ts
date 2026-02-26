@@ -47,6 +47,12 @@ export interface DeleteSupplementaryFileEvent {
   fileName: string;
 }
 
+export interface DetachBookFileEvent {
+  book: Book;
+  fileId: number;
+  fileName: string;
+}
+
 @Component({
   selector: 'app-metadata-tabs',
   standalone: true,
@@ -84,6 +90,7 @@ export class MetadataTabsComponent {
   @Output() downloadAllFiles = new EventEmitter<DownloadAllFilesEvent>();
   @Output() deleteBookFile = new EventEmitter<DeleteBookFileEvent>();
   @Output() deleteSupplementaryFile = new EventEmitter<DeleteSupplementaryFileEvent>();
+  @Output() detachBookFile = new EventEmitter<DetachBookFileEvent>();
 
   get defaultTabValue(): string {
     return this.bookInSeries && this.bookInSeries.length > 1 ? 'series' : 'similar';
@@ -112,6 +119,17 @@ export class MetadataTabsComponent {
 
   deleteSupplementary(bookId: number, fileId: number, fileName: string): void {
     this.deleteSupplementaryFile.emit({ bookId, fileId, fileName });
+  }
+
+  detachFile(book: Book, fileId: number, fileName: string): void {
+    this.detachBookFile.emit({ book, fileId, fileName });
+  }
+
+  canDetach(book: Book): boolean {
+    const totalFiles = (book.primaryFile ? 1 : 0)
+      + (book.alternativeFormats?.length ?? 0)
+      + (book.supplementaryFiles?.length ?? 0);
+    return totalFiles > 1;
   }
 
   hasMultipleFiles(book: Book): boolean {

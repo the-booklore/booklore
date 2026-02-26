@@ -194,6 +194,17 @@
                         tooltipPosition="top"
                         (onClick)="download(book)">
                       </p-button>
+                      @if (canDetach(book)) {
+                        <p-button
+                          icon="pi pi-external-link"
+                          size="small"
+                          text
+                          severity="warn"
+                          [pTooltip]="t('detachTooltip')"
+                          tooltipPosition="top"
+                          (onClick)="detachFile(book, book.primaryFile!.id, book.primaryFile!.fileName || 'file')">
+                        </p-button>
+                      }
                       <p-button
                         icon="pi pi-trash"
                         size="small"
@@ -271,6 +282,17 @@
                           tooltipPosition="top"
                           (onClick)="downloadAdditionalFile(book, format.id)">
                         </p-button>
+                        @if (canDetach(book)) {
+                          <p-button
+                            icon="pi pi-external-link"
+                            size="small"
+                            text
+                            severity="warn"
+                            [pTooltip]="t('detachTooltip')"
+                            tooltipPosition="top"
+                            (onClick)="detachFile(book, format.id, format.fileName || 'file')">
+                          </p-button>
+                        }
                         <p-button
                           icon="pi pi-trash"
                           size="small"
@@ -307,6 +329,17 @@
                           tooltipPosition="top"
                           (onClick)="downloadAdditionalFile(book, file.id)">
                         </p-button>
+                        @if (canDetach(book)) {
+                          <p-button
+                            icon="pi pi-external-link"
+                            size="small"
+                            text
+                            severity="warn"
+                            [pTooltip]="t('detachTooltip')"
+                            tooltipPosition="top"
+                            (onClick)="detachFile(book, file.id, file.fileName || 'file')">
+                          </p-button>
+                        }
                         <p-button
                           icon="pi pi-trash"
                           size="small"

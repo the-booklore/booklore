@@ -1,7 +1,10 @@
 package org.booklore.controller;
 
+import org.booklore.config.security.service.AuthenticationService;
+import org.booklore.config.security.userdetails.OpdsUserDetails;
 import org.booklore.service.book.BookDownloadService;
 import org.booklore.service.book.BookService;
+import org.booklore.service.opds.OpdsBookService;
 import org.booklore.service.opds.OpdsFeedService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,6 +37,8 @@ public class OpdsController {
     private final OpdsFeedService opdsFeedService;
     private final BookService bookService;
     private final BookDownloadService bookDownloadService;
+    private final OpdsBookService opdsBookService;
+    private final AuthenticationService authenticationService;
 
     @Operation(summary = "Download book file", description = "Download the book file by its ID. Optionally specify a fileId to download a specific format.")
     @ApiResponses({
@@ -44,6 +49,7 @@ public class OpdsController {
     public ResponseEntity<Resource> downloadBook(
             @Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId,
             @Parameter(description = "Optional ID of a specific file format to download") @RequestParam(required = false) Long fileId) {
+        opdsBookService.validateBookContentAccess(bookId, getOpdsUserId());
         if (fileId != null) {
             return bookDownloadService.downloadBookFile(bookId, fileId);
         }
@@ -57,6 +63,7 @@ public class OpdsController {
     })
     @GetMapping("/{bookId}/cover")
     public ResponseEntity<Resource> getBookCover(@Parameter(description = "ID of the book") @PathVariable long bookId) {
+        opdsBookService.validateBookContentAccess(bookId, getOpdsUserId());
         Resource coverImage = bookService.getBookThumbnail(bookId);
         String contentType = "image/jpeg";
         return ResponseEntity.ok()
@@ -168,5 +175,12 @@ public class OpdsController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/opensearchdescription+xml;charset=utf-8"))
                 .body(searchDoc);
+    }
+
+    private Long getOpdsUserId() {
+        OpdsUserDetails details = authenticationService.getOpdsUser();
+        return details != null && details.getOpdsUserV2() != null
+                ? details.getOpdsUserV2().getUserId()
+                : null;
     }
 }

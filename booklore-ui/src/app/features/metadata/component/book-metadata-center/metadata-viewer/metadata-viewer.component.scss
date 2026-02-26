@@ -1019,7 +1019,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 500px;
+  max-height: 2000px;
   overflow: hidden;
   transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
   opacity: 1;
@@ -1097,5 +1097,102 @@
   &.abridged {
     background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: white;
+  }
+}
+
+.audiobook-chapters-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.audiobook-chapters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.375rem 0;
+
+  &:hover .audiobook-chapters-toggle-label {
+    color: var(--primary-hover-color);
+  }
+}
+
+.audiobook-chapters-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+  transition: color 0.2s ease;
+
+  i {
+    font-size: 0.9rem;
+    color: var(--primary-color);
+  }
+}
+
+.audiobook-chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 500px;
+  overflow-y: auto;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+
+  &.collapsed {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+}
+
+.audiobook-chapter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--surface-border);
+  font-size: 0.875rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.audiobook-chapter-index {
+  flex: 0 0 1.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  font-size: 0.8rem;
+}
+
+.audiobook-chapter-title {
+  flex: 1;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audiobook-chapter-duration {
+  flex-shrink: 0;
+  color: var(--text-color-secondary);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.detach-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .detach-dialog-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 }

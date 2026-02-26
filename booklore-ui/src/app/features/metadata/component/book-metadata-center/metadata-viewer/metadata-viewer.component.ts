@@ -33,9 +33,11 @@ import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS, fileSizeRanges, matchScoreRan
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
-import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
+import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DetachBookFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 import {AuthorService} from '../../../../author-browser/service/author.service';
+import {Dialog} from 'primeng/dialog';
+import {Checkbox} from 'primeng/checkbox';
 
 
 @Component({
@@ -43,7 +45,7 @@ import {AuthorService} from '../../../../author-browser/service/author.service';
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe, Dialog, Checkbox]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChecked {
   @Input() book$!: Observable<Book | null>;
@@ -72,17 +74,24 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
   bookInSeries: Book[] = [];
+  @ViewChild(Image) private coverImage?: Image;
   @ViewChild('descriptionContent') descriptionContentRef?: ElementRef<HTMLElement>;
   isExpanded = false;
   isOverflowing = false;
   isComicSectionExpanded = true;
   isAudiobookSectionExpanded = true;
+  isChapterListExpanded = false;
   showFilePath = false;
   isAutoFetching = false;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   selectedReadStatus: ReadStatus = ReadStatus.UNREAD;
   isEditingDateFinished = false;
   editDateFinished: Date | null = null;
+  showDetachDialog = false;
+  detachCopyMetadata = true;
+  private detachBookId = 0;
+  private detachFileId = 0;
+  detachFileName = '';
 
   readStatusOptions: { value: ReadStatus, labelKey: string }[] = [
     {value: ReadStatus.UNREAD, labelKey: 'metadata.viewer.readStatusUnread'},
@@ -104,6 +113,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   navigationState$ = this.bookNavigationService.getNavigationState();
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.coverImage?.closePreview());
+
+    const onPopState = () => this.coverImage?.closePreview();
+    window.addEventListener('popstate', onPopState);
+    this.destroyRef.onDestroy(() => window.removeEventListener('popstate', onPopState));
+
     this.readMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => {
@@ -527,6 +542,19 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
 
   onDeleteSupplementaryFile(event: DeleteSupplementaryFileEvent): void {
     this.deleteAdditionalFile(event.bookId, event.fileId, event.fileName);
+  }
+
+  onDetachBookFile(event: DetachBookFileEvent): void {
+    this.detachBookId = event.book.id;
+    this.detachFileId = event.fileId;
+    this.detachFileName = event.fileName;
+    this.detachCopyMetadata = true;
+    this.showDetachDialog = true;
+  }
+
+  confirmDetach(): void {
+    this.showDetachDialog = false;
+    this.bookFileService.detachBookFile(this.detachBookId, this.detachFileId, this.detachCopyMetadata).subscribe();
   }
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
@@ -1363,6 +1391,18 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
+  }
+
+  formatDurationMs(ms: number): string {
+    if (!ms) return '-';
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
   formatSampleRate(sampleRate: number): string {

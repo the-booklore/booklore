@@ -9,7 +9,7 @@ import { filter, take } from 'rxjs/operators';
 import { BookService } from '../../service/book.service';
 import { BookFileService } from '../../service/book-file.service';
 import { Book } from '../../model/book.model';
-import { MessageService } from 'primeng/api';
+import {MessageService, PrimeTemplate} from 'primeng/api';
 import { TranslocoDirective, TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AppSettingsService } from '../../../../shared/service/app-settings.service';
 
@@ -23,6 +23,7 @@ import { AppSettingsService } from '../../../../shared/service/app-settings.serv
     Checkbox,
     TranslocoDirective,
     TranslocoPipe,
+    PrimeTemplate,
   ],
   templateUrl: './book-file-attacher.component.html',
   styleUrls: ['./book-file-attacher.component.scss']

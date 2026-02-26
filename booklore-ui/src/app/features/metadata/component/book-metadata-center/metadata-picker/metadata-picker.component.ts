@@ -462,7 +462,7 @@ export class MetadataPickerComponent implements OnInit {
       }
     }
 
-    flags['cover'] = !current.thumbnailUrl && !!original.thumbnailUrl;
+    flags['cover'] = this.copiedFields['thumbnailUrl'] === false && !current.thumbnailUrl && !!original.thumbnailUrl;
 
     // Handle audiobook metadata clear flags (now at top-level of BookMetadata)
     for (const field of AUDIOBOOK_METADATA_FIELDS) {
@@ -502,16 +502,16 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   getThumbnail(): string | null {
-    // For Audible provider, cover is handled separately via uploadAudiobookCoverFromUrl
+    if (this.copiedFields['thumbnailUrl']) {
+      return (this.fetchedMetadata['thumbnailUrl' as keyof BookMetadata] as string) || null;
+    }
+    // For Audible provider, audiobook cover is handled separately via uploadAudiobookCoverFromUrl
     if (this.isAudibleProvider()) {
       return null;
     }
     const thumbnailUrl = this.metadataForm.get('thumbnailUrl')?.value;
     if (thumbnailUrl?.includes('api/v1')) {
       return null;
-    }
-    if (this.copiedFields['thumbnailUrl']) {
-      return (this.fetchedMetadata['thumbnailUrl' as keyof BookMetadata] as string) || null;
     }
     return null;
   }
@@ -640,6 +640,7 @@ export class MetadataPickerComponent implements OnInit {
     // For audiobook cover from Audible, use the thumbnailUrl from fetched metadata
     if (field === 'audiobookThumbnailUrl') {
       this.metadataForm.get('audiobookThumbnailUrl')?.setValue(this.fetchedMetadata.thumbnailUrl);
+      this.copiedFields['audiobookThumbnailUrl'] = true;
       this.highlightCopiedInput(field);
       return;
     }
