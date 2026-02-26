@@ -5,6 +5,12 @@ import com.github.junrar.rarfile.FileHeader;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
+import jakarta.xml.bind.ValidationEvent;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.sax.SAXSource;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
@@ -16,6 +22,7 @@ import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.ComicCreatorRole;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.util.ArchiveUtils;
+import org.booklore.util.UnrarHelper;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Component;
@@ -47,10 +54,6 @@ public class CbxMetadataWriter implements MetadataWriter {
     private static final JAXBContext JAXB_CONTEXT;
 
     static {
-        // XXE protection: Disable external DTD and Schema access for security
-        System.setProperty("javax.xml.accessExternalDTD", "");
-        System.setProperty("javax.xml.accessExternalSchema", "");
-        
         try {
             JAXB_CONTEXT = JAXBContext.newInstance(ComicInfo.class);
         } catch (jakarta.xml.bind.JAXBException e) {
@@ -194,7 +197,30 @@ public class CbxMetadataWriter implements MetadataWriter {
                 }
             }
             return new ComicInfo();
+        } catch (Exception e) {
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI: {}", file.getName(), e.getMessage());
+                return loadFromRarViaCli(file.toPath());
+            }
+            throw e;
         }
+    }
+
+    private ComicInfo loadFromRarViaCli(Path rarPath) throws Exception {
+        java.util.List<String> entries = UnrarHelper.listEntries(rarPath);
+        String comicInfoEntry = entries.stream()
+                .filter(CbxMetadataWriter::isComicInfoXml)
+                .findFirst()
+                .orElse(null);
+        if (comicInfoEntry != null) {
+            byte[] xmlBytes = UnrarHelper.extractEntryBytes(rarPath, comicInfoEntry);
+            if (xmlBytes != null && xmlBytes.length > 0) {
+                try (InputStream stream = new ByteArrayInputStream(xmlBytes)) {
+                    return parseComicInfo(stream);
+                }
+            }
+        }
+        return new ComicInfo();
     }
 
     private void applyMetadataChanges(ComicInfo info, BookMetadataEntity metadata, MetadataClearFlags clearFlags) {
@@ -447,20 +473,32 @@ public class CbxMetadataWriter implements MetadataWriter {
     }
 
     private ComicInfo parseComicInfo(InputStream xmlStream) throws Exception {
+        // Use a SAXSource with an explicitly secured XMLReader to prevent XXE injection.
+        // This is more robust than System.setProperty() because it is per-instance and
+        // cannot be inadvertently disabled by other code running in the same JVM.
+        SAXParserFactory spf = SAXParserFactory.newInstance();
+        spf.setNamespaceAware(true);
+        spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        spf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        XMLReader xmlReader = spf.newSAXParser().getXMLReader();
+        SAXSource saxSource = new SAXSource(xmlReader, new InputSource(xmlStream));
+
         Unmarshaller unmarshaller = JAXB_CONTEXT.createUnmarshaller();
         unmarshaller.setEventHandler(event -> {
-            if (event.getSeverity() == jakarta.xml.bind.ValidationEvent.WARNING || 
-                event.getSeverity() == jakarta.xml.bind.ValidationEvent.ERROR) {
-                log.warn("JAXB Parsing Issue: {} [Line: {}, Col: {}]", 
-                    event.getMessage(), 
-                    event.getLocator().getLineNumber(), 
+            if (event.getSeverity() == ValidationEvent.WARNING ||
+                event.getSeverity() == ValidationEvent.ERROR) {
+                log.warn("JAXB Parsing Issue: {} [Line: {}, Col: {}]",
+                    event.getMessage(),
+                    event.getLocator().getLineNumber(),
                     event.getLocator().getColumnNumber());
             }
             return true; // Continue processing
         });
-        ComicInfo result = (ComicInfo) unmarshaller.unmarshal(xmlStream);
-        log.debug("CbxMetadataWriter: Parsed ComicInfo - Title: {}, Summary length: {}", 
-            result.getTitle(), 
+        ComicInfo result = (ComicInfo) unmarshaller.unmarshal(saxSource);
+        log.debug("CbxMetadataWriter: Parsed ComicInfo - Title: {}, Summary length: {}",
+            result.getTitle(),
             result.getSummary() != null ? result.getSummary().length() : 0);
         return result;
     }
@@ -590,6 +628,13 @@ public class CbxMetadataWriter implements MetadataWriter {
                     }
                 }
             }
+        } catch (Exception e) {
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI extractAll: {}", rarFile.getName(), e.getMessage());
+                UnrarHelper.extractAll(rarFile.toPath(), targetDir);
+                return;
+            }
+            throw e;
         }
     }
 
@@ -617,6 +662,13 @@ public class CbxMetadataWriter implements MetadataWriter {
             zipOutput.putNextEntry(new ZipEntry("ComicInfo.xml"));
             zipOutput.write(xmlContent);
             zipOutput.closeEntry();
+        } catch (Exception e) {
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI for RAR-to-ZIP: {}", rarFile.getName(), e.getMessage());
+                convertRarToZipViaCli(rarFile.toPath(), tempZip, xmlContent);
+            } else {
+                throw e;
+            }
         }
 
         Path targetPath = rarFile.toPath().resolveSibling(removeFileExtension(rarFile.getName()) + ".cbz");
@@ -628,6 +680,26 @@ public class CbxMetadataWriter implements MetadataWriter {
         }
 
         return null;
+    }
+
+    private void convertRarToZipViaCli(Path rarPath, Path tempZip, byte[] xmlContent) throws Exception {
+        java.util.List<String> entries = UnrarHelper.listEntries(rarPath);
+        try (ZipOutputStream zipOutput = new ZipOutputStream(Files.newOutputStream(tempZip))) {
+            for (String entryName : entries) {
+                if (isComicInfoXml(entryName)) continue;
+                if (!isPathSafe(entryName)) {
+                    log.warn("Skipping unsafe RAR entry name: {}", entryName);
+                    continue;
+                }
+                byte[] bytes = UnrarHelper.extractEntryBytes(rarPath, entryName);
+                zipOutput.putNextEntry(new ZipEntry(entryName));
+                zipOutput.write(bytes);
+                zipOutput.closeEntry();
+            }
+            zipOutput.putNextEntry(new ZipEntry("ComicInfo.xml"));
+            zipOutput.write(xmlContent);
+            zipOutput.closeEntry();
+        }
     }
 
     private void restoreOriginalFile(Path backupPath, File targetFile) {
@@ -703,8 +775,12 @@ public class CbxMetadataWriter implements MetadataWriter {
         if (entryName == null || entryName.isBlank()) return false;
         String normalized = entryName.replace('\\', '/');
         if (normalized.startsWith("/")) return false;
-        if (normalized.contains("../")) return false;
         if (normalized.contains("\0")) return false;
+        // Check each path component for ".." traversal. Splitting with -1 limit catches
+        // trailing separators and avoids missing ".." at the end of a path (e.g. "foo/..").
+        for (String component : normalized.split("/", -1)) {
+            if ("..".equals(component)) return false;
+        }
         return true;
     }
 

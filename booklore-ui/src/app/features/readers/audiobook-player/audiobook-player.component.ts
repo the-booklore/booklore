@@ -388,9 +388,12 @@ export class AudiobookPlayerComponent implements OnInit, OnDestroy {
   private updateMediaSessionMetadata(): void {
     if (!('mediaSession' in navigator)) return;
 
+    const chapters = this.audiobookInfo.chapters;
+    const chapterTitle = chapters && chapters.length > 1 ? this.getCurrentChapter()?.title : null;
+
     const title = this.audiobookInfo.folderBased
       ? this.currentTrack?.title
-      : this.getCurrentChapter()?.title || this.audiobookInfo.title;
+      : chapterTitle || this.audiobookInfo.title;
 
     navigator.mediaSession.metadata = new MediaMetadata({
       title: title || this.t.translate('readerAudiobook.untitled'),

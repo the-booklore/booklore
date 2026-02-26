@@ -2,7 +2,7 @@
     "loading": "Nalaganje zvočne knjige...",
     "untitled": "Brez naslova",
     "unknownAuthor": "Neznan avtor",
-    "coverAlt": "Platnica",
+    "coverAlt": "Naslovnica",
     "header": {
         "backTooltip": "Nazaj",
         "bookmarksTooltip": "Zaznamki",
@@ -26,9 +26,9 @@
         "endOfChapter": "Konec poglavja"
     },
     "details": {
-        "narratedBy": "Pripoveduje {{ narrator }}",
+        "narratedBy": "Pripoveduje: {{ narrator }}",
         "kbps": "{{ bitrate }} kbps",
-        "totalDuration": "Skupaj {{ duration }}"
+        "totalDuration": "Skupno trajanje: {{ duration }}"
     },
     "sidebar": {
         "tracks": "Posnetki",
@@ -37,7 +37,7 @@
     "bookmarks": {
         "title": "Zaznamki",
         "empty": "Ni še zaznamkov",
-        "emptyHint": "Dodajte zaznamek, da shranite svoje mesto",
+        "emptyHint": "Dodaj zaznamek, da shraniš svoje mesto",
         "deleteTooltip": "Izbriši",
         "bookmarkAt": "Zaznamek ob {{ time }}"
     },

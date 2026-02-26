@@ -4,7 +4,7 @@
         "createNewLibrary": "Ustvari novo knjižnico",
         "uploadBook": "Naloži knjigo",
         "charts": "Grafi",
-        "metadataManager": "Upravljalnik metapodatkov",
+        "metadataManager": "Upravitelj metapodatkov",
         "settings": "Nastavitve",
         "documentation": "Dokumentacija",
         "profile": "Profil",
@@ -23,17 +23,18 @@
         "allBooks": "Vse knjige",
         "libraries": "Knjižnice",
         "shelves": "Police",
-        "magicShelves": "Pametne police",
-        "unshelved": "Brez police",
+        "magicShelves": "Čarobne police",
+        "unshelved": "Nerazvrščeno",
         "series": "Zbirke",
         "notebook": "Beležnica",
-        "update": "(Posodobitev)"
+        "update": "(Posodobitev)",
+        "authors": "Avtorji"
     },
     "changelog": {
         "title": "Kaj je novega",
         "description": "Zadnje posodobitve in izboljšave",
-        "loading": "Nalaganje dnevnika sprememb ...",
-        "empty": "Ni razpoložljivih posodobitev."
+        "loading": "Nalaganje dnevnika sprememb...",
+        "empty": "Ni novih posodobitev."
     },
     "theme": {
         "primary": "Primarna",
@@ -42,6 +43,13 @@
     "uploadDialog": {
         "chooseFile": "Izberi datoteko:",
         "selectImage": "Izberi sliko",
-        "fileNote": "Podprti formati: JPEG, PNG • Največja velikost datoteke: 5 MB"
+        "fileNote": "Podprti formati: JPEG, PNG • Največja velikost: 5 MB",
+        "or": "ALI",
+        "imageUrl": "URL slike:",
+        "urlPlaceholder": "Tukaj prilepi URL slike",
+        "urlNote": "Podprti formati: JPEG, PNG • Največja velikost: 5 MB",
+        "errorNoInput": "Prosim, izberi datoteko ali prilepi URL.",
+        "errorUploadFailed": "Nalaganje slike ni uspelo.",
+        "errorUploadRetry": "Nalaganje ni uspelo. Prosim, poskusi znova."
     }
 }

@@ -7,6 +7,7 @@ import org.booklore.exception.APIException;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.response.AttachBookFileResponse;
 import org.booklore.model.entity.*;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookRepository;
@@ -68,7 +69,7 @@ class BookFileAttachmentServiceTest {
                 .path(tempDir.toString())
                 .build();
 
-        library.setLibraryPaths(List.of(libraryPath));
+        library.setLibraryPaths(new ArrayList<>(List.of(libraryPath)));
     }
 
     private BookEntity createBook(Long id) {
@@ -320,9 +321,11 @@ class BookFileAttachmentServiceTest {
             when(bookRepository.findAllById(List.of(2L))).thenReturn(List.of(source));
             setupGetUpdatedBookMocks(1L, target);
 
-            Book result = service.attachBookFiles(1L, List.of(2L), false);
+            AttachBookFileResponse result = service.attachBookFiles(1L, List.of(2L), false);
 
             assertNotNull(result);
+            assertNotNull(result.updatedBook());
+            assertEquals(List.of(2L), result.deletedSourceBookIds());
             verify(entityManager).createQuery(contains("UPDATE BookFileEntity"));
             verify(entityManager).flush();
             verify(entityManager).clear();
@@ -693,10 +696,11 @@ class BookFileAttachmentServiceTest {
             when(bookMapper.toBook(target)).thenReturn(dto);
             when(bookService.filterShelvesByUserId(any(), eq(1L))).thenReturn(Set.of());
 
-            Book result = service.attachBookFiles(1L, List.of(2L), false);
+            AttachBookFileResponse result = service.attachBookFiles(1L, List.of(2L), false);
 
             assertNotNull(result);
-            assertEquals(1L, result.getId());
+            assertEquals(1L, result.updatedBook().getId());
+            assertEquals(List.of(2L), result.deletedSourceBookIds());
             verify(readingProgressService).enrichBookWithProgress(eq(dto), any(), any());
             verify(bookService).filterShelvesByUserId(any(), eq(1L));
         }
@@ -727,10 +731,11 @@ class BookFileAttachmentServiceTest {
 
             setupGetUpdatedBookMocks(1L, target);
 
-            service.attachBookFiles(1L, List.of(2L), false);
+            AttachBookFileResponse result = service.attachBookFiles(1L, List.of(2L), false);
 
             // Should not delete source since it has remaining non-book files
             verify(bookRepository, never()).deleteAll(anyList());
+            assertTrue(result.deletedSourceBookIds().isEmpty());
         }
 
         @Test
@@ -789,6 +794,54 @@ class BookFileAttachmentServiceTest {
             service.attachBookFiles(1L, List.of(2L), true);
 
             assertTrue(Files.exists(tempDir.resolve("target.pdf")));
+        }
+
+        @Test
+        @DisplayName("Auto-upgrades to file move when source and target have different library paths")
+        void attachBookFiles_differentLibraryPaths_autoUpgradesToFileMove() throws IOException {
+            LibraryPathEntity otherLibraryPath = LibraryPathEntity.builder()
+                    .id(2L)
+                    .library(library)
+                    .path(tempDir.resolve("other_root").toString())
+                    .build();
+            library.setLibraryPaths(new ArrayList<>(List.of(libraryPath, otherLibraryPath)));
+
+            Files.createDirectories(tempDir.resolve("other_root"));
+
+            BookEntity target = createBook(1L);
+            createBookFile(10L, target, "target.epub", "target_dir", true, false);
+
+            BookEntity source = BookEntity.builder()
+                    .id(2L)
+                    .library(library)
+                    .libraryPath(otherLibraryPath)
+                    .build();
+            source.setBookFiles(new ArrayList<>());
+            BookFileEntity sourceFile = BookFileEntity.builder()
+                    .id(20L)
+                    .book(source)
+                    .fileName("source.pdf")
+                    .fileSubPath("source_dir")
+                    .isBookFormat(true)
+                    .folderBased(false)
+                    .bookType(BookFileType.PDF)
+                    .build();
+            Path sourceDir = tempDir.resolve("other_root/source_dir");
+            Files.createDirectories(sourceDir);
+            Files.createFile(sourceDir.resolve("source.pdf"));
+
+            when(bookRepository.findByIdWithBookFiles(1L)).thenReturn(Optional.of(target));
+            when(bookRepository.findByIdWithBookFiles(2L)).thenReturn(Optional.of(source));
+            setupGetUpdatedBookMocks(1L, target);
+            setupFileMoveStubs(target, "target_dir/{title}");
+
+            AttachBookFileResponse result = service.attachBookFiles(1L, List.of(2L), false);
+
+            assertFalse(Files.exists(sourceDir.resolve("source.pdf")),
+                    "Source file should be moved (auto-upgraded to file move)");
+            assertTrue(Files.exists(tempDir.resolve("target_dir/target.pdf")),
+                    "Source file should be at target directory");
+            assertEquals(List.of(2L), result.deletedSourceBookIds());
         }
 
         @Test

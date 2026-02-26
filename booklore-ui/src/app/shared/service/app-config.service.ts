@@ -1,8 +1,8 @@
-import {DOCUMENT, isPlatformBrowser} from '@angular/common';
-import {effect, inject, Injectable, PLATFORM_ID, signal} from '@angular/core';
-import {$t, updatePreset, updateSurfacePalette} from '@primeng/themes';
-import Aura from '@primeng/themes/aura';
-import {AppState} from '../model/app-state.model';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { $t, updatePreset, updateSurfacePalette } from '@primeuix/themes';
+import Aura from '@primeuix/themes/aura';
+import { AppState } from '../model/app-state.model';
 
 type ColorPalette = Record<string, string>;
 
@@ -332,7 +332,7 @@ export class AppConfigService {
 
   constructor() {
     const initialState = this.loadAppState();
-    this.appState.set({...initialState});
+    this.appState.set({ ...initialState });
     this.document.documentElement.classList.add('p-dark');
 
     if (isPlatformBrowser(this.platformId)) {
@@ -383,7 +383,7 @@ export class AppConfigService {
     if (primaryName === 'noir') {
       return {
         semantic: {
-          primary: {...surfacePalette},
+          primary: { ...surfacePalette },
           colorScheme: {
             dark: {
               primary: {
@@ -430,6 +430,6 @@ export class AppConfigService {
   onPresetChange(): void {
     const surfacePalette = this.getSurfacePalette(this.appState().surface ?? 'neutral');
     const preset = this.getPresetExt();
-    $t().preset(Aura).preset(preset).surfacePalette(surfacePalette).use({useDefaultOptions: true});
+    $t().preset(Aura).preset(preset).surfacePalette(surfacePalette).use({ useDefaultOptions: true });
   }
 }

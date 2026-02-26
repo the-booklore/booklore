@@ -2,12 +2,12 @@
      [class.selected]="isSelected"
      (click)="onCardClick($event)">
 
-  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive, 'loaded': isImageLoaded, 'audiobook-cover': _isAudiobook }">
+  <div class="cover-container" [ngClass]="{ 'center-info-btn': _isSeriesViewActive || !hasDigitalFile(), 'loaded': isImageLoaded, 'audiobook-cover': _isAudiobook, 'square-library-cover': useSquareCovers }">
     <img
       [src]="coverImageUrl"
       class="book-cover"
       [class.loaded]="isImageLoaded"
-      [class.square-cover]="_isAudiobook"
+      [class.square-cover]="_isAudiobook || useSquareCovers"
       [alt]="('book.card.alt.cover' | transloco: { title: displayTitle })"
       loading="lazy"
       decoding="async"

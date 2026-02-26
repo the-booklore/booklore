@@ -212,17 +212,17 @@ export class BookFileService {
     return this.http.post<DuplicateGroup[]>(`${this.url}/duplicates`, request);
   }
 
-  attachBookFiles(targetBookId: number, sourceBookIds: number[], moveFiles: boolean): Observable<Book> {
-    return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], moveFiles: boolean): Observable<{updatedBook: Book, deletedSourceBookIds: number[]}> {
+    return this.http.post<{updatedBook: Book, deletedSourceBookIds: number[]}>(`${this.url}/${targetBookId}/attach-file`, {
       sourceBookIds,
       moveFiles
     }).pipe(
-      tap(updatedBook => {
+      tap(response => {
         const currentState = this.bookStateService.getCurrentBookState();
-        const sourceIdSet = new Set(sourceBookIds);
+        const deletedIdSet = new Set(response.deletedSourceBookIds);
         let updatedBooks = (currentState.books || []).map(book =>
-          book.id === targetBookId ? updatedBook : book
-        ).filter(book => !sourceIdSet.has(book.id));
+          book.id === targetBookId ? response.updatedBook : book
+        ).filter(book => !deletedIdSet.has(book.id));
 
         this.bookStateService.updateBookState({
           ...currentState,

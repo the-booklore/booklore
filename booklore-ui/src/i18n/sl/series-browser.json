@@ -4,22 +4,22 @@
     "searchPlaceholder": "Išči po imenu zbirke ali avtorju...",
     "readNext": "Naslednje za branje",
     "booksRead": "prebranih knjig",
-    "noSeriesFound": "Nobena zbirka se ne ujema z vašim iskanjem ali filtri.",
+    "noSeriesFound": "Nobena zbirka ne ustreza tvojemu iskanju ali filtrom.",
     "noSeriesInCategory": "V tej kategoriji ni najdenih zbirk.",
-    "cardSize": "Velikost kartice",
+    "cardSize": "Velikost kartic",
     "filters": {
         "all": "Vse",
-        "notStarted": "Nezacaleto",
-        "inProgress": "V teku",
-        "completed": "Dokončano",
-        "abandoned": "Opustljeno"
+        "notStarted": "Še nezačeto",
+        "inProgress": "V branju",
+        "completed": "Prebrano",
+        "abandoned": "Opuščeno"
     },
     "sort": {
-        "nameAsc": "Ime (A-Ž)",
-        "nameDesc": "Ime (Ž-A)",
+        "nameAsc": "Ime (A–Z)",
+        "nameDesc": "Ime (Z–A)",
         "bookCount": "Število knjig",
         "progress": "Napredek",
-        "recentlyRead": "Nazadnje brano",
-        "recentlyAdded": "Nazadnje dodano"
+        "recentlyRead": "Zadnje brano",
+        "recentlyAdded": "Zadnje dodano"
     }
 }

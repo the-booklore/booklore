@@ -1,36 +1,36 @@
 {
     "title": "Nastavitve avtentikacije",
-    "description": "Konfigurirajte metode avtentikacije za svojo instanco Booklore. Interna avtentikacija je vedno omogočena, opcijsko pa lahko omogočite OIDC za zunanje ponudnike avtentikacije.",
+    "description": "Konfiguriraj načine prijave za svojo instanco Booklore. Notranja avtentikacija je vedno omogočena, po želji pa lahko omogočiš OIDC za zunanje ponudnike prijave.",
     "methods": {
-        "sectionTitle": "Metode avtentikacije",
-        "sectionDesc": "Izberite, katere metode avtentikacije so na voljo uporabnikom za prijavo."
+        "sectionTitle": "Načini avtentikacije",
+        "sectionDesc": "Izberi, kateri načini prijave so na voljo uporabnikom."
     },
     "internal": {
-        "label": "Interna avtentikacija",
+        "label": "Notranja avtentikacija",
         "status": "Vedno omogočeno",
-        "description": "Vgrajena avtentikacija z uporabniškim imenom in geslom. To je privzeta metoda in je ni mogoče onemogočiti."
+        "description": "Vgrajena prijava z uporabniškim imenom in geslom. To je privzet način in ga ni mogoče onemogočiti."
     },
     "oidc": {
         "label": "OIDC avtentikacija",
         "experimental": "Eksperimentalno",
-        "description": "OpenID Connect za enotno prijavo (SSO) z zunanjimi ponudniki (Authentik, Keycloak itd.).",
-        "configHint": "Za omogočanje konfigurirajte spodnje nastavitve.",
+        "description": "OpenID Connect za enotno prijavo (SSO) z zunanjimi ponudniki (Authentik, Keycloak, itd.).",
+        "configHint": "Za omogočanje konfiguriraj spodnje nastavitve.",
         "enabled": "Omogočeno",
         "disabled": "Onemogočeno"
     },
     "providerConfig": {
         "sectionTitle": "Konfiguracija ponudnika OIDC",
-        "sectionDesc": "Konfigurirajte nastavitve ponudnika OIDC. Za omogočanje OIDC avtentikacije so zahtevana vsa polja.",
+        "sectionDesc": "Konfiguriraj nastavitve svojega ponudnika OIDC. Za delovanje so zahtevana vsa polja.",
         "providerName": "Ime ponudnika",
         "providerPlaceholder": "npr. Authentik, Keycloak",
-        "clientId": "ID klienta",
-        "clientIdPlaceholder": "Vaš OIDC ID klienta",
-        "issuerUri": "URI izdajatelja",
-        "issuerPlaceholder": "npr. https://auth.example.com/realms/booklore",
+        "clientId": "ID klienta (Client ID)",
+        "clientIdPlaceholder": "Tvoj OIDC Client ID",
+        "issuerUri": "URI izdajatelja (Issuer URI)",
+        "issuerPlaceholder": "npr. https://auth.primer.si/realms/booklore",
         "scope": "Obseg (Scope)",
-        "scopeHint": "Zahtevani obsegi za prijavo OIDC. Ponudnik jih mora podpirati.",
-        "claimMappings": "Preslikava zahtevkov (Claim Mappings)",
-        "claimDesc": "Preslikajte OIDC žetone v polja uporabnikov Booklore. Ti se morajo ujemati z zahtevki ponudnika.",
+        "scopeHint": "Zahtevani obsegi za OIDC prijavo. Ponudnik jih mora podpirati.",
+        "claimMappings": "Preslikave zahtevkov (Claim Mappings)",
+        "claimDesc": "Preslikaj zahtevke žetona OIDC v uporabniška polja Booklore. Ti se morajo ujemati z zahtevki ponudnika.",
         "usernameClaim": "Zahtevek za uporabniško ime",
         "usernamePlaceholder": "npr. preferred_username",
         "emailClaim": "Zahtevek za e-pošto",
@@ -39,24 +39,24 @@
         "namePlaceholder": "npr. name"
     },
     "provisioning": {
-        "sectionTitle": "Priprava uporabnikov (User Provisioning)",
-        "sectionDesc": "Konfigurirajte, kako se ustvarijo novi uporabniki OIDC in katera dovoljenja prejmejo.",
-        "autoLabel": "Samodejna priprava uporabnikov",
+        "sectionTitle": "Ustvarjanje uporabnikov",
+        "sectionDesc": "Določi, kako se ustvarijo novi OIDC uporabniki in kakšna dovoljenja prejmejo.",
+        "autoLabel": "Samodejno ustvarjanje uporabnikov",
         "autoEnabled": "Omogočeno",
         "autoDisabled": "Onemogočeno",
-        "autoDesc": "Ko je omogočeno, se novi uporabniki ob prvi prijavi preko OIDC samodejno ustvarijo s spodnjimi dovoljenji. Ko je onemogočeno, morajo biti uporabniki v Booklore ustvarjeni ročno, preden se lahko prijavijo preko OIDC.",
+        "autoDesc": "Ko je omogočeno, se novi uporabniki ob prvi OIDC prijavi samodejno ustvarijo s spodnjimi dovoljenji. Ko je onemogočeno, moraš uporabnika v Booklore ustvariti ročno, preden se lahko prijavi prek OIDC.",
         "defaultPerms": "Privzeta dovoljenja",
         "readBooks": "Branje knjig",
         "defaultLibraryAccess": "Privzet dostop do knjižnic",
-        "selectLibraries": "Izberite knjižnice, do katerih lahko dostopajo novi uporabniki"
+        "selectLibraries": "Izberi knjižnice, do katerih lahko dostopajo novi uporabniki"
     },
     "perms": {
         "uploadBooks": "Nalaganje knjig",
         "downloadBooks": "Prenos knjig",
-        "editMetadata": "Urejanje metapodatkov knjig",
+        "editMetadata": "Urejanje metapodatkov",
         "manageLibrary": "Upravljanje knjižnice",
-        "emailBook": "Pošiljanje knjige po e-pošti",
-        "deleteBook": "Brisanje knjige",
+        "emailBook": "Pošiljanje knjig po e-pošti",
+        "deleteBook": "Brisanje knjig",
         "koreaderSync": "Sinhronizacija KOReader",
         "koboSync": "Sinhronizacija Kobo",
         "accessOpds": "Dostop do OPDS"
@@ -65,9 +65,9 @@
         "saved": "Shranjeno",
         "oidcUpdated": "OIDC nastavitev posodobljena.",
         "oidcError": "Posodobitev OIDC nastavitve ni uspela.",
-        "providerSaved": "Nastavitve ponudnika OIDC shranjene.",
+        "providerSaved": "Nastavitve ponudnika OIDC so shranjene.",
         "providerError": "Shranjevanje nastavitev ponudnika OIDC ni uspelo.",
-        "provisionSaved": "Nastavitve samodejne priprave OIDC shranjene.",
-        "provisionError": "Shranjevanje nastavitev samodejne priprave OIDC ni uspelo."
+        "provisionSaved": "Nastavitve samodejnega ustvarjanja OIDC uporabnikov so shranjene.",
+        "provisionError": "Shranjevanje nastavitev za ustvarjanje uporabnikov ni uspelo."
     }
 }

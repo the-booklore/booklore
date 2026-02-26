@@ -673,6 +673,11 @@ export class SeriesPageComponent implements OnDestroy, AfterViewChecked {
 
   lockUnlockMetadata(): void {
     this.dialogRef = this.dialogHelperService.openLockUnlockMetadataDialog(this.selectedBooks);
+    if (this.dialogRef) {
+      this.dialogRef.onClose.subscribe(() => {
+        this.deselectAllBooks();
+      });
+    }
   }
 
   autoFetchMetadata(): void {
@@ -688,11 +693,21 @@ export class SeriesPageComponent implements OnDestroy, AfterViewChecked {
   }
 
   bulkEditMetadata(): void {
-    this.dialogHelperService.openBulkMetadataEditDialog(this.selectedBooks);
+    this.dialogRef = this.dialogHelperService.openBulkMetadataEditDialog(this.selectedBooks);
+    if (this.dialogRef) {
+      this.dialogRef.onClose.subscribe(() => {
+        this.deselectAllBooks();
+      });
+    }
   }
 
   multiBookEditMetadata(): void {
-    this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
+    this.dialogRef = this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
+    if (this.dialogRef) {
+      this.dialogRef.onClose.subscribe(() => {
+        this.deselectAllBooks();
+      });
+    }
   }
 
   regenerateCoversForSelected(): void {

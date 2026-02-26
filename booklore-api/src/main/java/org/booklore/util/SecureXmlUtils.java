@@ -12,7 +12,7 @@ import javax.xml.parsers.ParserConfigurationException;
 @UtilityClass
 public class SecureXmlUtils {
 
-    public static DocumentBuilderFactory createSecureDocumentBuilderFactory(boolean namespaceAware) {
+    public static DocumentBuilderFactory createSecureDocumentBuilderFactory(boolean namespaceAware) throws ParserConfigurationException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(namespaceAware);
@@ -27,10 +27,8 @@ public class SecureXmlUtils {
             
             return factory;
         } catch (ParserConfigurationException e) {
-            log.warn("Failed to configure secure XML parser, using defaults: {}", e.getMessage());
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(namespaceAware);
-            return factory;
+            log.error("CRITICAL: Failed to configure secure XML parser: {}", e.getMessage());
+            throw e;
         }
     }
 

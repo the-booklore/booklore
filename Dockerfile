@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular app
-FROM node:22-alpine AS angular-build
+FROM node:24-alpine AS angular-build
 
 WORKDIR /angular-app
 
@@ -56,8 +56,12 @@ LABEL org.opencontainers.image.title="BookLore" \
 
 ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+UseCompactObjectHeaders -XX:MaxRAMPercentage=75.0"
 
-RUN apk update && apk add --no-cache su-exec && \
+ARG TARGETARCH
+RUN apk update && apk add --no-cache su-exec libstdc++ libgcc && \
     mkdir -p /bookdrop
+
+COPY docker/unrar/unrar-${TARGETARCH} /usr/local/bin/unrar
+RUN chmod 755 /usr/local/bin/unrar
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

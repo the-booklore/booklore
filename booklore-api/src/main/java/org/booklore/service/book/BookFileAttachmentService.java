@@ -5,6 +5,7 @@ import org.booklore.exception.ApiError;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookLoreUser;
+import org.booklore.model.dto.response.AttachBookFileResponse;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.LibraryPathEntity;
@@ -45,7 +46,7 @@ public class BookFileAttachmentService {
     private final EntityManager entityManager;
 
     @Transactional
-    public Book attachBookFiles(Long targetBookId, List<Long> sourceBookIds, boolean moveFiles) {
+    public AttachBookFileResponse attachBookFiles(Long targetBookId, List<Long> sourceBookIds, boolean moveFiles) {
         BookEntity targetBook = bookRepository.findByIdWithBookFiles(targetBookId)
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(targetBookId));
 
@@ -100,17 +101,25 @@ public class BookFileAttachmentService {
             }
         }
 
-        if (moveFiles) {
-            attachWithFileMove(targetBook, sourceBooks, targetPrimaryFile);
-        } else {
-            attachWithoutFileMove(targetBook, sourceBooks);
+        if (!moveFiles) {
+            boolean hasPathMismatch = sourceBooks.stream()
+                    .anyMatch(source -> !source.getLibraryPath().getId().equals(targetBook.getLibraryPath().getId()));
+            if (hasPathMismatch) {
+                moveFiles = true;
+            }
         }
 
-        // Return updated target book
-        return getUpdatedBook(targetBookId);
+        List<Long> deletedSourceBookIds;
+        if (moveFiles) {
+            deletedSourceBookIds = attachWithFileMove(targetBook, sourceBooks, targetPrimaryFile);
+        } else {
+            deletedSourceBookIds = attachWithoutFileMove(targetBook, sourceBooks);
+        }
+
+        return new AttachBookFileResponse(getUpdatedBook(targetBookId), deletedSourceBookIds);
     }
 
-    private void attachWithoutFileMove(BookEntity targetBook, List<BookEntity> sourceBooks) {
+    private List<Long> attachWithoutFileMove(BookEntity targetBook, List<BookEntity> sourceBooks) {
         List<Long> sourceBooksToDeleteIds = new ArrayList<>();
 
         for (BookEntity sourceBook : sourceBooks) {
@@ -140,10 +149,12 @@ public class BookFileAttachmentService {
             List<BookEntity> booksToDelete = bookRepository.findAllById(sourceBooksToDeleteIds);
             bookRepository.deleteAll(booksToDelete);
         }
+
+        return sourceBooksToDeleteIds;
     }
 
-    private void attachWithFileMove(BookEntity targetBook, List<BookEntity> sourceBooks,
-                                    BookFileEntity targetPrimaryFile) {
+    private List<Long> attachWithFileMove(BookEntity targetBook, List<BookEntity> sourceBooks,
+                                          BookFileEntity targetPrimaryFile) {
         String fileNamingPattern = fileMoveHelper.getFileNamingPattern(targetBook.getLibrary());
         String patternResolvedPath = PathPatternResolver.resolvePattern(targetBook, targetPrimaryFile, fileNamingPattern);
         Path libraryRootPath = Paths.get(targetBook.getLibraryPath().getPath());
@@ -306,6 +317,10 @@ public class BookFileAttachmentService {
                 }
             }
 
+            List<Long> deletedSourceBookIds = sourceBooksToDelete.stream()
+                    .map(BookEntity::getId)
+                    .toList();
+
             if (!sourceBooksToDelete.isEmpty()) {
                 bookRepository.deleteAll(sourceBooksToDelete);
             }
@@ -319,6 +334,8 @@ public class BookFileAttachmentService {
             for (Path sourceDir : sourceDirectoriesToCleanup) {
                 bookService.deleteEmptyParentDirsUpToLibraryFolders(sourceDir, libraryRoots);
             }
+
+            return deletedSourceBookIds;
         } finally {
             for (Path path : pathsToReregister) {
                 if (Files.exists(path) && Files.isDirectory(path)) {

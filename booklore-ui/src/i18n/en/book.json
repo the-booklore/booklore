@@ -445,6 +445,7 @@
     "statusFailed": "Failed",
     "dragDropText": "Drag and drop a file here to upload.",
     "supportedFormats": "Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+    "supplementaryAllFormats": "All file formats are supported for supplementary files.",
     "maxFileSize": "Maximum file size: {{ size }} per file",
     "uploadForBook": "Upload an additional file for <strong>{{ title }}</strong>.",
     "thisBook": "this book",

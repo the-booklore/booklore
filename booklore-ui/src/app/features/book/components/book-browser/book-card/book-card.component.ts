@@ -53,6 +53,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isSeriesCollapsed: boolean = false;
   @Input() overlayPreferenceService?: BookCardOverlayPreferenceService;
   @Input() forceEbookMode: boolean = false;
+  @Input() useSquareCovers: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
@@ -138,7 +139,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['book'] || changes['forceEbookMode']) {
+    if (changes['book'] || changes['forceEbookMode'] || changes['useSquareCovers']) {
       this.computeAllMemoizedValues();
       if (changes['book'] && !changes['book'].firstChange && this.menuInitialized) {
         this.additionalFilesLoaded = false;

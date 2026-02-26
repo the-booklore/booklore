@@ -36,6 +36,10 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
       fields: ['hardcoverId', 'hardcoverBookId', 'hardcoverRating', 'hardcoverReviewCount']
     },
     {
+      label: 'Audible',
+      fields: ['audibleId', 'audibleRating', 'audibleReviewCount']
+    },
+    {
       label: 'Comicvine',
       fields: ['comicvineId']
     },
@@ -46,10 +50,6 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
     {
       label: 'Ranobedb',
       fields: ['ranobedbId', 'ranobedbRating']
-    },
-    {
-      label: 'Audible',
-      fields: ['audibleId', 'audibleRating', 'audibleReviewCount']
     }
   ];
 

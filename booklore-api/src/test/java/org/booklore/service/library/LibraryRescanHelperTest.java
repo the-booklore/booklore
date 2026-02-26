@@ -1,6 +1,7 @@
 package org.booklore.service.library;
 
 import org.booklore.model.MetadataUpdateContext;
+import org.booklore.model.dto.AudiobookMetadata;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookEntity;
@@ -14,6 +15,7 @@ import org.booklore.model.websocket.Topic;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.service.NotificationService;
+import org.booklore.service.fileprocessor.AudiobookProcessor;
 import org.booklore.service.metadata.BookMetadataUpdater;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.task.options.RescanLibraryContext;
@@ -46,6 +48,7 @@ class LibraryRescanHelperTest {
     @Mock private NotificationService notificationService;
     @Mock private TaskCancellationManager cancellationManager;
     @Mock private BookRepository bookRepository;
+    @Mock private AudiobookProcessor audiobookProcessor;
     @InjectMocks private LibraryRescanHelper libraryRescanHelper;
 
     @Captor private ArgumentCaptor<TaskProgressPayload> payloadCaptor;
@@ -304,6 +307,71 @@ class LibraryRescanHelperTest {
 
         assertDoesNotThrow(() -> libraryRescanHelper.handleRescanOptions(rescanContext, taskId));
         verify(bookMetadataUpdater).setBookMetadata(any(MetadataUpdateContext.class));
+    }
+
+    @Test
+    void handleRescanOptions_shouldUpdateAudiobookTechnicalMetadata() {
+        BookEntity audiobookEntity = createBookEntity(3L, "audiobook.m4b", BookFileType.AUDIOBOOK);
+
+        AudiobookMetadata audiobookMeta = AudiobookMetadata.builder()
+                .durationSeconds(3600L)
+                .bitrate(128)
+                .sampleRate(44100)
+                .channels(2)
+                .codec("AAC")
+                .chapterCount(5)
+                .build();
+
+        BookMetadata metadata = new BookMetadata();
+        metadata.setTitle("Test Audiobook");
+        metadata.setAudiobookMetadata(audiobookMeta);
+
+        when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(audiobookEntity));
+        when(metadataExtractorFactory.extractMetadata(eq(BookFileType.AUDIOBOOK), any(File.class))).thenReturn(metadata);
+        when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
+
+        libraryRescanHelper.handleRescanOptions(rescanContext, taskId);
+
+        verify(bookMetadataUpdater).setBookMetadata(any(MetadataUpdateContext.class));
+        verify(audiobookProcessor).setAudiobookTechnicalMetadata(audiobookEntity, metadata);
+    }
+
+    @Test
+    void handleRescanOptions_shouldNotUpdateTechnicalMetadata_forNonAudiobooks() {
+        BookEntity epubBook = createBookEntity(1L, "book.epub", BookFileType.EPUB);
+
+        BookMetadata metadata = new BookMetadata();
+        metadata.setTitle("Epub Book");
+
+        when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(epubBook));
+        when(metadataExtractorFactory.extractMetadata(eq(BookFileType.EPUB), any(File.class))).thenReturn(metadata);
+        when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
+
+        libraryRescanHelper.handleRescanOptions(rescanContext, taskId);
+
+        verify(bookMetadataUpdater).setBookMetadata(any(MetadataUpdateContext.class));
+        verify(audiobookProcessor, never()).setAudiobookTechnicalMetadata(any(), any());
+    }
+
+    @Test
+    void handleRescanOptions_shouldSkipTechnicalMetadata_whenAudiobookMetadataNull() {
+        BookEntity audiobookEntity = createBookEntity(3L, "audiobook.m4b", BookFileType.AUDIOBOOK);
+
+        BookMetadata metadata = new BookMetadata();
+        metadata.setTitle("Audiobook Without Tech Meta");
+        metadata.setAudiobookMetadata(null);
+
+        when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(audiobookEntity));
+        when(metadataExtractorFactory.extractMetadata(eq(BookFileType.AUDIOBOOK), any(File.class))).thenReturn(metadata);
+        when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
+
+        libraryRescanHelper.handleRescanOptions(rescanContext, taskId);
+
+        verify(bookMetadataUpdater).setBookMetadata(any(MetadataUpdateContext.class));
+        verify(audiobookProcessor, never()).setAudiobookTechnicalMetadata(any(), any());
     }
 
     private BookEntity createBookEntity(Long id, String fileName, BookFileType bookType) {

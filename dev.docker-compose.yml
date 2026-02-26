@@ -4,12 +4,13 @@ services:
     command: sh -c "cd /booklore-api && ./gradlew bootRun"
     ports:
       - "${BACKEND_PORT:-6060}:6060"
-      - "${REMOTE_DEBUG_PORT:-5005}:5005"
+      - "127.0.0.1:${REMOTE_DEBUG_PORT:-5005}:5005"
     environment:
       - DATABASE_URL=jdbc:mariadb://backend_db:3306/booklore
       - DATABASE_USERNAME=booklore
       - DATABASE_PASSWORD=booklore
       - REMOTE_DEBUG_ENABLED=true
+      - ALLOWED_ORIGINS=http://localhost:4200
     stdin_open: true
     tty: true
     restart: unless-stopped
