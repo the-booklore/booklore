@@ -72,7 +72,7 @@ export class BookService {
   }
 
   private fetchBooks(): Observable<Book[]> {
-    return this.http.get<Book[]>(this.url).pipe(
+    return this.http.get<Book[]>(this.url, {params: {withDescription: true}}).pipe(
       map(bookList => {
         this.bookStateService.updateBookState({
           books: bookList,
