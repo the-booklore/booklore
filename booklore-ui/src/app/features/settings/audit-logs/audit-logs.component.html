@@ -78,7 +78,7 @@
             <tr>
               <th style="width: 120px">{{ t('columns.timestamp') }}</th>
               <th style="width: 100px">{{ t('columns.user') }}</th>
-              <th style="width: 140px">{{ t('columns.action') }}</th>
+              <th style="width: 200px">{{ t('columns.action') }}</th>
               <th>{{ t('columns.description') }}</th>
               <th style="width: 160px">{{ t('columns.ip') }}</th>
             </tr>
@@ -91,9 +91,9 @@
               </td>
               <td>{{ log.username }}</td>
               <td>
-                <span class="action-badge" [ngClass]="getActionClass(log.action)">
+                <app-tag [color]="getActionColor(log.action)" size="2xs" [rounded]="true">
                   {{ formatAction(log.action) }}
-                </span>
+                </app-tag>
               </td>
               <td class="description-cell"
                   [class.expanded]="expandedRows.has(log.id)"
