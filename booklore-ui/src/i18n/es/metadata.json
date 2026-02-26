@@ -286,6 +286,7 @@
     "audiobookSampleRate": "Frecuencia de muestreo",
     "audiobookChannels": "Canales",
     "audiobookCodec": "Códec",
+    "audiobookChapterList": "Lista de capítulos",
     "abridged": "Abreviado",
     "unabridged": "Íntegro",
     "readBtn": "Leer",

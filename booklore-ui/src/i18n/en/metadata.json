@@ -286,6 +286,7 @@
     "audiobookSampleRate": "Sample Rate",
     "audiobookChannels": "Channels",
     "audiobookCodec": "Codec",
+    "audiobookChapterList": "Chapter List",
     "abridged": "Abridged",
     "unabridged": "Unabridged",
     "readBtn": "Read",

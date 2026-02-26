@@ -97,6 +97,14 @@ export interface BookFileProgress {
   progressPercent: number;
 }
 
+export interface AudiobookChapterInfo {
+  index?: number;
+  title?: string;
+  startTimeMs?: number;
+  endTimeMs?: number;
+  durationMs?: number;
+}
+
 export interface AudiobookMetadata {
   narrator?: string;
   abridged?: boolean | null;
@@ -106,6 +114,7 @@ export interface AudiobookMetadata {
   channels?: number;
   codec?: string;
   chapterCount?: number;
+  chapters?: AudiobookChapterInfo[];
   narratorLocked?: boolean;
   abridgedLocked?: boolean;
 }
