@@ -1,19 +1,19 @@
 {
-  "title": "",
-  "description": "",
-  "sectionTitle": "",
-  "filterPlaceholder": "",
-  "userFilterPlaceholder": "",
-  "dateRangePlaceholder": "",
-  "clearFilters": "",
-  "autoRefresh": "",
-  "pageReport": "",
-  "empty": "",
-  "columns": {
-    "timestamp": "",
-    "user": "",
-    "action": "",
+    "title": "Záznamky auditu",
     "description": "",
-    "ip": ""
-  }
+    "sectionTitle": "",
+    "filterPlaceholder": "",
+    "userFilterPlaceholder": "",
+    "dateRangePlaceholder": "",
+    "clearFilters": "",
+    "autoRefresh": "",
+    "pageReport": "",
+    "empty": "",
+    "columns": {
+        "timestamp": "",
+        "user": "",
+        "action": "",
+        "description": "",
+        "ip": ""
+    }
 }

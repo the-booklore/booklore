@@ -16,13 +16,16 @@ import org.booklore.repository.BookRepository;
 import org.booklore.repository.MagicShelfRepository;
 import org.booklore.repository.UserRepository;
 import org.booklore.service.BookRuleEvaluatorService;
+import org.booklore.service.restriction.ContentRestrictionService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +40,7 @@ public class MagicShelfBookService {
     private final UserRepository userRepository;
     private final BookLoreUserTransformer bookLoreUserTransformer;
     private final BookRuleEvaluatorService ruleEvaluatorService;
+    private final ContentRestrictionService contentRestrictionService;
     private final ObjectMapper objectMapper;
 
     public Page<Book> getBooksByMagicShelfId(Long userId, Long magicShelfId, int page, int size) {
@@ -49,7 +53,12 @@ public class MagicShelfBookService {
 
             Page<BookEntity> booksPage = bookRepository.findAll(specification, pageable);
 
-            return booksPage.map(bookMapper::toBook).map(book -> filterBook(book, userId));
+            List<BookEntity> filteredEntities = contentRestrictionService.applyRestrictions(booksPage.getContent(), userId);
+            List<Book> books = filteredEntities.stream()
+                    .map(bookMapper::toBook)
+                    .map(book -> filterBook(book, userId))
+                    .toList();
+            return new PageImpl<>(books, pageable, booksPage.getTotalElements());
         } catch (Exception e) {
             log.error("Failed to parse or execute magic shelf rules", e);
             throw new RuntimeException("Failed to parse or execute magic shelf rules: " + e.getMessage(), e);

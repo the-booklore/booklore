@@ -57,11 +57,6 @@ public class FileService {
         TARGET_HOST_THREAD_LOCAL.remove();
     }
 
-    static {
-        // Enable restricted headers to allow 'Host' header override for DNS rebinding protection
-        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-    }
-
     private final AppProperties appProperties;
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
@@ -168,6 +163,10 @@ public class FileService {
 
     public String getToolsKepubifyPath() {
         return Paths.get(appProperties.getPathConfig(), "tools", "kepubify").toString();
+    }
+
+    public String getToolsFfprobePath() {
+        return Paths.get(appProperties.getPathConfig(), "tools", "ffprobe").toString();
     }
 
 

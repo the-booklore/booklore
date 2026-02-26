@@ -23,6 +23,7 @@
   <p-select
     [options]="fileTypeOptions"
     [(ngModel)]="fileType"
+    (ngModelChange)="onFileTypeChange()"
     optionLabel="label"
     optionValue="value"
     [placeholder]="t('selectFileType')"
@@ -34,7 +35,7 @@
   <p-fileupload class="file-upload" name="file"
     [customUpload]="true"
     [multiple]="false"
-    accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2,.mobi,.azw,.azw3,.m4b,.m4a,.mp3"
+    [accept]="acceptedFormats"
     (onSelect)="onFilesSelect($event)"
     (uploadHandler)="uploadFiles($event)"
     [disabled]="isUploading">
@@ -123,8 +124,13 @@
         <i class="pi pi-cloud-upload empty-icon"></i>
         <p class="empty-text">{{ t('dragDropText') }}</p>
         <p class="empty-subtext">
-          <span [innerHTML]="t('supportedFormats')"></span>
-          <br/>
+          @if (fileType === AdditionalFileType.ALTERNATIVE_FORMAT) {
+            <span [innerHTML]="t('supportedFormats')"></span>
+            <br/>
+          } @else {
+            <span>{{ t('supplementaryAllFormats') }}</span>
+            <br/>
+          }
           {{ t('maxFileSize', { size: maxFileSizeDisplay }) }}
         </p>
       </div>

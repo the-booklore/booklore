@@ -144,16 +144,7 @@ export class BookBrowserEntityService {
   }
 
   private fetchShelfBooks(shelfId: number, sortOption: SortOption): Observable<BookState> {
-    return this.shelfService.getBooksOnShelf(shelfId).pipe(
-      map(books => {
-        const sortedBooks = this.sortService.applySort(books, sortOption);
-        return {
-          books: sortedBooks,
-          loaded: true,
-          error: null
-        };
-      })
-    );
+    return this.fetchBooks(book => book.shelves?.some(s => s.id === shelfId) ?? false, sortOption);
   }
 
   private fetchMagicShelfBooks(magicShelfId: number, sortOption: SortOption): Observable<BookState> {

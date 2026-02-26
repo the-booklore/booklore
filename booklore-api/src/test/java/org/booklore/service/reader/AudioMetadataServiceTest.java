@@ -1,11 +1,14 @@
 package org.booklore.service.reader;
 
+import org.booklore.model.dto.AudiobookMetadata;
 import org.booklore.model.dto.response.AudiobookChapter;
 import org.booklore.model.dto.response.AudiobookInfo;
 import org.booklore.model.dto.response.AudiobookTrack;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.repository.BookFileRepository;
+import org.booklore.service.metadata.extractor.AudiobookMetadataExtractor;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -23,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,6 +40,12 @@ class AudioMetadataServiceTest {
 
     @Mock
     AudioFileUtilityService audioFileUtility;
+
+    @Mock
+    AudiobookMetadataExtractor audiobookMetadataExtractor;
+
+    @Mock
+    BookFileRepository bookFileRepository;
 
     @InjectMocks
     AudioMetadataService audioMetadataService;
@@ -557,5 +567,125 @@ class AudioMetadataServiceTest {
             AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
             assertNull(info.getBitrate());
         }
+    }
+
+    @Test
+    void getMetadata_backfillsChapters_whenDbHasMetadataButNoChapters() throws Exception {
+        bookFileEntity.setDurationSeconds(3600L);
+        bookFileEntity.setBitrate(192);
+        bookFileEntity.setChapters(null);
+
+        var bookMetadata = new BookMetadataEntity();
+        bookMetadata.setTitle("Test Book");
+        bookEntity.setMetadata(bookMetadata);
+
+        List<AudiobookMetadata.ChapterInfo> extractedChapters = List.of(
+                AudiobookMetadata.ChapterInfo.builder()
+                        .index(0).title("Chapter 1").startTimeMs(0L).endTimeMs(1800000L).durationMs(1800000L).build(),
+                AudiobookMetadata.ChapterInfo.builder()
+                        .index(1).title("Chapter 2").startTimeMs(1800000L).endTimeMs(3600000L).durationMs(1800000L).build()
+        );
+        when(audiobookMetadataExtractor.extractChaptersFromFile(any(File.class))).thenReturn(extractedChapters);
+
+        AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
+
+        assertNotNull(info.getChapters());
+        assertEquals(2, info.getChapters().size());
+        assertEquals("Chapter 1", info.getChapters().get(0).getTitle());
+        assertEquals("Chapter 2", info.getChapters().get(1).getTitle());
+
+        verify(bookFileRepository).save(bookFileEntity);
+        assertNotNull(bookFileEntity.getChapters());
+        assertEquals(2, bookFileEntity.getChapters().size());
+        assertEquals(2, bookFileEntity.getChapterCount());
+    }
+
+    @Test
+    void getMetadata_backfillFallsBackToFullAudiobook_whenExtractorReturnsNull() throws Exception {
+        bookFileEntity.setDurationSeconds(7200L);
+        bookFileEntity.setChapters(null);
+
+        var bookMetadata = new BookMetadataEntity();
+        bookEntity.setMetadata(bookMetadata);
+
+        when(audiobookMetadataExtractor.extractChaptersFromFile(any(File.class))).thenReturn(null);
+
+        AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
+
+        assertNotNull(info.getChapters());
+        assertEquals(1, info.getChapters().size());
+        assertEquals("Full Audiobook", info.getChapters().get(0).getTitle());
+        assertEquals(7200000L, info.getChapters().get(0).getEndTimeMs());
+
+        verify(bookFileRepository).save(bookFileEntity);
+    }
+
+    @Test
+    void getMetadata_extractSingleFile_usesRealChapterExtraction() throws Exception {
+        AudioFile audioFile = mock(AudioFile.class);
+        AudioHeader header = mock(AudioHeader.class);
+
+        when(audioFile.getAudioHeader()).thenReturn(header);
+        when(audioFile.getTag()).thenReturn(null);
+        when(header.getPreciseTrackLength()).thenReturn(3600.0);
+
+        List<AudiobookMetadata.ChapterInfo> extractedChapters = List.of(
+                AudiobookMetadata.ChapterInfo.builder()
+                        .index(0).title("Intro").startTimeMs(0L).endTimeMs(600000L).durationMs(600000L).build(),
+                AudiobookMetadata.ChapterInfo.builder()
+                        .index(1).title("Part One").startTimeMs(600000L).endTimeMs(3600000L).durationMs(3000000L).build()
+        );
+        when(audiobookMetadataExtractor.extractChaptersFromFile(any(File.class))).thenReturn(extractedChapters);
+
+        try (MockedStatic<AudioFileIO> audioFileIOMock = mockStatic(AudioFileIO.class)) {
+            audioFileIOMock.when(() -> AudioFileIO.read(audioPath.toFile())).thenReturn(audioFile);
+
+            AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
+
+            assertNotNull(info.getChapters());
+            assertEquals(2, info.getChapters().size());
+            assertEquals("Intro", info.getChapters().get(0).getTitle());
+            assertEquals("Part One", info.getChapters().get(1).getTitle());
+        }
+    }
+
+    @Test
+    void getMetadata_extractSingleFile_fallsBackWhenExtractionReturnsEmpty() throws Exception {
+        AudioFile audioFile = mock(AudioFile.class);
+        AudioHeader header = mock(AudioHeader.class);
+
+        when(audioFile.getAudioHeader()).thenReturn(header);
+        when(audioFile.getTag()).thenReturn(null);
+        when(header.getPreciseTrackLength()).thenReturn(5400.0);
+
+        when(audiobookMetadataExtractor.extractChaptersFromFile(any(File.class))).thenReturn(List.of());
+
+        try (MockedStatic<AudioFileIO> audioFileIOMock = mockStatic(AudioFileIO.class)) {
+            audioFileIOMock.when(() -> AudioFileIO.read(audioPath.toFile())).thenReturn(audioFile);
+
+            AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
+
+            assertNotNull(info.getChapters());
+            assertEquals(1, info.getChapters().size());
+            assertEquals("Full Audiobook", info.getChapters().get(0).getTitle());
+            assertEquals(5400000L, info.getChapters().get(0).getDurationMs());
+        }
+    }
+
+    @Test
+    void getMetadata_backfillSurvivesExtractionException() throws Exception {
+        bookFileEntity.setDurationSeconds(1800L);
+        bookFileEntity.setChapters(null);
+
+        var bookMetadata = new BookMetadataEntity();
+        bookEntity.setMetadata(bookMetadata);
+
+        when(audiobookMetadataExtractor.extractChaptersFromFile(any(File.class)))
+                .thenThrow(new RuntimeException("ffprobe failed"));
+
+        AudiobookInfo info = audioMetadataService.getMetadata(bookFileEntity, audioPath);
+
+        assertNotNull(info);
+        verify(bookFileRepository, never()).save(any());
     }
 }

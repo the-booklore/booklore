@@ -312,6 +312,7 @@
                         [isSeriesCollapsed]="seriesCollapseFilter.isSeriesCollapsed"
                         (checkboxClick)="onCheckboxClicked($event)"
                         [isSelected]="selectedBooks.has(book.id)"
+                        [useSquareCovers]="isAudiobookOnlyLibrary"
                         [overlayPreferenceService]="bookCardOverlayPreferenceService">
                       </app-book-card>
                     </div>

@@ -1,43 +1,43 @@
 {
-    "title": "Globalne nastavitve",
-    "description": "Konfigurirajte globalne nastavitve za svojo instanco Booklore, vključno z upravljanjem naslovnic, preferencami iskanja in omejitvami nalaganja datotek.",
+    "title": "Splošne nastavitve",
+    "description": "Konfiguriraj splošne nastavitve za svojo instanco Booklore, vključno z upravljanjem naslovnic, nastavitvami iskanja in omejitvami nalaganja datotek.",
     "covers": {
         "sectionTitle": "Naslovnica knjige",
         "regenerate": "Ponovno ustvari naslovnice",
         "regenerateBtn": "Ponovno ustvari",
-        "regenerateDesc": "Ponovno ustvari slike naslovnic za vse knjige iz vgrajenih naslovnic v datoteki.",
-        "regenerateStarted": "Ponovno ustvarjanje naslovnic se je začelo",
-        "regenerateStartedDetail": "Naslovnice knjig se ponovno ustvarjajo.",
-        "regenerateError": "Niso bilo mogoče začeti ponovnega ustvarjanja naslovnic.",
+        "regenerateDesc": "Ponovno ustvari slike naslovnic za vse knjige iz vgrajenih slik v datotekah.",
+        "regenerateStarted": "Ustvarjanje naslovnic se je začelo",
+        "regenerateStartedDetail": "Slike naslovnic se trenutno ponovno ustvarjajo.",
+        "regenerateError": "Ponovnega ustvarjanja naslovnic ni bilo mogoče zagnati.",
         "verticalCropping": "Navpično obrezovanje naslovnic",
-        "verticalCroppingDesc": "Samodejno obreži izjemno visoke slike (kot so spletni stripi) z vrha, da ustvariš uporabne sličice naslovnic.",
+        "verticalCroppingDesc": "Samodejno obreži izjemno visoke slike (npr. spletni stripi) z vrha, da ustvariš uporabne sličice naslovnic.",
         "horizontalCropping": "Vodoravno obrezovanje naslovnic",
         "horizontalCroppingDesc": "Samodejno obreži izjemno široke slike z leve strani, da ustvariš uporabne sličice naslovnic.",
         "aspectRatio": "Prag razmerja stranic: {{value}}",
-        "aspectRatioDesc": "Slike z razmerjem stranic, ki presega ta prag, bodo obrezane. Vrednost 2,5 pomeni, da bodo slike, ki so več kot 2,5-krat višje (ali širše) od običajnih, obrezane.",
+        "aspectRatioDesc": "Slike, ki presegajo to razmerje stranic, bodo obrezane. Vrednost 2.5 pomeni, da bodo obrezane slike, ki so več kot 2,5-krat višje (ali širše) od običajnih.",
         "smartCropping": "Pametno obrezovanje",
-        "smartCroppingDesc": "Preskoči enobarvna območja pri določanju mesta obrezovanja. Osredotoči sliko naslovnice na najpomembnejšo vsebino."
+        "smartCroppingDesc": "Preskoči enobarvne regije pri določanju mesta obreza. Fokusira naslovnico na najbolj relevantno vsebino."
     },
     "search": {
         "sectionTitle": "Iskanje in priporočila",
         "autoBookSearch": "Samodejno iskanje knjig",
-        "autoBookSearchDesc": "Samodejno poskusi ujemati metapodatke, ko je odprta plošča z informacijami o knjigi.",
+        "autoBookSearchDesc": "Samodejno poskusi poiskati ujemajoče se metapodatke, ko odpreš ploščo z informacijami o knjigi.",
         "similarBook": "Priporočila podobnih knjig",
-        "similarBookDesc": "Omogoči ali onemogoči priporočila podobnih knjig na podlagi vaše knjižnice."
+        "similarBookDesc": "Omogoči ali onemogoči priporočila podobnih knjig na podlagi tvoje knjižnice."
     },
     "fileManagement": {
         "sectionTitle": "Upravljanje datotek",
         "maxUploadSize": "Največja velikost naložene datoteke",
         "maxUploadPlaceholder": "Največja velikost",
         "maxUploadDesc": "Določa največjo dovoljeno velikost (v MB) za vsako naloženo datoteko. Velja za formate EPUB, PDF, CBZ, CBR in CB7.",
-        "restartWarning": "Spremembe bodo začele veljati po ponovnem zagonu strežnika",
+        "restartWarning": "Spremembe bodo stopile v veljavo po ponovnem zagonu strežnika",
         "invalidInput": "Neveljaven vnos",
-        "invalidInputDetail": "Prosimo, vnesite veljavno največjo velikost datoteke v MB."
+        "invalidInputDetail": "Prosim, vnesi veljavno največjo velikost datoteke v MB."
     },
     "telemetry": {
         "sectionTitle": "Telemetrija",
         "enableTelemetry": "Omogoči telemetrijo",
-        "telemetryDesc": "Pomagajte izboljšati Booklore z deljenjem anonimnih statistik uporabe. Ti podatki razvijalcem omogočajo vpogled v to, katere funkcije se najpogosteje uporabljajo, prepoznavanje hroščev in težav z zmogljivostjo, da vedo, na čem delati naprej. Osebni podatki, vsebina knjig ali kateri koli prepoznavni podatki se nikoli ne pošiljajo. Podatki se samodejno pošljejo na strežnik Booklore enkrat vsakih 24 ur. To je popolnoma varno in zelo koristno za razvijalce."
+        "telemetryDesc": "Pomagaj izboljšati Booklore z deljenjem anonimnih statistik uporabe. Ti podatki razvijalcem omogočajo vpogled v to, katere funkcije so najbolj uporabljene, prepoznavanje hroščev in težav z zmogljivostjo. Osebni podatki, vsebina knjig ali kateri koli drugi identifikacijski podatki se nikoli ne pošiljajo. Podatki se samodejno pošljejo na strežnik Booklore enkrat na 24 ur. To je popolnoma varno in zelo v pomoč razvijalcem."
     },
     "settingsSaved": "Nastavitve shranjene",
     "settingsSavedDetail": "Nastavitve so bile uspešno shranjene!",

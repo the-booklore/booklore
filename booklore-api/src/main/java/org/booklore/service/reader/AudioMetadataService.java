@@ -1,10 +1,13 @@
 package org.booklore.service.reader;
 
+import org.booklore.model.dto.AudiobookMetadata;
 import org.booklore.model.dto.response.AudiobookChapter;
 import org.booklore.model.dto.response.AudiobookInfo;
 import org.booklore.model.dto.response.AudiobookTrack;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookMetadataEntity;
+import org.booklore.repository.BookFileRepository;
+import org.booklore.service.metadata.extractor.AudiobookMetadataExtractor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jaudiotagger.audio.AudioFile;
@@ -15,6 +18,7 @@ import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.images.Artwork;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +31,8 @@ import java.util.stream.Collectors;
 public class AudioMetadataService {
 
     private final AudioFileUtilityService audioFileUtility;
+    private final AudiobookMetadataExtractor audiobookMetadataExtractor;
+    private final BookFileRepository bookFileRepository;
 
     public AudiobookInfo getMetadata(BookFileEntity bookFile, Path audioPath) throws Exception {
         if (bookFile.isFolderBased()) {
@@ -64,6 +70,8 @@ public class AudioMetadataService {
                                 .build())
                         .collect(Collectors.toList());
                 builder.chapters(chapters);
+            } else {
+                backfillChapters(bookFile, audioPath, builder);
             }
 
             if (metadata != null) {
@@ -222,17 +230,61 @@ public class AudioMetadataService {
                     .narrator(getTagValue(tag, FieldKey.COMPOSER));
         }
 
-        List<AudiobookChapter> chapters = new ArrayList<>();
-        chapters.add(AudiobookChapter.builder()
-                .index(0)
-                .title("Full Audiobook")
-                .startTimeMs(0L)
-                .endTimeMs(durationMs)
-                .durationMs(durationMs)
-                .build());
+        List<AudiobookChapter> chapters = extractChaptersFromFile(audioPath.toFile(), durationMs);
         builder.chapters(chapters);
 
         return builder.build();
+    }
+
+    private void backfillChapters(BookFileEntity bookFile, Path audioPath, AudiobookInfo.AudiobookInfoBuilder builder) {
+        try {
+            List<AudiobookChapter> chapters = extractChaptersFromFile(
+                    audioPath.toFile(),
+                    bookFile.getDurationSeconds() != null ? bookFile.getDurationSeconds() * 1000 : 0
+            );
+            builder.chapters(chapters);
+
+            List<BookFileEntity.AudioFileChapter> entityChapters = chapters.stream()
+                    .map(ch -> BookFileEntity.AudioFileChapter.builder()
+                            .index(ch.getIndex())
+                            .title(ch.getTitle())
+                            .startTimeMs(ch.getStartTimeMs())
+                            .endTimeMs(ch.getEndTimeMs())
+                            .durationMs(ch.getDurationMs())
+                            .build())
+                    .collect(Collectors.toList());
+            bookFile.setChapters(entityChapters);
+            bookFile.setChapterCount(entityChapters.size());
+            bookFileRepository.save(bookFile);
+            log.info("Backfilled {} chapters for audiobook file id={}", entityChapters.size(), bookFile.getId());
+        } catch (Exception e) {
+            log.debug("Failed to backfill chapters for audiobook file id={}: {}", bookFile.getId(), e.getMessage());
+        }
+    }
+
+    private List<AudiobookChapter> extractChaptersFromFile(File audioFile, long fallbackDurationMs) {
+        List<AudiobookMetadata.ChapterInfo> extracted = audiobookMetadataExtractor.extractChaptersFromFile(audioFile);
+        if (extracted != null && !extracted.isEmpty()) {
+            return extracted.stream()
+                    .map(ch -> AudiobookChapter.builder()
+                            .index(ch.getIndex())
+                            .title(ch.getTitle())
+                            .startTimeMs(ch.getStartTimeMs())
+                            .endTimeMs(ch.getEndTimeMs())
+                            .durationMs(ch.getDurationMs())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        List<AudiobookChapter> fallback = new ArrayList<>();
+        fallback.add(AudiobookChapter.builder()
+                .index(0)
+                .title("Full Audiobook")
+                .startTimeMs(0L)
+                .endTimeMs(fallbackDurationMs)
+                .durationMs(fallbackDurationMs)
+                .build());
+        return fallback;
     }
 
     public byte[] getEmbeddedCoverArt(Path audioPath) {
