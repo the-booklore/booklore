@@ -441,3 +441,8 @@ export interface DuplicateGroup {
   matchReason: string;
   books: Book[];
 }
+
+export interface DetachBookFileResponse {
+  sourceBook: Book;
+  newBook: Book;
+}

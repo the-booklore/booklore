@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {Observable, throwError} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {catchError, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, DuplicateDetectionRequest, DuplicateGroup} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, DetachBookFileResponse, DuplicateDetectionRequest, DuplicateGroup} from '../model/book.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
@@ -206,6 +206,37 @@ export class BookFileService {
     ].find((f: AdditionalFile) => f.id === fileId);
     const downloadUrl = `${this.url}/${book.id}/files/${fileId}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile?.fileName ?? 'file');
+  }
+
+  detachBookFile(bookId: number, fileId: number, copyMetadata: boolean): Observable<DetachBookFileResponse> {
+    return this.http.post<DetachBookFileResponse>(`${this.url}/${bookId}/files/${fileId}/detach`, { copyMetadata }).pipe(
+      tap(response => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        let updatedBooks = (currentState.books || []).map(book =>
+          book.id === bookId ? response.sourceBook : book
+        );
+        updatedBooks = [...updatedBooks, response.newBook];
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: this.t.translate('metadata.viewer.toast.detachFileSuccessSummary'),
+          detail: this.t.translate('metadata.viewer.toast.detachFileSuccessDetail')
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.t.translate('metadata.viewer.toast.detachFileErrorSummary'),
+          detail: error?.error?.message || error?.message || this.t.translate('metadata.viewer.toast.detachFileErrorDetail')
+        });
+        return throwError(() => error);
+      })
+    );
   }
 
   findDuplicates(request: DuplicateDetectionRequest): Observable<DuplicateGroup[]> {

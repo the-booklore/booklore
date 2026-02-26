@@ -262,8 +262,11 @@ public class SecurityConfig {
                     protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
                         super.prepareConnection(connection, httpMethod);
                         connection.setInstanceFollowRedirects(false);
+                        String targetHost = FileService.getTargetHost();
+                        if (targetHost != null) {
+                            connection.setRequestProperty("Host", targetHost);
+                        }
                         if (connection instanceof HttpsURLConnection httpsConnection) {
-                            String targetHost = FileService.getTargetHost();
                             if (targetHost != null) {
                                 // Set original host for SNI (even if connecting to IP)
                                 SSLSocketFactory defaultFactory = httpsConnection.getSSLSocketFactory();

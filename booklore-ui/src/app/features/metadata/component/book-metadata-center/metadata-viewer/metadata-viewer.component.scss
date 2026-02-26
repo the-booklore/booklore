@@ -1184,3 +1184,15 @@
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
+
+.detach-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .detach-dialog-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
