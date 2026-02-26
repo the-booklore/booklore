@@ -331,8 +331,8 @@ public class BookMetadataEntity {
     @JsonIgnore
     private BookEntity book;
 
-    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", referencedColumnName = "book_id", insertable = false, updatable = false)
+    @OneToOne(mappedBy = "bookMetadata", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true, fetch = FetchType.LAZY)
+    @PrimaryKeyJoinColumn
     private ComicMetadataEntity comicMetadata;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
