@@ -44,7 +44,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   protected urlHelper = inject(UrlHelperService);
   private readonly t = inject(TranslocoService);
   private readonly searchPrefService = inject(SearchPreferenceService);
-  private headerFilter = new HeaderFilter(this.#searchSubject.asObservable());
+  private headerFilter = new HeaderFilter(this.#searchSubject.asObservable(), () => this.searchMode);
 
   get searchMode(): SearchTriggerMode {
     return this.searchPrefService.mode;
@@ -53,7 +53,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.#subscription = this.bookService.bookState$.pipe(
       switchMap(bookState => this.headerFilter.filter(bookState)),
-      catchError(() => of({books: [], loaded: true, error: null}))
+      catchError(() => of({ books: [], loaded: true, error: null }))
     ).subscribe({
       next: (filteredState) => {
         const term = this.searchQuery.trim();
@@ -89,7 +89,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && this.searchMode === 'enter') {
+    if (event.key === 'Enter' && this.searchMode === 'button') {
       this.triggerSearch();
     }
   }
@@ -101,7 +101,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   onBookClick(book: Book): void {
     this.clearSearch();
     this.router.navigate(['/book', book.id], {
-      queryParams: {tab: 'view'}
+      queryParams: { tab: 'view' }
     });
   }
 

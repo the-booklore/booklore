@@ -172,7 +172,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   protected moreActionsMenuItems: MenuItem[] | undefined;
 
   private sideBarFilter = new SideBarFilter(this.selectedFilter, this.selectedFilterMode);
-  private headerFilter = new HeaderFilter(this.searchTerm$);
+  private headerFilter = new HeaderFilter(this.searchTerm$, () => this.searchMode);
   protected bookSorter = new BookSorter(
     sortCriteria => this.onMultiSortChange(sortCriteria),
     this.t
@@ -782,7 +782,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && this.searchMode === 'enter') {
+    if (event.key === 'Enter' && this.searchMode === 'button') {
       this.triggerSearch();
     }
   }

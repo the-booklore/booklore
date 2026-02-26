@@ -3,9 +3,14 @@ import {BookState} from '../../../model/state/book-state.model';
 import {Observable, of} from 'rxjs';
 import {map, debounceTime, distinctUntilChanged, switchMap} from 'rxjs/operators';
 
+import { SearchTriggerMode } from '../../../../../shared/service/search-preference.service';
+
 export class HeaderFilter implements BookFilter {
 
-  constructor(private searchTerm$: Observable<string>) {
+  constructor(
+    private searchTerm$: Observable<string>,
+    private modeFn: () => SearchTriggerMode = () => 'instant'
+  ) {
   }
 
   filter(bookState: BookState): Observable<BookState> {
@@ -31,7 +36,7 @@ export class HeaderFilter implements BookFilter {
           return of(bookState);
         }
         return of(normalizedTerm).pipe(
-          debounceTime(500),
+          switchMap(nTerm => this.modeFn() === 'instant' ? of(nTerm).pipe(debounceTime(500)) : of(nTerm)),
           map(nTerm => {
             const filteredBooks = bookState.books?.filter(book => {
               const title = book.metadata?.title || '';

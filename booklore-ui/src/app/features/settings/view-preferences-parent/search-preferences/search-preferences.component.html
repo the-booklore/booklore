@@ -29,14 +29,6 @@
             <button
               type="button"
               class="option-button"
-              [class.selected]="selectedMode === 'enter'"
-              (click)="onModeChange('enter')">
-              <i class="pi pi-sign-in"></i>
-              <span class="option-text">{{ t('modeEnter') }}</span>
-            </button>
-            <button
-              type="button"
-              class="option-button"
               [class.selected]="selectedMode === 'button'"
               (click)="onModeChange('button')">
               <i class="pi pi-search"></i>

@@ -1,182 +1,155 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {TestBed} from '@angular/core/testing';
-import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/service/search-preference.service';
-import {LocalStorageService} from '../../../../shared/service/local-storage.service';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { BookSearcherComponent } from './book-searcher.component';
+import { SearchPreferenceService } from '../../../../shared/service/search-preference.service';
+import { BookService } from '../../service/book.service';
+import { Router } from '@angular/router';
+import { UrlHelperService } from '../../../../shared/service/url-helper.service';
+import { TranslocoService, TranslocoTestingModule } from '@jsverse/transloco';
+import { BehaviorSubject, Subject, of } from 'rxjs';
+import { BookState } from '../../model/state/book-state.model';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { Book } from '../../model/book.model';
 
-/**
- * Tests for the search trigger mode behavior used in BookSearcherComponent.
- * We test the logic directly (mirroring the component methods) rather than
- * rendering the full component template, to avoid deep DI chains.
- */
-describe('BookSearcherComponent search trigger logic', () => {
-  let searchPrefService: SearchPreferenceService;
+describe('BookSearcherComponent', () => {
+  let component: BookSearcherComponent;
+  let fixture: ComponentFixture<BookSearcherComponent>;
+  let mockSearchPrefService: any;
+  let mockBookService: any;
+  let mockRouter: any;
+  let bookStateSubject: BehaviorSubject<BookState>;
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
+  beforeEach(async () => {
+    bookStateSubject = new BehaviorSubject<BookState>({ books: [], loaded: true, error: null });
+
+    mockBookService = {
+      bookState$: bookStateSubject.asObservable()
+    };
+
+    mockSearchPrefService = {
+      mode: 'instant',
+      setMode: vi.fn((m) => { mockSearchPrefService.mode = m; })
+    };
+
+    mockRouter = {
+      navigate: vi.fn()
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [BookSearcherComponent, TranslocoTestingModule.forRoot({ langs: {} })],
       providers: [
-        SearchPreferenceService,
-        {
-          provide: LocalStorageService,
-          useValue: {
-            get: vi.fn(() => null),
-            set: vi.fn(),
-          },
-        },
-      ],
-    });
+        { provide: SearchPreferenceService, useValue: mockSearchPrefService },
+        { provide: BookService, useValue: mockBookService },
+        { provide: Router, useValue: mockRouter },
+        { provide: UrlHelperService, useValue: { getThumbnailUrl: vi.fn() } }
+      ]
+    }).compileComponents();
 
-    searchPrefService = TestBed.inject(SearchPreferenceService);
+    fixture = TestBed.createComponent(BookSearcherComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
   });
 
-  function createComponentLogic() {
-    let lastEmittedTerm: string | null = null;
-    const emitSearch = (term: string) => {
-      lastEmittedTerm = term;
-    };
-
-    return {
-      searchQuery: '',
-      books: [] as any[],
-
-      get searchMode(): SearchTriggerMode {
-        return searchPrefService.mode;
-      },
-
-      onSearchInputChange() {
-        if (this.searchMode === 'instant') {
-          emitSearch(this.searchQuery.trim());
-        }
-      },
-
-      triggerSearch() {
-        emitSearch(this.searchQuery.trim());
-      },
-
-      onSearchKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter' && this.searchMode === 'enter') {
-          this.triggerSearch();
-        }
-      },
-
-      clearSearch() {
-        this.searchQuery = '';
-        this.books = [];
-      },
-
-      getLastEmittedTerm: () => lastEmittedTerm,
-    };
-  }
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('instant mode (default)', () => {
     beforeEach(() => {
-      searchPrefService.setMode('instant');
+      mockSearchPrefService.mode = 'instant';
     });
 
-    it('should emit search term on input change', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'test query';
-      comp.onSearchInputChange();
-      expect(comp.getLastEmittedTerm()).toBe('test query');
+    it('should filter books on input change dynamically', () => {
+      vi.useFakeTimers();
+      bookStateSubject.next({ books: [{ id: 1, metadata: { title: 'Test Book' } } as Book], loaded: true, error: null });
+
+      component.searchQuery = 'Test';
+      component.onSearchInputChange();
+      vi.advanceTimersByTime(600);
+      fixture.detectChanges();
+
+      expect(component.books.length).toBe(1);
+      vi.useRealTimers();
     });
 
-    it('should not trigger search on Enter key', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'test';
-      const event = new KeyboardEvent('keydown', {key: 'Enter'});
-      comp.onSearchKeydown(event);
-      expect(comp.getLastEmittedTerm()).toBeNull();
-    });
-
-    it('should trim whitespace from search query', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = '  hello  ';
-      comp.onSearchInputChange();
-      expect(comp.getLastEmittedTerm()).toBe('hello');
-    });
-  });
-
-  describe('enter mode', () => {
-    beforeEach(() => {
-      searchPrefService.setMode('enter');
-    });
-
-    it('should NOT emit search term on input change', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'test query';
-      comp.onSearchInputChange();
-      expect(comp.getLastEmittedTerm()).toBeNull();
-    });
-
-    it('should trigger search on Enter key', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'search term';
-      const event = new KeyboardEvent('keydown', {key: 'Enter'});
-      comp.onSearchKeydown(event);
-      expect(comp.getLastEmittedTerm()).toBe('search term');
-    });
-
-    it('should NOT trigger search on non-Enter keys', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'test';
-      comp.onSearchKeydown(new KeyboardEvent('keydown', {key: 'a'}));
-      expect(comp.getLastEmittedTerm()).toBeNull();
-
-      comp.onSearchKeydown(new KeyboardEvent('keydown', {key: 'Tab'}));
-      expect(comp.getLastEmittedTerm()).toBeNull();
+    it('should not do anything special on Enter key', () => {
+      component.searchQuery = 'test';
+      const emitSpy = vi.spyOn(component, 'triggerSearch');
+      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+      component.onSearchKeydown(event);
+      expect(emitSpy).not.toHaveBeenCalled();
     });
   });
 
   describe('button mode', () => {
     beforeEach(() => {
-      searchPrefService.setMode('button');
+      mockSearchPrefService.mode = 'button';
     });
 
-    it('should NOT emit search term on input change', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'test query';
-      comp.onSearchInputChange();
-      expect(comp.getLastEmittedTerm()).toBeNull();
+    it('should NOT trigger search on input change', () => {
+      vi.useFakeTimers();
+      bookStateSubject.next({ books: [{ id: 1, metadata: { title: 'Test Book' } } as Book], loaded: true, error: null });
+      component.searchQuery = 'Test';
+      component.onSearchInputChange();
+      vi.advanceTimersByTime(600);
+      fixture.detectChanges();
+
+      expect(component.books.length).toBe(0);
+      vi.useRealTimers();
     });
 
-    it('should NOT trigger search on Enter key', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'test';
-      const event = new KeyboardEvent('keydown', {key: 'Enter'});
-      comp.onSearchKeydown(event);
-      expect(comp.getLastEmittedTerm()).toBeNull();
+    it('should trigger search on Enter key', () => {
+      vi.useFakeTimers();
+      bookStateSubject.next({ books: [{ id: 1, metadata: { title: 'Test Book' } } as Book], loaded: true, error: null });
+      component.searchQuery = 'Test';
+      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+      component.onSearchKeydown(event);
+      vi.advanceTimersByTime(600);
+      fixture.detectChanges();
+
+      expect(component.books.length).toBe(1);
+      vi.useRealTimers();
+    });
+
+    it('should NOT trigger search on non-Enter keys', () => {
+      const emitSpy = vi.spyOn(component, 'triggerSearch');
+      component.searchQuery = 'test';
+      component.onSearchKeydown(new KeyboardEvent('keydown', { key: 'a' }));
+      expect(emitSpy).not.toHaveBeenCalled();
+
+      component.onSearchKeydown(new KeyboardEvent('keydown', { key: 'Tab' }));
+      expect(emitSpy).not.toHaveBeenCalled();
     });
 
     it('should trigger search via triggerSearch method', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'button search';
-      comp.triggerSearch();
-      expect(comp.getLastEmittedTerm()).toBe('button search');
+      vi.useFakeTimers();
+      bookStateSubject.next({ books: [{ id: 1, metadata: { title: 'Test Book' } } as Book], loaded: true, error: null });
+      component.searchQuery = 'Test';
+      component.triggerSearch();
+      vi.advanceTimersByTime(600);
+      fixture.detectChanges();
+
+      expect(component.books.length).toBe(1);
+      vi.useRealTimers();
     });
   });
 
   describe('clearSearch', () => {
     it('should clear the search query and results', () => {
-      const comp = createComponentLogic();
-      comp.searchQuery = 'some text';
-      comp.books = [{id: 1} as any];
-      comp.clearSearch();
-      expect(comp.searchQuery).toBe('');
-      expect(comp.books).toEqual([]);
+      component.searchQuery = 'some text';
+      component.books = [{ id: 1 } as any];
+      component.clearSearch();
+      expect(component.searchQuery).toBe('');
+      expect(component.books.length).toBe(0);
     });
   });
 
   describe('searchMode getter', () => {
     it('should return the current mode from SearchPreferenceService', () => {
-      const comp = createComponentLogic();
+      mockSearchPrefService.mode = 'button';
+      expect(component.searchMode).toBe('button');
 
-      searchPrefService.setMode('enter');
-      expect(comp.searchMode).toBe('enter');
-
-      searchPrefService.setMode('button');
-      expect(comp.searchMode).toBe('button');
-
-      searchPrefService.setMode('instant');
-      expect(comp.searchMode).toBe('instant');
+      mockSearchPrefService.mode = 'instant';
+      expect(component.searchMode).toBe('instant');
     });
   });
 });

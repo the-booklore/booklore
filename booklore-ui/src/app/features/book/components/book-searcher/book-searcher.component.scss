@@ -32,22 +32,32 @@
 
 .search-input {
   width: 100%;
-  padding-right: 2.5rem;
+  padding-right: 4.5rem; /* space for multiple action buttons */
   height: 2.5rem;
   line-height: 2.5rem;
   font-size: 1rem;
 }
 
-.clear-search-btn {
+.search-actions {
   position: absolute;
   right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  gap: 0.125rem;
+  align-items: center;
+}
+
+.clear-search-btn {
   display: none;
 
   @media (min-width: 1024px) {
-    display: inline-flex;
+    display: flex;
   }
+}
+
+.search-trigger-btn {
+  display: flex;
 }
 
 .search-dropdown {

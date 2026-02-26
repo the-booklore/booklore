@@ -123,14 +123,13 @@
     "savedDetail": ""
   },
   "search": {
-    "sectionTitle": "Search Preferences",
-    "sectionDesc": "Configure how search is triggered in the book browser and header search bar.",
-    "searchTrigger": "Search Trigger Mode",
-    "searchTriggerDesc": "'Instant' searches as you type with a debounce delay. 'Search on Enter' waits until you press Enter. 'Search button' adds a button to manually trigger the search.",
-    "modeInstant": "Instant (debounced)",
-    "modeEnter": "Search on Enter",
-    "modeButton": "Search button",
-    "prefsUpdated": "Preferences Updated",
-    "prefsUpdatedDetail": "Your search trigger preference has been saved."
+    "sectionTitle": "",
+    "sectionDesc": "",
+    "searchTrigger": "",
+    "searchTriggerDesc": "",
+    "modeInstant": "",
+    "modeButton": "",
+    "prefsUpdated": "",
+    "prefsUpdatedDetail": ""
   }
 }

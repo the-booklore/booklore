@@ -2,12 +2,12 @@ import {inject, Injectable} from '@angular/core';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {LocalStorageService} from './local-storage.service';
 
-export type SearchTriggerMode = 'instant' | 'enter' | 'button';
+export type SearchTriggerMode = 'instant' | 'button';
 
-const VALID_MODES: SearchTriggerMode[] = ['instant', 'enter', 'button'];
+const VALID_MODES: SearchTriggerMode[] = ['instant', 'button'];
 const STORAGE_KEY = 'searchTriggerMode';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class SearchPreferenceService {
 
   private readonly localStorageService = inject(LocalStorageService);
