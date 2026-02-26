@@ -532,6 +532,8 @@ public class EpubMetadataWriter implements MetadataWriter {
                 mimetypeParams.setFileNameInZip("mimetype");
                 mimetypeParams.setCompressionMethod(CompressionMethod.STORE);
                 zipFile.addFile(mimetypeFile, mimetypeParams);
+            } else {
+                log.warn("EPUB mimetype file not found in extracted directory — output may be spec-invalid");
             }
         }
 
@@ -642,8 +644,7 @@ public class EpubMetadataWriter implements MetadataWriter {
         creator.setPrefix("dc");
         creator.setTextContent(fullName);
 
-        String epubVersion = doc.getDocumentElement().getAttribute("version");
-        boolean isEpub3 = epubVersion != null && epubVersion.startsWith("3");
+        boolean isEpub3 = isEpub3(doc);
 
         if (isEpub3) {
             // EPUB3: use <meta refines="#id"> elements instead of opf: attributes
@@ -755,7 +756,7 @@ public class EpubMetadataWriter implements MetadataWriter {
 
     private boolean isEpub3(Document doc) {
         String version = doc.getDocumentElement().getAttribute("version");
-        return version != null && version.startsWith("3");
+        return version != null && version.trim().startsWith("3");
     }
 
     private void removeAllBookloreMetadata(Element metadataElement) {
@@ -1032,7 +1033,7 @@ public class EpubMetadataWriter implements MetadataWriter {
             String property = meta.getAttribute("property");
             String name = meta.getAttribute("name");
             
-            boolean isCalibreSeries = "calibre:series".equals(name) || "calibre:series_index".equals(name);
+            boolean isCalibreSeries = !isEpub3(doc) && ("calibre:series".equals(name) || "calibre:series_index".equals(name));
             if (!isCalibreSeries && (property.startsWith("calibre:") || name.startsWith("calibre:"))) {
                 metadataElement.removeChild(meta);
             }
