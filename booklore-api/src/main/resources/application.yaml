@@ -24,7 +24,6 @@ app:
   disk-type: ${DISK_TYPE:LOCAL}
 
 server:
-  max-http-header-size: 128KB
   forward-headers-strategy: native
   port: ${BOOKLORE_PORT:6060}
   compression:
@@ -37,6 +36,7 @@ server:
       min: 8
       idle-timeout: 60000
     connection-idle-timeout: 30000
+  max-http-request-header-size: 128KB
 
 spring:
   jackson:
