@@ -57,7 +57,7 @@ LABEL org.opencontainers.image.title="BookLore" \
 ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+UseCompactObjectHeaders -XX:MaxRAMPercentage=75.0"
 
 ARG TARGETARCH
-RUN apk update && apk add --no-cache su-exec libstdc++ libgcc && \
+RUN apk update && apk add --no-cache su-exec libstdc++ libgcc ffmpeg && \
     mkdir -p /bookdrop
 
 COPY docker/unrar/unrar-${TARGETARCH} /usr/local/bin/unrar
