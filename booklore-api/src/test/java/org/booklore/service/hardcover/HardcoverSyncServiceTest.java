@@ -1,9 +1,11 @@
 package org.booklore.service.hardcover;
 
+import jakarta.persistence.EntityManager;
 import org.booklore.model.dto.HardcoverSyncSettings;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.repository.BookRepository;
+import org.booklore.repository.UserBookProgressRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,12 @@ class HardcoverSyncServiceTest {
     @Mock
     private RestClient.ResponseSpec responseSpec;
 
+    @Mock
+    private UserBookProgressRepository userBookProgressRepository;
+
+    @Mock
+    private EntityManager entityManager;
+
     private HardcoverSyncService service;
 
     private BookEntity testBook;
@@ -59,7 +67,7 @@ class HardcoverSyncServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         // Create service with mocked dependencies
-        service = new HardcoverSyncService(hardcoverSyncSettingsService, bookRepository);
+        service = new HardcoverSyncService(hardcoverSyncSettingsService, bookRepository, userBookProgressRepository, entityManager);
         
         // Inject our mocked restClient using reflection
         Field restClientField = HardcoverSyncService.class.getDeclaredField("restClient");
