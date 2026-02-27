@@ -88,6 +88,9 @@ export type RuleField =
   | 'audibleReviewCount'
   | 'abridged'
   | 'audiobookDuration'
+  | 'audiobookCodec'
+  | 'audiobookChapterCount'
+  | 'audiobookBitrate'
   | 'isPhysical'
   | 'seriesStatus'
   | 'seriesGaps'
@@ -180,6 +183,9 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   audibleReviewCount: {label: 'audibleReviewCount', type: 'number'},
   abridged: {label: 'abridged', type: 'boolean'},
   audiobookDuration: {label: 'audiobookDuration', type: 'number'},
+  audiobookCodec: {label: 'audiobookCodec'},
+  audiobookChapterCount: {label: 'audiobookChapterCount', type: 'number'},
+  audiobookBitrate: {label: 'audiobookBitrate', type: 'number'},
   isPhysical: {label: 'isPhysical', type: 'boolean'},
   seriesStatus: {label: 'seriesStatus'},
   seriesGaps: {label: 'seriesGaps'},
@@ -201,7 +207,7 @@ const FIELD_GROUPS: FieldGroup[] = [
   { translationKey: 'ratingsReviews', fields: ['personalRating', 'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount', 'hardcoverRating', 'hardcoverReviewCount', 'ranobedbRating', 'lubimyczytacRating', 'audibleRating', 'audibleReviewCount'] },
   { translationKey: 'qualityMetadata', fields: ['metadataScore', 'metadataPresence'] },
   { translationKey: 'tagsMoods', fields: ['moods', 'tags'] },
-  { translationKey: 'audiobook', fields: ['narrator', 'abridged', 'audiobookDuration'] },
+  { translationKey: 'audiobook', fields: ['narrator', 'abridged', 'audiobookDuration', 'audiobookCodec', 'audiobookChapterCount', 'audiobookBitrate'] },
   { translationKey: 'fileIdentifiers', fields: ['fileType', 'fileSize', 'isbn13', 'isbn10', 'isPhysical'] }
 ];
 
