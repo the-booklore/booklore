@@ -376,6 +376,7 @@ class BookServiceTest {
 
         doNothing().when(bookRepository).deleteAll(anyList());
         when(bookQueryService.findAllWithMetadataByIds(Set.of(11L))).thenReturn(List.of(entity));
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
         BookDeletionResponse response = bookService.deleteBooks(Set.of(11L)).getBody();
 
@@ -403,6 +404,7 @@ class BookServiceTest {
         entity.setBookFiles(List.of(primaryFile));
 
         when(bookQueryService.findAllWithMetadataByIds(Set.of(13L))).thenReturn(List.of(entity));
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         doNothing().when(bookRepository).deleteAll(anyList());
 
         BookDeletionResponse response = bookService.deleteBooks(Set.of(13L)).getBody();
