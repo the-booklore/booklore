@@ -4,6 +4,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {IconService} from '../../services/icon.service';
 import {IconCacheService} from '../../services/icon-cache.service';
 import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 import {UrlHelperService} from '../../service/url-helper.service';
 import {MessageService} from 'primeng/api';
 import {IconCategoriesHelper} from '../../helpers/icon-categories.helper';
@@ -158,7 +159,11 @@ export class IconPickerComponent implements OnInit {
     }
 
     try {
-      this.svgPreview = this.sanitizer.bypassSecurityTrustHtml(this.svgContent);
+      const sanitized = DOMPurify.sanitize(this.svgContent, {
+        USE_PROFILES: { svg: true },
+        FORBID_TAGS: ['script', 'style', 'foreignObject']
+      });
+      this.svgPreview = this.sanitizer.bypassSecurityTrustHtml(sanitized);
     } catch {
       this.svgPreview = null;
       this.errorMessage = this.ERROR_MESSAGES.PARSE_ERROR;

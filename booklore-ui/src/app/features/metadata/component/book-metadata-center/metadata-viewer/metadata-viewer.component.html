@@ -670,7 +670,7 @@
       </div>
       <div class="description-body">
         <div #descriptionContent [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
-          <div class="description-html" [innerHTML]="book.metadata!.description"></div>
+          <div class="description-html" [innerHTML]="sanitizeDescription(book.metadata!.description)"></div>
         </div>
         @if (isExpanded || isOverflowing) {
           <button class="expand-toggle" (click)="toggleExpand()">

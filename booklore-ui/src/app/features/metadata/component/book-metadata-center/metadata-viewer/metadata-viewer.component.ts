@@ -38,6 +38,7 @@ import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/tran
 import {AuthorService} from '../../../../author-browser/service/author.service';
 import {Dialog} from 'primeng/dialog';
 import {Checkbox} from 'primeng/checkbox';
+import DOMPurify from 'dompurify';
 
 
 @Component({
@@ -488,6 +489,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
 
   toggleExpand(): void {
     this.isExpanded = !this.isExpanded;
+  }
+
+  sanitizeDescription(html: string | null | undefined): string {
+    return html ? DOMPurify.sanitize(html) : '';
   }
 
   read(bookId: number | undefined, reader?: "epub-streaming", bookType?: BookType): void {
