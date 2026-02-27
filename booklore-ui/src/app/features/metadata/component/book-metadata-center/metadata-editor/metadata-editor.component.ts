@@ -1064,11 +1064,19 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onNext() {
-    this.nextBookClicked.emit();
+    if (this.autoSaveEnabled && this.metadataForm.dirty) {
+      this.saveMetadata().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.nextBookClicked.emit());
+    } else {
+      this.nextBookClicked.emit();
+    }
   }
 
   onPrevious() {
-    this.previousBookClicked.emit();
+    if (this.autoSaveEnabled && this.metadataForm.dirty) {
+      this.saveMetadata().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.previousBookClicked.emit());
+    } else {
+      this.previousBookClicked.emit();
+    }
   }
 
   closeDialog() {

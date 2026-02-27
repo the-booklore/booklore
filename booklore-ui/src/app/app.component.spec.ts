@@ -11,6 +11,7 @@ import {MetadataProgressService} from './shared/service/metadata-progress.servic
 import {BookdropFileService} from './features/bookdrop/service/bookdrop-file.service';
 import {TaskService} from './features/settings/task-management/task.service';
 import {LibraryService} from './features/book/service/library.service';
+import {LibraryHealthService} from './features/book/service/library-health.service';
 import {LibraryLoadingService} from './features/library-creator/library-loading.service';
 import {TranslocoTestingModule} from '@jsverse/transloco';
 
@@ -34,6 +35,7 @@ describe('AppComponent offline detection', () => {
         {provide: BookdropFileService, useValue: {}},
         {provide: TaskService, useValue: {}},
         {provide: LibraryService, useValue: {largeLibraryLoading$: of({isLoading: false, expectedCount: 0})}},
+        {provide: LibraryHealthService, useValue: {initialize: vi.fn()}},
         {provide: LibraryLoadingService, useValue: {hide: vi.fn()}},
       ]
     });

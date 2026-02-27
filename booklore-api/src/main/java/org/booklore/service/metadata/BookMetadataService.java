@@ -26,6 +26,8 @@ import org.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.service.metadata.parser.BookParser;
 import org.booklore.service.metadata.parser.DetailedMetadataProvider;
+import org.booklore.service.appsettings.AppSettingService;
+import org.booklore.model.dto.request.MetadataRefreshOptions;
 import org.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +40,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import org.booklore.model.dto.request.IsbnLookupRequest;
+
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -62,6 +65,7 @@ public class BookMetadataService {
     private final MetadataExtractorFactory metadataExtractorFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
     private final PlatformTransactionManager transactionManager;
+    private final AppSettingService appSettingService;
 
 
     public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
@@ -84,6 +88,52 @@ public class BookMetadataService {
         return getParser(provider).fetchMetadata(book, request);
     }
 
+
+    public BookMetadata lookupByIsbn(IsbnLookupRequest request) {
+        List<MetadataProvider> providers = deriveProviderChainFromSettings();
+
+        FetchMetadataRequest fetchRequest = FetchMetadataRequest.builder()
+                .isbn(request.getIsbn())
+                .providers(providers)
+                .build();
+
+        Book emptyBook = Book.builder().build();
+
+        for (MetadataProvider provider : providers) {
+            try {
+                List<BookMetadata> results = fetchMetadataListFromAProvider(provider, emptyBook, fetchRequest);
+                if (results != null && !results.isEmpty()) {
+                    return results.getFirst();
+                }
+            } catch (Exception e) {
+                log.warn("ISBN lookup failed for provider {}: {}", provider, e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    private List<MetadataProvider> deriveProviderChainFromSettings() {
+        try {
+            MetadataRefreshOptions options = appSettingService.getAppSettings().getDefaultMetadataRefreshOptions();
+            if (options != null && options.getFieldOptions() != null) {
+                MetadataRefreshOptions.FieldProvider titleProvider = options.getFieldOptions().getTitle();
+                if (titleProvider != null) {
+                    List<MetadataProvider> chain = Stream.of(
+                                    titleProvider.getP1(), titleProvider.getP2(),
+                                    titleProvider.getP3(), titleProvider.getP4())
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .toList();
+                    if (!chain.isEmpty()) {
+                        return chain;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to derive provider chain from settings, falling back to default: {}", e.getMessage());
+        }
+        return List.of(MetadataProvider.Google);
+    }
 
     public BookMetadata getDetailedProviderMetadata(MetadataProvider provider, String providerItemId) {
         BookParser parser = getParser(provider);

@@ -3,6 +3,7 @@ import {AppMenuitemComponent} from './app.menuitem.component';
 import {AsyncPipe} from '@angular/common';
 import {MenuModule} from 'primeng/menu';
 import {LibraryService} from '../../../../features/book/service/library.service';
+import {LibraryHealthService} from '../../../../features/book/service/library-health.service';
 import {combineLatest, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {ShelfService} from '../../../../features/book/service/shelf.service';
@@ -39,6 +40,7 @@ export class AppMenuComponent implements OnInit {
   dynamicDialogRef: DynamicDialogRef | undefined | null;
 
   private libraryService = inject(LibraryService);
+  private libraryHealthService = inject(LibraryHealthService);
   private shelfService = inject(ShelfService);
   private bookService = inject(BookService);
   private versionService = inject(VersionService);
@@ -156,6 +158,7 @@ export class AppMenuComponent implements OnInit {
               iconType: (library.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
+              unhealthy$: this.libraryHealthService.isUnhealthy$(library.id ?? 0),
             })),
           },
         ];

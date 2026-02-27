@@ -7,6 +7,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -84,6 +87,23 @@ class KoboServerProxyTest {
         when(objectMapper.readTree(anyString())).thenReturn(mock(JsonNode.class));
         when(httpClient.<String>send(any(HttpRequest.class), any()))
                 .thenReturn(httpResponse);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "Authorization", "authorization" })
+    void proxyCurrentRequest_withSquareBracketsInQueryParams_shouldIncludeAuthHeaders(String authHeader) throws Exception {
+        mockRequest.setQueryString("Filter=ALL");
+        mockRequest.addHeader("User-Agent", "Kobo/1.0");
+        mockRequest.addHeader(authHeader, "jwt.looking.token");
+        setupSuccessfulProxyResponse();
+
+        ResponseEntity<JsonNode> response = koboServerProxy.proxyCurrentRequest(null, false);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient).<String>send(captor.capture(), any());
+        assertThat(captor.getValue().headers().map().get(authHeader)).isNotNull();
     }
 
     @Test

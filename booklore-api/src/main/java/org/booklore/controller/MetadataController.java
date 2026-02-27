@@ -6,6 +6,7 @@ import org.booklore.mapper.BookMetadataMapper;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.model.dto.request.IsbnLookupRequest;
 import org.booklore.model.dto.request.*;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.enums.MetadataProvider;
@@ -140,6 +141,19 @@ public class MetadataController {
     public ResponseEntity<Void> deleteMetadata(@Parameter(description = "Delete metadata request") @Validated @RequestBody DeleteMetadataRequest request) {
         metadataManagementService.deleteMetadata(request.getMetadataType(), request.getValuesToDelete());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Lookup metadata by ISBN", description = "Fetch metadata for a book by ISBN. Requires library management permission or admin.")
+    @ApiResponse(responseCode = "200", description = "Metadata found")
+    @ApiResponse(responseCode = "404", description = "No metadata found for the given ISBN")
+    @PostMapping("/metadata/isbn-lookup")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<BookMetadata> lookupByIsbn(@RequestBody IsbnLookupRequest request) {
+        BookMetadata metadata = bookMetadataService.lookupByIsbn(request);
+        if (metadata == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(metadata);
     }
 
     @Operation(summary = "Get detailed metadata from provider", description = "Fetch full metadata details for a specific item from a provider. Requires metadata edit permission or admin.")

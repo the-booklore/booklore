@@ -30,6 +30,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
 @Slf4j
@@ -80,9 +81,9 @@ public class SendEmailV2Service {
                 notificationService.sendMessage(Topic.LOG, LogNotification.info(successMessage));
                 log.info(successMessage);
             } catch (Exception e) {
-                String errorMessage = "An error occurred while sending the book: " + bookTitle + " to " + recipientEmail + ". Error: " + e.getMessage();
-                notificationService.sendMessage(Topic.LOG, LogNotification.error(errorMessage));
-                log.error(errorMessage, e);
+                String userMessage = "Failed to send book: " + bookTitle + " to " + recipientEmail + ". " + extractUserFriendlyMessage(e);
+                notificationService.sendMessage(Topic.LOG, LogNotification.error(userMessage));
+                log.error("Email send failed for book '{}' to {}: {}", bookTitle, recipientEmail, e.getMessage(), e);
             }
         });
     }
@@ -200,6 +201,20 @@ public class SendEmailV2Service {
 
         return emailProviderRepository.findAccessibleProvider(defaultProviderId, user.getId())
                 .orElseThrow(ApiError.DEFAULT_EMAIL_PROVIDER_NOT_FOUND::createException);
+    }
+
+    private String extractUserFriendlyMessage(Exception e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof IOException) {
+                return "The email provider rejected or dropped the connection during transfer. This often happens when the attachment exceeds the provider's size limit.";
+            }
+            cause = cause.getCause();
+        }
+        if (e instanceof MessagingException) {
+            return "The email could not be sent due to a mail server error. Please verify your email provider settings.";
+        }
+        return "An unexpected error occurred: " + e.getMessage();
     }
 
     private enum ConnectionType {

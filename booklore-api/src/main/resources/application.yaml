@@ -46,6 +46,10 @@ spring:
       request-timeout: 600000
   application:
     name: booklore-api
+  data:
+    web:
+      pageable:
+        max-page-size: 100
   datasource:
     url: ${DATABASE_URL:jdbc:mariadb://${DATABASE_HOST:${DB_HOST:mariadb}}:${DATABASE_PORT:3306}/${DATABASE_NAME:booklore}?createDatabaseIfNotExist=true}
     username: ${DATABASE_USERNAME:root}

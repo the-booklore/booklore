@@ -285,9 +285,12 @@ public class FileService {
                 }
             }
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
-            headers.set(HttpHeaders.ACCEPT, "image/*");
+                HttpHeaders headers = new HttpHeaders();
+                // Host header is set in prepareConnection via setRequestProperty.
+                // Do NOT set it here: Spring's addRequestProperty would add a duplicate,
+                // and duplicate Host headers cause 400 on strict CDNs like CloudFront.
+                headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
+                headers.set(HttpHeaders.ACCEPT, "image/*");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 

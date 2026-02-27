@@ -110,8 +110,17 @@ public class BookService {
 
     public List<Book> getBooksByIds(Set<Long> bookIds, boolean withDescription) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
+        boolean isAdmin = user.getPermissions().isAdmin();
 
         List<BookEntity> bookEntities = bookQueryService.findAllWithMetadataByIds(bookIds);
+
+        if (!isAdmin) {
+            Set<Long> userLibraryIds = getUserLibraryIds(user);
+            bookEntities = bookEntities.stream()
+                    .filter(book -> userLibraryIds.contains(book.getLibrary().getId()))
+                    .toList();
+        }
+
         Set<Long> entityIds = bookEntities.stream().map(BookEntity::getId).collect(Collectors.toSet());
 
         Map<Long, UserBookProgressEntity> progressMap =
@@ -363,7 +372,15 @@ public class BookService {
 
     @Transactional
     public ResponseEntity<BookDeletionResponse> deleteBooks(Set<Long> ids) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
+
+        if (!user.getPermissions().isAdmin()) {
+            Set<Long> userLibraryIds = getUserLibraryIds(user);
+            books = books.stream()
+                    .filter(book -> userLibraryIds.contains(book.getLibrary().getId()))
+                    .toList();
+        }
         List<Long> failedFileDeletions = new ArrayList<>();
         for (BookEntity book : books) {
             for (BookFileEntity bookFile : book.getBookFiles()) {
@@ -408,7 +425,7 @@ public class BookService {
             }
         }
 
-        bookRepository.deleteAll(books);
+        bookRepository.deleteAllInBatch(books);
         auditService.log(AuditAction.BOOK_DELETED, "Deleted " + ids.size() + " book(s)");
         BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
         return failedFileDeletions.isEmpty()
