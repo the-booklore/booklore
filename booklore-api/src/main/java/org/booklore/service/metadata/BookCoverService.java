@@ -315,7 +315,7 @@ public class BookCoverService {
                         notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Regenerating cover for: " + bookInfo.title()));
 
                         transactionTemplate.execute(status -> {
-                            bookRepository.findById(bookInfo.id()).ifPresent(book -> {
+                            bookRepository.findByIdWithBookFiles(bookInfo.id()).ifPresent(book -> {
                                 var primaryFile = book.getPrimaryBookFile();
                                 if (primaryFile == null) {
                                     log.warn("{}Skipping physical book ID {} ({}) - no file to regenerate cover from", progress, book.getId(), bookInfo.title());
