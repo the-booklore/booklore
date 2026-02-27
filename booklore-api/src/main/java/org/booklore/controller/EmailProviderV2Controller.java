@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +45,7 @@ public class EmailProviderV2Controller {
     @PreAuthorize("@securityUtil.isAdmin() or @securityUtil.canEmailBook()")
     @PostMapping
     public ResponseEntity<EmailProviderV2> createEmailProvider(
-            @Parameter(description = "Email provider creation request") @RequestBody CreateEmailProviderRequest createEmailProviderRequest) {
+            @Parameter(description = "Email provider creation request") @RequestBody @Valid CreateEmailProviderRequest createEmailProviderRequest) {
         return ResponseEntity.ok(service.createEmailProvider(createEmailProviderRequest));
     }
 
@@ -54,7 +55,7 @@ public class EmailProviderV2Controller {
     @PutMapping("/{id}")
     public ResponseEntity<EmailProviderV2> updateEmailProvider(
             @Parameter(description = "ID of the email provider") @PathVariable Long id,
-            @Parameter(description = "Email provider update request") @RequestBody CreateEmailProviderRequest updateRequest) {
+            @Parameter(description = "Email provider update request") @RequestBody @Valid CreateEmailProviderRequest updateRequest) {
         return ResponseEntity.ok(service.updateEmailProvider(id, updateRequest));
     }
 

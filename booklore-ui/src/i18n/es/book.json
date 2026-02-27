@@ -101,7 +101,10 @@
       "deleteBookMessage": "¿Estás seguro de que deseas eliminar \"{{ title }}\"?\n\nEsto eliminará permanentemente el archivo del libro de tu sistema de archivos.\n\nEsta acción no se puede deshacer.",
       "deleteBookHeader": "Confirmar eliminación",
       "deleteFileMessage": "¿Estás seguro de que deseas eliminar el archivo adicional \"{{ fileName }}\"?",
-      "deleteFileHeader": "Confirmar eliminación de archivo"
+      "deleteFileHeader": "Confirmar eliminación de archivo",
+      "largeFileMessage": "Este archivo supera los 25 MB. Algunos proveedores de correo pueden rechazar archivos adjuntos grandes.\n\n¿Deseas enviarlo de todos modos?",
+      "largeFileHeader": "Advertencia de archivo grande",
+      "sendAnyway": "Enviar de todos modos"
     },
     "toast": {
       "quickSendSuccessDetail": "El envío del libro ha sido programado.",
@@ -429,7 +432,8 @@
     "validationTitleOrIsbn": "Se requiere un título o ISBN",
     "validationReady": "Listo para crear",
     "cancelButton": "Cancelar",
-    "addButton": "Agregar libro físico"
+    "addButton": "Agregar libro físico",
+    "fetchMetadataTooltip": "Obtener metadatos por ISBN"
   },
   "fileUploader": {
     "title": "Subir archivo adicional",

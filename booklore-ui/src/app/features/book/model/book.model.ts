@@ -413,6 +413,7 @@ export interface CreatePhysicalBookRequest {
   language?: string;
   pageCount?: number;
   categories?: string[];
+  thumbnailUrl?: string;
 }
 
 export interface BookStatusUpdateResponse {

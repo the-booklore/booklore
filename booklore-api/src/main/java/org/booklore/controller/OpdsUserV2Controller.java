@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +36,7 @@ public class OpdsUserV2Controller {
     @PostMapping
     @PreAuthorize("@securityUtil.isAdmin() or @securityUtil.canAccessOpds()")
     public OpdsUserV2 createUser(
-            @Parameter(description = "OPDS user creation request") @RequestBody OpdsUserV2CreateRequest createRequest) {
+            @Parameter(description = "OPDS user creation request") @RequestBody @Valid OpdsUserV2CreateRequest createRequest) {
         return service.createOpdsUser(createRequest);
     }
 
@@ -54,6 +55,6 @@ public class OpdsUserV2Controller {
     @PreAuthorize("@securityUtil.isAdmin() or @securityUtil.canAccessOpds()")
     public OpdsUserV2 updateUser(
             @Parameter(description = "ID of the OPDS user to update") @PathVariable Long id,
-            @Parameter(description = "OPDS user update request") @RequestBody OpdsUserV2UpdateRequest updateRequest) {
+            @Parameter(description = "OPDS user update request") @RequestBody @Valid OpdsUserV2UpdateRequest updateRequest) {
         return service.updateOpdsUser(id, updateRequest);
     }}

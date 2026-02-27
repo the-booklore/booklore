@@ -383,7 +383,10 @@
       "detachFileBtn": "Separar",
       "deleteBookMessage": "¿Estás seguro de que deseas eliminar \"{{ title }}\"?\n\nEsto eliminará permanentemente el registro del libro de tu biblioteca.\n\nEsta acción no se puede deshacer.",
       "deleteBookAllFilesMessage": "¿Estás seguro de que deseas eliminar \"{{ title }}\"?\n\nEsto eliminará permanentemente el registro del libro Y todos los archivos asociados de tu sistema de archivos.\n\nEsta acción no se puede deshacer.",
-      "deleteEverythingBtn": "Eliminar todo"
+      "deleteEverythingBtn": "Eliminar todo",
+      "largeFileMessage": "Este archivo supera los 25 MB. Algunos proveedores de correo pueden rechazar archivos adjuntos grandes.\n\n¿Deseas enviarlo de todos modos?",
+      "largeFileHeader": "Advertencia de archivo grande",
+      "sendAnyway": "Enviar de todos modos"
     }
   },
   "sidecar": {

@@ -25,7 +25,7 @@ export class SeriesDataService {
       const seriesName = book.metadata?.seriesName;
       if (!seriesName) continue;
 
-      const key = seriesName.toLowerCase();
+      const key = seriesName.trim().toLowerCase();
       if (!seriesMap.has(key)) {
         seriesMap.set(key, []);
       }
@@ -41,7 +41,7 @@ export class SeriesDataService {
         return aNum - bNum;
       });
 
-      const displayName = sorted[0].metadata?.seriesName || '';
+      const displayName = sorted[0].metadata?.seriesName?.trim() || '';
       const authorSet = new Set<string>();
       const categorySet = new Set<string>();
 
