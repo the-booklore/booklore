@@ -279,7 +279,10 @@ export class MagicShelfComponent implements OnInit {
     {label: 'CB7', value: 'cb7'},
     {label: 'FB2', value: 'fb2'},
     {label: 'MOBI', value: 'mobi'},
-    {label: 'AZW3', value: 'azw3'}
+    {label: 'AZW3', value: 'azw3'},
+    {label: 'M4B', value: 'm4b'},
+    {label: 'M4A', value: 'm4a'},
+    {label: 'MP3', value: 'mp3'}
   ];
 
   get readStatusOptions() {
