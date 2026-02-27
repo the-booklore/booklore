@@ -271,6 +271,44 @@ class BookCoverServiceTest {
         }
     }
 
+    @Test
+    void regenerateCovers_usesFindByIdWithBookFiles_notFindById() {
+        try (MockedStatic<SecurityContextVirtualThread> ignored = mockStatic(SecurityContextVirtualThread.class)) {
+            BookEntity book = mockBookEntity(11L, false);
+            when(bookQueryService.getAllFullBookEntities()).thenReturn(List.of(book));
+            when(bookRepository.findByIdWithBookFiles(11L)).thenReturn(Optional.of(book));
+            when(bookRepository.save(any())).thenReturn(book);
+
+            BookFileProcessor processor = mock(BookFileProcessor.class);
+            when(processorRegistry.getProcessorOrThrow(any())).thenReturn(processor);
+            when(processor.generateCover(any(BookEntity.class))).thenReturn(true);
+
+            BookCoverUpdateProjection projection = mock(BookCoverUpdateProjection.class);
+            when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of(projection));
+            doNothing().when(notificationService).sendMessage(any(), any());
+
+            when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+                org.springframework.transaction.support.TransactionCallback<?> callback = invocation.getArgument(0);
+                return callback.doInTransaction(null);
+            });
+
+            ignored.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return null;
+                    });
+
+            bookCoverService.regenerateCovers();
+
+            // Must use findByIdWithBookFiles to eagerly load bookFiles, never the lazy findById
+            verify(bookRepository).findByIdWithBookFiles(11L);
+            verify(bookRepository, never()).findById(11L);
+            verify(processor).generateCover(any(BookEntity.class));
+            verify(bookRepository).save(any(BookEntity.class));
+        }
+    }
+
     private AppSettings mockAppSettings(boolean saveToOriginalFile, boolean convertCbrCb7ToCbz) {
         MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFileObj =
             MetadataPersistenceSettings.SaveToOriginalFile.builder()
@@ -290,4 +328,3 @@ class BookCoverServiceTest {
         };
     }
 }
-
