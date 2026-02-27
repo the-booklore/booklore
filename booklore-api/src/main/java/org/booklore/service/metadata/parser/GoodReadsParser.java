@@ -96,7 +96,7 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
         String isbn = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         if (isbn != null && !isbn.isBlank()) {
-            log.info("Goodreads Query URL (ISBN): " + BASE_ISBN_URL + "{}", isbn);
+            log.info("Goodreads Query URL (ISBN): {}{}", BASE_ISBN_URL, isbn);
             Document doc = fetchDoc(BASE_ISBN_URL + isbn);
             String ogUrl = Optional.ofNullable(doc.selectFirst("meta[property=og:url]"))
                     .map(e -> e.attr("content"))
