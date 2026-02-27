@@ -268,7 +268,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
                   {
                     label: this.t.translate('metadata.viewer.menuQuickSend'),
                     icon: 'pi pi-bolt',
-                    command: () => this.quickSend(book.id)
+                    command: () => this.quickSend(book)
                   },
                   {
                     label: this.t.translate('metadata.viewer.menuCustomSend'),
@@ -646,19 +646,36 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
     }, 15000);
   }
 
-  quickSend(bookId: number) {
-    this.emailService.emailBookQuick(bookId).subscribe({
-      next: () => this.messageService.add({
-        severity: 'info',
-        summary: this.t.translate('metadata.viewer.toast.quickSendSuccessSummary'),
-        detail: this.t.translate('metadata.viewer.toast.quickSendSuccessDetail'),
-      }),
-      error: (err) => this.messageService.add({
-        severity: 'error',
-        summary: this.t.translate('metadata.viewer.toast.quickSendErrorSummary'),
-        detail: err?.error?.message || this.t.translate('metadata.viewer.toast.quickSendErrorDetail'),
-      })
-    });
+  quickSend(book: Book) {
+    const doSend = () => {
+      this.emailService.emailBookQuick(book.id).subscribe({
+        next: () => this.messageService.add({
+          severity: 'info',
+          summary: this.t.translate('metadata.viewer.toast.quickSendSuccessSummary'),
+          detail: this.t.translate('metadata.viewer.toast.quickSendSuccessDetail'),
+        }),
+        error: (err) => this.messageService.add({
+          severity: 'error',
+          summary: this.t.translate('metadata.viewer.toast.quickSendErrorSummary'),
+          detail: err?.error?.message || this.t.translate('metadata.viewer.toast.quickSendErrorDetail'),
+        })
+      });
+    };
+
+    if (book.primaryFile?.fileSizeKb && book.primaryFile.fileSizeKb > 25 * 1024) {
+      this.confirmationService.confirm({
+        message: this.t.translate('metadata.viewer.confirm.largeFileMessage'),
+        header: this.t.translate('metadata.viewer.confirm.largeFileHeader'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: this.t.translate('metadata.viewer.confirm.sendAnyway'),
+        rejectLabel: this.t.translate('common.cancel'),
+        acceptButtonProps: { severity: 'warn' },
+        rejectButtonProps: { severity: 'secondary' },
+        accept: doSend,
+      });
+    } else {
+      doSend();
+    }
   }
 
   assignShelf(bookId: number) {
