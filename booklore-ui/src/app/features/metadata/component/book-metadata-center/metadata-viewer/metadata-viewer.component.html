@@ -593,9 +593,8 @@
                   <p-button
                     icon="pi pi-chevron-left"
                     [disabled]="!canNavigatePrevious()"
-                    (onClick)="navigatePrevious()"
-                    rounded
-                    text
+                    (onClick)="navigatePrevious()"`
+                    outlined
                     severity="secondary"
                     [pTooltip]="t('goToPreviousBook')"
                     tooltipPosition="bottom">
@@ -609,8 +608,7 @@
                     [disabled]="!canNavigateNext()"
                     (onClick)="navigateNext()"
                     severity="secondary"
-                    rounded
-                    text
+                    outlined
                     [pTooltip]="t('goToNextBook')"
                     tooltipPosition="bottom">
                   </p-button>

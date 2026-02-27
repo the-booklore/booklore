@@ -106,6 +106,54 @@
   box-sizing: border-box;
 }
 
+.isbn-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  .input-full {
+    flex: 1;
+  }
+}
+
+.top-section {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.top-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cover-preview {
+  flex-shrink: 0;
+  padding: 0.5rem;
+
+  img {
+    height: 180px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    object-fit: contain;
+  }
+
+  @media (max-width: 640px) {
+    img {
+      height: 150px;
+    }
+  }
+}
+
 .autocomplete-wrapper {
   width: 100%;
 

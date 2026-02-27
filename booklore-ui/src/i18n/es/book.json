@@ -429,7 +429,8 @@
     "validationTitleOrIsbn": "Se requiere un título o ISBN",
     "validationReady": "Listo para crear",
     "cancelButton": "Cancelar",
-    "addButton": "Agregar libro físico"
+    "addButton": "Agregar libro físico",
+    "fetchMetadataTooltip": "Obtener metadatos por ISBN"
   },
   "fileUploader": {
     "title": "Subir archivo adicional",
