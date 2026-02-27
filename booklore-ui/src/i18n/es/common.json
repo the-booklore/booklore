@@ -21,5 +21,6 @@
   "select": "Seleccionar",
   "dismiss": "Descartar",
   "discard": "Descartar",
-  "review": "Revisar"
+  "review": "Revisar",
+  "libraryPathInaccessible": "Ruta de biblioteca inaccesible"
 }
