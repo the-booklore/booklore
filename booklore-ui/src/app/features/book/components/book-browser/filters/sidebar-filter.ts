@@ -71,8 +71,8 @@ export function doesBookMatchFilter(
         : filterValues.every(val => book.metadata?.categories?.includes(val as string));
     case 'series':
       return mode === 'or'
-        ? filterValues.some(val => book.metadata?.seriesName === val)
-        : filterValues.every(val => book.metadata?.seriesName === val);
+        ? filterValues.some(val => book.metadata?.seriesName?.trim() === val)
+        : filterValues.every(val => book.metadata?.seriesName?.trim() === val);
     case 'bookType':
       return filterValues.includes(book.primaryFile?.bookType);
     case 'readStatus':
