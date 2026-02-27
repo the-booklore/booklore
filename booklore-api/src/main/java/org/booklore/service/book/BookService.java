@@ -425,7 +425,7 @@ public class BookService {
             }
         }
 
-        bookRepository.deleteAll(books);
+        bookRepository.deleteAllInBatch(books);
         auditService.log(AuditAction.BOOK_DELETED, "Deleted " + ids.size() + " book(s)");
         BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
         return failedFileDeletions.isEmpty()

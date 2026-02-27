@@ -374,7 +374,7 @@ class BookServiceTest {
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, "abc".getBytes());
 
-        doNothing().when(bookRepository).deleteAll(anyList());
+        doNothing().when(bookRepository).deleteAllInBatch(anyList());
         when(bookQueryService.findAllWithMetadataByIds(Set.of(11L))).thenReturn(List.of(entity));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
@@ -405,7 +405,7 @@ class BookServiceTest {
 
         when(bookQueryService.findAllWithMetadataByIds(Set.of(13L))).thenReturn(List.of(entity));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
-        doNothing().when(bookRepository).deleteAll(anyList());
+        doNothing().when(bookRepository).deleteAllInBatch(anyList());
 
         BookDeletionResponse response = bookService.deleteBooks(Set.of(13L)).getBody();
 
