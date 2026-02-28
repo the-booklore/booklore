@@ -1,5 +1,6 @@
 package org.booklore.controller;
 
+import org.booklore.config.security.annotation.CheckBookAccess;
 import org.booklore.model.dto.response.EpubBookInfo;
 import org.booklore.service.reader.EpubReaderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ public class EpubReaderController {
     @Operation(summary = "Get EPUB book info",
             description = "Retrieve parsed metadata, spine, manifest, and TOC for an EPUB book.")
     @ApiResponse(responseCode = "200", description = "Book info returned successfully")
+    @CheckBookAccess(bookIdParam = "bookId")
     @GetMapping("/{bookId}/info")
     public ResponseEntity<EpubBookInfo> getBookInfo(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,
@@ -39,6 +41,7 @@ public class EpubReaderController {
 
     @Operation(summary = "Get file from EPUB", description = "Retrieve a specific file from within the EPUB archive (HTML, CSS, images, fonts, etc.).")
     @ApiResponse(responseCode = "200", description = "File content returned successfully")
+    @CheckBookAccess(bookIdParam = "bookId")
     @GetMapping("/{bookId}/file/**")
     public void getFile(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,

@@ -4,6 +4,7 @@ import org.booklore.config.security.annotation.CheckLibraryAccess;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.Library;
 import org.booklore.model.dto.request.CreateLibraryRequest;
+import org.booklore.service.library.LibraryHealthService;
 import org.booklore.service.library.LibraryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,12 +27,20 @@ import java.util.Map;
 public class LibraryController {
 
     private final LibraryService libraryService;
+    private final LibraryHealthService libraryHealthService;
 
     @Operation(summary = "Get all libraries", description = "Retrieve a list of all libraries.")
     @ApiResponse(responseCode = "200", description = "Libraries returned successfully")
     @GetMapping
     public ResponseEntity<List<Library>> getLibraries() {
         return ResponseEntity.ok(libraryService.getLibraries());
+    }
+
+    @Operation(summary = "Get library health", description = "Check accessibility of all library paths.")
+    @ApiResponse(responseCode = "200", description = "Library health returned successfully")
+    @GetMapping("/health")
+    public ResponseEntity<Map<Long, Boolean>> getLibraryHealth() {
+        return ResponseEntity.ok(libraryHealthService.getCurrentHealth());
     }
 
     @Operation(summary = "Get a library by ID", description = "Retrieve details of a specific library by its ID.")

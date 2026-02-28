@@ -39,6 +39,7 @@ public class KoboServerProxy {
 
     private static final Set<String> HEADERS_OUT_INCLUDE = Set.of(
             HttpHeaders.AUTHORIZATION.toLowerCase(),
+            HttpHeaders.AUTHORIZATION,
             HttpHeaders.USER_AGENT,
             HttpHeaders.ACCEPT,
             HttpHeaders.ACCEPT_LANGUAGE

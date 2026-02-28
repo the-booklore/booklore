@@ -155,7 +155,7 @@ export class SeriesPageComponent implements OnDestroy, AfterViewChecked {
   ]).pipe(
     map(([seriesName, books]) => {
       const inSeries = books.filter(
-        (b) => b.metadata?.seriesName?.toLowerCase() === seriesName
+        (b) => b.metadata?.seriesName?.trim().toLowerCase() === seriesName
       );
       return inSeries.sort((a, b) => {
         const aNum = a.metadata?.seriesNumber ?? Number.MAX_SAFE_INTEGER;

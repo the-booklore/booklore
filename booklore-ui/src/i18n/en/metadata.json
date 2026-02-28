@@ -383,7 +383,10 @@
       "detachFileBtn": "Detach",
       "deleteBookMessage": "Are you sure you want to delete \"{{ title }}\"?\n\nThis will permanently remove the book record from your library.\n\nThis action cannot be undone.",
       "deleteBookAllFilesMessage": "Are you sure you want to delete \"{{ title }}\"?\n\nThis will permanently remove the book record AND all associated files from your filesystem.\n\nThis action cannot be undone.",
-      "deleteEverythingBtn": "Delete Everything"
+      "deleteEverythingBtn": "Delete Everything",
+      "largeFileMessage": "This file exceeds 25MB. Some email providers may reject large attachments.\n\nDo you want to send it anyway?",
+      "largeFileHeader": "Large File Warning",
+      "sendAnyway": "Send Anyway"
     }
   },
   "sidecar": {

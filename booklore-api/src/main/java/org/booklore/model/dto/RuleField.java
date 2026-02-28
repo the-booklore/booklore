@@ -87,6 +87,12 @@ public enum RuleField {
     ABRIDGED,
     @JsonProperty("audiobookDuration")
     AUDIOBOOK_DURATION,
+    @JsonProperty("audiobookCodec")
+    AUDIOBOOK_CODEC,
+    @JsonProperty("audiobookChapterCount")
+    AUDIOBOOK_CHAPTER_COUNT,
+    @JsonProperty("audiobookBitrate")
+    AUDIOBOOK_BITRATE,
     @JsonProperty("isPhysical")
     IS_PHYSICAL,
     @JsonProperty("seriesStatus")

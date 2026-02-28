@@ -41,5 +41,10 @@
     },
     "settingsSaved": "Postavke spremljene",
     "settingsSavedDetail": "Postavke su uspješno spremljene!",
-    "settingsError": "Došlo je do pogreške prilikom spremanja postavki."
+    "settingsError": "Došlo je do pogreške prilikom spremanja postavki.",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }

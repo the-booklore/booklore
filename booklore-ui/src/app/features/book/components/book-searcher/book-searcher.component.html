@@ -3,7 +3,7 @@
     <p-iconfield class="search-iconfield" [class.focused]="isSearchFocused" [class.has-results]="isDropdownOpen">
       <p-inputicon class="pi pi-search" />
       <input type="text" pInputText [(ngModel)]="searchQuery" (input)="onSearchInputChange()"
-        (keydown)="onSearchKeydown($event)" (focus)="isSearchFocused = true" (blur)="onSearchBlur()"
+        (keydown)="onSearchKeydown($event)" (focus)="isSearchFocused = true" (keydown)="onKeydown($event)"
         [placeholder]="t('placeholder')" class="search-input" />
       <div class="search-actions">
         @if (searchQuery) {
@@ -20,10 +20,21 @@
     </p-iconfield>
 
     @if (books.length > 0 || searchQuery) {
-    <div class="search-dropdown layout-menu" [class.show]="(books.length > 0)">
-      @if (books.length > 0) {
-      @for (book of books; track book) {
-      <div class="search-dropdown-item" (click)="onBookClick(book)">
+    <div class="search-dropdown layout-menu" [class.show]="isDropdownOpen"
+    >
+      @if (isLoading) {
+        @for (i of [1,2,3]; track i) {
+          <div class="search-skeleton-item">
+            <p-skeleton width="50px" height="67px" borderRadius="4px"/>
+            <div class="search-skeleton-details">
+              <p-skeleton width="80%" height="1rem"/>
+              <p-skeleton width="60%" height="0.8rem"/>
+            </div>
+          </div>
+        }
+      } @elseif (books.length > 0) {
+      @for (book of books; track book; let idx = $index) {
+      <div class="search-dropdown-item" [class.active]="activeIndex === idx"(click)="onBookClick(book)">
         <div class="search-item-content">
           <img [attr.src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)" [alt]="t('bookCoverAlt')"
             class="search-book-cover" />
@@ -49,7 +60,7 @@
             }
           </div>
         </div>
-        <p-divider></p-divider>
+
       </div>
       }
       } @else {

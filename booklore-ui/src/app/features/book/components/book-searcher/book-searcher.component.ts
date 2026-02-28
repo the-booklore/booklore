@@ -1,13 +1,13 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {BehaviorSubject, of, Subscription} from 'rxjs';
-import {catchError, switchMap} from 'rxjs/operators';
+import {catchError, debounceTime, distinctUntilChanged, switchMap, tap} from 'rxjs/operators';
 import {Book} from '../../model/book.model';
 import {FormsModule} from '@angular/forms';
 import {InputTextModule} from 'primeng/inputtext';
 import {BookService} from '../../service/book.service';
 import {Button} from 'primeng/button';
 import {SlicePipe} from '@angular/common';
-import {Divider} from 'primeng/divider';
+import {Skeleton} from 'primeng/skeleton';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {Router} from '@angular/router';
 import {IconField} from 'primeng/iconfield';
@@ -24,7 +24,7 @@ import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/ser
     InputTextModule,
     Button,
     SlicePipe,
-    Divider,
+    Skeleton,
     IconField,
     InputIcon,
     TranslocoDirective,
@@ -35,6 +35,8 @@ import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/ser
 export class BookSearcherComponent implements OnInit, OnDestroy {
   searchQuery: string = '';
   books: Book[] = [];
+  isLoading = false;
+  activeIndex = -1;
   #searchSubject = new BehaviorSubject<string>('');
   #subscription!: Subscription;
   isSearchFocused = false;
@@ -44,7 +46,11 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   protected urlHelper = inject(UrlHelperService);
   private readonly t = inject(TranslocoService);
   private readonly searchPrefService = inject(SearchPreferenceService);
-  private headerFilter = new HeaderFilter(this.#searchSubject.asObservable(), () => this.searchMode);
+  private elRef = inject(ElementRef);
+  private headerFilter = new HeaderFilter(
+    this.#searchSubject.pipe(debounceTime(200), distinctUntilChanged()),
+    () => this.searchMode
+  );
 
   get searchMode(): SearchTriggerMode {
     return this.searchPrefService.mode;
@@ -52,10 +58,17 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.#subscription = this.bookService.bookState$.pipe(
+      tap(() => {
+        if (this.searchQuery.trim().length >= 2) {
+          this.isLoading = true;
+        }
+      }),
       switchMap(bookState => this.headerFilter.filter(bookState)),
       catchError(() => of({ books: [], loaded: true, error: null }))
     ).subscribe({
       next: (filteredState) => {
+        this.isLoading = false;
+        this.activeIndex = -1;
         const term = this.searchQuery.trim();
         this.books = term.length >= 2
           ? (filteredState.books || []).slice(0, 50)
@@ -108,18 +121,43 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   clearSearch(): void {
     this.searchQuery = '';
     this.books = [];
+    this.isLoading = false;
   }
 
   get isDropdownOpen(): boolean {
-    return this.books.length > 0;
+    return this.books.length > 0 || this.isLoading;
   }
 
-  onSearchBlur(): void {
-    setTimeout(() => {
-      if (!this.isDropdownOpen) {
-        this.isSearchFocused = false;
-      }
-    }, 200);
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!this.elRef.nativeElement.contains(event.target)) {
+      this.clearSearch();
+      this.isSearchFocused = false;
+    }
+  }
+
+  onKeydown(event: KeyboardEvent): void {
+    if (!this.isDropdownOpen) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        this.activeIndex = Math.min(this.activeIndex + 1, this.books.length - 1);
+        event.preventDefault();
+        break;
+      case 'ArrowUp':
+        this.activeIndex = Math.max(this.activeIndex - 1, 0);
+        event.preventDefault();
+        break;
+      case 'Enter':
+        if (this.activeIndex >= 0 && this.activeIndex < this.books.length) {
+          this.onBookClick(this.books[this.activeIndex]);
+        }
+        break;
+      case 'Escape':
+        this.clearSearch();
+        (event.target as HTMLElement).blur();
+        break;
+    }
   }
 
   ngOnDestroy(): void {

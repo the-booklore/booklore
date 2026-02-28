@@ -15,6 +15,7 @@ import {BookdropFileNotification, BookdropFileService} from './features/bookdrop
 import {Subscription} from 'rxjs';
 import {TaskProgressPayload, TaskService} from './features/settings/task-management/task.service';
 import {LibraryService} from './features/book/service/library.service';
+import {LibraryHealthService} from './features/book/service/library-health.service';
 import {LibraryLoadingService} from './features/library-creator/library-loading.service';
 import {scan, withLatestFrom} from 'rxjs/operators';
 
@@ -41,6 +42,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private bookdropFileService = inject(BookdropFileService);
   private taskService = inject(TaskService);
   private libraryService = inject(LibraryService);
+  private libraryHealthService = inject(LibraryHealthService);
   private libraryLoadingService = inject(LibraryLoadingService);
 
   ngOnInit(): void {
@@ -51,6 +53,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loading = !ready;
       if (ready && !this.subscriptionsInitialized) {
         this.setupWebSocketSubscriptions();
+        this.libraryHealthService.initialize();
         this.subscriptionsInitialized = true;
       }
     });

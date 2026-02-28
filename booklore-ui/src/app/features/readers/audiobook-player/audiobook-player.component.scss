@@ -148,9 +148,8 @@ $border-color: rgba(255, 255, 255, 0.1);
 .cover-container {
   flex-shrink: 0;
   width: 100%;
-  max-width: 480px;
+  max-width: min(480px, 40vh);
   aspect-ratio: 1;
-  margin-top: 1.5rem;
 
   .cover-wrapper {
     position: relative;
@@ -712,8 +711,7 @@ $border-color: rgba(255, 255, 255, 0.1);
   }
 
   .cover-container {
-    max-width: 360px;
-    margin-top: 1rem;
+    max-width: min(360px, 35vh);
   }
 
   .secondary-controls {
@@ -748,8 +746,7 @@ $border-color: rgba(255, 255, 255, 0.1);
 
 @media (max-width: 480px) {
   .cover-container {
-    max-width: 300px;
-    margin-top: 0.5rem;
+    max-width: min(300px, 30vh);
   }
 
   .playback-controls {

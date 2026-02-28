@@ -41,5 +41,10 @@
     },
     "settingsSaved": "設定を保存しました",
     "settingsSavedDetail": "設定が正常に保存されました！",
-    "settingsError": "設定の保存中にエラーが発生しました。"
+    "settingsError": "設定の保存中にエラーが発生しました。",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }

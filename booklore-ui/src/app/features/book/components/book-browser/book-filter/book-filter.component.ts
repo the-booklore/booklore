@@ -67,6 +67,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   readonly filterModeOptions: FilterModeOption[] = [
     {label: 'AND', value: 'and'},
     {label: 'OR', value: 'or'},
+    {label: 'NOT', value: 'not'},
     {label: '1', value: 'single'}
   ];
 

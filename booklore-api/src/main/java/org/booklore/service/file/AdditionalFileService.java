@@ -2,8 +2,10 @@ package org.booklore.service.file;
 
 import org.booklore.mapper.AdditionalFileMapper;
 import org.booklore.model.dto.BookFile;
+import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.repository.BookAdditionalFileRepository;
+import org.booklore.repository.BookRepository;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class AdditionalFileService {
     private static final Pattern NON_ASCII = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookAdditionalFileRepository additionalFileRepository;
+    private final BookRepository bookRepository;
     private final AdditionalFileMapper additionalFileMapper;
     private final MonitoringRegistrationService monitoringRegistrationService;
 
@@ -58,13 +61,13 @@ public class AdditionalFileService {
         }
 
         BookFileEntity file = fileOpt.get();
+        BookEntity book = file.getBook();
 
         try {
             monitoringRegistrationService.unregisterSpecificPath(file.getFullFilePath().getParent());
 
             Path filePath = file.getFullFilePath();
             if (file.isFolderBased() && Files.isDirectory(filePath)) {
-                // For folder-based audiobooks, delete the entire directory
                 deleteDirectoryRecursively(filePath);
                 log.info("Deleted folder-based audiobook: {}", filePath);
             } else {
@@ -76,6 +79,17 @@ public class AdditionalFileService {
         } catch (IOException e) {
             log.warn("Failed to delete physical file: {}", file.getFullFilePath(), e);
             additionalFileRepository.delete(file);
+        }
+
+        if (file.isBook() && book != null) {
+            book.getBookFiles().remove(file);
+            boolean hasRemainingBookFiles = book.getBookFiles().stream()
+                    .anyMatch(BookFileEntity::isBook);
+            if (!hasRemainingBookFiles) {
+                book.setIsPhysical(true);
+                bookRepository.save(book);
+                log.info("Book {} reverted to physical (last book file removed)", book.getId());
+            }
         }
     }
 

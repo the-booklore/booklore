@@ -41,5 +41,10 @@
     },
     "settingsSaved": "Настройки сохранены",
     "settingsSavedDetail": "Настройки были успешно сохранены!",
-    "settingsError": "Произошла ошибка при сохранении настроек."
+    "settingsError": "Произошла ошибка при сохранении настроек.",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }

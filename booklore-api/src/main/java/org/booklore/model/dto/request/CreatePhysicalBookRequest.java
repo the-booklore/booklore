@@ -27,4 +27,5 @@ public class CreatePhysicalBookRequest {
     private String language;
     private Integer pageCount;
     private List<String> categories;
+    private String thumbnailUrl;
 }

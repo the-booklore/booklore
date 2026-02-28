@@ -61,9 +61,7 @@ export class SortService {
   };
 
   private readonly fieldExtractors: Record<string, (book: Book) => unknown> = {
-    title: (book) => book.metadata?.seriesName?.toLowerCase()
-      || book.metadata?.title?.toLowerCase()
-      || null,
+    title: (book) => book.metadata?.title?.toLowerCase() || null,
     author: (book) => book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null,
     authorSurnameVorname: (book) => book.metadata?.authors?.map(a => {
       const parts = a.trim().split(/\s+/);

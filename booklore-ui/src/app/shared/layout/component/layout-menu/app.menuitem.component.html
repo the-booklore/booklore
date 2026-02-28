@@ -53,6 +53,13 @@
           tabindex="0"
           pRipple
         >
+          @if (item.unhealthy$ | async) {
+            <span
+              class="library-health-dot"
+              [pTooltip]="'common.libraryPathInaccessible' | transloco"
+              tooltipPosition="right"
+            ></span>
+          }
           <app-icon-display
             [icon]="getIconSelection()"
             iconClass="layout-menuitem-icon"

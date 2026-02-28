@@ -772,6 +772,9 @@ public class BookRuleEvaluatorService {
             case AUDIBLE_REVIEW_COUNT -> root.get("metadata").get("audibleReviewCount");
             case ABRIDGED -> root.get("metadata").get("abridged");
             case AUDIOBOOK_DURATION -> root.join("bookFiles", JoinType.LEFT).get("durationSeconds");
+            case AUDIOBOOK_CODEC -> root.join("bookFiles", JoinType.LEFT).get("codec");
+            case AUDIOBOOK_CHAPTER_COUNT -> root.join("bookFiles", JoinType.LEFT).get("chapterCount");
+            case AUDIOBOOK_BITRATE -> root.join("bookFiles", JoinType.LEFT).get("bitrate");
             case IS_PHYSICAL -> root.get("isPhysical");
             case READING_PROGRESS -> {
                 Expression<Float> koreader = cb.coalesce(progressJoin.get("koreaderProgressPercent"), 0f);
@@ -928,7 +931,8 @@ public class BookRuleEvaluatorService {
             RuleField.GOODREADS_RATING, RuleField.GOODREADS_REVIEW_COUNT,
             RuleField.HARDCOVER_RATING, RuleField.HARDCOVER_REVIEW_COUNT,
             RuleField.LUBIMYCZYTAC_RATING, RuleField.RANOBEDB_RATING,
-            RuleField.AUDIBLE_RATING, RuleField.AUDIBLE_REVIEW_COUNT
+            RuleField.AUDIBLE_RATING, RuleField.AUDIBLE_REVIEW_COUNT,
+            RuleField.AUDIOBOOK_CHAPTER_COUNT, RuleField.AUDIOBOOK_BITRATE
     );
 
     private static boolean isNumericField(RuleField field) {

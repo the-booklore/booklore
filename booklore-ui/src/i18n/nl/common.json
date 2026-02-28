@@ -21,5 +21,6 @@
     "select": "Selecteren",
     "dismiss": "Sluiten",
     "discard": "Verwerpen",
-    "review": "Beoordelen"
+    "review": "Beoordelen",
+    "libraryPathInaccessible": ""
 }
