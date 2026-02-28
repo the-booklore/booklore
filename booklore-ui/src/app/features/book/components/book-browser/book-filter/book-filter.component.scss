@@ -3,7 +3,7 @@
 }
 
 :host ::ng-deep .p-togglebutton {
-  --p-togglebutton-content-padding: 0.25rem 0.5rem;
+  --p-togglebutton-content-padding: 0.25rem 0.35rem;
 }
 
 :host ::ng-deep .cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper {
@@ -34,7 +34,11 @@
 }
 
 .filter-mode-select {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+}
+
+:host ::ng-deep .filter-mode-select .p-togglebutton-label {
+  font-size: 0.75rem;
 }
 
 .filter-content {
@@ -83,6 +87,11 @@
 
   &.active {
     color: var(--primary-color);
+  }
+
+  &.active-not {
+    color: var(--p-red-400);
+    text-decoration: line-through;
   }
 }
 

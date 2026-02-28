@@ -244,6 +244,7 @@
   right: 10%;
   display: flex;
   align-items: center;
+  overflow: hidden;
   padding: 1rem 0.5rem 0.5rem;
   z-index: 1;
   border-radius: 10px 10px 0 0;
@@ -260,10 +261,6 @@
     pointer-events: none;
   }
 
-  > .footer-content {
-    width: 100%;
-  }
-
   @media (max-width: 768px) {
     left: 0;
     right: 0;
@@ -273,23 +270,50 @@
 .footer-content {
   display: flex;
   align-items: center;
+  min-width: 0;
+  flex: 1;
 }
 
 .footer-left {
   display: flex;
   align-items: center;
   padding-left: 0.5rem;
-  width: 25%;
+  flex-shrink: 0;
+  width: 120px;
+
+  @media (max-width: 768px) {
+    width: auto;
+  }
 }
 
 .footer-center {
   display: flex;
   justify-content: center;
-  width: 50%;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 32px), transparent 100%);
+  padding: 0 16px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
 }
 
 .footer-right {
-  width: 25%;
+  flex-shrink: 0;
+  width: 120px;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 .selected-count-badge {
@@ -326,6 +350,7 @@
 
 .action-buttons-group {
   display: flex;
+  flex-shrink: 0;
   gap: 0.5rem;
 
   @media (min-width: 768px) {

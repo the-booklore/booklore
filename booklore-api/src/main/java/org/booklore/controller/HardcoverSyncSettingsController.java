@@ -5,6 +5,7 @@ import org.booklore.service.hardcover.HardcoverSyncSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,7 +36,7 @@ public class HardcoverSyncSettingsController {
     @ApiResponse(responseCode = "200", description = "Settings updated successfully")
     @PutMapping
     @PreAuthorize("@securityUtil.canSyncKobo() or @securityUtil.canSyncKoReader() or @securityUtil.isAdmin()")
-    public ResponseEntity<HardcoverSyncSettings> updateSettings(@RequestBody HardcoverSyncSettings settings) {
+    public ResponseEntity<HardcoverSyncSettings> updateSettings(@RequestBody @Valid HardcoverSyncSettings settings) {
         HardcoverSyncSettings updated = hardcoverSyncSettingsService.updateCurrentUserSettings(settings);
         return ResponseEntity.ok(updated);
     }

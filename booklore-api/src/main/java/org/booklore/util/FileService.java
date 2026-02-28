@@ -57,11 +57,6 @@ public class FileService {
         TARGET_HOST_THREAD_LOCAL.remove();
     }
 
-    static {
-        // Enable restricted headers to allow 'Host' header override for DNS rebinding protection
-        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-    }
-
     private final AppProperties appProperties;
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
@@ -168,6 +163,10 @@ public class FileService {
 
     public String getToolsKepubifyPath() {
         return Paths.get(appProperties.getPathConfig(), "tools", "kepubify").toString();
+    }
+
+    public String getToolsFfprobePath() {
+        return Paths.get(appProperties.getPathConfig(), "tools", "ffprobe").toString();
     }
 
 
@@ -324,8 +323,9 @@ public class FileService {
                 String requestUrl = uri.getScheme() + "://" + hostInUrl + portSuffix + path + (query != null ? "?" + query : "");
 
                 HttpHeaders headers = new HttpHeaders();
-                // Set original 'Host' header for server-side virtual hosting
-                headers.set(HttpHeaders.HOST, host);
+                // Host header is set in prepareConnection via setRequestProperty.
+                // Do NOT set it here: Spring's addRequestProperty would add a duplicate,
+                // and duplicate Host headers cause 400 on strict CDNs like CloudFront.
                 headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
                 headers.set(HttpHeaders.ACCEPT, "image/*");
 

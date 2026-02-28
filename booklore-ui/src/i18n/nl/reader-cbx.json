@@ -1,6 +1,6 @@
 {
     "reader": {
-        "continueToNextBook": "",
+        "continueToNextBook": "Doorgaan naar het volgende boek",
         "noPagesAvailable": "",
         "loadingBook": "Boek laden...",
         "slideshow": ""

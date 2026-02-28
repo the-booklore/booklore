@@ -34,6 +34,11 @@
     "invalidInput": "Invalid Input",
     "invalidInputDetail": "Please enter a valid max file upload size in MB."
   },
+  "appearance": {
+    "sectionTitle": "Appearance",
+    "supportButtonAnimation": "Support Button Animation",
+    "supportButtonAnimationDesc": "Show the animated heart effect on the support button in the top bar. Disabling this keeps the button visible but removes the animation."
+  },
   "telemetry": {
     "sectionTitle": "Telemetry",
     "enableTelemetry": "Enable Telemetry",

@@ -21,5 +21,6 @@
     "select": "Kiválasztás",
     "dismiss": "Ignorálás",
     "discard": "Elvetés",
-    "review": "Felülvizsgálat"
+    "review": "Felülvizsgálat",
+    "libraryPathInaccessible": ""
 }

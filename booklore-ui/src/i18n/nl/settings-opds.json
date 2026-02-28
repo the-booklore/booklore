@@ -35,8 +35,8 @@
     },
     "createDialog": {
         "title": "",
-        "username": "",
-        "password": "",
+        "username": "Gebruikersnaam",
+        "password": "Wachtwoord",
         "sortOrder": "",
         "enterUsername": "",
         "enterPassword": "",

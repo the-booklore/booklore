@@ -7,11 +7,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/v1/reading-sessions")
@@ -39,8 +43,8 @@ public class ReadingSessionController {
     @GetMapping("/book/{bookId}")
     public ResponseEntity<Page<ReadingSessionResponse>> getReadingSessionsForBook(
             @PathVariable Long bookId, 
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size) {
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int size) {
         Page<ReadingSessionResponse> sessions = readingSessionService.getReadingSessionsForBook(bookId, page, size);
         return ResponseEntity.ok(sessions);
     }

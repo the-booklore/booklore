@@ -12,6 +12,7 @@ import org.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import org.booklore.model.dto.request.ReadProgressRequest;
 import org.booklore.model.dto.request.ReadStatusUpdateRequest;
 import org.booklore.model.dto.request.ShelvesAssignmentRequest;
+import org.booklore.model.dto.response.AttachBookFileResponse;
 import org.booklore.model.dto.response.BookDeletionResponse;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
 import org.booklore.model.dto.response.DuplicateGroup;
@@ -35,10 +36,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -46,6 +49,7 @@ import java.util.Set;
 
 @Tag(name = "Books", description = "Endpoints for managing books, their metadata, progress, and recommendations")
 @RequestMapping("/api/v1/books")
+@Validated
 @RestController
 @AllArgsConstructor
 public class BookController {
@@ -189,7 +193,7 @@ public class BookController {
     @PutMapping("/{bookId}/viewer-setting")
     @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Void> updateBookViewerSettings(
-            @Parameter(description = "Viewer settings to update") @RequestBody BookViewerSettings bookViewerSettings,
+            @Parameter(description = "Viewer settings to update") @RequestBody @Valid BookViewerSettings bookViewerSettings,
             @Parameter(description = "ID of the book") @PathVariable long bookId) {
         bookService.updateBookViewerSetting(bookId, bookViewerSettings);
         return ResponseEntity.noContent().build();
@@ -236,7 +240,7 @@ public class BookController {
     })
     @PostMapping("/reset-progress")
     public ResponseEntity<List<BookStatusUpdateResponse>> resetProgress(
-            @Parameter(description = "List of book IDs to reset progress for") @RequestBody List<Long> bookIds,
+            @Parameter(description = "List of book IDs to reset progress for") @RequestBody @Size(max = 500) List<Long> bookIds,
             @Parameter(description = "Type of progress reset") @RequestParam ResetProgressType type) {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
@@ -259,7 +263,7 @@ public class BookController {
     })
     @PostMapping("/reset-personal-rating")
     public ResponseEntity<List<PersonalRatingUpdateResponse>> resetPersonalRating(
-            @Parameter(description = "List of book IDs to reset personal rating for") @RequestBody List<Long> bookIds) {
+            @Parameter(description = "List of book IDs to reset personal rating for") @RequestBody @Size(max = 500) List<Long> bookIds) {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
@@ -285,7 +289,7 @@ public class BookController {
     })
     @PostMapping("/{targetBookId}/attach-file")
     @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
-    public ResponseEntity<Book> attachBookFiles(
+    public ResponseEntity<AttachBookFileResponse> attachBookFiles(
             @Parameter(description = "ID of the target book to attach the files to") @PathVariable Long targetBookId,
             @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
         return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isMoveFiles()));

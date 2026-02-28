@@ -57,4 +57,8 @@ export class BookMetadataService {
   fetchMetadataDetail(provider: string, providerItemId: string): Observable<BookMetadata> {
     return this.http.get<BookMetadata>(`${this.url}/metadata/detail/${provider}/${providerItemId}`);
   }
+
+  lookupByIsbn(isbn: string): Observable<BookMetadata> {
+    return this.http.post<BookMetadata>(`${this.url}/metadata/isbn-lookup`, {isbn});
+  }
 }

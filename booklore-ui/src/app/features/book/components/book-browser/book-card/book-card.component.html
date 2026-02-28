@@ -34,7 +34,7 @@
     @if (_isSeriesViewActive) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()" [ariaLabel]="'book.card.alt.viewSeriesInfo' | transloco"></p-button>
     } @else {
-      <a [routerLink]="urlHelper.getBookUrl(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn" [ariaLabel]="'book.card.alt.viewDetails' | transloco">
+      <a [routerLink]="urlHelper.getBookUrl(book)" (click)="prepareNavigation(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn" [ariaLabel]="'book.card.alt.viewDetails' | transloco">
       </p-button></a>
     }
 

@@ -2,7 +2,10 @@ package org.booklore.controller;
 
 import org.booklore.config.security.annotation.CheckBookAccess;
 import org.booklore.model.dto.BookFile;
+import org.booklore.model.dto.request.DetachBookFileRequest;
+import org.booklore.model.dto.response.DetachBookFileResponse;
 import org.booklore.model.enums.BookFileType;
+import org.booklore.service.book.BookFileDetachmentService;
 import org.booklore.service.file.AdditionalFileService;
 import org.booklore.service.upload.FileUploadService;
 import lombok.AllArgsConstructor;
@@ -22,6 +25,7 @@ public class AdditionalFileController {
 
     private final AdditionalFileService additionalFileService;
     private final FileUploadService fileUploadService;
+    private final BookFileDetachmentService bookFileDetachmentService;
 
     @GetMapping
     @CheckBookAccess(bookIdParam = "bookId")
@@ -68,5 +72,15 @@ public class AdditionalFileController {
             @PathVariable Long fileId) {
         additionalFileService.deleteAdditionalFile(fileId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{fileId}/detach")
+    @CheckBookAccess(bookIdParam = "bookId")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<DetachBookFileResponse> detachFile(
+            @PathVariable Long bookId,
+            @PathVariable Long fileId,
+            @RequestBody DetachBookFileRequest request) {
+        return ResponseEntity.ok(bookFileDetachmentService.detachBookFile(bookId, fileId, request.copyMetadata()));
     }
 }

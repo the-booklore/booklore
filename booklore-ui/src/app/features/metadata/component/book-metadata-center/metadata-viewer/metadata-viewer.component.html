@@ -593,9 +593,8 @@
                   <p-button
                     icon="pi pi-chevron-left"
                     [disabled]="!canNavigatePrevious()"
-                    (onClick)="navigatePrevious()"
-                    rounded
-                    text
+                    (onClick)="navigatePrevious()"`
+                    outlined
                     severity="secondary"
                     [pTooltip]="t('goToPreviousBook')"
                     tooltipPosition="bottom">
@@ -609,8 +608,7 @@
                     [disabled]="!canNavigateNext()"
                     (onClick)="navigateNext()"
                     severity="secondary"
-                    rounded
-                    text
+                    outlined
                     [pTooltip]="t('goToNextBook')"
                     tooltipPosition="bottom">
                   </p-button>
@@ -672,7 +670,7 @@
       </div>
       <div class="description-body">
         <div #descriptionContent [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
-          <div class="description-html" [innerHTML]="book.metadata!.description"></div>
+          <div class="description-html" [innerHTML]="sanitizeDescription(book.metadata!.description)"></div>
         </div>
         @if (isExpanded || isOverflowing) {
           <button class="expand-toggle" (click)="toggleExpand()">
@@ -978,6 +976,27 @@
               </span>
             </div>
           }
+
+          @if (audio.chapters?.length) {
+            <div class="audiobook-chapters-section">
+              <div class="audiobook-chapters-header clickable" (click)="isChapterListExpanded = !isChapterListExpanded">
+                <span class="audiobook-chapters-toggle-label">
+                  <i class="pi pi-list"></i>
+                  {{ t('audiobookChapterList') }}
+                </span>
+                <i class="pi section-toggle-icon" [ngClass]="isChapterListExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
+              </div>
+              <div class="audiobook-chapters-list" [ngClass]="{'collapsed': !isChapterListExpanded}">
+                @for (chapter of audio.chapters; track chapter.index) {
+                  <div class="audiobook-chapter-row">
+                    <span class="audiobook-chapter-index">{{ chapter.index! + 1 }}</span>
+                    <span class="audiobook-chapter-title">{{ chapter.title }}</span>
+                    <span class="audiobook-chapter-duration">{{ formatDurationMs(chapter.durationMs!) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
         </div>
       </div>
     }
@@ -991,8 +1010,42 @@
       (downloadFile)="onDownloadFile($event)"
       (downloadAllFiles)="onDownloadAllFiles($event)"
       (deleteBookFile)="onDeleteBookFile($event)"
-      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)">
+      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)"
+      (detachBookFile)="onDetachBookFile($event)">
     </app-metadata-tabs>
+
+    <p-dialog
+      [header]="t('confirm.detachFileHeader')"
+      [(visible)]="showDetachDialog"
+      [modal]="true"
+      [closable]="true"
+      [style]="{ width: '450px' }"
+      [breakpoints]="{ '575px': '95vw' }">
+      <div class="detach-dialog-content">
+        <p>{{ t('confirm.detachFileMessage', { fileName: detachFileName }) }}</p>
+        <div class="detach-dialog-option">
+          <p-checkbox
+            [(ngModel)]="detachCopyMetadata"
+            [binary]="true"
+            inputId="copyMetadata">
+          </p-checkbox>
+          <label for="copyMetadata">{{ t('confirm.detachFileCopyMetadata') }}</label>
+        </div>
+      </div>
+      <ng-template #footer>
+        <p-button
+          [label]="'common.cancel' | transloco"
+          severity="secondary"
+          (onClick)="showDetachDialog = false">
+        </p-button>
+        <p-button
+          [label]="t('confirm.detachFileBtn')"
+          severity="warn"
+          icon="pi pi-external-link"
+          (onClick)="confirmDetach()">
+        </p-button>
+      </ng-template>
+    </p-dialog>
   </div>
 } @else {
   <div class="loading-state" *transloco="let t; prefix: 'metadata.viewer'">

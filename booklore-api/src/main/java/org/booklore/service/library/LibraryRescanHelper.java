@@ -11,11 +11,13 @@ import org.booklore.model.websocket.Topic;
 import org.booklore.repository.LibraryRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.service.NotificationService;
+import org.booklore.service.fileprocessor.AudiobookProcessor;
 import org.booklore.service.metadata.BookMetadataUpdater;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.task.options.RescanLibraryContext;
 import org.booklore.task.TaskCancellationManager;
 import org.booklore.task.TaskStatus;
+import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.TaskType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -34,14 +36,16 @@ public class LibraryRescanHelper {
     private final NotificationService notificationService;
     private final TaskCancellationManager cancellationManager;
     private final BookRepository bookRepository;
+    private final AudiobookProcessor audiobookProcessor;
 
-    public LibraryRescanHelper(LibraryRepository libraryRepository, MetadataExtractorFactory metadataExtractorFactory, @Lazy BookMetadataUpdater bookMetadataUpdater, NotificationService notificationService, TaskCancellationManager cancellationManager, BookRepository bookRepository) {
+    public LibraryRescanHelper(LibraryRepository libraryRepository, MetadataExtractorFactory metadataExtractorFactory, @Lazy BookMetadataUpdater bookMetadataUpdater, NotificationService notificationService, TaskCancellationManager cancellationManager, BookRepository bookRepository, AudiobookProcessor audiobookProcessor) {
         this.libraryRepository = libraryRepository;
         this.metadataExtractorFactory = metadataExtractorFactory;
         this.bookMetadataUpdater = bookMetadataUpdater;
         this.notificationService = notificationService;
         this.cancellationManager = cancellationManager;
         this.bookRepository = bookRepository;
+        this.audiobookProcessor = audiobookProcessor;
     }
 
     @Transactional
@@ -105,6 +109,10 @@ public class LibraryRescanHelper {
                         .mergeTags(true)
                         .build();
                 bookMetadataUpdater.setBookMetadata(metadataUpdateContext);
+
+                if (bookEntity.getPrimaryBookFile().getBookType() == BookFileType.AUDIOBOOK && bookMetadata.getAudiobookMetadata() != null) {
+                    audiobookProcessor.setAudiobookTechnicalMetadata(bookEntity, bookMetadata);
+                }
             } catch (Exception e) {
                 log.error("Failed to update metadata for book id={} path={}: {}", bookEntity.getId(), bookEntity.getFullFilePath(), e.getMessage(), e);
             } finally {

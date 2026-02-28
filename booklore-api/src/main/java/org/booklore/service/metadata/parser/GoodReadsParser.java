@@ -96,7 +96,7 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
         String isbn = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         if (isbn != null && !isbn.isBlank()) {
-            log.info("Goodreads Query URL (ISBN): " + BASE_ISBN_URL + "{}", isbn);
+            log.info("Goodreads Query URL (ISBN): {}{}", BASE_ISBN_URL, isbn);
             Document doc = fetchDoc(BASE_ISBN_URL + isbn);
             String ogUrl = Optional.ofNullable(doc.selectFirst("meta[property=og:url]"))
                     .map(e -> e.attr("content"))
@@ -417,6 +417,9 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
     }
 
     private LocalDate convertToLocalDate(String timestamp) {
+        if (timestamp == null || timestamp.isBlank() || "null".equals(timestamp)) {
+            return null;
+        }
         try {
             long millis = Long.parseLong(timestamp);
             return Instant.ofEpochMilli(millis)

@@ -51,14 +51,14 @@
         "selectLibraries": ""
     },
     "perms": {
-        "uploadBooks": "",
-        "downloadBooks": "",
+        "uploadBooks": "Boeken uploaden",
+        "downloadBooks": "Boeken downloaden",
         "editMetadata": "",
-        "manageLibrary": "",
+        "manageLibrary": "Bibliotheek beheren",
         "emailBook": "",
         "deleteBook": "",
-        "koreaderSync": "",
-        "koboSync": "",
+        "koreaderSync": "KOReader-synchronisatie",
+        "koboSync": "Kobo-synchronisatie",
         "accessOpds": ""
     },
     "toast": {

@@ -41,5 +41,10 @@
     },
     "settingsSaved": "Paramètres enregistrés",
     "settingsSavedDetail": "Les paramètres ont été enregistrés avec succès !",
-    "settingsError": "Une erreur s'est produite lors de l'enregistrement des paramètres."
+    "settingsError": "Une erreur s'est produite lors de l'enregistrement des paramètres.",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }

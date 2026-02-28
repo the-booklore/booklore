@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {Observable, throwError} from 'rxjs';
 import {HttpClient} from '@angular/common/http';
 import {catchError, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, DuplicateDetectionRequest, DuplicateGroup} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, DetachBookFileResponse, DuplicateDetectionRequest, DuplicateGroup} from '../model/book.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {MessageService} from 'primeng/api';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
@@ -208,21 +208,52 @@ export class BookFileService {
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile?.fileName ?? 'file');
   }
 
+  detachBookFile(bookId: number, fileId: number, copyMetadata: boolean): Observable<DetachBookFileResponse> {
+    return this.http.post<DetachBookFileResponse>(`${this.url}/${bookId}/files/${fileId}/detach`, { copyMetadata }).pipe(
+      tap(response => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        let updatedBooks = (currentState.books || []).map(book =>
+          book.id === bookId ? response.sourceBook : book
+        );
+        updatedBooks = [...updatedBooks, response.newBook];
+
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: this.t.translate('metadata.viewer.toast.detachFileSuccessSummary'),
+          detail: this.t.translate('metadata.viewer.toast.detachFileSuccessDetail')
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.t.translate('metadata.viewer.toast.detachFileErrorSummary'),
+          detail: error?.error?.message || error?.message || this.t.translate('metadata.viewer.toast.detachFileErrorDetail')
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
   findDuplicates(request: DuplicateDetectionRequest): Observable<DuplicateGroup[]> {
     return this.http.post<DuplicateGroup[]>(`${this.url}/duplicates`, request);
   }
 
-  attachBookFiles(targetBookId: number, sourceBookIds: number[], moveFiles: boolean): Observable<Book> {
-    return this.http.post<Book>(`${this.url}/${targetBookId}/attach-file`, {
+  attachBookFiles(targetBookId: number, sourceBookIds: number[], moveFiles: boolean): Observable<{updatedBook: Book, deletedSourceBookIds: number[]}> {
+    return this.http.post<{updatedBook: Book, deletedSourceBookIds: number[]}>(`${this.url}/${targetBookId}/attach-file`, {
       sourceBookIds,
       moveFiles
     }).pipe(
-      tap(updatedBook => {
+      tap(response => {
         const currentState = this.bookStateService.getCurrentBookState();
-        const sourceIdSet = new Set(sourceBookIds);
+        const deletedIdSet = new Set(response.deletedSourceBookIds);
         let updatedBooks = (currentState.books || []).map(book =>
-          book.id === targetBookId ? updatedBook : book
-        ).filter(book => !sourceIdSet.has(book.id));
+          book.id === targetBookId ? response.updatedBook : book
+        ).filter(book => !deletedIdSet.has(book.id));
 
         this.bookStateService.updateBookState({
           ...currentState,

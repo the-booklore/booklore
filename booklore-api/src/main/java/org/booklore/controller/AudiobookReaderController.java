@@ -46,6 +46,7 @@ public class AudiobookReaderController {
     @ApiResponse(responseCode = "200", description = "Full audio file returned")
     @ApiResponse(responseCode = "206", description = "Partial content returned (range request)")
     @ApiResponse(responseCode = "416", description = "Range not satisfiable")
+    @CheckBookAccess(bookIdParam = "bookId")
     @GetMapping("/{bookId}/stream")
     public void streamAudiobook(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,
@@ -62,6 +63,7 @@ public class AudiobookReaderController {
     @ApiResponse(responseCode = "200", description = "Full track file returned")
     @ApiResponse(responseCode = "206", description = "Partial content returned (range request)")
     @ApiResponse(responseCode = "416", description = "Range not satisfiable")
+    @CheckBookAccess(bookIdParam = "bookId")
     @GetMapping("/{bookId}/track/{trackIndex}/stream")
     public void streamTrack(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,
@@ -79,6 +81,7 @@ public class AudiobookReaderController {
                     "Uses token query parameter for authentication.")
     @ApiResponse(responseCode = "200", description = "Cover art returned successfully")
     @ApiResponse(responseCode = "404", description = "No embedded cover art found")
+    @CheckBookAccess(bookIdParam = "bookId")
     @GetMapping("/{bookId}/cover")
     public ResponseEntity<byte[]> getEmbeddedCover(
             @Parameter(description = "ID of the book") @PathVariable Long bookId,

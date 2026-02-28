@@ -222,6 +222,7 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .referrerPolicy(referrer -> referrer.policy(
                                 ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .contentTypeOptions(contentType -> {})
                 )
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
@@ -242,6 +243,7 @@ public class SecurityConfig {
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                         .referrerPolicy(referrer -> referrer.policy(
                                 ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .contentTypeOptions(contentType -> {})
                 )
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
@@ -262,8 +264,11 @@ public class SecurityConfig {
                     protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
                         super.prepareConnection(connection, httpMethod);
                         connection.setInstanceFollowRedirects(false);
+                        String targetHost = FileService.getTargetHost();
+                        if (targetHost != null) {
+                            connection.setRequestProperty("Host", targetHost);
+                        }
                         if (connection instanceof HttpsURLConnection httpsConnection) {
-                            String targetHost = FileService.getTargetHost();
                             if (targetHost != null) {
                                 // Set original host for SNI (even if connecting to IP)
                                 SSLSocketFactory defaultFactory = httpsConnection.getSSLSocketFactory();

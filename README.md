@@ -212,7 +212,7 @@ volumes:
 | 💬 **Come hang out** | [Discord Server](https://discord.gg/Ee5hd458Uz) |
 
 > [!WARNING]
-> **Before opening a PR:** Open an issue first and get maintainer approval. PRs without a linked issue, without screenshots/video proof, or without pasted test output will be closed. AI-assisted contributions are welcome, but you must run, test, and understand every line you submit. See the [Contributing Guide](CONTRIBUTING.md) for full details.
+> **Before opening a PR:** Open an issue first and get maintainer approval. PRs without a linked issue, without screenshots/video proof, or without pasted test output will be closed. All code must follow project [backend](CONTRIBUTING.md#backend-conventions) and [frontend](CONTRIBUTING.md#frontend-conventions) conventions. AI-assisted contributions are welcome, but you must run, test, and understand every line you submit. See the [Contributing Guide](CONTRIBUTING.md) for full details.
 
 ---
 

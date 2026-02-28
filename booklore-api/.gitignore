@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Local scripts ###
+local/

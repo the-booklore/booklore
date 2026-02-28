@@ -453,7 +453,8 @@
             "fileTooLargeDetail": "{{ fileName }} överskrider maximal filstorlek på {{ maxSize }}",
             "fileTooLargeError": "Filen överskrider maximal storlek på {{ maxSize }}",
             "uploadFailedUnknown": "Uppladdning misslyckades på grund av okänt fel."
-        }
+        },
+        "supplementaryAllFormats": ""
     },
     "filter": {
         "title": "Filter",
