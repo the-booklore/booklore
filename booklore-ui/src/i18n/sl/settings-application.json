@@ -41,5 +41,10 @@
     },
     "settingsSaved": "Nastavitve shranjene",
     "settingsSavedDetail": "Nastavitve so bile uspešno shranjene!",
-    "settingsError": "Pri shranjevanju nastavitev je prišlo do napake."
+    "settingsError": "Pri shranjevanju nastavitev je prišlo do napake.",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }
