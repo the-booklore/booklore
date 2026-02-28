@@ -3,9 +3,9 @@
         "confirm": {
             "deleteMessage": "Weet je zeker dat je {{ count }} boeken wilt verwijderen?\n\nJe boeken zullen permanent verwijdert worden van je bestandssysteem.\n\nDeze actie kan niet ongedaan worden gemaakt.",
             "deleteHeader": "Verwijdering bevestigen",
-            "regenCoverMessage": "",
-            "regenCoverHeader": "",
-            "customCoverMessage": "",
+            "regenCoverMessage": "Weet u zeker dat u de omslagen voor {{ count }} boek(en) opnieuw wil genereren?",
+            "regenCoverHeader": "Bevestig het opnieuw genereren van de omslag",
+            "customCoverMessage": "Weet u zeker dat u aangepaste omslagen wilt genereren voor {{ count }} boek(en)?",
             "customCoverHeader": ""
         },
         "toast": {
