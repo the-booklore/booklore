@@ -5,6 +5,7 @@ import org.booklore.service.kobo.KoboSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +42,7 @@ public class KoboSettingsController {
     @ApiResponse(responseCode = "200", description = "Settings updated successfully")
     @PutMapping
     @PreAuthorize("@securityUtil.canSyncKobo() or @securityUtil.isAdmin()")
-    public ResponseEntity<KoboSyncSettings> updateSettings(@RequestBody KoboSyncSettings settings) {
+    public ResponseEntity<KoboSyncSettings> updateSettings(@RequestBody @Valid KoboSyncSettings settings) {
         KoboSyncSettings updated = koboService.updateSettings(settings);
         return ResponseEntity.ok(updated);
     }

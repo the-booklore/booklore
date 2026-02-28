@@ -9,20 +9,22 @@ Thanks for your interest in contributing to Booklore! Whether you're fixing bugs
 **Tech Stack:**
 
 - **Frontend:** Angular 20, TypeScript, PrimeNG 19
-- **Backend:** Java 21, Spring Boot 3.5
+- **Backend:** Java 25, Spring Boot 3.5
 - **Authentication:** Local JWT + optional OIDC (e.g., Authentik)
 - **Database:** MariaDB
 - **Deployment:** Docker-compatible, reverse proxy-ready
 
 ## Table of Contents
 
+- [Before You Start](#before-you-start)
 - [Where to Start](#where-to-start)
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
 - [Running Tests](#running-tests)
 - [Making Changes](#making-changes)
 - [Submitting a Pull Request](#submitting-a-pull-request)
-- [Code Style](#code-style)
+- [Backend Conventions](#backend-conventions)
+- [Frontend Conventions](#frontend-conventions)
 - [Reporting Bugs](#reporting-bugs)
 - [Community & Support](#community--support)
 - [Code of Conduct](#code-of-conduct)
@@ -42,7 +44,7 @@ This protects both your time and ours. It ensures that the work is actually want
 - No test output pasted in the PR
 - Bulk AI-generated changes that clearly haven't been reviewed or tested
 - Unsolicited refactors, cleanups, or "improvements" nobody asked for
-- PRs over 1000+ changed lines (split them up)
+- PRs with 1000+ changed lines (split them up)
 
 ## Where to Start
 
@@ -50,8 +52,6 @@ Not sure where to begin? Look for issues labeled:
 
 - [`good first issue`](https://github.com/booklore-app/booklore/labels/good%20first%20issue) - small, well-scoped tasks ideal for newcomers
 - [`help wanted`](https://github.com/booklore-app/booklore/labels/help%20wanted) - tasks where maintainers would appreciate a hand
-
-You can also check the [project roadmap](https://github.com/booklore-app/booklore/projects) for larger initiatives.
 
 ---
 
@@ -89,7 +89,7 @@ git push origin develop
 ```
 booklore/
 ├── booklore-ui/             # Angular frontend (TypeScript, PrimeNG)
-├── booklore-api/            # Spring Boot backend (Java 21, Gradle)
+├── booklore-api/            # Spring Boot backend (Java 25, Gradle)
 ├── dev.docker-compose.yml   # Development Docker stack
 ├── assets/                  # Shared assets (logos, icons)
 └── local/                   # Local development helpers
@@ -127,8 +127,8 @@ For full control over each component or IDE integration (debugging, hot-reload, 
 
 | Tool          | Version | Download                                     |
 |---------------|---------|----------------------------------------------|
-| Java          | 21+     | [Adoptium](https://adoptium.net/)            |
-| Node.js + npm | 18+     | [nodejs.org](https://nodejs.org/)            |
+| Java          | 25+     | [Adoptium](https://adoptium.net/)            |
+| Node.js + npm | 20+     | [nodejs.org](https://nodejs.org/)            |
 | MariaDB       | 10.6+   | [mariadb.org](https://mariadb.org/download/) |
 | Git           | latest  | [git-scm.com](https://git-scm.com/)         |
 
@@ -182,7 +182,7 @@ ng serve
 
 The UI will be available at http://localhost:4200 with hot-reload enabled.
 
-> If you hit dependency issues, try `npm install --legacy-peer-deps`.
+> If you hit dependency issues, try `npm ci --force`.
 
 ---
 
@@ -265,8 +265,8 @@ Before opening your PR:
 - [ ] PR is linked to an **approved** issue (PRs without a linked issue will be closed)
 - [ ] All tests pass (`./gradlew test` and `ng test`)
 - [ ] Actual test output is pasted in the PR description
-- [ ] Code follows project conventions (see [Code Style](#code-style))
-- [ ] IntelliJ linter shows no errors
+- [ ] Code follows project conventions (see [Backend Conventions](#backend-conventions), [Frontend Conventions](#frontend-conventions))
+- [ ] No lint errors
 - [ ] Branch is up-to-date with `develop`
 - [ ] You ran the full stack locally and manually verified the change works
 - [ ] PR description includes a screen recording or screenshots proving it works
@@ -275,6 +275,8 @@ Before opening your PR:
 - [ ] No unrelated refactors, style changes, or "improvements" are bundled in
 - [ ] **PR is reasonably sized.** PRs with 1000+ changed lines will be closed without review. Break large changes into small, focused PRs.
 - [ ] **For user-facing features:** submit a companion docs PR at [booklore-docs](https://github.com/booklore-app/booklore-docs)
+
+> When you open your PR on GitHub, a **PR template** will appear. Fill it out completely, including test output and screenshots.
 
 ### AI-Assisted Contributions
 
@@ -293,14 +295,32 @@ We've seen a sharp increase in AI-generated PRs where the contributor clearly ne
 
 ---
 
-## Code Style
+## Backend Conventions
 
-| Area       | Convention                                                         |
-|------------|--------------------------------------------------------------------|
-| Angular    | Follow the [official style guide](https://angular.dev/style-guide) |
-| Java       | Modern Java 21 features, clean structure                           |
-| Formatting | Use IntelliJ IDEA's built-in linter                               |
-| UI         | SCSS with PrimeNG components                                       |
+- Use Spring Data JPA repository methods or JPQL. No native queries unless explicitly approved by a maintainer.
+- Constructor injection via Lombok `@AllArgsConstructor`. No `@Autowired`.
+- Logging via Lombok `@Slf4j`. No manual `LoggerFactory.getLogger(...)`.
+- Throw errors via `ApiError` enum (`ApiError.SOME_ERROR.createException()`). No raw `RuntimeException`.
+- Entities use `*Entity` suffix; DTOs drop it (e.g., `BookEntity` vs `Book`).
+- Use MapStruct for entity-to-DTO mapping. No hand-written mapping code.
+- Security: `@PreAuthorize("@securityUtil.isAdmin()")` or `@CheckBookAccess`. No `@Secured` or `@RolesAllowed`.
+- Testing: JUnit 5 + Mockito + AssertJ. `@ExtendWith(MockitoExtension.class)` for unit tests, `@SpringBootTest` only for integration tests.
+- Use modern Java features (records, sealed classes, pattern matching, text blocks, etc.).
+- No fully qualified class names inline. Always use imports.
+- Flyway migrations go in `booklore-api/src/main/resources/db/migration/` with naming `V<number>__<Description>.sql`.
+- Never modify a released migration. Always create a new migration file for changes.
+- Use idempotent guards in migrations (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `DROP ... IF EXISTS` before re-creating).
+
+---
+
+## Frontend Conventions
+
+- Follow the [Angular style guide](https://angular.dev/style-guide).
+- All components are standalone. No NgModules.
+- Use `inject()` for dependency injection. No constructor injection.
+- PrimeNG for UI components. SCSS for styling. Transloco for i18n.
+- Testing with Vitest (not Karma/Jasmine).
+- All UI features must be responsive (desktop + mobile).
 
 ---
 

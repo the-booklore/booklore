@@ -348,6 +348,12 @@ export class BookRuleEvaluatorService {
         return book.metadata?.abridged;
       case 'audiobookDuration':
         return book.metadata?.audiobookMetadata?.durationSeconds ?? null;
+      case 'audiobookCodec':
+        return book.metadata?.audiobookMetadata?.codec?.toLowerCase() ?? null;
+      case 'audiobookChapterCount':
+        return book.metadata?.audiobookMetadata?.chapterCount ?? null;
+      case 'audiobookBitrate':
+        return book.metadata?.audiobookMetadata?.bitrate ?? null;
       case 'isPhysical':
         return book.isPhysical;
       case 'lubimyczytacRating':
@@ -538,6 +544,9 @@ export class BookRuleEvaluatorService {
       case 'comicvineId': return book.metadata?.comicvineId;
       case 'abridged': return book.metadata?.abridged;
       case 'audiobookDuration': return book.metadata?.audiobookMetadata?.durationSeconds;
+      case 'audiobookCodec': return book.metadata?.audiobookMetadata?.codec;
+      case 'audiobookChapterCount': return book.metadata?.audiobookMetadata?.chapterCount;
+      case 'audiobookBitrate': return book.metadata?.audiobookMetadata?.bitrate;
       case 'comicCharacters': return book.metadata?.comicMetadata?.characters;
       case 'comicTeams': return book.metadata?.comicMetadata?.teams;
       case 'comicLocations': return book.metadata?.comicMetadata?.locations;

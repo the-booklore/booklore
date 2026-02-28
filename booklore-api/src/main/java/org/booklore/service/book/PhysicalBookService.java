@@ -13,6 +13,8 @@ import org.booklore.repository.AuthorRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.CategoryRepository;
 import org.booklore.repository.LibraryRepository;
+import org.booklore.util.BookCoverUtils;
+import org.booklore.util.FileService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,7 @@ public class PhysicalBookService {
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
     private final BookMapper bookMapper;
+    private final FileService fileService;
 
     @Transactional
     public Book createPhysicalBook(CreatePhysicalBookRequest request) {
@@ -75,6 +78,17 @@ public class PhysicalBookService {
 
         BookEntity savedBook = bookRepository.save(bookEntity);
         log.info("Created physical book '{}' in library {} with id {}", request.getTitle(), library.getName(), savedBook.getId());
+
+        if (request.getThumbnailUrl() != null && !request.getThumbnailUrl().isBlank()) {
+            try {
+                fileService.createThumbnailFromUrl(savedBook.getId(), request.getThumbnailUrl());
+                savedBook.getMetadata().setCoverUpdatedOn(Instant.now());
+                savedBook.setBookCoverHash(BookCoverUtils.generateCoverHash());
+                savedBook = bookRepository.save(savedBook);
+            } catch (Exception ex) {
+                log.warn("Failed to download cover for physical book {}: {}", savedBook.getId(), ex.getMessage());
+            }
+        }
 
         return bookMapper.toBook(savedBook);
     }

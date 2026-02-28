@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class OpdsFeedServiceTest {
@@ -115,10 +116,11 @@ class OpdsFeedServiceTest {
     }
 
     @Test
-    void generateShelvesNavigation_shouldHandleNullUserDetails() {
+    void generateShelvesNavigation_shouldThrowWhenNotAuthenticated() {
         when(authenticationService.getOpdsUser()).thenReturn(null);
-        String xml = opdsFeedService.generateShelvesNavigation(request);
-        assertThat(xml).contains("</feed>");
+        assertThatThrownBy(() -> opdsFeedService.generateShelvesNavigation(request))
+                .isInstanceOf(org.booklore.exception.APIException.class)
+                .hasMessageContaining("OPDS authentication required");
         verify(opdsBookService, never()).getUserShelves(any());
     }
 
@@ -300,14 +302,14 @@ class OpdsFeedServiceTest {
     }
 
     @Test
-    void getUserId_shouldReturnNullWhenNotAuthenticated() throws Exception {
+    void getUserId_shouldThrowWhenNotAuthenticated() throws Exception {
         when(authenticationService.getOpdsUser()).thenReturn(null);
 
         var method = OpdsFeedService.class.getDeclaredMethod("getUserId");
         method.setAccessible(true);
-        Long userId = (Long) method.invoke(opdsFeedService);
-
-        assertThat(userId).isNull();
+        assertThatThrownBy(() -> method.invoke(opdsFeedService))
+                .hasCauseInstanceOf(org.booklore.exception.APIException.class)
+                .hasRootCauseMessage("OPDS authentication required");
     }
 
     @Test

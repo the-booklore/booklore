@@ -6,6 +6,7 @@ import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.LibraryPathEntity;
 import org.booklore.repository.BookAdditionalFileRepository;
+import org.booklore.repository.BookRepository;
 import org.booklore.service.file.AdditionalFileService;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,9 @@ class AdditionalFileServiceTest {
 
     @Mock
     private BookAdditionalFileRepository additionalFileRepository;
+
+    @Mock
+    private BookRepository bookRepository;
 
     @Mock
     private AdditionalFileMapper additionalFileMapper;
@@ -175,6 +179,8 @@ class AdditionalFileServiceTest {
             verify(monitoringRegistrationService).unregisterSpecificPath(parentPath);
             filesMock.verify(() -> Files.deleteIfExists(fileEntity.getFullFilePath()));
             verify(additionalFileRepository).delete(fileEntity);
+            verify(bookRepository).save(bookEntity);
+            assertTrue(bookEntity.getIsPhysical());
         }
     }
 
@@ -194,6 +200,8 @@ class AdditionalFileServiceTest {
             verify(monitoringRegistrationService).unregisterSpecificPath(parentPath);
             filesMock.verify(() -> Files.deleteIfExists(fileEntity.getFullFilePath()));
             verify(additionalFileRepository).delete(fileEntity);
+            verify(bookRepository).save(bookEntity);
+            assertTrue(bookEntity.getIsPhysical());
         }
     }
 

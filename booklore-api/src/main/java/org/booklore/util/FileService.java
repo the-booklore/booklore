@@ -323,8 +323,9 @@ public class FileService {
                 String requestUrl = uri.getScheme() + "://" + hostInUrl + portSuffix + path + (query != null ? "?" + query : "");
 
                 HttpHeaders headers = new HttpHeaders();
-                // Set original 'Host' header for server-side virtual hosting
-                headers.set(HttpHeaders.HOST, host);
+                // Host header is set in prepareConnection via setRequestProperty.
+                // Do NOT set it here: Spring's addRequestProperty would add a duplicate,
+                // and duplicate Host headers cause 400 on strict CDNs like CloudFront.
                 headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
                 headers.set(HttpHeaders.ACCEPT, "image/*");
 
