@@ -205,7 +205,10 @@ public class MetadataChangeDetectorTest {
             Arguments.of("goodreadsRating", (Consumer<BookMetadata>) m -> m.setGoodreadsRating(4.3)),
             Arguments.of("goodreadsReviewCount", (Consumer<BookMetadata>) m -> m.setGoodreadsReviewCount(30000)),
             Arguments.of("hardcoverRating", (Consumer<BookMetadata>) m -> m.setHardcoverRating(4.2)),
-            Arguments.of("hardcoverReviewCount", (Consumer<BookMetadata>) m -> m.setHardcoverReviewCount(750))
+            Arguments.of("hardcoverReviewCount", (Consumer<BookMetadata>) m -> m.setHardcoverReviewCount(750)),
+            Arguments.of("audibleId", (Consumer<BookMetadata>) m -> m.setAudibleId("B098765432")),
+            Arguments.of("audibleRating", (Consumer<BookMetadata>) m -> m.setAudibleRating(4.6)),
+            Arguments.of("audibleReviewCount", (Consumer<BookMetadata>) m -> m.setAudibleReviewCount(3000))
         );
     }
 
@@ -551,6 +554,8 @@ public class MetadataChangeDetectorTest {
         newMeta.setAmazonReviewCount(2000);
         newMeta.setGoodreadsReviewCount(35000);
         newMeta.setHardcoverReviewCount(800);
+        newMeta.setAudibleRating(4.6);
+        newMeta.setAudibleReviewCount(3000);
         boolean result = MetadataChangeDetector.hasValueChangesForFileWrite(newMeta, existingMeta, clearFlags);
         assertFalse(result, "Rating and review count fields should not trigger file write");
     }

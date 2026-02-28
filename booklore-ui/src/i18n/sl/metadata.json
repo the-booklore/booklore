@@ -221,7 +221,8 @@
         "downloadTooltip": "Prenesi",
         "deleteTooltip": "Izbriši",
         "downloadAllTooltip": "Prenesi vse datoteke kot ZIP arhiv",
-        "physicalBookHint": "Lahko naložiš digitalno kopijo ali ročno dodaš metapodatke."
+        "physicalBookHint": "Lahko naložiš digitalno kopijo ali ročno dodaš metapodatke.",
+        "detachTooltip": "Odklopi"
     },
     "viewer": {
         "metadataLocked": "Metapodatki te knjige so zaklenjeni.",
@@ -357,7 +358,11 @@
             "dateUpdatedSummary": "Datum posodobljen",
             "dateUpdatedDetail": "Datum dokončanja knjige je bil posodobljen.",
             "dateUpdateFailedSummary": "Posodobitev ni uspela",
-            "dateUpdateFailedDetail": "Datuma dokončanja ni bilo mogoče posodobiti."
+            "dateUpdateFailedDetail": "Datuma dokončanja ni bilo mogoče posodobiti.",
+            "detachFileSuccessSummary": "Datoteka odklopljena",
+            "detachFileSuccessDetail": "Datoteka je bila odklopljena in ustvarjena je bila nova knjiga.",
+            "detachFileErrorSummary": "Odklop ni uspel",
+            "detachFileErrorDetail": "Datoteke ni bilo mogoče odklopiti."
         },
         "confirm": {
             "resetProgressMessage": "Želiš ponastaviti napredek branja za \"{{ title }}\"?",
@@ -373,8 +378,16 @@
             "deleteFileBtn": "Izbriši datoteko",
             "deleteBookMessage": "Ali si prepričan, da želiš izbrisati \"{{ title }}\"?\n\nTo bo trajno odstranilo zapis o knjigi iz tvoje knjižnice.\n\nTega dejanja ni mogoče razveljaviti.",
             "deleteBookAllFilesMessage": "Ali si prepričan, da želiš izbrisati \"{{ title }}\"?\n\nTo bo trajno odstranilo zapis o knjigi IN vse povezane datoteke iz tvojega sistema.\n\nTega dejanja ni mogoče razveljaviti.",
-            "deleteEverythingBtn": "Izbriši vse"
-        }
+            "deleteEverythingBtn": "Izbriši vse",
+            "detachFileHeader": "Odklopi datoteko",
+            "detachFileMessage": "S tem boš datoteko \"{{ fileName }}\" ločil od te knjige in zanjo ustvaril novo samostojno knjigo. Datoteka ne bo izbrisana.",
+            "detachFileCopyMetadata": "Kopiraj metapodatke v novo knjigo",
+            "detachFileBtn": "Odklopi",
+            "largeFileMessage": "Ta datoteka presega 25 MB. Nekateri ponudniki e-pošte lahko zavrnejo velike priloge.\n\nAli jo želiš vseeno poslati?",
+            "largeFileHeader": "Opozorilo o veliki datoteki",
+            "sendAnyway": "Vseeno pošlji"
+        },
+        "audiobookChapterList": "Seznam poglavij"
     },
     "sidecar": {
         "title": "Sidecar metapodatki",
