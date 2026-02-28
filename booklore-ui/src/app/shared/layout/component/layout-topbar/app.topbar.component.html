@@ -117,12 +117,16 @@
           </p-popover>
         </li>
 
-        <li class="topbar-item-relative heart-button topbar-item" (click)="openGithubSupportDialog()">
-          <span class="heart-ripple"></span>
-          <span class="heart-ripple heart-ripple-delayed"></span>
-          <span class="heart-orbit heart-orbit-1"></span>
-          <span class="heart-orbit heart-orbit-2"></span>
-          <span class="heart-orbit heart-orbit-3"></span>
+        <li class="topbar-item-relative heart-button topbar-item"
+            [class.heart-button-static]="!supportAnimationEnabled"
+            (click)="openGithubSupportDialog()">
+          @if (supportAnimationEnabled) {
+            <span class="heart-ripple"></span>
+            <span class="heart-ripple heart-ripple-delayed"></span>
+            <span class="heart-orbit heart-orbit-1"></span>
+            <span class="heart-orbit heart-orbit-2"></span>
+            <span class="heart-orbit heart-orbit-3"></span>
+          }
           <i class="pi pi-heart-fill heart-icon"></i>
         </li>
         <li class="topbar-item-relative">
