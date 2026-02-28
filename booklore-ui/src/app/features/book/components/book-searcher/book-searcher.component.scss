@@ -45,7 +45,7 @@
   transform: translateY(-50%);
   display: none;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 640px) {
     display: inline-flex;
   }
 }
@@ -54,7 +54,8 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  width: 300px;
+  width: 100%;
+  max-width: 600px;
   background-color: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -62,17 +63,12 @@
   0 2px 4px -1px rgba(0, 0, 0, 0.06),
   0 10px 15px -3px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  max-height: 70vh;
+  max-height: min(70vh, calc(100dvh - 4rem));
   overflow-y: auto;
   opacity: 0;
   height: 0;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, transform 0.2s ease, height 0.2s ease;
-
-  @media (min-width: 640px) {
-    width: 100%;
-    max-width: 600px;
-  }
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -103,6 +99,7 @@
   flex-direction: column;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
 
   &:first-child {
     border-radius: 8px 8px 0 0;
@@ -110,13 +107,11 @@
 
   &:last-child {
     border-radius: 0 0 8px 8px;
-
-    ::ng-deep .p-divider {
-      display: none;
-    }
+    border-bottom: none;
   }
 
-  &:hover {
+  &:hover,
+  &.active {
     background-color: var(--surface-hover);
   }
 
@@ -125,15 +120,6 @@
     text-align: center;
     color: var(--text-secondary-color);
     font-style: italic;
-  }
-
-  ::ng-deep .p-divider {
-    margin: 0;
-
-    &::before {
-      border-top-color: var(--border-color);
-      opacity: 0.5;
-    }
   }
 }
 
@@ -154,6 +140,7 @@
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background-color: var(--surface-ground);
+  aspect-ratio: 2/3;
 }
 
 .search-book-details {
@@ -161,7 +148,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .search-book-title-container {
@@ -254,12 +241,21 @@
   }
 
   &.series-badge {
-    background-color: rgba(59, 130, 246, 0.1);
-    color: rgb(59, 130, 246);
+    background-color: color-mix(in srgb, var(--p-primary-color) 10%, transparent);
+    color: var(--p-primary-color);
   }
+}
 
-  &.year-badge {
-    background-color: rgba(34, 197, 94, 0.1);
-    color: rgb(34, 197, 94);
-  }
+.search-skeleton-item {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.search-skeleton-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
 }
