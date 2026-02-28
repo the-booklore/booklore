@@ -13,10 +13,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.service.metadata.BookLoreMetadata;
 import org.booklore.util.SecureXmlUtils;
-// NOTE: spring-boot-configurationprocessor JSON classes are used here for runtime parsing.
-// This is a pre-existing pattern in this file (JSONObject was already imported). It is not
-// a public API and could change across Spring Boot upgrades; migrate to org.json or Jackson
-// if this becomes a problem.
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
