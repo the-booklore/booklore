@@ -13,6 +13,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.dto.BookMetadata;
 import org.booklore.service.metadata.BookLoreMetadata;
 import org.booklore.util.SecureXmlUtils;
+// NOTE: spring-boot-configurationprocessor JSON classes are used here for runtime parsing.
+// This is a pre-existing pattern in this file (JSONObject was already imported). It is not
+// a public API and could change across Spring Boot upgrades; migrate to org.json or Jackson
+// if this becomes a problem.
+import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
@@ -253,19 +258,23 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                                 if ("calibre:pages".equals(name) || "pagecount".equals(name) || "schema:pagecount".equals(prop) || "media:pagecount".equals(prop) || (BookLoreMetadata.NS_PREFIX + ":page_count").equals(prop)) {
                                     safeParseInt(content, builderMeta::pageCount);
-                                } else if ("calibre:user_metadata:#pagecount".equals(name)) {
+                                } else if (name.startsWith("calibre:user_metadata:#")) {
+                                    String lookupName = name.substring("calibre:user_metadata:".length());
                                     try {
-                                        JSONObject jsonroot = new JSONObject(content);
-                                        Object value = jsonroot.opt("#value#");
-                                        safeParseInt(String.valueOf(value), builderMeta::pageCount);
+                                        applyCalibreUserMetadataField(lookupName, new JSONObject(content), builderMeta);
                                     } catch (JSONException ignored) {
                                     }
                                 } else if ("calibre:user_metadata".equals(prop)) {
                                     try {
                                         JSONObject jsonroot = new JSONObject(content);
-                                        JSONObject pages = jsonroot.getJSONObject("#pagecount");
-                                        Object value = pages.opt("#value#");
-                                        safeParseInt(String.valueOf(value), builderMeta::pageCount);
+                                        Iterator<String> keys = jsonroot.keys();
+                                        while (keys.hasNext()) {
+                                            String lookupName = keys.next();
+                                            try {
+                                                applyCalibreUserMetadataField(lookupName, jsonroot.getJSONObject(lookupName), builderMeta);
+                                            } catch (JSONException ignored) {
+                                            }
+                                        }
                                     } catch (JSONException ignored) {
                                     }
                                 }
@@ -352,9 +361,10 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                         case "COMICVINE" -> builderMeta.comicvineId(value);
                                         case "RANOBEDB" -> builderMeta.ranobedbId(value);
                                         case "GOOGLE" -> builderMeta.googleId(value);
-                                        case "AMAZON" -> builderMeta.asin(value);
+                                        case "ASIN", "AMAZON", "MOBI-ASIN" -> builderMeta.asin(value);
                                         case "HARDCOVER" -> builderMeta.hardcoverId(value);
-                                        case "HARDCOVERBOOK", "HARDCOVER_BOOK_ID" -> builderMeta.hardcoverBookId(value);
+                                        case "HARDCOVERBOOK", "HARDCOVER_BOOK",
+                                             "HARDCOVER_BOOK_ID" -> builderMeta.hardcoverBookId(value);
                                         case "LUBIMYCZYTAC" -> builderMeta.lubimyczytacId(value);
                                     }
                                 }
@@ -477,6 +487,75 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Maps a single Calibre custom column field to the corresponding BookMetadata builder field.
+     *
+     * <p>Lookup names (e.g. {@code #subtitle}, {@code #moods}) are <em>user-defined</em> in Calibre
+     * and therefore not universal. The names recognised here follow the convention established by
+     * popular Calibre metadata plugins (e.g. Goodreads Sync, Hardcover) and Booklore's own
+     * "Polish EPUB" workflow. Unknown lookup names are silently ignored — this is intentional
+     * best-effort behaviour. If these column names become configurable in the future, this switch
+     * is the single place to update.
+     *
+     * @param lookupName the Calibre custom-column lookup name, e.g. {@code #subtitle}
+     * @param fieldJson  the per-column JSON object stored by Calibre (contains {@code #value#})
+     * @param builderMeta the metadata builder to populate
+     */
+    private void applyCalibreUserMetadataField(
+            String lookupName,
+            JSONObject fieldJson,
+            BookMetadata.BookMetadataBuilder builderMeta) {
+
+        Object rawValue = fieldJson.opt("#value#");
+        if (rawValue == null) return;
+        String strValue = String.valueOf(rawValue).trim();
+
+        switch (lookupName) {
+            case "#subtitle" -> {
+                if (StringUtils.isNotBlank(strValue) && !"null".equals(strValue))
+                    builderMeta.subtitle(strValue);
+            }
+            case "#pagecount"            -> safeParseInt(strValue,    builderMeta::pageCount);
+            case "#series_total"         -> safeParseInt(strValue,    builderMeta::seriesTotal);
+            case "#amazon_rating"        -> safeParseDouble(strValue, builderMeta::amazonRating);
+            case "#amazon_review_count"  -> safeParseInt(strValue,    builderMeta::amazonReviewCount);
+            case "#goodreads_rating"     -> safeParseDouble(strValue, builderMeta::goodreadsRating);
+            case "#goodreads_review_count" -> safeParseInt(strValue,  builderMeta::goodreadsReviewCount);
+            case "#hardcover_rating"     -> safeParseDouble(strValue, builderMeta::hardcoverRating);
+            case "#hardcover_review_count" -> safeParseInt(strValue,  builderMeta::hardcoverReviewCount);
+            case "#moods" -> {
+                Set<String> vals = extractCalibreListValue(rawValue);
+                if (!vals.isEmpty()) builderMeta.moods(vals);
+            }
+            case "#extra_tags" -> {
+                Set<String> vals = extractCalibreListValue(rawValue);
+                if (!vals.isEmpty()) builderMeta.tags(vals);
+            }
+            // Unknown Calibre custom columns are intentionally ignored.
+        }
+    }
+
+    /**
+     * Extracts items from a Calibre list-type custom column value.
+     * Calibre stores list values as a JSONArray in "#value#"; falls back to CSV parsing for plain strings.
+     */
+    private Set<String> extractCalibreListValue(Object rawValue) {
+        if (rawValue == null) return new HashSet<>();
+        if (rawValue instanceof JSONArray arr) {
+            Set<String> result = new HashSet<>();
+            for (int i = 0; i < arr.length(); i++) {
+                try {
+                    String item = arr.getString(i);
+                    if (StringUtils.isNotBlank(item)) result.add(item.trim());
+                } catch (JSONException ignored) {
+                }
+            }
+            return result;
+        }
+        String str = String.valueOf(rawValue).trim();
+        return "null".equals(str) ? new HashSet<>() : parseJsonArrayOrCsv(str);
     }
 
     private LocalDate parseDate(String value) {
