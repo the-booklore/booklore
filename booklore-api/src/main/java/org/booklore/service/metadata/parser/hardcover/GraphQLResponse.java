@@ -296,14 +296,13 @@ public class GraphQLResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CachedTags {
         @JsonProperty("Genre")
-        private List<HardcoverBookDetails.CachedTag> genre;
+        private List<GraphQLResponse.CachedTag> genre;
 
         @JsonProperty("Mood")
-        private List<HardcoverBookDetails.CachedTag> mood;
+        private List<GraphQLResponse.CachedTag> mood;
 
         @JsonProperty("Tag")
-        private List<HardcoverBookDetails.CachedTag> tag;
-
+        private List<GraphQLResponse.CachedTag> tag;
     }
 
     @Getter
@@ -322,5 +321,38 @@ public class GraphQLResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Language {
         private String code2;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CachedTag {
+        private String tag;
+
+        @JsonProperty("tagSlug")
+        private String tagSlug;
+
+        private String category;
+
+        @JsonProperty("categorySlug")
+        private String categorySlug;
+
+        @JsonProperty("spoilerRatio")
+        private Double spoilerRatio;
+
+        private Integer count;
+
+        public HardcoverBookDetails.CachedTag toHardcoverCachedTag() {
+            return new HardcoverBookDetails.CachedTag(
+                    this.getTag(),
+                    this.getTagSlug(),
+                    this.getCategory(),
+                    this.getCategorySlug(),
+                    this.getSpoilerRatio(),
+                    this.getCount()
+            );
+        }
     }
 }

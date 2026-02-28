@@ -884,9 +884,9 @@ class HardcoverParserTest {
 
         // Cached tags for the book (moods, genres, tags)
         GraphQLResponse.CachedTags cachedTags = new GraphQLResponse.CachedTags();
-        cachedTags.setMood(List.of(createCachedTag("adventurous", 15), createCachedTag("exciting", 12), createCachedTag("novotes", 0)));
-        cachedTags.setGenre(List.of(createCachedTag("fiction", 20), createCachedTag("fantasy", 18), createCachedTag("novotes", 0)));
-        cachedTags.setTag(List.of(createCachedTag("epic", 10), createCachedTag("quest", 8), createCachedTag("novotes", 0)));
+        cachedTags.setMood(List.of(createGraphQLCachedTag("adventurous", 15), createGraphQLCachedTag("exciting", 12), createGraphQLCachedTag("novotes", 0)));
+        cachedTags.setGenre(List.of(createGraphQLCachedTag("fiction", 20), createGraphQLCachedTag("fantasy", 18), createGraphQLCachedTag("novotes", 0)));
+        cachedTags.setTag(List.of(createGraphQLCachedTag("epic", 10), createGraphQLCachedTag("quest", 8), createGraphQLCachedTag("novotes", 0)));
         book.setCachedTags(cachedTags);
 
         return book;
@@ -894,6 +894,13 @@ class HardcoverParserTest {
 
     private HardcoverBookDetails.CachedTag createCachedTag(String tag, int count) {
         HardcoverBookDetails.CachedTag cachedTag = new HardcoverBookDetails.CachedTag();
+        cachedTag.setTag(tag);
+        cachedTag.setCount(count);
+        return cachedTag;
+    }
+
+    private GraphQLResponse.CachedTag createGraphQLCachedTag(String tag, int count) {
+        GraphQLResponse.CachedTag cachedTag = new GraphQLResponse.CachedTag();
         cachedTag.setTag(tag);
         cachedTag.setCount(count);
         return cachedTag;

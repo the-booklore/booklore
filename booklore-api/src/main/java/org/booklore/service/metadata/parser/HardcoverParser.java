@@ -270,21 +270,30 @@ public class HardcoverParser implements BookParser {
         GraphQLResponse.CachedTags cachedTags = book.getCachedTags();
 
         if (cachedTags != null && cachedTags.getMood() != null && !cachedTags.getMood().isEmpty()) {
-            Set<String> basicFilteredMoods = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags.getMood());
+            Set<String> basicFilteredMoods = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags.getMood()
+                    .stream()
+                    .map(GraphQLResponse.CachedTag::toHardcoverCachedTag)
+                    .toList());
             metadata.setMoods(basicFilteredMoods.stream()
                     .map(WordUtils::capitalizeFully)
                     .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
 
         if (cachedTags != null && cachedTags.getGenre() != null && !cachedTags.getGenre().isEmpty()) {
-            Set<String> filteredGenres = HardcoverMoodFilter.filterGenresWithCounts(cachedTags.getGenre());
+            Set<String> filteredGenres = HardcoverMoodFilter.filterGenresWithCounts(cachedTags.getGenre()
+                    .stream()
+                    .map(GraphQLResponse.CachedTag::toHardcoverCachedTag)
+                    .toList());
             metadata.setCategories(filteredGenres.stream()
                     .map(WordUtils::capitalizeFully)
                     .collect(Collectors.toSet()));
         }
 
         if (cachedTags != null && cachedTags.getTag() != null && !cachedTags.getTag().isEmpty()) {
-            Set<String> filteredTags = HardcoverMoodFilter.filterTagsWithCounts(cachedTags.getTag());
+            Set<String> filteredTags = HardcoverMoodFilter.filterTagsWithCounts(cachedTags.getTag()
+                    .stream()
+                    .map(GraphQLResponse.CachedTag::toHardcoverCachedTag)
+                    .toList());
             metadata.setTags(filteredTags.stream()
                     .map(WordUtils::capitalizeFully)
                     .collect(Collectors.toSet()));
