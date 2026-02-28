@@ -554,4 +554,185 @@ class BookMetadataUpdaterTest {
         assertEquals("Existing Title", bookEntity.getMetadata().getTitle(),
                 "Title should NOT be replaced when using REPLACE_MISSING mode and title exists");
     }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_shouldPreserveExistingAgeRatingWhenIncomingIsNull() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setAgeRating(16);
+        bookEntity.getMetadata().setAgeRatingLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("Some Title");
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals(16, bookEntity.getMetadata().getAgeRating(),
+                "ageRating should be preserved when incoming value is null and mode is REPLACE_WHEN_PROVIDED");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_shouldPreserveExistingContentRatingWhenIncomingIsNull() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setContentRating("Mature");
+        bookEntity.getMetadata().setContentRatingLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("Some Title");
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("Mature", bookEntity.getMetadata().getContentRating(),
+                "contentRating should be preserved when incoming value is null and mode is REPLACE_WHEN_PROVIDED");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceAll_shouldClearAgeRatingWhenIncomingIsNull() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setAgeRating(16);
+        bookEntity.getMetadata().setAgeRatingLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_ALL);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertNull(bookEntity.getMetadata().getAgeRating(),
+                "ageRating should be cleared when incoming value is null and mode is REPLACE_ALL");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceAll_shouldClearContentRatingWhenIncomingIsNull() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setContentRating("Mature");
+        bookEntity.getMetadata().setContentRatingLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_ALL);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertNull(bookEntity.getMetadata().getContentRating(),
+                "contentRating should be cleared when incoming value is null and mode is REPLACE_ALL");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_shouldUpdateAgeRatingWhenProvided() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setAgeRating(12);
+        bookEntity.getMetadata().setAgeRatingLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setAgeRating(18);
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals(18, bookEntity.getMetadata().getAgeRating(),
+                "ageRating should be updated when a new value is provided");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_shouldUpdateContentRatingWhenProvided() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setContentRating("Teen");
+        bookEntity.getMetadata().setContentRatingLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setContentRating("Mature");
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("Mature", bookEntity.getMetadata().getContentRating(),
+                "contentRating should be updated when a new value is provided");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_shouldPreserveExistingTitleWhenIncomingIsNull() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setTitle("Existing Title");
+        bookEntity.getMetadata().setTitleLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("Existing Title", bookEntity.getMetadata().getTitle(),
+                "Title should be preserved when incoming value is null and mode is REPLACE_WHEN_PROVIDED");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_shouldPreserveAuthorsWhenIncomingIsEmpty() {
+        BookEntity bookEntity = createBookEntity();
+        Set<AuthorEntity> existingAuthors = new HashSet<>();
+        existingAuthors.add(AuthorEntity.builder().name("Author1").build());
+        bookEntity.getMetadata().setAuthors(existingAuthors);
+        bookEntity.getMetadata().setAuthorsLocked(false);
+
+        BookMetadata newMetadata = new BookMetadata();
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals(1, bookEntity.getMetadata().getAuthors().size(),
+                "Authors should be preserved when incoming is null/empty and mode is REPLACE_WHEN_PROVIDED");
+    }
+
+    @Test
+    void setBookMetadata_withReplaceWhenProvided_lockedFieldShouldNotBeUpdated() {
+        BookEntity bookEntity = createBookEntity();
+        bookEntity.getMetadata().setAgeRating(12);
+        bookEntity.getMetadata().setAgeRatingLocked(true);
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setAgeRating(18);
+
+        MetadataUpdateContext context = buildContext(bookEntity, newMetadata, MetadataReplaceMode.REPLACE_WHEN_PROVIDED);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals(12, bookEntity.getMetadata().getAgeRating(),
+                "Locked ageRating should not be updated even when a new value is provided");
+    }
+
+    private BookEntity createBookEntity() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        return bookEntity;
+    }
+
+    private MetadataUpdateContext buildContext(BookEntity bookEntity, BookMetadata newMetadata, MetadataReplaceMode replaceMode) {
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        return MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(replaceMode)
+                .build();
+    }
 }

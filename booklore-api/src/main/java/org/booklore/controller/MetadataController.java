@@ -65,7 +65,8 @@ public class MetadataController {
     public ResponseEntity<BookMetadata> updateMetadata(
             @Parameter(description = "Metadata update wrapper") @RequestBody MetadataUpdateWrapper metadataUpdateWrapper,
             @Parameter(description = "ID of the book") @PathVariable long bookId,
-            @Parameter(description = "Merge categories") @RequestParam(defaultValue = "false") boolean mergeCategories) {
+            @Parameter(description = "Merge categories") @RequestParam(defaultValue = "false") boolean mergeCategories,
+            @Parameter(description = "Replace mode") @RequestParam(defaultValue = "REPLACE_ALL") MetadataReplaceMode replaceMode) {
         BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(java.util.Collections.singleton(bookId)).stream()
                 .findFirst()
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
@@ -75,7 +76,7 @@ public class MetadataController {
                 .metadataUpdateWrapper(metadataUpdateWrapper)
                 .updateThumbnail(true)
                 .mergeCategories(mergeCategories)
-                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .replaceMode(replaceMode)
                 .mergeMoods(false)
                 .mergeTags(false)
                 .build();
