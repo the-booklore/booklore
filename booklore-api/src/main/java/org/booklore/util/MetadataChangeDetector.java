@@ -208,11 +208,11 @@ public class MetadataChangeDetector {
             new FieldDescriptor<>("ageRating",
                     BookMetadata::getAgeRating, BookMetadataEntity::getAgeRating,
                     BookMetadata::getAgeRatingLocked, BookMetadataEntity::getAgeRatingLocked,
-                    MetadataClearFlags::isAgeRating, false),
+                    MetadataClearFlags::isAgeRating, true),
             new FieldDescriptor<>("contentRating",
                     BookMetadata::getContentRating, BookMetadataEntity::getContentRating,
                     BookMetadata::getContentRatingLocked, BookMetadataEntity::getContentRatingLocked,
-                    MetadataClearFlags::isContentRating, false)
+                    MetadataClearFlags::isContentRating, true)
     );
 
     private static final List<CollectionFieldDescriptor> COLLECTION_FIELDS = List.of(
