@@ -86,14 +86,14 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterMoodsWithCounts should return empty set for null cached_tags")
     void filterMoodsWithCounts_nullCachedTags_returnsEmptySet() {
-        Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts((Map<String, List<HardcoverBookDetails.CachedTag>>) null);
+        Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts((Map<String, List<HardcoverCachedTag>>) null);
         assertThat(result).isEmpty();
     }
 
     @Test
     @DisplayName("filterMoodsWithCounts should return empty set when no Mood category")
     void filterMoodsWithCounts_noMoodCategory_returnsEmptySet() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Genre", List.of(createCachedTag("Fiction", 10)));
 
         Set<String> result = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags);
@@ -108,7 +108,7 @@ class HardcoverMoodFilterTest {
         // "sad" has 17 votes, "funny" has 4 votes
         // With max=17 and MIN_VOTE_RATIO=0.15, threshold is ~3
         // But "funny" at 4 votes should still be filtered if we use higher threshold
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Mood", List.of(
                 createCachedTag("sad", 17),
                 createCachedTag("dark", 16),
@@ -129,8 +129,8 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterMoodsWithCounts should respect MAX_MOODS limit")
     void filterMoodsWithCounts_manyHighVoteMoods_limitsToMax() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
-        List<HardcoverBookDetails.CachedTag> moodTags = new ArrayList<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
+        List<HardcoverCachedTag> moodTags = new ArrayList<>();
         // Create 10 moods all with high vote counts
         for (int i = 0; i < 10; i++) {
             moodTags.add(createCachedTag("mood" + i, 20 - i));
@@ -145,7 +145,7 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterMoodsWithCounts should order moods by vote count (highest first)")
     void filterMoodsWithCounts_orderedByVoteCount() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Mood", List.of(
                 createCachedTag("emotional", 5),
                 createCachedTag("sad", 15),
@@ -162,8 +162,8 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterMoodsWithCounts should handle null vote counts")
     void filterMoodsWithCounts_nullVoteCounts_handlesGracefully() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
-        HardcoverBookDetails.CachedTag tagWithNullCount = createCachedTag("mysterious", null);
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
+        HardcoverCachedTag tagWithNullCount = createCachedTag("mysterious", null);
         cachedTags.put("Mood", List.of(
                 createCachedTag("sad", 10),
                 tagWithNullCount,
@@ -179,7 +179,7 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterMoodsWithCounts should return empty when all votes are zero")
     void filterMoodsWithCounts_allZeroVotes_returnsEmpty() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Mood", List.of(
                 createCachedTag("sad", 0),
                 createCachedTag("dark", 0)
@@ -193,7 +193,7 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterGenresWithCounts should return filtered genres")
     void filterGenresWithCounts_validData_returnsFiltered() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Genre", List.of(
                 createCachedTag("Fiction", 10),
                 createCachedTag("War", 8),
@@ -210,7 +210,7 @@ class HardcoverMoodFilterTest {
     @Test
     @DisplayName("filterTagsWithCounts should filter tags with low votes")
     void filterTagsWithCounts_mixedVotes_filtersLowVotes() {
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
         cachedTags.put("Tag", List.of(
                 createCachedTag("Loveable Characters", 13),
                 createCachedTag("Strong Character Development", 9),
@@ -249,8 +249,8 @@ class HardcoverMoodFilterTest {
     /**
      * Helper method to create a CachedTag for testing.
      */
-    private HardcoverBookDetails.CachedTag createCachedTag(String tag, Integer count) {
-        HardcoverBookDetails.CachedTag cachedTag = new HardcoverBookDetails.CachedTag();
+    private HardcoverCachedTag createCachedTag(String tag, Integer count) {
+        HardcoverCachedTag cachedTag = new HardcoverCachedTag();
         cachedTag.setTag(tag);
         cachedTag.setCount(count);
         return cachedTag;

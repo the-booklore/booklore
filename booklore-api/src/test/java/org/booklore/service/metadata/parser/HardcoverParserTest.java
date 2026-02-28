@@ -7,6 +7,7 @@ import org.booklore.model.enums.MetadataProvider;
 import org.booklore.service.metadata.parser.hardcover.GraphQLResponse;
 import org.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
 import org.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
+import org.booklore.service.metadata.parser.hardcover.HardcoverCachedTag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -787,16 +788,16 @@ class HardcoverParserTest {
         details.setId(12345);
         details.setTitle("Test Book");
 
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
 
-        List<HardcoverBookDetails.CachedTag> moods = new ArrayList<>();
+        List<HardcoverCachedTag> moods = new ArrayList<>();
         moods.add(createCachedTag("sad", 15));
         moods.add(createCachedTag("dark", 12));
         moods.add(createCachedTag("emotional", 8));
         moods.add(createCachedTag("funny", 2));  // Low count, should be filtered
         cachedTags.put("Mood", moods);
 
-        List<HardcoverBookDetails.CachedTag> genres = new ArrayList<>();
+        List<HardcoverCachedTag> genres = new ArrayList<>();
         genres.add(createCachedTag("Fiction", 10));
         genres.add(createCachedTag("Drama", 8));
         cachedTags.put("Genre", genres);
@@ -884,23 +885,16 @@ class HardcoverParserTest {
 
         // Cached tags for the book (moods, genres, tags)
         GraphQLResponse.CachedTags cachedTags = new GraphQLResponse.CachedTags();
-        cachedTags.setMood(List.of(createGraphQLCachedTag("adventurous", 15), createGraphQLCachedTag("exciting", 12), createGraphQLCachedTag("novotes", 0)));
-        cachedTags.setGenre(List.of(createGraphQLCachedTag("fiction", 20), createGraphQLCachedTag("fantasy", 18), createGraphQLCachedTag("novotes", 0)));
-        cachedTags.setTag(List.of(createGraphQLCachedTag("epic", 10), createGraphQLCachedTag("quest", 8), createGraphQLCachedTag("novotes", 0)));
+        cachedTags.setMood(List.of(createCachedTag("adventurous", 15), createCachedTag("exciting", 12), createCachedTag("novotes", 0)));
+        cachedTags.setGenre(List.of(createCachedTag("fiction", 20), createCachedTag("fantasy", 18), createCachedTag("novotes", 0)));
+        cachedTags.setTag(List.of(createCachedTag("epic", 10), createCachedTag("quest", 8), createCachedTag("novotes", 0)));
         book.setCachedTags(cachedTags);
 
         return book;
     }
 
-    private HardcoverBookDetails.CachedTag createCachedTag(String tag, int count) {
-        HardcoverBookDetails.CachedTag cachedTag = new HardcoverBookDetails.CachedTag();
-        cachedTag.setTag(tag);
-        cachedTag.setCount(count);
-        return cachedTag;
-    }
-
-    private GraphQLResponse.CachedTag createGraphQLCachedTag(String tag, int count) {
-        GraphQLResponse.CachedTag cachedTag = new GraphQLResponse.CachedTag();
+    private HardcoverCachedTag createCachedTag(String tag, int count) {
+        HardcoverCachedTag cachedTag = new HardcoverCachedTag();
         cachedTag.setTag(tag);
         cachedTag.setCount(count);
         return cachedTag;
