@@ -488,13 +488,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     /**
      * Maps a single Calibre custom column field to the corresponding BookMetadata builder field.
      *
-     * <p>Lookup names (e.g. {@code #subtitle}, {@code #moods}) are <em>user-defined</em> in Calibre
-     * and therefore not universal. The names recognised here follow the convention established by
-     * popular Calibre metadata plugins (e.g. Goodreads Sync, Hardcover) and Booklore's own
-     * "Polish EPUB" workflow. Unknown lookup names are silently ignored — this is intentional
-     * best-effort behaviour. If these column names become configurable in the future, this switch
-     * is the single place to update.
-     *
      * @param lookupName the Calibre custom-column lookup name, e.g. {@code #subtitle}
      * @param fieldJson  the per-column JSON object stored by Calibre (contains {@code #value#})
      * @param builderMeta the metadata builder to populate
