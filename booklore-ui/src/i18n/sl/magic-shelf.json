@@ -102,7 +102,10 @@
         "seriesGaps": "Vrzeli v zbirki",
         "seriesPosition": "Položaj v zbirki",
         "readingProgress": "Napredek branja (%)",
-        "metadataPresence": "Prisotnost metapodatkov"
+        "metadataPresence": "Prisotnost metapodatkov",
+        "audiobookCodec": "Kodek",
+        "audiobookChapterCount": "Število poglavij",
+        "audiobookBitrate": "Bitna hitrost (kb/s)"
     },
     "operators": {
         "equals": "Je enako",
@@ -257,7 +260,10 @@
         "comicColorists": "Koloristi",
         "comicLetterers": "Opremljevalci besedila",
         "comicCoverArtists": "Avtorji naslovnic",
-        "comicEditors": "Uredniki"
+        "comicEditors": "Uredniki",
+        "audiobookCodec": "Kodek",
+        "audiobookChapterCount": "Poglavja",
+        "audiobookBitrate": "Bitna hitrost"
     },
     "toast": {
         "validationErrorSummary": "Napaka pri preverjanju",
