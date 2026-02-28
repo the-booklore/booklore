@@ -60,11 +60,11 @@
               (click)="shouldShowStatsMenu ? statsMenu?.toggle($event) : handleStatsButtonClick($event)"
               [pTooltip]="statsTooltip"
               tooltipPosition="bottom">
-              <svg class="multi-color-chart-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1.25" y="10" width="2.5" height="9" rx="0.5" fill="#ef4444"/>
-                <rect x="6.25" y="7" width="2.5" height="12" rx="0.5" fill="#f59e0b"/>
-                <rect x="11.25" y="3" width="2.5" height="16" rx="0.5" fill="#10b981"/>
-                <rect x="16.25" y="5" width="2.5" height="14" rx="0.5" fill="#3b82f6"/>
+              <svg class="multi-color-chart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem;">
+                <rect x="2" y="13" width="4" height="9" rx="1" fill="#ef4444"/>
+                <rect x="7.5" y="3" width="4" height="19" rx="1" fill="#f59e0b"/>
+                <rect x="13" y="9" width="4" height="13" rx="1" fill="#3b82f6"/>
+                <rect x="18.5" y="5" width="4" height="17" rx="1" fill="#10b981"/>
               </svg>
             </button>
             @if (shouldShowStatsMenu) {
