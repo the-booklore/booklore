@@ -101,7 +101,10 @@
             "deleteBookMessage": "Ali si prepričan, da želiš izbrisati \"{{ title }}\"?\n\nTo bo trajno odstranilo datoteko s tvojega diska.\n\nTe akcije ni mogoče preklicati.",
             "deleteBookHeader": "Potrdi brisanje",
             "deleteFileMessage": "Ali si prepričan, da želiš izbrisati dodatno datoteko \"{{ fileName }}\"?",
-            "deleteFileHeader": "Potrdi brisanje datoteke"
+            "deleteFileHeader": "Potrdi brisanje datoteke",
+            "largeFileMessage": "Ta datoteka presega 25 MB. Nekateri ponudniki e-pošte lahko zavrnejo velike priloge.\n\nAli jo želiš vseeno poslati?",
+            "largeFileHeader": "Opozorilo o veliki datoteki",
+            "sendAnyway": "Pošlji vseeno"
         },
         "toast": {
             "quickSendSuccessDetail": "Pošiljanje knjige je bilo načrtovano.",
@@ -429,7 +432,8 @@
         "validationTitleOrIsbn": "Naslov ali ISBN je obvezen",
         "validationReady": "Pripravljeno na ustvarjanje",
         "cancelButton": "Prekliči",
-        "addButton": "Dodaj fizično knjigo"
+        "addButton": "Dodaj fizično knjigo",
+        "fetchMetadataTooltip": "Pridobi metapodatke po ISBN"
     },
     "fileUploader": {
         "title": "Naloži dodatno datoteko",
