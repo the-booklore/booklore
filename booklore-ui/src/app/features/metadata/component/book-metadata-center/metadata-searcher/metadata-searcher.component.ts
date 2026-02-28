@@ -10,7 +10,7 @@ import {AppSettings} from '../../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 import {BehaviorSubject, combineLatest, Observable, Subject, Subscription, takeUntil} from 'rxjs';
-import {distinctUntilChanged, filter, switchMap} from 'rxjs/operators';
+import {filter, switchMap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {AsyncPipe} from '@angular/common';
 import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.component';
@@ -111,13 +111,16 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
             return combineLatest([this.book$, this.appSettings$]);
           }),
           filter(([book, settings]) => !!book && !!settings),
-          distinctUntilChanged(([prevBook], [currBook]) => prevBook?.id === currBook?.id)
         )
         .subscribe(([book, settings]) => {
-          this.resetFormFromBook(book!);
-
-          if (settings!.autoBookSearch) {
-            this.onSubmit();
+          const bookChanged = book!.id !== this.bookId;
+          if (bookChanged) {
+            this.resetFormFromBook(book!);
+            if (settings!.autoBookSearch) {
+              this.onSubmit();
+            }
+          } else {
+            this.updateFormFromBook(book!);
           }
         })
     );
@@ -134,6 +137,14 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
 
     this.form.patchValue({
       provider: this.providers,
+      title: book.metadata?.title ?? '',
+      author: book.metadata?.authors?.[0] ?? '',
+      isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
+    });
+  }
+
+  private updateFormFromBook(book: Book): void {
+    this.form.patchValue({
       title: book.metadata?.title ?? '',
       author: book.metadata?.authors?.[0] ?? '',
       isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
