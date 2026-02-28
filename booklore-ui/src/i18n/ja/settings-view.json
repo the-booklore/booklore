@@ -122,14 +122,14 @@
         "saved": "設定を更新しました",
         "savedDetail": "サイドバー幅の設定が保存されました。"
     },
-  "search": {
-    "sectionTitle": "",
-    "sectionDesc": "",
-    "searchTrigger": "",
-    "searchTriggerDesc": "",
-    "modeInstant": "",
-    "modeButton": "",
-    "prefsUpdated": "",
-    "prefsUpdatedDetail": ""
-  }
+    "search": {
+        "sectionTitle": "",
+        "sectionDesc": "",
+        "searchTrigger": "",
+        "searchTriggerDesc": "",
+        "modeInstant": "",
+        "modeButton": "",
+        "prefsUpdated": "",
+        "prefsUpdatedDetail": ""
+    }
 }

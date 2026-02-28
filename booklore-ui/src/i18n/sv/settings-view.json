@@ -122,14 +122,14 @@
         "saved": "Inställningar uppdaterade",
         "savedDetail": "Din inställning för sidopanelens bredd har sparats."
     },
-  "search": {
-    "sectionTitle": "",
-    "sectionDesc": "",
-    "searchTrigger": "",
-    "searchTriggerDesc": "",
-    "modeInstant": "",
-    "modeButton": "",
-    "prefsUpdated": "",
-    "prefsUpdatedDetail": ""
-  }
+    "search": {
+        "sectionTitle": "",
+        "sectionDesc": "",
+        "searchTrigger": "",
+        "searchTriggerDesc": "",
+        "modeInstant": "",
+        "modeButton": "",
+        "prefsUpdated": "",
+        "prefsUpdatedDetail": ""
+    }
 }

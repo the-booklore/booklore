@@ -32,9 +32,9 @@
             </div>
           </div>
         }
-      } @elseif (books.length > 0) {
+      } @else if (books.length > 0) {
       @for (book of books; track book; let idx = $index) {
-      <div class="search-dropdown-item" [class.active]="activeIndex === idx"(click)="onBookClick(book)">
+      <div class="search-dropdown-item" [class.active]="activeIndex === idx" (click)="onBookClick(book)">
         <div class="search-item-content">
           <img [attr.src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)" [alt]="t('bookCoverAlt')"
             class="search-book-cover" />

@@ -1,5 +1,4 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {FormsModule} from '@angular/forms';
 import {MessageService} from 'primeng/api';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/service/search-preference.service';
@@ -8,7 +7,6 @@ import {SearchPreferenceService, SearchTriggerMode} from '../../../../shared/ser
   selector: 'app-search-preferences',
   standalone: true,
   imports: [
-    FormsModule,
     TranslocoDirective,
   ],
   templateUrl: './search-preferences.component.html',

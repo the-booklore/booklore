@@ -122,14 +122,14 @@
         "saved": "Préférences mises à jour",
         "savedDetail": "Votre préférence de largeur de barre latérale a été enregistrée."
     },
-  "search": {
-    "sectionTitle": "",
-    "sectionDesc": "",
-    "searchTrigger": "",
-    "searchTriggerDesc": "",
-    "modeInstant": "",
-    "modeButton": "",
-    "prefsUpdated": "",
-    "prefsUpdatedDetail": ""
-  }
+    "search": {
+        "sectionTitle": "",
+        "sectionDesc": "",
+        "searchTrigger": "",
+        "searchTriggerDesc": "",
+        "modeInstant": "",
+        "modeButton": "",
+        "prefsUpdated": "",
+        "prefsUpdatedDetail": ""
+    }
 }

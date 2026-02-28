@@ -122,14 +122,14 @@
         "saved": "Preferenze aggiornate",
         "savedDetail": "La tua preferenza di larghezza della barra laterale è stata salvata."
     },
-  "search": {
-    "sectionTitle": "",
-    "sectionDesc": "",
-    "searchTrigger": "",
-    "searchTriggerDesc": "",
-    "modeInstant": "",
-    "modeButton": "",
-    "prefsUpdated": "",
-    "prefsUpdatedDetail": ""
-  }
+    "search": {
+        "sectionTitle": "",
+        "sectionDesc": "",
+        "searchTrigger": "",
+        "searchTriggerDesc": "",
+        "modeInstant": "",
+        "modeButton": "",
+        "prefsUpdated": "",
+        "prefsUpdatedDetail": ""
+    }
 }

@@ -787,7 +787,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSearchKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && this.searchMode === 'button') {
+    if (event.key === 'Enter') {
       this.triggerSearch();
     }
   }

@@ -69,8 +69,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
       next: (filteredState) => {
         this.isLoading = false;
         this.activeIndex = -1;
-        const term = this.searchQuery.trim();
-        this.books = term.length >= 2
+        this.books = this.#searchSubject.value.trim().length >= 2
           ? (filteredState.books || []).slice(0, 50)
           : [];
       }
@@ -119,6 +118,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   }
 
   clearSearch(): void {
+    this.#searchSubject.next('');
     this.searchQuery = '';
     this.books = [];
     this.isLoading = false;

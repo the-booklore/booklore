@@ -122,14 +122,14 @@
         "saved": "Preferencias actualizadas",
         "savedDetail": "Tu preferencia de ancho de la barra lateral se ha guardado."
     },
-  "search": {
-    "sectionTitle": "Search Preferences",
-    "sectionDesc": "Configure how search is triggered in the book browser and header search bar.",
-    "searchTrigger": "Search Trigger Mode",
-    "searchTriggerDesc": "'Instantáneo' busca mientras escribes con un retraso. 'Botón de búsqueda' añade un botón para buscar manualmente (o al presionar Enter).",
-    "modeInstant": "Instant (debounced)",
-    "modeButton": "Search button",
-    "prefsUpdated": "Preferences Updated",
-    "prefsUpdatedDetail": "Your search trigger preference has been saved."
-  }
+    "search": {
+        "sectionTitle": "",
+        "sectionDesc": "",
+        "searchTrigger": "",
+        "searchTriggerDesc": "",
+        "modeInstant": "",
+        "modeButton": "",
+        "prefsUpdated": "",
+        "prefsUpdatedDetail": ""
+    }
 }

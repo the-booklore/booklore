@@ -121,5 +121,15 @@
     "sidebarWidthDesc": "",
     "saved": "",
     "savedDetail": ""
+  },
+  "search": {
+    "sectionTitle": "",
+    "sectionDesc": "",
+    "searchTrigger": "",
+    "searchTriggerDesc": "",
+    "modeInstant": "",
+    "modeButton": "",
+    "prefsUpdated": "",
+    "prefsUpdatedDetail": ""
   }
 }
