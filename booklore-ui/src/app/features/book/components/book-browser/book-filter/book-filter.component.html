@@ -42,7 +42,8 @@
                       *cdkVirtualFor="let filter of filters; trackBy: trackByFilter"
                       class="filter-row"
                       [ngClass]="{
-                    'active': activeFilters[filterType]?.includes(getFilterValueId(filter))
+                    'active': activeFilters[filterType]?.includes(getFilterValueId(filter)),
+                    'active-not': activeFilters[filterType]?.includes(getFilterValueId(filter)) && selectedFilterMode === 'not'
                   }"
                       (click)="handleFilterClick(filterType, getFilterValueId(filter))">
                       <span class="filter-value-text">{{ getFilterValueDisplay(filter) }}</span>
