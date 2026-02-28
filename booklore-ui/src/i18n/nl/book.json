@@ -1,7 +1,7 @@
 {
     "browser": {
         "confirm": {
-            "deleteMessage": "",
+            "deleteMessage": "Weet je zeker dat je {{ count }} boeken wilt verwijderen?\n\nJe boeken zullen permanent verwijdert worden van je bestandssysteem.\n\nDeze actie kan niet ongedaan worden gemaakt.",
             "deleteHeader": "Verwijdering bevestigen",
             "regenCoverMessage": "",
             "regenCoverHeader": "",
