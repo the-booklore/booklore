@@ -289,6 +289,7 @@ public class FileService {
             }
 
             HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.HOST, uri.getHost());
             headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
             headers.set(HttpHeaders.ACCEPT, "image/*");
 
