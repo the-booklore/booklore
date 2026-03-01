@@ -7,7 +7,7 @@
         "totalAuthors": "",
         "authors": "Penulis",
         "totalSeries": "",
-        "series": "Serial",
+        "series": "Seri",
         "totalPublishers": "",
         "publishers": "Penerbit",
         "totalSize": "",
@@ -155,7 +155,7 @@
         "dataTypes": {
             "authors": "Penulis",
             "categories": "Kategori",
-            "series": "Serial",
+            "series": "Seri",
             "publishers": "Penerbit",
             "tags": "Tag",
             "moods": ""
