@@ -222,7 +222,15 @@
         "deleteTooltip": "Eliminar",
         "detachTooltip": "Separar",
         "downloadAllTooltip": "Descargar todos los archivos como archivo ZIP",
-        "physicalBookHint": "Puede subir una copia digital o agregar metadatos manualmente."
+        "physicalBookHint": "Puede subir una copia digital o agregar metadatos manualmente.",
+        "chapters": "Capítulos",
+        "chapterTitle": "Título",
+        "startTime": "Inicio",
+        "endTime": "Fin",
+        "duration": "Duración",
+        "totalDuration": "Duración total",
+        "noChapters": "No hay información de capítulos disponible.",
+        "fileName": "Archivo"
     },
     "viewer": {
         "metadataLocked": "Los metadatos de este libro están bloqueados.",
@@ -279,7 +287,6 @@
         "blackAndWhite": "B/N",
         "rightToLeft": "DaI",
         "notesLabel": "Notas",
-        "audiobookDetailsTitle": "Detalles del audiolibro",
         "audiobookDuration": "Duración",
         "audiobookNarrator": "Narrador",
         "audiobookChapters": "Capítulos",
@@ -287,7 +294,7 @@
         "audiobookSampleRate": "Frecuencia de muestreo",
         "audiobookChannels": "Canales",
         "audiobookCodec": "Códec",
-        "audiobookChapterList": "Lista de capítulos",
+        "audiobookAbridged": "Abreviado",
         "abridged": "Abreviado",
         "unabridged": "Íntegro",
         "readBtn": "Leer",
