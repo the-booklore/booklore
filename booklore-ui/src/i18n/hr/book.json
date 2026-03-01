@@ -101,7 +101,10 @@
             "deleteBookMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti datoteku knjige iz vašeg datotečnog sustava.\n\nOva radnja se ne može poništiti.",
             "deleteBookHeader": "Potvrdi brisanje",
             "deleteFileMessage": "Jeste li sigurni da želite obrisati dodatnu datoteku \"{{ fileName }}\"?",
-            "deleteFileHeader": "Potvrdi brisanje datoteke"
+            "deleteFileHeader": "Potvrdi brisanje datoteke",
+            "largeFileMessage": "Ova datoteka prelazi 25 MB. Neki pružatelji usluga e-pošte mogu odbiti velike priloge.\n\nŽelite li je ipak poslati?",
+            "largeFileHeader": "Upozorenje o velikoj datoteci",
+            "sendAnyway": "Svejedno pošalji"
         },
         "toast": {
             "quickSendSuccessDetail": "Slanje knjige je zakazano.",
@@ -429,7 +432,8 @@
         "validationTitleOrIsbn": "Naslov ili ISBN je obavezan",
         "validationReady": "Spremno za kreiranje",
         "cancelButton": "Odustani",
-        "addButton": "Dodaj fizičku knjigu"
+        "addButton": "Dodaj fizičku knjigu",
+        "fetchMetadataTooltip": "Dohvati metapodatke po ISBN-u"
     },
     "fileUploader": {
         "title": "Učitaj dodatnu datoteku",
@@ -454,7 +458,7 @@
             "fileTooLargeError": "Datoteka premašuje maksimalnu veličinu od {{ maxSize }}",
             "uploadFailedUnknown": "Učitavanje nije uspjelo zbog nepoznate pogreške."
         },
-        "supplementaryAllFormats": ""
+        "supplementaryAllFormats": "Za dodatne datoteke podržani su svi formati datoteka."
     },
     "filter": {
         "title": "Filteri",
@@ -772,30 +776,30 @@
             "deselectAll": "Poništi odabir svih knjiga",
             "deleteSelected": "Obriši odabrane knjige"
         },
-        "readButton": "",
-        "booksInSeries": "",
-        "continueButton": "",
-        "missingBooks": "",
-        "book": "",
-        "continueReading": "",
+        "readButton": "Čitaj",
+        "booksInSeries": "Knjige u seriji",
+        "continueButton": "Nastaviti",
+        "missingBooks": "Nedostaje: #{{ brojevi }}",
+        "book": "Knjiga",
+        "continueReading": "Nastavi čitati",
         "stats": {
-            "avgGoodreads": "",
-            "avgHardcover": "",
-            "totalAudioDuration": "",
-            "owned": "",
-            "formats": "",
-            "avgPersonalRating": "",
-            "totalPages": "",
-            "avgAmazon": ""
+            "avgGoodreads": "Prosječni Goodreads",
+            "avgHardcover": "Prosječni Hardcover",
+            "totalAudioDuration": "Trajanje zvuka",
+            "owned": "U vlasništvu",
+            "formats": "Formati",
+            "avgPersonalRating": "Prosječna osobna ocjena",
+            "totalPages": "Ukupno stranica",
+            "avgAmazon": "Prosječni Amazon"
         },
-        "readPercent": "",
-        "completionOwned": "",
-        "viewDetails": "",
-        "listPages": "",
-        "synopsis": "",
-        "books": "",
-        "bookListTab": "",
-        "nextUp": ""
+        "readPercent": "{{ progress }} pročitanog",
+        "completionOwned": "Posjedujete {{ owned }} od {{ total }} knjiga",
+        "viewDetails": "Prikaži detalje",
+        "listPages": "stranica",
+        "synopsis": "Sinopsis",
+        "books": "Knjige",
+        "bookListTab": "Popis knjiga",
+        "nextUp": "Sljedeće"
     },
     "duplicateMerger": {
         "title": "Pronađi duplikate",
