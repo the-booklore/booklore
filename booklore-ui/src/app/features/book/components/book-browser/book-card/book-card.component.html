@@ -87,14 +87,15 @@
 
   @if (!bottomBarHidden) {
     <div class="book-title-container">
-      @if (_shouldShowStatusIcon) {
-        <div class="read-status-indicator"
-             [ngClass]="_readStatusClass"
-             [pTooltip]="readStatusTooltip"
-             tooltipPosition="bottom">
-          <i [class]="_readStatusIcon" style="font-size: 0.9rem"></i>
-        </div>
-      }
+      <div class="read-status-indicator"
+           [ngClass]="_readStatusClass"
+           [pTooltip]="readStatusTooltip"
+           tooltipPosition="bottom"
+           (click)="toggleReadStatusMenu($event, readStatusMenu)"
+           [attr.aria-label]="'book.card.alt.readStatusMenu' | transloco">
+        <i [class]="_readStatusIcon" style="font-size: 0.9rem"></i>
+      </div>
+      <p-tieredmenu #readStatusMenu [model]="readStatusMenuItems" [popup]="true" appendTo="body"></p-tieredmenu>
       <h4 class="book-title"
           tooltipPosition="bottom"
           [pTooltip]="titleTooltip">
