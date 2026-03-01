@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
+import org.booklore.exception.ApiError;
 import org.booklore.config.security.userdetails.OpdsUserDetails;
 import org.booklore.model.dto.Book;
 import org.booklore.model.dto.BookFile;
@@ -747,9 +748,10 @@ public class OpdsFeedService {
 
     private Long getUserId() {
         OpdsUserDetails details = authenticationService.getOpdsUser();
-        return details != null && details.getOpdsUserV2() != null
-                ? details.getOpdsUserV2().getUserId()
-                : null;
+        if (details == null || details.getOpdsUserV2() == null) {
+            throw ApiError.FORBIDDEN.createException("OPDS authentication required");
+        }
+        return details.getOpdsUserV2().getUserId();
     }
 
     private OpdsSortOrder getSortOrder() {

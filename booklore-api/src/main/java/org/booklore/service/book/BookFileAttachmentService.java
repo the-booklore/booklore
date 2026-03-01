@@ -50,13 +50,11 @@ public class BookFileAttachmentService {
         BookEntity targetBook = bookRepository.findByIdWithBookFiles(targetBookId)
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(targetBookId));
 
-        // Validate and deduplicate source book IDs
-        Set<Long> uniqueSourceBookIds = new LinkedHashSet<>(sourceBookIds); // Preserves order, removes duplicates
+        Set<Long> uniqueSourceBookIds = new LinkedHashSet<>(sourceBookIds);
         if (uniqueSourceBookIds.contains(targetBookId)) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("Cannot attach a book to itself");
         }
 
-        // Load all source books upfront to avoid Hibernate auto-flush issues when loading inside loop
         List<BookEntity> sourceBooks = new ArrayList<>();
         for (Long sourceBookId : uniqueSourceBookIds) {
             BookEntity sourceBook = bookRepository.findByIdWithBookFiles(sourceBookId)
@@ -64,17 +62,12 @@ public class BookFileAttachmentService {
             sourceBooks.add(sourceBook);
         }
 
-        // === VALIDATION PHASE - Do all validation BEFORE any file operations ===
-
-        // Validate target has a primary file
         BookFileEntity targetPrimaryFile = targetBook.getBookFiles().stream()
                 .filter(BookFileEntity::isBookFormat)
                 .findFirst()
                 .orElseThrow(() -> ApiError.GENERIC_BAD_REQUEST.createException("Target book has no primary file"));
 
-        // Validate all source books upfront
         for (BookEntity sourceBook : sourceBooks) {
-            // Validate same library
             if (!targetBook.getLibrary().getId().equals(sourceBook.getLibrary().getId())) {
                 throw ApiError.GENERIC_BAD_REQUEST.createException("Source book " + sourceBook.getId() + " must be in the same library as target");
             }
@@ -101,14 +94,6 @@ public class BookFileAttachmentService {
             }
         }
 
-        if (!moveFiles) {
-            boolean hasPathMismatch = sourceBooks.stream()
-                    .anyMatch(source -> !source.getLibraryPath().getId().equals(targetBook.getLibraryPath().getId()));
-            if (hasPathMismatch) {
-                moveFiles = true;
-            }
-        }
-
         List<Long> deletedSourceBookIds;
         if (moveFiles) {
             deletedSourceBookIds = attachWithFileMove(targetBook, sourceBooks, targetPrimaryFile);
@@ -121,22 +106,42 @@ public class BookFileAttachmentService {
 
     private List<Long> attachWithoutFileMove(BookEntity targetBook, List<BookEntity> sourceBooks) {
         List<Long> sourceBooksToDeleteIds = new ArrayList<>();
+        Path targetLibraryRoot = Paths.get(targetBook.getLibraryPath().getPath()).toAbsolutePath().normalize();
 
         for (BookEntity sourceBook : sourceBooks) {
-            List<Long> bookFileIds = sourceBook.getBookFiles().stream()
+            boolean sameLibraryPath = sourceBook.getLibraryPath().getId().equals(targetBook.getLibraryPath().getId());
+            List<BookFileEntity> bookFormatFiles = sourceBook.getBookFiles().stream()
                     .filter(BookFileEntity::isBookFormat)
-                    .map(BookFileEntity::getId)
                     .toList();
 
-            if (!bookFileIds.isEmpty()) {
-                entityManager.createQuery(
-                        "UPDATE BookFileEntity bf SET bf.book.id = :targetId WHERE bf.id IN :fileIds")
-                        .setParameter("targetId", targetBook.getId())
-                        .setParameter("fileIds", bookFileIds)
-                        .executeUpdate();
+            if (!bookFormatFiles.isEmpty()) {
+                if (sameLibraryPath) {
+                    List<Long> bookFileIds = bookFormatFiles.stream()
+                            .map(BookFileEntity::getId)
+                            .toList();
+                    entityManager.createQuery(
+                            "UPDATE BookFileEntity bf SET bf.book.id = :targetId WHERE bf.id IN :fileIds")
+                            .setParameter("targetId", targetBook.getId())
+                            .setParameter("fileIds", bookFileIds)
+                            .executeUpdate();
+                } else {
+                    Path sourceLibraryRoot = Paths.get(sourceBook.getLibraryPath().getPath()).toAbsolutePath().normalize();
+                    for (BookFileEntity file : bookFormatFiles) {
+                        Path fileDir = sourceLibraryRoot.resolve(file.getFileSubPath()).normalize();
+                        String newSubPath = fileDir.equals(targetLibraryRoot)
+                                ? ""
+                                : targetLibraryRoot.relativize(fileDir).toString();
+                        entityManager.createQuery(
+                                "UPDATE BookFileEntity bf SET bf.book.id = :targetId, bf.fileSubPath = :subPath WHERE bf.id = :fileId")
+                                .setParameter("targetId", targetBook.getId())
+                                .setParameter("subPath", newSubPath)
+                                .setParameter("fileId", file.getId())
+                                .executeUpdate();
+                    }
+                }
             }
 
-            long remainingBookFiles = sourceBook.getBookFiles().size() - bookFileIds.size();
+            long remainingBookFiles = sourceBook.getBookFiles().size() - bookFormatFiles.size();
             if (remainingBookFiles == 0) {
                 sourceBooksToDeleteIds.add(sourceBook.getId());
             }
@@ -373,7 +378,6 @@ public class BookFileAttachmentService {
             return originalFileName;
         }
 
-        // Extract base name and extension
         String baseName;
         String extension;
         int lastDotIndex = originalFileName.lastIndexOf('.');
@@ -385,7 +389,6 @@ public class BookFileAttachmentService {
             extension = "";
         }
 
-        // Try with incrementing suffix
         int counter = 1;
         String newFileName;
         do {

@@ -197,6 +197,18 @@ public class MetadataChangeDetector {
                     BookMetadata::getRanobedbRating, BookMetadataEntity::getRanobedbRating,
                     BookMetadata::getRanobedbRatingLocked, BookMetadataEntity::getRanobedbRatingLocked,
                     MetadataClearFlags::isRanobedbRating, false),
+            new FieldDescriptor<>("audibleId",
+                    BookMetadata::getAudibleId, BookMetadataEntity::getAudibleId,
+                    BookMetadata::getAudibleIdLocked, BookMetadataEntity::getAudibleIdLocked,
+                    MetadataClearFlags::isAudibleId, false),
+            new FieldDescriptor<>("audibleRating",
+                    BookMetadata::getAudibleRating, BookMetadataEntity::getAudibleRating,
+                    BookMetadata::getAudibleRatingLocked, BookMetadataEntity::getAudibleRatingLocked,
+                    MetadataClearFlags::isAudibleRating, false),
+            new FieldDescriptor<>("audibleReviewCount",
+                    BookMetadata::getAudibleReviewCount, BookMetadataEntity::getAudibleReviewCount,
+                    BookMetadata::getAudibleReviewCountLocked, BookMetadataEntity::getAudibleReviewCountLocked,
+                    MetadataClearFlags::isAudibleReviewCount, false),
             new FieldDescriptor<>("narrator",
                     BookMetadata::getNarrator, BookMetadataEntity::getNarrator,
                     BookMetadata::getNarratorLocked, BookMetadataEntity::getNarratorLocked,
@@ -208,11 +220,11 @@ public class MetadataChangeDetector {
             new FieldDescriptor<>("ageRating",
                     BookMetadata::getAgeRating, BookMetadataEntity::getAgeRating,
                     BookMetadata::getAgeRatingLocked, BookMetadataEntity::getAgeRatingLocked,
-                    MetadataClearFlags::isAgeRating, false),
+                    MetadataClearFlags::isAgeRating, true),
             new FieldDescriptor<>("contentRating",
                     BookMetadata::getContentRating, BookMetadataEntity::getContentRating,
                     BookMetadata::getContentRatingLocked, BookMetadataEntity::getContentRatingLocked,
-                    MetadataClearFlags::isContentRating, false)
+                    MetadataClearFlags::isContentRating, true)
     );
 
     private static final List<CollectionFieldDescriptor> COLLECTION_FIELDS = List.of(

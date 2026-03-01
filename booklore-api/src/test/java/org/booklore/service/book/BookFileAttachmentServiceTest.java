@@ -797,8 +797,8 @@ class BookFileAttachmentServiceTest {
         }
 
         @Test
-        @DisplayName("Auto-upgrades to file move when source and target have different library paths")
-        void attachBookFiles_differentLibraryPaths_autoUpgradesToFileMove() throws IOException {
+        @DisplayName("Attach without move keeps file in place and recalculates fileSubPath for different library paths")
+        void attachBookFiles_differentLibraryPaths_noMoveRecalculatesSubPath() throws IOException {
             LibraryPathEntity otherLibraryPath = LibraryPathEntity.builder()
                     .id(2L)
                     .library(library)
@@ -830,17 +830,20 @@ class BookFileAttachmentServiceTest {
             Files.createDirectories(sourceDir);
             Files.createFile(sourceDir.resolve("source.pdf"));
 
+            Query mockQuery = mock(Query.class);
+            when(entityManager.createQuery(anyString())).thenReturn(mockQuery);
+            when(mockQuery.setParameter(anyString(), any())).thenReturn(mockQuery);
+            when(mockQuery.executeUpdate()).thenReturn(1);
+
             when(bookRepository.findByIdWithBookFiles(1L)).thenReturn(Optional.of(target));
             when(bookRepository.findByIdWithBookFiles(2L)).thenReturn(Optional.of(source));
             setupGetUpdatedBookMocks(1L, target);
-            setupFileMoveStubs(target, "target_dir/{title}");
 
             AttachBookFileResponse result = service.attachBookFiles(1L, List.of(2L), false);
 
-            assertFalse(Files.exists(sourceDir.resolve("source.pdf")),
-                    "Source file should be moved (auto-upgraded to file move)");
-            assertTrue(Files.exists(tempDir.resolve("target_dir/target.pdf")),
-                    "Source file should be at target directory");
+            assertTrue(Files.exists(sourceDir.resolve("source.pdf")),
+                    "Source file should remain at original location");
+            verify(entityManager).createQuery(contains("bf.fileSubPath"));
             assertEquals(List.of(2L), result.deletedSourceBookIds());
         }
 

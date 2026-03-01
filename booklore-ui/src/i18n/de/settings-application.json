@@ -41,5 +41,10 @@
     },
     "settingsSaved": "Einstellungen gespeichert",
     "settingsSavedDetail": "Die Einstellungen wurden erfolgreich gespeichert!",
-    "settingsError": "Beim Speichern der Einstellungen ist ein Fehler aufgetreten."
+    "settingsError": "Beim Speichern der Einstellungen ist ein Fehler aufgetreten.",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }

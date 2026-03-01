@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.0.3'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.hibernate.orm' version '7.2.4.Final'
+    id 'org.hibernate.orm' version '7.2.5.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
     id 'jacoco'
 }
@@ -44,7 +44,7 @@ dependencies {
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.7'
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
-    implementation 'org.flywaydb:flyway-mysql:12.0.1'
+    implementation 'org.flywaydb:flyway-mysql:12.0.2'
 
     // --- Security & Authentication ---
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
@@ -65,10 +65,10 @@ dependencies {
     implementation 'com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0'
     
     // --- TwelveMonkeys ImageIO ---
-    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.13.0'
-    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.13.0'
-    implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.0'
-    implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.13.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.13.1'
+    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.13.1'
+    implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.1'
+    implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.13.1'
     
     implementation 'io.documentnode:epub4j-core:4.2.3'
 
@@ -76,7 +76,7 @@ dependencies {
     implementation 'net.jthink:jaudiotagger:3.0.1'
 
     // --- UNRAR Support ---
-    implementation 'com.github.junrar:junrar:7.5.7'
+    implementation 'com.github.junrar:junrar:7.5.8'
 
     // --- JSON & Web Scraping ---
     implementation 'org.jsoup:jsoup:1.22.1'
@@ -99,7 +99,7 @@ dependencies {
     implementation 'org.freemarker:freemarker:2.3.34'
 
     // --- Jackson 3 ---
-    implementation platform('tools.jackson:jackson-bom:3.0.4')
+    implementation platform('tools.jackson:jackson-bom:3.1.0')
     implementation 'tools.jackson.core:jackson-core'
     implementation 'tools.jackson.core:jackson-databind'
     implementation 'tools.jackson.module:jackson-module-blackbird'

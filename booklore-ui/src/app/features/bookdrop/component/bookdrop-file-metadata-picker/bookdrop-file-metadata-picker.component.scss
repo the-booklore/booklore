@@ -93,18 +93,45 @@ textarea.changed,
   width: 8rem;
 }
 
-.header-fields-row {
+.column-headers {
   display: flex;
-  width: 100%;
   align-items: center;
-}
+  padding: 1rem;
+  border-bottom: 1px dotted var(--border-color);
 
-.header-column {
-  width: 50%;
-}
+  @media (min-width: 768px) {
+    &::before {
+      content: '';
+      min-width: 8rem;
+      flex-shrink: 0;
+    }
+  }
 
-.btn-margin {
-  margin: 0 0.5rem;
+  .column-label {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+
+    &.current {
+      justify-content: flex-end;
+      padding-right: 1rem;
+    }
+
+    &.fetched {
+      justify-content: flex-start;
+      padding-left: 1rem;
+    }
+  }
+
+  .column-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
 }
 
 .thumbnail-row {
@@ -217,25 +244,13 @@ textarea.changed,
   }
 }
 
+
 .metaheader {
-  position: relative;
   display: flex;
   align-items: center;
   border-bottom: 1px dotted var(--border-color);
   padding: 1rem;
   justify-content: space-between;
-
-  p {
-    text-align: center;
-
-    @media (max-width: 768px) {
-      font-size: 0.875rem;
-    }
-  }
-}
-
-.metaheader .midbuttons {
-  white-space: nowrap;
 }
 
 .metacontent {
@@ -294,7 +309,6 @@ textarea.changed,
 }
 
 @media (min-width: 768px) {
-  .metaheader,
   .metapicker .metacontent,
   .metaeditor .metabody {
     padding-left: 3.25rem;

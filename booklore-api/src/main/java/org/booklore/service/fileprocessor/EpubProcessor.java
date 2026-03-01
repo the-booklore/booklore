@@ -136,6 +136,8 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setLubimyczytacRating(epubMetadata.getLubimyczytacRating());
         metadata.setRanobedbId(truncate(epubMetadata.getRanobedbId(), 100));
         metadata.setRanobedbRating(epubMetadata.getRanobedbRating());
+        metadata.setAgeRating(epubMetadata.getAgeRating());
+        metadata.setContentRating(truncate(epubMetadata.getContentRating(), 20));
 
         bookCreatorService.addAuthorsToBook(epubMetadata.getAuthors(), bookEntity);
 

@@ -150,7 +150,9 @@ public class BookQueryService {
             m.setExternalUrl(null);
             m.setThumbnailUrl(null);
             m.setProvider(null);
-            m.setAudiobookMetadata(null);
+            if (m.getAudiobookMetadata() != null) {
+                m.getAudiobookMetadata().setChapters(null);
+            }
             m.setBookReviews(null);
 
             // Strip unused ratings

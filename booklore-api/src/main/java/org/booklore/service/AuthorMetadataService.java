@@ -3,10 +3,13 @@ package org.booklore.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.booklore.exception.ApiError;
+import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.model.dto.AuthorDetails;
 import org.booklore.model.dto.AuthorSearchResult;
 import org.booklore.model.dto.AuthorSummary;
+import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.CoverImage;
+import org.booklore.model.dto.Library;
 import org.booklore.model.dto.request.AuthorMatchRequest;
 import org.booklore.model.dto.request.AuthorUpdateRequest;
 import org.booklore.model.entity.AuthorEntity;
@@ -32,6 +35,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -43,9 +48,19 @@ public class AuthorMetadataService {
     private final AuditService auditService;
     private final FileService fileService;
     private final DuckDuckGoCoverService duckDuckGoCoverService;
+    private final AuthenticationService authenticationService;
 
     public List<AuthorSummary> getAllAuthors() {
-        List<Object[]> results = authorRepository.findAllWithBookCount();
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        List<Object[]> results;
+        if (user.getPermissions().isAdmin()) {
+            results = authorRepository.findAllWithBookCount();
+        } else {
+            Set<Long> libraryIds = user.getAssignedLibraries().stream()
+                    .map(Library::getId)
+                    .collect(Collectors.toSet());
+            results = authorRepository.findAllWithBookCountByLibraryIds(libraryIds);
+        }
         List<AuthorSummary> summaries = new ArrayList<>();
         for (Object[] row : results) {
             AuthorEntity author = (AuthorEntity) row[0];
@@ -244,12 +259,14 @@ public class AuthorMetadataService {
     public AuthorDetails getAuthorByName(String name) {
         AuthorEntity author = authorRepository.findByNameIgnoreCase(name)
                 .orElseThrow(() -> ApiError.AUTHOR_NOT_FOUND.createException(name));
+        verifyAuthorAccess(author.getId());
         return toAuthorDetails(author);
     }
 
     public AuthorDetails getAuthorDetails(Long authorId) {
         AuthorEntity author = authorRepository.findById(authorId)
                 .orElseThrow(() -> ApiError.AUTHOR_NOT_FOUND.createException(authorId));
+        verifyAuthorAccess(authorId);
         return toAuthorDetails(author);
     }
 
@@ -275,6 +292,19 @@ public class AuthorMetadataService {
             log.warn("Malformed URL for author thumbnail path: {}", thumbnailPath);
         }
         return null;
+    }
+
+    private void verifyAuthorAccess(Long authorId) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        if (user.getPermissions().isAdmin()) {
+            return;
+        }
+        Set<Long> libraryIds = user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(Collectors.toSet());
+        if (libraryIds.isEmpty() || !authorRepository.existsByIdAndLibraryIds(authorId, libraryIds)) {
+            throw ApiError.AUTHOR_NOT_FOUND.createException(authorId);
+        }
     }
 
     private void applyMetadataResult(AuthorEntity author, AuthorSearchResult result) {

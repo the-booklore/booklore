@@ -1,0 +1,17 @@
+{
+    "tabs": {
+        "reader": "Читалка",
+        "view": "Вигляд",
+        "metadata1": "Метадані 1",
+        "metadata2": "Метадані 2",
+        "application": "Програма",
+        "users": "Користувачі",
+        "email": "Email",
+        "patterns": "Шаблони",
+        "authentication": "Автентифікація",
+        "tasks": "Задачі",
+        "auditLogs": "Журнал аудиту",
+        "opds": "OPDS",
+        "devices": "Пристрої"
+    }
+}

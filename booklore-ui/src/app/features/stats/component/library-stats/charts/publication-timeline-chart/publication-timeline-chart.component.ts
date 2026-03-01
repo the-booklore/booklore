@@ -27,7 +27,9 @@ interface TimelineInsights {
   peakDecade: string;
   peakDecadeCount: number;
   centuryBreakdown: { c21: number; c20: number; older: number };
-  decadesCovered: number;
+  goldenEra: { start: number; end: number; count: number };
+  mostCommonYear: { year: number; count: number };
+  rarityScore: number;
 }
 
 type TimelineChartData = ChartData<'bar', number[], string>;
@@ -338,12 +340,44 @@ export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
     let peakDecadeCount = 0;
     for (const [decade, count] of decadeCounts) {
       if (count > peakDecadeCount) {
-        peakDecade = decade === 'pre1900' ? 'Pre-1900' : decade.toUpperCase();
+        peakDecade = decade === 'pre1900' ? 'Pre-1900' : decade;
         peakDecadeCount = count;
       }
     }
 
     const timeSpan = oldest && newest ? newest.year - oldest.year : 0;
+
+    // Golden Era: best 20-year window
+    let goldenEra = {start: 0, end: 0, count: 0};
+    if (years.length > 0) {
+      for (let i = 0; i < years.length; i++) {
+        const windowStart = years[i];
+        const windowEnd = windowStart + 19;
+        const windowCount = years.filter(y => y >= windowStart && y <= windowEnd).length;
+        if (windowCount > goldenEra.count) {
+          goldenEra = {start: windowStart, end: windowEnd, count: windowCount};
+        }
+      }
+    }
+
+    // Most Common Year
+    const yearCounts = new Map<number, number>();
+    for (const y of years) {
+      yearCounts.set(y, (yearCounts.get(y) || 0) + 1);
+    }
+    let mostCommonYear = {year: 0, count: 0};
+    for (const [y, c] of yearCounts) {
+      if (c > mostCommonYear.count) {
+        mostCommonYear = {year: y, count: c};
+      }
+    }
+
+    // Rarity Score: % of books in decades with fewer than 3 books
+    let rareBooks = 0;
+    for (const [_, count] of decadeCounts) {
+      if (count < 3) rareBooks += count;
+    }
+    const rarityScore = years.length > 0 ? Math.round((rareBooks / years.length) * 100) : 0;
 
     return {
       oldestBook: oldest,
@@ -355,7 +389,9 @@ export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
       peakDecade,
       peakDecadeCount,
       centuryBreakdown: {c21, c20, older},
-      decadesCovered: decadeCounts.size
+      goldenEra,
+      mostCommonYear,
+      rarityScore
     };
   }
 

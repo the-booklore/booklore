@@ -86,35 +86,6 @@
   table-layout: fixed;
 }
 
-.action-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.125rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-
-  &.action-danger {
-    background: color-mix(in srgb, var(--p-red-500) 15%, transparent);
-    color: var(--p-red-400);
-  }
-
-  &.action-success {
-    background: color-mix(in srgb, var(--p-green-500) 15%, transparent);
-    color: var(--p-green-400);
-  }
-
-  &.action-info {
-    background: color-mix(in srgb, var(--p-primary-color) 15%, transparent);
-    color: var(--p-primary-color);
-  }
-
-  &.action-warning {
-    background: color-mix(in srgb, var(--p-orange-500) 15%, transparent);
-    color: var(--p-orange-400);
-  }
-}
 
 .timestamp-cell {
   white-space: nowrap;

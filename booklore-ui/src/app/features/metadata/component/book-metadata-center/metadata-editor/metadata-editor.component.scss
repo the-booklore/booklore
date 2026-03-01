@@ -509,6 +509,13 @@ label {
   gap: 1rem;
 }
 
+.embeddable-indicator {
+  font-size: 0.65rem;
+  color: var(--p-green-500);
+  margin-left: 0.25rem;
+  vertical-align: super;
+}
+
 .mobile-lock-actions {
   display: flex;
   gap: 1rem;

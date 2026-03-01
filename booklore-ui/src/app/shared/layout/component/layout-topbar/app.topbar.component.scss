@@ -133,6 +133,18 @@
   transition: filter 0.3s;
 }
 
+.heart-button-static {
+  .heart-icon {
+    animation: none;
+    filter: none;
+  }
+
+  &:hover .heart-icon {
+    animation: none;
+    filter: none;
+  }
+}
+
 .mobile-trigger {
   display: none;
   position: relative;

@@ -476,7 +476,7 @@ public class BookDropService {
                         .build())
                 .updateThumbnail(metadata.getThumbnailUrl() != null)
                 .mergeCategories(false)
-                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .replaceMode(MetadataReplaceMode.REPLACE_WHEN_PROVIDED)
                 .mergeMoods(true)
                 .mergeTags(true)
                 .build();
