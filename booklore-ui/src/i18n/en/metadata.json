@@ -85,6 +85,7 @@
     "saveBtn": "Save",
     "fetchFromFileBtn": "From File",
     "fetchFromFileTooltip": "Load metadata embedded in the book file",
+    "writtenToFileTooltip": "This field is written to the physical file",
     "previousBookTooltip": "Go to previous book",
     "nextBookTooltip": "Go to next book",
     "autoFetchTooltip": "Automatically fetch metadata using default sources",
