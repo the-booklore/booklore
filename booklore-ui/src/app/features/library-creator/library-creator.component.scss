@@ -251,6 +251,35 @@
   }
 }
 
+.folder-structure-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary-color);
+  line-height: 1.5;
+
+  i {
+    font-size: 0.9rem;
+    color: rgb(234, 179, 8);
+    flex-shrink: 0;
+  }
+
+  a {
+    color: var(--p-primary-color);
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
 // Folders zone
 .folders-zone {
   display: flex;
