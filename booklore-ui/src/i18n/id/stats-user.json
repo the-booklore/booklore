@@ -148,8 +148,8 @@
         "axisAvgDuration": "",
         "sessions": "Sesi",
         "avgDurationMin": "",
-        "tooltipSessions": "",
-        "tooltipSessionsPlural": "",
+        "tooltipSessions": "{{ label }}: {{ value }} sesi",
+        "tooltipSessionsPlural": "{{ label }}: {{ value }} sesi",
         "tooltipMin": ""
     },
     "personalRating": {
