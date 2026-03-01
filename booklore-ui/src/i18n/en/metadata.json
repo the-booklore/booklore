@@ -222,7 +222,15 @@
     "deleteTooltip": "Delete",
     "detachTooltip": "Detach",
     "downloadAllTooltip": "Download all files as a ZIP archive",
-    "physicalBookHint": "You can upload a digital copy or add metadata manually."
+    "physicalBookHint": "You can upload a digital copy or add metadata manually.",
+    "chapters": "Chapters",
+    "chapterTitle": "Title",
+    "startTime": "Start",
+    "endTime": "End",
+    "duration": "Duration",
+    "totalDuration": "Total Duration",
+    "noChapters": "No chapter information available.",
+    "fileName": "File"
   },
   "viewer": {
     "metadataLocked": "This book metadata is locked.",
@@ -279,7 +287,6 @@
     "blackAndWhite": "B&W",
     "rightToLeft": "RTL",
     "notesLabel": "Notes",
-    "audiobookDetailsTitle": "Audiobook Details",
     "audiobookDuration": "Duration",
     "audiobookNarrator": "Narrator",
     "audiobookChapters": "Chapters",
@@ -287,7 +294,7 @@
     "audiobookSampleRate": "Sample Rate",
     "audiobookChannels": "Channels",
     "audiobookCodec": "Codec",
-    "audiobookChapterList": "Chapter List",
+    "audiobookAbridged": "Abridged",
     "abridged": "Abridged",
     "unabridged": "Unabridged",
     "readBtn": "Read",
