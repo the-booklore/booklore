@@ -59,8 +59,8 @@
             "pageCount": "Halaman"
         },
         "sortDirections": {
-            "asc": "",
-            "desc": ""
+            "asc": "Naik",
+            "desc": "Turun"
         }
     }
 }
