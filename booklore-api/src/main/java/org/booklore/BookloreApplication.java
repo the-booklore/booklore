@@ -14,10 +14,6 @@ import org.booklore.config.BookmarkProperties;
 @SpringBootApplication
 public class BookloreApplication {
 
-    static {
-        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-    }
-
     public static void main(String[] args) {
         SpringApplication.run(BookloreApplication.class, args);
     }

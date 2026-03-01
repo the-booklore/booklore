@@ -34,6 +34,11 @@ public class BookRuleEvaluatorService {
 
     public Specification<BookEntity> toSpecification(GroupRule groupRule, Long userId) {
         return (root, query, cb) -> {
+            // JOINs on multi-valued associations (authors, tags, shelves, etc.) can
+            // produce duplicate rows — use DISTINCT so pagination counts and page
+            // content reflect unique BookEntity results.
+            query.distinct(true);
+
             Join<BookEntity, UserBookProgressEntity> progressJoin = root.join("userBookProgress", JoinType.LEFT);
 
             Predicate userPredicate = cb.or(

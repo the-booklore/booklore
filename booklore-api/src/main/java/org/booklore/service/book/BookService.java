@@ -252,8 +252,7 @@ public class BookService {
             if (Files.exists(thumbnailPath)) {
                 return new UrlResource(thumbnailPath.toUri());
             } else {
-                Path defaultCover = Paths.get("static/images/missing-cover.jpg");
-                return new UrlResource(defaultCover.toUri());
+                return new ClassPathResource("static/images/missing-cover.jpg");
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to load book cover for bookId=" + bookId, e);
