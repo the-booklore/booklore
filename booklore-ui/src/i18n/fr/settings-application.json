@@ -29,7 +29,7 @@
         "sectionTitle": "Gestion des fichiers",
         "maxUploadSize": "Taille max. de téléversement",
         "maxUploadPlaceholder": "Taille max.",
-        "maxUploadDesc": "Définit la taille maximale autorisée (en Mo) pour chaque fichier téléversé. S'applique aux formats EPUB, PDF, CBZ, CBR et CB7.",
+        "maxUploadDesc": "Définit la taille maximale autorisée (en Mo) pour chaque fichier téléversé. S'applique à tous les formats supportés.",
         "restartWarning": "Les modifications prendront effet après le redémarrage du serveur",
         "invalidInput": "Entrée invalide",
         "invalidInputDetail": "Veuillez entrer une taille maximale de téléversement valide en Mo."
@@ -43,8 +43,8 @@
     "settingsSavedDetail": "Les paramètres ont été enregistrés avec succès !",
     "settingsError": "Une erreur s'est produite lors de l'enregistrement des paramètres.",
     "appearance": {
-        "supportButtonAnimation": "",
+        "supportButtonAnimation": "Animation du bouton de support",
         "supportButtonAnimationDesc": "",
-        "sectionTitle": ""
+        "sectionTitle": "Apparence"
     }
 }

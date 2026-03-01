@@ -106,7 +106,8 @@
         "seriesGaps": "Lacunes de la série",
         "seriesPosition": "Position dans la série",
         "readingProgress": "Progression de lecture (%)",
-        "metadataPresence": "Présence de métadonnées"
+        "metadataPresence": "Présence de métadonnées",
+        "audiobookCodec": "Codec"
     },
     "fieldGroups": {
         "organization": "Organisation",

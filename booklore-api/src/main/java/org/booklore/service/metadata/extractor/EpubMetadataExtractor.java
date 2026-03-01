@@ -31,6 +31,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,10 +46,46 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     private static final List<MediaType> MEDIA_TYPES = new ArrayList<>();
     private static final Pattern ISBN_SEPARATOR_PATTERN = Pattern.compile("[- ]");
 
+    private static final Set<Integer> VALID_AGE_RATINGS = Set.of(0, 6, 10, 13, 16, 18, 21);
+
     static {
         MEDIA_TYPES.addAll(Arrays.asList(MediaTypes.mediaTypes));
         MEDIA_TYPES.add(null);
     }
+
+    private static final Map<String, BiConsumer<BookMetadata.BookMetadataBuilder, String>> CALIBRE_IDENTIFIER_PREFIXES = Map.of(
+            "amazon", BookMetadata.BookMetadataBuilder::asin,
+            "asin", BookMetadata.BookMetadataBuilder::asin,
+            "mobi-asin", BookMetadata.BookMetadataBuilder::asin,
+            "goodreads", BookMetadata.BookMetadataBuilder::goodreadsId,
+            "google", BookMetadata.BookMetadataBuilder::googleId,
+            "hardcover", BookMetadata.BookMetadataBuilder::hardcoverId,
+            "hardcover_book", BookMetadata.BookMetadataBuilder::hardcoverBookId,
+            "comicvine", BookMetadata.BookMetadataBuilder::comicvineId,
+            "lubimyczytac", BookMetadata.BookMetadataBuilder::lubimyczytacId,
+            "ranobedb", BookMetadata.BookMetadataBuilder::ranobedbId);
+
+    private static final Map<String, BiConsumer<BookMetadata.BookMetadataBuilder, String>> CALIBRE_FIELD_MAPPINGS = Map.ofEntries(
+            Map.entry("#subtitle", BookMetadata.BookMetadataBuilder::subtitle),
+            Map.entry("#pagecount", (builder, value) -> safeParseInt(value, builder::pageCount)),
+            Map.entry("#series_total", (builder, value) -> safeParseInt(value, builder::seriesTotal)),
+            Map.entry("#amazon_rating", (builder, value) -> safeParseDouble(value, builder::amazonRating)),
+            Map.entry("#amazon_review_count", (builder, value) -> safeParseInt(value, builder::amazonReviewCount)),
+            Map.entry("#goodreads_rating", (builder, value) -> safeParseDouble(value, builder::goodreadsRating)),
+            Map.entry("#goodreads_review_count", (builder, value) -> safeParseInt(value, builder::goodreadsReviewCount)),
+            Map.entry("#hardcover_rating", (builder, value) -> safeParseDouble(value, builder::hardcoverRating)),
+            Map.entry("#hardcover_review_count", (builder, value) -> safeParseInt(value, builder::hardcoverReviewCount)),
+            Map.entry("#lubimyczytac_rating", (builder, value) -> safeParseDouble(value, builder::lubimyczytacRating)),
+            Map.entry("#ranobedb_rating", (builder, value) -> safeParseDouble(value, builder::ranobedbRating)),
+            Map.entry("#age_rating", (builder, value) -> safeParseInt(value, v -> {
+                if (VALID_AGE_RATINGS.contains(v)) builder.ageRating(v);
+            })),
+            Map.entry("#content_rating", (builder, value) -> {
+                String normalized = value.trim().toUpperCase();
+                if (Set.of("EVERYONE", "TEEN", "MATURE", "ADULT", "EXPLICIT").contains(normalized)) {
+                    builder.contentRating(normalized);
+                }
+            }));
 
     @Override
     public byte[] extractCover(File epubFile) {
@@ -196,6 +233,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                     BookMetadata.BookMetadataBuilder builderMeta = BookMetadata.builder();
                     Set<String> categories = new HashSet<>();
+                    Set<String> moods = new HashSet<>();
+                    Set<String> tags = new HashSet<>();
 
                     boolean seriesFound = false;
                     boolean seriesIndexFound = false;
@@ -262,11 +301,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 } else if ("calibre:user_metadata".equals(prop)) {
                                     try {
-                                        JSONObject jsonroot = new JSONObject(content);
-                                        JSONObject pages = jsonroot.getJSONObject("#pagecount");
-                                        Object value = pages.opt("#value#");
-                                        safeParseInt(String.valueOf(value), builderMeta::pageCount);
-                                    } catch (JSONException ignored) {
+                                        extractCalibreUserMetadata(new JSONObject(content), builderMeta, moods, tags);
+                                    } catch (JSONException e) {
+                                        log.warn("Failed to parse Calibre user_metadata JSON: {}", e.getMessage());
                                     }
                                 }
 
@@ -286,18 +323,23 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":series_total")) safeParseInt(content, builderMeta::seriesTotal);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":rating")) { /* Generic rating not supported */ }
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":amazon_rating")) safeParseDouble(content, builderMeta::amazonRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":amazon_review_count")) safeParseInt(content, builderMeta::amazonReviewCount);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":goodreads_rating")) safeParseDouble(content, builderMeta::goodreadsRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":goodreads_review_count")) safeParseInt(content, builderMeta::goodreadsReviewCount);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":hardcover_rating")) safeParseDouble(content, builderMeta::hardcoverRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":hardcover_review_count")) safeParseInt(content, builderMeta::hardcoverReviewCount);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":lubimyczytac_rating")) safeParseDouble(content, builderMeta::lubimyczytacRating);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":ranobedb_rating")) safeParseDouble(content, builderMeta::ranobedbRating);
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":age_rating")) safeParseInt(content, v -> { if (VALID_AGE_RATINGS.contains(v)) builderMeta.ageRating(v); });
+                                else if (key.equals(BookLoreMetadata.NS_PREFIX + ":content_rating")) builderMeta.contentRating(content);
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":moods")) {
                                     if (StringUtils.isNotBlank(content)) {
-                                        builderMeta.moods(parseJsonArrayOrCsv(content));
+                                        extractSetField(content, moods);
                                     }
                                 }
                                 else if (key.equals(BookLoreMetadata.NS_PREFIX + ":tags")) {
                                     if (StringUtils.isNotBlank(content)) {
-                                        builderMeta.tags(parseJsonArrayOrCsv(content));
+                                        extractSetField(content, tags);
                                     }
                                 }
                             }
@@ -357,6 +399,19 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                         case "HARDCOVERBOOK", "HARDCOVER_BOOK_ID" -> builderMeta.hardcoverBookId(value);
                                         case "LUBIMYCZYTAC" -> builderMeta.lubimyczytacId(value);
                                     }
+                                } else {
+                                    // Handle Calibre's prefix:value format (e.g., amazon:B09XXX, goodreads:123)
+                                    int colonIdx = text.indexOf(':');
+                                    if (colonIdx > 0) {
+                                        String prefix = text.substring(0, colonIdx).toLowerCase();
+                                        String val = text.substring(colonIdx + 1).trim();
+                                        if (!"calibre".equals(prefix) && !"uuid".equals(prefix)) {
+                                            BiConsumer<BookMetadata.BookMetadataBuilder, String> setter = CALIBRE_IDENTIFIER_PREFIXES.get(prefix);
+                                            if (setter != null) {
+                                                setter.accept(builderMeta, val);
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             case "date" -> {
@@ -399,12 +454,12 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                     builderMeta.authors(creatorsByRole.get("aut"));
 
-                    // Remove tags and moods from categories to ensure strict separation
-                    BookMetadata intermediate = builderMeta.build();
-                    Set<String> knownNonCategories = new HashSet<>();
-                    if (intermediate.getMoods() != null) knownNonCategories.addAll(intermediate.getMoods());
-                    if (intermediate.getTags() != null) knownNonCategories.addAll(intermediate.getTags());
-                    categories.removeAll(knownNonCategories);
+                    if (!moods.isEmpty()) builderMeta.moods(moods);
+                    if (!tags.isEmpty()) builderMeta.tags(tags);
+
+                    // Remove moods and tags from categories to ensure strict separation
+                    categories.removeAll(moods);
+                    categories.removeAll(tags);
 
                     builderMeta.categories(categories);
 
@@ -425,20 +480,57 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         }
     }
 
-    private void safeParseInt(String value, java.util.function.IntConsumer setter) {
+    private static void safeParseInt(String value, java.util.function.IntConsumer setter) {
         try {
             setter.accept(Integer.parseInt(value));
         } catch (NumberFormatException ignored) {
         }
     }
 
-    private void safeParseDouble(String value, java.util.function.DoubleConsumer setter) {
+    private static void safeParseDouble(String value, java.util.function.DoubleConsumer setter) {
         try {
             setter.accept(Double.parseDouble(value));
         } catch (NumberFormatException ignored) {
         }
     }
     
+    private void extractSetField(String value, Set<String> targetSet) {
+        if (StringUtils.isNotBlank(value)) {
+            targetSet.addAll(parseJsonArrayOrCsv(value));
+        }
+    }
+
+    private void extractCalibreUserMetadata(JSONObject userMetadata, BookMetadata.BookMetadataBuilder builder,
+                                             Set<String> moodsSet, Set<String> tagsSet) {
+        Iterator<String> keys = userMetadata.keys();
+        while (keys.hasNext()) {
+            String fieldName = keys.next();
+            try {
+                JSONObject fieldObj = userMetadata.optJSONObject(fieldName);
+                if (fieldObj == null) continue;
+
+                Object rawValue = fieldObj.opt("#value#");
+                if (rawValue == null) continue;
+
+                String value = String.valueOf(rawValue).trim();
+                if (value.isEmpty() || "null".equals(value)) continue;
+
+                if ("#moods".equals(fieldName)) {
+                    extractSetField(value, moodsSet);
+                } else if ("#extra_tags".equals(fieldName)) {
+                    extractSetField(value, tagsSet);
+                } else {
+                    BiConsumer<BookMetadata.BookMetadataBuilder, String> mapper = CALIBRE_FIELD_MAPPINGS.get(fieldName);
+                    if (mapper != null) {
+                        mapper.accept(builder, value);
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Failed to extract Calibre field '{}': {}", fieldName, e.getMessage());
+            }
+        }
+    }
+
     /**
      * Parses a string that may be either a JSON array (e.g., ["item1", "item2"]) or a CSV (item1, item2).
      * Returns a Set of parsed values.

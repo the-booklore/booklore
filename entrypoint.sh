@@ -12,4 +12,8 @@ if ! getent passwd "$USER_ID" >/dev/null 2>&1; then
     adduser -u "$USER_ID" -G "$(getent group "$GROUP_ID" | cut -d: -f1)" -S -D booklore
 fi
 
+# Ensure data and bookdrop directories exist and are writable by the target user
+mkdir -p /app/data /bookdrop
+chown "$USER_ID:$GROUP_ID" /app/data /bookdrop 2>/dev/null || true
+
 exec su-exec "$USER_ID:$GROUP_ID" "$@"

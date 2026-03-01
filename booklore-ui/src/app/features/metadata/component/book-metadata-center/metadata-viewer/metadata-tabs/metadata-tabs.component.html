@@ -1,5 +1,5 @@
 <ng-container *transloco="let t; prefix: 'metadata.tabs'">
-<p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
+<p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable (valueChange)="onTabChange($event)">
   <p-tablist>
     @if (bookInSeries.length > 1) {
       <p-tab value="series">
@@ -12,6 +12,11 @@
     @if (supportsDualCovers()) {
       <p-tab value="covers">
         <i class="pi pi-images"></i> {{ t('covers') }}
+      </p-tab>
+    }
+    @if (hasAudiobookFormat()) {
+      <p-tab value="chapters">
+        <i class="pi pi-headphones"></i> {{ t('chapters') }}
       </p-tab>
     }
     <p-tab value="files">
@@ -106,6 +111,90 @@
     <p-tabpanel value="reviews">
       <ng-template #content>
         <app-book-reviews [bookId]="book.id"></app-book-reviews>
+      </ng-template>
+    </p-tabpanel>
+    <p-tabpanel value="chapters">
+      <ng-template #content>
+        <div class="chapters-tab-content">
+          @if (chaptersLoading) {
+            <div class="chapters-loading">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+          } @else if (audiobookInfo) {
+            <div class="chapters-tech-info">
+              <span class="tech-info-item">
+                <i class="pi pi-clock"></i> {{ formatDuration(audiobookInfo.durationMs) }}
+              </span>
+              @if (audiobookInfo.codec) {
+                <span class="tech-info-item">{{ audiobookInfo.codec.toUpperCase() }}</span>
+              }
+              @if (audiobookInfo.bitrate) {
+                <span class="tech-info-item">{{ audiobookInfo.bitrate }} kbps</span>
+              }
+              @if (audiobookInfo.sampleRate) {
+                <span class="tech-info-item">{{ formatSampleRate(audiobookInfo.sampleRate) }}</span>
+              }
+              @if (audiobookInfo.channels) {
+                <span class="tech-info-item">{{ getChannelLabel(audiobookInfo.channels) }}</span>
+              }
+            </div>
+            @if (audiobookInfo.folderBased && audiobookInfo.tracks?.length) {
+              <div class="chapters-table-wrapper">
+                <table class="chapters-table">
+                  <thead>
+                    <tr>
+                      <th class="chapter-num">#</th>
+                      <th class="chapter-title">{{ t('chapterTitle') }}</th>
+                      <th class="chapter-file">{{ t('fileName') }}</th>
+                      <th class="chapter-time">{{ t('startTime') }}</th>
+                      <th class="chapter-time">{{ t('duration') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (track of audiobookInfo.tracks; track track.index) {
+                      <tr>
+                        <td class="chapter-num">{{ track.index + 1 }}</td>
+                        <td class="chapter-title">{{ track.title }}</td>
+                        <td class="chapter-file">{{ track.fileName }}</td>
+                        <td class="chapter-time">{{ formatDuration(track.cumulativeStartMs) }}</td>
+                        <td class="chapter-time">{{ formatDuration(track.durationMs) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else if (audiobookInfo.chapters?.length) {
+              <div class="chapters-table-wrapper">
+                <table class="chapters-table">
+                  <thead>
+                    <tr>
+                      <th class="chapter-num">#</th>
+                      <th class="chapter-title">{{ t('chapterTitle') }}</th>
+                      <th class="chapter-time">{{ t('startTime') }}</th>
+                      <th class="chapter-time">{{ t('endTime') }}</th>
+                      <th class="chapter-time">{{ t('duration') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (chapter of audiobookInfo.chapters; track chapter.index) {
+                      <tr>
+                        <td class="chapter-num">{{ chapter.index + 1 }}</td>
+                        <td class="chapter-title">{{ chapter.title }}</td>
+                        <td class="chapter-time">{{ formatDuration(chapter.startTimeMs) }}</td>
+                        <td class="chapter-time">{{ formatDuration(chapter.endTimeMs) }}</td>
+                        <td class="chapter-time">{{ formatDuration(chapter.durationMs) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="chapters-empty">
+                <i class="pi pi-info-circle"></i> {{ t('noChapters') }}
+              </div>
+            }
+          }
+        </div>
       </ng-template>
     </p-tabpanel>
     <p-tabpanel value="files">
