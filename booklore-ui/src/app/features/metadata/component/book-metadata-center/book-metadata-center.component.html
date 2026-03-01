@@ -60,7 +60,7 @@
       }
       @if (admin || canEditMetadata) {
         <p-tabpanel value="match">
-          <app-metadata-searcher [book$]="book$"></app-metadata-searcher>
+          <app-metadata-searcher [book$]="book$" [isActiveTab]="tab === 'match'"></app-metadata-searcher>
         </p-tabpanel>
       }
       @if ((admin || canEditMetadata) && !isPhysical) {
