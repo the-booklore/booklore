@@ -47,7 +47,7 @@ Selector labels
 */}}
 {{- define "booklore.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "booklore.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/part-of: {{ .Release.Name }}
 {{- end }}
 
 {{/*

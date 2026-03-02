@@ -1,0 +1,96 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: booklore
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: application
+    {{- include "booklore.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: application
+      {{- include "booklore.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: application
+        {{- include "booklore.labels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: wait-for-database
+          image: cgr.dev/chainguard/wait-for-it:latest
+          args:
+            - -t
+            - "0"
+            - -h
+            - mariadb.{{ .Release.Namespace }}
+            - -p
+            - {{ .Values.mariadb.service.port | int | toString | quote }}
+      containers:
+        - name: booklore
+          image: {{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}
+          imagePullPolicy: {{ .Values.app.image.pull_policy }}
+          env:
+            - name: BOOKLORE_PORT
+              value: {{ .Values.app.service.target | toString | quote }}
+            - name: DATABASE_URL
+              value: >-
+                jdbc:mariadb://mariadb.{{ .Release.Namespace }}:{{ .Values.mariadb.service.port }}/{{ .Values.mariadb.config.database | default "booklore" }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booklore-secrets
+                  key: password
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: booklore-secrets
+                  key: username
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: booklore-config
+                  key: timezone
+            {{- range $key, $_ := .Values.app.config }}
+            {{- if ne $key "timezone" }}
+            - name: {{ $key | snakecase | upper }}
+              valueFrom:
+                configMapKeyRef:
+                  name: booklore-config
+                  key: {{ $key }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: {{ .Values.app.service.target }}
+          volumeMounts:
+            - name: booklore-pvc
+              subPath: data
+              mountPath: /app/data
+            - name: booklore-pvc
+              subPath: books
+              mountPath: /books
+            - name: bookdrop-cache
+              subPath: books
+              mountPath: /bookdrop
+          livenessProbe:
+            httpGet:
+              path: /api/v1/healthcheck
+              port: {{ .Values.app.service.target }}
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+            initialDelaySeconds: 60
+      volumes:
+        - name: booklore-pvc
+          persistentVolumeClaim:
+            claimName: booklore-pvc
+        - name: bookdrop-cache
+          emptyDir:
+            sizeLimit: 10Gi

@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: booklore
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: application-service
+    {{- include "booklore.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.app.service.type }}
+  selector:
+    app.kubernetes.io/component: application
+    {{- include "booklore.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.app.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.app.service.target }}

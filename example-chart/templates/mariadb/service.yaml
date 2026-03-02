@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: database-service
+    {{- include "booklore.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.mariadb.service.type }}
+  selector:
+    app.kubernetes.io/component: database
+    {{- include "booklore.labels" . | nindent 4 }}
+  ports:
+    - name: db
+      port: {{ .Values.mariadb.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.mariadb.service.target }}

@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: database
+    {{- include "booklore.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: database
+      {{- include "booklore.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: database
+        {{- include "booklore.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: mariadb
+          image: {{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}
+          imagePullPolicy: {{ .Values.mariadb.image.pull_policy }}
+          env:
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: booklore-secrets
+                  key: username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booklore-secrets
+                  key: password
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booklore-secrets
+                  key: root_password
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: booklore-config
+                  key: database
+            - name: PGID
+              valueFrom:
+                configMapKeyRef:
+                  name: booklore-config
+                  key: group_id
+            - name: PUID
+              valueFrom:
+                configMapKeyRef:
+                  name: booklore-config
+                  key: user_id
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: booklore-config
+                  key: timezone
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          ports:
+            - name: mariadb
+              protocol: TCP
+              containerPort: {{ .Values.mariadb.service.target }}
+          volumeMounts:
+            - name: data
+              mountPath: /config
+          livenessProbe:
+            exec: &PROBE_CMD
+              command:
+                - bash
+                - -c
+                - --
+                - >-
+                  mariadb-admin ping --skip-ssl --protocol=tcp
+                  --host="${POD_IP}" --port={{ .Values.mariadb.service.target }}
+            periodSeconds: 5
+            timeoutSeconds: 5
+            initialDelaySeconds: 30
+          readinessProbe:
+            exec:
+              <<: *PROBE_CMD
+            periodSeconds: 5
+            timeoutSeconds: 5
+            initialDelaySeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: booklore-mariadb-pvc

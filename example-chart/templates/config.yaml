@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: booklore-secrets
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: secrets
+    {{- include "booklore.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-delete-policy: before-hook-creation
+data:
+  username: {{ .Values.mariadb.config.username | default "booklore-user" | b64enc | quote }}
+  password: {{ required "A non-null password is required!" .Values.mariadb.config.password | trim | b64enc | quote }}
+  root_password: {{ required "A non-null root password is required!" .Values.mariadb.config.root_password | trim | b64enc | quote }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: booklore-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: configuration
+    {{- include "booklore.labels" . | nindent 4 }}
+data:
+  database: {{ .Values.mariadb.config.database | default "booklore" }}
+  {{- range $key, $value := .Values.app.config }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
