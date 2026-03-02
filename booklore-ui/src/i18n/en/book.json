@@ -137,7 +137,8 @@
       "readBook": "Read book",
       "playAudiobook": "Play audiobook",
       "bookMenu": "Book actions menu",
-      "continueReading": "Continue reading"
+      "continueReading": "Continue reading",
+      "readStatusMenu": "Change read status"
     }
   },
   "notes": {

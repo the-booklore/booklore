@@ -51,7 +51,8 @@
             "createdLargeDetail": "Knjižnica kreirana s {{count}} datoteka. Učitavanje u tijeku...",
             "createFailedSummary": "Kreiranje nije uspjelo",
             "createFailedDetail": "Došlo je do pogreške prilikom kreiranja knjižnice. Pokušajte ponovo."
-        }
+        },
+        "folderStructureHint": "Provjerite slijede li vaše mape očekivanu <a href='https://booklore.org/docs/library/folder-structure#-recommended-structures' target='_blank' rel='noopener'>strukturu direktorija</a> za knjige i audioknjige."
     },
     "loading": {
         "title": "Učitavanje knjižnice",

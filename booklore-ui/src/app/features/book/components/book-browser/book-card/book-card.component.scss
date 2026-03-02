@@ -381,6 +381,13 @@
   justify-content: center;
   font-weight: bold;
   margin-left: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 .status-read {
@@ -409,6 +416,10 @@
 
 .status-wont-read {
   color: #ec4899;
+}
+
+.status-unset {
+  color: var(--text-color-secondary);
 }
 
 ::ng-deep .progress-incomplete .p-progressbar-value {

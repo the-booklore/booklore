@@ -88,7 +88,13 @@
         "insightPeakDecade": "Najmočnejše desetletje",
         "insightPeakDecadeBooks": "{{ count }} knjig",
         "insightDecadesCovered": "Zajeta desetletja",
-        "insightDifferentEras": "različnih obdobij"
+        "insightDifferentEras": "različnih obdobij",
+        "insightGoldenEra": "Zlata doba",
+        "insightGoldenEraRange": "{{ count }} knjig",
+        "insightMostCommonYear": "Najpogostejše leto",
+        "insightMostCommonYearBooks": "{{ count }} knjig",
+        "insightRarityScore": "Rezultat redkosti",
+        "insightRarePicks": "redke izbire"
     },
     "publicationTrend": {
         "title": "Trend izdaj",
