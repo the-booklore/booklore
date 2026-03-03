@@ -125,6 +125,7 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
             String narrator = extractPreviewNarrator(container);
 
             BookMetadata.BookMetadataBuilder builder = BookMetadata.builder()
+                    .asin(asin)
                     .audibleId(asin)
                     .title(title)
                     .thumbnailUrl(thumbnailUrl)
@@ -416,6 +417,7 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
 
         return BookMetadata.builder()
                 .provider(MetadataProvider.Audible)
+                .asin(audibleId)
                 .audibleId(audibleId)
                 .title(title)
                 .subtitle(subtitle)

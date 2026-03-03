@@ -33,15 +33,12 @@
 }
 
 .insights-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
 }
 
 .insight-item {
-  flex: 1;
-  min-width: 120px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -105,14 +102,26 @@
     }
   }
 
-  &.decades {
+  &.golden-era {
     .insight-value {
       color: #fb923c;
     }
   }
+
+  &.common-year {
+    .insight-value {
+      color: #34d399;
+    }
+  }
+
+  &.rarity {
+    .insight-value {
+      color: #f87171;
+    }
+  }
 }
 
-.insights-row.secondary {
+.insights-row + .insights-row {
   margin-top: 0.75rem;
 }
 
@@ -123,6 +132,11 @@
 
   .insights-row {
     gap: 0.75rem;
+  }
+
+  .insights-row {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
   }
 
   .insight-item {
@@ -148,8 +162,11 @@
     padding: 0.3rem 0.75rem;
   }
 
+  .insights-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .insight-item {
-    min-width: 90px;
     padding: 0.5rem;
 
     .insight-value {

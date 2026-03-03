@@ -271,10 +271,10 @@ class BookServiceTest {
     }
 
     @Test
-    void getBookThumbnail_fileMissing_returnsDefault() throws Exception {
+    void getBookThumbnail_fileMissing_returnsDefault() {
         when(fileService.getThumbnailFile(1L)).thenReturn("/tmp/nonexistent.jpg");
         Resource res = bookService.getBookThumbnail(1L);
-        assertTrue(res instanceof UrlResource);
+        assertTrue(res instanceof ClassPathResource);
     }
 
     @Test

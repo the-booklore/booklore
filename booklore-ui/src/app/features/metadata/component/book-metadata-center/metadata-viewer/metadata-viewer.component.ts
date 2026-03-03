@@ -80,8 +80,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   isExpanded = false;
   isOverflowing = false;
   isComicSectionExpanded = true;
-  isAudiobookSectionExpanded = true;
-  isChapterListExpanded = false;
   showFilePath = false;
   isAutoFetching = false;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
@@ -1413,18 +1411,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
-  }
-
-  formatDurationMs(ms: number): string {
-    if (!ms) return '-';
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
   formatSampleRate(sampleRate: number): string {

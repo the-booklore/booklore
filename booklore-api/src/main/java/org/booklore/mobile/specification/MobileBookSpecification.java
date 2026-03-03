@@ -229,6 +229,16 @@ public class MobileBookSpecification {
         };
     }
 
+    public static Specification<BookEntity> inSeries(String seriesName) {
+        return (root, query, cb) -> {
+            if (seriesName == null || seriesName.trim().isEmpty()) {
+                return cb.conjunction();
+            }
+            Join<BookEntity, BookMetadataEntity> metadataJoin = root.join("metadata", JoinType.LEFT);
+            return cb.equal(metadataJoin.get("seriesName"), seriesName);
+        };
+    }
+
     @SafeVarargs
     public static Specification<BookEntity> combine(Specification<BookEntity>... specs) {
         Specification<BookEntity> result = (root, query, cb) -> cb.conjunction();

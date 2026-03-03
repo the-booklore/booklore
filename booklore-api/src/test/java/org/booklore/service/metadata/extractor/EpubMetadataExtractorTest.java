@@ -286,6 +286,48 @@ class EpubMetadataExtractorTest {
         }
 
         @Test
+        @DisplayName("Should extract description from EPUB metadata")
+        void extractMetadata_withDescription_returnsDescription() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test Book</dc:title>
+                        <dc:description>A great book about testing.</dc:description>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-desc-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epubFile);
+            assertNotNull(result);
+            assertEquals("A great book about testing.", result.getDescription());
+        }
+
+        @Test
+        @DisplayName("Should extract multiple dc:subject categories from EPUB metadata")
+        void extractMetadata_withCategories_returnsAllCategories() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test Book</dc:title>
+                        <dc:subject>Science Fiction</dc:subject>
+                        <dc:subject>Adventure</dc:subject>
+                        <dc:subject>Fantasy</dc:subject>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-cats-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epubFile);
+            assertNotNull(result);
+            assertNotNull(result.getCategories());
+            assertTrue(result.getCategories().contains("Science Fiction"));
+            assertTrue(result.getCategories().contains("Adventure"));
+            assertTrue(result.getCategories().contains("Fantasy"));
+            assertEquals(3, result.getCategories().size());
+        }
+
+        @Test
         @DisplayName("Should use filename as title when title is missing")
         void extractMetadata_withoutTitle_usesFilename() throws IOException {
             File epubFile = createEpubWithMetadata(null, null, null, null);
@@ -343,6 +385,30 @@ class EpubMetadataExtractorTest {
                 () -> assertNotNull(result),
                 () -> assertEquals("Series", result.getSeriesName()),
                 () -> assertTrue(result.getSeriesNumber() == null || result.getSeriesNumber() == 0.0f)
+            );
+        }
+
+        @Test
+        @DisplayName("Should extract EPUB3 belongs-to-collection series metadata")
+        void extractMetadata_withEpub3Collection_returnsSeriesInfo() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test Book</dc:title>
+                        <meta property="belongs-to-collection" id="c01">The Wheel of Time</meta>
+                        <meta property="group-position" refines="#c01">14</meta>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-epub3-series-" + System.nanoTime() + ".epub");
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertAll(
+                () -> assertNotNull(result),
+                () -> assertEquals("The Wheel of Time", result.getSeriesName()),
+                () -> assertEquals(14.0f, result.getSeriesNumber(), 0.001)
             );
         }
     }
@@ -488,6 +554,442 @@ class EpubMetadataExtractorTest {
 
             assertNotNull(cover, "Cover should be extracted via ZIP heuristic");
             assertArrayEquals(pngImage, cover);
+        }
+    }
+
+    @Nested
+    @DisplayName("Calibre Identifier Tests")
+    class CalibreIdentifierTests {
+
+        @Test
+        @DisplayName("Should extract ASIN from Calibre amazon: prefix identifier")
+        void extractMetadata_calibreAmazonPrefix_returnsAsin() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>amazon:B09QZY6N2K</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-asin-amazon-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("B09QZY6N2K", result.getAsin());
+        }
+
+        @Test
+        @DisplayName("Should extract ASIN from Calibre asin: prefix identifier")
+        void extractMetadata_calibreAsinPrefix_returnsAsin() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>asin:B09QZY6N2K</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-asin-prefix-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("B09QZY6N2K", result.getAsin());
+        }
+
+        @Test
+        @DisplayName("Should extract ASIN from mobi-asin: prefix identifier")
+        void extractMetadata_calibreMobiAsinPrefix_returnsAsin() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>mobi-asin:B09QZY6N2K</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-mobiasin-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("B09QZY6N2K", result.getAsin());
+        }
+
+        @Test
+        @DisplayName("Should extract Goodreads ID from Calibre goodreads: prefix identifier")
+        void extractMetadata_calibreGoodreadsPrefix_returnsGoodreadsId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>goodreads:60229814</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-gr-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("60229814", result.getGoodreadsId());
+        }
+
+        @Test
+        @DisplayName("Should extract Google ID from Calibre google: prefix identifier")
+        void extractMetadata_calibreGooglePrefix_returnsGoogleId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>google:abc123</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-google-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("abc123", result.getGoogleId());
+        }
+
+        @Test
+        @DisplayName("Should extract Hardcover ID from Calibre hardcover: prefix identifier")
+        void extractMetadata_calibreHardcoverPrefix_returnsHardcoverId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>hardcover:8888</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-hc-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("8888", result.getHardcoverId());
+        }
+
+        @Test
+        @DisplayName("Should extract Hardcover Book ID from Calibre hardcover_book: prefix identifier")
+        void extractMetadata_calibreHardcoverBookPrefix_returnsHardcoverBookId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>hardcover_book:7777</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-hcbook-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("7777", result.getHardcoverBookId());
+        }
+
+        @Test
+        @DisplayName("Should extract Comicvine ID from Calibre comicvine: prefix identifier")
+        void extractMetadata_calibreComicvinePrefix_returnsComicvineId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>comicvine:555</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-cv-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("555", result.getComicvineId());
+        }
+
+        @Test
+        @DisplayName("Should extract Lubimyczytac ID from Calibre lubimyczytac: prefix identifier")
+        void extractMetadata_calibreLubimyczytacPrefix_returnsLubimyczytacId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>lubimyczytac:444</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-lubi-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("444", result.getLubimyczytacId());
+        }
+
+        @Test
+        @DisplayName("Should extract Ranobedb ID from Calibre ranobedb: prefix identifier")
+        void extractMetadata_calibreRanobedbPrefix_returnsRanobedbId() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>ranobedb:333</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-ranobedb-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("333", result.getRanobedbId());
+        }
+
+        @Test
+        @DisplayName("Should extract ISBN-13 from urn:isbn: URN format")
+        void extractMetadata_urnIsbn13_returnsIsbn13() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier>urn:isbn:9781234567890</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-urn-isbn-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("9781234567890", result.getIsbn13());
+        }
+
+        @Test
+        @DisplayName("Should ignore calibre:UUID identifier")
+        void extractMetadata_calibreUuid_isIgnored() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <dc:identifier id="BookId">calibre:12345678-abcd-1234-abcd-123456789abc</dc:identifier>
+                    </metadata>
+                </package>
+                """;
+            File epub = createEpubWithOpf(opfContent, "test-calibre-uuid-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertNull(result.getAsin());
+            assertNull(result.getGoodreadsId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Calibre User Metadata Tests")
+    class CalibreUserMetadataTests {
+
+        private File createEpubWithCalibreUserMetadata(String userMetadataJson) throws IOException {
+            String escapedJson = userMetadataJson.replace("\"", "&quot;");
+            String opfContent = String.format("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Calibre Book</dc:title>
+                        <meta property="calibre:user_metadata">%s</meta>
+                    </metadata>
+                </package>
+                """, escapedJson);
+            return createEpubWithOpf(opfContent, "test-calibre-um-" + System.nanoTime() + ".epub");
+        }
+
+        @Test
+        @DisplayName("Should extract subtitle from Calibre #subtitle custom column")
+        void extractMetadata_calibreSubtitle_returnsSubtitle() throws IOException {
+            String json = "{\"#subtitle\":{\"#value#\":\"The Hidden Path\"}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("The Hidden Path", result.getSubtitle());
+        }
+
+        @Test
+        @DisplayName("Should extract page count from Calibre #pagecount custom column")
+        void extractMetadata_calibrePagecount_returnsPageCount() throws IOException {
+            String json = "{\"#pagecount\":{\"#value#\":412}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals(412, result.getPageCount());
+        }
+
+        @Test
+        @DisplayName("Should extract series total from Calibre #series_total custom column")
+        void extractMetadata_calibreSeriesTotal_returnsSeriesTotal() throws IOException {
+            String json = "{\"#series_total\":{\"#value#\":7}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals(7, result.getSeriesTotal());
+        }
+
+        @Test
+        @DisplayName("Should extract all ratings from Calibre custom columns")
+        void extractMetadata_calibreRatings_returnsAllRatings() throws IOException {
+            String json = "{" +
+                "\"#amazon_rating\":{\"#value#\":4.5}," +
+                "\"#amazon_review_count\":{\"#value#\":1234}," +
+                "\"#goodreads_rating\":{\"#value#\":4.1}," +
+                "\"#goodreads_review_count\":{\"#value#\":5678}," +
+                "\"#hardcover_rating\":{\"#value#\":4.8}," +
+                "\"#hardcover_review_count\":{\"#value#\":999}," +
+                "\"#lubimyczytac_rating\":{\"#value#\":3.9}," +
+                "\"#ranobedb_rating\":{\"#value#\":4.2}" +
+                "}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertAll(
+                () -> assertEquals(4.5, result.getAmazonRating(), 0.001),
+                () -> assertEquals(1234, result.getAmazonReviewCount()),
+                () -> assertEquals(4.1, result.getGoodreadsRating(), 0.001),
+                () -> assertEquals(5678, result.getGoodreadsReviewCount()),
+                () -> assertEquals(4.8, result.getHardcoverRating(), 0.001),
+                () -> assertEquals(999, result.getHardcoverReviewCount()),
+                () -> assertEquals(3.9, result.getLubimyczytacRating(), 0.001),
+                () -> assertEquals(4.2, result.getRanobedbRating(), 0.001)
+            );
+        }
+
+        @Test
+        @DisplayName("Should extract age rating from Calibre #age_rating custom column")
+        void extractMetadata_calibreAgeRating_returnsAgeRating() throws IOException {
+            String json = "{\"#age_rating\":{\"#value#\":16}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals(16, result.getAgeRating());
+        }
+
+        @Test
+        @DisplayName("Should extract valid content rating from Calibre #content_rating custom column")
+        void extractMetadata_calibreContentRating_valid_returnsContentRating() throws IOException {
+            String json = "{\"#content_rating\":{\"#value#\":\"Teen\"}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals("TEEN", result.getContentRating());
+        }
+
+        @Test
+        @DisplayName("Should ignore invalid content rating from Calibre #content_rating custom column")
+        void extractMetadata_calibreContentRating_invalid_isIgnored() throws IOException {
+            String json = "{\"#content_rating\":{\"#value#\":\"Unknown Rating\"}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertNull(result.getContentRating());
+        }
+
+        @Test
+        @DisplayName("Should extract moods from Calibre #moods custom column")
+        void extractMetadata_calibreMoods_returnsMoods() throws IOException {
+            String json = "{\"#moods\":{\"#value#\":\"Dark, Suspenseful, Atmospheric\"}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertNotNull(result.getMoods());
+            assertTrue(result.getMoods().contains("Dark"));
+            assertTrue(result.getMoods().contains("Suspenseful"));
+            assertTrue(result.getMoods().contains("Atmospheric"));
+        }
+
+        @Test
+        @DisplayName("Should extract tags from Calibre #extra_tags custom column")
+        void extractMetadata_calibreExtraTags_returnsTags() throws IOException {
+            String json = "{\"#extra_tags\":{\"#value#\":\"Fiction, Thriller, Mystery\"}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertNotNull(result.getTags());
+            assertTrue(result.getTags().contains("Fiction"));
+            assertTrue(result.getTags().contains("Thriller"));
+            assertTrue(result.getTags().contains("Mystery"));
+        }
+
+        @Test
+        @DisplayName("Should handle null #value# in Calibre user_metadata gracefully")
+        void extractMetadata_calibreNullValue_isIgnored() throws IOException {
+            String json = "{\"#subtitle\":{\"#value#\":null},\"#pagecount\":{\"#value#\":null}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertNull(result.getSubtitle());
+            assertNull(result.getPageCount());
+        }
+
+        @Test
+        @DisplayName("Should ignore age rating value not in valid set {0,6,10,13,16,18,21}")
+        void extractMetadata_calibreAgeRating_invalidValue_isIgnored() throws IOException {
+            String json = "{\"#age_rating\":{\"#value#\":15}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertNull(result.getAgeRating());
+        }
+
+        @Test
+        @DisplayName("Should extract age rating 0 (All Ages) from Calibre #age_rating")
+        void extractMetadata_calibreAgeRating_zero_returnsZero() throws IOException {
+            String json = "{\"#age_rating\":{\"#value#\":0}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals(0, result.getAgeRating());
+        }
+
+        @Test
+        @DisplayName("Should extract age rating 21 from Calibre #age_rating")
+        void extractMetadata_calibreAgeRating_21_returns21() throws IOException {
+            String json = "{\"#age_rating\":{\"#value#\":21}}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertEquals(21, result.getAgeRating());
+        }
+
+        @Test
+        @DisplayName("Should extract age_rating and content_rating from a full real-world Calibre user_metadata JSON blob with 17 custom columns")
+        void extractMetadata_calibreFullRealWorldJson_extractsAgeAndContentRating() throws IOException {
+            String json = "{" +
+                "\"#age_rating\":{\"#extra#\":null,\"#value#\":18,\"category_sort\":\"value\",\"colnum\":82,\"column\":\"value\",\"datatype\":\"int\",\"display\":{\"description\":\"Age Rating\",\"number_format\":null,\"web_search_template\":\"\"},\"is_category\":false,\"is_csp\":false,\"is_custom\":true,\"is_editable\":true,\"is_multiple\":null,\"is_multiple2\":{},\"kind\":\"field\",\"label\":\"age_rating\",\"link_column\":\"value\",\"name\":\"Age Rating\",\"rec_index\":23}," +
+                "\"#content_rating\":{\"#extra#\":null,\"#value#\":\"Everyone\",\"category_sort\":\"value\",\"colnum\":83,\"column\":\"value\",\"datatype\":\"text\",\"display\":{\"description\":\"Content Rating\",\"use_decorations\":false,\"web_search_template\":\"\"},\"is_category\":true,\"is_csp\":false,\"is_custom\":true,\"is_editable\":true,\"is_multiple\":null,\"is_multiple2\":{},\"kind\":\"field\",\"label\":\"content_rating\",\"link_column\":\"value\",\"name\":\"Content Rating\",\"rec_index\":26}," +
+                "\"#amazon_rating\":{\"#extra#\":null,\"#value#\":5.0,\"datatype\":\"float\",\"colnum\":67,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#amazon_review_count\":{\"#extra#\":null,\"#value#\":5,\"datatype\":\"int\",\"colnum\":68,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#goodreads_rating\":{\"#extra#\":null,\"#value#\":5.0,\"datatype\":\"float\",\"colnum\":70,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#goodreads_review_count\":{\"#extra#\":null,\"#value#\":5,\"datatype\":\"int\",\"colnum\":71,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#hardcover_rating\":{\"#extra#\":null,\"#value#\":5.0,\"datatype\":\"float\",\"colnum\":72,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#hardcover_review_count\":{\"#extra#\":null,\"#value#\":5,\"datatype\":\"int\",\"colnum\":73,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#lubimyczytac_rating\":{\"#extra#\":null,\"#value#\":5.0,\"datatype\":\"float\",\"colnum\":84,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#ranobedb_rating\":{\"#extra#\":null,\"#value#\":5.0,\"datatype\":\"float\",\"colnum\":85,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#pagecount\":{\"#extra#\":null,\"#value#\":1000,\"datatype\":\"int\",\"colnum\":81,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#series_total\":{\"#extra#\":null,\"#value#\":10,\"datatype\":\"int\",\"colnum\":37,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#subtitle\":{\"#extra#\":null,\"#value#\":\"DEMO-SUBTITLE\",\"datatype\":\"comments\",\"colnum\":77,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#moods\":{\"#extra#\":null,\"#value#\":[\"DEMO-MOODS\"],\"datatype\":\"text\",\"colnum\":76,\"is_multiple\":\"|\",\"is_multiple2\":{\"cache_to_list\":\"|\",\"list_to_ui\":\", \",\"ui_to_list\":\",\"}}," +
+                "\"#extra_tags\":{\"#extra#\":null,\"#value#\":[\"DEMO-TAGS\"],\"datatype\":\"text\",\"colnum\":74,\"is_multiple\":\"|\",\"is_multiple2\":{\"cache_to_list\":\"|\",\"list_to_ui\":\", \",\"ui_to_list\":\",\"}}," +
+                "\"#word_count\":{\"#extra#\":null,\"#value#\":1000,\"datatype\":\"int\",\"colnum\":57,\"is_multiple\":null,\"is_multiple2\":{}}," +
+                "\"#goodreads_awards\":{\"#extra#\":null,\"#value#\":[\"DEMO-AWARDS\"],\"datatype\":\"text\",\"colnum\":69,\"is_multiple\":\"|\",\"is_multiple2\":{}}" +
+                "}";
+            File epub = createEpubWithCalibreUserMetadata(json);
+            BookMetadata result = extractor.extractMetadata(epub);
+            assertNotNull(result);
+            assertAll(
+                () -> assertEquals(18, result.getAgeRating()),
+                () -> assertEquals("EVERYONE", result.getContentRating()),
+                () -> assertEquals(5.0, result.getAmazonRating(), 0.001),
+                () -> assertEquals(5, result.getAmazonReviewCount()),
+                () -> assertEquals(1000, result.getPageCount()),
+                () -> assertEquals(10, result.getSeriesTotal()),
+                () -> assertEquals("DEMO-SUBTITLE", result.getSubtitle()),
+                () -> assertNotNull(result.getMoods()),
+                () -> assertTrue(result.getMoods().contains("DEMO-MOODS")),
+                () -> assertNotNull(result.getTags()),
+                () -> assertTrue(result.getTags().contains("DEMO-TAGS"))
+            );
         }
     }
 
@@ -642,25 +1144,19 @@ class EpubMetadataExtractorTest {
     }
 
     @Nested
-    @DisplayName("BookLore Metadata Tests")
-    class BookLoreMetadataTests {
+    @DisplayName("BookLore Round-Trip Metadata Tests")
+    class BookloreRoundTripTests {
 
         @Test
-        @DisplayName("Should extract BookLore custom properties from EPUB metadata")
-        void extractMetadata_withBookloreProperties_returnsExtendedMetadata() throws IOException {
-            File epubFile = createEpubWithBookloreMetadata();
+        @DisplayName("Should extract all 14 booklore: namespace fields from OPF")
+        void extractMetadata_allBookloreFields_roundTrip() throws IOException {
+            File epubFile = createEpubWithAllBookloreFields();
 
             BookMetadata result = extractor.extractMetadata(epubFile);
 
             assertAll(
                 () -> assertNotNull(result),
-                () -> assertEquals("A Subtitle", result.getSubtitle()),
-                () -> assertEquals(10, result.getSeriesTotal()),
-                () -> assertEquals(4.5, result.getAmazonRating()),
-                () -> assertEquals(4.0, result.getGoodreadsRating()),
-                () -> assertEquals(5.0, result.getHardcoverRating()),
-                () -> assertEquals(3.5, result.getLubimyczytacRating()),
-                () -> assertEquals(2.0, result.getRanobedbRating()),
+                // IDs (legacy booklore meta format)
                 () -> assertEquals("B001", result.getAsin()),
                 () -> assertEquals("1001", result.getGoodreadsId()),
                 () -> assertEquals("2002", result.getComicvineId()),
@@ -668,27 +1164,118 @@ class EpubMetadataExtractorTest {
                 () -> assertEquals("4004", result.getRanobedbId()),
                 () -> assertEquals("5005", result.getGoogleId()),
                 () -> assertEquals("6006", result.getLubimyczytacId()),
+                // Numeric fields
+                () -> assertEquals(350, result.getPageCount()),
+                () -> assertEquals(10, result.getSeriesTotal()),
+                () -> assertEquals(16, result.getAgeRating()),
+                () -> assertEquals("TEEN", result.getContentRating()),
+                // Ratings
+                () -> assertEquals(4.5, result.getAmazonRating(), 0.001),
+                () -> assertEquals(4.0, result.getGoodreadsRating(), 0.001),
+                () -> assertEquals(5.0, result.getHardcoverRating(), 0.001),
+                () -> assertEquals(3.5, result.getLubimyczytacRating(), 0.001),
+                () -> assertEquals(2.0, result.getRanobedbRating(), 0.001),
+                // Review counts
+                () -> assertEquals(1234, result.getAmazonReviewCount()),
+                () -> assertEquals(5678, result.getGoodreadsReviewCount()),
+                () -> assertEquals(999, result.getHardcoverReviewCount()),
+                // Sets (JSON array format - as written by EpubMetadataWriter)
+                () -> assertNotNull(result.getMoods()),
                 () -> assertTrue(result.getMoods().contains("Dark")),
                 () -> assertTrue(result.getMoods().contains("Mystery")),
+                () -> assertNotNull(result.getTags()),
                 () -> assertTrue(result.getTags().contains("Fiction")),
                 () -> assertTrue(result.getTags().contains("Thriller"))
             );
         }
+
+        @Test
+        @DisplayName("Should extract booklore:subtitle from OPF")
+        void extractMetadata_bookloreSubtitle_returnsSubtitle() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Main Title</dc:title>
+                        <meta property="booklore:subtitle">A Subtitle</meta>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-subtitle-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epubFile);
+            assertNotNull(result);
+            assertEquals("A Subtitle", result.getSubtitle());
+        }
+
+        @Test
+        @DisplayName("Should extract booklore:age_rating as integer")
+        void extractMetadata_bookloreAgeRating_returnsInteger() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <meta property="booklore:age_rating">18</meta>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-agerate-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epubFile);
+            assertNotNull(result);
+            assertEquals(18, result.getAgeRating());
+        }
+
+        @Test
+        @DisplayName("Should extract booklore:content_rating as valid enum string")
+        void extractMetadata_bookloreContentRating_returnsString() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <meta property="booklore:content_rating">MATURE</meta>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-contentrate-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epubFile);
+            assertNotNull(result);
+            assertEquals("MATURE", result.getContentRating());
+        }
+
+        @Test
+        @DisplayName("Should extract booklore moods and tags as JSON arrays")
+        void extractMetadata_bookloreMoodsTagsJsonArray_returnsSets() throws IOException {
+            String opfContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test</dc:title>
+                        <meta property="booklore:moods">["Dark", "Tense", "Atmospheric"]</meta>
+                        <meta property="booklore:tags">["Horror", "Suspense"]</meta>
+                    </metadata>
+                </package>
+                """;
+            File epubFile = createEpubWithOpf(opfContent, "test-moodstags-" + System.nanoTime() + ".epub");
+            BookMetadata result = extractor.extractMetadata(epubFile);
+            assertNotNull(result);
+            assertNotNull(result.getMoods());
+            assertTrue(result.getMoods().contains("Dark"));
+            assertTrue(result.getMoods().contains("Tense"));
+            assertTrue(result.getMoods().contains("Atmospheric"));
+            assertNotNull(result.getTags());
+            assertTrue(result.getTags().contains("Horror"));
+            assertTrue(result.getTags().contains("Suspense"));
+        }
     }
 
-    private File createEpubWithBookloreMetadata() throws IOException {
+    private File createEpubWithAllBookloreFields() throws IOException {
         String opfContent = """
             <?xml version="1.0" encoding="UTF-8"?>
-            <package xmlns="http://www.idpf.org/2007/opf" xmlns:booklore="http://booklore.org/metadata" version="3.0">
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0"
+                     prefix="booklore: http://booklore.org/metadata/1.0/">
                 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-                    <dc:title>BookLore Test</dc:title>
-                    <meta property="booklore:subtitle">A Subtitle</meta>
-                    <meta property="booklore:series_total">10</meta>
-                    <meta property="booklore:amazon_rating">4.5</meta>
-                    <meta property="booklore:goodreads_rating">4.0</meta>
-                    <meta property="booklore:hardcover_rating">5.0</meta>
-                    <meta property="booklore:lubimyczytac_rating">3.5</meta>
-                    <meta property="booklore:ranobedb_rating">2.0</meta>
+                    <dc:title>BookLore Round-Trip Test</dc:title>
                     <meta property="booklore:asin">B001</meta>
                     <meta property="booklore:goodreads_id">1001</meta>
                     <meta property="booklore:comicvine_id">2002</meta>
@@ -696,12 +1283,24 @@ class EpubMetadataExtractorTest {
                     <meta property="booklore:ranobedb_id">4004</meta>
                     <meta property="booklore:google_books_id">5005</meta>
                     <meta property="booklore:lubimyczytac_id">6006</meta>
-                    <meta property="booklore:moods">Dark, Mystery</meta>
-                    <meta property="booklore:tags">Fiction, Thriller</meta>
+                    <meta property="booklore:page_count">350</meta>
+                    <meta property="booklore:series_total">10</meta>
+                    <meta property="booklore:age_rating">16</meta>
+                    <meta property="booklore:content_rating">TEEN</meta>
+                    <meta property="booklore:amazon_rating">4.5</meta>
+                    <meta property="booklore:amazon_review_count">1234</meta>
+                    <meta property="booklore:goodreads_rating">4.0</meta>
+                    <meta property="booklore:goodreads_review_count">5678</meta>
+                    <meta property="booklore:hardcover_rating">5.0</meta>
+                    <meta property="booklore:hardcover_review_count">999</meta>
+                    <meta property="booklore:lubimyczytac_rating">3.5</meta>
+                    <meta property="booklore:ranobedb_rating">2.0</meta>
+                    <meta property="booklore:moods">["Dark", "Mystery"]</meta>
+                    <meta property="booklore:tags">["Fiction", "Thriller"]</meta>
                 </metadata>
             </package>
             """;
-        return createEpubWithOpf(opfContent, "test-booklore-" + System.nanoTime() + ".epub");
+        return createEpubWithOpf(opfContent, "test-booklore-all-" + System.nanoTime() + ".epub");
     }
 
     private File createEpubWithIsbn(String isbn13, String isbn10) throws IOException {

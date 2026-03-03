@@ -106,7 +106,10 @@
         "seriesGaps": "Praznine u serijalu",
         "seriesPosition": "Pozicija u serijalu",
         "readingProgress": "Napredak čitanja (%)",
-        "metadataPresence": "Prisutnost metapodataka"
+        "metadataPresence": "Prisutnost metapodataka",
+        "audiobookCodec": "Kodek",
+        "audiobookChapterCount": "Broj poglavlja",
+        "audiobookBitrate": "Brzina prijenosa (kbps)"
     },
     "fieldGroups": {
         "organization": "Organizacija",
@@ -257,7 +260,10 @@
         "comicColorists": "Koloristi",
         "comicLetterers": "Letristi",
         "comicCoverArtists": "Naslovničari",
-        "comicEditors": "Urednici"
+        "comicEditors": "Urednici",
+        "audiobookCodec": "Kodek",
+        "audiobookChapterCount": "Poglavlja",
+        "audiobookBitrate": "Brzina prijenosa"
     },
     "toast": {
         "validationErrorSummary": "Pogreška validacije",

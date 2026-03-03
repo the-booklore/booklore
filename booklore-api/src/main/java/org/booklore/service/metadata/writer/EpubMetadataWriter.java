@@ -871,6 +871,14 @@ public class EpubMetadataWriter implements MetadataWriter {
                 .toList()) + "]";
             metadataElement.appendChild(createBookloreMetaElement(doc, "tags", tagsJson));
         }
+
+        if (metadata.getAgeRating() != null) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "age_rating", String.valueOf(metadata.getAgeRating())));
+        }
+
+        if (StringUtils.isNotBlank(metadata.getContentRating())) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "content_rating", metadata.getContentRating()));
+        }
     }
 
     private Element createBookloreMetaElement(Document doc, String property, String value) {

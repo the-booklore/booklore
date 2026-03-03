@@ -29,7 +29,7 @@
         "sectionTitle": "Upravljanje datotekama",
         "maxUploadSize": "Maks. veličina učitavanja",
         "maxUploadPlaceholder": "Maks. veličina",
-        "maxUploadDesc": "Definira maksimalnu dopuštenu veličinu (u MB) za svaku učitanu datoteku. Primjenjuje se na EPUB, PDF, CBZ, CBR i CB7 formate.",
+        "maxUploadDesc": "Definira maksimalnu dopuštenu veličinu (u MB) za svaku prenesenu datoteku. Odnosi se na sve podržane formate datoteka.",
         "restartWarning": "Promjene će stupiti na snagu nakon ponovnog pokretanja poslužitelja",
         "invalidInput": "Nevažeći unos",
         "invalidInputDetail": "Unesite valjanu maksimalnu veličinu učitavanja datoteke u MB."
@@ -43,8 +43,8 @@
     "settingsSavedDetail": "Postavke su uspješno spremljene!",
     "settingsError": "Došlo je do pogreške prilikom spremanja postavki.",
     "appearance": {
-        "supportButtonAnimation": "",
-        "supportButtonAnimationDesc": "",
-        "sectionTitle": ""
+        "supportButtonAnimation": "Animacija gumba za podršku",
+        "supportButtonAnimationDesc": "Prikaži animirani efekt srca na gumbu za podršku u gornjoj traci. Isključivanjem ove opcije gumb ostaje vidljiv, ali se animacija uklanja.",
+        "sectionTitle": "Izgled"
     }
 }

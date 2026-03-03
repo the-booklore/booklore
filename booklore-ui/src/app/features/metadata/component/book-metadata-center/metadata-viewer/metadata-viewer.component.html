@@ -560,6 +560,36 @@
               }
             </div>
 
+            @if (isAudiobook(book) && hasAudiobookMetadata(book)) {
+              @let audio = book.metadata!.audiobookMetadata!;
+              @if (book.metadata?.narrator) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookNarrator') }}</span>
+                  <a class="metadata-value metadata-link" (click)="goToNarrator(book.metadata!.narrator!)">
+                    {{ book.metadata?.narrator }}
+                  </a>
+                </div>
+              }
+              @if (audio.durationSeconds) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookDuration') }}</span>
+                  <span class="metadata-value">{{ formatDuration(audio.durationSeconds) }}</span>
+                </div>
+              }
+              @if (audio.chapterCount) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookChapters') }}</span>
+                  <span class="metadata-value">{{ audio.chapterCount }}</span>
+                </div>
+              }
+              @if (book.metadata?.abridged != null) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookAbridged') }}</span>
+                  <span class="metadata-value">{{ book.metadata?.abridged ? t('abridged') : t('unabridged') }}</span>
+                </div>
+              }
+            }
+
             @if (hasDigitalFile(book)) {
               <div class="metadata-item">
                 <span class="metadata-key">{{ t('fileSizeLabel') }}</span>
@@ -902,99 +932,6 @@
                 <span>{{ t('notesLabel') }}</span>
               </div>
               <p class="comic-notes-content">{{ comic.notes }}</p>
-            </div>
-          }
-        </div>
-      </div>
-    }
-
-    @if (isAudiobook(book) && hasAudiobookMetadata(book)) {
-      <div class="audiobook-metadata-section">
-        <div class="section-header clickable" (click)="isAudiobookSectionExpanded = !isAudiobookSectionExpanded">
-          <div class="section-header-left">
-            <i class="pi pi-headphones"></i>
-            <span>{{ t('audiobookDetailsTitle') }}</span>
-          </div>
-          <i class="pi section-toggle-icon" [ngClass]="isAudiobookSectionExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
-        </div>
-
-        <div class="audiobook-metadata-content" [ngClass]="{'collapsed': !isAudiobookSectionExpanded}">
-          @let audio = book.metadata!.audiobookMetadata!;
-
-          <div class="audiobook-info-grid">
-            @if (audio.durationSeconds) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookDuration') }}</span>
-                <span class="audiobook-info-value">{{ formatDuration(audio.durationSeconds) }}</span>
-              </div>
-            }
-            @if (book.metadata?.narrator) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookNarrator') }}</span>
-                <a class="audiobook-info-value audiobook-link" (click)="goToNarrator(book.metadata!.narrator!)">
-                  {{ book.metadata?.narrator }}
-                </a>
-              </div>
-            }
-            @if (audio.chapterCount) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookChapters') }}</span>
-                <span class="audiobook-info-value">{{ audio.chapterCount }}</span>
-              </div>
-            }
-            @if (audio.bitrate) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookBitrate') }}</span>
-                <span class="audiobook-info-value">{{ audio.bitrate }} kbps</span>
-              </div>
-            }
-            @if (audio.sampleRate) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookSampleRate') }}</span>
-                <span class="audiobook-info-value">{{ formatSampleRate(audio.sampleRate) }}</span>
-              </div>
-            }
-            @if (audio.channels) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookChannels') }}</span>
-                <span class="audiobook-info-value">{{ getChannelLabel(audio.channels) }}</span>
-              </div>
-            }
-            @if (audio.codec) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookCodec') }}</span>
-                <span class="audiobook-info-value">{{ audio.codec.toUpperCase() }}</span>
-              </div>
-            }
-          </div>
-
-          @if (book.metadata?.abridged != null) {
-            <div class="audiobook-properties">
-              <span class="audiobook-property-badge" [ngClass]="book.metadata?.abridged ? 'abridged' : 'unabridged'">
-                <i class="pi" [ngClass]="book.metadata?.abridged ? 'pi-minus-circle' : 'pi-check-circle'"></i>
-                {{ book.metadata?.abridged ? t('abridged') : t('unabridged') }}
-              </span>
-            </div>
-          }
-
-          @if (audio.chapters?.length) {
-            <div class="audiobook-chapters-section">
-              <div class="audiobook-chapters-header clickable" (click)="isChapterListExpanded = !isChapterListExpanded">
-                <span class="audiobook-chapters-toggle-label">
-                  <i class="pi pi-list"></i>
-                  {{ t('audiobookChapterList') }}
-                </span>
-                <i class="pi section-toggle-icon" [ngClass]="isChapterListExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
-              </div>
-              <div class="audiobook-chapters-list" [ngClass]="{'collapsed': !isChapterListExpanded}">
-                @for (chapter of audio.chapters; track chapter.index) {
-                  <div class="audiobook-chapter-row">
-                    <span class="audiobook-chapter-index">{{ chapter.index! + 1 }}</span>
-                    <span class="audiobook-chapter-title">{{ chapter.title }}</span>
-                    <span class="audiobook-chapter-duration">{{ formatDurationMs(chapter.durationMs!) }}</span>
-                  </div>
-                }
-              </div>
             </div>
           }
         </div>

@@ -58,6 +58,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
   items: MenuItem[] | undefined;
+  readStatusMenuItems: MenuItem[] = [];
   isImageLoaded: boolean = false;
   isSubMenuLoading = false;
   private additionalFilesLoaded = false;
@@ -238,6 +239,40 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   get coverImageUrl(): string {
     return this._coverImageUrl;
+  }
+
+  private buildReadStatusMenuItems(): void {
+    this.readStatusMenuItems = Object.entries(readStatusLabels).map(([status, label]) => ({
+      label,
+      command: () => {
+        this.bookService.updateBookReadStatus(this.book.id, status as ReadStatus).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: this.t.translate('book.card.toast.readStatusUpdatedSummary'),
+              detail: this.t.translate('book.card.toast.readStatusUpdatedDetail', {label}),
+              life: 2000
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: this.t.translate('book.card.toast.readStatusFailedSummary'),
+              detail: this.t.translate('book.card.toast.readStatusFailedDetail'),
+              life: 3000
+            });
+          }
+        });
+      }
+    }));
+  }
+
+  toggleReadStatusMenu(event: Event, menu: TieredMenu): void {
+    event.stopPropagation();
+    if (this.readStatusMenuItems.length === 0) {
+      this.buildReadStatusMenuItems();
+    }
+    menu.toggle(event);
   }
 
   onImageLoad(): void {

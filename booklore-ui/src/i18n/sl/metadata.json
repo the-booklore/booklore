@@ -131,7 +131,8 @@
             "audiobookUploadFailed": "Prišlo je do napake pri nalaganju naslovnice zvočne knjige",
             "fileMetadataLoaded": "Metapodatki so naloženi iz datoteke. Preglej in shrani.",
             "fileMetadataFailed": "Izločanje metapodatkov iz datoteke ni uspelo"
-        }
+        },
+        "writtenToFileTooltip": "To polje se zapiše v fizično datoteko"
     },
     "picker": {
         "loadingMetadata": "Nalaganje celotnih metapodatkov...",
@@ -222,7 +223,15 @@
         "deleteTooltip": "Izbriši",
         "downloadAllTooltip": "Prenesi vse datoteke kot ZIP arhiv",
         "physicalBookHint": "Lahko naložiš digitalno kopijo ali ročno dodaš metapodatke.",
-        "detachTooltip": "Odklopi"
+        "detachTooltip": "Odklopi",
+        "chapters": "Poglavja",
+        "chapterTitle": "Naslov",
+        "startTime": "Začetek",
+        "endTime": "Konec",
+        "duration": "Trajanje",
+        "totalDuration": "Skupno trajanje",
+        "noChapters": "Podatki o poglavju niso na voljo.",
+        "fileName": "Datoteka"
     },
     "viewer": {
         "metadataLocked": "Metapodatki te knjige so zaklenjeni.",
@@ -387,7 +396,8 @@
             "largeFileHeader": "Opozorilo o veliki datoteki",
             "sendAnyway": "Vseeno pošlji"
         },
-        "audiobookChapterList": "Seznam poglavij"
+        "audiobookChapterList": "Seznam poglavij",
+        "audiobookAbridged": "Skrajšano"
     },
     "sidecar": {
         "title": "Sidecar metapodatki",

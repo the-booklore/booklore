@@ -12,7 +12,9 @@ import {Tooltip} from 'primeng/tooltip';
 import {Image} from 'primeng/image';
 import {UrlHelperService} from '../../../../../../shared/service/url-helper.service';
 import {BookMetadataManageService} from '../../../../../book/service/book-metadata-manage.service';
-import {TranslocoDirective} from '@jsverse/transloco';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {AudiobookService} from '../../../../../readers/audiobook-player/audiobook.service';
+import {AudiobookInfo} from '../../../../../readers/audiobook-player/audiobook.model';
 
 export interface ReadEvent {
   bookId: number;
@@ -83,6 +85,11 @@ export class MetadataTabsComponent {
 
   protected urlHelper = inject(UrlHelperService);
   private bookMetadataManageService = inject(BookMetadataManageService);
+  private audiobookService = inject(AudiobookService);
+  private t = inject(TranslocoService);
+
+  audiobookInfo: AudiobookInfo | null = null;
+  chaptersLoading = false;
 
   @Output() readBook = new EventEmitter<ReadEvent>();
   @Output() downloadBook = new EventEmitter<DownloadEvent>();
@@ -191,5 +198,54 @@ export class MetadataTabsComponent {
 
   supportsDualCovers(): boolean {
     return this.bookMetadataManageService.supportsDualCovers(this.book);
+  }
+
+  onTabChange(value: string | number | undefined): void {
+    if (value === 'chapters') {
+      this.loadChapters();
+    }
+  }
+
+  hasAudiobookFormat(): boolean {
+    const allFiles = [this.book.primaryFile, ...(this.book.alternativeFormats || [])].filter(f => f?.bookType);
+    return allFiles.some(f => f!.bookType === 'AUDIOBOOK');
+  }
+
+  loadChapters(): void {
+    if (this.audiobookInfo || this.chaptersLoading) return;
+    this.chaptersLoading = true;
+    this.audiobookService.getAudiobookInfo(this.book.id).subscribe({
+      next: info => {
+        this.audiobookInfo = info;
+        this.chaptersLoading = false;
+      },
+      error: () => {
+        this.chaptersLoading = false;
+      }
+    });
+  }
+
+  formatDuration(ms: number): string {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return hours > 0 ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  formatSampleRate(sampleRate: number): string {
+    return `${(sampleRate / 1000).toFixed(1)} kHz`;
+  }
+
+  getChannelLabel(channels: number): string {
+    switch (channels) {
+      case 1:
+        return this.t.translate('metadata.viewer.channelMono');
+      case 2:
+        return this.t.translate('metadata.viewer.channelStereo');
+      default:
+        return this.t.translate('metadata.viewer.channelMultiple', { count: channels });
+    }
   }
 }
