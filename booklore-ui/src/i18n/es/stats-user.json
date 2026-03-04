@@ -1,9 +1,9 @@
 {
     "main": {
         "title": "Estadísticas de lectura de {{ name }}",
-        "customizeLayout": "Personalizar diseno",
-        "chartConfig": "Configuracion de graficos",
-        "resetLayout": "Restablecer diseno",
+        "customizeLayout": "Personalizar diseño",
+        "chartConfig": "Configuración de gráficos",
+        "resetLayout": "Restablecer diseño",
         "hideAll": "Ocultar todos",
         "showAll": "Mostrar todos",
         "close": "Cerrar"
@@ -406,12 +406,12 @@
         "tooltipGripScore": "Puntuacion de enganche: {{ score }}/100",
         "tooltipSessions": "Sesiones: {{ count }}",
         "tooltipAvgSession": "Sesion promedio: {{ minutes }}min",
-        "tooltipRating": "Calificacion: {{ rating }}/10"
+        "tooltipRating": "Calificación: {{ rating }}/10"
     },
     "completionRace": {
-        "title": "Carrera de finalizacion de lectura",
+        "title": "Carrera de finalización de lectura",
         "tooltip": "Cada línea representa el recorrido de lectura de un libro completado. El eje X muestra los días desde que empezaste ese libro, y el eje Y muestra tu progreso de 0% a 100%. Líneas más empinadas significan lecturas más rápidas. Solo se incluyen libros marcados como 'Leído' con sesiones rastreadas.",
-        "description": "Compara que tan rapido terminaste diferentes libros",
+        "description": "Compara que tan rápido terminaste diferentes libros",
         "previousYear": "Año anterior",
         "nextYear": "Año siguiente",
         "books": "Libros",
@@ -422,7 +422,7 @@
         "slowest": "Más lento",
         "axisDaysSinceFirstSession": "Días desde la primera sesión",
         "axisProgress": "Progreso (%)",
-        "tooltipDayProgress": "Dia {{ day }}: {{ progress }}% de progreso",
+        "tooltipDayProgress": "Día {{ day }}: {{ progress }}% de progreso",
         "noData": "No se encontraron libros completados con sesiones de lectura para {{ year }}.",
         "noDataHint": "Completa algunos libros con sesiones de lectura rastreadas para ver tus carreras de finalizacion."
     },
