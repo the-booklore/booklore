@@ -214,8 +214,8 @@ class KoboEntitlementServiceTest {
         when(koboCompatibilityService.isBookSupportedForKobo(any(BookEntity.class))).thenReturn(true);
         when(shelfRepository.findByUserId(user.getId())).thenReturn(List.of(koboShelf, userShelf));
         when(magicShelfRepository.findAllByUserId(user.getId())).thenReturn(List.of(magicShelf));
-        when(magicShelfBookService.getBooksByMagicShelfId(eq(user.getId()), eq(201L), eq(0), eq(Integer.MAX_VALUE)))
-                .thenReturn(new PageImpl<>(List.of(Book.builder().id(2L).build())));
+        when(magicShelfBookService.getBookIdsByMagicShelfId(eq(user.getId()), eq(201L), anyInt()))
+                .thenReturn(List.of(2L));
 
         List<KoboTagWrapper> tags = koboEntitlementService.generateTags();
 
@@ -356,8 +356,8 @@ class KoboEntitlementServiceTest {
         when(koboCompatibilityService.isBookSupportedForKobo(any(BookEntity.class))).thenReturn(true);
         when(shelfRepository.findByUserId(user.getId())).thenReturn(List.of(koboShelf));
         when(magicShelfRepository.findAllByUserId(user.getId())).thenReturn(List.of(magicShelf));
-        when(magicShelfBookService.getBooksByMagicShelfId(eq(user.getId()), eq(201L), eq(0), eq(Integer.MAX_VALUE)))
-                .thenReturn(new PageImpl<>(List.of(Book.builder().id(1L).build())));
+        when(magicShelfBookService.getBookIdsByMagicShelfId(eq(user.getId()), eq(201L), anyInt()))
+                .thenReturn(List.of(1L));
 
         List<KoboTagWrapper> tags = koboEntitlementService.generateTags();
 

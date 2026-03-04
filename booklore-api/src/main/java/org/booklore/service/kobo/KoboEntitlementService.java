@@ -2,7 +2,6 @@ package org.booklore.service.kobo;
 
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.mapper.KoboReadingStateMapper;
-import org.booklore.model.dto.Book;
 import org.booklore.model.dto.kobo.*;
 import org.booklore.model.dto.settings.KoboSettings;
 import org.booklore.model.entity.*;
@@ -34,6 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class KoboEntitlementService {
 
+    private static final int MAX_MAGIC_SHELF_BOOKS_FOR_KOBO = 250;
     private static final Pattern NON_ALPHANUMERIC_LOWERCASE_PATTERN = Pattern.compile("[^a-z0-9]");
     private final KoboUrlBuilder koboUrlBuilder;
     private final BookQueryService bookQueryService;
@@ -113,11 +113,11 @@ public class KoboEntitlementService {
 
     public List<KoboTagWrapper> generateTags() {
         Long userId = authenticationService.getAuthenticatedUser().getId();
-        List<Long> koboBookIDs = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
+        Set<Long> koboBookIDs = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
                 .orElseThrow(() -> new NoSuchElementException("Kobo shelf not found for user: " + userId))
                 .getBookEntities().stream().filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(BookEntity::getId)
-                .toList();
+                .collect(Collectors.toSet());
 
         List<KoboTagWrapper> tags = new ArrayList<>();
         // Shelves
@@ -130,8 +130,7 @@ public class KoboEntitlementService {
         // Magic Shelves
         magicShelfRepository.findAllByUserId(userId).stream()
                 .map(magicShelf -> {
-                    List<Long> bookIds = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelf.getId(), 0, Integer.MAX_VALUE)
-                            .stream().map(Book::getId).toList();
+                    List<Long> bookIds = magicShelfBookService.getBookIdsByMagicShelfId(userId, magicShelf.getId(), MAX_MAGIC_SHELF_BOOKS_FOR_KOBO);
                     return buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
                             magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
                             bookIds, koboBookIDs);
@@ -142,7 +141,7 @@ public class KoboEntitlementService {
         return tags;
     }
 
-    private KoboTagWrapper buildKoboTag(String id, String name, String created, String modified, List<Long> bookIds, List<Long> koboFilterIds) {
+    private KoboTagWrapper buildKoboTag(String id, String name, String created, String modified, List<Long> bookIds, Set<Long> koboFilterIds) {
         List<KoboTag.KoboTagItem> items = bookIds.stream()
                 .filter(koboFilterIds::contains)
                 .map(bookId -> KoboTag.KoboTagItem.builder()
