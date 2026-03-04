@@ -308,6 +308,10 @@ Every contribution matters. [See how you can help →](CONTRIBUTING.md)
 
 ---
 
+## ⚠️ Note to Integrators
+
+While BookLore is open source and its API is accessible, it is not designed or maintained as a stable integration point. Endpoints are undocumented, unversioned, and may change or break at any time without notice. No compatibility guarantees or support are provided for third-party use.
+
 <div align="center">
 
 ## ⚖️ License
