@@ -5,78 +5,82 @@ import org.booklore.config.security.userdetails.UserAuthenticationDetails;
 import org.booklore.mapper.custom.BookLoreUserTransformer;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.entity.BookLoreUserEntity;
-import org.booklore.model.entity.UserPermissionsEntity;
 import org.booklore.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-@AllArgsConstructor
+@Slf4j
 @Component
+@AllArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private final BookLoreUserTransformer bookLoreUserTransformer;
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
-    private final BookLoreUserTransformer bookLoreUserTransformer;
+
+    private static final List<String> WHITELISTED_PATHS = List.of(
+            "/api/v1/opds/",
+            "/api/v2/opds/",
+            "/api/v1/auth/refresh",
+            "/api/v1/setup/",
+            "/api/kobo/"
+    );
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        return "websocket".equalsIgnoreCase(request.getHeader("Upgrade"));
-    }
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+        String token = extractToken(request);
+        String path = request.getRequestURI();
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-        String token = getJwtFromRequest(request);
-        if (token != null && jwtUtils.validateToken(token)) {
-            Long userId = jwtUtils.extractUserId(token);
-            BookLoreUserEntity bookLoreUserEntity = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            BookLoreUser bookLoreUser = bookLoreUserTransformer.toDTO(bookLoreUserEntity);
-            List<GrantedAuthority> authorities = getAuthorities(bookLoreUserEntity.getPermissions());
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(bookLoreUser, null, authorities);
-            authentication.setDetails(new UserAuthenticationDetails(request, bookLoreUser.getId()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        boolean isWhitelisted = WHITELISTED_PATHS.stream().anyMatch(path::startsWith);
+        if (isWhitelisted) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        if (token == null) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        try {
+            if (jwtUtils.validateToken(token)) {
+                authenticateUser(token, request);
+            } else {
+                log.debug("Invalid token. Rejecting request.");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+        } catch (Exception ex) {
+            log.error("Authentication error: {}", ex.getMessage(), ex);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
         chain.doFilter(request, response);
     }
 
-    private String getJwtFromRequest(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7);
-        }
-        return null;
+    private void authenticateUser(String token, HttpServletRequest request) {
+        Long userId = jwtUtils.extractUserId(token);
+        BookLoreUserEntity entity = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, null);
+        authentication.setDetails(new UserAuthenticationDetails(request, user.getId()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
-    private List<GrantedAuthority> getAuthorities(UserPermissionsEntity permissions) {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        if (permissions.isPermissionUpload()) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_UPLOAD"));
-        }
-        if (permissions.isPermissionDownload()) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_DOWNLOAD"));
-        }
-        if (permissions.isPermissionEditMetadata()) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_EDIT_METADATA"));
-        }
-        if (permissions.isPermissionManageLibrary()) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_MANAGE_LIBRARY"));
-        }
-        if (permissions.isPermissionAdmin()) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        }
-        return authorities;
+    private String extractToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        return (bearer != null && bearer.startsWith("Bearer ")) ? bearer.substring(7) : null;
     }
 }

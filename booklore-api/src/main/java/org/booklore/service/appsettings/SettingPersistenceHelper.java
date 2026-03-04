@@ -75,6 +75,9 @@ public class SettingPersistenceHelper {
     }
 
     public String serializeSettingValue(AppSettingKey key, Object val) throws JacksonException {
+        if (val == null) {
+            return null;
+        }
         return key.isJson() ? objectMapper.writeValueAsString(val) : val.toString();
     }
 

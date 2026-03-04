@@ -52,7 +52,7 @@ export class AuthorService {
   }
 
   autoMatchAuthors(authorIds: number[]): Observable<AuthorSummary> {
-    const token = this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
+    const token = this.authService.getInternalAccessToken();
     const headers = new HttpHeaders()
       .set('Content-Type', 'application/json')
       .set('Authorization', `Bearer ${token}`);
@@ -101,7 +101,7 @@ export class AuthorService {
   }
 
   getAuthorPhotoUrl(authorId: number): string {
-    const token = this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
+    const token = this.authService.getInternalAccessToken();
     let url = `${this.mediaBaseUrl}/author/${authorId}/photo`;
     if (token) {
       url += `?token=${token}`;
@@ -110,7 +110,7 @@ export class AuthorService {
   }
 
   getAuthorThumbnailUrl(authorId: number, cacheBuster?: number): string {
-    const token = this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
+    const token = this.authService.getInternalAccessToken();
     let url = `${this.mediaBaseUrl}/author/${authorId}/thumbnail`;
     if (token) {
       url += `?token=${token}`;

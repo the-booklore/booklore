@@ -1,17 +1,16 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import {AuthService} from '../../service/auth.service';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {Password} from 'primeng/password';
 import {Button} from 'primeng/button';
 import {Message} from 'primeng/message';
 import {InputText} from 'primeng/inputtext';
-import {OAuthService} from 'angular-oauth2-oidc';
-import {Observable, Subject} from 'rxjs';
+import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
-import {getOidcErrorCount, isOidcBypassed, resetOidcBypass} from '../../../core/security/auth-initializer';
 import {AppSettingsService, PublicAppSettings} from '../../service/app-settings.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {OidcService} from '../../../core/security/oidc.service';
 
 @Component({
   selector: 'app-login',
@@ -26,28 +25,46 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent implements OnInit, OnDestroy {
+export class LoginComponent implements OnInit {
   username = '';
   password = '';
   errorMessage = '';
+  infoMessage = '';
   oidcEnabled = false;
   oidcName = 'OIDC';
-  isOidcBypassed = false;
-  showOidcBypassInfo = false;
-  oidcBypassMessage = '';
   isOidcLoginInProgress = false;
+  showLocalLogin = true;
+  private oidcOnlyAutoRedirect = false;
 
   private authService = inject(AuthService);
-  private oAuthService = inject(OAuthService);
+  private oidcService = inject(OidcService);
   private appSettingsService = inject(AppSettingsService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private translocoService = inject(TranslocoService);
 
   publicAppSettings$: Observable<PublicAppSettings | null> = this.appSettingsService.publicAppSettings$;
 
-  private destroy$ = new Subject<void>();
+  private static readonly OIDC_ERROR_KEYS: Record<string, string> = {
+    'state_mismatch': 'auth.login.oidcErrors.stateMismatch',
+    'missing_code': 'auth.login.oidcErrors.stateMismatch',
+    'exchange_failed': 'auth.login.oidcErrors.exchangeFailed'
+  };
+
+  private static readonly MAX_REDIRECT_COUNT = 3;
 
   ngOnInit(): void {
+    this.route.queryParams.pipe(take(1)).subscribe(params => {
+      if (params['reason'] === 'session_revoked') {
+        this.infoMessage = this.translocoService.translate('auth.login.sessionRevoked');
+      }
+
+      const oidcError = params['oidcError'];
+      if (oidcError) {
+        this.errorMessage = this.resolveOidcError(oidcError);
+      }
+    });
+
     this.publicAppSettings$
       .pipe(
         filter(settings => settings != null),
@@ -56,25 +73,55 @@ export class LoginComponent implements OnInit, OnDestroy {
       .subscribe(publicSettings => {
         this.oidcEnabled = publicSettings!.oidcEnabled;
         this.oidcName = publicSettings!.oidcProviderDetails?.providerName || 'OIDC';
-        this.checkOidcBypassStatus();
+
+        this.route.queryParams.pipe(take(1)).subscribe(params => {
+          const isLocalMode = params['local'] === 'true';
+          const hasOidcError = !!params['oidcError'];
+
+          if (publicSettings!.oidcForceOnlyMode && !isLocalMode && !hasOidcError) {
+            this.handleAutoRedirect();
+          }
+        });
       });
   }
 
-  private checkOidcBypassStatus(): void {
-    this.isOidcBypassed = isOidcBypassed();
-    const errorCount = getOidcErrorCount();
+  private handleAutoRedirect(): void {
+    const countStr = sessionStorage.getItem('oidc_redirect_count');
+    const count = countStr ? parseInt(countStr, 10) : 0;
 
-    if (this.oidcEnabled && (this.isOidcBypassed || errorCount > 0)) {
-      this.showOidcBypassInfo = true;
-
-      if (this.isOidcBypassed && errorCount >= 3) {
-        this.oidcBypassMessage = this.translocoService.translate('auth.login.oidcAutoDisabled', {provider: this.oidcName, count: errorCount});
-      } else if (this.isOidcBypassed) {
-        this.oidcBypassMessage = this.translocoService.translate('auth.login.oidcManuallyDisabled', {provider: this.oidcName});
-      } else if (errorCount > 0) {
-        this.oidcBypassMessage = this.translocoService.translate('auth.login.oidcErrors', {provider: this.oidcName, count: errorCount});
-      }
+    if (count >= LoginComponent.MAX_REDIRECT_COUNT) {
+      sessionStorage.removeItem('oidc_redirect_count');
+      this.errorMessage = this.translocoService.translate('auth.login.oidcOnlyRedirectFailed');
+      this.showLocalLogin = false;
+      return;
     }
+
+    this.oidcOnlyAutoRedirect = true;
+    sessionStorage.setItem('oidc_redirect_count', String(count + 1));
+    this.showLocalLogin = false;
+    this.loginWithOidc();
+  }
+
+  private resolveOidcError(error: string): string {
+    if (error.startsWith('OIDC user')) {
+      return this.translocoService.translate('auth.login.oidcErrors.userNotProvisioned');
+    }
+    if (error.startsWith('Cannot reach')) {
+      return this.translocoService.translate('auth.login.oidcErrors.providerUnreachable');
+    }
+    if (error.startsWith('Invalid token') || error.startsWith('No token')) {
+      return this.translocoService.translate('auth.login.oidcErrors.invalidToken');
+    }
+    if (error.startsWith('Failed to exchange') || error.includes('token exchange')) {
+      return this.translocoService.translate('auth.login.oidcErrors.exchangeFailed');
+    }
+
+    const key = LoginComponent.OIDC_ERROR_KEYS[error];
+    if (key) {
+      return this.translocoService.translate(key);
+    }
+
+    return this.translocoService.translate('auth.login.oidcErrors.unknown');
   }
 
   login(): void {
@@ -98,7 +145,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
   }
 
-  loginWithOidc(): void {
+  async loginWithOidc(): Promise<void> {
     if (this.isOidcLoginInProgress) {
       return;
     }
@@ -107,45 +154,36 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
 
     try {
-      setTimeout(() => {
+      const publicSettings = this.appSettingsService.currentPublicSettings;
+      if (!publicSettings?.oidcProviderDetails) {
+        this.errorMessage = this.translocoService.translate('auth.login.oidcInitError');
         this.isOidcLoginInProgress = false;
-      }, 5000);
-      this.oAuthService.initCodeFlow();
+        return;
+      }
+
+      const details = publicSettings.oidcProviderDetails;
+      const pkce = await this.oidcService.generatePkce();
+      const state = await this.oidcService.fetchState();
+      const nonce = this.oidcService.generateRandomString();
+
+      this.oidcService.storePkceState({codeVerifier: pkce.codeVerifier, state, nonce});
+
+      const authUrl = await this.oidcService.buildAuthUrl(
+        details.issuerUri,
+        details.clientId,
+        pkce.codeChallenge,
+        state,
+        nonce
+      );
+
+      window.location.href = authUrl;
     } catch (error) {
       console.error('OIDC login initiation failed:', error);
-      this.errorMessage = this.translocoService.translate('auth.login.oidcInitError');
+      sessionStorage.removeItem('oidc_redirect_count');
+      this.errorMessage = this.translocoService.translate('auth.login.oidcErrors.providerUnreachable');
+      this.showLocalLogin = !this.oidcOnlyAutoRedirect;
       this.isOidcLoginInProgress = false;
     }
   }
 
-  bypassOidc(): void {
-    localStorage.setItem('booklore-oidc-bypass', 'true');
-    this.isOidcBypassed = true;
-    this.showOidcBypassInfo = false;
-  }
-
-  enableOidc(): void {
-    resetOidcBypass();
-    this.isOidcBypassed = false;
-    this.showOidcBypassInfo = false;
-    this.isOidcLoginInProgress = false;
-    window.location.reload();
-  }
-
-  retryOidc(): void {
-    resetOidcBypass();
-    this.isOidcBypassed = false;
-    this.showOidcBypassInfo = false;
-    this.isOidcLoginInProgress = false;
-    window.location.reload();
-  }
-
-  dismissOidcWarning(): void {
-    this.showOidcBypassInfo = false;
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
 }

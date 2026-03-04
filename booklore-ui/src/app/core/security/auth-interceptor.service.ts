@@ -10,10 +10,7 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  const internalToken = authService.getInternalAccessToken();
-  const oidcToken = authService.getOidcAccessToken();
-  const token = internalToken || oidcToken;
-
+  const token = authService.getInternalAccessToken();
   const isApiRequest = req.url.startsWith(`${API_CONFIG.BASE_URL}/api/`);
 
   const authReq = (token && isApiRequest) ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
@@ -21,7 +18,7 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        return handle401Error(authService, authReq, next, router, !!internalToken);
+        return handle401Error(authService, authReq, next, router);
       }
       return throwError(() => error);
     })
@@ -31,8 +28,8 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-function handle401Error(authService: AuthService, request: HttpRequest<unknown>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<HttpEvent<unknown>> {
-  if (!isRefreshing && isInternal) {
+function handle401Error(authService: AuthService, request: HttpRequest<unknown>, next: HttpHandlerFn, router: Router): Observable<HttpEvent<unknown>> {
+  if (!isRefreshing) {
     isRefreshing = true;
     refreshTokenSubject.next(null);
 
@@ -56,23 +53,17 @@ function handle401Error(authService: AuthService, request: HttpRequest<unknown>,
     );
   }
 
-  if (isRefreshing && isInternal) {
-    return refreshTokenSubject.pipe(
-      filter(token => token !== null),
-      take(1),
-      switchMap(token =>
-        next(request.clone({
-          setHeaders: { Authorization: `Bearer ${token}` }
-        }))
-      )
-    );
-  }
-
-  forceLogout(authService, router, isInternal ? 'Session expired, please log in again.' : 'OIDC token expired, please log in again.');
-  return throwError(() => new Error('Authentication failed, please log in.'));
+  return refreshTokenSubject.pipe(
+    filter(token => token !== null),
+    take(1),
+    switchMap(token =>
+      next(request.clone({
+        setHeaders: { Authorization: `Bearer ${token}` }
+      }))
+    )
+  );
 }
 
-function forceLogout(authService: AuthService, router: Router, message?: string): void {
-  if (message) console.warn(message);
+function forceLogout(authService: AuthService, router: Router): void {
   authService.logout();
 }

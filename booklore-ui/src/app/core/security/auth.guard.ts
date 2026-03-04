@@ -1,18 +1,20 @@
 import {inject} from '@angular/core';
 import {CanActivateFn, Router} from '@angular/router';
 import {AuthService} from '../../shared/service/auth.service';
-import {OAuthService} from 'angular-oauth2-oidc';
 
 export const AuthGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const authService = inject(AuthService);
-  const oauthService = inject(OAuthService);
 
   const internalAccessToken = authService.getInternalAccessToken();
 
   if (internalAccessToken) {
     try {
       const payload = JSON.parse(atob(internalAccessToken.split('.')[1]));
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem('accessToken_Internal');
+        return router.createUrlTree(['/login']);
+      }
       if (payload.isDefaultPassword) {
         router.navigate(['/change-password']);
         return false;
@@ -23,10 +25,6 @@ export const AuthGuard: CanActivateFn = (route, state) => {
       router.navigate(['/login']);
       return false;
     }
-  }
-
-  if (oauthService.hasValidAccessToken()) {
-    return true;
   }
 
   router.navigate(['/login']);
