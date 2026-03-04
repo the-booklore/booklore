@@ -17,6 +17,7 @@ import org.booklore.repository.UserBookProgressRepository;
 import org.booklore.service.book.BookQueryService;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.opds.MagicShelfBookService;
+import org.booklore.service.reader.EpubReaderService;
 import org.booklore.util.SecureXmlUtils;
 import org.booklore.util.kobo.KoboUrlBuilder;
 import lombok.AllArgsConstructor;
@@ -298,34 +299,15 @@ public class KoboEntitlementService {
         Path filePath = book.getFullFilePath();
         if (filePath == null) return false;
 
-        File epubFile = book.getFullFilePath().toFile();
-        try (ZipFile zip = new ZipFile(epubFile)) {
-            DocumentBuilder builder = SecureXmlUtils.createSecureDocumentBuilder(true);
+        try {
+            File epubFile = book.getFullFilePath().toFile();
+            Document doc = EpubReaderService.getOPFDocument(epubFile);
+            NodeList manifestItems = doc.getElementsByTagName("meta");
 
-            FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
-            if (containerHdr == null) return false;
-
-            try (InputStream cis = zip.getInputStream(containerHdr)) {
-                Document containerDoc = builder.parse(cis);
-                NodeList roots = containerDoc.getElementsByTagName("rootfile");
-                if (roots.getLength() == 0) return false;
-
-                String opfPath = ((Element) roots.item(0)).getAttribute("full-path");
-                if (StringUtils.isBlank(opfPath)) return false;
-
-                FileHeader opfHdr = zip.getFileHeader(opfPath);
-                if (opfHdr == null) return false;
-
-                try (InputStream in = zip.getInputStream(opfHdr)) {
-                    Document doc = builder.parse(in);
-                    NodeList manifestItems = doc.getElementsByTagName("meta");
-
-                    for (int i = 0; i < manifestItems.getLength(); i++) {
-                        Element item = (Element) manifestItems.item(i);
-                        String prop = item.getAttribute("property");
-                        if (prop.equals("rendition:layout") && item.getTextContent().equals("pre-paginated")) return true;
-                    }
-                }
+            for (int i = 0; i < manifestItems.getLength(); i++) {
+                Element item = (Element) manifestItems.item(i);
+                String prop = item.getAttribute("property");
+                if (prop.equals("rendition:layout") && item.getTextContent().equals("pre-paginated")) return true;
             }
         } catch (Exception e) {
             log.debug("Failed to determine if epub is pre-paginated for Kobo sync: {}", e.getMessage());
