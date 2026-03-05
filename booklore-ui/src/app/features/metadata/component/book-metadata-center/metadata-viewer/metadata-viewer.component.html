@@ -120,8 +120,13 @@
               </div>
 
               <p class="authors">
-                @for (author of book?.metadata!.authors; track $index; let isLast = $last) {
-                  <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                @for (author of book?.metadata!.authors; track $index; let isLast = $last; let isFirst = $first) {
+                  @if (isFirst && book!.metadata!.authors!.length > 1) {
+                    <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                    <span class="first-author-badge">{{ t('firstAuthorBadge') }}</span>
+                  } @else {
+                    <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                  }
                   @if (!isLast) {
                     <span class="author-separator">, </span>
                   }

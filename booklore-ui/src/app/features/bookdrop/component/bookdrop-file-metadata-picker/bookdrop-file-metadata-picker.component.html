@@ -182,19 +182,45 @@
           <div class="meta-row field-{{field.controlName}}">
             <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
-              <p-autoComplete
-                size="small"
-                formControlName="{{field.controlName}}"
-                [multiple]="true"
-                [typeahead]="false"
-                [dropdown]="false"
-                [forceSelection]="false"
-                class="dest full-width"
-                [ngClass]="{
-                  'changed': isValueChanged(field.controlName),
-                }"
-                (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
-              />
+              @if (field.controlName === 'authors') {
+                <div class="author-chips-container dest full-width"
+                     cdkDropList cdkDropListOrientation="mixed"
+                     (cdkDropListDropped)="dropAuthor($event)"
+                     [ngClass]="{ 'changed': isValueChanged('authors') }">
+                  @for (author of metadataForm.get('authors')!.value; track $index) {
+                    <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
+                      @if ($index === 0) { <span class="main-author-badge">m</span> }
+                      {{ author }}
+                      <i class="pi pi-times author-chip-remove" (click)="removeAuthor($index)"></i>
+                    </span>
+                  }
+                  <p-autoComplete
+                    class="author-add-input"
+                    [(ngModel)]="authorInputValue"
+                    [ngModelOptions]="{ standalone: true }"
+                    size="small"
+                    [forceSelection]="false"
+                    [dropdown]="false"
+                    (onKeyUp)="onAuthorInputKeyUp($event)"
+                    (onSelect)="onAuthorInputSelect($event)"
+                    placeholder="Add author..."
+                  />
+                </div>
+              } @else {
+                <p-autoComplete
+                  size="small"
+                  formControlName="{{field.controlName}}"
+                  [multiple]="true"
+                  [typeahead]="false"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  class="dest full-width"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }"
+                  (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                />
+              }
               <p-button
                 size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
@@ -406,19 +432,45 @@
             <div class="meta-row field-{{field.controlName}}">
               <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
               <div class="field-input-row">
-                <p-autoComplete
-                  size="small"
-                  formControlName="{{field.controlName}}"
-                  [multiple]="true"
-                  [typeahead]="false"
-                  [dropdown]="false"
-                  [forceSelection]="false"
-                  class="full-width"
-                  [ngClass]="{
-                    'changed': isValueChanged(field.controlName),
-                  }"
-                  (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
-                />
+                @if (field.controlName === 'authors') {
+                  <div class="author-chips-container full-width"
+                       cdkDropList cdkDropListOrientation="mixed"
+                       (cdkDropListDropped)="dropAuthor($event)"
+                       [ngClass]="{ 'changed': isValueChanged('authors') }">
+                    @for (author of metadataForm.get('authors')!.value; track $index) {
+                      <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
+                        @if ($index === 0) { <span class="main-author-badge">m</span> }
+                        {{ author }}
+                        <i class="pi pi-times author-chip-remove" (click)="removeAuthor($index)"></i>
+                      </span>
+                    }
+                    <p-autoComplete
+                      class="author-add-input"
+                      [(ngModel)]="authorInputValue"
+                      [ngModelOptions]="{ standalone: true }"
+                      size="small"
+                      [forceSelection]="false"
+                      [dropdown]="false"
+                      (onKeyUp)="onAuthorInputKeyUp($event)"
+                      (onSelect)="onAuthorInputSelect($event)"
+                      placeholder="Add author..."
+                    />
+                  </div>
+                } @else {
+                  <p-autoComplete
+                    size="small"
+                    formControlName="{{field.controlName}}"
+                    [multiple]="true"
+                    [typeahead]="false"
+                    [dropdown]="false"
+                    [forceSelection]="false"
+                    class="full-width"
+                    [ngClass]="{
+                      'changed': isValueChanged(field.controlName),
+                    }"
+                    (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                  />
+                }
                 <p-button
                   size="small"
                   icon="pi pi-refresh"

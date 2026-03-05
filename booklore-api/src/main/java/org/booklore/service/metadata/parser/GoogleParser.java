@@ -392,15 +392,15 @@ public class GoogleParser implements BookParser {
         return WHITESPACE_PATTERN.matcher(title.trim()).replaceAll(" ");
     }
 
-    private Set<String> cleanAuthors(Set<String> authors) {
+    private List<String> cleanAuthors(List<String> authors) {
         if (authors == null || authors.isEmpty()) {
-            return Set.of();
+            return List.of();
         }
         return authors.stream()
                 .filter(Objects::nonNull)
                 .filter(author -> !author.isBlank())
                 .map(String::trim)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .toList();
     }
 
     private Set<String> cleanCategories(Set<String> categories) {

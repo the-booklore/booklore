@@ -587,7 +587,7 @@ class MetadataRefreshServiceTest {
     @Test
     void resolveFieldAsList_returnsNullWhenFieldProviderNull() {
         Map<MetadataProvider, BookMetadata> metadataMap = new HashMap<>();
-        Set<String> result = service.resolveFieldAsList(metadataMap, null, BookMetadata::getCategories);
+        List<String> result = service.resolveFieldAsList(metadataMap, null, BookMetadata::getCategories);
         assertThat(result).isNull();
     }
 
@@ -602,7 +602,7 @@ class MetadataRefreshServiceTest {
                 .p2(MetadataProvider.Google)
                 .build();
 
-        Set<String> result = service.resolveFieldAsList(metadataMap, fp, BookMetadata::getCategories);
+        List<String> result = service.resolveFieldAsList(metadataMap, fp, BookMetadata::getCategories);
         assertThat(result).containsExactly("Cat");
     }
 
@@ -1048,7 +1048,7 @@ class MetadataRefreshServiceTest {
                     .subtitle("Sub")
                     .description("Desc")
                     .publisher("Pub")
-                    .authors(Set.of("Auth"))
+                    .authors(List.of("Auth"))
                     .publishedDate(java.time.LocalDate.of(2020, 1, 1))
                     .seriesName("Series")
                     .seriesNumber(1.0f)
@@ -1092,7 +1092,7 @@ class MetadataRefreshServiceTest {
             metadataMap.put(MetadataProvider.Amazon, BookMetadata.builder()
                     .subtitle("Amazon Sub")
                     .description("Amazon Desc")
-                    .authors(Set.of("Author A"))
+                    .authors(List.of("Author A"))
                     .publisher("Amazon Pub")
                     .publishedDate(java.time.LocalDate.of(2021, 6, 15))
                     .seriesName("Amazon Series")

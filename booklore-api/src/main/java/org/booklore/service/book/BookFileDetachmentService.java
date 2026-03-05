@@ -26,8 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -160,7 +162,7 @@ public class BookFileDetachmentService {
         copy.setContentRating(source.getContentRating());
 
         if (source.getAuthors() != null) {
-            copy.setAuthors(new HashSet<>(source.getAuthors()));
+            copy.setAuthors(new ArrayList<>(source.getAuthors()));
         }
         if (source.getCategories() != null) {
             copy.setCategories(new HashSet<>(source.getCategories()));

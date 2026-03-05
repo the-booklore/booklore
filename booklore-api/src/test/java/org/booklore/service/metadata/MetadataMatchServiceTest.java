@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -153,7 +154,7 @@ class MetadataMatchServiceTest {
             BookMetadataEntity metadata = BookMetadataEntity.builder()
                     .title("Title")
                     .description("Desc")
-                    .authors(Set.of(AuthorEntity.builder().name("Author").build()))
+                    .authors(List.of(AuthorEntity.builder().name("Author").build()))
                     .build();
             BookEntity book = bookWith(metadata);
 
@@ -171,7 +172,7 @@ class MetadataMatchServiceTest {
                     .title("Title")
                     .subtitle("Subtitle")
                     .description("Description")
-                    .authors(Set.of(AuthorEntity.builder().name("Author").build()))
+                    .authors(List.of(AuthorEntity.builder().name("Author").build()))
                     .publisher("Publisher")
                     .publishedDate(LocalDate.now())
                     .seriesName("Series")
@@ -261,7 +262,7 @@ class MetadataMatchServiceTest {
                     .build();
             stubWeights(weights);
 
-            BookEntity book = bookWith(BookMetadataEntity.builder().authors(new HashSet<>()).build());
+            BookEntity book = bookWith(BookMetadataEntity.builder().authors(new ArrayList<>()).build());
             assertThat(service.calculateMatchScore(book)).isEqualTo(0f);
         }
     }
@@ -367,7 +368,7 @@ class MetadataMatchServiceTest {
             stubWeights(weights);
 
             BookEntity book = bookWith(BookMetadataEntity.builder()
-                    .authors(new HashSet<>())
+                    .authors(new ArrayList<>())
                     .authorsLocked(true)
                     .build());
 

@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -70,7 +71,7 @@ class EpubMetadataWriterTest {
         metadata.setTitle("Test Book");
         AuthorEntity author = new AuthorEntity();
         author.setName("Test Author");
-        metadata.setAuthors(Collections.singleton(author));
+        metadata.setAuthors(List.of(author));
 
         bookEntity = new BookEntity();
         LibraryPathEntity libraryPath = new LibraryPathEntity();
@@ -174,7 +175,7 @@ class EpubMetadataWriterTest {
             newMeta.setTitle("Updated Title");
             AuthorEntity author = new AuthorEntity();
             author.setName("Updated Author");
-            newMeta.setAuthors(Collections.singleton(author));
+            newMeta.setAuthors(List.of(author));
 
             writer.saveMetadataToFile(epubFile, newMeta, null, new MetadataClearFlags());
             String contentAfterFirstSave = readOpfContent(epubFile);

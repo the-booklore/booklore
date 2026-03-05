@@ -25,8 +25,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -87,7 +89,7 @@ class PdfMetadataWriterTest {
         meta.setLanguage("en");
         meta.setPageCount(754);
         
-        Set<AuthorEntity> authors = new HashSet<>();
+        List<AuthorEntity> authors = new ArrayList<>();
         AuthorEntity author = new AuthorEntity();
         author.setName("Jason C McDonald");
         authors.add(author);

@@ -223,8 +223,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
             }
         }
 
-        Set<String> authors = new HashSet<>();
-        authors.addAll(splitValues(getTextContent(document, "Writer")));
+        List<String> authors = new ArrayList<>(splitValues(getTextContent(document, "Writer")));
         if (!authors.isEmpty()) {
             builder.authors(authors);
         }

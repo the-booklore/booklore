@@ -67,7 +67,7 @@ class BookMetadataUpdaterTest {
         metadataEntity = BookMetadataEntity.builder()
                 .bookId(1L)
                 .title("Original Title")
-                .authors(new HashSet<>())
+                .authors(new ArrayList<>())
                 .categories(new HashSet<>())
                 .moods(new HashSet<>())
                 .tags(new HashSet<>())
@@ -331,12 +331,12 @@ class BookMetadataUpdaterTest {
     @Test
     void setBookMetadata_authorsReplaceAll_replacesExisting() {
         AuthorEntity existing = AuthorEntity.builder().id(1L).name("Old Author").build();
-        metadataEntity.setAuthors(new HashSet<>(Set.of(existing)));
+        metadataEntity.setAuthors(new ArrayList<>(List.of(existing)));
 
         AuthorEntity newAuthor = AuthorEntity.builder().id(2L).name("New Author").build();
         when(authorRepository.findByName("New Author")).thenReturn(Optional.of(newAuthor));
 
-        BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of("New Author")).build();
+        BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of("New Author")).build();
         MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_ALL);
 
         try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
@@ -351,9 +351,9 @@ class BookMetadataUpdaterTest {
     @Test
     void setBookMetadata_authorsReplaceMissing_skipsWhenExistingAuthorsPresent() {
         AuthorEntity existing = AuthorEntity.builder().id(1L).name("Existing").build();
-        metadataEntity.setAuthors(new HashSet<>(Set.of(existing)));
+        metadataEntity.setAuthors(new ArrayList<>(List.of(existing)));
 
-        BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of("New Author")).build();
+        BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of("New Author")).build();
         MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_MISSING);
 
         try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
@@ -367,11 +367,11 @@ class BookMetadataUpdaterTest {
 
     @Test
     void setBookMetadata_authorsReplaceMissing_addsWhenEmpty() {
-        metadataEntity.setAuthors(new HashSet<>());
+        metadataEntity.setAuthors(new ArrayList<>());
         AuthorEntity newAuthor = AuthorEntity.builder().id(2L).name("New").build();
         when(authorRepository.findByName("New")).thenReturn(Optional.of(newAuthor));
 
-        BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of("New")).build();
+        BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of("New")).build();
         MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_MISSING);
 
         try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
@@ -387,9 +387,9 @@ class BookMetadataUpdaterTest {
     void setBookMetadata_authorsLocked_notUpdated() {
         metadataEntity.setAuthorsLocked(true);
         AuthorEntity existing = AuthorEntity.builder().id(1L).name("Locked").build();
-        metadataEntity.setAuthors(new HashSet<>(Set.of(existing)));
+        metadataEntity.setAuthors(new ArrayList<>(List.of(existing)));
 
-        BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of("New Author")).build();
+        BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of("New Author")).build();
         MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_ALL);
 
         try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
@@ -404,7 +404,7 @@ class BookMetadataUpdaterTest {
     @Test
     void setBookMetadata_clearAuthors_clearsSet() {
         AuthorEntity existing = AuthorEntity.builder().id(1L).name("Author").build();
-        metadataEntity.setAuthors(new HashSet<>(Set.of(existing)));
+        metadataEntity.setAuthors(new ArrayList<>(List.of(existing)));
 
         BookMetadata newMeta = BookMetadata.builder().title("T").build();
         MetadataClearFlags clearFlags = new MetadataClearFlags();
@@ -528,9 +528,9 @@ class BookMetadataUpdaterTest {
     @Test
     void setBookMetadata_authorsReplaceAll_emptyNewAuthors_clearsExisting() {
         AuthorEntity existing = AuthorEntity.builder().id(1L).name("Author").build();
-        metadataEntity.setAuthors(new HashSet<>(Set.of(existing)));
+        metadataEntity.setAuthors(new ArrayList<>(List.of(existing)));
 
-        BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of()).build();
+        BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of()).build();
         MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_ALL);
 
         try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
@@ -544,12 +544,12 @@ class BookMetadataUpdaterTest {
 
     @Test
     void setBookMetadata_createsNewAuthorWhenNotFound() {
-        metadataEntity.setAuthors(new HashSet<>());
+        metadataEntity.setAuthors(new ArrayList<>());
         AuthorEntity created = AuthorEntity.builder().id(5L).name("Brand New").build();
         when(authorRepository.findByName("Brand New")).thenReturn(Optional.empty());
         when(authorRepository.save(any(AuthorEntity.class))).thenReturn(created);
 
-        BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of("Brand New")).build();
+        BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of("Brand New")).build();
         MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_ALL);
 
         try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
@@ -1460,12 +1460,12 @@ class BookMetadataUpdaterTest {
         @Test
         void authors_nullReplaceMode_noMerge_replacesExisting() {
             AuthorEntity existing = AuthorEntity.builder().id(1L).name("Old").build();
-            metadataEntity.setAuthors(new HashSet<>(Set.of(existing)));
+            metadataEntity.setAuthors(new ArrayList<>(List.of(existing)));
 
             AuthorEntity newAuthor = AuthorEntity.builder().id(2L).name("New").build();
             when(authorRepository.findByName("New")).thenReturn(Optional.of(newAuthor));
 
-            BookMetadata newMeta = BookMetadata.builder().title("T").authors(Set.of("New")).build();
+            BookMetadata newMeta = BookMetadata.builder().title("T").authors(List.of("New")).build();
             MetadataUpdateContext context = buildContext(newMeta, null);
 
             try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {

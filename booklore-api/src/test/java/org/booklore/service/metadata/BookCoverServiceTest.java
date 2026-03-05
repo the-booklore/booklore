@@ -360,7 +360,7 @@ class BookCoverServiceTest {
         void generatesCoverWithTitleAndAuthor() {
             BookEntity book = buildBook(1L, false);
             AuthorEntity author = AuthorEntity.builder().name("Jane Doe").build();
-            book.getMetadata().setAuthors(Set.of(author));
+            book.getMetadata().setAuthors(List.of(author));
             book.setBookFiles(new ArrayList<>());
             when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
             when(coverImageGenerator.generateCover("Test Book", "Jane Doe")).thenReturn(new byte[]{1, 2, 3});
@@ -598,7 +598,7 @@ class BookCoverServiceTest {
         void successfullyGeneratesCustomAudiobookCover() {
             BookEntity book = buildBookWithAudiobookLock(1L, false);
             AuthorEntity author = AuthorEntity.builder().name("Author Name").build();
-            book.getMetadata().setAuthors(Set.of(author));
+            book.getMetadata().setAuthors(List.of(author));
             when(bookRepository.findByIdWithBookFiles(1L)).thenReturn(Optional.of(book));
             when(coverImageGenerator.generateSquareCover("Test Audiobook", "Author Name")).thenReturn(new byte[]{1, 2});
             when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of());
@@ -986,7 +986,7 @@ class BookCoverServiceTest {
         @Test
         void returnsNullForEmptyAuthors() {
             BookEntity book = buildBook(1L, false);
-            book.getMetadata().setAuthors(new HashSet<>());
+            book.getMetadata().setAuthors(new ArrayList<>());
             when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
             when(coverImageGenerator.generateCover("Test Book", null)).thenReturn(new byte[]{1});
             when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of());
@@ -999,7 +999,7 @@ class BookCoverServiceTest {
         @Test
         void joinsMultipleAuthorNames() {
             BookEntity book = buildBook(1L, false);
-            Set<AuthorEntity> authors = new LinkedHashSet<>();
+            List<AuthorEntity> authors = new ArrayList<>();
             authors.add(AuthorEntity.builder().name("Alice").build());
             authors.add(AuthorEntity.builder().name("Bob").build());
             book.getMetadata().setAuthors(authors);

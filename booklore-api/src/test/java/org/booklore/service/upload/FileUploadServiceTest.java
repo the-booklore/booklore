@@ -50,7 +50,7 @@ import static org.mockito.Mockito.*;
 
 class FileUploadServiceTest {
 
-    public static final Set<String> LONG_AUTHOR_LIST = new LinkedHashSet<>(List.of(
+    public static final List<String> LONG_AUTHOR_LIST = new ArrayList<>(List.of(
         "梁思成", "叶嘉莹", "厉以宁", "萧乾", "冯友兰", "费孝通", "李济", "侯仁之", "汤一介", "温源宁",
         "胡适", "吴青", "李照国", "蒋梦麟", "汪荣祖", "邢玉瑞", "《中华思想文化术语》编委会",
         "北京大学政策法规研究室", "（美）艾恺（Guy S. Alitto）", "顾毓琇", "陈从周",

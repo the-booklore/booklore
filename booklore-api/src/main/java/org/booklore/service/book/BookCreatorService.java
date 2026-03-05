@@ -137,10 +137,10 @@ public class BookCreatorService {
                 .forEach(catEntity -> bookEntity.getMetadata().getCategories().add(catEntity));
     }
 
-    public void addAuthorsToBook(Set<String> authors, BookEntity bookEntity) {
+    public void addAuthorsToBook(Collection<String> authors, BookEntity bookEntity) {
         if (authors == null || authors.isEmpty()) return;
         if (bookEntity.getMetadata().getAuthors() == null) {
-            bookEntity.getMetadata().setAuthors(new HashSet<>());
+            bookEntity.getMetadata().setAuthors(new ArrayList<>());
         }
         authors.stream()
                 .map(authorName -> truncate(authorName, 255))

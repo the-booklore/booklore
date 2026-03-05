@@ -2,7 +2,7 @@ package org.booklore.model.entity;
 
 import org.booklore.util.BookUtils;
 import org.junit.jupiter.api.Test;
-import java.util.Set;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BookMetadataEntityTest {
@@ -12,7 +12,7 @@ class BookMetadataEntityTest {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Jo Nesbø Book");
         metadata.setSubtitle("Murder Mystery");
-        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
+        metadata.setAuthors(List.of(AuthorEntity.builder().name("Jo Nesbø").build()));
 
         metadata.updateSearchText();
 
@@ -27,7 +27,7 @@ class BookMetadataEntityTest {
     void updateSearchText_normalizesAuthorWithDiacritics() {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("The Snowman");
-        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
+        metadata.setAuthors(List.of(AuthorEntity.builder().name("Jo Nesbø").build()));
 
         metadata.updateSearchText();
 
@@ -44,7 +44,7 @@ class BookMetadataEntityTest {
         metadata.setTitle("Müller's Café");
         metadata.setSubtitle("À la française");
         metadata.setSeriesName("José's Stories");
-        metadata.setAuthors(Set.of(
+        metadata.setAuthors(List.of(
             AuthorEntity.builder().name("François Müller").build(),
             AuthorEntity.builder().name("José García").build()
         ));
@@ -160,7 +160,7 @@ class BookMetadataEntityTest {
     void searchSimulation_withDiacritics() {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("The Bat");
-        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
+        metadata.setAuthors(List.of(AuthorEntity.builder().name("Jo Nesbø").build()));
         metadata.updateSearchText();
         
         String storedSearchText = metadata.getSearchText();

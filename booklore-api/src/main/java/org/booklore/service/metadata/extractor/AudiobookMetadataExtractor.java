@@ -88,7 +88,7 @@ public class AudiobookMetadataExtractor implements FileMetadataExtractor {
 
             String albumArtist = tag.getFirst(FieldKey.ALBUM_ARTIST);
             String artist = tag.getFirst(FieldKey.ARTIST);
-            Set<String> authors = new HashSet<>();
+            List<String> authors = new ArrayList<>();
             if (StringUtils.isNotBlank(albumArtist)) {
                 authors.add(albumArtist);
             } else if (StringUtils.isNotBlank(artist)) {

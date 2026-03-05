@@ -46,7 +46,7 @@ public class BookMetadataMapperTest {
         entity.setHardcoverId("hc-id");
         entity.setHardcoverRating(4.5);
         entity.setGoodreadsId("gr-id");
-        entity.setAuthors(new java.util.HashSet<>());
+        entity.setAuthors(new java.util.ArrayList<>());
         entity.setCategories(new java.util.HashSet<>());
         entity.setMoods(new java.util.HashSet<>());
         entity.setTags(new java.util.HashSet<>());

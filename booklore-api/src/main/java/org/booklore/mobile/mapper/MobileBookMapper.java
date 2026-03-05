@@ -71,13 +71,13 @@ public interface MobileBookMapper {
     MobileBookDetail toDetail(BookEntity book, UserBookProgressEntity progress, UserBookFileProgressEntity fileProgress);
 
     @Named("mapAuthors")
-    default List<String> mapAuthors(Set<AuthorEntity> authors) {
+    default List<String> mapAuthors(List<AuthorEntity> authors) {
         if (authors == null || authors.isEmpty()) {
             return Collections.emptyList();
         }
         return authors.stream()
                 .map(AuthorEntity::getName)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Named("mapCategories")
