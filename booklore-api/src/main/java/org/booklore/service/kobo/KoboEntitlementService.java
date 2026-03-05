@@ -128,14 +128,16 @@ public class KoboEntitlementService {
                 .forEach(tags::add);
 
         // Magic Shelves
-        magicShelfRepository.findAllByUserId(userId).stream()
-                .map(magicShelf -> {
-                    List<Long> bookIds = magicShelfBookService.getBookIdsByMagicShelfId(userId, magicShelf.getId(), MAX_MAGIC_SHELF_BOOKS_FOR_KOBO);
-                    return buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
-                            magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
-                            bookIds, koboBookIDs);
-                })
-                .forEach(tags::add);
+        magicShelfRepository.findAllByUserId(userId).forEach(magicShelf -> {
+            try {
+                List<Long> bookIds = magicShelfBookService.getBookIdsByMagicShelfId(userId, magicShelf.getId(), MAX_MAGIC_SHELF_BOOKS_FOR_KOBO);
+                tags.add(buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
+                        magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
+                        bookIds, koboBookIDs));
+            } catch (Exception e) {
+                log.warn("Skipping magic shelf '{}' during Kobo tag generation: {}", magicShelf.getName(), e.getMessage());
+            }
+        });
 
         log.info("Synced {} tags to Kobo", tags.size());
         return tags;
