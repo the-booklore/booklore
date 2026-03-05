@@ -186,6 +186,37 @@ class FileUtilsTest {
     }
 
     @Test
+    void testShouldIgnore_tempFileExtensions_returnsTrue() {
+        List<String> tempFiles = List.of(
+                "book.epub.part", "book.epub.tmp", "book.epub.crdownload",
+                "book.epub.download", "book.epub.bak", "book.epub.old",
+                "book.epub.temp", "book.epub.tempfile"
+        );
+        for (String name : tempFiles) {
+            assertTrue(FileUtils.shouldIgnore(tempDir.resolve(name)), "Should ignore: " + name);
+        }
+    }
+
+    @Test
+    void testShouldIgnore_standaloneTempFile_returnsTrue() {
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("something.tmp")));
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("download.part")));
+    }
+
+    @Test
+    void testShouldIgnore_tempExtensionCaseInsensitive_returnsTrue() {
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("book.epub.PART")));
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("book.epub.TMP")));
+    }
+
+    @Test
+    void testShouldIgnore_normalBookFile_returnsFalse() {
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("book.epub")));
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("book.pdf")));
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("audiobook.m4b")));
+    }
+
+    @Test
     void testGetFileSizeInKb_validFile_returnsSize() throws IOException {
         Path file = tempDir.resolve("test.txt");
         Files.write(file, "test".getBytes());

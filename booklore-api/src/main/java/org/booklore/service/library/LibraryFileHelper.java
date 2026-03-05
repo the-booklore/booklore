@@ -69,7 +69,7 @@ public class LibraryFileHelper {
             @Override
             @NonNull
             public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
-                if (FileUtils.shouldIgnore(file) || !Files.isReadable(file) || !Files.isRegularFile(file)) {
+                if (FileUtils.shouldIgnore(file) || !Files.isReadable(file) || !Files.isRegularFile(file) || attrs.size() == 0) {
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -106,6 +106,10 @@ public class LibraryFileHelper {
             @NonNull
             public FileVisitResult preVisitDirectory(@NonNull Path dir, @NonNull BasicFileAttributes attrs) throws IOException {
                 if (FileUtils.shouldIgnore(dir) || !Files.isReadable(dir)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                if (!dir.equals(libraryPath) && Files.exists(dir.resolve(".ignore"))) {
+                    log.debug("Skipping directory with .ignore file: {}", dir);
                     return FileVisitResult.SKIP_SUBTREE;
                 }
                 return super.preVisitDirectory(dir, attrs);
@@ -167,7 +171,7 @@ public class LibraryFileHelper {
             @Override
             @NonNull
             public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
-                if (FileUtils.shouldIgnore(file) || !Files.isReadable(file) || !Files.isRegularFile(file)) {
+                if (FileUtils.shouldIgnore(file) || !Files.isReadable(file) || !Files.isRegularFile(file) || attrs.size() == 0) {
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -282,7 +286,10 @@ public class LibraryFileHelper {
                 if (FileUtils.shouldIgnore(dir) || !Files.isReadable(dir)) {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
-
+                if (!dir.equals(libraryPath) && Files.exists(dir.resolve(".ignore"))) {
+                    log.debug("Skipping directory with .ignore file: {}", dir);
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
                 return super.preVisitDirectory(dir, attrs);
             }
         });

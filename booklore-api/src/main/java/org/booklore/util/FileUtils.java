@@ -243,12 +243,24 @@ public class FileUtils {
       ".caltrash"
     );
 
+    private final Set<String> tempExtensions = Set.of(
+            ".part", ".tmp", ".crdownload", ".download",
+            ".bak", ".old", ".temp", ".tempfile"
+    );
+
     public boolean shouldIgnore(Path path) {
-        if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
+        String fileName = path.getFileName().toString();
+        if (!fileName.isEmpty() && fileName.charAt(0) == '.') {
             return true;
         }
         for (Path part : path) {
             if (systemDirs.contains(part.toString())) {
+                return true;
+            }
+        }
+        String lowerName = fileName.toLowerCase();
+        for (String ext : tempExtensions) {
+            if (lowerName.endsWith(ext)) {
                 return true;
             }
         }

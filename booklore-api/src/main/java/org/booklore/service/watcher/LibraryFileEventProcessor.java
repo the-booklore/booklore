@@ -154,6 +154,10 @@ public class LibraryFileEventProcessor {
     }
 
     private void handleFileCreate(LibraryEntity library, Path path) {
+        if (!fileHasContent(path)) {
+            log.debug("[SKIP] Zero-byte file: '{}'", path);
+            return;
+        }
         log.info("[FILE_CREATE] '{}'", path);
         bookFileTransactionalHandler.handleNewBookFile(library.getId(), path);
     }
@@ -238,10 +242,17 @@ public class LibraryFileEventProcessor {
     }
 
     private void processFilesInFolderIndividually(LibraryEntity library, Path folderPath) {
+        if (Files.exists(folderPath.resolve(".ignore"))) {
+            log.debug("[SKIP] Folder has .ignore file: '{}'", folderPath);
+            clearTrackedFilesFor(folderPath);
+            return;
+        }
         clearTrackedFilesFor(folderPath);
         try (var stream = Files.walk(folderPath)) {
             stream.filter(Files::isRegularFile)
+                    .filter(p -> !isUnderIgnoredDirectory(p, folderPath))
                     .filter(p -> isBookFile(p.getFileName().toString()))
+                    .filter(this::fileHasContent)
                     .forEach(p -> {
                         try {
                             bookFileTransactionalHandler.handleNewBookFile(library.getId(), p);
@@ -255,6 +266,11 @@ public class LibraryFileEventProcessor {
     }
 
     private void processFilesInFolderAsOneBook(LibraryEntity library, Path folderPath) {
+        if (Files.exists(folderPath.resolve(".ignore"))) {
+            log.debug("[SKIP] Folder has .ignore file: '{}'", folderPath);
+            clearTrackedFilesFor(folderPath);
+            return;
+        }
         clearTrackedFilesFor(folderPath);
 
         String libraryPath = bookFilePersistenceService.findMatchingLibraryPath(library, folderPath);
@@ -263,7 +279,9 @@ public class LibraryFileEventProcessor {
         List<LibraryFile> libraryFiles = new ArrayList<>();
         try (var stream = Files.walk(folderPath)) {
             stream.filter(Files::isRegularFile)
+                    .filter(p -> !isUnderIgnoredDirectory(p, folderPath))
                     .filter(p -> isBookFile(p.getFileName().toString()))
+                    .filter(this::fileHasContent)
                     .forEach(p -> {
                         String fileName = p.getFileName().toString();
                         var ext = BookFileExtension.fromFileName(fileName);
@@ -289,7 +307,9 @@ public class LibraryFileEventProcessor {
     private void processTrackedAndWalkedFiles(LibraryEntity library, Path folderPath) {
         var trackedFiles = filesFromPendingFolder.stream()
                 .filter(p -> p.startsWith(folderPath))
+                .filter(p -> !isUnderIgnoredDirectory(p, folderPath))
                 .filter(p -> isBookFile(p.getFileName().toString()))
+                .filter(this::fileHasContent)
                 .toList();
 
         if (!trackedFiles.isEmpty()) {
@@ -306,7 +326,9 @@ public class LibraryFileEventProcessor {
 
         try (var stream = Files.walk(folderPath)) {
             stream.filter(Files::isRegularFile)
+                    .filter(p -> !isUnderIgnoredDirectory(p, folderPath))
                     .filter(p -> isBookFile(p.getFileName().toString()))
+                    .filter(this::fileHasContent)
                     .filter(p -> !trackedFiles.contains(p))
                     .forEach(p -> {
                         try {
@@ -329,7 +351,10 @@ public class LibraryFileEventProcessor {
         boolean hasNonAudioBook = false;
 
         try (var stream = Files.walk(folderPath)) {
-            var files = stream.filter(Files::isRegularFile).toList();
+            var files = stream.filter(Files::isRegularFile)
+                    .filter(p -> !isUnderIgnoredDirectory(p, folderPath))
+                    .filter(this::fileHasContent)
+                    .toList();
 
             for (Path file : files) {
                 String fileName = file.getFileName().toString();
@@ -370,6 +395,25 @@ public class LibraryFileEventProcessor {
         } catch (Exception e) {
             log.warn("[ERROR] Folder delete '{}': {}", folderPath, e.getMessage());
         }
+    }
+
+    private boolean fileHasContent(Path path) {
+        try {
+            return Files.size(path) > 0;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private boolean isUnderIgnoredDirectory(Path filePath, Path root) {
+        Path parent = filePath.getParent();
+        while (parent != null && !parent.equals(root)) {
+            if (Files.exists(parent.resolve(".ignore"))) {
+                return true;
+            }
+            parent = parent.getParent();
+        }
+        return false;
     }
 
     private boolean isFolder(Path path) {
