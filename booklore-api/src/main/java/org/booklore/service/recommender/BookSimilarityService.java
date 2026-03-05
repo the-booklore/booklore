@@ -62,7 +62,7 @@ public class BookSimilarityService {
         return round(score, 5);
     }
 
-    private Set<String> extractNames(Set<?> entities) {
+    private Set<String> extractNames(Collection<?> entities) {
         if (entities == null) return Collections.emptySet();
         Set<String> names = new HashSet<>();
         for (Object obj : entities) {

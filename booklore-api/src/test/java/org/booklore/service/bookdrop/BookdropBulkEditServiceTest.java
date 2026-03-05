@@ -87,7 +87,7 @@ class BookdropBulkEditServiceTest {
     @Test
     void bulkEdit_WithArrayFieldsMergeMode_ShouldMergeArrays() {
         BookMetadata existingMetadata = new BookMetadata();
-        existingMetadata.setAuthors(new LinkedHashSet<>(List.of("Author 1")));
+        existingMetadata.setAuthors(new ArrayList<>(List.of("Author 1")));
         existingMetadata.setCategories(new LinkedHashSet<>(List.of("Category 1")));
 
         when(metadataHelper.getCurrentMetadata(any())).thenReturn(existingMetadata);
@@ -100,7 +100,7 @@ class BookdropBulkEditServiceTest {
                 .thenReturn(List.of(file));
 
         BookMetadata updates = new BookMetadata();
-        updates.setAuthors(new LinkedHashSet<>(List.of("Author 2")));
+        updates.setAuthors(new ArrayList<>(List.of("Author 2")));
         updates.setCategories(new LinkedHashSet<>(List.of("Category 2")));
 
         BookdropBulkEditRequest request = new BookdropBulkEditRequest();
@@ -129,7 +129,7 @@ class BookdropBulkEditServiceTest {
     @Test
     void bulkEdit_WithArrayFieldsReplaceMode_ShouldReplaceArrays() {
         BookMetadata existingMetadata = new BookMetadata();
-        existingMetadata.setAuthors(new LinkedHashSet<>(List.of("Author 1")));
+        existingMetadata.setAuthors(new ArrayList<>(List.of("Author 1")));
 
         when(metadataHelper.getCurrentMetadata(any())).thenReturn(existingMetadata);
         
@@ -141,7 +141,7 @@ class BookdropBulkEditServiceTest {
                 .thenReturn(List.of(file));
 
         BookMetadata updates = new BookMetadata();
-        updates.setAuthors(new LinkedHashSet<>(List.of("Author 2")));
+        updates.setAuthors(new ArrayList<>(List.of("Author 2")));
 
         BookdropBulkEditRequest request = new BookdropBulkEditRequest();
         request.setFields(updates);

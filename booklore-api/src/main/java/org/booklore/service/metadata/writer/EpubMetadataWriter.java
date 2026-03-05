@@ -970,11 +970,11 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
 
         if (metadata.getAgeRating() != null) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "age_rating", String.valueOf(metadata.getAgeRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "age_rating", String.valueOf(metadata.getAgeRating()), epub3));
         }
 
         if (StringUtils.isNotBlank(metadata.getContentRating())) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "content_rating", metadata.getContentRating()));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "content_rating", metadata.getContentRating(), epub3));
         }
     }
 

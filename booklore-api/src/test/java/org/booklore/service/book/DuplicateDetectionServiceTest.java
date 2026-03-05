@@ -61,7 +61,7 @@ class DuplicateDetectionServiceTest {
                 .bookType(fileType)
                 .build();
 
-        Set<AuthorEntity> authors = new HashSet<>();
+        List<AuthorEntity> authors = new ArrayList<>();
         if (authorName != null) {
             authors.add(AuthorEntity.builder().id(id * 10).name(authorName).build());
         }
@@ -388,9 +388,9 @@ class DuplicateDetectionServiceTest {
         @Test
         void skipsBooksWithNoAuthors() {
             BookEntity book1 = createBook(BookFileType.EPUB, "Orphan Book", null);
-            book1.getMetadata().setAuthors(new HashSet<>());
+            book1.getMetadata().setAuthors(new ArrayList<>());
             BookEntity book2 = createBook(BookFileType.MOBI, "Orphan Book", null);
-            book2.getMetadata().setAuthors(new HashSet<>());
+            book2.getMetadata().setAuthors(new ArrayList<>());
             stubBooks(book1, book2);
 
             List<DuplicateGroup> result = service.findDuplicates(onlyTitleAuthor());
@@ -438,7 +438,7 @@ class DuplicateDetectionServiceTest {
         void requiresAtLeastTwoBooksWithAuthorsInTitleGroup() {
             BookEntity book1 = createBook(BookFileType.EPUB, "Solo Title", "Author A");
             BookEntity book2 = createBook(BookFileType.MOBI, "Solo Title", null);
-            book2.getMetadata().setAuthors(new HashSet<>());
+            book2.getMetadata().setAuthors(new ArrayList<>());
             stubBooks(book1, book2);
 
             List<DuplicateGroup> result = service.findDuplicates(onlyTitleAuthor());

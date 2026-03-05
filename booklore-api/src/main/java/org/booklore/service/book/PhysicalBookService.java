@@ -27,6 +27,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -69,7 +70,7 @@ public class PhysicalBookService {
         bookEntity.setMetadata(metadata);
 
         if (request.getAuthors() != null && !request.getAuthors().isEmpty()) {
-            addAuthorsToBook(new HashSet<>(request.getAuthors()), bookEntity);
+            addAuthorsToBook(new ArrayList<>(request.getAuthors()), bookEntity);
         }
 
         if (request.getCategories() != null && !request.getCategories().isEmpty()) {
@@ -122,9 +123,9 @@ public class PhysicalBookService {
         return cleaned.length() == 10 ? cleaned : null;
     }
 
-    private void addAuthorsToBook(Set<String> authors, BookEntity bookEntity) {
+    private void addAuthorsToBook(List<String> authors, BookEntity bookEntity) {
         if (bookEntity.getMetadata().getAuthors() == null) {
-            bookEntity.getMetadata().setAuthors(new HashSet<>());
+            bookEntity.getMetadata().setAuthors(new ArrayList<>());
         }
         authors.stream()
                 .map(authorName -> truncate(authorName, 255))

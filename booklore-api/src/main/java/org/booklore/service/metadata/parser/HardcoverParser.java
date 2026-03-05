@@ -178,7 +178,7 @@ public class HardcoverParser implements BookParser {
         metadata.setDescription(doc.getDescription());
 
         if (doc.getAuthorNames() != null) {
-            metadata.setAuthors(Set.copyOf(doc.getAuthorNames()));
+            metadata.setAuthors(List.copyOf(doc.getAuthorNames()));
         }
 
         mapSeriesInfo(doc, metadata);
@@ -226,7 +226,7 @@ public class HardcoverParser implements BookParser {
                     .filter(Objects::nonNull)
                     .map(GraphQLResponse.Author::getName)
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toSet()));
+                    .toList());
         }
 
         if (book.getFeaturedBookSeries() != null && book.getFeaturedBookSeries().getSeries() != null) {

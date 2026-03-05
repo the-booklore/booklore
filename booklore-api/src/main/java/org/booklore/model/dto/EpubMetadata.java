@@ -3,6 +3,7 @@ package org.booklore.model.dto;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -37,6 +38,6 @@ public class EpubMetadata {
     private String googleId;
     private String ranobedbId;
     private Double ranobedbRating;
-    private Set<String> authors;
+    private List<String> authors;
     private Set<String> categories;
 }

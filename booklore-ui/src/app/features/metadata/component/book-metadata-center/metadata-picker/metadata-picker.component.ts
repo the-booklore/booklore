@@ -1,6 +1,7 @@
 import {Component, DestroyRef, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
 import {Book, BookMetadata, ComicMetadata, MetadataClearFlags, MetadataUpdateWrapper} from '../../../../book/model/book.model';
 import {MessageService} from 'primeng/api';
+import {CdkDragDrop, CdkDropList, CdkDrag, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Button} from 'primeng/button';
 import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
@@ -39,7 +40,9 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
     Image,
     LazyLoadImageModule,
     Checkbox,
-    TranslocoDirective
+    TranslocoDirective,
+    CdkDropList,
+    CdkDrag,
   ]
 })
 export class MetadataPickerComponent implements OnInit {
@@ -68,6 +71,7 @@ export class MetadataPickerComponent implements OnInit {
 
   private allItems: Record<string, string[]> = {};
   filteredItems: Record<string, string[]> = {};
+  authorInputValue = '';
 
   metadataForm!: FormGroup;
   currentBookId!: number;
@@ -282,6 +286,44 @@ export class MetadataPickerComponent implements OnInit {
         input.value = '';
       }
     }
+  }
+
+  dropAuthor(event: CdkDragDrop<string[]>) {
+    const authors = [...(this.metadataForm.get('authors')?.value ?? [])];
+    moveItemInArray(authors, event.previousIndex, event.currentIndex);
+    this.metadataForm.get('authors')?.setValue(authors);
+    this.metadataForm.get('authors')?.markAsDirty();
+  }
+
+  removeAuthor(index: number) {
+    const authors = [...(this.metadataForm.get('authors')?.value ?? [])];
+    authors.splice(index, 1);
+    this.metadataForm.get('authors')?.setValue(authors);
+    this.metadataForm.get('authors')?.markAsDirty();
+  }
+
+  onAuthorInputKeyUp(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const value = this.authorInputValue?.trim();
+      if (value) {
+        const authors = this.metadataForm.get('authors')?.value || [];
+        if (!authors.includes(value)) {
+          this.metadataForm.get('authors')?.setValue([...authors, value]);
+          this.metadataForm.get('authors')?.markAsDirty();
+        }
+        this.authorInputValue = '';
+      }
+    }
+  }
+
+  onAuthorInputSelect(event: AutoCompleteSelectEvent) {
+    const authors = (this.metadataForm.get('authors')?.value as string[]) || [];
+    const value = event.value as string;
+    if (!authors.includes(value)) {
+      this.metadataForm.get('authors')?.setValue([...authors, value]);
+      this.metadataForm.get('authors')?.markAsDirty();
+    }
+    setTimeout(() => this.authorInputValue = '');
   }
 
   onSave(): void {

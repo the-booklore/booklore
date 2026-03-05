@@ -65,7 +65,7 @@ class MetadataManagementServiceTest {
         when(authorRepository.save(targetAuthor)).thenReturn(targetAuthor);
         when(authorRepository.findByNameIgnoreCase("Old Author")).thenReturn(Optional.of(oldAuthor));
 
-        Set<AuthorEntity> authors = new HashSet<>(List.of(oldAuthor));
+        List<AuthorEntity> authors = new ArrayList<>(List.of(oldAuthor));
         BookMetadataEntity metadata = BookMetadataEntity.builder().authors(authors).build();
         when(bookMetadataRepository.findAllByAuthorsContaining(oldAuthor)).thenReturn(List.of(metadata));
 
@@ -86,7 +86,7 @@ class MetadataManagementServiceTest {
         when(authorRepository.save(any(AuthorEntity.class))).thenReturn(newAuthor);
         when(authorRepository.findByNameIgnoreCase("Old")).thenReturn(Optional.of(oldAuthor));
 
-        Set<AuthorEntity> authors = new HashSet<>(List.of(oldAuthor));
+        List<AuthorEntity> authors = new ArrayList<>(List.of(oldAuthor));
         BookMetadataEntity metadata = BookMetadataEntity.builder().authors(authors).build();
         when(bookMetadataRepository.findAllByAuthorsContaining(oldAuthor)).thenReturn(List.of(metadata));
 
@@ -234,7 +234,7 @@ class MetadataManagementServiceTest {
                 .libraryPath(libraryPath)
                 .build();
         BookMetadataEntity metadata = BookMetadataEntity.builder()
-                .authors(new HashSet<>(List.of(oldAuthor)))
+                .authors(new ArrayList<>(List.of(oldAuthor)))
                 .book(book)
                 .build();
         book.setMetadata(metadata);
@@ -295,7 +295,7 @@ class MetadataManagementServiceTest {
                 .libraryPath(libraryPath)
                 .build();
         BookMetadataEntity metadata = BookMetadataEntity.builder()
-                .authors(new HashSet<>(List.of(oldAuthor)))
+                .authors(new ArrayList<>(List.of(oldAuthor)))
                 .book(book)
                 .build();
         book.setMetadata(metadata);
@@ -322,7 +322,7 @@ class MetadataManagementServiceTest {
         AuthorEntity author = AuthorEntity.builder().id(1L).name("Author1").build();
         when(authorRepository.findByName("Author1")).thenReturn(Optional.of(author));
 
-        Set<AuthorEntity> authors = new HashSet<>(List.of(author));
+        List<AuthorEntity> authors = new ArrayList<>(List.of(author));
         BookMetadataEntity metadata = BookMetadataEntity.builder().authors(authors).build();
         when(bookMetadataRepository.findAllByAuthorsContaining(author)).thenReturn(List.of(metadata));
 
@@ -531,7 +531,7 @@ class MetadataManagementServiceTest {
                 .libraryPath(libraryPath)
                 .build();
         BookMetadataEntity metadata = BookMetadataEntity.builder()
-                .authors(new HashSet<>(List.of(oldAuthor)))
+                .authors(new ArrayList<>(List.of(oldAuthor)))
                 .book(book)
                 .build();
         book.setMetadata(metadata);

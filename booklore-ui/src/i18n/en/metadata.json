@@ -245,6 +245,7 @@
     "languageLabel": "Language:",
     "formatsLabel": "Formats:",
     "primaryBadge": "PRIMARY",
+    "firstAuthorBadge": "MAIN",
     "physicalBadge": "PHYSICAL",
     "bookloreProgressLabel": "BookLore Progress:",
     "metadataMatchLabel": "Metadata Match:",

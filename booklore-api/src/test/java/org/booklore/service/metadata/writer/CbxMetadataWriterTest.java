@@ -23,8 +23,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -93,7 +95,7 @@ class CbxMetadataWriterTest {
         meta.setPageCount(42);
         meta.setLanguage("en");
 
-        Set<AuthorEntity> authors = new HashSet<>();
+        List<AuthorEntity> authors = new ArrayList<>();
         AuthorEntity aliceAuthor = new AuthorEntity();
         aliceAuthor.setId(1L);
         aliceAuthor.setName("Alice");

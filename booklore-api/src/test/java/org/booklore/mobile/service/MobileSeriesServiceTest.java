@@ -463,7 +463,7 @@ class MobileSeriesServiceTest {
                 .seriesName(seriesName)
                 .seriesNumber(seriesNumber)
                 .coverUpdatedOn(Instant.now())
-                .authors(Set.of(author))
+                .authors(List.of(author))
                 .build();
 
         BookFileEntity bookFile = BookFileEntity.builder()

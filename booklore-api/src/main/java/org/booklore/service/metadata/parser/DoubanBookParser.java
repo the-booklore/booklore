@@ -177,7 +177,7 @@ public class DoubanBookParser implements BookParser {
 
                     // Extract abstract information
                     String abstractText = item.get("abstract").asText();
-                    Set<String> authors = Set.of();
+                    List<String> authors = List.of();
                     String publisher = null;
                     String pubDate = null;
 
@@ -189,12 +189,12 @@ public class DoubanBookParser implements BookParser {
                             authors = Arrays.stream(parts, 0, parts.length - 3)
                                     .map(String::trim)
                                     .filter(s -> !s.isEmpty())
-                                    .collect(Collectors.toSet());
+                                    .toList();
                             publisher = parts[parts.length - 3].trim();
                             pubDate = parts[parts.length - 2].trim();
                         } else if (parts.length >= 2) {
                             // Fallback for shorter abstracts
-                            authors = Set.of(parts[1].trim());
+                            authors = List.of(parts[1].trim());
                             if (parts.length >= 3) {
                                 publisher = parts[2].trim();
                             }
@@ -279,7 +279,7 @@ public class DoubanBookParser implements BookParser {
                 .provider(MetadataProvider.Douban)
                 .title(getTitle(doc))
                 .subtitle(getSubtitle(doc))
-                .authors(new HashSet<>(getAuthors(doc)))
+                .authors(new ArrayList<>(getAuthors(doc)))
                 .categories(new HashSet<>(getCategories(doc)))
                 .description(cleanDescriptionHtml(getDescription(doc)))
                 .seriesName(getSeriesName(doc))
@@ -359,8 +359,8 @@ public class DoubanBookParser implements BookParser {
         return null;
     }
 
-    private Set<String> getAuthors(Document doc) {
-        Set<String> authors = new HashSet<>();
+    private List<String> getAuthors(Document doc) {
+        List<String> authors = new ArrayList<>();
         try {
             Element infoElement = doc.selectFirst("#info");
             if (infoElement != null) {
@@ -386,7 +386,7 @@ public class DoubanBookParser implements BookParser {
         } catch (Exception e) {
             log.warn("Failed to parse authors: {}", e.getMessage());
         }
-        return authors.isEmpty() ? Set.of() : authors;
+        return authors.isEmpty() ? List.of() : authors;
     }
 
     private String getDescription(Document doc) {

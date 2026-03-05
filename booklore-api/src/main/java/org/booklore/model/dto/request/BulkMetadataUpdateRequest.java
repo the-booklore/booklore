@@ -3,13 +3,14 @@ package org.booklore.model.dto.request;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Data
 public class BulkMetadataUpdateRequest {
     private Set<Long> bookIds;
 
-    private Set<String> authors;
+    private List<String> authors;
     private boolean clearAuthors;
 
     private String publisher;

@@ -38,11 +38,11 @@ public interface BookMapper {
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
 
-    default Set<String> mapAuthors(Set<AuthorEntity> authors) {
+    default List<String> mapAuthors(List<AuthorEntity> authors) {
         if (authors == null) return null;
         return authors.stream()
                 .map(AuthorEntity::getName)
-                .collect(Collectors.toSet());
+                .toList();
     }
 
     default Set<String> mapCategories(Set<CategoryEntity> categories) {

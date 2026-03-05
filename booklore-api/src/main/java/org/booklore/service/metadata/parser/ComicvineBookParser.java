@@ -580,7 +580,7 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
         }
 
         String volumeName = comic.getVolume() != null ? comic.getVolume().getName() : null;
-        Set<String> authors = extractAuthors(comic.getPersonCredits());
+        List<String> authors = extractAuthors(comic.getPersonCredits());
         String formattedTitle = formatTitle(volumeName, comic.getIssueNumber(), comic.getName());
         String dateToUse = comic.getStoreDate() != null ? comic.getStoreDate() : comic.getCoverDate();
 
@@ -622,7 +622,7 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
     }
 
     private BookMetadata buildVolumeMetadata(Comic volume) {
-        Set<String> authors = extractAuthors(volume.getPersonCredits());
+        List<String> authors = extractAuthors(volume.getPersonCredits());
         
         return BookMetadata.builder()
                 .provider(MetadataProvider.Comicvine)
@@ -772,14 +772,14 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
         return title;
     }
     
-    private Set<String> extractAuthors(List<Comic.PersonCredit> personCredits) {
+    private List<String> extractAuthors(List<Comic.PersonCredit> personCredits) {
         if (personCredits == null || personCredits.isEmpty()) {
-            return Collections.emptySet();
+            return Collections.emptyList();
         }
-        
+
         Set<String> writerRoles = Set.of("writer", "script", "story", "plotter", "plot");
 
-        Set<String> authors = personCredits.stream()
+        List<String> authors = personCredits.stream()
                 .filter(pc -> {
                     if (pc.getRole() == null) return false;
                     String role = pc.getRole().toLowerCase();
@@ -787,8 +787,8 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
                 })
                 .map(Comic.PersonCredit::getName)
                 .filter(name -> name != null && !name.isEmpty())
-                .collect(Collectors.toSet());
-        
+                .toList();
+
         if (authors.isEmpty()) {
             List<String> allRoles = personCredits.stream()
                     .map(pc -> pc.getName() + " (" + pc.getRole() + ")")
@@ -799,9 +799,9 @@ public class ComicvineBookParser implements BookParser, DetailedMetadataProvider
                     .filter(pc -> pc.getRole() != null && pc.getRole().toLowerCase().contains("creator"))
                     .map(Comic.PersonCredit::getName)
                     .filter(name -> name != null && !name.isEmpty())
-                    .collect(Collectors.toSet());
+                    .toList();
         }
-        
+
         return authors;
     }
 
