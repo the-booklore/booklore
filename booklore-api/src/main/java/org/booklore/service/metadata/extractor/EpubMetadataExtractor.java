@@ -445,6 +445,22 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         }
     }
 
+    public boolean checkEpubFixedLayout(File epubFile) {
+        try {
+            Document doc = EpubReaderService.getOPFDocument(epubFile);
+            NodeList manifestItems = doc.getElementsByTagName("meta");
+
+            for (int i = 0; i < manifestItems.getLength(); i++) {
+                Element item = (Element) manifestItems.item(i);
+                String prop = item.getAttribute("property");
+                if (prop.equals("rendition:layout") && item.getTextContent().equals("pre-paginated")) return true;
+            }
+        } catch (Exception e) {
+            log.debug("Failed to determine if epub is pre-paginated for Kobo sync: {}", e.getMessage());
+        }
+        return false;
+    }
+
     private static void safeParseInt(String value, java.util.function.IntConsumer setter) {
         try {
             setter.accept(Integer.parseInt(value));
