@@ -5,7 +5,7 @@ WORKDIR /angular-app
 
 COPY ./booklore-ui/package.json ./booklore-ui/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm config set registry http://registry.npmjs.org/ \
+    npm config set registry https://registry.npmjs.org/ \
     && npm ci --force
 
 COPY ./booklore-ui /angular-app/
@@ -54,7 +54,7 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:25-jre-alpine"
 
-ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+UseCompactObjectHeaders -XX:MaxRAMPercentage=75.0"
+ENV JAVA_TOOL_OPTIONS="-XX:+UseG1GC -XX:+UseCompactObjectHeaders -XX:+UseStringDeduplication -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
 
 ARG TARGETARCH
 RUN apk update && apk add --no-cache su-exec libstdc++ libgcc && \

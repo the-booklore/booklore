@@ -27,7 +27,11 @@
         "ratingTaste": "Bewertungs-Geschmacksvergleich",
         "seriesProgress": "Serien-Fortschrittstracker",
         "readingDna": "Lese-DNA-Profil",
-        "readingHabits": "Lesegewohnheiten-Analyse"
+        "readingHabits": "Lesegewohnheiten-Analyse",
+        "bookFlow": "",
+        "publicationEra": "",
+        "readingDebt": "",
+        "sessionArchetypes": ""
     },
     "sessionHeatmap": {
         "title": "Lesesitzungsaktivität",
@@ -472,10 +476,55 @@
         "trend": "Trend"
     },
     "bookFlow": {
-        "colRating": "Bewertung"
+        "colRating": "Bewertung",
+        "noData": "",
+        "totalBooks": "",
+        "noDataHint": "",
+        "description": "",
+        "avgRating": "",
+        "completionRate": "",
+        "busiestQuarter": "",
+        "colAdded": "",
+        "colStatus": "",
+        "topStatus": "",
+        "title": "",
+        "tooltip": ""
     },
     "readingDebt": {
         "booksAdded": "Bücher hinzugefügt",
-        "booksFinished": "Bücher beendet"
+        "booksFinished": "Bücher beendet",
+        "description": "",
+        "shrinking": "",
+        "backlog": "",
+        "growing": "",
+        "noData": "",
+        "trendLabel": "",
+        "noDataHint": "",
+        "title": "",
+        "currentBacklog": "",
+        "tooltip": ""
+    },
+    "publicationEra": {
+        "noDataHint": "",
+        "title": "",
+        "tooltip": "",
+        "noData": "",
+        "description": "",
+        "bestDecade": "",
+        "avgRating": "",
+        "booksRated": ""
+    },
+    "sessionArchetypes": {
+        "archetype_afternoon": "",
+        "noData": "",
+        "title": "",
+        "tooltip": "",
+        "dominantType": "",
+        "archetype_morning": "",
+        "archetype_evening": "",
+        "description": "",
+        "noDataHint": "",
+        "archetype_night": "",
+        "sessions": ""
     }
 }

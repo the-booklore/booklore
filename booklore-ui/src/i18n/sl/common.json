@@ -21,5 +21,6 @@
     "select": "Izberi",
     "dismiss": "Prezri",
     "discard": "Zavrzi",
-    "review": "Preglej"
+    "review": "Preglej",
+    "libraryPathInaccessible": "Pot do knjižnice ni dostopna"
 }

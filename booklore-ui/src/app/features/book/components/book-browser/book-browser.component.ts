@@ -470,8 +470,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       this.visibleSortOptions = visibleFields.map(f => sortOptionsByField.get(f)).filter((o): o is SortOption => !!o);
 
 
-      // Only update sort criteria if they actually changed to avoid resetting popover/CDK state
-      if (!this.areSortCriteriaEqual(this.bookSorter.selectedSortCriteria, parseResult.sortCriteria)) {
+      // Only update sort criteria if they actually changed to avoid resetting popover/CDK state.
+      // Skip preference-based sort re-derivation when sort is already established (prevents
+      // userState$ emissions from non-sort preference changes like seriesCollapsed from
+      // resetting the sort during the race window before syncQueryParams writes to URL).
+      const sortFromUrl = !!queryParamMap.get('sort');
+      const sortNotYetEstablished = this.bookSorter.selectedSortCriteria.length === 0;
+      if ((sortFromUrl || sortNotYetEstablished) && !this.areSortCriteriaEqual(this.bookSorter.selectedSortCriteria, parseResult.sortCriteria)) {
         this.bookSorter.setSortCriteria(parseResult.sortCriteria);
       }
       this.currentViewMode = parseResult.viewMode;

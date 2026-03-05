@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +45,7 @@ public class EmailRecipientV2Controller {
     @PreAuthorize("@securityUtil.isAdmin() or @securityUtil.canEmailBook()")
     @PostMapping
     public ResponseEntity<EmailRecipientV2> createEmailRecipient(
-            @Parameter(description = "Email recipient creation request") @RequestBody CreateEmailRecipientRequest createEmailRecipientRequest) {
+            @Parameter(description = "Email recipient creation request") @RequestBody @Valid CreateEmailRecipientRequest createEmailRecipientRequest) {
         return ResponseEntity.ok(service.createEmailRecipient(createEmailRecipientRequest));
     }
 
@@ -54,7 +55,7 @@ public class EmailRecipientV2Controller {
     @PutMapping("/{id}")
     public ResponseEntity<EmailRecipientV2> updateEmailRecipient(
             @Parameter(description = "ID of the email recipient") @PathVariable Long id,
-            @Parameter(description = "Email recipient update request") @RequestBody CreateEmailRecipientRequest updateRequest) {
+            @Parameter(description = "Email recipient update request") @RequestBody @Valid CreateEmailRecipientRequest updateRequest) {
         return ResponseEntity.ok(service.updateEmailRecipient(id, updateRequest));
     }
 

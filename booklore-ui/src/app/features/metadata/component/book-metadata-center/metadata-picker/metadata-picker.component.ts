@@ -289,7 +289,7 @@ export class MetadataPickerComponent implements OnInit {
     const updatedBookMetadata = this.buildMetadataWrapper(undefined);
 
     const requests: Observable<unknown>[] = [
-      this.bookMetadataManageService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false)
+      this.bookMetadataManageService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false, 'REPLACE_WHEN_PROVIDED')
     ];
 
     // Handle audiobook cover upload when fetched from Audible provider
@@ -517,7 +517,7 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
-    this.bookMetadataManageService.updateBookMetadata(this.currentBookId, this.buildMetadataWrapper(shouldLockAllFields), false).subscribe({
+    this.bookMetadataManageService.updateBookMetadata(this.currentBookId, this.buildMetadataWrapper(shouldLockAllFields), false, 'REPLACE_WHEN_PROVIDED').subscribe({
       next: () => {
         if (shouldLockAllFields !== undefined) {
           this.messageService.add({

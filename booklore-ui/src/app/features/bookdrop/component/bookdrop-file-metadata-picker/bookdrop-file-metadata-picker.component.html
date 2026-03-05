@@ -2,41 +2,41 @@
 @if (fetchedMetadata && fetchedMetadata.title) {
   <form [formGroup]="metadataForm" class="metapicker">
     <div class="form-scroll">
-      <div class="metaheader">
-        <label class="field-label"></label>
-        <div class="header-fields-row">
-          <p class="header-column">{{ t('fileData') }}</p>
-          <div class="midbuttons">
-            <p-button
-              size="small"
-              icon="pi pi-angle-left"
-              class="btn-margin"
-              [outlined]="true"
-              [pTooltip]="t('copyMissingTooltip')"
-              tooltipPosition="bottom"
-              (onClick)="copyMissing()"
-            ></p-button>
-            <p-button
-              size="small"
-              icon="pi pi-angle-double-left"
-              class="btn-margin"
-              [outlined]="true"
-              [pTooltip]="t('overwriteAllTooltip')"
-              tooltipPosition="bottom"
-              (onClick)="copyAll()"
-            ></p-button>
-            <p-button
-              size="small"
-              severity="warn"
-              icon="pi pi-refresh"
-              class="btn-margin"
-              [outlined]="true"
-              [pTooltip]="t('resetAllTooltip')"
-              tooltipPosition="bottom"
-              (onClick)="confirmReset()"
-            ></p-button>
-          </div>
-          <p class="header-column">{{ t('fetchedData') }}</p>
+      <div class="column-headers">
+        <div class="column-label current">
+          <span>{{ t('fileData') }}</span>
+        </div>
+        <div class="column-actions">
+          <button
+            type="button"
+            class="p-button p-button-outlined p-button-sm p-button-icon-only"
+            [pTooltip]="t('copyMissingTooltip')"
+            tooltipPosition="bottom"
+            (click)="copyMissing()"
+          >
+            <span class="p-button-icon pi pi-angle-left"></span>
+          </button>
+          <button
+            type="button"
+            class="p-button p-button-outlined p-button-sm p-button-icon-only"
+            [pTooltip]="t('overwriteAllTooltip')"
+            tooltipPosition="bottom"
+            (click)="copyAll()"
+          >
+            <span class="p-button-icon pi pi-angle-double-left"></span>
+          </button>
+          <button
+            type="button"
+            class="p-button p-button-outlined p-button-sm p-button-icon-only p-button-warn"
+            [pTooltip]="t('resetAllTooltip')"
+            tooltipPosition="bottom"
+            (click)="confirmReset()"
+          >
+            <span class="p-button-icon pi pi-refresh"></span>
+          </button>
+        </div>
+        <div class="column-label fetched">
+          <span>{{ t('fetchedData') }}</span>
         </div>
       </div>
       <div class="metacontent">

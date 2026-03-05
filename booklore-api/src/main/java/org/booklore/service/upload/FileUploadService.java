@@ -116,11 +116,13 @@ public class FileUploadService {
             final String fileSubPath;
             final BookFileType effectiveBookType;
 
-            // Handle physical books that are getting their first file
-            if (wasPhysicalBook) {
-                // Physical book - determine library path and subpath
-                LibraryPathEntity libraryPath = determineLibraryPathForPhysicalBook(book);
-                book.setLibraryPath(libraryPath);
+            // Handle physical books or books that lost all their files
+            if (wasPhysicalBook || book.getPrimaryBookFile() == null) {
+                LibraryPathEntity libraryPath = book.getLibraryPath();
+                if (libraryPath == null) {
+                    libraryPath = determineLibraryPathForPhysicalBook(book);
+                    book.setLibraryPath(libraryPath);
+                }
 
                 String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
                 String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);

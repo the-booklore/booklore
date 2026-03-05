@@ -38,63 +38,81 @@
 
     <div class="gradient-divider"></div>
 
-    <div class="form-row">
-      <div class="form-group highlight-group flex-2">
-        <label for="title" class="form-label">
-          <i class="pi pi-tag label-icon"></i>
-          {{ t('titleLabel') }}
-        </label>
-        <div class="input-wrapper">
-          <input
-            id="title"
-            type="text"
-            pInputText
-            [(ngModel)]="title"
-            class="input-full"
-            [placeholder]="t('titlePlaceholder')"
-            [class.filled]="title.trim()"/>
+    <div class="top-section">
+      @if (coverUrl) {
+        <div class="cover-preview">
+          <img [src]="coverUrl" alt="Book cover"/>
         </div>
-      </div>
+      }
 
-      <div class="form-group highlight-group flex-1">
-        <label for="isbn" class="form-label">
-          <i class="pi pi-barcode label-icon"></i>
-          {{ t('isbnLabel') }}
-        </label>
-        <div class="input-wrapper">
-          <input
-            id="isbn"
-            type="text"
-            pInputText
-            [(ngModel)]="isbn"
-            class="input-full"
-            [placeholder]="t('isbnPlaceholder')"/>
+      <div class="top-fields">
+        <div class="form-row">
+          <div class="form-group highlight-group flex-2">
+            <label for="title" class="form-label">
+              <i class="pi pi-tag label-icon"></i>
+              {{ t('titleLabel') }}
+            </label>
+            <div class="input-wrapper">
+              <input
+                id="title"
+                type="text"
+                pInputText
+                [(ngModel)]="title"
+                class="input-full"
+                [placeholder]="t('titlePlaceholder')"
+                [class.filled]="title.trim()"/>
+            </div>
+          </div>
+
+          <div class="form-group highlight-group flex-1">
+            <label for="isbn" class="form-label">
+              <i class="pi pi-barcode label-icon"></i>
+              {{ t('isbnLabel') }}
+            </label>
+            <div class="isbn-input-row">
+              <input
+                id="isbn"
+                type="text"
+                pInputText
+                [(ngModel)]="isbn"
+                class="input-full"
+                [placeholder]="t('isbnPlaceholder')"/>
+              <p-button
+                icon="pi pi-search"
+                [rounded]="true"
+                [text]="true"
+                severity="info"
+                (onClick)="fetchMetadataByIsbn()"
+                [disabled]="!isbn.trim() || isFetchingMetadata"
+                [loading]="isFetchingMetadata"
+                [pTooltip]="t('fetchMetadataTooltip')"
+                tooltipPosition="top"/>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div class="gradient-divider"></div>
-
-    <div class="form-group highlight-group">
-      <label for="authors" class="form-label">
-        <i class="pi pi-user label-icon"></i>
-        {{ t('authorsLabel') }}
-      </label>
-      <div class="autocomplete-wrapper">
-        <p-autoComplete
-          appendTo="body"
-          [(ngModel)]="authors"
-          [multiple]="true"
-          [fluid]="true"
-          [dropdown]="false"
-          [suggestions]="filteredAuthors"
-          [forceSelection]="false"
-          [showClear]="false"
-          [placeholder]="t('authorsPlaceholder')"
-          (completeMethod)="filterAuthors($event)"
-          (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
-          (onSelect)="onAutoCompleteSelect('authors', $event)">
-        </p-autoComplete>
+        <div class="form-group highlight-group">
+          <label for="authors" class="form-label">
+            <i class="pi pi-user label-icon"></i>
+            {{ t('authorsLabel') }}
+          </label>
+          <div class="autocomplete-wrapper">
+            <p-autoComplete
+              appendTo="body"
+              [(ngModel)]="authors"
+              [multiple]="true"
+              [fluid]="true"
+              [dropdown]="false"
+              [suggestions]="filteredAuthors"
+              [forceSelection]="false"
+              [showClear]="false"
+              [placeholder]="t('authorsPlaceholder')"
+              (completeMethod)="filterAuthors($event)"
+              (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
+              (onSelect)="onAutoCompleteSelect('authors', $event)">
+            </p-autoComplete>
+          </div>
+        </div>
       </div>
     </div>
 

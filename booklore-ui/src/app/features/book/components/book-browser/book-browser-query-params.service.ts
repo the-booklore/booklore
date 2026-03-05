@@ -287,7 +287,7 @@ export class BookBrowserQueryParamsService {
     }
 
     const currentParams = this.activatedRoute.snapshot.queryParams;
-    const changed = Object.keys(queryParams).some(k => currentParams[k] !== queryParams[k]);
+    const changed = Object.keys(queryParams).some(k => (queryParams[k] ?? undefined) !== (currentParams[k] ?? undefined));
 
     if (changed) {
       const mergedParams = {...currentParams, ...queryParams};

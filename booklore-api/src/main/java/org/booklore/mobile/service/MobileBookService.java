@@ -32,6 +32,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -263,7 +264,7 @@ public class MobileBookService {
         }
 
         long maxOffset = Math.max(0, totalElements - pageSize);
-        int randomOffset = (int) (Math.random() * (maxOffset + 1));
+        int randomOffset = ThreadLocalRandom.current().nextInt((int) maxOffset + 1);
 
         Pageable pageable = PageRequest.of(randomOffset / pageSize, pageSize);
         Page<BookEntity> bookPage = bookRepository.findAll(spec, pageable);

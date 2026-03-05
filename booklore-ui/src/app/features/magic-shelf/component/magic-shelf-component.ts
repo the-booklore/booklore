@@ -88,6 +88,9 @@ export type RuleField =
   | 'audibleReviewCount'
   | 'abridged'
   | 'audiobookDuration'
+  | 'audiobookCodec'
+  | 'audiobookChapterCount'
+  | 'audiobookBitrate'
   | 'isPhysical'
   | 'seriesStatus'
   | 'seriesGaps'
@@ -180,6 +183,9 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   audibleReviewCount: {label: 'audibleReviewCount', type: 'number'},
   abridged: {label: 'abridged', type: 'boolean'},
   audiobookDuration: {label: 'audiobookDuration', type: 'number'},
+  audiobookCodec: {label: 'audiobookCodec'},
+  audiobookChapterCount: {label: 'audiobookChapterCount', type: 'number'},
+  audiobookBitrate: {label: 'audiobookBitrate', type: 'number'},
   isPhysical: {label: 'isPhysical', type: 'boolean'},
   seriesStatus: {label: 'seriesStatus'},
   seriesGaps: {label: 'seriesGaps'},
@@ -201,7 +207,7 @@ const FIELD_GROUPS: FieldGroup[] = [
   { translationKey: 'ratingsReviews', fields: ['personalRating', 'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount', 'hardcoverRating', 'hardcoverReviewCount', 'ranobedbRating', 'lubimyczytacRating', 'audibleRating', 'audibleReviewCount'] },
   { translationKey: 'qualityMetadata', fields: ['metadataScore', 'metadataPresence'] },
   { translationKey: 'tagsMoods', fields: ['moods', 'tags'] },
-  { translationKey: 'audiobook', fields: ['narrator', 'abridged', 'audiobookDuration'] },
+  { translationKey: 'audiobook', fields: ['narrator', 'abridged', 'audiobookDuration', 'audiobookCodec', 'audiobookChapterCount', 'audiobookBitrate'] },
   { translationKey: 'fileIdentifiers', fields: ['fileType', 'fileSize', 'isbn13', 'isbn10', 'isPhysical'] }
 ];
 
@@ -279,7 +285,10 @@ export class MagicShelfComponent implements OnInit {
     {label: 'CB7', value: 'cb7'},
     {label: 'FB2', value: 'fb2'},
     {label: 'MOBI', value: 'mobi'},
-    {label: 'AZW3', value: 'azw3'}
+    {label: 'AZW3', value: 'azw3'},
+    {label: 'M4B', value: 'm4b'},
+    {label: 'M4A', value: 'm4a'},
+    {label: 'MP3', value: 'mp3'}
   ];
 
   get readStatusOptions() {

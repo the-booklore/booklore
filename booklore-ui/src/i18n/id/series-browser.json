@@ -1,0 +1,25 @@
+{
+    "pageTitle": "Serial",
+    "browseAllSeries": "Jelajahi Seluruh Serial",
+    "searchPlaceholder": "Cari berdasarkan nama serial atau penulis...",
+    "readNext": "",
+    "booksRead": "",
+    "noSeriesFound": "",
+    "noSeriesInCategory": "",
+    "cardSize": "",
+    "filters": {
+        "all": "",
+        "notStarted": "",
+        "inProgress": "",
+        "completed": "",
+        "abandoned": ""
+    },
+    "sort": {
+        "nameAsc": "",
+        "nameDesc": "",
+        "bookCount": "",
+        "progress": "",
+        "recentlyRead": "",
+        "recentlyAdded": ""
+    }
+}

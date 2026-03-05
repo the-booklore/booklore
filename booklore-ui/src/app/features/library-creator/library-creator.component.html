@@ -82,6 +82,11 @@
         </div>
 
         <div class="folders-zone">
+          <div class="folder-structure-hint">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span [innerHTML]="t('folderStructureHint')"></span>
+          </div>
+
           <button class="add-folder-trigger" (click)="openDirectoryPicker()" type="button">
             <i class="pi pi-plus-circle"></i>
             <span>{{ t('addFolder') }}</span>
@@ -102,11 +107,6 @@
                   </button>
                 </div>
               }
-            </div>
-          } @else {
-            <div class="empty-hint">
-              <i class="pi pi-info-circle"></i>
-              <span>{{ t('emptyFoldersHint') }}</span>
             </div>
           }
         </div>

@@ -74,8 +74,9 @@
 
 // Column Headers - mirrors field-row structure for alignment (desktop only)
 .column-headers {
-  display: none;
+  display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0.875rem 1rem;
   margin-bottom: 0.5rem;
   background: var(--overlay-background);
@@ -83,18 +84,23 @@
   border-radius: 8px;
 
   @media (min-width: 768px) {
-    display: flex;
+    justify-content: flex-start;
   }
 
-  // Spacer to match field-label width
+  // Spacer to match field-label width (desktop only)
   &::before {
     content: '';
     min-width: 120px;
     flex-shrink: 0;
+    display: none;
+
+    @media (min-width: 768px) {
+      display: block;
+    }
   }
 
   .column-label {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 0.625rem;
     font-size: 1rem;
@@ -102,6 +108,10 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     flex: 1;
+
+    @media (min-width: 768px) {
+      display: flex;
+    }
 
     i {
       font-size: 1.125rem;

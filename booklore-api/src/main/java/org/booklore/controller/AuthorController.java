@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -69,7 +70,7 @@ public class AuthorController {
     @PutMapping("/{authorId}")
     public ResponseEntity<AuthorDetails> updateAuthor(
             @Parameter(description = "ID of the author") @PathVariable long authorId,
-            @RequestBody AuthorUpdateRequest request) {
+            @RequestBody @Valid AuthorUpdateRequest request) {
         return ResponseEntity.ok(authorMetadataService.updateAuthor(authorId, request));
     }
 
@@ -101,7 +102,7 @@ public class AuthorController {
     @PostMapping("/{authorId}/match")
     public ResponseEntity<AuthorDetails> matchAuthor(
             @Parameter(description = "ID of the author") @PathVariable long authorId,
-            @RequestBody AuthorMatchRequest request) {
+            @RequestBody @Valid AuthorMatchRequest request) {
         return ResponseEntity.ok(authorMetadataService.matchAuthor(authorId, request));
     }
 

@@ -72,7 +72,7 @@ PASTE OUTPUT HERE
 > **All boxes must be checked before requesting review.** Incomplete PRs will be closed without review. No exceptions.
 
 - [ ] This PR is linked to an approved issue
-- [ ] Code follows project style guidelines and conventions
+- [ ] Code follows project [backend and frontend conventions](../CONTRIBUTING.md#backend-conventions)
 - [ ] Branch is up to date with `develop` (merge conflicts resolved)
 - [ ] I ran the full stack locally (backend + frontend + database) and verified the change works
 - [ ] Automated tests added or updated to cover changes (backend **and** frontend)

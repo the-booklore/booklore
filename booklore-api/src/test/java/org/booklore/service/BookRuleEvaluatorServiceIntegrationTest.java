@@ -624,7 +624,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
         @Test
         void thisPeriod_month_matchesThisMonthBook() {
             BookEntity thisMonth = createBook("This Month Book");
-            thisMonth.setAddedOn(Instant.now().minus(1, ChronoUnit.DAYS));
+            thisMonth.setAddedOn(Instant.now().minus(1, ChronoUnit.HOURS));
             em.merge(thisMonth);
 
             BookEntity notThisMonth = createBook("Not This Month Book");

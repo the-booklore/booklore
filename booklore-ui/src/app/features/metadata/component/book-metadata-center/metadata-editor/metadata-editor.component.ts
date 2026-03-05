@@ -8,7 +8,7 @@ import {AsyncPipe} from "@angular/common";
 import {MessageService} from "primeng/api";
 import {Book, BookMetadata, ComicMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
 import {UrlHelperService} from "../../../../../shared/service/url-helper.service";
-import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, MetadataFieldConfig} from '../../../../../shared/metadata';
+import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, MetadataFieldConfig, isFieldEmbeddable, hasMetadataWriter} from '../../../../../shared/metadata';
 import {FileUpload, FileUploadErrorEvent, FileUploadEvent,} from "primeng/fileupload";
 import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
@@ -1064,11 +1064,19 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onNext() {
-    this.nextBookClicked.emit();
+    if (this.autoSaveEnabled && this.metadataForm.dirty) {
+      this.saveMetadata().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.nextBookClicked.emit());
+    } else {
+      this.nextBookClicked.emit();
+    }
   }
 
   onPrevious() {
-    this.previousBookClicked.emit();
+    if (this.autoSaveEnabled && this.metadataForm.dirty) {
+      this.saveMetadata().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.previousBookClicked.emit());
+    } else {
+      this.previousBookClicked.emit();
+    }
   }
 
   closeDialog() {
@@ -1167,6 +1175,14 @@ export class MetadataEditorComponent implements OnInit {
 
   isAudiobook(book: Book): boolean {
     return book.primaryFile?.bookType === 'AUDIOBOOK';
+  }
+
+  isEmbeddable(controlName: string, book: Book): boolean {
+    return isFieldEmbeddable(book.primaryFile?.bookType, controlName);
+  }
+
+  hasWriter(book: Book): boolean {
+    return hasMetadataWriter(book.primaryFile?.bookType);
   }
 
   getUploadAudiobookCoverUrl(): string {

@@ -24,8 +24,8 @@ export class BookMetadataManageService {
   private bookService = inject(BookService);
   private readonly t = inject(TranslocoService);
 
-  updateBookMetadata(bookId: number | undefined, wrapper: MetadataUpdateWrapper, mergeCategories: boolean): Observable<BookMetadata> {
-    const params = new HttpParams().set('mergeCategories', mergeCategories.toString());
+  updateBookMetadata(bookId: number | undefined, wrapper: MetadataUpdateWrapper, mergeCategories: boolean, replaceMode: 'REPLACE_ALL' | 'REPLACE_WHEN_PROVIDED' = 'REPLACE_ALL'): Observable<BookMetadata> {
+    const params = new HttpParams().set('mergeCategories', mergeCategories.toString()).set('replaceMode', replaceMode);
     return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, {params}).pipe(
       map(updatedMetadata => {
         this.bookSocketService.handleBookMetadataUpdate(bookId!, updatedMetadata);

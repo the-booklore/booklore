@@ -41,5 +41,10 @@
     },
     "settingsSaved": "设置已保存",
     "settingsSavedDetail": "设置已成功保存！",
-    "settingsError": "保存设置时出错。"
+    "settingsError": "保存设置时出错。",
+    "appearance": {
+        "supportButtonAnimation": "",
+        "supportButtonAnimationDesc": "",
+        "sectionTitle": ""
+    }
 }

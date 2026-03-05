@@ -413,6 +413,7 @@ export interface CreatePhysicalBookRequest {
   language?: string;
   pageCount?: number;
   categories?: string[];
+  thumbnailUrl?: string;
 }
 
 export interface BookStatusUpdateResponse {
@@ -440,4 +441,9 @@ export interface DuplicateGroup {
   suggestedTargetBookId: number;
   matchReason: string;
   books: Book[];
+}
+
+export interface DetachBookFileResponse {
+  sourceBook: Book;
+  newBook: Book;
 }

@@ -322,7 +322,35 @@ public class BookMetadataEntity {
     @PrePersist
     @PreUpdate
     public void updateSearchText() {
+        trimStringFields();
         this.searchText = BookUtils.buildSearchText(this);
+    }
+
+    private void trimStringFields() {
+        this.title = trimOrNull(this.title);
+        this.subtitle = trimOrNull(this.subtitle);
+        this.publisher = trimOrNull(this.publisher);
+        this.seriesName = trimOrNull(this.seriesName);
+        this.language = trimOrNull(this.language);
+        this.isbn13 = trimOrNull(this.isbn13);
+        this.isbn10 = trimOrNull(this.isbn10);
+        this.asin = trimOrNull(this.asin);
+        this.goodreadsId = trimOrNull(this.goodreadsId);
+        this.hardcoverId = trimOrNull(this.hardcoverId);
+        this.hardcoverBookId = trimOrNull(this.hardcoverBookId);
+        this.googleId = trimOrNull(this.googleId);
+        this.comicvineId = trimOrNull(this.comicvineId);
+        this.lubimyczytacId = trimOrNull(this.lubimyczytacId);
+        this.ranobedbId = trimOrNull(this.ranobedbId);
+        this.audibleId = trimOrNull(this.audibleId);
+        this.contentRating = trimOrNull(this.contentRating);
+        this.narrator = trimOrNull(this.narrator);
+    }
+
+    private static String trimOrNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @OneToOne(fetch = FetchType.LAZY)

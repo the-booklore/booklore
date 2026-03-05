@@ -1,8 +1,10 @@
 package org.booklore.service;
 
+import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.exception.APIException;
 import org.booklore.model.dto.AuthorDetails;
 import org.booklore.model.dto.AuthorSearchResult;
+import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.AuthorMatchRequest;
 import org.booklore.model.entity.AuthorEntity;
 import org.booklore.model.enums.AuditAction;
@@ -28,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class AuthorMetadataServiceTest {
@@ -37,6 +40,7 @@ class AuthorMetadataServiceTest {
     @Mock private AuditService auditService;
     @Mock private FileService fileService;
     @Mock private DuckDuckGoCoverService duckDuckGoCoverService;
+    @Mock private AuthenticationService authenticationService;
 
     private AuthorMetadataService service;
 
@@ -45,7 +49,12 @@ class AuthorMetadataServiceTest {
         Map<AuthorMetadataSource, AuthorParser> authorParserMap = Map.of(
                 AuthorMetadataSource.AUDNEXUS, authorParser
         );
-        service = new AuthorMetadataService(authorRepository, authorParserMap, auditService, fileService, duckDuckGoCoverService);
+        service = new AuthorMetadataService(authorRepository, authorParserMap, auditService, fileService, duckDuckGoCoverService, authenticationService);
+
+        BookLoreUser.UserPermissions adminPermissions = new BookLoreUser.UserPermissions();
+        adminPermissions.setAdmin(true);
+        BookLoreUser adminUser = BookLoreUser.builder().id(1L).permissions(adminPermissions).build();
+        lenient().when(authenticationService.getAuthenticatedUser()).thenReturn(adminUser);
     }
 
     @Test
