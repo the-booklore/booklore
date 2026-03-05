@@ -682,7 +682,7 @@ public class BookRuleEvaluatorService {
             return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false);
         }
 
-        return buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin);
+        return buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, root, progressJoin);
     }
 
     private Predicate buildExcludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
@@ -692,7 +692,7 @@ public class BookRuleEvaluatorService {
             return cb.not(buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false));
         }
 
-        Predicate negated = cb.not(buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin));
+        Predicate negated = cb.not(buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, root, progressJoin));
         if (rule.getField() == RuleField.READ_STATUS && ruleList.stream().noneMatch("UNSET"::equals)) {
             return cb.or(cb.isNull(progressJoin.get("readStatus")), negated);
         }
@@ -706,15 +706,16 @@ public class BookRuleEvaluatorService {
             return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, true);
         }
 
-        return buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, progressJoin);
+        return buildFieldInPredicate(rule.getField(), field -> field, ruleList, cb, root, progressJoin);
     }
 
     private Predicate buildFieldInPredicate(RuleField ruleField,
                                             java.util.function.Function<Expression<?>, Expression<?>> fieldTransformer,
                                             List<String> ruleList,
                                             CriteriaBuilder cb,
+                                            Root<BookEntity> root,
                                             Join<BookEntity, UserBookProgressEntity> progressJoin) {
-        Expression<?> field = fieldTransformer.apply(getFieldExpression(ruleField, cb, null, progressJoin));
+        Expression<?> field = fieldTransformer.apply(getFieldExpression(ruleField, cb, root, progressJoin));
         if (field == null) return cb.conjunction();
 
         if (ruleField == RuleField.READ_STATUS) {
