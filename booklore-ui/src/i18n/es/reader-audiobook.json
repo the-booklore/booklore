@@ -10,7 +10,7 @@
     },
     "trackInfo": {
         "trackOf": "Pista {{ current }} de {{ total }}",
-        "chapterOf": "Capitulo {{ current }} de {{ total }}"
+        "chapterOf": "Capítulo {{ current }} de {{ total }}"
     },
     "controls": {
         "previousTrackTooltip": "Pista anterior",
@@ -52,7 +52,7 @@
     "toast": {
         "loadFailed": "Error al cargar el audiolibro",
         "audioLoadFailed": "Error al cargar el audio",
-        "sleepTimerSet": "La reproduccion se detendra en {{ minutes }} minutos",
+        "sleepTimerSet": "La reproducción se detendrá en {{ minutes }} minutos",
         "sleepTimerEndOfChapter": "La reproduccion se detendra al final del capitulo",
         "sleepTimerStopped": "Reproduccion detenida por el temporizador",
         "bookmarkAdded": "Marcador agregado",

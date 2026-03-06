@@ -88,7 +88,13 @@
         "insightPeakDecade": "Toppperiod",
         "insightPeakDecadeBooks": "{{ count }} bocker",
         "insightDecadesCovered": "Decennier tackta",
-        "insightDifferentEras": "olika epoker"
+        "insightDifferentEras": "olika epoker",
+        "insightGoldenEra": "Gyllene eran",
+        "insightGoldenEraRange": "{{ count }} böcker",
+        "insightMostCommonYear": "Vanligaste året",
+        "insightMostCommonYearBooks": "{{ count }} böcker",
+        "insightRarityScore": "Sällsynthetspoäng",
+        "insightRarePicks": "sällsynta val"
     },
     "publicationTrend": {
         "title": "Utgivningstrend",

@@ -16,8 +16,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -96,7 +98,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
             Document doc = builder.parse(inputStream);
 
             BookMetadata.BookMetadataBuilder metadataBuilder = BookMetadata.builder();
-            Set<String> authors = new HashSet<>();
+            List<String> authors = new ArrayList<>();
             Set<String> categories = new HashSet<>();
 
             // Extract title-info (main metadata section)
@@ -128,7 +130,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
     }
 
     private void extractTitleInfo(Element titleInfo, BookMetadata.BookMetadataBuilder builder,
-                                   Set<String> authors, Set<String> categories) {
+                                   List<String> authors, Set<String> categories) {
         // Extract genres (categories)
         NodeList genres = titleInfo.getElementsByTagNameNS(FB2_NAMESPACE, "genre");
         for (int i = 0; i < genres.getLength(); i++) {

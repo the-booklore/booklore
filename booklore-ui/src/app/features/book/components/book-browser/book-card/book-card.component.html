@@ -39,10 +39,10 @@
     }
 
     @if (!_isSeriesViewActive && hasDigitalFile()) {
-      <p-button [rounded]="true" [icon]="readButtonIcon" class="read-btn" (click)="readBook(book)"
+      <a [routerLink]="urlHelper.getBookPrimaryReadingUrl(book)" (click)="readBook(book)"><p-button [rounded]="true" [icon]="readButtonIcon" class="read-btn" (click)="readBook(book)"
         [pTooltip]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : ''"
         tooltipPosition="bottom"
-        [ariaLabel]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : (_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco))"></p-button>
+        [ariaLabel]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : (_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco))"></p-button></a>
     }
 
     @if (isCheckboxEnabled) {

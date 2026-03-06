@@ -1,0 +1,18 @@
+.oidc-callback-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1rem;
+  color: var(--text-color);
+  background: var(--ground-background);
+
+  i {
+    font-size: 2.5rem;
+  }
+
+  span {
+    font-size: 1.1rem;
+  }
+}

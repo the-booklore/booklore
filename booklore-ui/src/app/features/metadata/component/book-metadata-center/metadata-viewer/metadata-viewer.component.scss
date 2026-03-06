@@ -222,6 +222,22 @@
   text-decoration: underline;
 }
 
+.first-author-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #DAA520;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-left: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid #DAA520;
+  border-radius: 3px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
 .formats-inline {
   display: flex;
   align-items: center;

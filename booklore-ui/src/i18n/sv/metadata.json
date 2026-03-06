@@ -131,7 +131,8 @@
             "audiobookUploadFailed": "Ett fel uppstod vid uppladdning av ljudboksomslaget",
             "fileMetadataLoaded": "Metadata laddad från bokfil. Granska och spara.",
             "fileMetadataFailed": "Kunde inte extrahera metadata från bokfilen"
-        }
+        },
+        "writtenToFileTooltip": "Det här fältet skrivs till den fysiska filen"
     },
     "picker": {
         "loadingMetadata": "Laddar komplett metadata...",
@@ -221,7 +222,16 @@
         "downloadTooltip": "Ladda ner",
         "deleteTooltip": "Radera",
         "downloadAllTooltip": "Ladda ner alla filer som ett ZIP-arkiv",
-        "physicalBookHint": "Du kan ladda upp en digital kopia eller lägga till metadata manuellt."
+        "physicalBookHint": "Du kan ladda upp en digital kopia eller lägga till metadata manuellt.",
+        "detachTooltip": "Koppla bort",
+        "chapters": "Kapitel",
+        "chapterTitle": "Titel",
+        "startTime": "Början",
+        "endTime": "Slut",
+        "duration": "Varaktighet",
+        "totalDuration": "Total varaktighet",
+        "noChapters": "Ingen kapitelinformation tillgänglig.",
+        "fileName": "Fil"
     },
     "viewer": {
         "metadataLocked": "Denna boks metadata är låst.",
@@ -282,7 +292,7 @@
         "audiobookDuration": "Längd",
         "audiobookNarrator": "Uppläsare",
         "audiobookChapters": "Kapitel",
-        "audiobookBitrate": "Bitrate",
+        "audiobookBitrate": "Överföringskapacitet",
         "audiobookSampleRate": "Samplingsfrekvens",
         "audiobookChannels": "Kanaler",
         "audiobookCodec": "Codec",
@@ -357,7 +367,11 @@
             "dateUpdatedSummary": "Datum uppdaterat",
             "dateUpdatedDetail": "Bokens avslutningsdatum har uppdaterats.",
             "dateUpdateFailedSummary": "Uppdatering misslyckades",
-            "dateUpdateFailedDetail": "Kunde inte uppdatera bokens avslutningsdatum."
+            "dateUpdateFailedDetail": "Kunde inte uppdatera bokens avslutningsdatum.",
+            "detachFileSuccessSummary": "Fil bortkopplad",
+            "detachFileSuccessDetail": "Filen har kopplats bort och en ny bok har skapats.",
+            "detachFileErrorSummary": "Bortkoppling misslyckades",
+            "detachFileErrorDetail": "Misslyckades med att koppla bort filen."
         },
         "confirm": {
             "resetProgressMessage": "Återställ läsframsteg för \"{{ title }}\"?",
@@ -373,8 +387,16 @@
             "deleteFileBtn": "Radera fil",
             "deleteBookMessage": "Är du säker på att du vill radera \"{{ title }}\"?\n\nDetta tar permanent bort bokregistret från ditt bibliotek.\n\nDenna åtgärd kan inte ångras.",
             "deleteBookAllFilesMessage": "Är du säker på att du vill radera \"{{ title }}\"?\n\nDetta tar permanent bort bokregistret OCH alla associerade filer från ditt filsystem.\n\nDenna åtgärd kan inte ångras.",
-            "deleteEverythingBtn": "Radera allt"
-        }
+            "deleteEverythingBtn": "Radera allt",
+            "detachFileHeader": "Koppla bort fil",
+            "detachFileMessage": "Detta kommer att koppla bort \"{{ fileName }}\" från den här boken och skapa en ny fristående bok för den. Filen kommer inte att raderas.",
+            "detachFileCopyMetadata": "Kopiera metadata till ny bok",
+            "detachFileBtn": "Koppla bort",
+            "largeFileMessage": "Den här filen överstiger 25 MB. Vissa e-postleverantörer kan avvisa stora bilagor.\n\nVill du skicka den ändå?",
+            "largeFileHeader": "Varning för stor fil",
+            "sendAnyway": "Skicka ändå"
+        },
+        "audiobookAbridged": "Förkortad"
     },
     "sidecar": {
         "title": "Sidecar-metadata",

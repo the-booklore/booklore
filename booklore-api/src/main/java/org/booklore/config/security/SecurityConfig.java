@@ -44,7 +44,7 @@ public class SecurityConfig {
 
     private static final Pattern ALLOWED = Pattern.compile("\\s*,\\s*");
     private final OpdsUserDetailsService opdsUserDetailsService;
-    private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
+    private final JwtAuthenticationFilter dualJwtAuthenticationFilter;
     private final Environment env;
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {

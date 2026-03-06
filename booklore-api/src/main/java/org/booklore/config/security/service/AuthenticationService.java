@@ -1,8 +1,8 @@
 package org.booklore.config.security.service;
 
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.booklore.config.AppProperties;
 import org.booklore.config.security.JwtUtils;
 import org.booklore.config.security.userdetails.KoreaderUserDetails;
@@ -17,6 +17,7 @@ import org.booklore.model.enums.ProvisioningMethod;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.RefreshTokenRepository;
 import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.user.DefaultSettingInitializer;
 import org.booklore.service.user.UserProvisioningService;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,6 @@ import org.booklore.service.audit.AuditService;
 import org.booklore.util.RequestUtils;
 
 @Slf4j
-@RequiredArgsConstructor
 @Service
 public class AuthenticationService {
 
@@ -50,6 +50,31 @@ public class AuthenticationService {
     private final BookLoreUserTransformer bookLoreUserTransformer;
     private final AuditService auditService;
     private final AuthRateLimitService authRateLimitService;
+    private final AppSettingService appSettingService;
+
+    public AuthenticationService(
+            AppProperties appProperties,
+            UserRepository userRepository,
+            RefreshTokenRepository refreshTokenRepository,
+            UserProvisioningService userProvisioningService,
+            PasswordEncoder passwordEncoder,
+            JwtUtils jwtUtils,
+            DefaultSettingInitializer defaultSettingInitializer,
+            AuditService auditService,
+            AuthRateLimitService authRateLimitService,
+            @Lazy AppSettingService appSettingService
+    ) {
+        this.appProperties = appProperties;
+        this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.userProvisioningService = userProvisioningService;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtils = jwtUtils;
+        this.defaultSettingInitializer = defaultSettingInitializer;
+        this.auditService = auditService;
+        this.authRateLimitService = authRateLimitService;
+        this.appSettingService = appSettingService;
+    }
 
     @PostConstruct
     void initDummyHash() {
@@ -117,6 +142,13 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
+        if (appSettingService.getAppSettings().isOidcForceOnlyMode()) {
+            BookLoreUserEntity oidcCheckUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
+            if (oidcCheckUser == null || !oidcCheckUser.getPermissions().isPermissionAdmin()) {
+                throw ApiError.OIDC_ONLY_MODE.createException();
+            }
+        }
+
         String ip = RequestUtils.getCurrentRequest().getRemoteAddr();
         String username = loginRequest.getUsername();
         authRateLimitService.checkLoginRateLimit(ip);
@@ -164,13 +196,19 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(BookLoreUserEntity user) {
+        return loginUser(user, null);
+    }
+
+    public ResponseEntity<Map<String, String>> loginUser(BookLoreUserEntity user, Long customRefreshTokenExpirationMs) {
         String accessToken = jwtUtils.generateAccessToken(user);
         String refreshToken = jwtUtils.generateRefreshToken(user);
+
+        long expirationMs = customRefreshTokenExpirationMs != null ? customRefreshTokenExpirationMs : jwtUtils.getRefreshTokenExpirationMs();
 
         RefreshTokenEntity refreshTokenEntity = RefreshTokenEntity.builder()
                 .user(user)
                 .token(refreshToken)
-                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshTokenExpirationMs()))
+                .expiryDate(Instant.now().plusMillis(expirationMs))
                 .revoked(false)
                 .build();
 

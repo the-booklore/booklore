@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.booklore.model.dto.ComicMetadata;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -18,7 +19,7 @@ import java.util.Set;
 public class SidecarBookMetadata {
     private String title;
     private String subtitle;
-    private Set<String> authors;
+    private List<String> authors;
     private String publisher;
     private LocalDate publishedDate;
     private String description;

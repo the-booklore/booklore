@@ -3,7 +3,6 @@ import {AuthService} from './auth.service';
 import {UserService} from '../../features/settings/user-management/user.service';
 import {filter, catchError} from 'rxjs/operators';
 import {of} from 'rxjs';
-import {OAuthService} from 'angular-oauth2-oidc';
 
 @Injectable({providedIn: 'root'})
 export class StartupService {

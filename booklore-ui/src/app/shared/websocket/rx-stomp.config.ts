@@ -9,9 +9,7 @@ export function createRxStompConfig(authService: AuthService): RxStompConfig {
     heartbeatOutgoing: 20000,
     reconnectDelay: 10000,
     beforeConnect: (stomp) => {
-      const oidcToken = authService.getOidcAccessToken();
-      const internalToken = authService.getInternalAccessToken();
-      const token = oidcToken || internalToken;
+      const token = authService.getInternalAccessToken();
       if (token) {
         stomp.stompClient.connectHeaders = {
           'Authorization': `Bearer ${token}`,

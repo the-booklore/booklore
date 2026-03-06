@@ -16,7 +16,8 @@ public enum Topic {
     BOOKDROP_FILE("/queue/bookdrop-file"),
     LOG("/queue/log"),
     TASK_PROGRESS("/queue/task-progress"),
-    LIBRARY_HEALTH("/topic/library-health");
+    LIBRARY_HEALTH("/topic/library-health"),
+    SESSION_REVOKED("/queue/session-revoked");
 
     private final String path;
 

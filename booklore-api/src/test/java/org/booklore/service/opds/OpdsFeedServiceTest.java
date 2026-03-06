@@ -143,7 +143,7 @@ class OpdsFeedServiceTest {
                 .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder()
                         .title("Book Title")
-                        .authors(Set.of("Author A"))
+                        .authors(List.of("Author A"))
                         .publisher("Publisher X")
                         .language("en")
                         .categories(Set.of("Fiction"))

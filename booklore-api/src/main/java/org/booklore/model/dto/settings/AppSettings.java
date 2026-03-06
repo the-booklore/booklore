@@ -36,5 +36,8 @@ public class AppSettings {
     private KoboSettings koboSettings;
     private CoverCroppingSettings coverCroppingSettings;
     private MetadataProviderSpecificFields metadataProviderSpecificFields;
+    private Integer oidcSessionDurationHours;
+    private String oidcGroupSyncMode;
+    private boolean oidcForceOnlyMode;
     private String diskType;
 }

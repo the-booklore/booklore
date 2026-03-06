@@ -37,6 +37,14 @@ public class NotificationService {
         }
     }
 
+    public void sendMessageToUser(String username, Topic topic, Object message) {
+        try {
+            messagingTemplate.convertAndSendToUser(username, topic.getPath(), message);
+        } catch (Exception e) {
+            log.error("Error sending message to user {} on topic {}: {}", username, topic, e.getMessage(), e);
+        }
+    }
+
     @Transactional(readOnly = true)
     public void sendMessageToPermissions(Topic topic, Object message, Set<PermissionType> permissionTypes) {
         if (permissionTypes == null || permissionTypes.isEmpty()) return;

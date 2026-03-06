@@ -399,7 +399,7 @@ public class LubimyCzytacParser implements BookParser {
             // Author(s) - can be single Person or array of Person objects
             if (root.has("author")) {
                 try {
-                    Set<String> authors = new HashSet<>();
+                    List<String> authors = new ArrayList<>();
                     JsonNode authorNode = root.get("author");
 
                     if (authorNode.isArray()) {

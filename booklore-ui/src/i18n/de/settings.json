@@ -8,7 +8,7 @@
         "users": "Benutzer",
         "email": "E-Mail",
         "patterns": "Muster",
-        "authentication": "Authentifizierung",
+        "authentication": "OIDC",
         "tasks": "Aufgaben",
         "auditLogs": "Audit-Protokolle",
         "opds": "OPDS",

@@ -18,27 +18,5 @@ public class HardcoverBookDetails {
     private String title;
     
     @JsonProperty("cached_tags")
-    private Map<String, List<CachedTag>> cachedTags;
-    
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class CachedTag {
-        private String tag;
-        
-        @JsonProperty("tagSlug")
-        private String tagSlug;
-        
-        private String category;
-        
-        @JsonProperty("categorySlug")
-        private String categorySlug;
-        
-        @JsonProperty("spoilerRatio")
-        private Double spoilerRatio;
-        
-        private Integer count;
-    }
+    private Map<String, List<HardcoverCachedTag>> cachedTags;
 }

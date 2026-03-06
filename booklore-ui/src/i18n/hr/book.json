@@ -137,7 +137,8 @@
             "readBook": "Čitaj knjigu",
             "playAudiobook": "Reproduciraj audioknjgu",
             "bookMenu": "Izbornik radnji knjige",
-            "continueReading": "Nastavi čitanje"
+            "continueReading": "Nastavi čitanje",
+            "readStatusMenu": "Promijeni status čitanja"
         }
     },
     "notes": {

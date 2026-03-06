@@ -2,10 +2,10 @@ package org.booklore.model;
 
 import lombok.Data;
 
-import java.util.Set;
+import java.util.List;
 
 @Data
 public class UploadedFileMetadata {
     private String title;
-    private Set<String> authors;
+    private List<String> authors;
 }

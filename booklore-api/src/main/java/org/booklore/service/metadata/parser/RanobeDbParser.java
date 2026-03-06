@@ -225,11 +225,11 @@ public class RanobeDbParser implements BookParser {
                         .findFirst()
                         .orElse(-1);
 
-                HashSet<String> authors = book.getEditions().stream()
+                List<String> authors = book.getEditions().stream()
                         .flatMap(edition -> edition.getStaff().stream())
                         .filter(staff -> RanobedbBookResponse.RoleType.AUTHOR.equals(staff.getRoleType()))
                         .map(staff -> staff.getRomaji() != null ? staff.getRomaji() : staff.getName())
-                        .collect(Collectors.toCollection(HashSet::new));
+                        .toList();
 
                 HashSet<String> genres = book.getSeries() != null ? book.getSeries().getTags().stream()
                         .filter(tag -> RanobedbBookResponse.TagType.GENRE.equals(tag.getTtype()))

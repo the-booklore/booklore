@@ -9,7 +9,9 @@ import org.hibernate.annotations.FetchMode;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -369,7 +371,8 @@ public class BookMetadataEntity {
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "author_id"))
     @Fetch(FetchMode.SUBSELECT)
-    private Set<AuthorEntity> authors;
+    @OrderColumn(name = "sort_order")
+    private List<AuthorEntity> authors;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(

@@ -2,7 +2,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {initializeAuthFactory} from './auth-initializer';
 import {AuthInitializationService} from './auth-initialization-service';
-import {OAuthService} from 'angular-oauth2-oidc';
 import {AuthService} from '../../shared/service/auth.service';
 import {AppSettingsService, PublicAppSettings} from '../../shared/service/app-settings.service';
 import {BehaviorSubject} from 'rxjs';
@@ -16,8 +15,7 @@ describe('initializeAuthFactory', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        {provide: OAuthService, useValue: {configure: vi.fn(), loadDiscoveryDocumentAndTryLogin: vi.fn()}},
-        {provide: AuthService, useValue: {tokenSubject: {next: vi.fn()}}},
+        {provide: AuthService, useValue: {tokenSubject: {next: vi.fn()}, getInternalAccessToken: vi.fn()}},
         {provide: AppSettingsService, useValue: {publicAppSettings$: publicSettingsSubject.asObservable()}},
         AuthInitializationService,
       ]
@@ -34,7 +32,7 @@ describe('initializeAuthFactory', () => {
     const factory = TestBed.runInInjectionContext(() => initializeAuthFactory());
     const initPromise = TestBed.runInInjectionContext(() => factory());
 
-    publicSettingsSubject.next({oidcEnabled: false, remoteAuthEnabled: false, oidcProviderDetails: null!});
+    publicSettingsSubject.next({oidcEnabled: false, remoteAuthEnabled: false, oidcProviderDetails: null!, oidcForceOnlyMode: false});
 
     await initPromise;
 
@@ -51,7 +49,7 @@ describe('initializeAuthFactory', () => {
     const factory = TestBed.runInInjectionContext(() => initializeAuthFactory());
     const initPromise = TestBed.runInInjectionContext(() => factory());
 
-    publicSettingsSubject.next({oidcEnabled: false, remoteAuthEnabled: false, oidcProviderDetails: null!});
+    publicSettingsSubject.next({oidcEnabled: false, remoteAuthEnabled: false, oidcProviderDetails: null!, oidcForceOnlyMode: false});
 
     await initPromise;
 

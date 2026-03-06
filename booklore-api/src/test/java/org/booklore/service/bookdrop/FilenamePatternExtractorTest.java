@@ -83,7 +83,7 @@ class FilenamePatternExtractorTest {
         BookMetadata result = extractor.extractFromFilename(filename, pattern);
 
         assertNotNull(result);
-        assertEquals(Set.of("John Smith"), result.getAuthors());
+        assertEquals(List.of("John Smith"), result.getAuthors());
         assertEquals("The Lost City", result.getTitle());
     }
 
@@ -288,7 +288,7 @@ class FilenamePatternExtractorTest {
         assertEquals("Chronicles of Earth", result.getSeriesName());
         assertEquals(7.0f, result.getSeriesNumber());
         assertEquals("The Final Battle", result.getTitle());
-        assertEquals(Set.of("John Smith"), result.getAuthors());
+        assertEquals(List.of("John Smith"), result.getAuthors());
     }
 
     @Test
@@ -299,7 +299,7 @@ class FilenamePatternExtractorTest {
         BookMetadata result = extractor.extractFromFilename(filename, pattern);
 
         assertNotNull(result);
-        assertEquals(Set.of("John Smith"), result.getAuthors());
+        assertEquals(List.of("John Smith"), result.getAuthors());
         assertEquals("The Lost City", result.getTitle());
         assertEquals(1949, result.getPublishedDate().getYear());
     }
@@ -312,7 +312,7 @@ class FilenamePatternExtractorTest {
         BookMetadata result = extractor.extractFromFilename(filename, pattern);
 
         assertNotNull(result);
-        assertEquals(Set.of("Smith", "John R."), result.getAuthors());
+        assertEquals(List.of("Smith", "John R."), result.getAuthors());
         assertEquals("The Lost City", result.getTitle());
     }
 
@@ -354,7 +354,7 @@ class FilenamePatternExtractorTest {
         assertEquals("Chronicles of Earth", result.getSeriesName());
         assertEquals(1.0f, result.getSeriesNumber());
         assertEquals("The Beginning", result.getTitle());
-        assertEquals(Set.of("John Smith"), result.getAuthors());
+        assertEquals(List.of("John Smith"), result.getAuthors());
     }
 
     // ===== New Placeholder Tests =====
@@ -666,7 +666,7 @@ class FilenamePatternExtractorTest {
 
         assertNotNull(result);
         assertEquals("The Lost City", result.getTitle());
-        assertEquals(Set.of("John Smith"), result.getAuthors());
+        assertEquals(List.of("John Smith"), result.getAuthors());
     }
 
     @Test

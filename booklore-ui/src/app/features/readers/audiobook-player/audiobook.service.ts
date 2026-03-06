@@ -25,7 +25,7 @@ export class AudiobookService {
   }
 
   getStreamUrl(bookId: number, trackIndex?: number): string {
-    const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
+    const token = this.authService.getInternalAccessToken();
     let url = `${this.baseUrl}/${bookId}/stream?ngsw-bypass=true&token=${encodeURIComponent(token || '')}`;
     if (trackIndex !== undefined && trackIndex !== null) {
       url += `&trackIndex=${trackIndex}`;
@@ -34,12 +34,12 @@ export class AudiobookService {
   }
 
   getTrackStreamUrl(bookId: number, trackIndex: number): string {
-    const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
+    const token = this.authService.getInternalAccessToken();
     return `${this.baseUrl}/${bookId}/track/${trackIndex}/stream?ngsw-bypass=true&token=${encodeURIComponent(token || '')}`;
   }
 
   getEmbeddedCoverUrl(bookId: number): string {
-    const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
+    const token = this.authService.getInternalAccessToken();
     return `${this.baseUrl}/${bookId}/cover?ngsw-bypass=true&token=${encodeURIComponent(token || '')}`;
   }
 

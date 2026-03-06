@@ -1,21 +1,20 @@
-import {inject, Injectable, Injector} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 import {catchError, finalize, map, shareReplay, switchMap, tap} from 'rxjs/operators';
 import {API_CONFIG} from '../../core/config/api-config';
-import {AppSettings, OidcProviderDetails} from '../model/app-settings.model';
-import {AuthService} from './auth.service';
+import {AppSettings, OidcProviderDetails, OidcTestResult} from '../model/app-settings.model';
 
 export interface PublicAppSettings {
   oidcEnabled: boolean;
   remoteAuthEnabled: boolean;
   oidcProviderDetails: OidcProviderDetails;
+  oidcForceOnlyMode: boolean;
 }
 
 @Injectable({providedIn: 'root'})
 export class AppSettingsService {
   private http = inject(HttpClient);
-  private injector = inject(Injector);
 
   private readonly apiUrl = `${API_CONFIG.BASE_URL}/api/v1/settings`;
   private readonly publicApiUrl = `${API_CONFIG.BASE_URL}/api/v1/public-settings`;
@@ -50,6 +49,10 @@ export class AppSettingsService {
     })
   );
 
+  get currentPublicSettings(): PublicAppSettings | null {
+    return this.publicAppSettingsSubject.value;
+  }
+
   private fetchAppSettings(): Observable<AppSettings> {
     return this.http.get<AppSettings>(this.apiUrl).pipe(
       tap(settings => {
@@ -74,11 +77,16 @@ export class AppSettingsService {
     );
   }
 
+  testOidcConnection(providerDetails: OidcProviderDetails): Observable<OidcTestResult> {
+    return this.http.post<OidcTestResult>(`${this.apiUrl}/oidc/test`, providerDetails);
+  }
+
   private syncPublicSettings(appSettings: AppSettings): void {
     const updatedPublicSettings: PublicAppSettings = {
       oidcEnabled: appSettings.oidcEnabled,
       remoteAuthEnabled: appSettings.remoteAuthEnabled,
-      oidcProviderDetails: appSettings.oidcProviderDetails
+      oidcProviderDetails: appSettings.oidcProviderDetails,
+      oidcForceOnlyMode: appSettings.oidcForceOnlyMode
     };
     const current = this.publicAppSettingsSubject.value;
 
@@ -86,6 +94,7 @@ export class AppSettingsService {
       !current ||
       current.oidcEnabled !== updatedPublicSettings.oidcEnabled ||
       current.remoteAuthEnabled !== updatedPublicSettings.remoteAuthEnabled ||
+      current.oidcForceOnlyMode !== updatedPublicSettings.oidcForceOnlyMode ||
       JSON.stringify(current.oidcProviderDetails) !== JSON.stringify(updatedPublicSettings.oidcProviderDetails)
     ) {
       this.publicAppSettingsSubject.next(updatedPublicSettings);
@@ -117,12 +126,6 @@ export class AppSettingsService {
           current.oidcEnabled = enabled;
           this.appSettingsSubject.next({...current});
           this.syncPublicSettings(current);
-        }
-        if (!enabled) {
-          const authService = this.injector.get(AuthService);
-          setTimeout(() => {
-            authService.clearOIDCTokens();
-          });
         }
       }),
       catchError(err => {
