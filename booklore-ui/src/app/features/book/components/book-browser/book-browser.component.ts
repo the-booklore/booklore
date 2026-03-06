@@ -52,7 +52,7 @@ import {BookNavigationService} from '../../service/book-navigation.service';
 import {BookCardOverlayPreferenceService} from './book-card-overlay-preference.service';
 import {BookSelectionService, CheckboxClickEvent} from './book-selection.service';
 import {BookBrowserQueryParamsService, VIEW_MODES} from './book-browser-query-params.service';
-import {BookBrowserEntityService} from './book-browser-entity.service';
+import {BookBrowserEntityService, EntityInfo} from './book-browser-entity.service';
 import {BookFilterOrchestrationService} from './book-filter-orchestration.service';
 import {BookBrowserScrollService} from './book-browser-scroll.service';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
@@ -127,6 +127,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
   entityType$: Observable<EntityType> | undefined;
+  private entityRouteInfo$!: Observable<EntityInfo>;
   searchTerm$ = new BehaviorSubject<string>('');
   selectedFilter = new BehaviorSubject<Record<string, string[]> | null>(null);
   selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
@@ -349,11 +350,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       const entityType = currentPath === 'all-books' ? EntityType.ALL_BOOKS : EntityType.UNSHELVED;
       this.entityType = entityType;
       this.entityType$ = of(entityType);
+      this.entityRouteInfo$ = of({entityId: NaN, entityType});
       this.entity$ = of(null);
       this.seriesCollapseFilter.setContext(null, null);
       this.pageTitle.setPageTitle(currentPath === 'all-books' ? this.t.translate('book.browser.labels.allBooks') : this.t.translate('book.browser.labels.unshelvedBooks'));
     } else {
       const routeEntityInfo$ = this.entityService.getEntityInfoFromRoute(this.activatedRoute);
+      this.entityRouteInfo$ = routeEntityInfo$;
       this.entityType$ = routeEntityInfo$.pipe(map(info => {
         this.entityType = info.entityType;
         return info.entityType;
@@ -408,15 +411,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private setupQueryParamSubscription(): void {
     combineLatest([
-      this.activatedRoute.paramMap,
+      this.entityRouteInfo$,
       this.activatedRoute.queryParamMap,
       this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
-    ]).subscribe(([_, queryParamMap, user]) => {
+    ]).subscribe(([entityInfo, queryParamMap, user]) => {
       const parseResult = this.queryParamsService.parseQueryParams(
         queryParamMap,
         user.user?.userSettings?.entityViewPreferences,
-        this.entityType,
-        this.entity?.id ?? undefined,
+        entityInfo.entityType,
+        entityInfo.entityId,
         this.bookSorter.sortOptions,
         user.user?.userSettings?.filterMode ?? 'and'
       );
@@ -470,13 +473,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
       this.visibleSortOptions = visibleFields.map(f => sortOptionsByField.get(f)).filter((o): o is SortOption => !!o);
 
 
-      // Only update sort criteria if they actually changed to avoid resetting popover/CDK state.
-      // Skip preference-based sort re-derivation when sort is already established (prevents
-      // userState$ emissions from non-sort preference changes like seriesCollapsed from
-      // resetting the sort during the race window before syncQueryParams writes to URL).
-      const sortFromUrl = !!queryParamMap.get('sort');
-      const sortNotYetEstablished = this.bookSorter.selectedSortCriteria.length === 0;
-      if ((sortFromUrl || sortNotYetEstablished) && !this.areSortCriteriaEqual(this.bookSorter.selectedSortCriteria, parseResult.sortCriteria)) {
+      if (!this.areSortCriteriaEqual(this.bookSorter.selectedSortCriteria, parseResult.sortCriteria)) {
         this.bookSorter.setSortCriteria(parseResult.sortCriteria);
       }
       this.currentViewMode = parseResult.viewMode;
@@ -489,7 +486,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.queryParamsService.syncQueryParams(
         this.currentViewMode!,
-        this.bookSorter.selectedSortCriteria,
         this.selectedFilterMode.getValue(),
         this.parsedFilters
       );
