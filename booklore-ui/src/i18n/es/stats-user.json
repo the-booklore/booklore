@@ -18,13 +18,13 @@
         "readingProgress": "Distribución de progreso de lectura",
         "readStatus": "Distribución de estado de lectura",
         "genreStats": "Estadísticas por género",
-        "completionTimeline": "Linea temporal de finalizacion",
+        "completionTimeline": "Línea temporal de finalización",
         "readingClock": "Reloj de lectura",
-        "pageTurner": "Puntuacion de enganche",
-        "completionRace": "Carrera de finalizacion de lectura",
+        "pageTurner": "Puntuación de enganche",
+        "completionRace": "Carrera de finalización de lectura",
         "readingSurvival": "Curva de supervivencia de lectura",
         "bookLength": "Extension ideal del libro",
-        "ratingTaste": "Comparacion de gusto en calificaciones",
+        "ratingTaste": "Comparación de gusto en calificaciones",
         "seriesProgress": "Seguimiento de progreso de series",
         "readingDna": "Perfil de ADN lector",
         "readingHabits": "Analisis de habitos de lectura",
@@ -63,7 +63,7 @@
         "selectWeek": "Seleccionar semana",
         "readingSession": "Sesión de lectura",
         "tooltipTime": "Hora:",
-        "tooltipDuration": "Duracion:",
+        "tooltipDuration": "Duración:",
         "tooltipFormat": "Formato:",
         "unknown": "Desconocido"
     },
@@ -74,7 +74,7 @@
         "axisGenres": "Géneros",
         "axisTimeRead": "Tiempo de lectura",
         "readingTime": "Tiempo de lectura",
-        "day": "dia",
+        "day": "día",
         "days": "días",
         "hr": "hr",
         "hrs": "hrs",
@@ -117,9 +117,9 @@
         "december": "Diciembre",
         "axisDayOfWeek": "Dia de la semana",
         "axisNumberOfSessions": "Número de sesiones",
-        "axisDurationHours": "Duracion (horas)",
+        "axisDurationHours": "Duración (horas)",
         "sessions": "Sesiones",
-        "durationHours": "Duracion (horas)",
+        "durationHours": "Duración (horas)",
         "tooltipSessions": "{{ label }}: {{ value }} sesión",
         "tooltipSessionsPlural": "{{ label }}: {{ value }} sesiones"
     },
@@ -145,9 +145,9 @@
         "december": "Diciembre",
         "axisHourOfDay": "Hora del dia",
         "axisNumberOfSessions": "Número de sesiones",
-        "axisAvgDuration": "Duracion promedio (min)",
+        "axisAvgDuration": "Duración promedio (min)",
         "sessions": "Sesiones",
-        "avgDurationMin": "Duracion promedio (min)",
+        "avgDurationMin": "Duración promedio (min)",
         "tooltipSessions": "{{ label }}: {{ value }} sesión",
         "tooltipSessionsPlural": "{{ label }}: {{ value }} sesiones",
         "tooltipMin": "{{ label }}: {{ value }} min"
@@ -155,17 +155,17 @@
     "personalRating": {
         "title": "Distribución de calificaciones personales",
         "tooltip": "Muestra cuantos libros has calificado con cada puntuación del 1 al 10. Te ayuda a ver si tiendes a calificar generosamente, severamente o agruparte alrededor de una puntuación particular. Solo se incluyen libros con calificación personal.",
-        "description": "Libros por tu calificacion (1–10)",
-        "axisPersonalRating": "Calificacion personal",
+        "description": "Libros por tu calificación (1–10)",
+        "axisPersonalRating": "Calificación personal",
         "axisNumberOfBooks": "Numero de libros",
-        "booksByPersonalRating": "Libros por calificacion personal",
-        "tooltipTitle": "Calificacion personal: {{ label }}",
+        "booksByPersonalRating": "Libros por calificación personal",
+        "tooltipTitle": "Calificación personal: {{ label }}",
         "tooltipBook": "{{ value }} libro",
         "tooltipBooks": "{{ value }} libros"
     },
     "readStatus": {
         "title": "Distribución de estado de lectura",
-        "tooltip": "Desglosa toda tu biblioteca por estado de lectura: leido, leyendo, parcialmente leido, pausado, abandonado, no leere y sin leer. Te da una vista rapida de cuanto de tu coleccion has recorrido.",
+        "tooltip": "Desglosa toda tu biblioteca por estado de lectura: leído, leyendo, parcialmente leído, pausado, abandonado, no leeré y sin leer. Te da una vista rápida de cuanto de tu colección has recorrido.",
         "description": "Libros por su estado de lectura",
         "unread": "Sin leer",
         "currentlyReading": "Leyendo actualmente",
@@ -185,7 +185,7 @@
         "personalityTraits": "Tus rasgos de personalidad lectora",
         "readingDnaProfile": "Perfil de ADN lector",
         "tooltipPersonality": "Personalidad {{ label }}",
-        "tooltipScore": "Puntuacion: {{ score }}/100",
+        "tooltipScore": "Puntuación: {{ score }}/100",
         "tooltipDefaultDescription": "Tu rasgo de personalidad lectora",
         "traits": {
             "adventurous": "Aventurero",
@@ -206,7 +206,7 @@
             "perfectionist": {
                 "low": "Mantienes muchos libros en progreso o sin terminar",
                 "mid": "Terminas la mayoria de los libros y favoreces lecturas de calidad",
-                "high": "Casi siempre terminas lo que empiezas y buscas libros de alta calificacion"
+                "high": "Casi siempre terminas lo que empiezas y buscas libros de alta calificación"
             },
             "intellectual": {
                 "low": "Tu lectura se inclina hacia temas más ligeros",
@@ -230,8 +230,8 @@
             },
             "nostalgic": {
                 "low": "Principalmente lees publicaciones contemporáneas",
-                "mid": "Aprecias una mezcla de obras clasicas y modernas",
-                "high": "Tienes un profundo amor por la literatura clasica y obras antiguas"
+                "mid": "Aprecias una mezcla de obras clásicas y modernas",
+                "high": "Tienes un profundo amor por la literatura clásica y obras antiguas"
             },
             "ambitious": {
                 "low": "Lees a un ritmo casual con libros más cortos",
@@ -242,12 +242,12 @@
     },
     "readingHabits": {
         "title": "Analisis de habitos de lectura",
-        "tooltip": "Un grafico de radar que analiza tu comportamiento de lectura en 8 dimensiones. Consistencia mide la regularidad de finalizaciones a lo largo del tiempo. Completismo rastrea la tasa de finalizacion vs. abandono. Metodologia verifica si lees series en orden. Las puntuaciones se derivan de tu actividad de lectura, fechas y datos de progreso.",
+        "tooltip": "Un gráfico de radar que analiza tu comportamiento de lectura en 8 dimensiones. Consistencia mide la regularidad de finalizaciones a lo largo del tiempo. Completismo rastrea la tasa de finalización vs. abandono. Metodología verifica si lees series en orden. Las puntuaciones se derivan de tu actividad de lectura, fechas y datos de progreso.",
         "description": "Tus patrones de comportamiento de lectura en 8 dimensiones",
         "habitPatterns": "Tus patrones de habitos de lectura",
         "readingHabitsProfile": "Perfil de habitos de lectura",
         "tooltipHabit": "Habito {{ label }}",
-        "tooltipScore": "Puntuacion: {{ score }}/100",
+        "tooltipScore": "Puntuación: {{ score }}/100",
         "tooltipDefaultDescription": "Tu patron de habito de lectura",
         "habits": {
             "consistency": "Consistencia",
@@ -324,15 +324,15 @@
         "tooltipLabel": "{{ value }} libro{{ plural }} ({{ description }}) - {{ percentage }}%"
     },
     "ratingTaste": {
-        "title": "Comparacion de gusto en calificaciones",
+        "title": "Comparación de gusto en calificaciones",
         "tooltip": "Cada punto es un libro graficado por su calificación externa (eje X, ej. Goodreads/Amazon) versus tu calificación personal (eje Y). Los libros en la diagonal significan que coincides con la mayoría. Arriba de la línea significa que calificaste más alto; abajo significa que calificaste más bajo. Los cuadrantes muestran tus patrones de gusto.",
         "description": "Compara tus calificaciones personales contra calificaciones externas (Goodreads, Amazon, etc.)",
         "booksAnalyzed": "libros analizados",
-        "axisExternalRating": "Calificacion externa (escala 1-5)",
-        "axisPersonalRating": "Tu calificacion personal (normalizada de 1-10)",
+        "axisExternalRating": "Calificación externa (escala 1-5)",
+        "axisPersonalRating": "Tu calificación personal (normalizada de 1-10)",
         "tooltipUnknownBook": "Libro desconocido",
-        "tooltipYourRating": "Tu calificacion: {{ rating }}/10 ({{ normalized }}/5)",
-        "tooltipExternalRating": "Calificacion externa: {{ rating }}/5",
+        "tooltipYourRating": "Tu calificación: {{ rating }}/10 ({{ normalized }}/5)",
+        "tooltipExternalRating": "Calificación externa: {{ rating }}/5",
         "tooltipDifference": "Diferencia: {{ diff }} (en escala de 5 puntos)",
         "tooltipCategory": "Categoria: {{ category }}",
         "quadrantHiddenGems": "Joyas ocultas",
@@ -364,7 +364,7 @@
         "completed": "Completadas",
         "notStarted": "No iniciadas",
         "sortByProgress": "Ordenar por progreso",
-        "sortByRating": "Ordenar por calificacion",
+        "sortByRating": "Ordenar por calificación",
         "sortByBooks": "Ordenar por libros",
         "sortByName": "Ordenar por nombre",
         "read": "Leidos",
@@ -380,18 +380,18 @@
         "axisCompletion": "Completado %",
         "tooltipRead": "Leidos: {{ read }}/{{ owned }} propios",
         "tooltipSeriesTotal": "Total de la serie: {{ total }} libros",
-        "tooltipYourRating": "Tu calificacion: {{ rating }}/10",
+        "tooltipYourRating": "Tu calificación: {{ rating }}/10",
         "noMatchingSearch": "No hay series que coincidan con \"{{ term }}\"",
         "pageInfo": "Pagina {{ current }} de {{ total }}",
         "noData": "No se encontraron series en tu biblioteca.",
         "noDataHint": "Los libros necesitan metadatos de serie para aparecer aqui."
     },
     "pageTurner": {
-        "title": "Puntuacion de enganche",
+        "title": "Puntuación de enganche",
         "tooltip": "Cada libro obtiene una 'puntuación de enganche' (0-100) basada en como cambio tu comportamiento de lectura con el tiempo. Mide si tus sesiones se alargaron, si los intervalos entre sesiones se acortaron y si tuviste una ráfaga de lectura al final. Puntuaciones más altas significan que el libro te atrapó más mientras leías.",
         "description": "Que tan atrapante fue cada libro segun tus patrones de lectura",
         "mostGripping": "Más atrapante",
-        "avgGripScore": "Puntuacion promedio",
+        "avgGripScore": "Puntuación promedio",
         "guiltyPleasure": "Placer culposo",
         "sessionDurationTrend": "Tendencia de duración de sesión",
         "gapBetweenSessionsTrend": "Tendencia de intervalo entre sesiones",
@@ -401,11 +401,11 @@
         "steady": "Estable",
         "shrinking": "Reduciendose",
         "growing": "Creciendo",
-        "axisGripScore": "Puntuacion de enganche (0-100)",
-        "gripScore": "Puntuacion de enganche",
+        "axisGripScore": "Puntuación de enganche (0-100)",
+        "gripScore": "Puntuación de enganche",
         "tooltipGripScore": "Puntuacion de enganche: {{ score }}/100",
         "tooltipSessions": "Sesiones: {{ count }}",
-        "tooltipAvgSession": "Sesion promedio: {{ minutes }}min",
+        "tooltipAvgSession": "Sesión promedio: {{ minutes }}min",
         "tooltipRating": "Calificación: {{ rating }}/10"
     },
     "completionRace": {
@@ -424,7 +424,7 @@
         "axisProgress": "Progreso (%)",
         "tooltipDayProgress": "Día {{ day }}: {{ progress }}% de progreso",
         "noData": "No se encontraron libros completados con sesiones de lectura para {{ year }}.",
-        "noDataHint": "Completa algunos libros con sesiones de lectura rastreadas para ver tus carreras de finalizacion."
+        "noDataHint": "Completa algunos libros con sesiones de lectura rastreadas para ver tus carreras de finalización."
     },
     "readingSurvival": {
         "title": "Curva de supervivencia de lectura",
@@ -459,15 +459,15 @@
     "bookLength": {
         "title": "Extension ideal del libro",
         "tooltip": "Cada punto es un libro que has calificado, graficado por su número de páginas (eje X) y tu calificación personal (eje Y). Los colores indican estado de lectura: verde = leído, azul = leyendo, rojo = abandonado. La línea de tendencia muestra si tiendes a calificar mejor los libros más largos o más cortos. El 'punto ideal' es el rango de páginas donde tu calificación promedio es más alta.",
-        "description": "Como la extension del libro se relaciona con tus calificaciones personales",
+        "description": "Cómo la extensión del libro se relaciona con tus calificaciones personales",
         "booksAnalyzed": "libros analizados",
         "sweetSpot": "Punto ideal",
         "highestRated": "Mejor calificado",
         "axisPageCount": "Número de páginas",
-        "axisPersonalRating": "Calificacion personal",
+        "axisPersonalRating": "Calificación personal",
         "tooltipUnknownBook": "Libro desconocido",
         "tooltipPages": "Paginas: {{ count }}",
-        "tooltipRating": "Calificacion: {{ rating }}/10",
+        "tooltipRating": "Calificación: {{ rating }}/10",
         "tooltipStatus": "Estado: {{ status }}",
         "statusRead": "Leido",
         "statusReading": "Leyendo",
@@ -477,8 +477,8 @@
     },
     "bookFlow": {
         "title": "Flujo de libros",
-        "tooltip": "Un diagrama aluvial que muestra como fluyen los libros desde cuando se agregaron (izquierda) a traves de su estado de lectura (centro) hasta su rango de calificacion (derecha). Sigue los flujos para ver patrones en como tus adquisiciones se convierten en lecturas y calificaciones.",
-        "description": "Como fluyen los libros desde la adquisicion al estado y la calificacion",
+        "tooltip": "Un diagrama aluvial que muestra como fluyen los libros desde cuando se agregaron (izquierda) a través de su estado de lectura (centro) hasta su rango de calificación (derecha). Sigue los flujos para ver patrones en como tus adquisiciones se convierten en lecturas y calificaciones.",
+        "description": "Como fluyen los libros desde la adquisición al estado y la calificación",
         "totalBooks": "Total de libros",
         "busiestQuarter": "Trimestre más activo",
         "topStatus": "Estado principal",
@@ -486,14 +486,14 @@
         "completionRate": "Completados",
         "colAdded": "Agregado",
         "colStatus": "Estado",
-        "colRating": "Calificacion",
+        "colRating": "Calificación",
         "noData": "No se encontraron libros en tu biblioteca.",
         "noDataHint": "Agrega algunos libros para ver el diagrama de flujo."
     },
     "readingDebt": {
         "title": "Deuda de lectura",
-        "tooltip": "Cada mes muestra libros agregados (rojo) y libros terminados (verde) en los ultimos 12 meses. La linea amarilla rastrea tu acumulacion pendiente. Una linea ascendente significa que tu pila por leer esta creciendo.",
-        "description": "Libros agregados vs terminados mensualmente con acumulacion pendiente",
+        "tooltip": "Cada mes muestra libros agregados (rojo) y libros terminados (verde) en los últimos 12 meses. La línea amarilla rastrea tu acumulación pendiente. Una línea ascendente significa que tu pila por leer está creciendo.",
+        "description": "Libros agregados vs terminados mensualmente con acumulación pendiente",
         "booksAdded": "Libros agregados",
         "booksFinished": "Libros terminados",
         "backlog": "Pendientes",
@@ -508,7 +508,7 @@
         "title": "Era de publicación vs calificación",
         "tooltip": "Cada línea representa una década de publicación, mostrando cuantos libros de esa era le diste a cada rango de calificación. Compara líneas para ver que décadas calificas más alto.",
         "description": "Qué décadas de publicación calificas más alto",
-        "bestDecade": "Mejor decada",
+        "bestDecade": "Mejor década",
         "avgRating": "Calif. promedio",
         "booksRated": "Libros calificados",
         "noData": "No hay suficientes libros calificados con fechas de publicación.",
@@ -516,8 +516,8 @@
     },
     "sessionArchetypes": {
         "title": "Arquetipos de sesiones",
-        "tooltip": "Cada punto es una sesion de lectura graficada por hora del dia (X) y duracion en minutos (Y), coloreada por dia de la semana. Los grupos naturales revelan tus patrones de lectura.",
-        "description": "Tus patrones de sesiones de lectura por hora y duracion",
+        "tooltip": "Cada punto es una sesión de lectura graficada por hora del día (X) y duración en minutos (Y), coloreada por día de la semana. Los grupos naturales revelan tus patrones de lectura.",
+        "description": "Tus patrones de sesiones de lectura por hora y duración",
         "sessions": "Sesiones",
         "dominantType": "Tipo dominante",
         "archetype_morning": "Lector matutino",
@@ -525,6 +525,6 @@
         "archetype_evening": "Lector nocturno",
         "archetype_night": "Noctambulo",
         "noData": "No se encontraron sesiones de lectura para este año.",
-        "noDataHint": "Rastrea sesiones de lectura para descubrir tus arquetipos de sesion."
+        "noDataHint": "Rastrea sesiones de lectura para descubrir tus arquetipos de sesión."
     }
 }
