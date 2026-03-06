@@ -44,7 +44,7 @@
             "nameExistsDetail": "Ця назва бібліотеки вже зайнята.",
             "updatedSummary": "Бібліотеку оновлено",
             "updatedDetail": "Бібліотеку успішно оновлено.",
-            "updateFailedSummary": "Помилка оновлення",
+            "updateFailedSummary": "Не вдалося оновити",
             "updateFailedDetail": "Під час оновлення бібліотеки виникла помилка. Будь ласка, спробуйте ще раз.",
             "createdSummary": "Бібліотеку створено",
             "createdDetail": "Бібліотеку успішно створено.",
