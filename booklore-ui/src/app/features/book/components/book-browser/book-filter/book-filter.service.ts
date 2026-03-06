@@ -13,7 +13,7 @@ import {Filter, FILTER_CONFIGS, FILTER_EXTRACTORS, FilterType, FilterValue, NUME
 import {filterBooksByFilters} from '../filters/sidebar-filter';
 import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
-const MAX_FILTER_ITEMS = 100;
+const MAX_FILTER_ITEMS = Number.MAX_SAFE_INTEGER;
 
 @Injectable({providedIn: 'root'})
 export class BookFilterService {
@@ -171,9 +171,13 @@ export class BookFilterService {
     }
 
     const filters = Array.from(filterMap.values());
-    const sorted = sortMode === 'sortIndex'
-      ? this.sortFiltersBySortIndex(filters)
-      : this.sortFiltersByCount(filters);
+    const sorted = filters.sort((a, b) =>
+	String(a.value.name ?? a.value).localeCompare(
+	String(b.value.name ?? b.value),
+	undefined,
+	{ sensitivity: 'base' }
+	)
+	);
 
     return sorted.slice(0, MAX_FILTER_ITEMS);
   }
