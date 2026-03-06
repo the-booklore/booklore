@@ -77,10 +77,10 @@ export class AuthService {
     const refreshToken = this.getInternalRefreshToken();
     this.http.post<{ logoutUrl: string | null }>(`${this.apiUrl}/logout`, {refreshToken}).subscribe({
       next: (response) => {
-        this.clearSession();
         if (response.logoutUrl) {
           window.location.href = response.logoutUrl;
         } else {
+          this.clearSession();
           this.router.navigate(['/login']).then(() => window.location.reload());
         }
       },
@@ -94,6 +94,10 @@ export class AuthService {
   forceLogout(reason: string): void {
     this.clearSession();
     this.router.navigate(['/login'], {queryParams: {reason}});
+  }
+
+  clearSessionOnLoginPage(): void {
+    this.clearSession();
   }
 
   private clearSession(): void {

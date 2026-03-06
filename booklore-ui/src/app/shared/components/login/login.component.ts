@@ -54,6 +54,8 @@ export class LoginComponent implements OnInit {
   private static readonly MAX_REDIRECT_COUNT = 3;
 
   ngOnInit(): void {
+    this.authService.clearSessionOnLoginPage();
+
     this.route.queryParams.pipe(take(1)).subscribe(params => {
       if (params['reason'] === 'session_revoked') {
         this.infoMessage = this.translocoService.translate('auth.login.sessionRevoked');
