@@ -21,7 +21,7 @@
         "usernameRequired": "El nombre de usuario es obligatorio.",
         "password": "Contraseña KOReader",
         "passwordDesc": "Tu contraseña para autenticarte con el servicio de sincronización KOReader.",
-        "passwordMinLength": "La contraseña debe tener al menos 6 caracteres.",
+        "passwordMinLength": "La contraseña debe tener al menos 8 caracteres.",
         "settingsManagement": "Gestión de ajustes",
         "settingsManagementDesc": "Guarda tus credenciales o edita los ajustes existentes.",
         "accessDenied": "El acceso a la sincronización KOReader está restringido.",

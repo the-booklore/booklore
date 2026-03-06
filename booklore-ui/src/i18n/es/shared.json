@@ -143,7 +143,7 @@
             "usernameRequired": "El nombre de usuario es obligatorio",
             "nameRequired": "El nombre es obligatorio",
             "emailRequired": "Se requiere un correo electrónico válido",
-            "passwordMinLength": "Se requieren al menos 6 caracteres",
+            "passwordMinLength": "Se requieren al menos 8 caracteres",
             "confirmPasswordRequired": "La confirmación de contraseña es obligatoria",
             "passwordsMismatch": "Las contraseñas no coinciden"
         },

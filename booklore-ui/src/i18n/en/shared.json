@@ -143,7 +143,7 @@
       "usernameRequired": "Username is required",
       "nameRequired": "Name is required",
       "emailRequired": "Valid email is required",
-      "passwordMinLength": "Minimum 6 characters required",
+      "passwordMinLength": "Minimum 8 characters required",
       "confirmPasswordRequired": "Password confirmation is required",
       "passwordsMismatch": "Passwords do not match"
     },

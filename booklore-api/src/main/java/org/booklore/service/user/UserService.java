@@ -170,6 +170,6 @@ public class UserService {
     }
 
     private boolean meetsMinimumPasswordRequirements(String password) {
-        return password != null && password.length() >= 6;
+        return password != null && password.length() >= 8;
     }
 }

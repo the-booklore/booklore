@@ -21,7 +21,7 @@
     "usernameRequired": "Username is required.",
     "password": "KOReader Password",
     "passwordDesc": "Your password for authenticating with the KOReader sync service.",
-    "passwordMinLength": "Password must be at least 6 characters.",
+    "passwordMinLength": "Password must be at least 8 characters.",
     "settingsManagement": "Settings Management",
     "settingsManagementDesc": "Save your credentials or edit existing settings.",
     "accessDenied": "Access to KOReader sync is restricted.",
