@@ -246,6 +246,10 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             creatorRoleById.put(refines.substring(1), content.toLowerCase());
                         }
 
+                        if ("rendition:layout".equals(prop) && "pre-paginated".equals(content)) {
+                            builderMeta.isFixedLayout(true);
+                        }
+
                         if (!seriesFound && ((BookLoreMetadata.NS_PREFIX + ":series").equals(prop) || "calibre:series".equals(name) || "belongs-to-collection".equals(prop))) {
                             builderMeta.seriesName(content);
                             seriesFound = true;
@@ -443,22 +447,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             log.error("Failed to read metadata from EPUB file {}: {}", epubFile.getName(), e.getMessage(), e);
             return null;
         }
-    }
-
-    public boolean checkEpubFixedLayout(File epubFile) {
-        try {
-            Document doc = EpubReaderService.getOPFDocument(epubFile);
-            NodeList manifestItems = doc.getElementsByTagName("meta");
-
-            for (int i = 0; i < manifestItems.getLength(); i++) {
-                Element item = (Element) manifestItems.item(i);
-                String prop = item.getAttribute("property");
-                if (prop.equals("rendition:layout") && item.getTextContent().equals("pre-paginated")) return true;
-            }
-        } catch (Exception e) {
-            log.debug("Failed to determine if epub is pre-paginated for Kobo sync: {}", e.getMessage());
-        }
-        return false;
     }
 
     private static void safeParseInt(String value, java.util.function.IntConsumer setter) {
