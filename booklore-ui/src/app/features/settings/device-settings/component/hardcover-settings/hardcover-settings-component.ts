@@ -11,6 +11,7 @@ import {ExternalDocLinkComponent} from '../../../../../shared/components/externa
 import {UserService} from '../../../user-management/user.service';
 import {HardcoverSyncSettingsService} from './hardcover-sync-settings.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {Checkbox} from 'primeng/checkbox';
 
 @Component({
   standalone: true,
@@ -22,7 +23,8 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
     Button,
     ToastModule,
     ExternalDocLinkComponent,
-    TranslocoDirective
+    TranslocoDirective,
+    Checkbox
   ],
   providers: [MessageService],
   templateUrl: './hardcover-settings-component.html',
@@ -39,6 +41,7 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
   hardcoverSyncEnabled = false;
   hardcoverApiKey = '';
   showHardcoverApiKey = false;
+  overwriteExistingData = false;
 
   ngOnInit() {
     let prevHasPermission = false;
@@ -93,10 +96,7 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
   }
 
   private hardcoverImport() {
-    this.hardcoverSyncSettingsService.startImport({
-      hardcoverSyncEnabled: this.hardcoverSyncEnabled,
-      hardcoverApiKey: this.hardcoverApiKey
-    }).subscribe({
+    this.hardcoverSyncSettingsService.startImport(this.overwriteExistingData).subscribe({
       next: () => {
         this.messageService.add({severity: 'success', summary: this.t.translate('settingsDevice.hardcover.importStarted')});
       },
