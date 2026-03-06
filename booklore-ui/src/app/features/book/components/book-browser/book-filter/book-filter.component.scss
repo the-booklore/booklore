@@ -22,7 +22,7 @@
 }
 
 .filter-header {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
@@ -54,6 +54,7 @@
   gap: 0.25rem;
   max-width: 100%;
   overflow: hidden;
+  min-width: 0;
 }
 
 .filter-label-text {
@@ -69,6 +70,7 @@
   color: var(--primary-color);
   flex-shrink: 0;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .filter-list {
@@ -84,6 +86,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  max-width: 97%;
 
   &.active {
     color: var(--primary-color);
