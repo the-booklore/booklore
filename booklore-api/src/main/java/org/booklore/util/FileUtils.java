@@ -122,6 +122,33 @@ public class FileUtils {
         }
     }
 
+    private static final List<String> COVER_IMAGE_BASENAMES = List.of("cover", "folder", "image");
+    private static final List<String> IMAGE_EXTENSIONS = List.of("jpg", "jpeg", "png", "webp", "gif", "bmp");
+
+    /**
+     * Find a cover image file in a folder by looking for well-known filenames
+     * (cover, folder, image) with common image extensions.
+     */
+    public Optional<Path> findCoverImageInFolder(Path folderPath) {
+        try {
+            if (folderPath == null || !Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
+                return Optional.empty();
+            }
+            for (String baseName : COVER_IMAGE_BASENAMES) {
+                for (String ext : IMAGE_EXTENSIONS) {
+                    Path candidate = folderPath.resolve(baseName + "." + ext);
+                    if (Files.isRegularFile(candidate)) {
+                        return Optional.of(candidate);
+                    }
+                }
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("Failed to find cover image in folder [{}]: {}", folderPath, e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
     /**
      * Check if a filename is an audio file.
      */

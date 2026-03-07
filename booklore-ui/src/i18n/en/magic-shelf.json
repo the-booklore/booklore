@@ -265,6 +265,15 @@
     "comicCoverArtists": "Cover Artists",
     "comicEditors": "Editors"
   },
+  "importJson": {
+    "buttonLabel": "Import",
+    "placeholder": "{\n  \"type\": \"group\",\n  \"join\": \"and\",\n  \"rules\": [\n    { \"field\": \"readStatus\", \"operator\": \"equals\", \"value\": \"READING\" }\n  ]\n}",
+    "apply": "Apply",
+    "emptyError": "Please paste a JSON configuration first.",
+    "parseError": "Invalid JSON. Please check the syntax and try again.",
+    "structureError": "Invalid structure. The JSON must have \"type\": \"group\" and a \"rules\" array.",
+    "successDetail": "Rules imported successfully. Review and save when ready."
+  },
   "toast": {
     "validationErrorSummary": "Validation Error",
     "validationErrorDetail": "You must add at least one valid rule before saving.",

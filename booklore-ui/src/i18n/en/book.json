@@ -279,6 +279,7 @@
     "magicShelf": {
       "optionsLabel": "Options",
       "editMagicShelf": "Edit Magic Shelf",
+      "exportJson": "Copy JSON",
       "deleteMagicShelf": "Delete Magic Shelf"
     },
     "confirm": {
@@ -298,6 +299,7 @@
       "shelfDeleteFailedDetail": "Failed to delete shelf",
       "magicShelfDeletedDetail": "Magic shelf was deleted",
       "magicShelfDeleteFailedDetail": "Failed to delete shelf",
+      "magicShelfJsonCopiedDetail": "Magic shelf JSON copied to clipboard",
       "failedSummary": "Failed"
     },
     "loading": {

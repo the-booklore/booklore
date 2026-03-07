@@ -271,14 +271,11 @@ export class BookBrowserQueryParamsService {
 
   syncQueryParams(
     viewMode: string,
-    sortCriteria: SortOption[],
     filterMode: BookFilterMode,
     filters: Record<string, string[]>
   ): void {
     const queryParams: Record<string, string | number | null | undefined> = {
       [QUERY_PARAMS.VIEW]: viewMode,
-      [QUERY_PARAMS.SORT]: this.serializeSort(sortCriteria),
-      [QUERY_PARAMS.DIRECTION]: null,  // Remove legacy direction param
       [QUERY_PARAMS.FMODE]: filterMode,
     };
 

@@ -245,6 +245,17 @@ export class LibraryShelfMenuService {
             }
           },
           {
+            label: this.t.translate('book.shelfMenuService.magicShelf.exportJson'),
+            icon: 'pi pi-copy',
+            command: () => {
+              if (entity?.filterJson) {
+                navigator.clipboard.writeText(entity.filterJson).then(() => {
+                  this.messageService.add({severity: 'success', summary: this.t.translate('common.success'), detail: this.t.translate('book.shelfMenuService.toast.magicShelfJsonCopiedDetail')});
+                });
+              }
+            }
+          },
+          {
             separator: true
           },
           {

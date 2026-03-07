@@ -76,7 +76,7 @@ export function doesBookMatchFilter(
         ? filterValues.some(val => book.metadata?.seriesName?.trim() === val)
         : filterValues.every(val => book.metadata?.seriesName?.trim() === val);
     case 'bookType':
-      return filterValues.includes(book.primaryFile?.bookType);
+      return book.isPhysical ? filterValues.includes('PHYSICAL') : filterValues.includes(book.primaryFile?.bookType);
     case 'readStatus':
       return doesBookMatchReadStatus(book, filterValues);
     case 'personalRating':
