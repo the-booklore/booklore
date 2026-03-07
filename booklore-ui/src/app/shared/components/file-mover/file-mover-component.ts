@@ -254,6 +254,7 @@ export class FileMoverComponent implements OnDestroy {
     const values: Record<string, string> = {
       authors: this.sanitize(meta.authors?.join(', ') || 'Unknown Author'),
       title: this.sanitize(meta.title || 'Untitled'),
+      subtitle: this.sanitize(meta.subtitle || ''),
       year: this.formatYear(meta.publishedDate),
       series: this.sanitize(meta.seriesName || ''),
       seriesIndex: this.formatSeriesIndex(meta.seriesNumber ?? undefined),
