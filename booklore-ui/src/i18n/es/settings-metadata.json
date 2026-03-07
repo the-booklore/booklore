@@ -12,6 +12,8 @@
         "sectionDesc": "Configura cómo se escriben los metadatos en los archivos originales y cómo se mueven o renombran los archivos cuando cambian los metadatos.",
         "networkWarningTitle": "Advertencia de almacenamiento en red:",
         "networkWarning": "Estas funciones modifican y mueven directamente los archivos de libros en el disco (incluyendo la reescritura de metadatos y el renombramiento de archivos). Están diseñadas solo para sistemas de archivos locales. Usarlas en NAS o almacenamiento en la nube no está probado y puede provocar corrupción de archivos, escrituras incompletas o pérdida permanente de datos. No se darán soporte a problemas de Github relacionados con almacenamiento en red.",
+        "networkModeTitle": "Modo de almacenamiento en red activo:",
+        "networkModeDesc": "Esta instancia está configurada para almacenamiento en red (DISK_TYPE=NETWORK). Todas las funciones de escritura y reorganización de archivos están deshabilitadas. Los metadatos se almacenan solo en la base de datos y los archivos de libros nunca se modifican.",
         "unsupportedNote": "La escritura de metadatos <b>no es compatible</b> con los formatos FB2, AZW3 y MOBI.",
         "writeEpub": "Escribir metadatos en EPUB",
         "writeEpubDesc": "Escribir metadatos directamente en archivos EPUB al editar información del libro.",

@@ -41,11 +41,13 @@ export class LibraryMetadataSettingsComponent implements OnInit {
   activePanel: number | null = null;
   sidecarExporting: Record<number, boolean> = {};
   sidecarImporting: Record<number, boolean> = {};
+  isLocalStorage = true;
   private cachedDefaultOptions: Record<number, MetadataRefreshOptions> = {};
 
   ngOnInit() {
     this.appSettingsService.appSettings$.subscribe(appSettings => {
       if (appSettings) {
+        this.isLocalStorage = appSettings.diskType === 'LOCAL';
         this.defaultMetadataOptions = appSettings.defaultMetadataRefreshOptions;
         this.cachedDefaultOptions = {};
         this.initializeLibraryOptions(appSettings);

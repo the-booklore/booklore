@@ -85,7 +85,7 @@ DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
 DB_USER=booklore
 DB_PASSWORD=ChangeMe_BookLoreApp_2025!
 
-# Storage: LOCAL (default) or NETWORK (for NFS/SMB, disables file reorganization)
+# Storage: LOCAL (default) or NETWORK (disables file operations, see Network Storage section below)
 DISK_TYPE=LOCAL
 
 # MariaDB
@@ -112,6 +112,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_USERNAME=${DB_USER}
       - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DISK_TYPE=${DISK_TYPE}
     depends_on:
       mariadb:
         condition: service_healthy
@@ -157,6 +158,15 @@ docker compose up -d
 ```
 
 Open **http://localhost:6060**, create your admin account, and start building your library.
+
+---
+
+## ⚠️ Network Storage (NAS / NFS / SMB / CIFS)
+
+> [!CAUTION]
+> BookLore's file operations (metadata writing, file renaming, file organization) are built for **local file systems only**. Network-attached storage (NAS, NFS, SMB/CIFS mounts, cloud-backed FUSE, etc.) is **unsupported and untested**. Mount options, network latency, caching, and filesystem semantics are all outside BookLore's control and can cause silent file corruption, incomplete writes, missing files, and other unpredictable behavior. **Issues related to network storage will be closed without investigation.**
+
+If your book files live on network storage, set `DISK_TYPE=NETWORK` in your `.env` file. This puts BookLore into **network storage mode**, which disables all file write and reorganization features. Metadata is stored in the database only and your files are never modified. This is the only supported configuration for network storage.
 
 ---
 

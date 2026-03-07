@@ -4,10 +4,8 @@ import {FormsModule} from '@angular/forms';
 import {AppSettingKey, AppSettings, MetadataPersistenceSettings, SaveToOriginalFileSettings, SidecarSettings} from '../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {SettingsHelperService} from '../../../../shared/service/settings-helper.service';
-import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 import {Tooltip} from 'primeng/tooltip';
-import {AsyncPipe} from '@angular/common';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
@@ -16,7 +14,6 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
     ToggleSwitch,
     FormsModule,
     Tooltip,
-    AsyncPipe,
     TranslocoDirective
   ],
   templateUrl: './metadata-persistence-settings-component.html',
@@ -53,11 +50,13 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
     }
   };
 
+  isNetworkStorage = false;
+
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly settingsHelper = inject(SettingsHelperService);
   private t = inject(TranslocoService);
 
-  readonly appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
+  private readonly appSettings$ = this.appSettingsService.appSettings$;
 
   ngOnInit(): void {
     this.loadSettings();
@@ -101,6 +100,7 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
   }
 
   private initializeSettings(settings: AppSettings): void {
+    this.isNetworkStorage = settings.diskType !== 'LOCAL';
     if (settings.metadataPersistenceSettings) {
       const persistenceSettings = settings.metadataPersistenceSettings;
 

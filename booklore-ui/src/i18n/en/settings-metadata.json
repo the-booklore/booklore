@@ -12,6 +12,8 @@
     "sectionDesc": "Configure how metadata is written to original files and how files are moved or renamed when metadata changes.",
     "networkWarningTitle": "Network Storage Warning:",
     "networkWarning": "These features directly modify and move book files on disk (including rewriting metadata and renaming files). They are designed for local file systems only. Using them on NAS or cloud-backed storage is untested and may lead to file corruption, incomplete writes, or permanent data loss. Github issues related to network storage will not be supported.",
+    "networkModeTitle": "Network Storage Mode Active:",
+    "networkModeDesc": "This instance is configured for network storage (DISK_TYPE=NETWORK). All file write and reorganization features are disabled. Metadata is stored in the database only and your book files are never modified.",
     "unsupportedNote": "Writing metadata is <b>not supported</b> for FB2, AZW3, and MOBI formats.",
     "writeEpub": "Write Metadata to EPUB",
     "writeEpubDesc": "Write metadata directly into EPUB files when editing book information.",

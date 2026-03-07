@@ -1,5 +1,6 @@
 package org.booklore.service.metadata;
 
+import org.booklore.config.AppProperties;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
@@ -38,6 +39,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class BookMetadataUpdaterTest {
 
+    @Mock private AppProperties appProperties;
     @Mock private AuthorRepository authorRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private MoodRepository moodRepository;
@@ -64,6 +66,7 @@ class BookMetadataUpdaterTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(appProperties.isLocalStorage()).thenReturn(true);
         metadataEntity = BookMetadataEntity.builder()
                 .bookId(1L)
                 .title("Original Title")
@@ -1839,6 +1842,34 @@ class BookMetadataUpdaterTest {
                 java.nio.file.Files.deleteIfExists(tempDir);
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Nested
+    class NetworkStorageGating {
+
+        @Test
+        void updateBookMetadata_networkStorage_skipsFileWrite() {
+            when(appProperties.isLocalStorage()).thenReturn(false);
+
+            BookFileEntity bookFile = BookFileEntity.builder()
+                    .bookType(BookFileType.EPUB)
+                    .isBookFormat(true)
+                    .build();
+            bookEntity.setBookFiles(new ArrayList<>(List.of(bookFile)));
+
+            BookMetadata newMeta = BookMetadata.builder().title("New Title").build();
+            MetadataUpdateContext context = buildContext(newMeta, MetadataReplaceMode.REPLACE_ALL);
+
+            try (MockedStatic<MetadataChangeDetector> mcd = mockStatic(MetadataChangeDetector.class)) {
+                mockSettingsAndChangeDetector(mcd, true, true);
+                mcd.when(() -> MetadataChangeDetector.hasValueChangesForFileWrite(any(), any(), any())).thenReturn(true);
+
+                updater.setBookMetadata(context);
+
+                verify(metadataWriterFactory, never()).getWriter(any());
+                verify(bookRepository).save(bookEntity);
             }
         }
     }

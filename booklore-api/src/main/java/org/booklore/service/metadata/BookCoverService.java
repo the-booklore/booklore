@@ -1,5 +1,6 @@
 package org.booklore.service.metadata;
 
+import org.booklore.config.AppProperties;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.AuthorEntity;
@@ -42,6 +43,7 @@ public class BookCoverService {
 
     private static final int BATCH_SIZE = 100;
 
+    private final AppProperties appProperties;
     private final BookRepository bookRepository;
     private final NotificationService notificationService;
     private final AppSettingService appSettingService;
@@ -540,9 +542,11 @@ public class BookCoverService {
     }
 
     private void writeCoverToBookFile(BookEntity bookEntity, BiConsumer<MetadataWriter, BookEntity> writerAction) {
+        if (!appProperties.isLocalStorage()) {
+            return;
+        }
         var primaryFile = bookEntity.getPrimaryBookFile();
         if (primaryFile == null) {
-            // Physical book with no files - skip writing cover to file
             return;
         }
 
@@ -560,6 +564,9 @@ public class BookCoverService {
     }
 
     private void writeAudiobookCoverToFile(BookEntity bookEntity, BiConsumer<MetadataWriter, BookEntity> writerAction) {
+        if (!appProperties.isLocalStorage()) {
+            return;
+        }
         var audiobookFile = bookEntity.getBookFiles().stream()
                 .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
                 .findFirst()
