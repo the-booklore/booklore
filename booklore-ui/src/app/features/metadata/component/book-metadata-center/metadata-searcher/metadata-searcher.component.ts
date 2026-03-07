@@ -68,6 +68,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy, OnChanges {
   private metadataByProvider: Map<string, BookMetadata[]> = new Map();
   private providerCompletionStatus: Map<string, boolean> = new Map();
   private pendingAutoSearch = false;
+  private providerInitialized = false;
 
   constructor() {
     this.form = this.formBuilder.group({
@@ -148,12 +149,18 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedProviderFilters = new Set(['all']);
     this.bookId = book.id;
 
-    this.form.patchValue({
-      provider: this.providers,
+    const formUpdate: Record<string, any> = {
       title: book.metadata?.title ?? '',
       author: book.metadata?.authors?.[0] ?? '',
       isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
-    });
+    };
+
+    if (!this.providerInitialized) {
+      formUpdate['provider'] = this.providers;
+      this.providerInitialized = true;
+    }
+
+    this.form.patchValue(formUpdate);
   }
 
   private updateFormFromBook(book: Book): void {
