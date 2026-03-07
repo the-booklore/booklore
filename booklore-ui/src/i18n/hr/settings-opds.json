@@ -1,6 +1,6 @@
 {
     "title": "OPDS konfiguracija",
-    "description": "Upravljajte OPDS vjerodajnicama i kontrolirajte kako se vaša kolekcija knjiga dijeli s aplikacijama za čitanje. Prema zadanim postavkama, sve knjižnice kojima imate pristup bit će uključene u OPDS feed.",
+    "description": "Upravljajte OPDS vjerodajnicama i kontrolirajte kako se vaša zbirka dijeli s aplikacijama za čitanje. Prema zadanim postavkama, sve zbirke kojima imate pristup bit će uključene u OPDS feed.",
     "server": {
         "sectionTitle": "Postavke poslužitelja",
         "sectionDesc": "Omogućite ili onemogućite OPDS i Komga API usluge za kontrolu pristupa vašoj kolekciji knjiga.",
