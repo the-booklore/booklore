@@ -6,6 +6,10 @@
           <label>{{ t('authorNameLabel') }}</label>
           <input pInputText type="text" [(ngModel)]="searchQuery" [placeholder]="t('authorNamePlaceholder')" class="search-input"/>
         </div>
+        <div class="field">
+          <label>{{ t('asinLabel') }}</label>
+          <input pInputText type="text" [(ngModel)]="asinQuery" [placeholder]="t('asinPlaceholder')" class="search-input"/>
+        </div>
         <div class="field region-field">
           <label>{{ t('regionLabel') }}</label>
           <p-select
@@ -22,7 +26,7 @@
             icon="pi pi-search"
             (onClick)="search()"
             [loading]="searching"
-            [disabled]="!searchQuery.trim()">
+            [disabled]="!canSearch">
           </p-button>
         </div>
       </div>
