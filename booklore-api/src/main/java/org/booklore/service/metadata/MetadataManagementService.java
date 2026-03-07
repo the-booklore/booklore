@@ -1,5 +1,6 @@
 package org.booklore.service.metadata;
 
+import org.booklore.config.AppProperties;
 import org.booklore.model.dto.FileMoveResult;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.*;
@@ -25,6 +26,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MetadataManagementService {
 
+    private final AppProperties appProperties;
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
     private final MoodRepository moodRepository;
@@ -61,13 +63,15 @@ public class MetadataManagementService {
 
                 var primaryFile = book.getPrimaryBookFile();
                 BookFileType bookType = primaryFile.getBookType();
-                Optional<MetadataWriter> writerOpt = metadataWriterFactory.getWriter(bookType);
-                if (writerOpt.isPresent()) {
-                    File file = book.getFullFilePath().toFile();
-                    writerOpt.get().saveMetadataToFile(file, metadata, null, null);
-                    String newHash = FileFingerprint.generateHash(book.getFullFilePath());
-                    primaryFile.setCurrentHash(newHash);
-                    bookModified = true;
+                if (appProperties.isLocalStorage()) {
+                    Optional<MetadataWriter> writerOpt = metadataWriterFactory.getWriter(bookType);
+                    if (writerOpt.isPresent()) {
+                        File file = book.getFullFilePath().toFile();
+                        writerOpt.get().saveMetadataToFile(file, metadata, null, null);
+                        String newHash = FileFingerprint.generateHash(book.getFullFilePath());
+                        primaryFile.setCurrentHash(newHash);
+                        bookModified = true;
+                    }
                 }
 
                 if (moveFile) {

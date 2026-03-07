@@ -82,7 +82,7 @@ class FileMoveServiceOrderingTest {
 
     @BeforeEach
     void setUp() {
-        when(appProperties.getDiskType()).thenReturn("LOCAL");
+        when(appProperties.isLocalStorage()).thenReturn(true);
         
         doAnswer(invocation -> {
             Consumer<TransactionStatus> action = invocation.getArgument(0);
