@@ -755,7 +755,7 @@ class BookCoverServiceTest {
                             return null;
                         });
 
-                service.regenerateCovers();
+                service.regenerateCovers(false);
 
                 verify(bookRepository).save(book);
                 assertThat(book.getMetadata().getCoverUpdatedOn()).isNotNull();
@@ -779,9 +779,52 @@ class BookCoverServiceTest {
                             return null;
                         });
 
-                service.regenerateCovers();
+                service.regenerateCovers(false);
 
                 verify(bookRepository, never()).save(any());
+            }
+        }
+
+        @Test
+        void missingOnlySkipsBooksWithExistingCover() {
+            BookEntity withCover = buildBook(1L, false);
+            withCover.setBookCoverHash("existingHash");
+            BookFileEntity ebookFile1 = BookFileEntity.builder()
+                    .bookType(BookFileType.EPUB).isBookFormat(true).build();
+            withCover.setBookFiles(List.of(ebookFile1));
+            withCover.setLibrary(LibraryEntity.builder().build());
+
+            BookEntity withoutCover = buildBook(2L, false);
+            withoutCover.setBookCoverHash(null);
+            BookFileEntity ebookFile2 = BookFileEntity.builder()
+                    .bookType(BookFileType.EPUB).isBookFormat(true).build();
+            withoutCover.setBookFiles(List.of(ebookFile2));
+            withoutCover.setLibrary(LibraryEntity.builder().build());
+
+            when(bookQueryService.getAllFullBookEntities()).thenReturn(List.of(withCover, withoutCover));
+
+            BookFileProcessor processor = mock(BookFileProcessor.class);
+            when(transactionTemplate.execute(any())).thenAnswer(inv -> {
+                var callback = inv.getArgument(0, org.springframework.transaction.support.TransactionCallback.class);
+                return callback.doInTransaction(null);
+            });
+            when(bookRepository.findById(2L)).thenReturn(Optional.of(withoutCover));
+            when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(processor);
+            when(processor.generateCover(withoutCover)).thenReturn(true);
+            when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of());
+
+            try (MockedStatic<SecurityContextVirtualThread> secMock = mockStatic(SecurityContextVirtualThread.class)) {
+                secMock.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                        .thenAnswer(inv -> {
+                            inv.<Runnable>getArgument(0).run();
+                            return null;
+                        });
+
+                service.regenerateCovers(true);
+
+                verify(transactionTemplate, times(1)).execute(any());
+                verify(bookRepository).save(withoutCover);
+                verify(bookRepository, never()).findById(1L);
             }
         }
 
@@ -799,7 +842,7 @@ class BookCoverServiceTest {
                             return null;
                         });
 
-                service.regenerateCovers();
+                service.regenerateCovers(false);
 
                 verify(transactionTemplate, never()).execute(any());
             }

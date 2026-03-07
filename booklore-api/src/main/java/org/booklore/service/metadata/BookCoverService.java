@@ -293,18 +293,20 @@ public class BookCoverService {
     }
 
     /**
-     * Regenerate covers for all books.
+     * Regenerate covers for all books, optionally only for books with missing covers.
      */
-    public void regenerateCovers() {
+    public void regenerateCovers(boolean missingOnly) {
         SecurityContextVirtualThread.runWithSecurityContext(() -> {
             try {
                 List<BookRegenerationInfo> books = bookQueryService.getAllFullBookEntities().stream()
                         .filter(book -> !isCoverLocked(book))
                         .filter(book -> book.getPrimaryBookFile() != null)
+                        .filter(book -> !missingOnly || book.getBookCoverHash() == null)
                         .map(book -> new BookRegenerationInfo(book.getId(), book.getMetadata().getTitle(), book.getPrimaryBookFile().getBookType(), false))
                         .toList();
                 int total = books.size();
-                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books"));
+                String label = missingOnly ? "missing" : "all";
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books (" + label + ")"));
 
                 int current = 1;
                 List<Long> refreshedIds = new ArrayList<>();

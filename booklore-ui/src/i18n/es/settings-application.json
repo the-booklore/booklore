@@ -4,8 +4,9 @@
     "covers": {
         "sectionTitle": "Imagen de portada del libro",
         "regenerate": "Regenerar portadas",
-        "regenerateBtn": "Regenerar",
-        "regenerateDesc": "Regenera las imágenes de portada de todos los libros a partir de las portadas incrustadas en el archivo.",
+        "regenerateAllBtn": "Regenerar todas",
+        "regenerateMissingBtn": "Regenerar faltantes",
+        "regenerateDesc": "Regenera las imágenes de portada de todos los libros a partir de las portadas incrustadas en el archivo. Usa \"Regenerar faltantes\" para generar portadas solo para libros que aún no tienen una.",
         "regenerateStarted": "Regeneración de portadas iniciada",
         "regenerateStartedDetail": "Las portadas de los libros se están regenerando.",
         "regenerateError": "Error al iniciar la regeneración de portadas.",

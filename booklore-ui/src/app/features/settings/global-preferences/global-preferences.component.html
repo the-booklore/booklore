@@ -51,14 +51,15 @@
           <div class="setting-info">
             <div class="setting-label-row">
               <label class="setting-label">{{ t('covers.regenerate') }}</label>
-              <p-button
-                [label]="t('covers.regenerateBtn')"
+              <p-splitbutton
+                [label]="t('covers.regenerateAllBtn')"
                 icon="pi pi-refresh"
                 outlined="true"
                 size="small"
                 severity="info"
+                [model]="regenerateCoverMenuItems"
                 (onClick)="regenerateCovers()">
-              </p-button>
+              </p-splitbutton>
             </div>
             <p class="setting-description">
               <i class="pi pi-info-circle"></i>
