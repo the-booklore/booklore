@@ -429,11 +429,10 @@ public class FileMoveService {
     }
 
     private void validateLocalStorage() {
-        String diskType = appProperties.getDiskType();
-        if (!"LOCAL".equalsIgnoreCase(diskType)) {
+        if (!appProperties.isLocalStorage()) {
             throw new IllegalStateException(
                     "File move operations are only supported on local storage. " +
-                    "Current disk type is configured as: " + diskType + ". " +
+                    "Current disk type is configured as: " + appProperties.getDiskType() + ". " +
                     "If you are using local storage, set DISK_TYPE=LOCAL in your environment."
             );
         }

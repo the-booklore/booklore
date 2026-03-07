@@ -1,6 +1,7 @@
 package org.booklore.service.metadata.sidecar;
 
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.config.AppProperties;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.dto.settings.SidecarSettings;
 import org.booklore.model.dto.sidecar.SidecarMetadata;
@@ -22,12 +23,14 @@ import java.nio.file.StandardCopyOption;
 @Service
 public class SidecarMetadataWriter {
 
+    private final AppProperties appProperties;
     private final SidecarMetadataMapper mapper;
     private final FileService fileService;
     private final AppSettingService appSettingService;
     private final ObjectMapper objectMapper;
 
-    public SidecarMetadataWriter(SidecarMetadataMapper mapper, FileService fileService, AppSettingService appSettingService) {
+    public SidecarMetadataWriter(AppProperties appProperties, SidecarMetadataMapper mapper, FileService fileService, AppSettingService appSettingService) {
+        this.appProperties = appProperties;
         this.mapper = mapper;
         this.fileService = fileService;
         this.appSettingService = appSettingService;
@@ -38,6 +41,9 @@ public class SidecarMetadataWriter {
     }
 
     public void writeSidecarMetadata(BookEntity book) {
+        if (!appProperties.isLocalStorage()) {
+            return;
+        }
         if (book == null || book.getMetadata() == null) {
             log.warn("Cannot write sidecar metadata: book or metadata is null");
             return;
