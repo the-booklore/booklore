@@ -41,6 +41,7 @@
         "toggleZoom": "Alternar zoom (ajustar página / tamaño real)",
         "doubleTap": "Doble toque",
         "toggleSlideshow": "Alternar presentación / reproducción automática",
+        "toggleMagnifier": "Alternar lupa",
         "showHelpDialog": "Mostrar este diálogo de ayuda"
     },
     "footer": {
@@ -76,6 +77,8 @@
         "exitFullscreenLabel": "Salir de pantalla completa",
         "fullscreenLabel": "Pantalla completa",
         "keyboardShortcutsLabel": "Atajos de teclado",
+        "enableMagnifier": "Lupa (M)",
+        "disableMagnifier": "Desactivar lupa (M)",
         "settings": "Ajustes",
         "closeReader": "Cerrar lector"
     },

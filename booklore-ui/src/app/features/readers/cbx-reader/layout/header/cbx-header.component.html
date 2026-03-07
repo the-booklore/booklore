@@ -15,6 +15,9 @@
   </div>
   <span class="book-title">{{ bookTitle }}</span>
   <div class="header-right">
+    <button class="icon-btn desktop-only" (click)="onToggleMagnifier()" [title]="state.isMagnifierActive ? ('readerCbx.header.disableMagnifier' | transloco) : ('readerCbx.header.enableMagnifier' | transloco)" [class.active]="state.isMagnifierActive">
+      <app-reader-icon name="magnifier" [size]="20" />
+    </button>
     <button class="icon-btn desktop-only" (click)="onToggleSlideshow()" [title]="state.isSlideshowActive ? ('readerCbx.header.stopSlideshow' | transloco) : ('readerCbx.header.startSlideshow' | transloco)" [class.active]="state.isSlideshowActive">
       <app-reader-icon [name]="state.isSlideshowActive ? 'pause' : 'play'" [size]="20" />
     </button>
