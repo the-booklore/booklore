@@ -44,47 +44,42 @@ import {CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray} from 
 export class ViewPreferencesComponent implements OnInit, OnDestroy {
   private t = inject(TranslocoService);
 
-  sortOptions: {label: string; field: string; translationKey: string}[] = [
-    {label: 'Title', field: 'title', translationKey: 'sortTitle'},
-    {label: 'File Name', field: 'fileName', translationKey: 'sortFileName'},
-    {label: 'File Path', field: 'filePath', translationKey: 'sortFilePath'},
-    {label: 'Author', field: 'author', translationKey: 'sortAuthor'},
-    {label: 'Author (Surname)', field: 'authorSurnameVorname', translationKey: 'sortAuthorSurname'},
-    {label: 'Series Name', field: 'seriesName', translationKey: 'sortSeriesName'},
-    {label: 'Series Number', field: 'seriesNumber', translationKey: 'sortSeriesNumber'},
-    {label: 'Last Read', field: 'lastReadTime', translationKey: 'sortLastRead'},
-    {label: 'Personal Rating', field: 'personalRating', translationKey: 'sortPersonalRating'},
-    {label: 'Added On', field: 'addedOn', translationKey: 'sortAddedOn'},
-    {label: 'File Size', field: 'fileSizeKb', translationKey: 'sortFileSize'},
-    {label: 'Locked', field: 'locked', translationKey: 'sortLocked'},
-    {label: 'Publisher', field: 'publisher', translationKey: 'sortPublisher'},
-    {label: 'Published Date', field: 'publishedDate', translationKey: 'sortPublishedDate'},
-    {label: 'Read Status', field: 'readStatus', translationKey: 'sortReadStatus'},
-    {label: 'Date Finished', field: 'dateFinished', translationKey: 'sortDateFinished'},
-    {label: 'Reading Progress', field: 'readingProgress', translationKey: 'sortReadingProgress'},
-    {label: 'Book Type', field: 'bookType', translationKey: 'sortBookType'},
-    {label: 'Amazon Rating', field: 'amazonRating', translationKey: 'sortAmazonRating'},
-    {label: 'Amazon #', field: 'amazonReviewCount', translationKey: 'sortAmazonCount'},
-    {label: 'Goodreads Rating', field: 'goodreadsRating', translationKey: 'sortGoodreadsRating'},
-    {label: 'Goodreads #', field: 'goodreadsReviewCount', translationKey: 'sortGoodreadsCount'},
-    {label: 'Hardcover Rating', field: 'hardcoverRating', translationKey: 'sortHardcoverRating'},
-    {label: 'Hardcover #', field: 'hardcoverReviewCount', translationKey: 'sortHardcoverCount'},
-    {label: 'Ranobedb Rating', field: 'ranobedbRating', translationKey: 'sortRanobedbRating'},
-    {label: 'Narrator', field: 'narrator', translationKey: 'sortNarrator'},
-    {label: 'Pages', field: 'pageCount', translationKey: 'sortPages'},
-    {label: 'Random', field: 'random', translationKey: 'sortRandom'},
+  private readonly sortOptionDefs: {field: string; translationKey: string}[] = [
+    {field: 'title', translationKey: 'sortTitle'},
+    {field: 'fileName', translationKey: 'sortFileName'},
+    {field: 'filePath', translationKey: 'sortFilePath'},
+    {field: 'author', translationKey: 'sortAuthor'},
+    {field: 'authorSurnameVorname', translationKey: 'sortAuthorSurname'},
+    {field: 'seriesName', translationKey: 'sortSeriesName'},
+    {field: 'seriesNumber', translationKey: 'sortSeriesNumber'},
+    {field: 'lastReadTime', translationKey: 'sortLastRead'},
+    {field: 'personalRating', translationKey: 'sortPersonalRating'},
+    {field: 'addedOn', translationKey: 'sortAddedOn'},
+    {field: 'fileSizeKb', translationKey: 'sortFileSize'},
+    {field: 'locked', translationKey: 'sortLocked'},
+    {field: 'publisher', translationKey: 'sortPublisher'},
+    {field: 'publishedDate', translationKey: 'sortPublishedDate'},
+    {field: 'readStatus', translationKey: 'sortReadStatus'},
+    {field: 'dateFinished', translationKey: 'sortDateFinished'},
+    {field: 'readingProgress', translationKey: 'sortReadingProgress'},
+    {field: 'bookType', translationKey: 'sortBookType'},
+    {field: 'amazonRating', translationKey: 'sortAmazonRating'},
+    {field: 'amazonReviewCount', translationKey: 'sortAmazonCount'},
+    {field: 'goodreadsRating', translationKey: 'sortGoodreadsRating'},
+    {field: 'goodreadsReviewCount', translationKey: 'sortGoodreadsCount'},
+    {field: 'hardcoverRating', translationKey: 'sortHardcoverRating'},
+    {field: 'hardcoverReviewCount', translationKey: 'sortHardcoverCount'},
+    {field: 'ranobedbRating', translationKey: 'sortRanobedbRating'},
+    {field: 'narrator', translationKey: 'sortNarrator'},
+    {field: 'pageCount', translationKey: 'sortPages'},
+    {field: 'random', translationKey: 'sortRandom'},
   ];
 
-  entityTypeOptions: {label: string; value: string; translationKey: string}[] = [
-    {label: 'Library', value: 'LIBRARY', translationKey: 'entityLibrary'},
-    {label: 'Shelf', value: 'SHELF', translationKey: 'entityShelf'},
-    {label: 'Magic Shelf', value: 'MAGIC_SHELF', translationKey: 'entityMagicShelf'}
-  ];
+  sortOptions: {label: string; field: string; translationKey: string}[] = [];
 
-  viewModeOptions: {label: string; value: string; translationKey: string}[] = [
-    {label: 'Grid', value: 'GRID', translationKey: 'viewGrid'},
-    {label: 'Table', value: 'TABLE', translationKey: 'viewTable'}
-  ];
+  entityTypeOptions: {label: string; value: string; translationKey: string}[] = [];
+
+  viewModeOptions: {label: string; value: string; translationKey: string}[] = [];
 
   libraryOptions: { label: string; value: number }[] = [];
   shelfOptions: { label: string; value: number }[] = [];
@@ -128,6 +123,20 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
 
   ngOnInit(): void {
+    this.rebuildTranslatedLabels();
+    this.t.langChanges$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.rebuildTranslatedLabels();
+      this.allSortAsOptions = this.sortOptions.map(o => ({
+        label: this.t.translate('settingsView.librarySort.' + o.translationKey),
+        field: o.field,
+        direction: SortDirection.ASCENDING
+      }));
+      this.globalSortAsOptions = this.toSortOptions(this.sortCriteria);
+      this.overrides.forEach(o => {
+        o.sortCriteriaAsOptions = this.toSortOptions(o.sortCriteria);
+      });
+    });
+
     combineLatest([
       this.userService.userState$.pipe(filter(userState => !!userState?.user && userState.loaded), take(1)),
       this.libraryService.libraryState$.pipe(filter(libraryState => !!libraryState?.libraries && libraryState.loaded), take(1)),
@@ -194,6 +203,23 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
         value: s.id!
       }));
     });
+  }
+
+  private rebuildTranslatedLabels(): void {
+    this.sortOptions = this.sortOptionDefs.map(o => ({
+      label: this.t.translate('settingsView.librarySort.' + o.translationKey),
+      field: o.field,
+      translationKey: o.translationKey
+    }));
+    this.entityTypeOptions = [
+      {label: this.t.translate('settingsView.librarySort.entityLibrary'), value: 'LIBRARY', translationKey: 'entityLibrary'},
+      {label: this.t.translate('settingsView.librarySort.entityShelf'), value: 'SHELF', translationKey: 'entityShelf'},
+      {label: this.t.translate('settingsView.librarySort.entityMagicShelf'), value: 'MAGIC_SHELF', translationKey: 'entityMagicShelf'}
+    ];
+    this.viewModeOptions = [
+      {label: this.t.translate('settingsView.librarySort.viewGrid'), value: 'GRID', translationKey: 'viewGrid'},
+      {label: this.t.translate('settingsView.librarySort.viewTable'), value: 'TABLE', translationKey: 'viewTable'}
+    ];
   }
 
   ngOnDestroy(): void {

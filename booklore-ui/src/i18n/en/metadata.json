@@ -498,12 +498,19 @@
     "deleting": "Deleting...",
     "tabs": {
       "author": "Author",
+      "authors": "Authors",
       "genre": "Genre",
+      "genres": "Genres",
       "mood": "Mood",
+      "moods": "Moods",
       "tag": "Tag",
+      "tags": "Tags",
       "series": "Series",
+      "seriesPlural": "Series",
       "publisher": "Publisher",
-      "language": "Language"
+      "publishers": "Publishers",
+      "language": "Language",
+      "languages": "Languages"
     },
     "placeholders": {
       "searchAuthors": "Search authors...",

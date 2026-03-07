@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'shared.supportDialog'">
 <div class="support-dialog-container">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-heart header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Support BookLore</h2>
-      <p class="panel-description">From a solo dev who loves books</p>
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('subtitle') }}</p>
     </div>
     <p-button
       icon="pi pi-times"
@@ -19,15 +20,15 @@
 
   <div class="dialog-content">
     <p class="intro">
-      BookLore is built and maintained by a single developer who genuinely loves books. If it's made organizing your library a little more enjoyable, here are a few ways to support the project and keep it going.
+      {{ t('intro') }}
     </p>
 
     <div class="support-cards">
       <a class="support-card star-card" href="https://github.com/booklore-app/booklore" target="_blank" rel="noopener noreferrer">
         <i class="pi pi-github card-icon"></i>
         <div class="card-text">
-          <span class="card-title">Star on GitHub</span>
-          <span class="card-desc">A star goes a long way. It helps new people find BookLore and keeps me motivated.</span>
+          <span class="card-title">{{ t('starTitle') }}</span>
+          <span class="card-desc">{{ t('starDesc') }}</span>
         </div>
         <i class="pi pi-arrow-up-right card-arrow"></i>
       </a>
@@ -35,8 +36,8 @@
       <a class="support-card collective-card" href="https://opencollective.com/booklore" target="_blank" rel="noopener noreferrer">
         <i class="pi pi-heart card-icon"></i>
         <div class="card-text">
-          <span class="card-title">Open Collective</span>
-          <span class="card-desc">Recurring support that helps cover hosting and keeps development sustainable.</span>
+          <span class="card-title">{{ t('collectiveTitle') }}</span>
+          <span class="card-desc">{{ t('collectiveDesc') }}</span>
         </div>
         <i class="pi pi-arrow-up-right card-arrow"></i>
       </a>
@@ -44,13 +45,14 @@
       <a class="support-card kofi-card" href="https://ko-fi.com/bookloredev" target="_blank" rel="noopener noreferrer">
         <i class="pi pi-gift card-icon"></i>
         <div class="card-text">
-          <span class="card-title">Buy me a coffee</span>
-          <span class="card-desc">A one-time tip to fuel late-night coding sessions. Every bit is appreciated!</span>
+          <span class="card-title">{{ t('kofiTitle') }}</span>
+          <span class="card-desc">{{ t('kofiDesc') }}</span>
         </div>
         <i class="pi pi-arrow-up-right card-arrow"></i>
       </a>
     </div>
 
-    <p class="closing">Thank you for being part of the BookLore community.</p>
+    <p class="closing">{{ t('closing') }}</p>
   </div>
 </div>
+</ng-container>

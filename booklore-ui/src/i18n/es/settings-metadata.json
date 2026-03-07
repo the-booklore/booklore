@@ -65,7 +65,38 @@
     },
     "fieldSelector": {
         "sectionTitle": "Campos habilitados en el editor y selector de metadatos",
-        "sectionDesc": "Selecciona qué campos de metadatos mostrar al editar información del libro o seleccionar metadatos de proveedores. Los campos deshabilitados se ocultarán de la interfaz."
+        "sectionDesc": "Selecciona qué campos de metadatos mostrar al editar información del libro o seleccionar metadatos de proveedores. Los campos deshabilitados se ocultarán de la interfaz.",
+        "providers": {
+            "amazon": "Amazon",
+            "googleBooks": "Google Books",
+            "goodreads": "Goodreads",
+            "hardcover": "Hardcover",
+            "audible": "Audible",
+            "comicvine": "Comicvine",
+            "lubimyczytac": "Lubimyczytac",
+            "ranobedb": "Ranobedb"
+        },
+        "fields": {
+            "asin": "Amazon ASIN",
+            "amazonRating": "Valoración de Amazon",
+            "amazonReviewCount": "Reseñas de Amazon",
+            "googleId": "ID de Google Books",
+            "goodreadsId": "ID de Goodreads",
+            "goodreadsRating": "Valoración de Goodreads",
+            "goodreadsReviewCount": "Reseñas de Goodreads",
+            "hardcoverId": "ID de Hardcover",
+            "hardcoverBookId": "ID de libro Hardcover",
+            "hardcoverRating": "Valoración de Hardcover",
+            "hardcoverReviewCount": "Reseñas de Hardcover",
+            "comicvineId": "ID de Comicvine",
+            "lubimyczytacId": "ID de Lubimyczytac",
+            "lubimyczytacRating": "Valoración de Lubimyczytac",
+            "ranobedbId": "ID de Ranobedb",
+            "ranobedbRating": "Valoración de Ranobedb",
+            "audibleId": "ID de Audible",
+            "audibleRating": "Valoración de Audible",
+            "audibleReviewCount": "Reseñas de Audible"
+        }
     },
     "publicReviews": {
         "sectionTitle": "Reseñas públicas",
@@ -91,6 +122,34 @@
         "saveSuccess": "Pesos guardados correctamente",
         "saveError": "Error al guardar los pesos",
         "recalcSuccess": "Todas las puntuaciones de coincidencia de libros se recalcularon correctamente.",
-        "recalcError": "Error al recalcular las puntuaciones de coincidencia."
+        "recalcError": "Error al recalcular las puntuaciones de coincidencia.",
+        "fields": {
+            "title": "Título",
+            "subtitle": "Subtítulo",
+            "authors": "Autores",
+            "description": "Descripción",
+            "publisher": "Editorial",
+            "publishedDate": "Fecha de publicación",
+            "categories": "Categorías",
+            "coverImage": "Imagen de portada",
+            "seriesName": "Nombre de serie",
+            "seriesNumber": "Número de serie",
+            "seriesTotal": "Total de serie",
+            "language": "Idioma",
+            "isbn13": "ISBN-13",
+            "isbn10": "ISBN-10",
+            "pageCount": "Número de páginas",
+            "amazonRating": "Valoración de Amazon",
+            "amazonReviewCount": "Valoración de Amazon #",
+            "goodreadsRating": "Valoración de Goodreads",
+            "goodreadsReviewCount": "Valoración de Goodreads #",
+            "hardcoverRating": "Valoración de Hardcover",
+            "hardcoverReviewCount": "Valoración de Hardcover #",
+            "audibleRating": "Valoración de Audible",
+            "audibleReviewCount": "Valoración de Audible #",
+            "doubanRating": "Valoración de Douban",
+            "doubanReviewCount": "Valoración de Douban #",
+            "ranobedbRating": "Valoración de Ranobedb"
+        }
     }
 }

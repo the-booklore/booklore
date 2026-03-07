@@ -498,12 +498,19 @@
         "deleting": "Eliminando...",
         "tabs": {
             "author": "Autor",
+            "authors": "Autores",
             "genre": "Género",
+            "genres": "Géneros",
             "mood": "Estado de ánimo",
+            "moods": "Estados de ánimo",
             "tag": "Etiqueta",
+            "tags": "Etiquetas",
             "series": "Serie",
+            "seriesPlural": "Series",
             "publisher": "Editorial",
-            "language": "Idioma"
+            "publishers": "Editoriales",
+            "language": "Idioma",
+            "languages": "Idiomas"
         },
         "placeholders": {
             "searchAuthors": "Buscar autores...",
