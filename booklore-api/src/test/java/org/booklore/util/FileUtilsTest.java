@@ -197,6 +197,135 @@ class FileUtilsTest {
 
     // ========== isSeriesFolder Tests ==========
 
+    // ========== findCoverImageInFolder Tests ==========
+
+    @Test
+    void testFindCoverImageInFolder_coverJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPng_found() throws IOException {
+        Files.createFile(tempDir.resolve("cover.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.png", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_imageJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("image.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("image.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_folderJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("folder.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPrioritizedOverFolder() throws IOException {
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPrioritizedOverImage() throws IOException {
+        Files.createFile(tempDir.resolve("image.png"));
+        Files.createFile(tempDir.resolve("cover.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.png", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_folderPrioritizedOverImage() throws IOException {
+        Files.createFile(tempDir.resolve("image.jpg"));
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("folder.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_jpgPrioritizedOverPng() throws IOException {
+        Files.createFile(tempDir.resolve("cover.png"));
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_webpSupported() throws IOException {
+        Files.createFile(tempDir.resolve("cover.webp"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.webp", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_noCoverImage_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("book.epub"));
+        Files.createFile(tempDir.resolve("metadata.opf"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_emptyFolder_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_nonExistentPath_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(tempDir.resolve("nonexistent"));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_nullPath_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(null);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_unsupportedExtension_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("cover.tiff"));
+        Files.createFile(tempDir.resolve("cover.svg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_directoryNamedCover_ignored() throws IOException {
+        Files.createDirectories(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_unrelatedImageName_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("artwork.jpg"));
+        Files.createFile(tempDir.resolve("poster.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    // ========== isSeriesFolder Tests ==========
+
     @Test
     void testIsSeriesFolder_distinctTitles_returnsTrue() {
         List<Path> files = List.of(

@@ -53,7 +53,14 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.AUDIOBOOK);
         setBookMetadata(bookEntity, libraryFile.isFolderBased());
-        if (generateCover(bookEntity, libraryFile.isFolderBased())) {
+        boolean coverGenerated = generateCover(bookEntity, libraryFile.isFolderBased());
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateAudiobookCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             bookEntity.getMetadata().setAudiobookCoverUpdatedOn(Instant.now());
             bookEntity.setAudiobookCoverHash(BookCoverUtils.generateCoverHash());
         }
