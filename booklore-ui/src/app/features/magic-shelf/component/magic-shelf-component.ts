@@ -1,5 +1,5 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {AbstractControl, FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Button} from 'primeng/button';
 import {NgTemplateOutlet} from '@angular/common';
 import {InputText} from 'primeng/inputtext';
@@ -24,6 +24,7 @@ import {BookService} from '../../book/service/book.service';
 import {ShelfService} from '../../book/service/shelf.service';
 import {Shelf} from '../../book/model/shelf.model';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {TextareaModule} from 'primeng/textarea';
 
 export type RuleOperator =
   | 'equals'
@@ -230,6 +231,7 @@ const READ_STATUS_KEYS: Record<string, string> = {
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     NgTemplateOutlet,
     InputText,
     Select,
@@ -241,7 +243,8 @@ const READ_STATUS_KEYS: Record<string, string> = {
     CheckboxModule,
     IconDisplayComponent,
     Tooltip,
-    TranslocoDirective
+    TranslocoDirective,
+    TextareaModule
   ]
 })
 export class MagicShelfComponent implements OnInit {
@@ -450,6 +453,8 @@ export class MagicShelfComponent implements OnInit {
   shelfId: number | null = null;
   isAdmin: boolean = false;
   editMode!: boolean;
+  showImportPanel = false;
+  importJson = '';
 
   libraryService = inject(LibraryService);
   shelfService = inject(ShelfService);
@@ -792,6 +797,40 @@ export class MagicShelfComponent implements OnInit {
   onIsPublicChange(event: CheckboxChangeEvent): void {
     const checked = event.checked ?? false;
     this.form.get('isPublic')?.setValue(checked);
+  }
+
+  toggleImportPanel() {
+    this.showImportPanel = !this.showImportPanel;
+    if (this.showImportPanel) {
+      this.importJson = '';
+    }
+  }
+
+  applyImportedJson() {
+    const trimmed = this.importJson.trim();
+    if (!trimmed) {
+      this.messageService.add({severity: 'warn', summary: this.t.translate('magicShelf.toast.validationErrorSummary'), detail: this.t.translate('magicShelf.importJson.emptyError')});
+      return;
+    }
+
+    let parsed: GroupRule;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      this.messageService.add({severity: 'error', summary: this.t.translate('magicShelf.toast.errorSummary'), detail: this.t.translate('magicShelf.importJson.parseError')});
+      return;
+    }
+
+    if (parsed.type !== 'group' || !Array.isArray(parsed.rules)) {
+      this.messageService.add({severity: 'error', summary: this.t.translate('magicShelf.toast.errorSummary'), detail: this.t.translate('magicShelf.importJson.structureError')});
+      return;
+    }
+
+    const builtGroup = this.buildGroupFromData(parsed);
+    this.form.setControl('group', builtGroup);
+    this.showImportPanel = false;
+    this.importJson = '';
+    this.messageService.add({severity: 'success', summary: this.t.translate('magicShelf.toast.successSummary'), detail: this.t.translate('magicShelf.importJson.successDetail')});
   }
 
   submit() {

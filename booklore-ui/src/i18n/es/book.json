@@ -279,6 +279,7 @@
         "magicShelf": {
             "optionsLabel": "Opciones",
             "editMagicShelf": "Editar estante mágico",
+            "exportJson": "Copiar JSON",
             "deleteMagicShelf": "Eliminar estante mágico"
         },
         "confirm": {
@@ -298,6 +299,7 @@
             "shelfDeleteFailedDetail": "Error al eliminar el estante",
             "magicShelfDeletedDetail": "Estante mágico eliminado",
             "magicShelfDeleteFailedDetail": "Error al eliminar el estante",
+            "magicShelfJsonCopiedDetail": "JSON del estante mágico copiado al portapapeles",
             "failedSummary": "Error"
         },
         "loading": {

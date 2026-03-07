@@ -265,6 +265,15 @@
         "comicCoverArtists": "Artistas de Portada",
         "comicEditors": "Editores"
     },
+    "importJson": {
+        "buttonLabel": "Importar",
+        "placeholder": "{\n  \"type\": \"group\",\n  \"join\": \"and\",\n  \"rules\": [\n    { \"field\": \"readStatus\", \"operator\": \"equals\", \"value\": \"READING\" }\n  ]\n}",
+        "apply": "Aplicar",
+        "emptyError": "Pegue una configuración JSON primero.",
+        "parseError": "JSON inválido. Verifique la sintaxis e intente de nuevo.",
+        "structureError": "Estructura inválida. El JSON debe tener \"type\": \"group\" y un arreglo \"rules\".",
+        "successDetail": "Reglas importadas exitosamente. Revise y guarde cuando esté listo."
+    },
     "toast": {
         "validationErrorSummary": "Error de Validación",
         "validationErrorDetail": "Debe agregar al menos una regla válida antes de guardar.",
