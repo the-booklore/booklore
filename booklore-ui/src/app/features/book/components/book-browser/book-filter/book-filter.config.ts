@@ -140,7 +140,7 @@ export const FILTER_LABELS: Readonly<Record<FilterType, string>> = {
   author: 'Author',
   category: 'Genre',
   series: 'Series',
-  bookType: 'Book Type',
+  bookType: 'File Format',
   readStatus: 'Read Status',
   personalRating: 'Personal Rating',
   publisher: 'Publisher',
