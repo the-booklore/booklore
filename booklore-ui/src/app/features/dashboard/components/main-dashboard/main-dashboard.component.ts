@@ -1,8 +1,9 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {LibraryService} from '../../../book/service/library.service';
 import {forkJoin, Observable, of} from 'rxjs';
-import {catchError, distinctUntilChanged, map, shareReplay, switchMap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, map, shareReplay, skip, switchMap} from 'rxjs/operators';
 import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
 import {DashboardScrollerComponent} from '../dashboard-scroller/dashboard-scroller.component';
@@ -50,6 +51,7 @@ export class MainDashboardComponent implements OnInit {
   private sortService = inject(SortService);
   private pageTitle = inject(PageTitleService);
   private readonly t = inject(TranslocoService);
+  private readonly destroyRef = inject(DestroyRef);
 
   bookState$ = this.bookService.bookState$;
   dashboardConfig$ = this.dashboardConfigService.config$;
@@ -65,16 +67,23 @@ export class MainDashboardComponent implements OnInit {
   ngOnInit(): void {
     this.pageTitle.setPageTitle(this.t.translate('dashboard.main.pageTitle'));
 
-    this.dashboardConfig$.subscribe(() => {
+    this.dashboardConfig$.pipe(
+      skip(1),
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
       this.scrollerBooksCache.clear();
     });
 
-    this.magicShelfService.shelvesState$.subscribe(() => {
+    this.magicShelfService.shelvesState$.pipe(
+      distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
       this.scrollerBooksCache.clear();
     });
   }
 
-  private getLastReadBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+  private getLastReadBooks(maxItems: number): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
         let books = (state.books || []).filter(book =>
@@ -114,7 +123,7 @@ export class MainDashboardComponent implements OnInit {
     return !!(book.epubProgress || book.pdfProgress || book.cbxProgress || book.koreaderProgress || book.koboProgress);
   }
 
-  private getLatestAddedBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+  private getLatestAddedBooks(maxItems: number): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
         let books = (state.books || []).filter(book => book.addedOn);
@@ -130,7 +139,7 @@ export class MainDashboardComponent implements OnInit {
     );
   }
 
-  private getRandomBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+  private getRandomBooks(maxItems: number): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
         const excludedStatuses = new Set<ReadStatus>([
@@ -151,11 +160,19 @@ export class MainDashboardComponent implements OnInit {
     );
   }
 
-  private getUpNextBooks(maxItems: number, showFirstUnread: boolean = false, sortBy?: string): Observable<Book[]> {
+  private getUpNextBooks(maxItems: number, showFirstUnread: boolean = false): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
         const books = state.books || [];
-        
+        const key = books
+          .filter(b => b.metadata?.seriesName && b.metadata?.seriesNumber != null)
+          .map(b => `${b.id}:${b.readStatus ?? ''}:${b.metadata?.seriesName ?? ''}:${b.metadata?.seriesNumber ?? ''}:${b.lastReadTime ?? ''}`)
+          .sort()
+          .join('|');
+        return {books, key};
+      }),
+      distinctUntilChanged((prev, curr) => prev.key === curr.key),
+      map(({books}) => {
         // Group books by series
         const seriesMap = new Map<string, Book[]>();
         books.forEach(book => {
@@ -244,13 +261,14 @@ export class MainDashboardComponent implements OnInit {
   private getReadAgainBooks(maxItems: number, sortByFinished: boolean = false): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
-        let readBooks = (state.books || []).filter(book =>
-          book.readStatus === ReadStatus.READ
-        );
-
+        const readBooks = (state.books || []).filter(book => book.readStatus === ReadStatus.READ);
+        const key = readBooks.map(b => `${b.id}:${b.dateFinished ?? ''}`).sort().join('|');
+        return {readBooks, key};
+      }),
+      distinctUntilChanged((prev, curr) => prev.key === curr.key),
+      map(({readBooks}) => {
         if (sortByFinished) {
-          // Sort by date finished (most recent first)
-          readBooks = readBooks
+          return readBooks
             .filter(book => book.dateFinished)
             .sort((a, b) => {
               const aTime = new Date(a.dateFinished!).getTime();
@@ -258,7 +276,6 @@ export class MainDashboardComponent implements OnInit {
               return bTime - aTime;
             })
             .slice(0, maxItems);
-          return readBooks;
         }
 
         return this.shuffleBooks(readBooks, maxItems);
@@ -294,7 +311,7 @@ export class MainDashboardComponent implements OnInit {
   }
 
 
-  private getRecommendationsBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+  private getRecommendationsBooks(maxItems: number): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       // Only recompute when read books actually change to avoid spamming the backend
       map((state: BookState) => {
