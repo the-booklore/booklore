@@ -40,16 +40,10 @@ public class BookRuleEvaluatorService {
 
     public Specification<BookEntity> toSpecification(GroupRule groupRule, Long userId) {
         return (root, query, cb) -> {
-            // JOINs on multi-valued associations (authors, tags, shelves, etc.) can
-            // produce duplicate rows — use DISTINCT so pagination counts and page
-            // content reflect unique BookEntity results.
             query.distinct(true);
 
             Join<BookEntity, UserBookProgressEntity> progressJoin = root.join("userBookProgress", JoinType.LEFT);
 
-            // Only join bookFiles when a rule actually references a file-based field
-            // (FILE_SIZE, FILE_TYPE, AUDIOBOOK_*) — avoids the extra fan-out and
-            // the associated DISTINCT overhead for queries that don't need it.
             Join<BookEntity, BookFileEntity> bookFileJoin = null;
             if (needsBookFileJoin(groupRule)) {
                 bookFileJoin = root.join("bookFiles", JoinType.LEFT);
