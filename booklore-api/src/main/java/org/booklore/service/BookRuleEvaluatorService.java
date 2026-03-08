@@ -165,8 +165,8 @@ public class BookRuleEvaluatorService {
         if (threshold == null) return cb.conjunction();
 
         if (rule.getField() == RuleField.PUBLISHED_DATE) {
-            LocalDateTime ldt = threshold.atZone(ZoneId.systemDefault()).toLocalDateTime();
-            return cb.greaterThanOrEqualTo(field.as(LocalDateTime.class), ldt);
+            LocalDate ld = threshold.atZone(ZoneId.systemDefault()).toLocalDate();
+            return cb.greaterThanOrEqualTo(field.as(LocalDate.class), ld);
         }
         return cb.greaterThanOrEqualTo(field.as(Instant.class), threshold);
     }
@@ -179,8 +179,8 @@ public class BookRuleEvaluatorService {
         if (threshold == null) return cb.conjunction();
 
         if (rule.getField() == RuleField.PUBLISHED_DATE) {
-            LocalDateTime ldt = threshold.atZone(ZoneId.systemDefault()).toLocalDateTime();
-            return cb.lessThan(field.as(LocalDateTime.class), ldt);
+            LocalDate ld = threshold.atZone(ZoneId.systemDefault()).toLocalDate();
+            return cb.lessThan(field.as(LocalDate.class), ld);
         }
         return cb.lessThan(field.as(Instant.class), threshold);
     }
@@ -200,8 +200,7 @@ public class BookRuleEvaluatorService {
         Instant startInstant = start.atStartOfDay(ZoneId.systemDefault()).toInstant();
 
         if (rule.getField() == RuleField.PUBLISHED_DATE) {
-            LocalDateTime ldt = startInstant.atZone(ZoneId.systemDefault()).toLocalDateTime();
-            return cb.greaterThanOrEqualTo(field.as(LocalDateTime.class), ldt);
+            return cb.greaterThanOrEqualTo(field.as(LocalDate.class), start);
         }
         return cb.greaterThanOrEqualTo(field.as(Instant.class), startInstant);
     }
@@ -547,6 +546,8 @@ public class BookRuleEvaluatorService {
 
         if (value instanceof Boolean) {
             return cb.equal(field, value);
+        } else if (value instanceof LocalDate) {
+            return cb.equal(field, value);
         } else if (value instanceof LocalDateTime) {
             return cb.equal(field, value);
         } else if (rule.getField() == RuleField.READ_STATUS) {
@@ -612,39 +613,46 @@ public class BookRuleEvaluatorService {
     private Predicate buildGreaterThan(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin, bookFileJoin,
                 (field, dateValue) -> cb.greaterThan(field.as(LocalDateTime.class), dateValue),
+                (field, localDateValue) -> cb.greaterThan(field.as(LocalDate.class), localDateValue),
                 (field, numValue) -> cb.gt(toNumericExpression(field), numValue));
     }
 
     private Predicate buildGreaterThanEqual(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin, bookFileJoin,
                 (field, dateValue) -> cb.greaterThanOrEqualTo(field.as(LocalDateTime.class), dateValue),
+                (field, localDateValue) -> cb.greaterThanOrEqualTo(field.as(LocalDate.class), localDateValue),
                 (field, numValue) -> cb.ge(toNumericExpression(field), numValue));
     }
 
     private Predicate buildLessThan(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin, bookFileJoin,
                 (field, dateValue) -> cb.lessThan(field.as(LocalDateTime.class), dateValue),
+                (field, localDateValue) -> cb.lessThan(field.as(LocalDate.class), localDateValue),
                 (field, numValue) -> cb.lt(toNumericExpression(field), numValue));
     }
 
     private Predicate buildLessThanEqual(Rule rule, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
         return buildComparisonPredicate(rule, cb, root, progressJoin, bookFileJoin,
                 (field, dateValue) -> cb.lessThanOrEqualTo(field.as(LocalDateTime.class), dateValue),
+                (field, localDateValue) -> cb.lessThanOrEqualTo(field.as(LocalDate.class), localDateValue),
                 (field, numValue) -> cb.le(toNumericExpression(field), numValue));
     }
 
     private Predicate buildComparisonPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root,
                                                Join<BookEntity, UserBookProgressEntity> progressJoin,
-                                               Join<BookEntity, BookFileEntity> bookFileJoin,
-                                               BiFunction<Expression<?>, LocalDateTime, Predicate> dateComparator,
+                                               BiFunction<Expression<?>, LocalDateTime, Predicate> dateTimeComparator,
+                                               BiFunction<Expression<?>, LocalDate, Predicate> dateComparator,
                                                BiFunction<Expression<?>, Double, Predicate> numberComparator) {
         Expression<?> field = getFieldExpression(rule.getField(), cb, root, progressJoin, bookFileJoin);
         if (field == null) return cb.conjunction();
 
         Object value = normalizeValue(rule.getValue(), rule.getField());
 
+        if (value instanceof LocalDate) {
+            return dateComparator.apply(field, (LocalDate) value);
+        }
         if (value instanceof LocalDateTime) {
-            return dateComparator.apply(field, (LocalDateTime) value);
+            return dateTimeComparator.apply(field, (LocalDateTime) value);
         }
         if (!(value instanceof Number)) return cb.conjunction();
         return numberComparator.apply(field, ((Number) value).doubleValue());
@@ -658,6 +666,10 @@ public class BookRuleEvaluatorService {
         Object end = normalizeValue(rule.getValueEnd(), rule.getField());
 
         if (start == null || end == null) return cb.conjunction();
+
+        if (start instanceof LocalDate && end instanceof LocalDate) {
+            return cb.between(field.as(LocalDate.class), (LocalDate) start, (LocalDate) end);
+        }
 
         if (start instanceof LocalDateTime && end instanceof LocalDateTime) {
             return cb.between(field.as(LocalDateTime.class), (LocalDateTime) start, (LocalDateTime) end);
@@ -890,7 +902,8 @@ public class BookRuleEvaluatorService {
         if (value == null) return null;
 
         if (field == RuleField.PUBLISHED_DATE) {
-            return parseDate(value);
+            LocalDateTime parsed = parseDate(value);
+            return parsed != null ? parsed.toLocalDate() : null;
         }
 
         if (field == RuleField.DATE_FINISHED || field == RuleField.LAST_READ_TIME || field == RuleField.ADDED_ON) {

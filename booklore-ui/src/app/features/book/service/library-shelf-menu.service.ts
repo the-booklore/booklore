@@ -46,6 +46,13 @@ export class LibraryShelfMenuService {
             }
           },
           {
+            label: this.t.translate('book.shelfMenuService.library.bulkIsbnImport'),
+            icon: 'pi pi-barcode',
+            command: () => {
+              this.bookDialogHelperService.openBulkIsbnImportDialog(entity?.id as number);
+            }
+          },
+          {
             separator: true
           },
           {
