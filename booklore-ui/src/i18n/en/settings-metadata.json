@@ -12,6 +12,8 @@
     "sectionDesc": "Configure how metadata is written to original files and how files are moved or renamed when metadata changes.",
     "networkWarningTitle": "Network Storage Warning:",
     "networkWarning": "These features directly modify and move book files on disk (including rewriting metadata and renaming files). They are designed for local file systems only. Using them on NAS or cloud-backed storage is untested and may lead to file corruption, incomplete writes, or permanent data loss. Github issues related to network storage will not be supported.",
+    "networkModeTitle": "Network Storage Mode Active:",
+    "networkModeDesc": "This instance is configured for network storage (DISK_TYPE=NETWORK). All file write and reorganization features are disabled. Metadata is stored in the database only and your book files are never modified.",
     "unsupportedNote": "Writing metadata is <b>not supported</b> for FB2, AZW3, and MOBI formats.",
     "writeEpub": "Write Metadata to EPUB",
     "writeEpubDesc": "Write metadata directly into EPUB files when editing book information.",
@@ -61,10 +63,6 @@
     "hardcoverPlaceholder": "Enter Hardcover API token",
     "comicvinePlaceholder": "Enter Comic Vine API token"
   },
-  "fieldSelector": {
-    "sectionTitle": "Enabled Fields in Metadata Editor & Picker",
-    "sectionDesc": "Select which metadata fields to display when editing book information or picking metadata from providers. Disabled fields will be hidden from the interface."
-  },
   "publicReviews": {
     "sectionTitle": "Public Reviews",
     "sectionDesc": "Configure automatic downloading of user reviews from external platforms. Reviews can be fetched from Amazon, Goodreads, and Hardcover for offline access.",
@@ -89,6 +87,69 @@
     "saveSuccess": "Weights saved successfully",
     "saveError": "Failed to save weights",
     "recalcSuccess": "All book match scores were recalculated successfully.",
-    "recalcError": "Failed to recalculate match scores."
+    "recalcError": "Failed to recalculate match scores.",
+    "fields": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "authors": "Authors",
+      "description": "Description",
+      "publisher": "Publisher",
+      "publishedDate": "Published Date",
+      "categories": "Categories",
+      "coverImage": "Cover Image",
+      "seriesName": "Series Name",
+      "seriesNumber": "Series Number",
+      "seriesTotal": "Series Total",
+      "language": "Language",
+      "isbn13": "ISBN-13",
+      "isbn10": "ISBN-10",
+      "pageCount": "Page Count",
+      "amazonRating": "Amazon Rating",
+      "amazonReviewCount": "Amazon Rating #",
+      "goodreadsRating": "Goodreads Rating",
+      "goodreadsReviewCount": "Goodreads Rating #",
+      "hardcoverRating": "Hardcover Rating",
+      "hardcoverReviewCount": "Hardcover Rating #",
+      "audibleRating": "Audible Rating",
+      "audibleReviewCount": "Audible Rating #",
+      "doubanRating": "Douban Rating",
+      "doubanReviewCount": "Douban Rating #",
+      "ranobedbRating": "Ranobedb Rating"
+    }
+  },
+  "fieldSelector": {
+    "sectionTitle": "Enabled Fields in Metadata Editor & Picker",
+    "sectionDesc": "Select which metadata fields to display when editing book information or picking metadata from providers. Disabled fields will be hidden from the interface.",
+    "providers": {
+      "amazon": "Amazon",
+      "googleBooks": "Google Books",
+      "goodreads": "Goodreads",
+      "hardcover": "Hardcover",
+      "audible": "Audible",
+      "comicvine": "Comicvine",
+      "lubimyczytac": "Lubimyczytac",
+      "ranobedb": "Ranobedb"
+    },
+    "fields": {
+      "asin": "Amazon ASIN",
+      "amazonRating": "Amazon Rating",
+      "amazonReviewCount": "Amazon Review Count",
+      "googleId": "Google Books ID",
+      "goodreadsId": "Goodreads ID",
+      "goodreadsRating": "Goodreads Rating",
+      "goodreadsReviewCount": "Goodreads Review Count",
+      "hardcoverId": "Hardcover ID",
+      "hardcoverBookId": "Hardcover Book ID",
+      "hardcoverRating": "Hardcover Rating",
+      "hardcoverReviewCount": "Hardcover Review Count",
+      "comicvineId": "Comicvine ID",
+      "lubimyczytacId": "Lubimyczytac ID",
+      "lubimyczytacRating": "Lubimyczytac Rating",
+      "ranobedbId": "Ranobedb ID",
+      "ranobedbRating": "Ranobedb Rating",
+      "audibleId": "Audible ID",
+      "audibleRating": "Audible Rating",
+      "audibleReviewCount": "Audible Review Count"
+    }
   }
 }

@@ -35,10 +35,14 @@ export class AuthorService {
     return this.http.get<AuthorDetails>(`${this.baseUrl}/by-name`, {params: {name}});
   }
 
-  searchAuthorMetadata(authorId: number, query: string, region: string): Observable<AuthorSearchResult[]> {
-    return this.http.get<AuthorSearchResult[]>(`${this.baseUrl}/${authorId}/search-metadata`, {
-      params: {q: query, region}
-    });
+  searchAuthorMetadata(authorId: number, query: string, region: string, asin?: string): Observable<AuthorSearchResult[]> {
+    const params: Record<string, string> = {region};
+    if (asin) {
+      params['asin'] = asin;
+    } else {
+      params['q'] = query;
+    }
+    return this.http.get<AuthorSearchResult[]>(`${this.baseUrl}/${authorId}/search-metadata`, {params});
   }
 
   matchAuthor(authorId: number, request: AuthorMatchRequest): Observable<AuthorDetails> {

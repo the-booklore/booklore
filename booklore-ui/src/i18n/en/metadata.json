@@ -327,6 +327,8 @@
     "menuSendBook": "Send Book",
     "menuQuickSend": "Quick Send",
     "menuCustomSend": "Custom Send",
+    "menuMarkPhysical": "Mark as Physical",
+    "menuUnmarkPhysical": "Unmark as Physical",
     "menuAttachToAnotherBook": "Attach to Another Book",
     "menuDeleteFileFormats": "Delete File Formats",
     "menuDeleteSupplementaryFiles": "Delete Supplementary Files",
@@ -498,12 +500,19 @@
     "deleting": "Deleting...",
     "tabs": {
       "author": "Author",
+      "authors": "Authors",
       "genre": "Genre",
+      "genres": "Genres",
       "mood": "Mood",
+      "moods": "Moods",
       "tag": "Tag",
+      "tags": "Tags",
       "series": "Series",
+      "seriesPlural": "Series",
       "publisher": "Publisher",
-      "language": "Language"
+      "publishers": "Publishers",
+      "language": "Language",
+      "languages": "Languages"
     },
     "placeholders": {
       "searchAuthors": "Search authors...",

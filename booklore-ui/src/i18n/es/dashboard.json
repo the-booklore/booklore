@@ -55,7 +55,7 @@
             "readStatus": "Estado de lectura",
             "dateFinished": "Fecha de finalización",
             "readingProgress": "Progreso de lectura",
-            "bookType": "Tipo de libro",
+            "bookType": "Formato de archivo",
             "pageCount": "Páginas"
         },
         "sortDirections": {

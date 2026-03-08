@@ -301,6 +301,20 @@ public class BookController {
         return ResponseEntity.ok(duplicateDetectionService.findDuplicates(request));
     }
 
+    @Operation(summary = "Toggle physical book flag", description = "Mark or unmark a book as a physical book.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Physical flag updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @PatchMapping("/{bookId}/physical")
+    @CheckBookAccess(bookIdParam = "bookId")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Book> togglePhysicalFlag(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "Whether the book is physical") @RequestParam boolean physical) {
+        return ResponseEntity.ok(physicalBookService.togglePhysicalFlag(bookId, physical));
+    }
+
     @Operation(summary = "Attach book files", description = "Attach book files from single-file source books to a target book as alternative formats.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Book files attached successfully"),

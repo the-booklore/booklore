@@ -37,7 +37,7 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
 
   loadSessions() {
     this.loading = true;
-    this.readingSessionService.getSessionsByBookId(this.bookId, 0, 9999)
+    this.readingSessionService.getSessionsByBookId(this.bookId, 0, 100)
       .subscribe({
         next: (response) => {
           this.sessions = response.content;

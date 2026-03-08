@@ -179,8 +179,7 @@ class AdditionalFileServiceTest {
             verify(monitoringRegistrationService).unregisterSpecificPath(parentPath);
             filesMock.verify(() -> Files.deleteIfExists(fileEntity.getFullFilePath()));
             verify(additionalFileRepository).delete(fileEntity);
-            verify(bookRepository).save(bookEntity);
-            assertTrue(bookEntity.getIsPhysical());
+            verify(bookRepository, never()).save(any());
         }
     }
 
@@ -200,8 +199,7 @@ class AdditionalFileServiceTest {
             verify(monitoringRegistrationService).unregisterSpecificPath(parentPath);
             filesMock.verify(() -> Files.deleteIfExists(fileEntity.getFullFilePath()));
             verify(additionalFileRepository).delete(fileEntity);
-            verify(bookRepository).save(bookEntity);
-            assertTrue(bookEntity.getIsPhysical());
+            verify(bookRepository, never()).save(any());
         }
     }
 

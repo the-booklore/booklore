@@ -85,6 +85,13 @@ public class AuthorMetadataService {
                 .toList();
     }
 
+    public List<AuthorSearchResult> lookupAuthorByAsin(String asin, String region) {
+        return authorParserMap.values().stream()
+                .map(provider -> provider.getAuthorByAsin(asin, region))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
     public AuthorDetails matchAuthor(Long authorId, AuthorMatchRequest request) {
         AuthorEntity author = authorRepository.findById(authorId)
                 .orElseThrow(() -> ApiError.AUTHOR_NOT_FOUND.createException(authorId));

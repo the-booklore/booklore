@@ -257,6 +257,16 @@ export class BookService {
     );
   }
 
+  togglePhysicalFlag(bookId: number, physical: boolean): Observable<Book> {
+    return this.http.patch<Book>(`${this.url}/${bookId}/physical`, null, {params: {physical}}).pipe(
+      tap(updatedBook => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(b => b.id === bookId ? {...b, isPhysical: physical} : b);
+        this.bookStateService.updateBookState({...currentState, books: updatedBooks});
+      })
+    );
+  }
+
   /*------------------ Reading & Viewer Settings ------------------*/
 
   readBook(bookId: number, reader?: 'epub-streaming', explicitBookType?: BookType): void {

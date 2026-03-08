@@ -3,7 +3,8 @@ import {FormsModule} from '@angular/forms';
 import {Observable} from 'rxjs';
 import {Button} from 'primeng/button';
 import {ToggleSwitch} from 'primeng/toggleswitch';
-import {MessageService} from 'primeng/api';
+import {MenuItem, MessageService} from 'primeng/api';
+import {SplitButton} from 'primeng/splitbutton';
 
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
 import {BookMetadataManageService} from '../../book/service/book-metadata-manage.service';
@@ -25,6 +26,7 @@ export const SUPPORT_ANIMATION_KEY = 'booklore-support-animation';
     FormsModule,
     InputText,
     Slider,
+    SplitButton,
     ExternalDocLinkComponent,
     TranslocoDirective,
     TranslocoPipe
@@ -56,8 +58,17 @@ export class GlobalPreferencesComponent implements OnInit {
 
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
   maxFileUploadSizeInMb?: number;
+  regenerateCoverMenuItems: MenuItem[] = [];
 
   ngOnInit(): void {
+    this.regenerateCoverMenuItems = [
+      {
+        label: this.t.translate('settingsApp.covers.regenerateMissingBtn'),
+        icon: 'pi pi-images',
+        command: () => this.regenerateCovers(true)
+      }
+    ];
+
     this.appSettings$.pipe(
       filter(settings => !!settings),
       take(1)
@@ -107,8 +118,8 @@ export class GlobalPreferencesComponent implements OnInit {
     this.saveSetting(AppSettingKey.MAX_FILE_UPLOAD_SIZE_IN_MB, this.maxFileUploadSizeInMb);
   }
 
-  regenerateCovers(): void {
-    this.bookMetadataManageService.regenerateCovers().subscribe({
+  regenerateCovers(missingOnly = false): void {
+    this.bookMetadataManageService.regenerateCovers(missingOnly).subscribe({
       next: () =>
         this.showMessage('success', this.t.translate('settingsApp.covers.regenerateStarted'), this.t.translate('settingsApp.covers.regenerateStartedDetail')),
       error: () =>

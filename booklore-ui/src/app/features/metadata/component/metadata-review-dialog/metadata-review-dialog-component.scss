@@ -8,11 +8,12 @@
 
 .panel-header {
   @include panel.panel-header;
+  flex-shrink: 0;
 }
 
 .dialog-content {
-  flex: 1;
-  overflow: auto;
+  height: calc(95dvh - 90px - 80px);
+  overflow-y: auto;
   padding: 1rem;
   background: var(--card-background);
   border: 1px solid var(--border-color);
@@ -33,6 +34,7 @@
 
 .dialog-footer {
   @include panel.dialog-footer;
+  flex-shrink: 0;
 
   .footer-info {
     flex: 1;

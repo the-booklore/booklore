@@ -66,30 +66,32 @@
                         </span>
                       }
                     </div>
-                    <div class="sidecar-actions">
-                      <p-button
-                        icon="pi pi-upload"
-                        [label]="t('libraryOverrides.exportSidecar')"
-                        size="small"
-                        severity="secondary"
-                        [outlined]="true"
-                        [loading]="isSidecarExporting(library.id!)"
-                        (onClick)="exportSidecarForLibrary(library.id!, $event)"
-                        [pTooltip]="t('libraryOverrides.exportTooltip')"
-                        tooltipPosition="top"
-                      />
-                      <p-button
-                        icon="pi pi-download"
-                        [label]="t('libraryOverrides.importSidecar')"
-                        size="small"
-                        severity="secondary"
-                        [outlined]="true"
-                        [loading]="isSidecarImporting(library.id!)"
-                        (onClick)="importSidecarForLibrary(library.id!, $event)"
-                        [pTooltip]="t('libraryOverrides.importTooltip')"
-                        tooltipPosition="top"
-                      />
-                    </div>
+                    @if (isLocalStorage) {
+                      <div class="sidecar-actions">
+                        <p-button
+                          icon="pi pi-upload"
+                          [label]="t('libraryOverrides.exportSidecar')"
+                          size="small"
+                          severity="secondary"
+                          [outlined]="true"
+                          [loading]="isSidecarExporting(library.id!)"
+                          (onClick)="exportSidecarForLibrary(library.id!, $event)"
+                          [pTooltip]="t('libraryOverrides.exportTooltip')"
+                          tooltipPosition="top"
+                        />
+                        <p-button
+                          icon="pi pi-download"
+                          [label]="t('libraryOverrides.importSidecar')"
+                          size="small"
+                          severity="secondary"
+                          [outlined]="true"
+                          [loading]="isSidecarImporting(library.id!)"
+                          (onClick)="importSidecarForLibrary(library.id!, $event)"
+                          [pTooltip]="t('libraryOverrides.importTooltip')"
+                          tooltipPosition="top"
+                        />
+                      </div>
+                    }
                   </div>
                 </p-accordion-header>
                 <p-accordion-content>

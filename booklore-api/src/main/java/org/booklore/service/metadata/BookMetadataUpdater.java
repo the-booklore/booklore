@@ -3,6 +3,7 @@ package org.booklore.service.metadata;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.booklore.config.AppProperties;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
@@ -53,6 +54,7 @@ public class BookMetadataUpdater {
     private final ComicTeamRepository comicTeamRepository;
     private final ComicLocationRepository comicLocationRepository;
     private final ComicCreatorRepository comicCreatorRepository;
+    private final AppProperties appProperties;
     private final FileService fileService;
     private final MetadataMatchService metadataMatchService;
     private final AppSettingService appSettingService;
@@ -123,7 +125,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if (primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
+        if (appProperties.isLocalStorage() && primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;

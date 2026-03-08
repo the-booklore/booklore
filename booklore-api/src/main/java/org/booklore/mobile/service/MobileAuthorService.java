@@ -139,7 +139,7 @@ public class MobileAuthorService {
         StringBuilder jpql = new StringBuilder(
                 "SELECT COUNT(DISTINCT bm.id) FROM AuthorEntity a JOIN a.bookMetadataEntityList bm JOIN bm.book b"
                         + " WHERE a.id = :authorId AND (b.deleted IS NULL OR b.deleted = false)"
-                        + " AND (b.isPhysical IS NULL OR b.isPhysical = false)");
+                        + " AND b.bookFiles IS NOT EMPTY");
         if (accessibleLibraryIds != null) {
             jpql.append(" AND b.library.id IN :libraryIds");
         }
@@ -174,9 +174,8 @@ public class MobileAuthorService {
         } else if (accessibleLibraryIds != null) {
             whereClause.append(" AND b.library.id IN :libraryIds");
         }
-        // Always filter out deleted/physical books when library filtering
         whereClause.append(" AND (b.deleted IS NULL OR b.deleted = false)");
-        whereClause.append(" AND (b.isPhysical IS NULL OR b.isPhysical = false)");
+        whereClause.append(" AND b.bookFiles IS NOT EMPTY");
     }
 
     private void buildSearchFilter(StringBuilder whereClause, String search) {

@@ -51,11 +51,16 @@ public class OpdsBookService {
                 .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(userId));
         BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
 
+        List<Library> libraries;
         if (user.getPermissions() != null && user.getPermissions().isAdmin()) {
-            return libraryService.getAllLibraries();
+            libraries = libraryService.getAllLibraries();
+        } else {
+            libraries = user.getAssignedLibraries();
         }
 
-        return user.getAssignedLibraries();
+        return libraries.stream()
+                .sorted(Comparator.comparing(Library::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     public Page<Book> getBooksPage(Long userId, String query, Long libraryId, Set<Long> shelfIds, int page, int size) {

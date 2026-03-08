@@ -50,6 +50,7 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
   canEditMetadata: boolean = false;
   admin: boolean = false;
   isPhysical: boolean = false;
+  isLocalStorage: boolean = true;
 
   private appSettings$ = this.appSettingsService.appSettings$;
   private currentBookId$ = new BehaviorSubject<number | null>(null);
@@ -144,6 +145,16 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
       .subscribe(userState => {
         this.canEditMetadata = userState.user?.permissions?.canEditMetadata ?? false;
         this.admin = userState.user?.permissions?.admin ?? false;
+      });
+
+    this.appSettings$
+      .pipe(
+        filter(settings => !!settings),
+        take(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(settings => {
+        this.isLocalStorage = settings!.diskType === 'LOCAL';
       });
   }
 

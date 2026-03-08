@@ -235,6 +235,19 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
               command: () => this.assignShelf(book.id)
             });
 
+            if (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) {
+              const isPhysical = book.isPhysical ?? false;
+              items.push({
+                label: isPhysical
+                  ? this.t.translate('metadata.viewer.menuUnmarkPhysical')
+                  : this.t.translate('metadata.viewer.menuMarkPhysical'),
+                icon: isPhysical ? 'pi pi-times-circle' : 'pi pi-book',
+                command: () => {
+                  this.bookService.togglePhysicalFlag(book.id, !isPhysical).subscribe();
+                }
+              });
+            }
+
             // Add allowed submenus based on user permissions
 
             if (userState?.user?.permissions.canUpload || userState?.user?.permissions.admin) {

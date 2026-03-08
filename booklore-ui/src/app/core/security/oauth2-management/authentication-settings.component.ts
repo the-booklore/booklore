@@ -74,7 +74,7 @@ export class AuthenticationSettingsComponent implements OnInit {
     {labelKey: 'infoPanel.redirectUri', value: `${window.location.origin}/oauth2-callback`},
     {labelKey: 'infoPanel.postLogoutRedirectUri', value: `${window.location.origin}/login`},
     {labelKey: 'infoPanel.backChannelLogoutUri', value: `${window.location.origin}/api/v1/auth/oidc/backchannel-logout`},
-    {labelKey: 'infoPanel.requiredScopes', value: 'openid profile email offline_access'},
+    {labelKey: 'infoPanel.requiredScopes', value: 'openid profile email groups offline_access'},
     {labelKey: 'infoPanel.pkceMethod', value: 'S256'},
     {labelKey: 'infoPanel.grantType', value: 'Authorization Code'},
   ];

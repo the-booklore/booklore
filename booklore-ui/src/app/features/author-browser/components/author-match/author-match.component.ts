@@ -39,6 +39,7 @@ export class AuthorMatchComponent implements OnInit {
   private t = inject(TranslocoService);
 
   searchQuery = '';
+  asinQuery = '';
   selectedRegion = 'us';
   searching = false;
   matching = false;
@@ -62,13 +63,19 @@ export class AuthorMatchComponent implements OnInit {
     this.searchQuery = this.authorName;
   }
 
+  get canSearch(): boolean {
+    return !!this.searchQuery.trim() || !!this.asinQuery.trim();
+  }
+
   search(): void {
-    if (!this.searchQuery.trim()) return;
+    const asin = this.asinQuery.trim();
+    const query = this.searchQuery.trim();
+    if (!query && !asin) return;
     this.searching = true;
     this.results = [];
     this.hasSearched = true;
 
-    this.authorService.searchAuthorMetadata(this.authorId, this.searchQuery.trim(), this.selectedRegion)
+    this.authorService.searchAuthorMetadata(this.authorId, query, this.selectedRegion, asin || undefined)
       .subscribe({
         next: (results) => {
           this.results = results;

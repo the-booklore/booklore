@@ -688,13 +688,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  prepareNavigation(book: Book): void {
-    const allBookIds = this.bookNavigationService.getAvailableBookIds();
-    if (allBookIds.length > 0) {
-      this.bookNavigationService.setNavigationContext(allBookIds, book.id);
-    }
-  }
-
   openBookInfo(book: Book): void {
     const allBookIds = this.bookNavigationService.getAvailableBookIds();
     if (allBookIds.length > 0) {

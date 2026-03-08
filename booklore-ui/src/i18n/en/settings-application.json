@@ -4,8 +4,9 @@
   "covers": {
     "sectionTitle": "Book Cover Image",
     "regenerate": "Regenerate Covers",
-    "regenerateBtn": "Regenerate",
-    "regenerateDesc": "Regenerates cover images for all books from the embedded covers in the file.",
+    "regenerateAllBtn": "Regenerate All",
+    "regenerateMissingBtn": "Regenerate Missing",
+    "regenerateDesc": "Regenerates cover images for all books from the embedded covers in the file. Use \"Regenerate Missing\" to only generate covers for books that don't have one yet.",
     "regenerateStarted": "Cover Regeneration Started",
     "regenerateStartedDetail": "Book covers are being regenerated.",
     "regenerateError": "Failed to start cover regeneration.",
