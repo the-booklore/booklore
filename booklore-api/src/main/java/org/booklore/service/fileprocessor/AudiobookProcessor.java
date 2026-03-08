@@ -53,7 +53,14 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.AUDIOBOOK);
         setBookMetadata(bookEntity, libraryFile.isFolderBased());
-        if (generateCover(bookEntity, libraryFile.isFolderBased())) {
+        boolean coverGenerated = generateCover(bookEntity, libraryFile.isFolderBased());
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateAudiobookCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             bookEntity.getMetadata().setAudiobookCoverUpdatedOn(Instant.now());
             bookEntity.setAudiobookCoverHash(BookCoverUtils.generateCoverHash());
         }
@@ -233,7 +240,7 @@ public class AudiobookProcessor extends AbstractFileProcessor implements BookFil
         setAudiobookTechnicalMetadata(bookEntity, audioMetadata);
     }
 
-    private void setAudiobookTechnicalMetadata(BookEntity bookEntity, BookMetadata audioMetadata) {
+    public void setAudiobookTechnicalMetadata(BookEntity bookEntity, BookMetadata audioMetadata) {
         AudiobookMetadata audiobookDto = audioMetadata.getAudiobookMetadata();
         if (audiobookDto == null) {
             return;

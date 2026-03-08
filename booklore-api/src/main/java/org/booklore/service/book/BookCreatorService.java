@@ -126,6 +126,7 @@ public class BookCreatorService {
     }
 
     public void addCategoriesToBook(Set<String> categories, BookEntity bookEntity) {
+        if (categories == null || categories.isEmpty()) return;
         if (bookEntity.getMetadata().getCategories() == null) {
             bookEntity.getMetadata().setCategories(new HashSet<>());
         }
@@ -136,9 +137,10 @@ public class BookCreatorService {
                 .forEach(catEntity -> bookEntity.getMetadata().getCategories().add(catEntity));
     }
 
-    public void addAuthorsToBook(Set<String> authors, BookEntity bookEntity) {
+    public void addAuthorsToBook(Collection<String> authors, BookEntity bookEntity) {
+        if (authors == null || authors.isEmpty()) return;
         if (bookEntity.getMetadata().getAuthors() == null) {
-            bookEntity.getMetadata().setAuthors(new HashSet<>());
+            bookEntity.getMetadata().setAuthors(new ArrayList<>());
         }
         authors.stream()
                 .map(authorName -> truncate(authorName, 255))
@@ -149,6 +151,7 @@ public class BookCreatorService {
     }
 
     public void addMoodsToBook(Set<String> moods, BookEntity bookEntity) {
+        if (moods == null || moods.isEmpty()) return;
         if (bookEntity.getMetadata().getMoods() == null) {
             bookEntity.getMetadata().setMoods(new HashSet<>());
         }
@@ -160,6 +163,7 @@ public class BookCreatorService {
     }
 
     public void addTagsToBook(Set<String> tags, BookEntity bookEntity) {
+        if (tags == null || tags.isEmpty()) return;
         if (bookEntity.getMetadata().getTags() == null) {
             bookEntity.getMetadata().setTags(new HashSet<>());
         }

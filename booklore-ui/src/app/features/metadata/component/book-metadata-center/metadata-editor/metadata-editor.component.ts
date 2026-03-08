@@ -8,7 +8,7 @@ import {AsyncPipe} from "@angular/common";
 import {MessageService} from "primeng/api";
 import {Book, BookMetadata, ComicMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
 import {UrlHelperService} from "../../../../../shared/service/url-helper.service";
-import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, MetadataFieldConfig} from '../../../../../shared/metadata';
+import {ALL_COMIC_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, COMIC_FORM_TO_MODEL_LOCK, COMIC_TEXT_METADATA_FIELDS, COMIC_ARRAY_METADATA_FIELDS, COMIC_TEXTAREA_METADATA_FIELDS, MetadataFieldConfig, isFieldEmbeddable, hasMetadataWriter} from '../../../../../shared/metadata';
 import {FileUpload, FileUploadErrorEvent, FileUploadEvent,} from "primeng/fileupload";
 import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
@@ -33,6 +33,7 @@ import {UserService} from '../../../../settings/user-management/user.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-settings.model';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {CdkDragDrop, CdkDropList, CdkDrag, moveItemInArray} from '@angular/cdk/drag-drop';
 
 @Component({
   selector: "app-metadata-editor",
@@ -56,6 +57,8 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
     LazyLoadImageModule,
     Select,
     TranslocoDirective,
+    CdkDropList,
+    CdkDrag,
   ],
 })
 export class MetadataEditorComponent implements OnInit {
@@ -105,6 +108,7 @@ export class MetadataEditorComponent implements OnInit {
   allSeries!: string[];
   filteredCategories: string[] = [];
   filteredAuthors: string[] = [];
+  authorInputValue = '';
   filteredMoods: string[] = [];
   filteredTags: string[] = [];
   filteredPublishers: string[] = [];
@@ -160,6 +164,44 @@ export class MetadataEditorComponent implements OnInit {
     this.filteredAuthors = this.allAuthors.filter((cat) =>
       cat.toLowerCase().includes(query)
     );
+  }
+
+  dropAuthor(event: CdkDragDrop<string[]>) {
+    const authors = [...(this.metadataForm.get('authors')?.value ?? [])];
+    moveItemInArray(authors, event.previousIndex, event.currentIndex);
+    this.metadataForm.get('authors')?.setValue(authors);
+    this.metadataForm.get('authors')?.markAsDirty();
+  }
+
+  removeAuthor(index: number) {
+    const authors = [...(this.metadataForm.get('authors')?.value ?? [])];
+    authors.splice(index, 1);
+    this.metadataForm.get('authors')?.setValue(authors);
+    this.metadataForm.get('authors')?.markAsDirty();
+  }
+
+  onAuthorInputKeyUp(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const value = this.authorInputValue?.trim();
+      if (value) {
+        const authors = this.metadataForm.get('authors')?.value || [];
+        if (!authors.includes(value)) {
+          this.metadataForm.get('authors')?.setValue([...authors, value]);
+          this.metadataForm.get('authors')?.markAsDirty();
+        }
+        this.authorInputValue = '';
+      }
+    }
+  }
+
+  onAuthorInputSelect(event: AutoCompleteSelectEvent) {
+    const authors = (this.metadataForm.get('authors')?.value as string[]) || [];
+    const value = event.value as string;
+    if (!authors.includes(value)) {
+      this.metadataForm.get('authors')?.setValue([...authors, value]);
+      this.metadataForm.get('authors')?.markAsDirty();
+    }
+    setTimeout(() => this.authorInputValue = '');
   }
 
   filterMoods(event: { query: string }) {
@@ -392,7 +434,7 @@ export class MetadataEditorComponent implements OnInit {
     this.metadataForm.patchValue({
       title: metadata.title ?? null,
       subtitle: metadata.subtitle ?? null,
-      authors: [...(metadata.authors ?? [])].sort(),
+      authors: [...(metadata.authors ?? [])],
       categories: [...(metadata.categories ?? [])].sort(),
       moods: [...(metadata.moods ?? [])].sort(),
       tags: [...(metadata.tags ?? [])].sort(),
@@ -1064,11 +1106,19 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onNext() {
-    this.nextBookClicked.emit();
+    if (this.autoSaveEnabled && this.metadataForm.dirty) {
+      this.saveMetadata().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.nextBookClicked.emit());
+    } else {
+      this.nextBookClicked.emit();
+    }
   }
 
   onPrevious() {
-    this.previousBookClicked.emit();
+    if (this.autoSaveEnabled && this.metadataForm.dirty) {
+      this.saveMetadata().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.previousBookClicked.emit());
+    } else {
+      this.previousBookClicked.emit();
+    }
   }
 
   closeDialog() {
@@ -1167,6 +1217,14 @@ export class MetadataEditorComponent implements OnInit {
 
   isAudiobook(book: Book): boolean {
     return book.primaryFile?.bookType === 'AUDIOBOOK';
+  }
+
+  isEmbeddable(controlName: string, book: Book): boolean {
+    return isFieldEmbeddable(book.primaryFile?.bookType, controlName);
+  }
+
+  hasWriter(book: Book): boolean {
+    return hasMetadataWriter(book.primaryFile?.bookType);
   }
 
   getUploadAudiobookCoverUrl(): string {

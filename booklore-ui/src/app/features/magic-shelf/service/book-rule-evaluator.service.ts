@@ -30,6 +30,7 @@ export class BookRuleEvaluatorService {
     const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
+      if (typeof val === 'boolean') return String(val);
       if (typeof val === 'string') {
         const date = new Date(val);
         if (!isNaN(date.getTime())) return date;
@@ -211,17 +212,21 @@ export class BookRuleEvaluatorService {
         }
         return Number(value) >= Number(ruleStart) && Number(value) <= Number(ruleEnd);
 
-      case 'is_empty':
-        if (value == null) return true;
-        if (typeof value === 'string') return value.trim() === '';
-        if (Array.isArray(value)) return value.length === 0;
+      case 'is_empty': {
+        const emptyVal = rule.field === 'readStatus' ? book.readStatus : value;
+        if (emptyVal == null) return true;
+        if (typeof emptyVal === 'string') return emptyVal.trim() === '';
+        if (Array.isArray(emptyVal)) return emptyVal.length === 0;
         return false;
+      }
 
-      case 'is_not_empty':
-        if (value == null) return false;
-        if (typeof value === 'string') return value.trim() !== '';
-        if (Array.isArray(value)) return value.length > 0;
+      case 'is_not_empty': {
+        const notEmptyVal = rule.field === 'readStatus' ? book.readStatus : value;
+        if (notEmptyVal == null) return false;
+        if (typeof notEmptyVal === 'string') return notEmptyVal.trim() !== '';
+        if (Array.isArray(notEmptyVal)) return notEmptyVal.length > 0;
         return true;
+      }
 
       case 'includes_all': {
         const bookList = getArrayField(rule.field);
@@ -343,6 +348,12 @@ export class BookRuleEvaluatorService {
         return book.metadata?.abridged;
       case 'audiobookDuration':
         return book.metadata?.audiobookMetadata?.durationSeconds ?? null;
+      case 'audiobookCodec':
+        return book.metadata?.audiobookMetadata?.codec?.toLowerCase() ?? null;
+      case 'audiobookChapterCount':
+        return book.metadata?.audiobookMetadata?.chapterCount ?? null;
+      case 'audiobookBitrate':
+        return book.metadata?.audiobookMetadata?.bitrate ?? null;
       case 'isPhysical':
         return book.isPhysical;
       case 'lubimyczytacRating':
@@ -533,6 +544,9 @@ export class BookRuleEvaluatorService {
       case 'comicvineId': return book.metadata?.comicvineId;
       case 'abridged': return book.metadata?.abridged;
       case 'audiobookDuration': return book.metadata?.audiobookMetadata?.durationSeconds;
+      case 'audiobookCodec': return book.metadata?.audiobookMetadata?.codec;
+      case 'audiobookChapterCount': return book.metadata?.audiobookMetadata?.chapterCount;
+      case 'audiobookBitrate': return book.metadata?.audiobookMetadata?.bitrate;
       case 'comicCharacters': return book.metadata?.comicMetadata?.characters;
       case 'comicTeams': return book.metadata?.comicMetadata?.teams;
       case 'comicLocations': return book.metadata?.comicMetadata?.locations;

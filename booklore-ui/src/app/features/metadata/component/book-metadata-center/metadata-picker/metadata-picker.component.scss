@@ -74,8 +74,9 @@
 
 // Column Headers - mirrors field-row structure for alignment (desktop only)
 .column-headers {
-  display: none;
+  display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0.875rem 1rem;
   margin-bottom: 0.5rem;
   background: var(--overlay-background);
@@ -83,18 +84,23 @@
   border-radius: 8px;
 
   @media (min-width: 768px) {
-    display: flex;
+    justify-content: flex-start;
   }
 
-  // Spacer to match field-label width
+  // Spacer to match field-label width (desktop only)
   &::before {
     content: '';
     min-width: 120px;
     flex-shrink: 0;
+    display: none;
+
+    @media (min-width: 768px) {
+      display: block;
+    }
   }
 
   .column-label {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 0.625rem;
     font-size: 1rem;
@@ -102,6 +108,10 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     flex: 1;
+
+    @media (min-width: 768px) {
+      display: flex;
+    }
 
     i {
       font-size: 1.125rem;
@@ -619,4 +629,90 @@
     font-size: 0.8rem;
     font-weight: 600;
   }
+}
+
+.author-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--p-inputtext-border-color);
+  border-radius: 6px;
+  background: var(--p-inputtext-background);
+  flex: 1;
+  min-width: 0;
+
+  &.disabled {
+    opacity: 0.6;
+    background: var(--p-inputtext-disabled-background);
+    cursor: default;
+
+    .author-chip {
+      cursor: default;
+    }
+  }
+}
+
+.author-add-input {
+  flex: 1 1 6rem;
+  min-width: 6rem;
+
+  ::ng-deep input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0.25rem;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+}
+
+.author-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  background: var(--p-chip-background);
+  color: var(--p-chip-color);
+  font-size: 0.875rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.main-author-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  font-size: 0.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.author-chip-remove {
+  font-size: 0.65rem;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0.15rem;
+  &:hover { opacity: 1; }
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cdk-drag-animating {
+  transition: transform 200ms ease;
 }

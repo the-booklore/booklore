@@ -2,6 +2,9 @@ package org.booklore.repository;
 
 import org.booklore.model.dto.BookCompletionHeatmapDto;
 import org.booklore.model.dto.CompletionTimelineDto;
+import org.booklore.model.dto.ProgressPercentDto;
+import org.booklore.model.dto.RatingDistributionDto;
+import org.booklore.model.dto.StatusDistributionDto;
 import org.booklore.model.entity.UserBookProgressEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -21,14 +24,6 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
 
     List<UserBookProgressEntity> findByUserIdAndBookIdIn(Long userId, Set<Long> bookIds);
 
-    @Query("SELECT MAX(COALESCE(ubp.lastReadTime, ubp.readStatusModifiedTime)) " +
-           "FROM UserBookProgressEntity ubp WHERE ubp.user.id = :userId")
-    Instant getMaxProgressTimestamp(@Param("userId") Long userId);
-
-    @Query("SELECT ubp.book.id FROM UserBookProgressEntity ubp WHERE ubp.user.id = :userId " +
-           "AND (ubp.lastReadTime > :since OR ubp.readStatusModifiedTime > :since)")
-    Set<Long> findBookIdsWithProgressChangedSince(@Param("userId") Long userId, @Param("since") Instant since);
-
     @Query("""
         SELECT ubp FROM UserBookProgressEntity ubp
         WHERE ubp.user.id = :userId
@@ -46,6 +41,10 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
                   ubp.koboProgressSentTime IS NULL
                   OR ubp.koboProgressReceivedTime > ubp.koboProgressSentTime
               ))
+              OR
+              (ubp.epubProgressPercent IS NOT NULL
+                  AND ubp.epubProgress IS NOT NULL
+                  AND (ubp.koboProgressSentTime IS NULL OR ubp.lastReadTime > ubp.koboProgressSentTime))
           )
     """)
     List<UserBookProgressEntity> findAllBooksNeedingKoboSync(
@@ -166,4 +165,35 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
             @Param("userId") Long userId,
             @Param("startYear") int startYear,
             @Param("endYear") int endYear);
+
+    @Query("""
+            SELECT ubp.personalRating as rating, COUNT(ubp) as count
+            FROM UserBookProgressEntity ubp
+            WHERE ubp.user.id = :userId
+            AND ubp.personalRating IS NOT NULL
+            GROUP BY ubp.personalRating
+            ORDER BY ubp.personalRating
+            """)
+    List<RatingDistributionDto> findRatingDistributionByUser(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT ubp.readStatus as status, COUNT(ubp) as count
+            FROM UserBookProgressEntity ubp
+            WHERE ubp.user.id = :userId
+            AND ubp.readStatus IS NOT NULL
+            AND ubp.readStatus <> org.booklore.model.enums.ReadStatus.UNSET
+            GROUP BY ubp.readStatus
+            """)
+    List<StatusDistributionDto> findStatusDistributionByUser(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT ubp.koreaderProgressPercent as koreaderProgressPercent,
+                   ubp.koboProgressPercent as koboProgressPercent,
+                   ubp.epubProgressPercent as epubProgressPercent,
+                   ubp.pdfProgressPercent as pdfProgressPercent,
+                   ubp.cbxProgressPercent as cbxProgressPercent
+            FROM UserBookProgressEntity ubp
+            WHERE ubp.user.id = :userId
+            """)
+    List<ProgressPercentDto> findAllProgressPercentsByUser(@Param("userId") Long userId);
 }

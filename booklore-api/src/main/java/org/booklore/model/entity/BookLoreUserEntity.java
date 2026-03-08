@@ -41,6 +41,15 @@ public class BookLoreUserEntity {
     @Enumerated(EnumType.STRING)
     private ProvisioningMethod provisioningMethod;
 
+    @Column(name = "oidc_subject")
+    private String oidcSubject;
+
+    @Column(name = "oidc_issuer", length = 512)
+    private String oidcIssuer;
+
+    @Column(name = "avatar_url", length = 1024)
+    private String avatarUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

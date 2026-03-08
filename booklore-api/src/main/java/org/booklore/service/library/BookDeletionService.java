@@ -3,6 +3,8 @@ package org.booklore.service.library;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookFileEntity;
 import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.LibraryEntity;
+import org.booklore.model.enums.BookFileType;
 import org.booklore.model.websocket.Topic;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
@@ -92,6 +94,53 @@ public class BookDeletionService {
         entityManager.clear();
         notificationService.sendMessage(Topic.BOOKS_REMOVE, bookIds);
         if (bookIds.size() > 1) log.info("Books removed: {}", bookIds);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void purgeDisallowedFormats(LibraryEntity libraryEntity) {
+        List<BookFileType> allowedFormats = libraryEntity.getAllowedFormats();
+        if (allowedFormats == null || allowedFormats.isEmpty()) {
+            return;
+        }
+
+        Set<BookFileType> allowed = EnumSet.copyOf(allowedFormats);
+        List<BookFileEntity> allBookFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
+
+        List<BookFileEntity> disallowedFiles = allBookFiles.stream()
+                .filter(BookFileEntity::isBook)
+                .filter(bf -> !allowed.contains(bf.getBookType()))
+                .toList();
+
+        if (disallowedFiles.isEmpty()) {
+            return;
+        }
+
+        Set<Long> affectedBookIds = disallowedFiles.stream()
+                .map(bf -> bf.getBook().getId())
+                .collect(Collectors.toSet());
+
+        Map<Long, Long> remainingCounts = allBookFiles.stream()
+                .filter(BookFileEntity::isBook)
+                .filter(bf -> allowed.contains(bf.getBookType()))
+                .filter(bf -> affectedBookIds.contains(bf.getBook().getId()))
+                .collect(Collectors.groupingBy(bf -> bf.getBook().getId(), Collectors.counting()));
+
+        List<Long> booksToDelete = affectedBookIds.stream()
+                .filter(bookId -> remainingCounts.getOrDefault(bookId, 0L) == 0)
+                .toList();
+
+        bookAdditionalFileRepository.deleteAll(disallowedFiles);
+        entityManager.flush();
+        entityManager.clear();
+
+        if (!booksToDelete.isEmpty()) {
+            log.info("Deleting {} books with no remaining files of allowed formats in library: {}",
+                    booksToDelete.size(), libraryEntity.getName());
+            deleteRemovedBooks(booksToDelete);
+        }
+
+        log.info("Purged {} book files of disallowed formats from library: {}",
+                disallowedFiles.size(), libraryEntity.getName());
     }
 
     private boolean tryPromoteAlternativeFormatToBook(BookEntity book, List<LibraryFile> libraryFiles) {

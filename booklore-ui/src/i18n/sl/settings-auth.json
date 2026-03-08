@@ -1,0 +1,76 @@
+{
+    "title": "Nastavitve avtentikacije",
+    "description": "Konfiguriraj načine prijave za svojo instanco Booklore. Notranja avtentikacija je vedno omogočena, po želji pa lahko omogočiš OIDC za zunanje ponudnike prijave.",
+    "methods": {
+        "sectionTitle": "Načini avtentikacije",
+        "sectionDesc": "Izberi, kateri načini prijave so na voljo uporabnikom."
+    },
+    "internal": {
+        "label": "Notranja avtentikacija",
+        "status": "Vedno omogočeno",
+        "description": "Vgrajena prijava z uporabniškim imenom in geslom. To je privzet način in ga ni mogoče onemogočiti."
+    },
+    "oidc": {
+        "label": "OIDC avtentikacija",
+        "experimental": "Eksperimentalno",
+        "description": "OpenID Connect za enotno prijavo (SSO) z zunanjimi ponudniki (Authentik, Keycloak, itd.).",
+        "configHint": "Za omogočanje konfiguriraj spodnje nastavitve.",
+        "enabled": "Omogočeno",
+        "disabled": "Onemogočeno"
+    },
+    "providerConfig": {
+        "sectionTitle": "Konfiguracija ponudnika OIDC",
+        "sectionDesc": "Konfiguriraj nastavitve svojega ponudnika OIDC. Za delovanje so zahtevana vsa polja.",
+        "providerName": "Ime ponudnika",
+        "providerPlaceholder": "npr. Authentik, Keycloak",
+        "clientId": "ID klienta (Client ID)",
+        "clientIdPlaceholder": "Tvoj OIDC Client ID",
+        "clientSecret": "",
+        "clientSecretPlaceholder": "",
+        "clientSecretHint": "",
+        "issuerUri": "URI izdajatelja (Issuer URI)",
+        "issuerPlaceholder": "npr. https://auth.primer.si/realms/booklore",
+        "scope": "Obseg (Scope)",
+        "scopeHint": "Zahtevani obsegi za OIDC prijavo. Ponudnik jih mora podpirati.",
+        "claimMappings": "Preslikave zahtevkov (Claim Mappings)",
+        "claimDesc": "Preslikaj zahtevke žetona OIDC v uporabniška polja Booklore. Ti se morajo ujemati z zahtevki ponudnika.",
+        "usernameClaim": "Zahtevek za uporabniško ime",
+        "usernamePlaceholder": "npr. preferred_username",
+        "emailClaim": "Zahtevek za e-pošto",
+        "emailPlaceholder": "npr. email",
+        "nameClaim": "Zahtevek za prikazno ime",
+        "namePlaceholder": "npr. name"
+    },
+    "provisioning": {
+        "sectionTitle": "Ustvarjanje uporabnikov",
+        "sectionDesc": "Določi, kako se ustvarijo novi OIDC uporabniki in kakšna dovoljenja prejmejo.",
+        "autoLabel": "Samodejno ustvarjanje uporabnikov",
+        "autoEnabled": "Omogočeno",
+        "autoDisabled": "Onemogočeno",
+        "autoDesc": "Ko je omogočeno, se novi uporabniki ob prvi OIDC prijavi samodejno ustvarijo s spodnjimi dovoljenji. Ko je onemogočeno, moraš uporabnika v Booklore ustvariti ročno, preden se lahko prijavi prek OIDC.",
+        "defaultPerms": "Privzeta dovoljenja",
+        "readBooks": "Branje knjig",
+        "defaultLibraryAccess": "Privzet dostop do knjižnic",
+        "selectLibraries": "Izberi knjižnice, do katerih lahko dostopajo novi uporabniki"
+    },
+    "perms": {
+        "uploadBooks": "Nalaganje knjig",
+        "downloadBooks": "Prenos knjig",
+        "editMetadata": "Urejanje metapodatkov",
+        "manageLibrary": "Upravljanje knjižnice",
+        "emailBook": "Pošiljanje knjig po e-pošti",
+        "deleteBook": "Brisanje knjig",
+        "koreaderSync": "Sinhronizacija KOReader",
+        "koboSync": "Sinhronizacija Kobo",
+        "accessOpds": "Dostop do OPDS"
+    },
+    "toast": {
+        "saved": "Shranjeno",
+        "oidcUpdated": "OIDC nastavitev posodobljena.",
+        "oidcError": "Posodobitev OIDC nastavitve ni uspela.",
+        "providerSaved": "Nastavitve ponudnika OIDC so shranjene.",
+        "providerError": "Shranjevanje nastavitev ponudnika OIDC ni uspelo.",
+        "provisionSaved": "Nastavitve samodejnega ustvarjanja OIDC uporabnikov so shranjene.",
+        "provisionError": "Shranjevanje nastavitev za ustvarjanje uporabnikov ni uspelo."
+    }
+}

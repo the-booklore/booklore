@@ -32,15 +32,19 @@ public class LibraryFileHelper {
 
     private static final int MIN_AUDIO_FILES_FOR_FOLDER_AUDIOBOOK = 2;
 
-    public List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity) throws IOException {
+    public List<LibraryFile> getAllLibraryFiles(LibraryEntity libraryEntity) throws IOException {
         List<LibraryFile> allFiles = new ArrayList<>();
         for (LibraryPathEntity pathEntity : libraryEntity.getLibraryPaths()) {
             allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity));
         }
-        return filterByAllowedFormats(allFiles, libraryEntity.getAllowedFormats());
+        return allFiles;
     }
 
-    private List<LibraryFile> filterByAllowedFormats(List<LibraryFile> files, List<BookFileType> allowedFormats) {
+    public List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity) throws IOException {
+        return filterByAllowedFormats(getAllLibraryFiles(libraryEntity), libraryEntity.getAllowedFormats());
+    }
+
+    List<LibraryFile> filterByAllowedFormats(List<LibraryFile> files, List<BookFileType> allowedFormats) {
         if (allowedFormats == null || allowedFormats.isEmpty()) {
             return files;
         }
@@ -105,22 +109,25 @@ public class LibraryFileHelper {
                 boolean hasNonAudioBooks = dirHasNonAudioBooks.getOrDefault(dir, false);
 
                 if (audioFiles != null && audioFiles.size() >= MIN_AUDIO_FILES_FOR_FOLDER_AUDIOBOOK && !hasNonAudioBooks) {
-                    // This is a folder-based audiobook: contains 2+ audio files and no ebook files
                     // Don't treat library root as audiobook folder
                     if (!dir.equals(libraryPath)) {
-                        log.info("Detected folder-based audiobook: {} ({} audio files)", dir.getFileName(), audioFiles.size());
+                        if (FileUtils.isSeriesFolder(audioFiles)) {
+                            log.info("Detected series folder: {} ({} audio files with distinct titles)", dir.getFileName(), audioFiles.size());
+                            addIndividualAudioFiles(audioFiles, libraryEntity, pathEntity, libraryFiles);
+                        } else {
+                            log.info("Detected folder-based audiobook: {} ({} audio files)", dir.getFileName(), audioFiles.size());
 
-                        processedAsFolderAudiobook.add(dir);
+                            processedAsFolderAudiobook.add(dir);
 
-                        // Add a single LibraryFile representing the folder
-                        libraryFiles.add(LibraryFile.builder()
-                                .libraryEntity(libraryEntity)
-                                .libraryPathEntity(pathEntity)
-                                .fileSubPath(FileUtils.getRelativeSubPath(pathEntity.getPath(), dir))
-                                .fileName(dir.getFileName().toString())
-                                .bookFileType(BookFileType.AUDIOBOOK)
-                                .folderBased(true)
-                                .build());
+                            libraryFiles.add(LibraryFile.builder()
+                                    .libraryEntity(libraryEntity)
+                                    .libraryPathEntity(pathEntity)
+                                    .fileSubPath(FileUtils.getRelativeSubPath(pathEntity.getPath(), dir))
+                                    .fileName(dir.getFileName().toString())
+                                    .bookFileType(BookFileType.AUDIOBOOK)
+                                    .folderBased(true)
+                                    .build());
+                        }
                     } else {
                         // Library root - add individual audio files
                         addIndividualAudioFiles(audioFiles, libraryEntity, pathEntity, libraryFiles);

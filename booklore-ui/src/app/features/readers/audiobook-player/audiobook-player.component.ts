@@ -167,7 +167,7 @@ export class AudiobookPlayerComponent implements OnInit, OnDestroy {
         }
 
         // Load cover URLs - prefer stored audiobook cover, fall back to embedded, then book cover
-        const token = this.authService.getInternalAccessToken() || this.authService.getOidcAccessToken();
+        const token = this.authService.getInternalAccessToken();
         this.bookCoverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/book/${this.bookId}/cover?token=${encodeURIComponent(token || '')}`;
         this.coverUrl = `${API_CONFIG.BASE_URL}/api/v1/media/book/${this.bookId}/audiobook-cover?token=${encodeURIComponent(token || '')}`;
 
@@ -388,9 +388,12 @@ export class AudiobookPlayerComponent implements OnInit, OnDestroy {
   private updateMediaSessionMetadata(): void {
     if (!('mediaSession' in navigator)) return;
 
+    const chapters = this.audiobookInfo.chapters;
+    const chapterTitle = chapters && chapters.length > 1 ? this.getCurrentChapter()?.title : null;
+
     const title = this.audiobookInfo.folderBased
       ? this.currentTrack?.title
-      : this.getCurrentChapter()?.title || this.audiobookInfo.title;
+      : chapterTitle || this.audiobookInfo.title;
 
     navigator.mediaSession.metadata = new MediaMetadata({
       title: title || this.t.translate('readerAudiobook.untitled'),

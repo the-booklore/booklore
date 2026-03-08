@@ -7,6 +7,7 @@ import org.booklore.model.enums.MetadataProvider;
 import org.booklore.service.metadata.parser.hardcover.GraphQLResponse;
 import org.booklore.service.metadata.parser.hardcover.HardcoverBookDetails;
 import org.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
+import org.booklore.service.metadata.parser.hardcover.HardcoverCachedTag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for HardcoverParser.
- * 
+ * <p>
  * These tests verify:
  * - Combined title+author search strategy for better reliability
  * - ISBN search behavior
@@ -79,7 +80,7 @@ class HardcoverParserTest {
 
             when(hardcoverBookSearchService.searchBooks("Some Book Unknown Author"))
                     .thenReturn(Collections.emptyList());
-            
+
             GraphQLResponse.Hit hit = createHitWithAuthor("Some Book", "Different Author");
             when(hardcoverBookSearchService.searchBooks("Some Book"))
                     .thenReturn(List.of(hit));
@@ -126,15 +127,157 @@ class HardcoverParserTest {
                     .isbn("978-0316769488")
                     .build();
 
-            GraphQLResponse.Hit hit = createHitWithAuthor("The Catcher in the Rye", "J.D. Salinger");
-            hit.getDocument().setIsbns(List.of("9780316769488", "0316769487"));
-            when(hardcoverBookSearchService.searchBooks("978-0316769488"))
+            GraphQLResponse.BookWithEditions hit = createBookWithEditions();
+            hit.getEditions().get(0).setIsbn13("9780316769488");
+            hit.getEditions().get(0).setIsbn10("0316769487");
+            when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
                     .thenReturn(List.of(hit));
 
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
-            verify(hardcoverBookSearchService).searchBooks("978-0316769488");
+            verify(hardcoverBookSearchService).searchBookByIsbn("9780316769488");
             verify(hardcoverBookSearchService, never()).searchBooks(contains("title"));
+        }
+
+        @Test
+        @DisplayName("Should return empty list when ISBN search returns book with no editions")
+        void fetchMetadata_isbnSearchNoEditions_returnsEmptyList() {
+            Book book = Book.builder().title("Any Title").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Any Title")
+                    .isbn("9780316769488")
+                    .build();
+
+            GraphQLResponse.BookWithEditions bookWithNoEditions = new GraphQLResponse.BookWithEditions();
+            bookWithNoEditions.setId(12345);
+            bookWithNoEditions.setTitle("Test Book");
+            bookWithNoEditions.setEditions(Collections.emptyList());
+
+            when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
+                    .thenReturn(List.of(bookWithNoEditions));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should return empty list when ISBN search returns book with null editions")
+        void fetchMetadata_isbnSearchNullEditions_returnsEmptyList() {
+            Book book = Book.builder().title("Any Title").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Any Title")
+                    .isbn("9780316769488")
+                    .build();
+
+            GraphQLResponse.BookWithEditions bookWithNullEditions = new GraphQLResponse.BookWithEditions();
+            bookWithNullEditions.setId(12345);
+            bookWithNullEditions.setTitle("Test Book");
+            bookWithNullEditions.setEditions(null);
+
+            when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
+                    .thenReturn(List.of(bookWithNullEditions));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should return empty list when ISBN search returns null")
+        void fetchMetadata_isbnSearchReturnsNull_returnsEmptyList() {
+            Book book = Book.builder().title("Any Title").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Any Title")
+                    .isbn("9780316769488")
+                    .build();
+
+            when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
+                    .thenReturn(null);
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should return all editions when ISBN search returns book with multiple editions")
+        void fetchMetadata_isbnSearchMultipleEditions_returnsAllEditions() {
+            Book book = Book.builder().title("Any Title").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Any Title")
+                    .isbn("9780316769488")
+                    .build();
+
+            GraphQLResponse.BookWithEditions bookWithEditions = createBookWithEditions();
+
+            // Add a second edition
+            GraphQLResponse.Edition secondEdition = new GraphQLResponse.Edition();
+            secondEdition.setId(2);
+            secondEdition.setTitle("Test Book - Paperback Edition");
+            secondEdition.setIsbn13("9780316769489");
+            secondEdition.setIsbn10("0316769489");
+            secondEdition.setPages(400);
+
+            GraphQLResponse.Author author = new GraphQLResponse.Author();
+            author.setName("Test Author");
+            GraphQLResponse.Contributor contributor = new GraphQLResponse.Contributor();
+            contributor.setAuthor(author);
+            secondEdition.setCachedContributors(List.of(contributor));
+
+            bookWithEditions.setEditions(List.of(bookWithEditions.getEditions().get(0), secondEdition));
+
+            when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
+                    .thenReturn(List.of(bookWithEditions));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results).hasSize(2);
+            assertThat(results.get(0).getTitle()).isEqualTo("Test Book - Hardcover Edition");
+            assertThat(results.get(1).getTitle()).isEqualTo("Test Book - Paperback Edition");
+        }
+
+        @Test
+        @DisplayName("Should handle edition with null optional fields gracefully")
+        void fetchMetadata_editionWithNullOptionalFields_handlesGracefully() {
+            Book book = Book.builder().title("Any Title").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Any Title")
+                    .isbn("9780316769488")
+                    .build();
+
+            GraphQLResponse.BookWithEditions bookWithEditions = new GraphQLResponse.BookWithEditions();
+            bookWithEditions.setId(12345);
+            bookWithEditions.setSlug("test-book");
+            bookWithEditions.setTitle("Test Book");
+            bookWithEditions.setDescription("A description");
+            bookWithEditions.setRating(4.0);
+            bookWithEditions.setRatingsCount(50);
+
+            // Edition with null language, publisher, and cachedContributors
+            GraphQLResponse.Edition edition = new GraphQLResponse.Edition();
+            edition.setId(1);
+            edition.setTitle("Test Book Edition");
+            edition.setIsbn13("9780316769488");
+            edition.setLanguage(null);
+            edition.setPublisher(null);
+            edition.setCachedContributors(null);
+            edition.setImage(null);
+
+            bookWithEditions.setEditions(List.of(edition));
+
+            when(hardcoverBookSearchService.searchBookByIsbn("9780316769488"))
+                    .thenReturn(List.of(bookWithEditions));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results).hasSize(1);
+            BookMetadata metadata = results.get(0);
+            assertThat(metadata.getTitle()).isEqualTo("Test Book Edition");
+            assertThat(metadata.getLanguage()).isNull();
+            assertThat(metadata.getPublisher()).isNull();
+            assertThat(metadata.getAuthors()).isNullOrEmpty();
+            assertThat(metadata.getThumbnailUrl()).isNull();
         }
 
         @Test
@@ -210,12 +353,16 @@ class HardcoverParserTest {
                     .author("Wrong Author")  // Should be ignored
                     .build();
 
-            GraphQLResponse.Hit hit = createHitWithAuthor("Any Book", "Correct Author");
-            when(hardcoverBookSearchService.searchBooks("123456789X"))
-                    .thenReturn(List.of(hit));
+            GraphQLResponse.BookWithEditions bookWithEditions = createBookWithEditions();
+            // The book has "Test Author" but request has "Wrong Author" - should still return results
+            when(hardcoverBookSearchService.searchBookByIsbn("123456789X"))
+                    .thenReturn(List.of(bookWithEditions));
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
             assertThat(results).hasSize(1);  // Should not filter out
+            verify(hardcoverBookSearchService).searchBookByIsbn("123456789X");
+
+            assertThat(results.get(0).getAuthors()).contains("Test Author");
         }
     }
 
@@ -229,19 +376,53 @@ class HardcoverParserTest {
             Book book = Book.builder().title("Test").build();
             FetchMetadataRequest request = FetchMetadataRequest.builder()
                     .title("Test")
-                    .isbn("9781234567897")
                     .build();
 
             GraphQLResponse.Hit hit = createFullyPopulatedHit();
-            when(hardcoverBookSearchService.searchBooks("9781234567897"))
+            when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
             List<BookMetadata> results = parser.fetchMetadata(book, request);
 
             assertThat(results).hasSize(1);
             BookMetadata metadata = results.get(0);
-            
+
             assertThat(metadata.getTitle()).isEqualTo("Test Book");
+            assertThat(metadata.getSubtitle()).isEqualTo("A Subtitle");
+            assertThat(metadata.getDescription()).isEqualTo("A description");
+            assertThat(metadata.getHardcoverId()).isEqualTo("test-book-slug");
+            assertThat(metadata.getHardcoverBookId()).isEqualTo("12345");
+            assertThat(metadata.getHardcoverRating()).isEqualTo(4.25);
+            assertThat(metadata.getHardcoverReviewCount()).isEqualTo(100);
+            assertThat(metadata.getPageCount()).isEqualTo(350);
+            assertThat(metadata.getAuthors()).contains("Test Author");
+            assertThat(metadata.getSeriesName()).isEqualTo("Test Series");
+            assertThat(metadata.getSeriesNumber()).isEqualTo(2.0f);
+            assertThat(metadata.getSeriesTotal()).isEqualTo(5);
+            assertThat(metadata.getIsbn13()).isEqualTo("9781111111113");
+            assertThat(metadata.getIsbn10()).isEqualTo("1111111111");
+            assertThat(metadata.getProvider()).isEqualTo(MetadataProvider.Hardcover);
+        }
+
+        @Test
+        @DisplayName("Should map all basic metadata fields correctly when searching with ISBN")
+        void fetchMetadata_fullDocument_mapsAllFields_fromISBN() {
+            Book book = Book.builder().title("Test").build();
+            FetchMetadataRequest request = FetchMetadataRequest.builder()
+                    .title("Test")
+                    .isbn("9781234567897")
+                    .build();
+
+            GraphQLResponse.BookWithEditions hit = createBookWithEditions();
+            when(hardcoverBookSearchService.searchBookByIsbn("9781234567897"))
+                    .thenReturn(List.of(hit));
+
+            List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+            assertThat(results).hasSize(1);
+            BookMetadata metadata = results.get(0);
+
+            assertThat(metadata.getTitle()).isEqualTo("Test Book - Hardcover Edition");
             assertThat(metadata.getSubtitle()).isEqualTo("A Subtitle");
             assertThat(metadata.getDescription()).isEqualTo("A description");
             assertThat(metadata.getHardcoverId()).isEqualTo("test-book-slug");
@@ -255,6 +436,11 @@ class HardcoverParserTest {
             assertThat(metadata.getSeriesTotal()).isEqualTo(5);
             assertThat(metadata.getIsbn13()).isEqualTo("9781234567897");
             assertThat(metadata.getIsbn10()).isEqualTo("123456789X");
+            assertThat(metadata.getPublisher()).isEqualTo("Test Publisher");
+            assertThat(metadata.getLanguage()).isEqualTo("en");
+            assertThat(metadata.getMoods()).containsExactlyInAnyOrder("Adventurous", "Exciting");
+            assertThat(metadata.getCategories()).containsExactlyInAnyOrder("Fiction", "Fantasy");
+            assertThat(metadata.getTags()).containsExactlyInAnyOrder("Epic", "Quest");
             assertThat(metadata.getProvider()).isEqualTo(MetadataProvider.Hardcover);
         }
 
@@ -267,8 +453,8 @@ class HardcoverParserTest {
                     .isbn("123456789X")
                     .build();
 
-            GraphQLResponse.Hit hit = createFullyPopulatedHit();
-            when(hardcoverBookSearchService.searchBooks("123456789X"))
+            GraphQLResponse.BookWithEditions hit = createBookWithEditions();
+            when(hardcoverBookSearchService.searchBookByIsbn("123456789X"))
                     .thenReturn(List.of(hit));
 
             List<BookMetadata> results = parser.fetchMetadata(book, request);
@@ -286,8 +472,11 @@ class HardcoverParserTest {
                     .isbn("9791111111112")
                     .build();
 
-            GraphQLResponse.Hit hit = createFullyPopulatedHit();
-            when(hardcoverBookSearchService.searchBooks("9791111111112"))
+            GraphQLResponse.BookWithEditions hit = createBookWithEditions();
+            hit.getEditions().get(0).setIsbn13("9791111111112");
+            hit.getEditions().get(0).setIsbn10(null);
+
+            when(hardcoverBookSearchService.searchBookByIsbn("9791111111112"))
                     .thenReturn(List.of(hit));
 
             List<BookMetadata> results = parser.fetchMetadata(book, request);
@@ -308,7 +497,7 @@ class HardcoverParserTest {
             GraphQLResponse.Image image = new GraphQLResponse.Image();
             image.setUrl("https://example.com/cover.jpg");
             hit.getDocument().setImage(image);
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -327,7 +516,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setImage(null);
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -352,7 +541,7 @@ class HardcoverParserTest {
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setId("12345");
             hit.getDocument().setMoods(List.of("sad", "dark", "funny", "hopeful"));
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -377,7 +566,7 @@ class HardcoverParserTest {
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setId("12345");
             hit.getDocument().setMoods(List.of("sad", "funny", "invalid-mood"));
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
             when(hardcoverBookSearchService.fetchBookDetails(12345))
@@ -400,7 +589,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setMoods(null);
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -456,7 +645,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setId("not-a-number");
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -492,7 +681,7 @@ class HardcoverParserTest {
 
             GraphQLResponse.Hit hit = createHitWithAuthor("Test", "Author");
             hit.getDocument().setReleaseDate("invalid-date");
-            
+
             when(hardcoverBookSearchService.searchBooks("Test"))
                     .thenReturn(List.of(hit));
 
@@ -551,7 +740,7 @@ class HardcoverParserTest {
         doc.setSlug(title.toLowerCase().replace(" ", "-"));
         doc.setAuthorNames(Set.of(author));
         doc.setId(String.valueOf(new Random().nextInt(100000)));
-        
+
         GraphQLResponse.Hit hit = new GraphQLResponse.Hit();
         hit.setDocument(doc);
         return hit;
@@ -573,22 +762,22 @@ class HardcoverParserTest {
         doc.setGenres(List.of("Fiction", "Fantasy"));
         doc.setMoods(List.of("adventurous", "exciting"));
         doc.setTags(List.of("Epic"));
-        
+
         // Series info
         GraphQLResponse.Series series = new GraphQLResponse.Series();
         series.setName("Test Series");
         series.setBooksCount(5);
-        
+
         GraphQLResponse.FeaturedSeries featuredSeries = new GraphQLResponse.FeaturedSeries();
         featuredSeries.setSeries(series);
         featuredSeries.setPosition(2);
         doc.setFeaturedSeries(featuredSeries);
-        
+
         // Image
         GraphQLResponse.Image image = new GraphQLResponse.Image();
         image.setUrl("https://example.com/cover.jpg");
         doc.setImage(image);
-        
+
         GraphQLResponse.Hit hit = new GraphQLResponse.Hit();
         hit.setDocument(doc);
         return hit;
@@ -598,27 +787,114 @@ class HardcoverParserTest {
         HardcoverBookDetails details = new HardcoverBookDetails();
         details.setId(12345);
         details.setTitle("Test Book");
-        
-        Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags = new HashMap<>();
-        
-        List<HardcoverBookDetails.CachedTag> moods = new ArrayList<>();
+
+        Map<String, List<HardcoverCachedTag>> cachedTags = new HashMap<>();
+
+        List<HardcoverCachedTag> moods = new ArrayList<>();
         moods.add(createCachedTag("sad", 15));
         moods.add(createCachedTag("dark", 12));
         moods.add(createCachedTag("emotional", 8));
         moods.add(createCachedTag("funny", 2));  // Low count, should be filtered
         cachedTags.put("Mood", moods);
-        
-        List<HardcoverBookDetails.CachedTag> genres = new ArrayList<>();
+
+        List<HardcoverCachedTag> genres = new ArrayList<>();
         genres.add(createCachedTag("Fiction", 10));
         genres.add(createCachedTag("Drama", 8));
         cachedTags.put("Genre", genres);
-        
+
         details.setCachedTags(cachedTags);
         return details;
     }
 
-    private HardcoverBookDetails.CachedTag createCachedTag(String tag, int count) {
-        HardcoverBookDetails.CachedTag cachedTag = new HardcoverBookDetails.CachedTag();
+    private GraphQLResponse.BookWithEditions createBookWithEditions() {
+        GraphQLResponse.BookWithEditions book = new GraphQLResponse.BookWithEditions();
+
+        book.setId(12345);
+        book.setSlug("test-book-slug");
+        book.setTitle("Test Book");
+        book.setSubtitle("A Subtitle");
+        book.setDescription("A description");
+        book.setRating(4.25);
+        book.setRatingsCount(100);
+        book.setReviewsCount(50);
+        book.setPages(350);
+        book.setReleaseDate("2023-01-15");
+        book.setReleaseYear(2023);
+
+        // Series info
+        GraphQLResponse.Series series = new GraphQLResponse.Series();
+        series.setName("Test Series");
+        series.setBooksCount(5);
+
+        GraphQLResponse.FeaturedSeries featuredSeries = new GraphQLResponse.FeaturedSeries();
+        featuredSeries.setSeries(series);
+        featuredSeries.setPosition(2);
+        book.setFeaturedBookSeries(featuredSeries);
+
+        GraphQLResponse.Image image = new GraphQLResponse.Image();
+        image.setUrl("https://example.com/cover.jpg");
+        book.setImage(image);
+
+        // Cached contributors for the book
+        GraphQLResponse.Author bookAuthor = new GraphQLResponse.Author();
+        bookAuthor.setId(1);
+        bookAuthor.setSlug("test-author");
+        bookAuthor.setName("Test Author");
+
+        GraphQLResponse.Contributor bookContributor = new GraphQLResponse.Contributor();
+        bookContributor.setAuthor(bookAuthor);
+        bookContributor.setContribution("Author");
+        book.setCachedContributors(List.of(bookContributor));
+
+        // Editions
+        GraphQLResponse.Edition edition = new GraphQLResponse.Edition();
+        edition.setId(1);
+        edition.setTitle("Test Book - Hardcover Edition");
+        edition.setSubtitle("A Subtitle");
+        edition.setPages(350);
+        edition.setReleaseDate("2023-01-15");
+        edition.setReleaseYear(2023);
+
+        // Cached contributors for the edition
+        GraphQLResponse.Author editionAuthor = new GraphQLResponse.Author();
+        editionAuthor.setId(1);
+        editionAuthor.setSlug("test-author");
+        editionAuthor.setName("Test Author");
+
+        GraphQLResponse.Contributor editionContributor = new GraphQLResponse.Contributor();
+        editionContributor.setAuthor(editionAuthor);
+        editionContributor.setContribution("Author");
+        edition.setCachedContributors(List.of(editionContributor));
+
+        GraphQLResponse.Image editionImage = new GraphQLResponse.Image();
+        editionImage.setUrl("https://example.com/edition-cover.jpg");
+        edition.setImage(editionImage);
+
+        edition.setIsbn10("123456789X");
+        edition.setIsbn13("9781234567897");
+
+        GraphQLResponse.Publisher publisher = new GraphQLResponse.Publisher();
+        publisher.setName("Test Publisher");
+        edition.setPublisher(publisher);
+
+        GraphQLResponse.Language language = new GraphQLResponse.Language();
+        language.setCode2("en");
+        edition.setLanguage(language);
+
+        book.setEditions(List.of(edition));
+
+        // Cached tags for the book (moods, genres, tags)
+        GraphQLResponse.CachedTags cachedTags = new GraphQLResponse.CachedTags();
+        cachedTags.setMood(List.of(createCachedTag("adventurous", 15), createCachedTag("exciting", 12), createCachedTag("novotes", 0)));
+        cachedTags.setGenre(List.of(createCachedTag("fiction", 20), createCachedTag("fantasy", 18), createCachedTag("novotes", 0)));
+        cachedTags.setTag(List.of(createCachedTag("epic", 10), createCachedTag("quest", 8), createCachedTag("novotes", 0)));
+        book.setCachedTags(cachedTags);
+
+        return book;
+    }
+
+    private HardcoverCachedTag createCachedTag(String tag, int count) {
+        HardcoverCachedTag cachedTag = new HardcoverCachedTag();
         cachedTag.setTag(tag);
         cachedTag.setCount(count);
         return cachedTag;

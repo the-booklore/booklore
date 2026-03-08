@@ -42,6 +42,7 @@ interface TimelineSession {
   bookType: BookType;
   level: number;
   totalLevels: number;
+  tooltipContent: string;
 }
 
 interface DayTimeline {
@@ -319,7 +320,7 @@ export class ReadingSessionTimelineComponent implements OnInit {
       width = 0.5;
     }
 
-    return {
+    const timelineSession: TimelineSession = {
       startHour,
       startMinute,
       endHour,
@@ -331,8 +332,11 @@ export class ReadingSessionTimelineComponent implements OnInit {
       bookId: session.bookId,
       bookType: session.bookType,
       level,
-      totalLevels
+      totalLevels,
+      tooltipContent: ''
     };
+    timelineSession.tooltipContent = this.buildTooltipContent(timelineSession);
+    return timelineSession;
   }
 
   public formatTime(hour: number, minute: number): string {
@@ -375,7 +379,7 @@ export class ReadingSessionTimelineComponent implements OnInit {
     return this.urlHelperService.getDirectThumbnailUrl(bookId);
   }
 
-  public getTooltipContent(session: TimelineSession): string {
+  private buildTooltipContent(session: TimelineSession): string {
     return `
       <div class="session-tooltip-content">
         <div class="session-tooltip-cover">

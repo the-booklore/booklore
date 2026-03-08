@@ -121,10 +121,11 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
             Element container = findProductContainer(link);
 
             String thumbnailUrl = extractPreviewThumbnail(container, link);
-            Set<String> authors = extractPreviewAuthors(container);
+            List<String> authors = extractPreviewAuthors(container);
             String narrator = extractPreviewNarrator(container);
 
             BookMetadata.BookMetadataBuilder builder = BookMetadata.builder()
+                    .asin(asin)
                     .audibleId(asin)
                     .title(title)
                     .thumbnailUrl(thumbnailUrl)
@@ -172,8 +173,8 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
         return null;
     }
 
-    private Set<String> extractPreviewAuthors(Element container) {
-        Set<String> authors = new LinkedHashSet<>();
+    private List<String> extractPreviewAuthors(Element container) {
+        List<String> authors = new ArrayList<>();
         if (container == null) return authors;
 
         for (Element authorLink : container.select("a[href*='/author/']")) {
@@ -318,7 +319,7 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
             }
         }
 
-        Set<String> authors = extractPersonNames(audiobookNode, "author");
+        List<String> authors = extractPersonNames(audiobookNode, "author");
         String narrator = extractFirstPersonName(audiobookNode, "readBy");
         String publisher = getJsonString(audiobookNode, "publisher");
         String description = getJsonString(audiobookNode, "description");
@@ -416,6 +417,7 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
 
         return BookMetadata.builder()
                 .provider(MetadataProvider.Audible)
+                .asin(audibleId)
                 .audibleId(audibleId)
                 .title(title)
                 .subtitle(subtitle)
@@ -443,8 +445,8 @@ public class AudibleParser implements BookParser, DetailedMetadataProvider {
         return fieldNode.asText(null);
     }
 
-    private Set<String> extractPersonNames(JsonNode node, String field) {
-        Set<String> names = new HashSet<>();
+    private List<String> extractPersonNames(JsonNode node, String field) {
+        List<String> names = new ArrayList<>();
         if (node == null) return names;
 
         JsonNode fieldNode = node.path(field);

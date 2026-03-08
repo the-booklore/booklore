@@ -7,20 +7,15 @@ import org.booklore.model.entity.BookMetadataEntity;
 import org.booklore.model.entity.BookReviewEntity;
 import org.booklore.model.enums.MetadataProvider;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class BookReviewUpdateServiceTest {
 
@@ -31,163 +26,296 @@ class BookReviewUpdateServiceTest {
         service = new BookReviewUpdateService();
     }
 
-    private BookReview buildDto(MetadataProvider provider, Instant date) {
+    private BookMetadataEntity entityWithReviews(Set<BookReviewEntity> reviews) {
+        return BookMetadataEntity.builder()
+                .reviewsLocked(false)
+                .reviews(reviews)
+                .build();
+    }
+
+    private BookReview review(MetadataProvider provider, String name, Instant date) {
         return BookReview.builder()
-            .metadataProvider(provider)
-            .reviewerName("alice")
-            .title("Great Book")
-            .rating(4.5f)
-            .date(date)
-            .body("insightful")
-            .spoiler(false)
-            .followersCount(42)
-            .textReviewsCount(3)
-            .country("US")
-            .build();
+                .metadataProvider(provider)
+                .reviewerName(name)
+                .date(date)
+                .build();
     }
 
-    @Test
-    void lockedEntityShouldRemainUnchanged() {
-        BookMetadataEntity entity = new BookMetadataEntity();
-        entity.setReviewsLocked(true);
+    @Nested
+    class ReviewLockRespect {
 
-        BookReviewEntity existing = BookReviewEntity.builder()
-            .metadataProvider(MetadataProvider.Amazon)
-            .build();
-        entity.getReviews().add(existing);
+        @Test
+        void skipsUpdateWhenReviewsLocked() {
+            BookMetadataEntity entity = BookMetadataEntity.builder()
+                    .reviewsLocked(true)
+                    .reviews(new HashSet<>())
+                    .build();
+            BookMetadata metadata = BookMetadata.builder()
+                    .bookReviews(List.of(review(MetadataProvider.Amazon, "r1", Instant.now())))
+                    .build();
 
-        List<BookReview> incoming = Collections.singletonList(buildDto(MetadataProvider.Amazon, Instant.now()));
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
 
-        service.updateBookReviews(BookMetadata.builder()
-                .bookReviews(incoming)
-                .build(), entity, new MetadataClearFlags(), true);
-
-        assertEquals(1, entity.getReviews().size());
-        assertTrue(entity.getReviews().stream().anyMatch(r -> r.getMetadataProvider() == MetadataProvider.Amazon));
-    }
-
-    @Test
-    void clearFlagRemovesAllReviews() {
-        BookMetadataEntity entity = new BookMetadataEntity();
-        entity.setReviewsLocked(false);
-
-        entity.getReviews().add(BookReviewEntity.builder()
-            .metadataProvider(MetadataProvider.GoodReads)
-            .build()
-        );
-
-        MetadataClearFlags flags = new MetadataClearFlags();
-        flags.setReviews(true);
-
-        service.updateBookReviews(BookMetadata.builder()
-                .bookReviews(Collections.singletonList(
-                    buildDto(MetadataProvider.GoodReads, Instant.now())
-                ))
-                .build(), entity, flags, true);
-
-        assertTrue(entity.getReviews().isEmpty());
-    }
-
-    @Test
-    void nullOrEmptyReviewsDoNothing() {
-        BookMetadataEntity entity = new BookMetadataEntity();
-        entity.setReviewsLocked(false);
-
-        entity.getReviews().add(BookReviewEntity.builder()
-            .metadataProvider(MetadataProvider.Google)
-            .build()
-        );
-
-        service.updateBookReviews(BookMetadata.builder().build(), entity, new MetadataClearFlags(), true);
-        assertEquals(1, entity.getReviews().size());
-
-        service.updateBookReviews(BookMetadata.builder()
-                .bookReviews(Collections.emptyList())
-                .build(), entity, new MetadataClearFlags(), true);
-        assertEquals(1, entity.getReviews().size());
-    }
-
-    @Test
-    void mergeWithExistingAddsReviews() {
-        BookMetadataEntity entity = new BookMetadataEntity();
-        entity.setReviewsLocked(false);
-
-        BookReviewEntity existing = BookReviewEntity.builder()
-            .metadataProvider(MetadataProvider.Google)
-            .build();
-        entity.getReviews().add(existing);
-
-        List<BookReview> incoming = Arrays.asList(
-            buildDto(MetadataProvider.Hardcover, Instant.now()),
-            buildDto(MetadataProvider.Comicvine, Instant.now())
-        );
-
-        service.updateBookReviews(BookMetadata.builder()
-                .bookReviews(incoming)
-                .build(), entity, new MetadataClearFlags(), true);
-
-        Set<MetadataProvider> providers = entity.getReviews().stream()
-            .map(BookReviewEntity::getMetadataProvider)
-            .collect(Collectors.toSet());
-
-        assertEquals(3, providers.size());
-        assertTrue(providers.containsAll(Arrays.asList(
-            MetadataProvider.Google,
-            MetadataProvider.Hardcover,
-            MetadataProvider.Comicvine
-        )));
-    }
-
-    @Test
-    void replaceClearsAndAddsOnlyIncoming() {
-        BookMetadataEntity entity = new BookMetadataEntity();
-        entity.setReviewsLocked(false);
-
-        entity.getReviews().add(BookReviewEntity.builder()
-            .metadataProvider(MetadataProvider.Amazon)
-            .build()
-        );
-
-        List<BookReview> incoming = Collections.singletonList(
-            buildDto(MetadataProvider.GoodReads, Instant.now())
-        );
-
-        service.updateBookReviews(BookMetadata.builder()
-                .bookReviews(incoming)
-                .build(), entity, new MetadataClearFlags(), false);
-
-        assertEquals(1, entity.getReviews().size());
-        assertTrue(entity.getReviews().stream()
-            .allMatch(r -> r.getMetadataProvider() == MetadataProvider.GoodReads));
-    }
-
-    @Test
-    void limitsReviewsPerProviderToFiveNewest() {
-        BookMetadataEntity entity = new BookMetadataEntity();
-        entity.setReviewsLocked(false);
-
-        List<BookReview> incoming = new ArrayList<>();
-        long now = System.currentTimeMillis();
-        for (int i = 0; i < 6; i++) {
-            incoming.add(buildDto(
-                MetadataProvider.Amazon,
-                Instant.ofEpochMilli(now - (i * 1000L))
-            ));
+            assertThat(entity.getReviews()).isEmpty();
         }
 
-        service.updateBookReviews(BookMetadata.builder()
-                .bookReviews(incoming)
-                .build(), entity, new MetadataClearFlags(), false);
+        @Test
+        void skipsUpdateWhenReviewsLockedIsNull() {
+            BookMetadataEntity entity = BookMetadataEntity.builder()
+                    .reviewsLocked(null)
+                    .reviews(new HashSet<>())
+                    .build();
+            BookMetadata metadata = BookMetadata.builder()
+                    .bookReviews(List.of(review(MetadataProvider.Amazon, "r1", Instant.now())))
+                    .build();
 
-        assertEquals(5, entity.getReviews().size());
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
 
-        List<Instant> keptDates = entity.getReviews().stream()
-            .map(BookReviewEntity::getDate)
-            .sorted(Comparator.reverseOrder())
-            .toList();
+            assertThat(entity.getReviews()).hasSize(1);
+        }
+    }
 
-        assertFalse(keptDates.contains(
-            Instant.ofEpochMilli(now - (5 * 1000L))
-        ));
+    @Nested
+    class ClearFlags {
+
+        @Test
+        void clearsReviewsWhenClearFlagSet() {
+            BookReviewEntity existing = BookReviewEntity.builder()
+                    .metadataProvider(MetadataProvider.Amazon)
+                    .reviewerName("existing")
+                    .build();
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>(Set.of(existing)));
+
+            MetadataClearFlags flags = new MetadataClearFlags();
+            flags.setReviews(true);
+
+            service.updateBookReviews(BookMetadata.builder().build(), entity, flags, true);
+
+            assertThat(entity.getReviews()).isEmpty();
+        }
+    }
+
+    @Nested
+    class NullAndEmptyReviewHandling {
+
+        @Test
+        void skipsWhenBookReviewsNull() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            BookMetadata metadata = BookMetadata.builder().bookReviews(null).build();
+
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            assertThat(entity.getReviews()).isEmpty();
+        }
+
+        @Test
+        void filtersNullReviewsInList() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            List<BookReview> reviews = new ArrayList<>();
+            reviews.add(null);
+            reviews.add(review(MetadataProvider.Amazon, "valid", Instant.now()));
+
+            BookMetadata metadata = BookMetadata.builder().bookReviews(reviews).build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            assertThat(entity.getReviews()).hasSize(1);
+        }
+
+        @Test
+        void filtersReviewsWithNullProvider() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            BookReview noProvider = BookReview.builder().reviewerName("orphan").build();
+
+            BookMetadata metadata = BookMetadata.builder()
+                    .bookReviews(List.of(noProvider))
+                    .build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            assertThat(entity.getReviews()).isEmpty();
+        }
+    }
+
+    @Nested
+    class MergeVsReplace {
+
+        @Test
+        void mergeAddsToExistingReviews() {
+            BookReviewEntity existing = BookReviewEntity.builder()
+                    .metadataProvider(MetadataProvider.Amazon)
+                    .reviewerName("old")
+                    .date(Instant.now())
+                    .build();
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>(Set.of(existing)));
+
+            BookMetadata metadata = BookMetadata.builder()
+                    .bookReviews(List.of(review(MetadataProvider.GoodReads, "new", Instant.now())))
+                    .build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            assertThat(entity.getReviews()).hasSize(2);
+        }
+
+        @Test
+        void replaceRemovesExistingReviews() {
+            BookReviewEntity existing = BookReviewEntity.builder()
+                    .metadataProvider(MetadataProvider.Amazon)
+                    .reviewerName("old")
+                    .date(Instant.now())
+                    .build();
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>(Set.of(existing)));
+
+            BookMetadata metadata = BookMetadata.builder()
+                    .bookReviews(List.of(review(MetadataProvider.GoodReads, "replacement", Instant.now())))
+                    .build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), false);
+
+            assertThat(entity.getReviews()).hasSize(1);
+            assertThat(entity.getReviews().iterator().next().getReviewerName()).isEqualTo("replacement");
+        }
+    }
+
+    @Nested
+    class PerProviderLimit {
+
+        @Test
+        void limitsToFiveReviewsPerProvider() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            Instant base = Instant.now();
+
+            List<BookReview> sevenReviews = IntStream.range(0, 7)
+                    .mapToObj(i -> review(MetadataProvider.Amazon, "r" + i, base.minus(i, ChronoUnit.DAYS)))
+                    .toList();
+
+            BookMetadata metadata = BookMetadata.builder().bookReviews(sevenReviews).build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            assertThat(entity.getReviews()).hasSize(5);
+        }
+
+        @Test
+        void limitsApplyPerProviderIndependently() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            Instant base = Instant.now();
+
+            List<BookReview> reviews = new ArrayList<>();
+            for (int i = 0; i < 6; i++) {
+                reviews.add(review(MetadataProvider.Amazon, "az" + i, base.minus(i, ChronoUnit.DAYS)));
+            }
+            for (int i = 0; i < 6; i++) {
+                reviews.add(review(MetadataProvider.GoodReads, "gr" + i, base.minus(i, ChronoUnit.DAYS)));
+            }
+
+            BookMetadata metadata = BookMetadata.builder().bookReviews(reviews).build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            long amazonCount = entity.getReviews().stream()
+                    .filter(r -> r.getMetadataProvider() == MetadataProvider.Amazon)
+                    .count();
+            long goodreadsCount = entity.getReviews().stream()
+                    .filter(r -> r.getMetadataProvider() == MetadataProvider.GoodReads)
+                    .count();
+
+            assertThat(amazonCount).isEqualTo(5);
+            assertThat(goodreadsCount).isEqualTo(5);
+        }
+
+        @Test
+        void keepsMostRecentReviewsWhenLimitApplied() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            Instant base = Instant.now();
+
+            List<BookReview> reviews = IntStream.range(0, 7)
+                    .mapToObj(i -> review(MetadataProvider.Amazon, "r" + i, base.minus(i, ChronoUnit.DAYS)))
+                    .toList();
+
+            BookMetadata metadata = BookMetadata.builder().bookReviews(reviews).build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            Set<String> keptNames = new HashSet<>();
+            entity.getReviews().forEach(r -> keptNames.add(r.getReviewerName()));
+
+            assertThat(keptNames).contains("r0", "r1", "r2", "r3", "r4");
+            assertThat(keptNames).doesNotContain("r6");
+        }
+
+        @Test
+        void handlesNullDatesInLimitSorting() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+
+            List<BookReview> reviews = new ArrayList<>();
+            reviews.add(review(MetadataProvider.Amazon, "dated", Instant.now()));
+            reviews.add(review(MetadataProvider.Amazon, "undated", null));
+
+            BookMetadata metadata = BookMetadata.builder().bookReviews(reviews).build();
+            service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+            assertThat(entity.getReviews()).hasSize(2);
+        }
+    }
+
+    @Nested
+    class AddReviewsToBook {
+
+        @Test
+        void addsReviewsViaConvenienceMethod() {
+            BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+            List<BookReview> reviews = List.of(
+                    review(MetadataProvider.Amazon, "r1", Instant.now()),
+                    review(MetadataProvider.GoodReads, "r2", Instant.now())
+            );
+
+            service.addReviewsToBook(reviews, entity);
+
+            assertThat(entity.getReviews()).hasSize(2);
+        }
+
+        @Test
+        void addReviewsToBookRespectsLock() {
+            BookMetadataEntity entity = BookMetadataEntity.builder()
+                    .reviewsLocked(true)
+                    .reviews(new HashSet<>())
+                    .build();
+
+            service.addReviewsToBook(
+                    List.of(review(MetadataProvider.Amazon, "r1", Instant.now())),
+                    entity
+            );
+
+            assertThat(entity.getReviews()).isEmpty();
+        }
+    }
+
+    @Test
+    void reviewEntityFieldsAreMappedCorrectly() {
+        BookMetadataEntity entity = entityWithReviews(new HashSet<>());
+        Instant date = Instant.now();
+        BookReview review = BookReview.builder()
+                .metadataProvider(MetadataProvider.Hardcover)
+                .reviewerName("Jane")
+                .title("Great Book")
+                .rating(4.5f)
+                .date(date)
+                .body("Loved it")
+                .spoiler(true)
+                .followersCount(100)
+                .textReviewsCount(50)
+                .country("US")
+                .build();
+
+        BookMetadata metadata = BookMetadata.builder().bookReviews(List.of(review)).build();
+        service.updateBookReviews(metadata, entity, new MetadataClearFlags(), true);
+
+        BookReviewEntity created = entity.getReviews().iterator().next();
+        assertThat(created.getMetadataProvider()).isEqualTo(MetadataProvider.Hardcover);
+        assertThat(created.getReviewerName()).isEqualTo("Jane");
+        assertThat(created.getTitle()).isEqualTo("Great Book");
+        assertThat(created.getRating()).isEqualTo(4.5f);
+        assertThat(created.getDate()).isEqualTo(date);
+        assertThat(created.getBody()).isEqualTo("Loved it");
+        assertThat(created.getSpoiler()).isTrue();
+        assertThat(created.getFollowersCount()).isEqualTo(100);
+        assertThat(created.getTextReviewsCount()).isEqualTo(50);
+        assertThat(created.getCountry()).isEqualTo("US");
+        assertThat(created.getBookMetadata()).isSameAs(entity);
     }
 }

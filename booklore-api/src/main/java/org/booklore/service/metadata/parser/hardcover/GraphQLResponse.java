@@ -23,6 +23,7 @@ public class GraphQLResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Data {
         private Search search;
+        private List<BookWithEditions> books;
     }
 
     @Getter
@@ -165,6 +166,82 @@ public class GraphQLResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class BookWithEditions {
+        private Integer id;
+        private String slug;
+        private String title;
+        private String subtitle;
+        private String description;
+
+        @JsonProperty("cached_contributors")
+        private List<Contributor> cachedContributors;
+
+        @JsonProperty("featured_book_series")
+        private FeaturedSeries featuredBookSeries;
+
+        private Double rating;
+
+        @JsonProperty("ratings_count")
+        private Integer ratingsCount;
+
+        @JsonProperty("reviews_count")
+        private Integer reviewsCount;
+
+        private Integer pages;
+
+        @JsonProperty("release_date")
+        private String releaseDate;
+
+        @JsonProperty("release_year")
+        private Integer releaseYear;
+
+        private Image image;
+
+        @JsonProperty("cached_tags")
+        private CachedTags cachedTags;
+
+        private List<Edition> editions;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Edition {
+        private Integer id;
+        private String title;
+        private String subtitle;
+
+        @JsonProperty("cached_contributors")
+        private List<Contributor> cachedContributors;
+
+        private Integer pages;
+
+        @JsonProperty("release_date")
+        private String releaseDate;
+
+        @JsonProperty("release_year")
+        private Integer releaseYear;
+
+        private Image image;
+
+        private Publisher publisher;
+
+        @JsonProperty("isbn_10")
+        private String isbn10;
+
+        @JsonProperty("isbn_13")
+        private String isbn13;
+
+        private Language language;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Image {
         private String url;
     }
@@ -188,5 +265,61 @@ public class GraphQLResponse {
         private String name;
         @JsonProperty("books_count")
         private Integer booksCount;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Contributor {
+        private Author author;
+        private String contribution;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Author {
+        private Integer id;
+        private String slug;
+        private String name;
+        private Image image;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CachedTags {
+        @JsonProperty("Genre")
+        private List<HardcoverCachedTag> genre;
+
+        @JsonProperty("Mood")
+        private List<HardcoverCachedTag> mood;
+
+        @JsonProperty("Tag")
+        private List<HardcoverCachedTag> tag;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Publisher {
+        private String name;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Language {
+        private String code2;
     }
 }

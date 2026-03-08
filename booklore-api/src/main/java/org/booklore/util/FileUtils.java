@@ -12,8 +12,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 @UtilityClass
 @Slf4j
@@ -119,15 +122,40 @@ public class FileUtils {
         }
     }
 
+    private static final List<String> COVER_IMAGE_BASENAMES = List.of("cover", "folder", "image");
+    private static final List<String> IMAGE_EXTENSIONS = List.of("jpg", "jpeg", "png", "webp", "gif", "bmp");
+
+    /**
+     * Find a cover image file in a folder by looking for well-known filenames
+     * (cover, folder, image) with common image extensions.
+     */
+    public Optional<Path> findCoverImageInFolder(Path folderPath) {
+        try {
+            if (folderPath == null || !Files.exists(folderPath) || !Files.isDirectory(folderPath)) {
+                return Optional.empty();
+            }
+            for (String baseName : COVER_IMAGE_BASENAMES) {
+                for (String ext : IMAGE_EXTENSIONS) {
+                    Path candidate = folderPath.resolve(baseName + "." + ext);
+                    if (Files.isRegularFile(candidate)) {
+                        return Optional.of(candidate);
+                    }
+                }
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("Failed to find cover image in folder [{}]: {}", folderPath, e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
     /**
      * Check if a filename is an audio file.
      */
     public boolean isAudioFile(String fileName) {
         if (fileName == null) return false;
         String lower = fileName.toLowerCase();
-        return lower.endsWith(".mp3") || lower.endsWith(".m4a") || lower.endsWith(".m4b")
-                || lower.endsWith(".flac") || lower.endsWith(".ogg") || lower.endsWith(".opus")
-                || lower.endsWith(".aac");
+        return lower.endsWith(".mp3") || lower.endsWith(".m4a") || lower.endsWith(".m4b");
     }
 
     /**
@@ -147,6 +175,43 @@ public class FileUtils {
             log.error("Failed to list audio files in folder [{}]: {}", folderPath, e.getMessage(), e);
             return List.of();
         }
+    }
+
+    private static final Pattern LEADING_NUMBER_PREFIX = Pattern.compile("^\\d{1,3}(?:\\.|\\s*-)\\s*");
+    private static final Pattern PART_DISC_INDICATOR = Pattern.compile(
+            "\\s*[\\(\\[\\-]?\\s*(?:part|pt|dis[ck]|cd)\\s*\\d+\\s*[\\)\\]]?\\s*$",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern TRAILING_NUMBERS = Pattern.compile("\\s*\\d+\\s*$");
+    private static final Set<String> GENERIC_AUDIO_TITLES = Set.of(
+            "chapter", "track", "part", "disc", "disk", "cd", "side", "intro", "epilogue", "prologue", "outro"
+    );
+
+    /**
+     * Determines if a list of audio files represents a series folder (each file is a separate book)
+     * rather than a multi-file audiobook (chapter files for one book).
+     *
+     * Extracts a "base title" from each file by stripping numbering, part indicators, and extensions,
+     * then counts distinct non-generic titles. If more than one distinct title exists, it's a series folder.
+     */
+    public boolean isSeriesFolder(List<Path> audioFiles) {
+        Set<String> distinctTitles = new HashSet<>();
+        for (Path file : audioFiles) {
+            String title = extractBaseTitle(file.getFileName().toString());
+            if (!title.isEmpty() && !GENERIC_AUDIO_TITLES.contains(title)) {
+                distinctTitles.add(title);
+            }
+        }
+        return distinctTitles.size() > 1;
+    }
+
+    private String extractBaseTitle(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        String baseName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+        baseName = LEADING_NUMBER_PREFIX.matcher(baseName).replaceFirst("");
+        baseName = PART_DISC_INDICATOR.matcher(baseName).replaceAll("");
+        baseName = TRAILING_NUMBERS.matcher(baseName).replaceAll("");
+        return baseName.toLowerCase().trim();
     }
 
     public void deleteDirectoryRecursively(Path path) throws IOException {

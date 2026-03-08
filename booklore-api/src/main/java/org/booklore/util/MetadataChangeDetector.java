@@ -52,13 +52,26 @@ public class MetadataChangeDetector {
 
     private record CollectionFieldDescriptor(
             String name,
-            Function<BookMetadata, Set<String>> dtoValueGetter,
-            Function<BookMetadataEntity, Set<?>> entityValueGetter,
+            Function<BookMetadata, ? extends Collection<String>> dtoValueGetter,
+            Function<BookMetadataEntity, ? extends Collection<?>> entityValueGetter,
             Function<BookMetadata, Boolean> dtoLockGetter,
             Function<BookMetadataEntity, Boolean> entityLockGetter,
             Predicate<MetadataClearFlags> clearFlagGetter,
-            boolean includedInFileWrite
+            boolean includedInFileWrite,
+            boolean orderSensitive
     ) {
+        CollectionFieldDescriptor(
+                String name,
+                Function<BookMetadata, ? extends Collection<String>> dtoValueGetter,
+                Function<BookMetadataEntity, ? extends Collection<?>> entityValueGetter,
+                Function<BookMetadata, Boolean> dtoLockGetter,
+                Function<BookMetadataEntity, Boolean> entityLockGetter,
+                Predicate<MetadataClearFlags> clearFlagGetter,
+                boolean includedInFileWrite
+        ) {
+            this(name, dtoValueGetter, entityValueGetter, dtoLockGetter, entityLockGetter, clearFlagGetter, includedInFileWrite, false);
+        }
+
         boolean isUnlocked(BookMetadataEntity entity) {
             return !isTrue(entityLockGetter.apply(entity));
         }
@@ -67,11 +80,16 @@ public class MetadataChangeDetector {
             return clearFlagGetter.test(flags);
         }
 
-        Set<String> getNewValue(BookMetadata dto) {
-            return dtoValueGetter.apply(dto);
+        Object getNewValue(BookMetadata dto) {
+            Collection<String> values = dtoValueGetter.apply(dto);
+            if (values == null) return null;
+            return orderSensitive ? new ArrayList<>(values) : new HashSet<>(values);
         }
 
-        Set<String> getOldValue(BookMetadataEntity entity) {
+        Object getOldValue(BookMetadataEntity entity) {
+            if (orderSensitive) {
+                return toNameList(entityValueGetter.apply(entity));
+            }
             return toNameSet(entityValueGetter.apply(entity));
         }
 
@@ -197,6 +215,18 @@ public class MetadataChangeDetector {
                     BookMetadata::getRanobedbRating, BookMetadataEntity::getRanobedbRating,
                     BookMetadata::getRanobedbRatingLocked, BookMetadataEntity::getRanobedbRatingLocked,
                     MetadataClearFlags::isRanobedbRating, false),
+            new FieldDescriptor<>("audibleId",
+                    BookMetadata::getAudibleId, BookMetadataEntity::getAudibleId,
+                    BookMetadata::getAudibleIdLocked, BookMetadataEntity::getAudibleIdLocked,
+                    MetadataClearFlags::isAudibleId, false),
+            new FieldDescriptor<>("audibleRating",
+                    BookMetadata::getAudibleRating, BookMetadataEntity::getAudibleRating,
+                    BookMetadata::getAudibleRatingLocked, BookMetadataEntity::getAudibleRatingLocked,
+                    MetadataClearFlags::isAudibleRating, false),
+            new FieldDescriptor<>("audibleReviewCount",
+                    BookMetadata::getAudibleReviewCount, BookMetadataEntity::getAudibleReviewCount,
+                    BookMetadata::getAudibleReviewCountLocked, BookMetadataEntity::getAudibleReviewCountLocked,
+                    MetadataClearFlags::isAudibleReviewCount, false),
             new FieldDescriptor<>("narrator",
                     BookMetadata::getNarrator, BookMetadataEntity::getNarrator,
                     BookMetadata::getNarratorLocked, BookMetadataEntity::getNarratorLocked,
@@ -208,18 +238,18 @@ public class MetadataChangeDetector {
             new FieldDescriptor<>("ageRating",
                     BookMetadata::getAgeRating, BookMetadataEntity::getAgeRating,
                     BookMetadata::getAgeRatingLocked, BookMetadataEntity::getAgeRatingLocked,
-                    MetadataClearFlags::isAgeRating, false),
+                    MetadataClearFlags::isAgeRating, true),
             new FieldDescriptor<>("contentRating",
                     BookMetadata::getContentRating, BookMetadataEntity::getContentRating,
                     BookMetadata::getContentRatingLocked, BookMetadataEntity::getContentRatingLocked,
-                    MetadataClearFlags::isContentRating, false)
+                    MetadataClearFlags::isContentRating, true)
     );
 
     private static final List<CollectionFieldDescriptor> COLLECTION_FIELDS = List.of(
             new CollectionFieldDescriptor("authors",
                     BookMetadata::getAuthors, BookMetadataEntity::getAuthors,
                     BookMetadata::getAuthorsLocked, BookMetadataEntity::getAuthorsLocked,
-                    MetadataClearFlags::isAuthors, true),
+                    MetadataClearFlags::isAuthors, true, true),
             new CollectionFieldDescriptor("categories",
                     BookMetadata::getCategories, BookMetadataEntity::getCategories,
                     BookMetadata::getCategoriesLocked, BookMetadataEntity::getCategoriesLocked,
@@ -365,7 +395,22 @@ public class MetadataChangeDetector {
         return !Objects.equals(normNew, normOld);
     }
 
-    private static Set<String> toNameSet(Set<?> entities) {
+    private static List<String> toNameList(Collection<?> entities) {
+        if (entities == null) {
+            return Collections.emptyList();
+        }
+        return entities.stream()
+                .map(e -> switch (e) {
+                    case AuthorEntity author -> author.getName();
+                    case CategoryEntity category -> category.getName();
+                    case MoodEntity mood -> mood.getName();
+                    case TagEntity tag -> tag.getName();
+                    default -> e.toString();
+                })
+                .toList();
+    }
+
+    private static Set<String> toNameSet(Collection<?> entities) {
         if (entities == null) {
             return Collections.emptySet();
         }

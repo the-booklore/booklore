@@ -31,6 +31,8 @@ public interface MobileBookMapper {
     @Mapping(target = "lastReadTime", source = "progress.lastReadTime")
     @Mapping(target = "readProgress", source = "progress", qualifiedByName = "mapReadProgress")
     @Mapping(target = "primaryFileType", source = "book", qualifiedByName = "mapPrimaryFileType")
+    @Mapping(target = "coverUpdatedOn", source = "book.metadata.coverUpdatedOn")
+    @Mapping(target = "audiobookCoverUpdatedOn", source = "book.metadata.audiobookCoverUpdatedOn")
     MobileBookSummary toSummary(BookEntity book, UserBookProgressEntity progress);
 
     @Mapping(target = "id", source = "book.id")
@@ -58,6 +60,8 @@ public interface MobileBookMapper {
     @Mapping(target = "shelves", source = "book.shelves", qualifiedByName = "mapShelves")
     @Mapping(target = "readProgress", source = "progress", qualifiedByName = "mapReadProgress")
     @Mapping(target = "primaryFileType", source = "book", qualifiedByName = "mapPrimaryFileType")
+    @Mapping(target = "coverUpdatedOn", source = "book.metadata.coverUpdatedOn")
+    @Mapping(target = "audiobookCoverUpdatedOn", source = "book.metadata.audiobookCoverUpdatedOn")
     @Mapping(target = "fileTypes", source = "book", qualifiedByName = "mapFileTypes")
     @Mapping(target = "files", source = "book", qualifiedByName = "mapFiles")
     @Mapping(target = "epubProgress", source = "progress", qualifiedByName = "mapEpubProgress")
@@ -67,13 +71,13 @@ public interface MobileBookMapper {
     MobileBookDetail toDetail(BookEntity book, UserBookProgressEntity progress, UserBookFileProgressEntity fileProgress);
 
     @Named("mapAuthors")
-    default List<String> mapAuthors(Set<AuthorEntity> authors) {
+    default List<String> mapAuthors(List<AuthorEntity> authors) {
         if (authors == null || authors.isEmpty()) {
             return Collections.emptyList();
         }
         return authors.stream()
                 .map(AuthorEntity::getName)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Named("mapCategories")
@@ -283,6 +287,7 @@ public interface MobileBookMapper {
                 .name(library.getName())
                 .icon(library.getIcon())
                 .bookCount(bookCount)
+                .allowedFormats(library.getAllowedFormats())
                 .build();
     }
 

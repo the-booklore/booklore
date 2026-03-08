@@ -62,6 +62,11 @@
   @include settings.settings-filesize-input;
 }
 
+.network-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .sidecar-section-header {
   margin-top: 1.5rem;
   padding-top: 1.5rem;

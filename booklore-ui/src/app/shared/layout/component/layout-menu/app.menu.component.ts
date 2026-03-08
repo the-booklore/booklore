@@ -3,6 +3,7 @@ import {AppMenuitemComponent} from './app.menuitem.component';
 import {AsyncPipe} from '@angular/common';
 import {MenuModule} from 'primeng/menu';
 import {LibraryService} from '../../../../features/book/service/library.service';
+import {LibraryHealthService} from '../../../../features/book/service/library-health.service';
 import {combineLatest, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {ShelfService} from '../../../../features/book/service/shelf.service';
@@ -13,6 +14,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
 import {SeriesDataService} from '../../../../features/series-browser/service/series-data.service';
+import {AuthorService} from '../../../../features/author-browser/service/author.service';
 import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
@@ -38,6 +40,7 @@ export class AppMenuComponent implements OnInit {
   dynamicDialogRef: DynamicDialogRef | undefined | null;
 
   private libraryService = inject(LibraryService);
+  private libraryHealthService = inject(LibraryHealthService);
   private shelfService = inject(ShelfService);
   private bookService = inject(BookService);
   private versionService = inject(VersionService);
@@ -46,6 +49,7 @@ export class AppMenuComponent implements OnInit {
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
   private seriesDataService = inject(SeriesDataService);
+  private authorService = inject(AuthorService);
   private t = inject(TranslocoService);
   private localStorageService = inject(LocalStorageService);
 
@@ -64,6 +68,8 @@ export class AppMenuComponent implements OnInit {
     this.versionService.getVersion().subscribe((data) => {
       this.versionInfo = data;
     });
+
+    this.authorService.getAllAuthors().subscribe();
 
     this.userService.userState$.pipe(
       filter(userState => !!userState?.user && userState.loaded))
@@ -108,6 +114,13 @@ export class AppMenuComponent implements OnInit {
               bookCount$: this.seriesDataService.allSeries$.pipe(map(series => series.length)),
             },
             {
+              label: this.t.translate('layout.menu.authors'),
+              type: 'Authors',
+              icon: 'pi pi-fw pi-users',
+              routerLink: ['/authors'],
+              bookCount$: this.authorService.allAuthors$.pipe(map(authors => authors?.length ?? 0)),
+            },
+            {
               label: this.t.translate('layout.menu.notebook'),
               icon: 'pi pi-fw pi-pencil',
               routerLink: ['/notebook'],
@@ -145,6 +158,7 @@ export class AppMenuComponent implements OnInit {
               iconType: (library.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
+              unhealthy$: this.libraryHealthService.isUnhealthy$(library.id ?? 0),
             })),
           },
         ];

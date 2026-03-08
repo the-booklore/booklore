@@ -37,7 +37,7 @@ export class SetupComponent {
       name: ['', [Validators.required]],
       username: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
     }, {validators: [passwordMatchValidator('password', 'confirmPassword')]});
   }

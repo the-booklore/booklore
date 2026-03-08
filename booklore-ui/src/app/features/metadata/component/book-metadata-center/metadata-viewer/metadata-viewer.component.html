@@ -120,13 +120,42 @@
               </div>
 
               <p class="authors">
-                @for (author of book?.metadata!.authors; track $index; let isLast = $last) {
-                  <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                @for (author of book?.metadata!.authors; track $index; let isLast = $last; let isFirst = $first) {
+                  @if (isFirst && book!.metadata!.authors!.length > 1) {
+                    <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                    <span class="first-author-badge">{{ t('firstAuthorBadge') }}</span>
+                  } @else {
+                    <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
+                  }
                   @if (!isLast) {
                     <span class="author-separator">, </span>
                   }
                 }
               </p>
+            </div>
+
+            <div class="formats-inline">
+              @if (getDisplayFormat(book?.primaryFile); as displayFormat) {
+                <span class="format-tag-wrapper primary-format" (click)="goToFileType(book?.primaryFile?.filePath)" [pTooltip]="book?.primaryFile?.fileName ?? ''" tooltipPosition="top">
+                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(displayFormat)" customTextColor="#fff">
+                    {{ displayFormat }}
+                  </app-tag>
+                  <span class="format-badge">{{ t('primaryBadge') }}</span>
+                </span>
+              }
+              @if (getDisplayFormat(book?.primaryFile) && getUniqueAlternativeFormats(book).length > 0) {
+                <span class="format-pipe">|</span>
+              }
+              @for (formatExt of getUniqueAlternativeFormats(book); track formatExt) {
+                <span class="format-tag-wrapper" (click)="goToFileType('.' + formatExt)" [pTooltip]="formatExt" tooltipPosition="top">
+                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(formatExt)" customTextColor="#fff">
+                    {{ formatExt }}
+                  </app-tag>
+                </span>
+              }
+              @if (book?.isPhysical) {
+                <app-tag size="3xs" variant="pill" [customBgColor]="'var(--book-type-physical-color)'" customTextColor="#fff">{{ t('physicalBadge') }}</app-tag>
+              }
             </div>
           </div>
 
@@ -372,30 +401,6 @@
             </div>
 
             <div class="metadata-item">
-              <span class="metadata-key">{{ t('formatsLabel') }}</span>
-              <span class="metadata-value-group format-tags">
-                @if (getDisplayFormat(book?.primaryFile); as displayFormat) {
-                  <span class="format-tag-wrapper primary-format" (click)="goToFileType(book?.primaryFile?.filePath)" [pTooltip]="book?.primaryFile?.fileName ?? ''" tooltipPosition="top">
-                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(displayFormat)" customTextColor="#fff">
-                      {{ displayFormat }}
-                    </app-tag>
-                    <span class="format-badge">{{ t('primaryBadge') }}</span>
-                  </span>
-                }
-                @for (formatExt of getUniqueAlternativeFormats(book); track formatExt) {
-                  <span class="format-tag-wrapper" (click)="goToFileType('.' + formatExt)" [pTooltip]="formatExt" tooltipPosition="top">
-                    <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(formatExt)" customTextColor="#fff">
-                      {{ formatExt }}
-                    </app-tag>
-                  </span>
-                }
-                @if (!book?.primaryFile?.filePath && !book?.alternativeFormats?.length) {
-                  <app-tag size="3xs" variant="pill" [customBgColor]="'var(--book-type-physical-color)'" customTextColor="#fff">{{ t('physicalBadge') }}</app-tag>
-                }
-              </span>
-            </div>
-
-            <div class="metadata-item">
               <span class="metadata-key">{{ t('bookloreProgressLabel') }}</span>
               <span class="metadata-value-group">
                 <app-tag size="3xs" variant="pill" [color]="getProgressColor(getProgressPercent(book))">
@@ -560,6 +565,36 @@
               }
             </div>
 
+            @if (isAudiobook(book) && hasAudiobookMetadata(book)) {
+              @let audio = book.metadata!.audiobookMetadata!;
+              @if (book.metadata?.narrator) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookNarrator') }}</span>
+                  <a class="metadata-value metadata-link" (click)="goToNarrator(book.metadata!.narrator!)">
+                    {{ book.metadata?.narrator }}
+                  </a>
+                </div>
+              }
+              @if (audio.durationSeconds) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookDuration') }}</span>
+                  <span class="metadata-value">{{ formatDuration(audio.durationSeconds) }}</span>
+                </div>
+              }
+              @if (audio.chapterCount) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookChapters') }}</span>
+                  <span class="metadata-value">{{ audio.chapterCount }}</span>
+                </div>
+              }
+              @if (book.metadata?.abridged != null) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ t('audiobookAbridged') }}</span>
+                  <span class="metadata-value">{{ book.metadata?.abridged ? t('abridged') : t('unabridged') }}</span>
+                </div>
+              }
+            }
+
             @if (hasDigitalFile(book)) {
               <div class="metadata-item">
                 <span class="metadata-key">{{ t('fileSizeLabel') }}</span>
@@ -593,9 +628,8 @@
                   <p-button
                     icon="pi pi-chevron-left"
                     [disabled]="!canNavigatePrevious()"
-                    (onClick)="navigatePrevious()"
-                    rounded
-                    text
+                    (onClick)="navigatePrevious()"`
+                    outlined
                     severity="secondary"
                     [pTooltip]="t('goToPreviousBook')"
                     tooltipPosition="bottom">
@@ -609,8 +643,7 @@
                     [disabled]="!canNavigateNext()"
                     (onClick)="navigateNext()"
                     severity="secondary"
-                    rounded
-                    text
+                    outlined
                     [pTooltip]="t('goToNextBook')"
                     tooltipPosition="bottom">
                   </p-button>
@@ -672,7 +705,7 @@
       </div>
       <div class="description-body">
         <div #descriptionContent [ngClass]="{ 'line-clamp-7': !isExpanded }" class="description-content">
-          <div class="description-html" [innerHTML]="book.metadata!.description"></div>
+          <div class="description-html" [innerHTML]="sanitizeDescription(book.metadata!.description)"></div>
         </div>
         @if (isExpanded || isOverflowing) {
           <button class="expand-toggle" (click)="toggleExpand()">
@@ -910,78 +943,6 @@
       </div>
     }
 
-    @if (isAudiobook(book) && hasAudiobookMetadata(book)) {
-      <div class="audiobook-metadata-section">
-        <div class="section-header clickable" (click)="isAudiobookSectionExpanded = !isAudiobookSectionExpanded">
-          <div class="section-header-left">
-            <i class="pi pi-headphones"></i>
-            <span>{{ t('audiobookDetailsTitle') }}</span>
-          </div>
-          <i class="pi section-toggle-icon" [ngClass]="isAudiobookSectionExpanded ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
-        </div>
-
-        <div class="audiobook-metadata-content" [ngClass]="{'collapsed': !isAudiobookSectionExpanded}">
-          @let audio = book.metadata!.audiobookMetadata!;
-
-          <div class="audiobook-info-grid">
-            @if (audio.durationSeconds) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookDuration') }}</span>
-                <span class="audiobook-info-value">{{ formatDuration(audio.durationSeconds) }}</span>
-              </div>
-            }
-            @if (book.metadata?.narrator) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookNarrator') }}</span>
-                <a class="audiobook-info-value audiobook-link" (click)="goToNarrator(book.metadata!.narrator!)">
-                  {{ book.metadata?.narrator }}
-                </a>
-              </div>
-            }
-            @if (audio.chapterCount) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookChapters') }}</span>
-                <span class="audiobook-info-value">{{ audio.chapterCount }}</span>
-              </div>
-            }
-            @if (audio.bitrate) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookBitrate') }}</span>
-                <span class="audiobook-info-value">{{ audio.bitrate }} kbps</span>
-              </div>
-            }
-            @if (audio.sampleRate) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookSampleRate') }}</span>
-                <span class="audiobook-info-value">{{ formatSampleRate(audio.sampleRate) }}</span>
-              </div>
-            }
-            @if (audio.channels) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookChannels') }}</span>
-                <span class="audiobook-info-value">{{ getChannelLabel(audio.channels) }}</span>
-              </div>
-            }
-            @if (audio.codec) {
-              <div class="audiobook-info-item">
-                <span class="audiobook-info-label">{{ t('audiobookCodec') }}</span>
-                <span class="audiobook-info-value">{{ audio.codec.toUpperCase() }}</span>
-              </div>
-            }
-          </div>
-
-          @if (book.metadata?.abridged != null) {
-            <div class="audiobook-properties">
-              <span class="audiobook-property-badge" [ngClass]="book.metadata?.abridged ? 'abridged' : 'unabridged'">
-                <i class="pi" [ngClass]="book.metadata?.abridged ? 'pi-minus-circle' : 'pi-check-circle'"></i>
-                {{ book.metadata?.abridged ? t('abridged') : t('unabridged') }}
-              </span>
-            </div>
-          }
-        </div>
-      </div>
-    }
-
     <app-metadata-tabs
       [book]="book"
       [bookInSeries]="bookInSeries"
@@ -991,8 +952,42 @@
       (downloadFile)="onDownloadFile($event)"
       (downloadAllFiles)="onDownloadAllFiles($event)"
       (deleteBookFile)="onDeleteBookFile($event)"
-      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)">
+      (deleteSupplementaryFile)="onDeleteSupplementaryFile($event)"
+      (detachBookFile)="onDetachBookFile($event)">
     </app-metadata-tabs>
+
+    <p-dialog
+      [header]="t('confirm.detachFileHeader')"
+      [(visible)]="showDetachDialog"
+      [modal]="true"
+      [closable]="true"
+      [style]="{ width: '450px' }"
+      [breakpoints]="{ '575px': '95vw' }">
+      <div class="detach-dialog-content">
+        <p>{{ t('confirm.detachFileMessage', { fileName: detachFileName }) }}</p>
+        <div class="detach-dialog-option">
+          <p-checkbox
+            [(ngModel)]="detachCopyMetadata"
+            [binary]="true"
+            inputId="copyMetadata">
+          </p-checkbox>
+          <label for="copyMetadata">{{ t('confirm.detachFileCopyMetadata') }}</label>
+        </div>
+      </div>
+      <ng-template #footer>
+        <p-button
+          [label]="'common.cancel' | transloco"
+          severity="secondary"
+          (onClick)="showDetachDialog = false">
+        </p-button>
+        <p-button
+          [label]="t('confirm.detachFileBtn')"
+          severity="warn"
+          icon="pi pi-external-link"
+          (onClick)="confirmDetach()">
+        </p-button>
+      </ng-template>
+    </p-dialog>
   </div>
 } @else {
   <div class="loading-state" *transloco="let t; prefix: 'metadata.viewer'">

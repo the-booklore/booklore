@@ -677,9 +677,13 @@ describe('BookRuleEvaluatorService', () => {
       expect(service.evaluateGroup(book, rule('audiobookDuration', 'is_empty', null))).toBe(true);
     });
 
-    it('should filter by isPhysical', () => {
-      const book = createBook({isPhysical: true});
-      expect(service.evaluateGroup(book, rule('isPhysical', 'equals', true))).toBe(true);
+    it('should filter by isPhysical with string value from UI', () => {
+      const physical = createBook({isPhysical: true});
+      const digital = createBook({isPhysical: false});
+      expect(service.evaluateGroup(physical, rule('isPhysical', 'equals', 'true'))).toBe(true);
+      expect(service.evaluateGroup(digital, rule('isPhysical', 'equals', 'true'))).toBe(false);
+      expect(service.evaluateGroup(digital, rule('isPhysical', 'equals', 'false'))).toBe(true);
+      expect(service.evaluateGroup(physical, rule('isPhysical', 'not_equals', 'true'))).toBe(false);
     });
 
     it('should filter by lubimyczytacRating', () => {
@@ -1446,6 +1450,28 @@ describe('BookRuleEvaluatorService', () => {
       old.setFullYear(old.getFullYear() - 3);
       const book = createBook({addedOn: old.toISOString()});
       expect(service.evaluateGroup(book, rule('addedOn', 'older_than', 2, 'years'))).toBe(true);
+    });
+  });
+
+  describe('readStatus is_empty / is_not_empty parity', () => {
+    it('should match is_empty when book has no readStatus', () => {
+      const book = createBook({readStatus: undefined});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_empty', null))).toBe(true);
+    });
+
+    it('should not match is_empty when book has a readStatus', () => {
+      const book = createBook({readStatus: ReadStatus.READING});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_empty', null))).toBe(false);
+    });
+
+    it('should not match is_not_empty when book has no readStatus', () => {
+      const book = createBook({readStatus: undefined});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_not_empty', null))).toBe(false);
+    });
+
+    it('should match is_not_empty when book has a readStatus', () => {
+      const book = createBook({readStatus: ReadStatus.READ});
+      expect(service.evaluateGroup(book, rule('readStatus', 'is_not_empty', null))).toBe(true);
     });
   });
 

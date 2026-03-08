@@ -38,12 +38,15 @@ public class HardcoverMoodFilter {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    public static Set<String> filterMoodsWithCounts(Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags) {
+    public static Set<String> filterMoodsWithCounts(Map<String, List<HardcoverCachedTag>> cachedTags) {
         if (cachedTags == null || cachedTags.isEmpty()) {
             return Collections.emptySet();
         }
 
-        List<HardcoverBookDetails.CachedTag> moodTags = cachedTags.get("Mood");
+        return filterMoodsWithCounts(cachedTags.get("Mood"));
+    }
+
+    public static Set<String> filterMoodsWithCounts(List<HardcoverCachedTag> moodTags) {
         if (moodTags == null || moodTags.isEmpty()) {
             return Collections.emptySet();
         }
@@ -51,7 +54,7 @@ public class HardcoverMoodFilter {
         // Find the maximum vote count
         int maxCount = moodTags.stream()
                 .filter(tag -> tag.getCount() != null)
-                .mapToInt(HardcoverBookDetails.CachedTag::getCount)
+                .mapToInt(HardcoverCachedTag::getCount)
                 .max()
                 .orElse(0);
 
@@ -62,10 +65,10 @@ public class HardcoverMoodFilter {
 
         int minCountThreshold = Math.max(MIN_VOTE_COUNT, (int) (maxCount * MIN_VOTE_RATIO));
 
-        List<HardcoverBookDetails.CachedTag> filteredMoods = moodTags.stream()
+        List<HardcoverCachedTag> filteredMoods = moodTags.stream()
                 .filter(tag -> tag.getCount() != null && tag.getCount() >= minCountThreshold)
                 .filter(tag -> tag.getTag() != null)
-                .sorted(Comparator.comparingInt(HardcoverBookDetails.CachedTag::getCount).reversed())
+                .sorted(Comparator.comparingInt(HardcoverCachedTag::getCount).reversed())
                 .limit(MAX_MOODS)
                 .toList();
 
@@ -73,16 +76,19 @@ public class HardcoverMoodFilter {
                 moodTags.size(), filteredMoods.size(), maxCount, minCountThreshold);
 
         return filteredMoods.stream()
-                .map(HardcoverBookDetails.CachedTag::getTag)
+                .map(HardcoverCachedTag::getTag)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    public static Set<String> filterGenresWithCounts(Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags) {
+    public static Set<String> filterGenresWithCounts(Map<String, List<HardcoverCachedTag>> cachedTags) {
         if (cachedTags == null || cachedTags.isEmpty()) {
             return Collections.emptySet();
         }
 
-        List<HardcoverBookDetails.CachedTag> genreTags = cachedTags.get("Genre");
+        return filterGenresWithCounts(cachedTags.get("Genre"));
+    }
+
+    public static Set<String> filterGenresWithCounts(List<HardcoverCachedTag> genreTags) {
         if (genreTags == null || genreTags.isEmpty()) {
             return Collections.emptySet();
         }
@@ -91,18 +97,21 @@ public class HardcoverMoodFilter {
         return genreTags.stream()
                 .filter(tag -> tag.getCount() != null && tag.getCount() >= 1)
                 .filter(tag -> tag.getTag() != null)
-                .sorted(Comparator.comparingInt(HardcoverBookDetails.CachedTag::getCount).reversed())
+                .sorted(Comparator.comparingInt(HardcoverCachedTag::getCount).reversed())
                 .limit(10) // Allow more genres
-                .map(HardcoverBookDetails.CachedTag::getTag)
+                .map(HardcoverCachedTag::getTag)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    public static Set<String> filterTagsWithCounts(Map<String, List<HardcoverBookDetails.CachedTag>> cachedTags) {
+    public static Set<String> filterTagsWithCounts(Map<String, List<HardcoverCachedTag>> cachedTags) {
         if (cachedTags == null || cachedTags.isEmpty()) {
             return Collections.emptySet();
         }
 
-        List<HardcoverBookDetails.CachedTag> tagList = cachedTags.get("Tag");
+        return filterTagsWithCounts(cachedTags.get("Tag"));
+    }
+
+    public static Set<String> filterTagsWithCounts(List<HardcoverCachedTag> tagList) {
         if (tagList == null || tagList.isEmpty()) {
             return Collections.emptySet();
         }
@@ -111,9 +120,9 @@ public class HardcoverMoodFilter {
         return tagList.stream()
                 .filter(tag -> tag.getCount() != null && tag.getCount() >= 2)
                 .filter(tag -> tag.getTag() != null)
-                .sorted(Comparator.comparingInt(HardcoverBookDetails.CachedTag::getCount).reversed())
+                .sorted(Comparator.comparingInt(HardcoverCachedTag::getCount).reversed())
                 .limit(10)
-                .map(HardcoverBookDetails.CachedTag::getTag)
+                .map(HardcoverCachedTag::getTag)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 

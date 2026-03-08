@@ -1,7 +1,8 @@
 package org.booklore.config.security.service;
 
-import lombok.AllArgsConstructor;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.booklore.config.AppProperties;
 import org.booklore.config.security.JwtUtils;
 import org.booklore.config.security.userdetails.OpdsUserDetails;
@@ -14,6 +15,7 @@ import org.booklore.model.enums.ProvisioningMethod;
 import org.booklore.model.enums.UserPermission;
 import org.booklore.repository.RefreshTokenRepository;
 import org.booklore.repository.UserRepository;
+import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.user.DefaultSettingInitializer;
 import org.booklore.service.user.UserProvisioningService;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +33,10 @@ import org.booklore.service.audit.AuditService;
 import org.booklore.util.RequestUtils;
 
 @Slf4j
-@AllArgsConstructor
 @Service
 public class AuthenticationService {
+
+    private String dummyPasswordHash;
 
     private final AppProperties appProperties;
     private final UserRepository userRepository;
@@ -44,6 +47,36 @@ public class AuthenticationService {
     private final DefaultSettingInitializer defaultSettingInitializer;
     private final AuditService auditService;
     private final AuthRateLimitService authRateLimitService;
+    private final AppSettingService appSettingService;
+
+    public AuthenticationService(
+            AppProperties appProperties,
+            UserRepository userRepository,
+            RefreshTokenRepository refreshTokenRepository,
+            UserProvisioningService userProvisioningService,
+            PasswordEncoder passwordEncoder,
+            JwtUtils jwtUtils,
+            DefaultSettingInitializer defaultSettingInitializer,
+            AuditService auditService,
+            AuthRateLimitService authRateLimitService,
+            @Lazy AppSettingService appSettingService
+    ) {
+        this.appProperties = appProperties;
+        this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.userProvisioningService = userProvisioningService;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtils = jwtUtils;
+        this.defaultSettingInitializer = defaultSettingInitializer;
+        this.auditService = auditService;
+        this.authRateLimitService = authRateLimitService;
+        this.appSettingService = appSettingService;
+    }
+
+    @PostConstruct
+    void initDummyHash() {
+        this.dummyPasswordHash = passwordEncoder.encode("_dummy_placeholder_for_timing_equalization_");
+    }
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -92,22 +125,39 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
-        String ip = RequestUtils.getCurrentRequest().getRemoteAddr();
-        authRateLimitService.checkLoginRateLimit(ip);
+        if (appSettingService.getAppSettings().isOidcForceOnlyMode()) {
+            BookLoreUserEntity oidcCheckUser = userRepository.findByUsername(loginRequest.getUsername()).orElse(null);
+            if (oidcCheckUser == null || !oidcCheckUser.getPermissions().isPermissionAdmin()) {
+                throw ApiError.OIDC_ONLY_MODE.createException();
+            }
+        }
 
-        BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> {
-            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for unknown user: " + loginRequest.getUsername());
+        String ip = RequestUtils.getCurrentRequest().getRemoteAddr();
+        String username = loginRequest.getUsername();
+        authRateLimitService.checkLoginRateLimit(ip);
+        authRateLimitService.checkLoginRateLimitByUsername(username);
+
+        BookLoreUserEntity user = userRepository.findByUsername(username).orElse(null);
+
+        if (user == null) {
+            // Constant-time dummy BCrypt check prevents timing-based user enumeration:
+            // without this, unknown-user responses are ~3x faster than wrong-password responses.
+            passwordEncoder.matches(loginRequest.getPassword(), dummyPasswordHash);
+            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for unknown user: " + username);
             authRateLimitService.recordFailedLoginAttempt(ip);
-            return ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername());
-        });
+            authRateLimitService.recordFailedLoginAttemptByUsername(username);
+            throw ApiError.INVALID_CREDENTIALS.createException();
+        }
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
-            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for user: " + loginRequest.getUsername());
+            auditService.log(AuditAction.LOGIN_FAILED, "Login failed for user: " + username);
             authRateLimitService.recordFailedLoginAttempt(ip);
+            authRateLimitService.recordFailedLoginAttemptByUsername(username);
             throw ApiError.INVALID_CREDENTIALS.createException();
         }
 
         authRateLimitService.resetLoginAttempts(ip);
+        authRateLimitService.resetLoginAttemptsByUsername(username);
         return loginUser(user);
     }
 
@@ -129,13 +179,19 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<Map<String, String>> loginUser(BookLoreUserEntity user) {
+        return loginUser(user, null);
+    }
+
+    public ResponseEntity<Map<String, String>> loginUser(BookLoreUserEntity user, Long customRefreshTokenExpirationMs) {
         String accessToken = jwtUtils.generateAccessToken(user);
         String refreshToken = jwtUtils.generateRefreshToken(user);
+
+        long expirationMs = customRefreshTokenExpirationMs != null ? customRefreshTokenExpirationMs : jwtUtils.getRefreshTokenExpirationMs();
 
         RefreshTokenEntity refreshTokenEntity = RefreshTokenEntity.builder()
                 .user(user)
                 .token(refreshToken)
-                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshTokenExpirationMs()))
+                .expiryDate(Instant.now().plusMillis(expirationMs))
                 .revoked(false)
                 .build();
 

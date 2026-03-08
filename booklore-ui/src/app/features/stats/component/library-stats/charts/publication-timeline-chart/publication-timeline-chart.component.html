@@ -48,9 +48,15 @@
               <span class="insight-detail" [title]="insights.newestBook.title">{{ insights.newestBook.title }}</span>
             </div>
           }
+
+          <div class="insight-item common-year">
+            <span class="insight-label">{{ t('insightMostCommonYear') }}</span>
+            <span class="insight-value">{{ insights.mostCommonYear.year }}</span>
+            <span class="insight-detail">{{ t('insightMostCommonYearBooks', { count: insights.mostCommonYear.count }) }}</span>
+          </div>
         </div>
 
-        <div class="insights-row secondary">
+        <div class="insights-row">
           <div class="insight-item timespan">
             <span class="insight-label">{{ t('insightTimeSpan') }}</span>
             <span class="insight-value">{{ insights.timeSpan }}</span>
@@ -63,10 +69,16 @@
             <span class="insight-detail">{{ t('insightPeakDecadeBooks', { count: insights.peakDecadeCount }) }}</span>
           </div>
 
-          <div class="insight-item decades">
-            <span class="insight-label">{{ t('insightDecadesCovered') }}</span>
-            <span class="insight-value">{{ insights.decadesCovered }}</span>
-            <span class="insight-detail">{{ t('insightDifferentEras') }}</span>
+          <div class="insight-item golden-era">
+            <span class="insight-label">{{ t('insightGoldenEra') }}</span>
+            <span class="insight-value">{{ insights.goldenEra.start }}-{{ insights.goldenEra.end }}</span>
+            <span class="insight-detail">{{ t('insightGoldenEraRange', { count: insights.goldenEra.count }) }}</span>
+          </div>
+
+          <div class="insight-item rarity">
+            <span class="insight-label">{{ t('insightRarityScore') }}</span>
+            <span class="insight-value">{{ insights.rarityScore }}%</span>
+            <span class="insight-detail">{{ t('insightRarePicks') }}</span>
           </div>
         </div>
       </div>

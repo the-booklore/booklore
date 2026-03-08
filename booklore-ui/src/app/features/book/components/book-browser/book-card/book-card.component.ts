@@ -53,10 +53,12 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isSeriesCollapsed: boolean = false;
   @Input() overlayPreferenceService?: BookCardOverlayPreferenceService;
   @Input() forceEbookMode: boolean = false;
+  @Input() useSquareCovers: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
   items: MenuItem[] | undefined;
+  readStatusMenuItems: MenuItem[] = [];
   isImageLoaded: boolean = false;
   isSubMenuLoading = false;
   private additionalFilesLoaded = false;
@@ -138,7 +140,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['book'] || changes['forceEbookMode']) {
+    if (changes['book'] || changes['forceEbookMode'] || changes['useSquareCovers']) {
       this.computeAllMemoizedValues();
       if (changes['book'] && !changes['book'].firstChange && this.menuInitialized) {
         this.additionalFilesLoaded = false;
@@ -237,6 +239,40 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   get coverImageUrl(): string {
     return this._coverImageUrl;
+  }
+
+  private buildReadStatusMenuItems(): void {
+    this.readStatusMenuItems = Object.entries(readStatusLabels).map(([status, label]) => ({
+      label,
+      command: () => {
+        this.bookService.updateBookReadStatus(this.book.id, status as ReadStatus).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: this.t.translate('book.card.toast.readStatusUpdatedSummary'),
+              detail: this.t.translate('book.card.toast.readStatusUpdatedDetail', {label}),
+              life: 2000
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: this.t.translate('book.card.toast.readStatusFailedSummary'),
+              detail: this.t.translate('book.card.toast.readStatusFailedDetail'),
+              life: 3000
+            });
+          }
+        });
+      }
+    }));
+  }
+
+  toggleReadStatusMenu(event: Event, menu: TieredMenu): void {
+    event.stopPropagation();
+    if (this.readStatusMenuItems.length === 0) {
+      this.buildReadStatusMenuItems();
+    }
+    menu.toggle(event);
   }
 
   onImageLoad(): void {
@@ -414,23 +450,40 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: this.t.translate('book.card.menu.quickSend'),
             icon: 'pi pi-envelope',
             command: () => {
-              this.emailService.emailBookQuick(this.book.id).subscribe({
-                next: () => {
-                  this.messageService.add({
-                    severity: 'info',
-                    summary: this.t.translate('common.success'),
-                    detail: this.t.translate('book.card.toast.quickSendSuccessDetail'),
-                  });
-                },
-                error: (err) => {
-                  const errorMessage = err?.error?.message || this.t.translate('book.card.toast.quickSendErrorDetail');
-                  this.messageService.add({
-                    severity: 'error',
-                    summary: this.t.translate('common.error'),
-                    detail: errorMessage,
-                  });
-                },
-              });
+              const doSend = () => {
+                this.emailService.emailBookQuick(this.book.id).subscribe({
+                  next: () => {
+                    this.messageService.add({
+                      severity: 'info',
+                      summary: this.t.translate('common.success'),
+                      detail: this.t.translate('book.card.toast.quickSendSuccessDetail'),
+                    });
+                  },
+                  error: (err) => {
+                    const errorMessage = err?.error?.message || this.t.translate('book.card.toast.quickSendErrorDetail');
+                    this.messageService.add({
+                      severity: 'error',
+                      summary: this.t.translate('common.error'),
+                      detail: errorMessage,
+                    });
+                  },
+                });
+              };
+
+              if (this.book.primaryFile?.fileSizeKb && this.book.primaryFile.fileSizeKb > 25 * 1024) {
+                this.confirmationService.confirm({
+                  message: this.t.translate('book.card.confirm.largeFileMessage'),
+                  header: this.t.translate('book.card.confirm.largeFileHeader'),
+                  icon: 'pi pi-exclamation-triangle',
+                  acceptLabel: this.t.translate('book.card.confirm.sendAnyway'),
+                  rejectLabel: this.t.translate('common.cancel'),
+                  acceptButtonProps: { severity: 'warn' },
+                  rejectButtonProps: { severity: 'secondary' },
+                  accept: doSend,
+                });
+              } else {
+                doSend();
+              }
             }
           },
             {
@@ -800,7 +853,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   getDisplayFormat(): string | null {
     if (!this.book?.primaryFile) {
-      return 'PHYSICAL';
+      return 'PHY';
     }
     if (this.forceEbookMode && this.book.primaryFile?.bookType === 'AUDIOBOOK') {
       const ebookType = this.getEbookType(this.book);

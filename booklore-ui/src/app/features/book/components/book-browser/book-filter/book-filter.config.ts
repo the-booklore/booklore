@@ -140,7 +140,7 @@ export const FILTER_LABELS: Readonly<Record<FilterType, string>> = {
   author: 'Author',
   category: 'Genre',
   series: 'Series',
-  bookType: 'Book Type',
+  bookType: 'File Format',
   readStatus: 'Read Status',
   personalRating: 'Personal Rating',
   publisher: 'Publisher',
@@ -202,8 +202,8 @@ const findExactAgeRating = (ageRating: number | null | undefined): FilterValue[]
 export const FILTER_EXTRACTORS: Readonly<Record<Exclude<FilterType, 'library'>, (book: Book) => FilterValue[]>> = {
   author: (book) => extractStringsAsFilters(book.metadata?.authors),
   category: (book) => extractStringsAsFilters(book.metadata?.categories),
-  series: (book) => extractSingleString(book.metadata?.seriesName),
-  bookType: (book) => extractSingleString(book.primaryFile?.bookType),
+  series: (book) => extractSingleString(book.metadata?.seriesName?.trim()),
+  bookType: (book) => book.isPhysical ? [{id: 'PHYSICAL', name: 'PHYSICAL'}] : extractSingleString(book.primaryFile?.bookType),
   readStatus: (book) => {
     const status = book.readStatus ?? ReadStatus.UNSET;
     const validStatus = status in READ_STATUS_LABELS ? status : ReadStatus.UNSET;
@@ -324,6 +324,7 @@ export const SHELF_STATUS_LABEL_KEYS: Readonly<Record<string, string>> = {
   'shelved': 'book.filter.shelfStatus.shelved',
   'unshelved': 'book.filter.shelfStatus.unshelved'
 };
+
 
 export const COMIC_ROLE_LABEL_KEYS: Readonly<Record<string, string>> = {
   penciller: 'book.filter.comicRoles.penciller',

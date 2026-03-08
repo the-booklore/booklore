@@ -44,6 +44,23 @@ public class BookFileGroupingUtils {
             "[\\s_-]?(\\d{1,3})\\s*$"
     );
 
+    // Part/disc indicators: "(part 1)", "[pt 2]", "- disc 1", "cd 3", etc.
+    // "part" requires brackets or dash prefix to avoid conflict with series labels ("Part 1" = series entry).
+    // "pt", "disc", "disk", "cd" are unambiguous and can be matched bare.
+    private static final Pattern PART_INDICATOR_PATTERN = Pattern.compile(
+            "\\s*(?:" +
+                    "[\\(\\[]\\s*(?:part|pt|dis[ck]|cd)\\s*\\d+\\s*[\\)\\]]" +
+                    "|-\\s*(?:part|pt|dis[ck]|cd)\\s*\\d+" +
+                    "|(?:pt|dis[ck]|cd)\\s*\\d+" +
+                    ")\\s*$",
+            Pattern.CASE_INSENSITIVE
+    );
+
+    // Bare-number prefix: "1. Title", "01 - Title" (NOT "101 Dalmatians" or "1984")
+    private static final Pattern BARE_NUMBER_PREFIX_PATTERN = Pattern.compile(
+            "^(\\d{1,3})(?:\\.|\\s*-)\\s+(.+)$"
+    );
+
     // Edition/version patterns that should NOT prevent grouping
     // Includes format indicators (audiobook, ebook) and edition descriptors
     private static final Pattern EDITION_PATTERN = Pattern.compile(
@@ -59,7 +76,7 @@ public class BookFileGroupingUtils {
     // Known book file extensions - only strip these, not arbitrary dots in folder names
     private static final Set<String> KNOWN_EXTENSIONS = Set.of(
             "pdf", "epub", "cbz", "cbr", "cb7", "mobi", "azw3", "azw", "fb2",
-            "m4b", "m4a", "mp3", "aac", "flac", "opus", "ogg"
+            "m4b", "m4a", "mp3"
     );
 
     public String extractGroupingKey(String fileName) {
@@ -85,6 +102,9 @@ public class BookFileGroupingUtils {
         baseName = UNDERSCORE_PATTERN.matcher(baseName).replaceAll(" ");
 
         baseName = FORMAT_INDICATOR_PATTERN.matcher(baseName).replaceAll("");
+
+        // Strip part/disc indicators (e.g., "(part 1)", "[cd 2]")
+        baseName = PART_INDICATOR_PATTERN.matcher(baseName).replaceAll("");
 
         // Strip trailing author names (after dash)
         baseName = TRAILING_AUTHOR_PATTERN.matcher(baseName).replaceAll("");
@@ -318,6 +338,18 @@ public class BookFileGroupingUtils {
                 }
             }
         }
+
+        // Fallback: bare-number prefix like "1. title" or "01 - title"
+        Matcher bareMatcher = BARE_NUMBER_PREFIX_PATTERN.matcher(key);
+        if (bareMatcher.matches()) {
+            String number = bareMatcher.group(1);
+            String baseTitle = bareMatcher.group(2).trim();
+            baseTitle = WHITESPACE_PATTERN.matcher(baseTitle).replaceAll(" ").trim();
+            if (baseTitle.length() >= 3) {
+                return new SeriesInfo(baseTitle, number);
+            }
+        }
+
         return null;
     }
 

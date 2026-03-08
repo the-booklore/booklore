@@ -87,9 +87,9 @@ public interface BookMapperV2 {
     }
 
     @Named("mapAuthors")
-    default Set<String> mapAuthors(Set<AuthorEntity> authors) {
-        return authors == null ? Set.of() :
-                authors.stream().map(AuthorEntity::getName).collect(Collectors.toSet());
+    default List<String> mapAuthors(List<AuthorEntity> authors) {
+        return authors == null ? List.of() :
+                authors.stream().map(AuthorEntity::getName).toList();
     }
 
     @Named("mapCategories")

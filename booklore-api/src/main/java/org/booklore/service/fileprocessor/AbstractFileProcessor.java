@@ -6,6 +6,7 @@ import org.booklore.model.dto.Book;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.enums.FileProcessStatus;
+import org.booklore.model.enums.LibraryOrganizationMode;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.service.book.BookCreatorService;
@@ -13,11 +14,16 @@ import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.metadata.MetadataMatchService;
 import org.booklore.service.metadata.sidecar.SidecarMetadataWriter;
 import org.booklore.util.FileService;
+import org.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 @Slf4j
 public abstract class AbstractFileProcessor implements BookFileProcessor {
@@ -76,4 +82,48 @@ public abstract class AbstractFileProcessor implements BookFileProcessor {
     }
 
     protected abstract BookEntity processNewFile(LibraryFile libraryFile);
+
+    protected Path getBookFolderForCoverFallback(LibraryFile libraryFile) {
+        if (libraryFile.isFolderBased()) {
+            return libraryFile.getFullPath();
+        }
+        if (libraryFile.getLibraryEntity().getOrganizationMode() == LibraryOrganizationMode.BOOK_PER_FOLDER) {
+            return libraryFile.getFullPath().getParent();
+        }
+        return null;
+    }
+
+    protected boolean generateCoverFromFolderImage(BookEntity bookEntity, Path bookFolder) {
+        Optional<Path> coverImage = FileUtils.findCoverImageInFolder(bookFolder);
+        if (coverImage.isEmpty()) return false;
+        try {
+            BufferedImage image = ImageIO.read(coverImage.get().toFile());
+            if (image == null) return false;
+            try {
+                return fileService.saveCoverImages(image, bookEntity.getId());
+            } finally {
+                image.flush();
+            }
+        } catch (Exception e) {
+            log.debug("Failed to use folder cover image {}: {}", coverImage.get(), e.getMessage());
+            return false;
+        }
+    }
+
+    protected boolean generateAudiobookCoverFromFolderImage(BookEntity bookEntity, Path bookFolder) {
+        Optional<Path> coverImage = FileUtils.findCoverImageInFolder(bookFolder);
+        if (coverImage.isEmpty()) return false;
+        try {
+            BufferedImage image = FileService.readImage(Files.readAllBytes(coverImage.get()));
+            if (image == null) return false;
+            try {
+                return fileService.saveAudiobookCoverImages(image, bookEntity.getId());
+            } finally {
+                image.flush();
+            }
+        } catch (Exception e) {
+            log.debug("Failed to use folder cover image {}: {}", coverImage.get(), e.getMessage());
+            return false;
+        }
+    }
 }

@@ -87,8 +87,12 @@
     "insightYearsOfLiterature": "years of literature",
     "insightPeakDecade": "Peak Decade",
     "insightPeakDecadeBooks": "{{ count }} books",
-    "insightDecadesCovered": "Decades Covered",
-    "insightDifferentEras": "different eras"
+    "insightGoldenEra": "Golden Era",
+    "insightGoldenEraRange": "{{ count }} books",
+    "insightMostCommonYear": "Most Common Year",
+    "insightMostCommonYearBooks": "{{ count }} books",
+    "insightRarityScore": "Rarity Score",
+    "insightRarePicks": "rare picks"
   },
   "publicationTrend": {
     "title": "Publication Trend",

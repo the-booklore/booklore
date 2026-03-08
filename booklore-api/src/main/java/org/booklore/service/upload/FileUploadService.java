@@ -1,5 +1,6 @@
 package org.booklore.service.upload;
 
+import lombok.RequiredArgsConstructor;
 import org.booklore.config.AppProperties;
 import org.booklore.exception.ApiError;
 import org.booklore.mapper.AdditionalFileMapper;
@@ -21,7 +22,7 @@ import org.booklore.service.file.FileMovingHelper;
 import org.booklore.service.monitoring.MonitoringRegistrationService;
 import org.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.booklore.util.PathPatternResolver;
-import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,11 +116,13 @@ public class FileUploadService {
             final String fileSubPath;
             final BookFileType effectiveBookType;
 
-            // Handle physical books that are getting their first file
-            if (wasPhysicalBook) {
-                // Physical book - determine library path and subpath
-                LibraryPathEntity libraryPath = determineLibraryPathForPhysicalBook(book);
-                book.setLibraryPath(libraryPath);
+            // Handle physical books or books that lost all their files
+            if (wasPhysicalBook || book.getPrimaryBookFile() == null) {
+                LibraryPathEntity libraryPath = book.getLibraryPath();
+                if (libraryPath == null) {
+                    libraryPath = determineLibraryPathForPhysicalBook(book);
+                    book.setLibraryPath(libraryPath);
+                }
 
                 String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
                 String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);
@@ -159,13 +162,6 @@ public class FileUploadService {
 
             final BookFileEntity entity = createAdditionalFileEntityWithSubPath(book, finalFileName, fileSubPath, isBook, effectiveBookType, file.getSize(), fileHash, description);
             final BookFileEntity savedEntity = additionalFileRepository.save(entity);
-
-            // Promote physical book to digital if this is a book file
-            if (wasPhysicalBook && isBook) {
-                book.setIsPhysical(false);
-                bookRepository.save(book);
-                log.info("Physical book {} promoted to digital book after file upload", bookId);
-            }
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
@@ -262,7 +258,13 @@ public class FileUploadService {
         if (originalFileName == null) {
             throw new IllegalArgumentException("File must have a name");
         }
-        return originalFileName;
+        // Prevent Path Traversal by extracting only the base file name
+        String cleanPath = StringUtils.cleanPath(originalFileName);
+        String baseFileName = StringUtils.getFilename(cleanPath);
+        if (baseFileName == null || baseFileName.isEmpty() || baseFileName.equals("..")) {
+            throw new IllegalArgumentException("Invalid filename");
+        }
+        return baseFileName;
     }
 
     private BookFileExtension getFileExtension(String fileName) {

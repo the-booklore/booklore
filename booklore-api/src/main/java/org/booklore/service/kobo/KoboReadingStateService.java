@@ -1,21 +1,21 @@
 package org.booklore.service.kobo;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.mapper.KoboReadingStateMapper;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.KoboSyncSettings;
 import org.booklore.model.dto.kobo.KoboReadingState;
 import org.booklore.model.dto.response.kobo.KoboReadingStateResponse;
-import org.booklore.model.entity.*;
+import org.booklore.model.entity.BookEntity;
+import org.booklore.model.entity.BookLoreUserEntity;
+import org.booklore.model.entity.KoboReadingStateEntity;
+import org.booklore.model.entity.UserBookFileProgressEntity;
+import org.booklore.model.entity.UserBookProgressEntity;
 import org.booklore.model.enums.ReadStatus;
-import org.booklore.repository.BookRepository;
-import org.booklore.repository.KoboReadingStateRepository;
-import org.booklore.repository.UserBookFileProgressRepository;
-import org.booklore.repository.UserBookProgressRepository;
-import org.booklore.repository.UserRepository;
+import org.booklore.repository.*;
 import org.booklore.service.hardcover.HardcoverSyncService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,7 +80,7 @@ public class KoboReadingStateService {
     private List<KoboReadingState> saveAll(List<KoboReadingState> dtos) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         Long userId = user.getId();
-        
+
         return dtos.stream()
                 .map(dto -> {
                     String entitlementId = mapper.cleanString(dto.getEntitlementId());
@@ -114,9 +114,9 @@ public class KoboReadingStateService {
 
                     KoboReadingStateEntity savedEntity = repository.save(entity);
                     KoboReadingState savedState = mapper.toDto(savedEntity);
-                    
+
                     syncKoboProgressToUserBookProgress(savedState, userId);
-                    
+
                     return savedEntity;
                 })
                 .map(mapper::toDto)
@@ -139,6 +139,8 @@ public class KoboReadingStateService {
                         .map(mapper::toDto))
                 .or(() -> constructReadingStateFromProgress(entitlementId));
 
+        readingState.ifPresent(state -> overlayWebReaderBookmark(state, entitlementId, userId));
+
         return readingState
                 .map(state -> {
                     normalizeResponseTimestamps(state);
@@ -146,21 +148,46 @@ public class KoboReadingStateService {
                 })
                 .orElse(List.of());
     }
-    
+
+    private void overlayWebReaderBookmark(KoboReadingState state, String entitlementId, Long userId) {
+        if (!koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync()) {
+            return;
+        }
+        try {
+            Long bookId = Long.parseLong(entitlementId);
+            progressRepository.findByUserIdAndBookId(userId, bookId)
+                    .filter(progress -> progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null)
+                    .ifPresent(progress -> {
+                        KoboReadingState.CurrentBookmark existing = state.getCurrentBookmark();
+                        KoboReadingState.CurrentBookmark webReaderBookmark = readingStateBuilder.buildBookmarkFromProgress(progress);
+
+                        if (existing != null) {
+                            existing.setProgressPercent(webReaderBookmark.getProgressPercent());
+                            existing.setLastModified(webReaderBookmark.getLastModified());
+                        } else {
+                            state.setCurrentBookmark(webReaderBookmark);
+                        }
+                    });
+        } catch (NumberFormatException e) {
+            // Not a valid book ID, skip overlay
+        }
+    }
+
     private Optional<KoboReadingState> constructReadingStateFromProgress(String entitlementId) {
         try {
             Long bookId = Long.parseLong(entitlementId);
             BookLoreUser user = authenticationService.getAuthenticatedUser();
-            
+
+            boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
             return progressRepository.findByUserIdAndBookId(user.getId(), bookId)
-                    .filter(progress -> progress.getKoboProgressPercent() != null || progress.getKoboLocation() != null)
+                    .filter(progress -> progress.getKoboProgressPercent() != null || progress.getKoboLocation() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                     .map(progress -> readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress));
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format when constructing reading state: {}", entitlementId);
             return Optional.empty();
         }
     }
-    
+
     private void syncKoboProgressToUserBookProgress(KoboReadingState readingState, Long userId) {
         try {
             Long bookId = Long.parseLong(readingState.getEntitlementId());
@@ -197,9 +224,6 @@ public class KoboReadingStateService {
 
                 KoboReadingState.CurrentBookmark.Location location = bookmark.getLocation();
                 if (location != null) {
-                    log.debug("Kobo location data: value={}, type={}, source={} (length={})",
-                            location.getValue(), location.getType(), location.getSource(),
-                            location.getSource() != null ? location.getSource().length() : 0);
                     progress.setKoboLocation(location.getValue());
                     progress.setKoboLocationType(location.getType());
                     progress.setKoboLocationSource(location.getSource());
@@ -208,7 +232,11 @@ public class KoboReadingStateService {
 
             Instant now = Instant.now();
             progress.setKoboProgressReceivedTime(now);
-            progress.setLastReadTime(now);
+
+            boolean koboApplied = crossPopulateEpubFieldsFromKobo(progress, bookmark, book, userId, now);
+            if (koboApplied) {
+                progress.setLastReadTime(now);
+            }
 
             if (progress.getKoboProgressPercent() != null) {
                 updateReadStatusFromKoboProgress(progress, now);
@@ -216,21 +244,61 @@ public class KoboReadingStateService {
 
             progressRepository.save(progress);
 
-            // Also save to file-level progress table (dual-write)
-            saveToFileProgress(userOpt.get(), book, progress);
-
-            log.debug("Synced Kobo progress: bookId={}, progress={}%", bookId, progress.getKoboProgressPercent());
-
             // Sync progress to Hardcover asynchronously (if enabled for this user)
             // But only if the progress percentage has changed from last time, or the read status has changed
             if (progress.getKoboProgressPercent() != null
                     && (!progress.getKoboProgressPercent().equals(prevousKoboProgressPercent)
-                            || progress.getReadStatus() != previousReadStatus)) {
+                    || progress.getReadStatus() != previousReadStatus)) {
                 hardcoverSyncService.syncProgressToHardcover(book.getId(), progress.getKoboProgressPercent(), userId);
             }
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
+    }
+
+    private boolean crossPopulateEpubFieldsFromKobo(UserBookProgressEntity progress,
+                                                      KoboReadingState.CurrentBookmark bookmark,
+                                                      BookEntity book, Long userId, Instant now) {
+        if (bookmark == null || bookmark.getProgressPercent() == null) {
+            return false;
+        }
+
+        if (!koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync()) {
+            return false;
+        }
+
+        UserBookFileProgressEntity fileProgress = book.getPrimaryBookFile() != null
+                ? fileProgressRepository.findByUserIdAndBookFileId(userId, book.getPrimaryBookFile().getId()).orElse(null)
+                : null;
+
+        Instant bookmarkTime = parseTimestamp(bookmark.getLastModified());
+        boolean webReaderIsNewer = fileProgress != null
+                && fileProgress.getLastReadTime() != null
+                && bookmarkTime != null
+                && fileProgress.getLastReadTime().isAfter(bookmarkTime);
+
+        if (webReaderIsNewer) {
+            return false;
+        }
+
+        progress.setEpubProgressPercent(bookmark.getProgressPercent().floatValue());
+        KoboReadingState.CurrentBookmark.Location location = bookmark.getLocation();
+        if (location != null && location.getSource() != null) {
+            progress.setEpubProgressHref(location.getSource());
+        }
+        progress.setEpubProgress(null);
+
+        if (fileProgress != null) {
+            fileProgress.setProgressPercent(bookmark.getProgressPercent().floatValue());
+            if (location != null && location.getSource() != null) {
+                fileProgress.setPositionHref(location.getSource());
+            }
+            fileProgress.setPositionData(null);
+            fileProgress.setLastReadTime(now);
+            fileProgressRepository.save(fileProgress);
+        }
+
+        return true;
     }
 
     private void normalizePutTimestamps(List<KoboReadingState> readingStates) {
@@ -429,26 +497,6 @@ public class KoboReadingStateService {
         return value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim());
     }
 
-    private void saveToFileProgress(BookLoreUserEntity user, BookEntity book, UserBookProgressEntity progress) {
-        try {
-            BookFileEntity primaryFile = book.getPrimaryBookFile();
-            UserBookFileProgressEntity fileProgress = fileProgressRepository
-                    .findByUserIdAndBookFileId(user.getId(), primaryFile.getId())
-                    .orElseGet(UserBookFileProgressEntity::new);
-
-            fileProgress.setUser(user);
-            fileProgress.setBookFile(primaryFile);
-            fileProgress.setLastReadTime(progress.getLastReadTime());
-
-            // For Kobo, we store the progress percent (Kobo doesn't provide position data)
-            fileProgress.setProgressPercent(progress.getKoboProgressPercent());
-
-            fileProgressRepository.save(fileProgress);
-        } catch (Exception e) {
-            log.warn("Failed to save file-level progress for book {}: {}", book.getId(), e.getMessage());
-        }
-    }
-    
     private void updateReadStatusFromKoboProgress(UserBookProgressEntity userProgress, Instant now) {
         if (shouldPreserveCurrentStatus(userProgress, now)) {
             return;
@@ -479,15 +527,15 @@ public class KoboReadingStateService {
 
         return now.isBefore(statusSentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS));
     }
-    
+
     private ReadStatus deriveStatusFromProgress(double progressPercent) {
         KoboSyncSettings settings = koboSettingsService.getCurrentUserSettings();
-        
-        float finishedThreshold = settings.getProgressMarkAsFinishedThreshold() != null 
+
+        float finishedThreshold = settings.getProgressMarkAsFinishedThreshold() != null
                 ? settings.getProgressMarkAsFinishedThreshold() : 99f;
-        float readingThreshold = settings.getProgressMarkAsReadingThreshold() != null 
+        float readingThreshold = settings.getProgressMarkAsReadingThreshold() != null
                 ? settings.getProgressMarkAsReadingThreshold() : 1f;
-        
+
         if (progressPercent >= finishedThreshold) return ReadStatus.READ;
         if (progressPercent >= readingThreshold) return ReadStatus.READING;
         return ReadStatus.UNREAD;

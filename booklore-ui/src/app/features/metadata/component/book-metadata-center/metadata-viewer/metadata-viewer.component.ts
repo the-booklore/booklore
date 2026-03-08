@@ -33,8 +33,12 @@ import {AGE_RATING_OPTIONS, CONTENT_RATING_LABELS, fileSizeRanges, matchScoreRan
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
-import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
+import {DeleteBookFileEvent, DeleteSupplementaryFileEvent, DetachBookFileEvent, DownloadAdditionalFileEvent, DownloadAllFilesEvent, DownloadEvent, MetadataTabsComponent, ReadEvent} from './metadata-tabs/metadata-tabs.component';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
+import {AuthorService} from '../../../../author-browser/service/author.service';
+import {Dialog} from 'primeng/dialog';
+import {Checkbox} from 'primeng/checkbox';
+import DOMPurify from 'dompurify';
 
 
 @Component({
@@ -42,7 +46,7 @@ import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/tran
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, ProgressBar, Menu, DatePicker, ProgressSpinner, TieredMenu, Image, TagComponent, MetadataTabsComponent, TranslocoDirective, TranslocoPipe, Dialog, Checkbox]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChecked {
   @Input() book$!: Observable<Book | null>;
@@ -57,6 +61,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   private bookService = inject(BookService);
   private bookFileService = inject(BookFileService);
   private taskHelperService = inject(TaskHelperService);
+  private authorService = inject(AuthorService);
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
@@ -70,17 +75,22 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
   bookInSeries: Book[] = [];
+  @ViewChild(Image) private coverImage?: Image;
   @ViewChild('descriptionContent') descriptionContentRef?: ElementRef<HTMLElement>;
   isExpanded = false;
   isOverflowing = false;
   isComicSectionExpanded = true;
-  isAudiobookSectionExpanded = true;
   showFilePath = false;
   isAutoFetching = false;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   selectedReadStatus: ReadStatus = ReadStatus.UNREAD;
   isEditingDateFinished = false;
   editDateFinished: Date | null = null;
+  showDetachDialog = false;
+  detachCopyMetadata = true;
+  private detachBookId = 0;
+  private detachFileId = 0;
+  detachFileName = '';
 
   readStatusOptions: { value: ReadStatus, labelKey: string }[] = [
     {value: ReadStatus.UNREAD, labelKey: 'metadata.viewer.readStatusUnread'},
@@ -102,6 +112,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   navigationState$ = this.bookNavigationService.getNavigationState();
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.coverImage?.closePreview());
+
+    const onPopState = () => this.coverImage?.closePreview();
+    window.addEventListener('popstate', onPopState);
+    this.destroyRef.onDestroy(() => window.removeEventListener('popstate', onPopState));
+
     this.readMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => {
@@ -219,6 +235,19 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
               command: () => this.assignShelf(book.id)
             });
 
+            if (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) {
+              const isPhysical = book.isPhysical ?? false;
+              items.push({
+                label: isPhysical
+                  ? this.t.translate('metadata.viewer.menuUnmarkPhysical')
+                  : this.t.translate('metadata.viewer.menuMarkPhysical'),
+                icon: isPhysical ? 'pi pi-times-circle' : 'pi pi-book',
+                command: () => {
+                  this.bookService.togglePhysicalFlag(book.id, !isPhysical).subscribe();
+                }
+              });
+            }
+
             // Add allowed submenus based on user permissions
 
             if (userState?.user?.permissions.canUpload || userState?.user?.permissions.admin) {
@@ -251,7 +280,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
                   {
                     label: this.t.translate('metadata.viewer.menuQuickSend'),
                     icon: 'pi pi-bolt',
-                    command: () => this.quickSend(book.id)
+                    command: () => this.quickSend(book)
                   },
                   {
                     label: this.t.translate('metadata.viewer.menuCustomSend'),
@@ -473,6 +502,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
     this.isExpanded = !this.isExpanded;
   }
 
+  sanitizeDescription(html: string | null | undefined): string {
+    return html ? DOMPurify.sanitize(html) : '';
+  }
+
   read(bookId: number | undefined, reader?: "epub-streaming", bookType?: BookType): void {
     if (bookId) this.bookService.readBook(bookId, reader, bookType);
   }
@@ -525,6 +558,19 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
 
   onDeleteSupplementaryFile(event: DeleteSupplementaryFileEvent): void {
     this.deleteAdditionalFile(event.bookId, event.fileId, event.fileName);
+  }
+
+  onDetachBookFile(event: DetachBookFileEvent): void {
+    this.detachBookId = event.book.id;
+    this.detachFileId = event.fileId;
+    this.detachFileName = event.fileName;
+    this.detachCopyMetadata = true;
+    this.showDetachDialog = true;
+  }
+
+  confirmDetach(): void {
+    this.showDetachDialog = false;
+    this.bookFileService.detachBookFile(this.detachBookId, this.detachFileId, this.detachCopyMetadata).subscribe();
   }
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
@@ -616,19 +662,36 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
     }, 15000);
   }
 
-  quickSend(bookId: number) {
-    this.emailService.emailBookQuick(bookId).subscribe({
-      next: () => this.messageService.add({
-        severity: 'info',
-        summary: this.t.translate('metadata.viewer.toast.quickSendSuccessSummary'),
-        detail: this.t.translate('metadata.viewer.toast.quickSendSuccessDetail'),
-      }),
-      error: (err) => this.messageService.add({
-        severity: 'error',
-        summary: this.t.translate('metadata.viewer.toast.quickSendErrorSummary'),
-        detail: err?.error?.message || this.t.translate('metadata.viewer.toast.quickSendErrorDetail'),
-      })
-    });
+  quickSend(book: Book) {
+    const doSend = () => {
+      this.emailService.emailBookQuick(book.id).subscribe({
+        next: () => this.messageService.add({
+          severity: 'info',
+          summary: this.t.translate('metadata.viewer.toast.quickSendSuccessSummary'),
+          detail: this.t.translate('metadata.viewer.toast.quickSendSuccessDetail'),
+        }),
+        error: (err) => this.messageService.add({
+          severity: 'error',
+          summary: this.t.translate('metadata.viewer.toast.quickSendErrorSummary'),
+          detail: err?.error?.message || this.t.translate('metadata.viewer.toast.quickSendErrorDetail'),
+        })
+      });
+    };
+
+    if (book.primaryFile?.fileSizeKb && book.primaryFile.fileSizeKb > 25 * 1024) {
+      this.confirmationService.confirm({
+        message: this.t.translate('metadata.viewer.confirm.largeFileMessage'),
+        header: this.t.translate('metadata.viewer.confirm.largeFileHeader'),
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: this.t.translate('metadata.viewer.confirm.sendAnyway'),
+        rejectLabel: this.t.translate('common.cancel'),
+        acceptButtonProps: { severity: 'warn' },
+        rejectButtonProps: { severity: 'secondary' },
+        accept: doSend,
+      });
+    } else {
+      doSend();
+    }
   }
 
   assignShelf(bookId: number) {
@@ -740,7 +803,20 @@ export class MetadataViewerComponent implements OnInit, OnChanges, AfterViewChec
   }
 
   goToAuthorBooks(author: string): void {
-    this.handleMetadataClick('author', author);
+    this.authorService.getAuthorByName(author).subscribe({
+      next: (authorDetails) => {
+        const navigate = () => this.router.navigate(['/author', authorDetails.id]);
+        if (this.metadataCenterViewMode === 'dialog') {
+          this.dialogRef?.close();
+          setTimeout(navigate, 200);
+        } else {
+          navigate();
+        }
+      },
+      error: () => {
+        this.handleMetadataClick('author', author);
+      }
+    });
   }
 
   goToCategory(category: string): void {

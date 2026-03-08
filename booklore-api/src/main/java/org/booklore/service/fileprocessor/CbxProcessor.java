@@ -19,6 +19,7 @@ import org.booklore.util.ArchiveUtils;
 import org.booklore.util.BookCoverUtils;
 import org.booklore.util.FileService;
 import org.booklore.util.FileUtils;
+import org.booklore.util.UnrarHelper;
 import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +66,14 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.CBX);
         bookEntity.getPrimaryBookFile().setArchiveType(ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(bookEntity))));
-        if (generateCover(bookEntity)) {
+        boolean coverGenerated = generateCover(bookEntity);
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
@@ -210,7 +218,33 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                 }
             }
         } catch (Exception e) {
+            if (UnrarHelper.isAvailable()) {
+                log.info("junrar failed for {}, falling back to unrar CLI: {}", file.getName(), e.getMessage());
+                return extractFirstImageFromRarViaCli(file);
+            }
             log.error("Error extracting RAR: {}", e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    private Optional<BufferedImage> extractFirstImageFromRarViaCli(File file) {
+        try {
+            List<String> entries = UnrarHelper.listEntries(file.toPath());
+            List<String> imageEntries = entries.stream()
+                    .filter(name -> IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(name).matches())
+                    .sorted()
+                    .toList();
+            for (String entry : imageEntries) {
+                try {
+                    byte[] bytes = UnrarHelper.extractEntryBytes(file.toPath(), entry);
+                    BufferedImage image = FileService.readImage(new ByteArrayInputStream(bytes));
+                    if (image != null) return Optional.of(image);
+                } catch (Exception ex) {
+                    log.warn("Error reading RAR entry via CLI {}: {}", entry, ex.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("unrar CLI fallback also failed for {}: {}", file.getName(), e.getMessage());
         }
         return Optional.empty();
     }

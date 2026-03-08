@@ -8,8 +8,8 @@
         </div>
       }
 
-      <!-- Column Headers (Desktop) -->
-      <div class="column-headers desktop-only">
+      <!-- Column Headers -->
+      <div class="column-headers">
         <div class="column-label current">
           <i class="pi pi-file-edit"></i>
           <span>{{ t('columnCurrent') }}</span>
@@ -258,18 +258,49 @@
                   >
                     <i [class]="metadataForm.get(field.lockedKey)?.value ? 'pi pi-lock' : 'pi pi-lock-open'"></i>
                   </button>
-                  <p-autoComplete
-                    class="chips-input"
-                    formControlName="{{field.controlName}}"
-                    [multiple]="true"
-                    [dropdown]="false"
-                    [forceSelection]="false"
-                    [showClear]="true"
-                    [suggestions]="getFiltered(field.controlName)"
-                    (completeMethod)="filterItems($event, field.controlName)"
-                    (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                    (onSelect)="onAutoCompleteSelect(field.controlName, $event)"
-                  />
+                  @if (field.controlName === 'authors') {
+                    <div class="author-chips-container" [class.disabled]="metadataForm.get('authors')?.disabled"
+                         cdkDropList cdkDropListOrientation="mixed"
+                         [cdkDropListDisabled]="metadataForm.get('authors')?.disabled"
+                         (cdkDropListDropped)="dropAuthor($event)">
+                      @for (author of metadataForm.get('authors')!.value; track $index) {
+                        <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
+                          @if ($index === 0) { <span class="main-author-badge">m</span> }
+                          {{ author }}
+                          @if (!metadataForm.get('authors')?.disabled) {
+                            <i class="pi pi-times author-chip-remove" (click)="removeAuthor($index)"></i>
+                          }
+                        </span>
+                      }
+                      @if (!metadataForm.get('authors')?.disabled) {
+                        <p-autoComplete
+                          class="author-add-input"
+                          [(ngModel)]="authorInputValue"
+                          [ngModelOptions]="{ standalone: true }"
+                          [suggestions]="getFiltered('authors')"
+                          [forceSelection]="false"
+                          [dropdown]="false"
+                          (completeMethod)="filterItems($event, 'authors')"
+                          (onKeyUp)="onAuthorInputKeyUp($event)"
+                          (onSelect)="onAuthorInputSelect($event)"
+                          placeholder="Add author..."
+                        />
+                      }
+                    </div>
+                  } @else {
+                    <p-autoComplete
+                      class="chips-input"
+                      formControlName="{{field.controlName}}"
+                      [multiple]="true"
+                      [dropdown]="false"
+                      [forceSelection]="false"
+                      [showClear]="true"
+                      [suggestions]="getFiltered(field.controlName)"
+                      (completeMethod)="filterItems($event, field.controlName)"
+                      (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
+                      (onSelect)="onAutoCompleteSelect(field.controlName, $event)"
+                    />
+                  }
                 </div>
 
                 <button

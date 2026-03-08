@@ -112,6 +112,13 @@ export class LibraryShelfMenuService {
             }
           },
           {
+            label: this.t.translate('book.shelfMenuService.library.findDuplicates'),
+            icon: 'pi pi-copy',
+            command: () => {
+              this.bookDialogHelperService.openDuplicateMergerDialog(entity?.id as number);
+            }
+          },
+          {
             separator: true
           },
           {
@@ -235,6 +242,17 @@ export class LibraryShelfMenuService {
             disabled: disableOptions,
             command: () => {
               this.dialogLauncherService.openMagicShelfEditDialog((entity?.id as number));
+            }
+          },
+          {
+            label: this.t.translate('book.shelfMenuService.magicShelf.exportJson'),
+            icon: 'pi pi-copy',
+            command: () => {
+              if (entity?.filterJson) {
+                navigator.clipboard.writeText(entity.filterJson).then(() => {
+                  this.messageService.add({severity: 'success', summary: this.t.translate('common.success'), detail: this.t.translate('book.shelfMenuService.toast.magicShelfJsonCopiedDetail')});
+                });
+              }
             }
           },
           {

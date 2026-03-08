@@ -2,9 +2,9 @@ package org.booklore.service.metadata;
 
 import org.booklore.model.dto.BookMetadata;
 
-import java.util.Set;
+import java.util.Collection;
 
 @FunctionalInterface
 interface FieldValueExtractorList {
-    Set<String> extract(BookMetadata metadata);
+    Collection<String> extract(BookMetadata metadata);
 }

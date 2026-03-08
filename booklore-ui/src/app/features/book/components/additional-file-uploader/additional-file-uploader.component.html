@@ -23,6 +23,7 @@
   <p-select
     [options]="fileTypeOptions"
     [(ngModel)]="fileType"
+    (ngModelChange)="onFileTypeChange()"
     optionLabel="label"
     optionValue="value"
     [placeholder]="t('selectFileType')"
@@ -30,22 +31,11 @@
     [disabled]="isUploading"
   ></p-select>
 
-  <!-- Description Field -->
-  <div class="description-field">
-    <label for="description" class="description-label">{{ t('descriptionLabel') }}</label>
-    <p-textarea
-      [(ngModel)]="description"
-      rows="3"
-      [attr.placeholder]="t('descriptionPlaceholder')"
-      class="full-width"
-      [disabled]="isUploading"
-    ></p-textarea>
-  </div>
-
   <!-- File Upload -->
   <p-fileupload class="file-upload" name="file"
     [customUpload]="true"
     [multiple]="false"
+    [accept]="acceptedFormats"
     (onSelect)="onFilesSelect($event)"
     (uploadHandler)="uploadFiles($event)"
     [disabled]="isUploading">
@@ -133,7 +123,16 @@
       <div class="empty-state">
         <i class="pi pi-cloud-upload empty-icon"></i>
         <p class="empty-text">{{ t('dragDropText') }}</p>
-        <p class="empty-subtext" [innerHTML]="t('uploadForBook', { title: book.metadata?.title || t('thisBook') })"></p>
+        <p class="empty-subtext">
+          @if (fileType === AdditionalFileType.ALTERNATIVE_FORMAT) {
+            <span [innerHTML]="t('supportedFormats')"></span>
+            <br/>
+          } @else {
+            <span>{{ t('supplementaryAllFormats') }}</span>
+            <br/>
+          }
+          {{ t('maxFileSize', { size: maxFileSizeDisplay }) }}
+        </p>
       </div>
     </ng-template>
   </p-fileupload>

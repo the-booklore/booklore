@@ -2,7 +2,6 @@ package org.booklore.service.kobo;
 
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.mapper.KoboReadingStateMapper;
-import org.booklore.model.dto.Book;
 import org.booklore.model.dto.kobo.*;
 import org.booklore.model.dto.settings.KoboSettings;
 import org.booklore.model.entity.*;
@@ -34,6 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class KoboEntitlementService {
 
+    private static final int MAX_MAGIC_SHELF_BOOKS_FOR_KOBO = 250;
     private static final Pattern NON_ALPHANUMERIC_LOWERCASE_PATTERN = Pattern.compile("[^a-z0-9]");
     private final KoboUrlBuilder koboUrlBuilder;
     private final BookQueryService bookQueryService;
@@ -47,6 +47,7 @@ public class KoboEntitlementService {
     private final ShelfRepository shelfRepository;
     private final MagicShelfRepository magicShelfRepository;
     private final MagicShelfBookService magicShelfBookService;
+    private final KoboSettingsService koboSettingsService;
 
     public List<NewEntitlement> generateNewEntitlements(Set<Long> bookIds, String token) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(bookIds);
@@ -112,11 +113,11 @@ public class KoboEntitlementService {
 
     public List<KoboTagWrapper> generateTags() {
         Long userId = authenticationService.getAuthenticatedUser().getId();
-        List<Long> koboBookIDs = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
+        Set<Long> koboBookIDs = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
                 .orElseThrow(() -> new NoSuchElementException("Kobo shelf not found for user: " + userId))
                 .getBookEntities().stream().filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(BookEntity::getId)
-                .toList();
+                .collect(Collectors.toSet());
 
         List<KoboTagWrapper> tags = new ArrayList<>();
         // Shelves
@@ -127,21 +128,22 @@ public class KoboEntitlementService {
                 .forEach(tags::add);
 
         // Magic Shelves
-        magicShelfRepository.findAllByUserId(userId).stream()
-                .map(magicShelf -> {
-                    List<Long> bookIds = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelf.getId(), 0, Integer.MAX_VALUE)
-                            .stream().map(Book::getId).toList();
-                    return buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
-                            magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
-                            bookIds, koboBookIDs);
-                })
-                .forEach(tags::add);
+        magicShelfRepository.findAllByUserId(userId).forEach(magicShelf -> {
+            try {
+                List<Long> bookIds = magicShelfBookService.getBookIdsByMagicShelfId(userId, magicShelf.getId(), MAX_MAGIC_SHELF_BOOKS_FOR_KOBO);
+                tags.add(buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
+                        magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
+                        bookIds, koboBookIDs));
+            } catch (Exception e) {
+                log.warn("Skipping magic shelf '{}' during Kobo tag generation: {}", magicShelf.getName(), e.getMessage());
+            }
+        });
 
         log.info("Synced {} tags to Kobo", tags.size());
         return tags;
     }
 
-    private KoboTagWrapper buildKoboTag(String id, String name, String created, String modified, List<Long> bookIds, List<Long> koboFilterIds) {
+    private KoboTagWrapper buildKoboTag(String id, String name, String created, String modified, List<Long> bookIds, Set<Long> koboFilterIds) {
         List<KoboTag.KoboTagItem> items = bookIds.stream()
                 .filter(koboFilterIds::contains)
                 .map(bookId -> KoboTag.KoboTagItem.builder()
@@ -178,7 +180,8 @@ public class KoboEntitlementService {
     private ChangedReadingState buildChangedReadingState(UserBookProgressEntity progress, String timestamp, OffsetDateTime now) {
         String entitlementId = String.valueOf(progress.getBook().getId());
 
-        KoboReadingState.CurrentBookmark bookmark = progress.getKoboProgressPercent() != null
+        boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
+        KoboReadingState.CurrentBookmark bookmark = (progress.getKoboProgressPercent() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                 ? readingStateBuilder.buildBookmarkFromProgress(progress, now)
                 : readingStateBuilder.buildEmptyBookmark(now);
 
@@ -214,10 +217,21 @@ public class KoboEntitlementService {
         Optional<UserBookProgressEntity> userProgress = progressRepository
                 .findByUserIdAndBookId(authenticationService.getAuthenticatedUser().getId(), book.getId());
 
-        KoboReadingState.CurrentBookmark bookmark = existingState != null && existingState.getCurrentBookmark() != null
+        boolean twoWaySync = koboSettingsService.getCurrentUserSettings().isTwoWayProgressSync();
+
+        KoboReadingState.CurrentBookmark webReaderBookmark = twoWaySync
+                ? userProgress
+                    .filter(progress -> progress.getEpubProgress() != null && progress.getEpubProgressPercent() != null)
+                    .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
+                    .orElse(null)
+                : null;
+
+        KoboReadingState.CurrentBookmark bookmark = webReaderBookmark != null
+                ? webReaderBookmark
+                : existingState != null && existingState.getCurrentBookmark() != null
                 ? existingState.getCurrentBookmark()
                 : userProgress
-                .filter(progress -> progress.getKoboProgressPercent() != null)
+                .filter(progress -> progress.getKoboProgressPercent() != null || (twoWaySync && progress.getEpubProgressPercent() != null))
                 .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
                 .orElseGet(() -> readingStateBuilder.buildEmptyBookmark(now));
 

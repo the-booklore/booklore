@@ -50,6 +50,7 @@ public class UserProvisioningService {
         user.setProvisioningMethod(ProvisioningMethod.LOCAL);
 
         UserPermissionsEntity perms = new UserPermissionsEntity();
+        perms.setUser(user);
         perms.setPermissionAdmin(true);
         perms.setPermissionUpload(true);
         perms.setPermissionDownload(true);
@@ -137,16 +138,22 @@ public class UserProvisioningService {
     }
 
     @Transactional
-    public BookLoreUserEntity provisionOidcUser(String username, String email, String name, OidcAutoProvisionDetails oidcAutoProvisionDetails) {
+    public BookLoreUserEntity provisionOidcUser(String username, String email, String name,
+                                                String oidcSubject, String oidcIssuer, String avatarUrl,
+                                                OidcAutoProvisionDetails oidcAutoProvisionDetails) {
         BookLoreUserEntity user = new BookLoreUserEntity();
         user.setUsername(username);
         user.setEmail(email);
         user.setName(name);
+        user.setOidcSubject(oidcSubject);
+        user.setOidcIssuer(oidcIssuer);
+        user.setAvatarUrl(avatarUrl);
         user.setDefaultPassword(false);
         user.setPasswordHash("OIDC_USER_" + UUID.randomUUID());
         user.setProvisioningMethod(ProvisioningMethod.OIDC);
 
         UserPermissionsEntity perms = new UserPermissionsEntity();
+        perms.setUser(user);
         List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();
         if (defaultPermissions != null) {
             perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));

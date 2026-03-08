@@ -1,5 +1,6 @@
 package org.booklore.service.book;
 
+import org.booklore.exception.ApiError;
 import org.booklore.exception.APIException;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.Book;
@@ -13,6 +14,8 @@ import org.booklore.repository.AuthorRepository;
 import org.booklore.repository.BookRepository;
 import org.booklore.repository.CategoryRepository;
 import org.booklore.repository.LibraryRepository;
+import org.booklore.util.BookCoverUtils;
+import org.booklore.util.FileService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -37,6 +41,7 @@ public class PhysicalBookService {
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
     private final BookMapper bookMapper;
+    private final FileService fileService;
 
     @Transactional
     public Book createPhysicalBook(CreatePhysicalBookRequest request) {
@@ -66,7 +71,7 @@ public class PhysicalBookService {
         bookEntity.setMetadata(metadata);
 
         if (request.getAuthors() != null && !request.getAuthors().isEmpty()) {
-            addAuthorsToBook(new HashSet<>(request.getAuthors()), bookEntity);
+            addAuthorsToBook(new ArrayList<>(request.getAuthors()), bookEntity);
         }
 
         if (request.getCategories() != null && !request.getCategories().isEmpty()) {
@@ -75,6 +80,17 @@ public class PhysicalBookService {
 
         BookEntity savedBook = bookRepository.save(bookEntity);
         log.info("Created physical book '{}' in library {} with id {}", request.getTitle(), library.getName(), savedBook.getId());
+
+        if (request.getThumbnailUrl() != null && !request.getThumbnailUrl().isBlank()) {
+            try {
+                fileService.createThumbnailFromUrl(savedBook.getId(), request.getThumbnailUrl());
+                savedBook.getMetadata().setCoverUpdatedOn(Instant.now());
+                savedBook.setBookCoverHash(BookCoverUtils.generateCoverHash());
+                savedBook = bookRepository.save(savedBook);
+            } catch (Exception ex) {
+                log.warn("Failed to download cover for physical book {}: {}", savedBook.getId(), ex.getMessage());
+            }
+        }
 
         return bookMapper.toBook(savedBook);
     }
@@ -108,9 +124,9 @@ public class PhysicalBookService {
         return cleaned.length() == 10 ? cleaned : null;
     }
 
-    private void addAuthorsToBook(Set<String> authors, BookEntity bookEntity) {
+    private void addAuthorsToBook(List<String> authors, BookEntity bookEntity) {
         if (bookEntity.getMetadata().getAuthors() == null) {
-            bookEntity.getMetadata().setAuthors(new HashSet<>());
+            bookEntity.getMetadata().setAuthors(new ArrayList<>());
         }
         authors.stream()
                 .map(authorName -> truncate(authorName, 255))
@@ -129,6 +145,16 @@ public class PhysicalBookService {
                 .map(truncated -> categoryRepository.findByName(truncated)
                         .orElseGet(() -> categoryRepository.save(CategoryEntity.builder().name(truncated).build())))
                 .forEach(catEntity -> bookEntity.getMetadata().getCategories().add(catEntity));
+    }
+
+    @Transactional
+    public Book togglePhysicalFlag(long bookId, boolean physical) {
+        BookEntity book = bookRepository.findById(bookId)
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        book.setIsPhysical(physical);
+        bookRepository.save(book);
+        log.info("Book {} physical flag set to {}", bookId, physical);
+        return bookMapper.toBook(book);
     }
 
     private String truncate(String input, int maxLength) {

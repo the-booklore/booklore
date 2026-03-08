@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -102,6 +103,7 @@ public class SidecarMetadataMapper {
                     .goodreadsId(ids.getGoodreadsId())
                     .googleId(ids.getGoogleId())
                     .hardcoverId(ids.getHardcoverId())
+                    .hardcoverBookId(ids.getHardcoverBookId())
                     .comicvineId(ids.getComicvineId())
                     .lubimyczytacId(ids.getLubimyczytacId())
                     .ranobedbId(ids.getRanobedbId())
@@ -144,11 +146,11 @@ public class SidecarMetadataMapper {
         return baseName + ".cover.jpg";
     }
 
-    private Set<String> extractNames(Set<AuthorEntity> entities) {
+    private List<String> extractNames(List<AuthorEntity> entities) {
         if (entities == null) return null;
         return entities.stream()
                 .map(AuthorEntity::getName)
-                .collect(Collectors.toSet());
+                .toList();
     }
 
     private Set<String> extractCategoryNames(Set<CategoryEntity> entities) {
@@ -189,6 +191,7 @@ public class SidecarMetadataMapper {
                 .goodreadsId(entity.getGoodreadsId())
                 .googleId(entity.getGoogleId())
                 .hardcoverId(entity.getHardcoverId())
+                .hardcoverBookId(entity.getHardcoverBookId())
                 .comicvineId(entity.getComicvineId())
                 .lubimyczytacId(entity.getLubimyczytacId())
                 .ranobedbId(entity.getRanobedbId())

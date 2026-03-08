@@ -66,6 +66,17 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT b FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllByLibraryIdWithFiles(@Param("libraryId") Long libraryId);
 
+    @Query("""
+            SELECT DISTINCT b FROM BookEntity b
+            LEFT JOIN FETCH b.metadata m
+            LEFT JOIN FETCH m.authors
+            LEFT JOIN FETCH b.bookFiles
+            LEFT JOIN FETCH b.libraryPath
+            WHERE b.library.id = :libraryId
+            AND (b.deleted IS NULL OR b.deleted = false)
+            """)
+    List<BookEntity> findAllForDuplicateDetection(@Param("libraryId") Long libraryId);
+
     @EntityGraph(attributePaths = {"metadata", "metadata.comicMetadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
@@ -117,29 +128,6 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.deleted = TRUE")
     long countAllSoftDeleted();
-
-    @Query("SELECT COUNT(b), MAX(COALESCE(b.metadataUpdatedAt, b.addedOn)), MAX(b.addedOn) " +
-           "FROM BookEntity b WHERE b.deleted IS NULL OR b.deleted = false")
-    Object[] getBookStats();
-
-    @Query("SELECT COUNT(b), MAX(COALESCE(b.metadataUpdatedAt, b.addedOn)), MAX(b.addedOn) " +
-           "FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false)")
-    Object[] getBookStatsByLibraryIds(@Param("libraryIds") Set<Long> libraryIds);
-
-    @Query("SELECT b.id FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false) " +
-           "AND (b.addedOn > :since OR b.metadataUpdatedAt > :since)")
-    Set<Long> findBookIdsModifiedSince(@Param("since") Instant since);
-
-    @Query("SELECT b.id FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false) " +
-           "AND (b.addedOn > :since OR b.metadataUpdatedAt > :since) AND b.library.id IN :libraryIds")
-    Set<Long> findBookIdsModifiedSinceByLibraryIds(@Param("since") Instant since, @Param("libraryIds") Set<Long> libraryIds);
-
-    @Query("SELECT b.id FROM BookEntity b WHERE b.deleted = true AND b.deletedAt > :since")
-    List<Long> findDeletedBookIdsSince(@Param("since") Instant since);
-
-    @Query("SELECT b.id FROM BookEntity b WHERE b.deleted = true AND b.deletedAt > :since " +
-           "AND b.library.id IN :libraryIds")
-    List<Long> findDeletedBookIdsSinceByLibraryIds(@Param("since") Instant since, @Param("libraryIds") Set<Long> libraryIds);
 
     @Query(value = """
         SELECT b.*

@@ -1,6 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {ActivatedRouteSnapshot, DetachedRouteHandle, RouteReuseStrategy} from '@angular/router';
 import {BookBrowserScrollService} from '../features/book/components/book-browser/book-browser-scroll.service';
+import {BookSelectionService} from '../features/book/components/book-browser/book-selection.service';
 
 @Injectable({
   providedIn: 'root',
@@ -8,13 +9,16 @@ import {BookBrowserScrollService} from '../features/book/components/book-browser
 export class CustomReuseStrategy implements RouteReuseStrategy {
   private storedRoutes = new Map<string, DetachedRouteHandle>();
   private scrollService = inject(BookBrowserScrollService);
+  private bookSelectionService = inject(BookSelectionService);
 
   private readonly BOOK_BROWSER_PATHS = [
     'all-books',
     'unshelved-books',
     'library/:libraryId/books',
     'shelf/:shelfId/books',
-    'magic-shelf/:magicShelfId/books'
+    'magic-shelf/:magicShelfId/books',
+    'authors',
+    'series'
   ];
 
   private readonly BOOK_DETAILS_PATH = 'book/:bookId';
@@ -29,10 +33,6 @@ export class CustomReuseStrategy implements RouteReuseStrategy {
     return this.BOOK_BROWSER_PATHS.includes(path || '');
   }
 
-  private isBookDetailsRoute(route: ActivatedRouteSnapshot): boolean {
-    return route.routeConfig?.path === this.BOOK_DETAILS_PATH;
-  }
-
   shouldDetach(route: ActivatedRouteSnapshot): boolean {
     return this.isBookBrowserRoute(route);
   }
@@ -41,6 +41,7 @@ export class CustomReuseStrategy implements RouteReuseStrategy {
     if (handle && this.isBookBrowserRoute(route)) {
       const key = this.getRouteKey(route);
       this.storedRoutes.set(key, handle);
+      this.bookSelectionService.deselectAll();
     }
   }
 

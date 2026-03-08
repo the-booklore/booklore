@@ -70,7 +70,11 @@ export class LibraryService {
 
   private fetchLibraries(): Observable<Library[]> {
     return this.http.get<Library[]>(this.url).pipe(
-      tap(libs => this.libraryStateSubject.next({libraries: libs, loaded: true, error: null})),
+      tap(libs => this.libraryStateSubject.next({
+        libraries: this.sortLibraries(libs),
+        loaded: true,
+        error: null,
+      })),
       catchError(err => {
         const current = this.libraryStateSubject.value;
         this.libraryStateSubject.next({libraries: current.libraries, loaded: true, error: err.message});
@@ -88,7 +92,7 @@ export class LibraryService {
       map(created => {
         const curr = this.libraryStateSubject.value;
         const updated = curr.libraries ? [...curr.libraries, created] : [created];
-        this.libraryStateSubject.next({...curr, libraries: updated});
+        this.libraryStateSubject.next({...curr, libraries: this.sortLibraries(updated)});
         return created;
       })
     );
@@ -99,7 +103,8 @@ export class LibraryService {
       map(updated => {
         const curr = this.libraryStateSubject.value;
         const list = curr.libraries?.map(l => (l.id === updated.id ? updated : l)) || [updated];
-        this.libraryStateSubject.next({...curr, libraries: list});
+        this.libraryStateSubject.next({...curr, libraries: this.sortLibraries(list)});
+        this.bookService.refreshBooks();
         return updated;
       })
     );
@@ -138,7 +143,7 @@ export class LibraryService {
         map(updated => {
           const curr = this.libraryStateSubject.value;
           const list = curr.libraries?.map(l => (l.id === updated.id ? updated : l)) || [updated];
-          this.libraryStateSubject.next({...curr, libraries: list});
+          this.libraryStateSubject.next({...curr, libraries: this.sortLibraries(list)});
           return updated;
         })
       );
@@ -168,5 +173,9 @@ export class LibraryService {
 
   getBookCountsByFormat(libraryId: number): Observable<Record<string, number>> {
     return this.http.get<Record<string, number>>(`${this.url}/${libraryId}/format-counts`);
+  }
+
+  private sortLibraries(libraries: Library[]): Library[] {
+    return [...libraries].sort((a, b) => a.name.localeCompare(b.name));
   }
 }

@@ -273,6 +273,8 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
               // Navigate to saved position if progress exists, otherwise go to first page
               if (book.epubProgress?.cfi) {
                 return this.viewManager.goTo(book.epubProgress.cfi);
+              } else if (book.epubProgress?.percentage && book.epubProgress.percentage > 0) {
+                return this.viewManager.goToFraction(book.epubProgress.percentage / 100);
               } else {
                 return this.viewManager.goTo(0);
               }

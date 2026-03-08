@@ -51,7 +51,14 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.EPUB);
         setBookMetadata(bookEntity);
-        if (generateCover(bookEntity)) {
+        boolean coverGenerated = generateCover(bookEntity);
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
@@ -136,6 +143,8 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setLubimyczytacRating(epubMetadata.getLubimyczytacRating());
         metadata.setRanobedbId(truncate(epubMetadata.getRanobedbId(), 100));
         metadata.setRanobedbRating(epubMetadata.getRanobedbRating());
+        metadata.setAgeRating(epubMetadata.getAgeRating());
+        metadata.setContentRating(truncate(epubMetadata.getContentRating(), 20));
 
         bookCreatorService.addAuthorsToBook(epubMetadata.getAuthors(), bookEntity);
 

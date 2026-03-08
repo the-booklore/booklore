@@ -78,7 +78,7 @@ class FileMoveServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(appProperties.getDiskType()).thenReturn("LOCAL");
+        when(appProperties.isLocalStorage()).thenReturn(true);
         
         // Mock simple execution for transaction template
         doAnswer(invocation -> {
@@ -1109,6 +1109,29 @@ class FileMoveServiceTest {
 
             // Both source and target libraries should be re-registered
             verify(monitoringRegistrationService, times(2)).registerLibrary(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("NetworkStorageGating")
+    class NetworkStorageGating {
+
+        @Test
+        @DisplayName("bulkMoveFiles throws IllegalStateException on network storage")
+        void bulkMoveFiles_networkStorage_throwsIllegalStateException() {
+            when(appProperties.isLocalStorage()).thenReturn(false);
+            when(appProperties.getDiskType()).thenReturn("NETWORK");
+
+            FileMoveRequest request = new FileMoveRequest();
+            FileMoveRequest.Move move = new FileMoveRequest.Move();
+            move.setBookId(100L);
+            move.setTargetLibraryId(2L);
+            move.setTargetLibraryPathId(20L);
+            request.setMoves(List.of(move));
+
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.bulkMoveFiles(request))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("File move operations are only supported on local storage");
         }
     }
 }

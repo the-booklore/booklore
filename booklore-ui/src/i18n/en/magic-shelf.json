@@ -101,6 +101,9 @@
     "audibleReviewCount": "Audible Review Count",
     "abridged": "Abridged",
     "audiobookDuration": "Audiobook Duration (s)",
+    "audiobookCodec": "Codec",
+    "audiobookChapterCount": "Chapter Count",
+    "audiobookBitrate": "Bitrate (kbps)",
     "isPhysical": "Physical Book",
     "seriesStatus": "Series Status",
     "seriesGaps": "Series Gaps",
@@ -249,6 +252,9 @@
     "narrator": "Narrator",
     "abridged": "Abridged",
     "audiobookDuration": "Duration",
+    "audiobookCodec": "Codec",
+    "audiobookChapterCount": "Chapters",
+    "audiobookBitrate": "Bitrate",
     "comicCharacters": "Characters",
     "comicTeams": "Teams",
     "comicLocations": "Locations",
@@ -258,6 +264,15 @@
     "comicLetterers": "Letterers",
     "comicCoverArtists": "Cover Artists",
     "comicEditors": "Editors"
+  },
+  "importJson": {
+    "buttonLabel": "Import",
+    "placeholder": "{\n  \"type\": \"group\",\n  \"join\": \"and\",\n  \"rules\": [\n    { \"field\": \"readStatus\", \"operator\": \"equals\", \"value\": \"READING\" }\n  ]\n}",
+    "apply": "Apply",
+    "emptyError": "Please paste a JSON configuration first.",
+    "parseError": "Invalid JSON. Please check the syntax and try again.",
+    "structureError": "Invalid structure. The JSON must have \"type\": \"group\" and a \"rules\" array.",
+    "successDetail": "Rules imported successfully. Review and save when ready."
   },
   "toast": {
     "validationErrorSummary": "Validation Error",

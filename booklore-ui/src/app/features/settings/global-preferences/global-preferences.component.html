@@ -14,6 +14,33 @@
     <div class="preferences-section">
       <div class="section-header">
         <h3 class="section-title">
+          <i class="pi pi-palette"></i>
+          {{ t('appearance.sectionTitle') }}
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">{{ t('appearance.supportButtonAnimation') }}</label>
+              <p-toggleswitch
+                [(ngModel)]="supportButtonAnimation"
+                (onChange)="onSupportAnimationChange($event.checked)">
+              </p-toggleswitch>
+            </div>
+            <p class="setting-description">
+              <i class="pi pi-info-circle"></i>
+              {{ t('appearance.supportButtonAnimationDesc') }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
           <i class="pi pi-image"></i>
           {{ t('covers.sectionTitle') }}
         </h3>
@@ -24,14 +51,15 @@
           <div class="setting-info">
             <div class="setting-label-row">
               <label class="setting-label">{{ t('covers.regenerate') }}</label>
-              <p-button
-                [label]="t('covers.regenerateBtn')"
+              <p-splitbutton
+                [label]="t('covers.regenerateAllBtn')"
                 icon="pi pi-refresh"
                 outlined="true"
                 size="small"
                 severity="info"
+                [model]="regenerateCoverMenuItems"
                 (onClick)="regenerateCovers()">
-              </p-button>
+              </p-splitbutton>
             </div>
             <p class="setting-description">
               <i class="pi pi-info-circle"></i>

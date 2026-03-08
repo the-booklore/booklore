@@ -12,8 +12,10 @@ import {UserService} from '../../../../features/settings/user-management/user.se
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {BookDialogHelperService} from '../../../../features/book/components/book-browser/book-dialog-helper.service';
 import {IconDisplayComponent} from '../../../components/icon-display/icon-display.component';
+import {Tooltip} from 'primeng/tooltip';
 import {MenuItem} from 'primeng/api';
 import {IconSelection} from '../../../service/icon-picker.service';
+import {TranslocoPipe} from '@jsverse/transloco';
 
 @Component({
   selector: '[app-menuitem]',
@@ -26,7 +28,9 @@ import {IconSelection} from '../../../service/icon-picker.service';
     AsyncPipe,
     Button,
     Menu,
-    IconDisplayComponent
+    IconDisplayComponent,
+    Tooltip,
+    TranslocoPipe
   ],
   animations: [
     trigger('children', [
@@ -175,6 +179,12 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     if (this.item.routerLink && !this.item.items && this.linkRef) {
       this.linkRef.nativeElement.click();
     }
+  }
+
+  formatCount(count: number | null | undefined): string {
+    if (count == null) return '0';
+    if (count >= 1000) return Math.floor(count / 1000) + 'K';
+    return count.toString();
   }
 
   getIconSelection(): IconSelection | null {

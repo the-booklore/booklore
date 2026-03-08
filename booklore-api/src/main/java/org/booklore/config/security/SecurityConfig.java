@@ -1,14 +1,15 @@
 package org.booklore.config.security;
 
-import org.booklore.config.AppProperties;
 import org.booklore.config.security.filter.*;
 import org.booklore.config.security.service.OpdsUserDetailsService;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -20,28 +21,31 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 
+import java.net.http.HttpClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @AllArgsConstructor
 @EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
 
+    private static final Pattern ALLOWED = Pattern.compile("\\s*,\\s*");
     private final OpdsUserDetailsService opdsUserDetailsService;
-    private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
-    private final AppProperties appProperties;
-
-    private static final String[] SWAGGER_ENDPOINTS = {
-            "/api/v1/swagger-ui.html",
-            "/api/v1/swagger-ui/**",
-            "/api/v1/api-docs/**"
-    };
+    private final JwtAuthenticationFilter dualJwtAuthenticationFilter;
+    private final Environment env;
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {
             "/ws/**",                  // WebSocket connections (auth handled in WebSocketAuthInterceptor)
@@ -200,14 +204,16 @@ public class SecurityConfig {
     @Order(8)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
         List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
-        if (appProperties.getSwagger().isEnabled()) {
-            publicEndpoints.addAll(Arrays.asList(SWAGGER_ENDPOINTS));
-        }
         http
                 .securityMatcher("/api/**", "/komga/**", "/ws/**")
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .contentTypeOptions(contentType -> {})
+                )
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         .requestMatchers(publicEndpoints.toArray(new String[0])).permitAll()
@@ -223,7 +229,12 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .headers(headers -> headers
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .contentTypeOptions(contentType -> {})
+                )
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
         return http.build();
     }
@@ -235,10 +246,34 @@ public class SecurityConfig {
         return auth.build();
     }
 
+    @Bean("noRedirectRestTemplate")
+    public RestTemplate noRedirectRestTemplate() {
+        HttpClient httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        return new RestTemplate(new JdkClientHttpRequestFactory(httpClient));
+    }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        
+        String allowedOriginsStr = env.getProperty("app.cors.allowed-origins", "*").trim();
+        if ("*".equals(allowedOriginsStr) || allowedOriginsStr.isEmpty()) {
+            log.warn(
+                "CORS is configured to allow all origins (*) because 'app.cors.allowed-origins' is '{}'. " +
+                "This maintains backward compatibility, but it's recommended to set it to an explicit origin list.",
+                allowedOriginsStr.isEmpty() ? "empty" : "*"
+            );
+            configuration.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            List<String> origins = Arrays.stream(ALLOWED.split(allowedOriginsStr))
+                    .filter(s -> !s.isEmpty())
+                    .map(String::trim)
+                    .toList();
+            configuration.setAllowedOriginPatterns(origins);
+        }
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type", "Range", "If-None-Match"));
         configuration.setExposedHeaders(List.of("Content-Disposition", "Accept-Ranges", "Content-Range", "Content-Length", "ETag", "Date"));

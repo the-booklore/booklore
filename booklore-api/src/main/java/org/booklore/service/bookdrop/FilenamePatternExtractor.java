@@ -430,9 +430,9 @@ public class FilenamePatternExtractor {
         }
     }
 
-    private Set<String> parseAuthors(String value) {
+    private List<String> parseAuthors(String value) {
         String[] parts = PATTERN.split(value);
-        Set<String> authors = new LinkedHashSet<>();
+        List<String> authors = new ArrayList<>();
         for (String part : parts) {
             String trimmed = part.trim();
             if (!trimmed.isEmpty()) {

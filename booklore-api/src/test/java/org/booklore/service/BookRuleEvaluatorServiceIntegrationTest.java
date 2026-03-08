@@ -624,7 +624,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
         @Test
         void thisPeriod_month_matchesThisMonthBook() {
             BookEntity thisMonth = createBook("This Month Book");
-            thisMonth.setAddedOn(Instant.now().minus(1, ChronoUnit.DAYS));
+            thisMonth.setAddedOn(Instant.now().minus(1, ChronoUnit.HOURS));
             em.merge(thisMonth);
 
             BookEntity notThisMonth = createBook("Not This Month Book");
@@ -1031,13 +1031,13 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity book1 = createBook("Mistborn");
             AuthorEntity author1 = AuthorEntity.builder().name("Brandon Sanderson").build();
             em.persist(author1);
-            book1.getMetadata().setAuthors(new HashSet<>(Set.of(author1)));
+            book1.getMetadata().setAuthors(new ArrayList<>(List.of(author1)));
             em.merge(book1.getMetadata());
 
             BookEntity book2 = createBook("It");
             AuthorEntity author2 = AuthorEntity.builder().name("Stephen King").build();
             em.persist(author2);
-            book2.getMetadata().setAuthors(new HashSet<>(Set.of(author2)));
+            book2.getMetadata().setAuthors(new ArrayList<>(List.of(author2)));
             em.merge(book2.getMetadata());
             em.flush();
             em.clear();
@@ -1089,7 +1089,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity withAuthors = createBook("With Authors Book");
             AuthorEntity author = AuthorEntity.builder().name("Test Author").build();
             em.persist(author);
-            withAuthors.getMetadata().setAuthors(new HashSet<>(Set.of(author)));
+            withAuthors.getMetadata().setAuthors(new ArrayList<>(List.of(author)));
             em.merge(withAuthors.getMetadata());
             em.flush();
             em.clear();
@@ -1106,7 +1106,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity withAuthors = createBook("With Authors Book");
             AuthorEntity author = AuthorEntity.builder().name("Test Author 2").build();
             em.persist(author);
-            withAuthors.getMetadata().setAuthors(new HashSet<>(Set.of(author)));
+            withAuthors.getMetadata().setAuthors(new ArrayList<>(List.of(author)));
             em.merge(withAuthors.getMetadata());
             em.flush();
             em.clear();
@@ -1160,19 +1160,19 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity bookA = createBook("Book A");
             AuthorEntity authorA = AuthorEntity.builder().name("Author A").build();
             em.persist(authorA);
-            bookA.getMetadata().setAuthors(new HashSet<>(Set.of(authorA)));
+            bookA.getMetadata().setAuthors(new ArrayList<>(List.of(authorA)));
             em.merge(bookA.getMetadata());
 
             BookEntity bookB = createBook("Book B");
             AuthorEntity authorB = AuthorEntity.builder().name("Author B").build();
             em.persist(authorB);
-            bookB.getMetadata().setAuthors(new HashSet<>(Set.of(authorB)));
+            bookB.getMetadata().setAuthors(new ArrayList<>(List.of(authorB)));
             em.merge(bookB.getMetadata());
 
             BookEntity bookC = createBook("Book C");
             AuthorEntity authorC = AuthorEntity.builder().name("Author C").build();
             em.persist(authorC);
-            bookC.getMetadata().setAuthors(new HashSet<>(Set.of(authorC)));
+            bookC.getMetadata().setAuthors(new ArrayList<>(List.of(authorC)));
             em.merge(bookC.getMetadata());
             em.flush();
             em.clear();
@@ -1187,19 +1187,19 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity bookA = createBook("Book A2");
             AuthorEntity authorA = AuthorEntity.builder().name("Author A2").build();
             em.persist(authorA);
-            bookA.getMetadata().setAuthors(new HashSet<>(Set.of(authorA)));
+            bookA.getMetadata().setAuthors(new ArrayList<>(List.of(authorA)));
             em.merge(bookA.getMetadata());
 
             BookEntity bookB = createBook("Book B2");
             AuthorEntity authorB = AuthorEntity.builder().name("Author B2").build();
             em.persist(authorB);
-            bookB.getMetadata().setAuthors(new HashSet<>(Set.of(authorB)));
+            bookB.getMetadata().setAuthors(new ArrayList<>(List.of(authorB)));
             em.merge(bookB.getMetadata());
 
             BookEntity bookC = createBook("Book C2");
             AuthorEntity authorC = AuthorEntity.builder().name("Author C2").build();
             em.persist(authorC);
-            bookC.getMetadata().setAuthors(new HashSet<>(Set.of(authorC)));
+            bookC.getMetadata().setAuthors(new ArrayList<>(List.of(authorC)));
             em.merge(bookC.getMetadata());
             em.flush();
             em.clear();
@@ -1216,13 +1216,13 @@ class BookRuleEvaluatorServiceIntegrationTest {
             AuthorEntity authorY = AuthorEntity.builder().name("Author Y").build();
             em.persist(authorX);
             em.persist(authorY);
-            bookBoth.getMetadata().setAuthors(new HashSet<>(Set.of(authorX, authorY)));
+            bookBoth.getMetadata().setAuthors(new ArrayList<>(List.of(authorX, authorY)));
             em.merge(bookBoth.getMetadata());
 
             BookEntity bookOne = createBook("Book One Author");
             AuthorEntity authorX2 = AuthorEntity.builder().name("Author X2").build();
             em.persist(authorX2);
-            bookOne.getMetadata().setAuthors(new HashSet<>(Set.of(authorX2)));
+            bookOne.getMetadata().setAuthors(new ArrayList<>(List.of(authorX2)));
             em.merge(bookOne.getMetadata());
             em.flush();
             em.clear();
@@ -1481,9 +1481,15 @@ class BookRuleEvaluatorServiceIntegrationTest {
 
         @Test
         void thisPeriod_week_matchesThisWeekBook() {
-            BookEntity yesterday = createBook("Yesterday Book");
-            yesterday.setAddedOn(Instant.now().minus(1, ChronoUnit.DAYS));
-            em.merge(yesterday);
+            // Use midweek (Wednesday) of the current week to avoid boundary issues on Monday
+            LocalDate thisWeekWednesday = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).plusDays(2);
+            // If Wednesday is in the future (we're Mon/Tue), just use today
+            LocalDate safeDate = thisWeekWednesday.isAfter(LocalDate.now()) ? LocalDate.now() : thisWeekWednesday;
+            Instant thisWeekInstant = safeDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().plus(12, ChronoUnit.HOURS);
+
+            BookEntity thisWeekBook = createBook("This Week Book");
+            thisWeekBook.setAddedOn(thisWeekInstant);
+            em.merge(thisWeekBook);
 
             BookEntity twoWeeksAgo = createBook("Two Weeks Ago Book");
             twoWeeksAgo.setAddedOn(Instant.now().minus(14, ChronoUnit.DAYS));
@@ -1492,7 +1498,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
             em.clear();
 
             List<Long> ids = findMatchingIds(singleRule(RuleField.ADDED_ON, RuleOperator.THIS_PERIOD, "week"));
-            assertThat(ids).contains(yesterday.getId());
+            assertThat(ids).contains(thisWeekBook.getId());
             assertThat(ids).doesNotContain(twoWeeksAgo.getId());
         }
     }
@@ -1592,7 +1598,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity withAuthors = createBook("With Authors");
             AuthorEntity author = AuthorEntity.builder().name("Test Author MP").build();
             em.persist(author);
-            withAuthors.getMetadata().setAuthors(new HashSet<>(Set.of(author)));
+            withAuthors.getMetadata().setAuthors(new ArrayList<>(List.of(author)));
             em.merge(withAuthors.getMetadata());
 
             BookEntity noAuthors = createBook("No Authors");
@@ -1609,7 +1615,7 @@ class BookRuleEvaluatorServiceIntegrationTest {
             BookEntity withAuthors = createBook("With Authors");
             AuthorEntity author = AuthorEntity.builder().name("Test Author MP2").build();
             em.persist(author);
-            withAuthors.getMetadata().setAuthors(new HashSet<>(Set.of(author)));
+            withAuthors.getMetadata().setAuthors(new ArrayList<>(List.of(author)));
             em.merge(withAuthors.getMetadata());
 
             BookEntity noAuthors = createBook("No Authors");

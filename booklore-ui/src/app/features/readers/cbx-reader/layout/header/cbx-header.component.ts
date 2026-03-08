@@ -24,7 +24,8 @@ export class CbxHeaderComponent implements OnInit, OnDestroy {
   overflowOpen = false;
   state: CbxHeaderState = {
     isFullscreen: false,
-    isSlideshowActive: false
+    isSlideshowActive: false,
+    isMagnifierActive: false
   };
 
   get bookTitle(): string {
@@ -68,6 +69,10 @@ export class CbxHeaderComponent implements OnInit, OnDestroy {
 
   onToggleSlideshow(): void {
     this.headerService.toggleSlideshow();
+  }
+
+  onToggleMagnifier(): void {
+    this.headerService.toggleMagnifier();
   }
 
   onShowShortcutsHelp(): void {

@@ -44,7 +44,7 @@
       "collapseSeries": "Collapse series",
       "gridColumns": "Grid columns",
       "gridItemSize": "Grid item size",
-      "bookTypeOverlay": "Book type overlay",
+      "bookTypeOverlay": "File format overlay",
       "noBooks": "This collection has no books!",
       "failedLibrary": "Failed to load library's books!",
       "failedShelf": "Failed to load shelf's books!",
@@ -101,7 +101,10 @@
       "deleteBookMessage": "Are you sure you want to delete \"{{ title }}\"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.",
       "deleteBookHeader": "Confirm Deletion",
       "deleteFileMessage": "Are you sure you want to delete the additional file \"{{ fileName }}\"?",
-      "deleteFileHeader": "Confirm File Deletion"
+      "deleteFileHeader": "Confirm File Deletion",
+      "largeFileMessage": "This file exceeds 25MB. Some email providers may reject large attachments.\n\nDo you want to send it anyway?",
+      "largeFileHeader": "Large File Warning",
+      "sendAnyway": "Send Anyway"
     },
     "toast": {
       "quickSendSuccessDetail": "The book sending has been scheduled.",
@@ -134,7 +137,8 @@
       "readBook": "Read book",
       "playAudiobook": "Play audiobook",
       "bookMenu": "Book actions menu",
-      "continueReading": "Continue reading"
+      "continueReading": "Continue reading",
+      "readStatusMenu": "Change read status"
     }
   },
   "notes": {
@@ -262,6 +266,7 @@
       "rescanLibrary": "Re-scan Library",
       "customFetchMetadata": "Custom Fetch Metadata",
       "autoFetchMetadata": "Auto Fetch Metadata",
+      "findDuplicates": "Find Duplicates",
       "deleteLibrary": "Delete Library"
     },
     "shelf": {
@@ -274,6 +279,7 @@
     "magicShelf": {
       "optionsLabel": "Options",
       "editMagicShelf": "Edit Magic Shelf",
+      "exportJson": "Copy JSON",
       "deleteMagicShelf": "Delete Magic Shelf"
     },
     "confirm": {
@@ -293,6 +299,7 @@
       "shelfDeleteFailedDetail": "Failed to delete shelf",
       "magicShelfDeletedDetail": "Magic shelf was deleted",
       "magicShelfDeleteFailedDetail": "Failed to delete shelf",
+      "magicShelfJsonCopiedDetail": "Magic shelf JSON copied to clipboard",
       "failedSummary": "Failed"
     },
     "loading": {
@@ -428,7 +435,8 @@
     "validationTitleOrIsbn": "Title or ISBN is required",
     "validationReady": "Ready to create",
     "cancelButton": "Cancel",
-    "addButton": "Add Physical Book"
+    "addButton": "Add Physical Book",
+    "fetchMetadataTooltip": "Fetch metadata by ISBN"
   },
   "fileUploader": {
     "title": "Upload Additional File",
@@ -436,8 +444,6 @@
     "selectFileType": "Select file type",
     "typeAlternativeFormat": "Alternative Format",
     "typeSupplementary": "Supplementary File",
-    "descriptionLabel": "Description (Optional)",
-    "descriptionPlaceholder": "Add a description for this file...",
     "statusUploading": "Uploading",
     "statusUploaded": "Uploaded",
     "statusUploadFailed": "Upload failed",
@@ -445,6 +451,9 @@
     "statusReady": "Ready",
     "statusFailed": "Failed",
     "dragDropText": "Drag and drop a file here to upload.",
+    "supportedFormats": "Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+    "supplementaryAllFormats": "All file formats are supported for supplementary files.",
+    "maxFileSize": "Maximum file size: {{ size }} per file",
     "uploadForBook": "Upload an additional file for <strong>{{ title }}</strong>.",
     "thisBook": "this book",
     "toast": {
@@ -462,7 +471,7 @@
       "author": "Author",
       "category": "Genre",
       "series": "Series",
-      "bookType": "Book Type",
+      "bookType": "File Format",
       "readStatus": "Read Status",
       "personalRating": "Personal Rating",
       "publisher": "Publisher",
@@ -667,7 +676,7 @@
       "readStatus": "Read Status",
       "dateFinished": "Date Finished",
       "readingProgress": "Reading Progress",
-      "bookType": "Book Type",
+      "bookType": "File Format",
       "amazonRating": "Amazon Rating",
       "amazonReviewCount": "Amazon #",
       "goodreadsRating": "Goodreads Rating",
@@ -690,14 +699,13 @@
     "unknownTitle": "Unknown Title",
     "selectTargetBook": "Select Target Book",
     "searchPlaceholder": "Search for a book in the same library...",
-    "deleteSource": "Delete source book after attachment",
-    "deleteSourceBulk": "Delete source books after attachment",
-    "warningMove": "This will move the file from the source book to the target book as alternative format.",
-    "warningMoveBulk": "This will move the files from the selected books to the target book as alternative formats.",
-    "warningDelete": "The source book record will be deleted (file will be preserved in target book).",
-    "warningDeleteBulk": "The source book records will be deleted (files will be preserved in target book).",
-    "warningKeep": "The source book record will remain but will have no readable files.",
-    "warningKeepBulk": "The source book records will remain but will have no readable files.",
+    "moveFilesLabel": "Move files to target book's directory",
+    "warningMove": "The source file will be moved to the target book's directory and renamed to match.",
+    "warningMoveBulk": "The source files will be moved to the target book's directory and renamed to match.",
+    "warningNoMove": "The source file will stay in its original location on disk.",
+    "warningNoMoveBulk": "The source files will stay in their original locations on disk.",
+    "warningDelete": "The source book record will be removed (files are preserved in target book).",
+    "warningDeleteBulk": "The source book records will be removed (files are preserved in target book).",
     "attachFile": "Attach File",
     "attachFilesBulk": "Attach Files",
     "unknownFile": "Unknown file",
@@ -739,17 +747,41 @@
   },
   "seriesPage": {
     "seriesDetailsTab": "Series Details",
+    "bookListTab": "Book List",
     "publisher": "Publisher:",
     "years": "Years:",
     "numberOfBooks": "Number of books:",
+    "book": "Book",
+    "books": "Books",
+    "synopsis": "Synopsis",
     "language": "Language:",
     "readStatus": "Read Status:",
     "noDescription": "No description available.",
     "showLess": "Show less",
     "showMore": "Show more",
     "noBooksFound": "No books found for this series.",
+    "booksInSeries": "Books in Series",
     "selected": "selected",
     "loadingSeriesDetails": "Loading series details...",
+    "completionOwned": "You own {{ owned }} of {{ total }} books",
+    "missingBooks": "Missing: #{{ numbers }}",
+    "nextUp": "Next Up",
+    "continueReading": "Continue Reading",
+    "readButton": "Read",
+    "viewDetails": "View Details",
+    "continueButton": "Continue",
+    "readPercent": "{{ progress }} read",
+    "listPages": "pages",
+    "stats": {
+      "totalPages": "Total Pages",
+      "avgPersonalRating": "Avg. Personal Rating",
+      "avgGoodreads": "Avg. Goodreads",
+      "avgAmazon": "Avg. Amazon",
+      "avgHardcover": "Avg. Hardcover",
+      "formats": "Formats",
+      "totalAudioDuration": "Audio Duration",
+      "owned": "Owned"
+    },
     "status": {
       "unread": "UNREAD",
       "reading": "READING",
@@ -770,6 +802,54 @@
       "selectAll": "Select all books",
       "deselectAll": "Deselect all books",
       "deleteSelected": "Delete selected books"
+    }
+  },
+  "duplicateMerger": {
+    "title": "Find Duplicates",
+    "description": "Detect and merge duplicate books in this library",
+    "presetStrict": "Strict",
+    "presetBalanced": "Balanced",
+    "presetAggressive": "Aggressive",
+    "presetCustom": "Custom",
+    "advanced": "Advanced",
+    "signalIsbn": "ISBN",
+    "signalExternalId": "External ID",
+    "signalTitleAuthor": "Title + Author",
+    "signalDirectory": "Same Directory",
+    "signalFilename": "Filename",
+    "scan": "Scan",
+    "scanning": "Scanning for duplicates...",
+    "scanPrompt": "Select a detection mode and click Scan to find duplicates.",
+    "noDuplicates": "No duplicates found.",
+    "allMerged": "All duplicate groups have been processed.",
+    "mergeAll": "Merge All ({{ count }})",
+    "merge": "Merge",
+    "deleteSelected": "Delete ({{ count }})",
+    "dismiss": "Dismiss",
+    "target": "Target",
+    "sameFormatWarning": "Same format",
+    "helpText": "Each group contains books that appear to be duplicates. Select the target book (the one to keep), then click Merge to combine files. To delete specific duplicates, check the ones you want to remove and click Delete.",
+    "groupLabel": "Group {{ index }}",
+    "fileCount": "{{ count }} files",
+    "reason": {
+      "ISBN": "ISBN Match",
+      "EXTERNAL_ID": "External ID Match",
+      "TITLE_AUTHOR": "Title + Author",
+      "DIRECTORY": "Same Directory",
+      "FILENAME": "Filename Match"
+    },
+    "confirm": {
+      "deleteHeader": "Confirm Deletion",
+      "deleteMessage": "This will permanently delete {{ count }} book(s) and their files from disk. This cannot be undone."
+    },
+    "toast": {
+      "scanFailedSummary": "Scan Failed",
+      "scanFailedDetail": "Could not scan for duplicates.",
+      "mergeSuccessSummary": "Merge Complete",
+      "mergeSuccessDetail": "Successfully merged {{ count }} group(s).",
+      "mergeFailedSummary": "Merge Failed",
+      "mergeFailedDetail": "Could not merge this group.",
+      "mergePartialDetail": "{{ success }} merged, {{ failed }} failed."
     }
   }
 }

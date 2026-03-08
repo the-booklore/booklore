@@ -7,18 +7,21 @@ import org.booklore.model.dto.BookRecommendation;
 import org.booklore.model.dto.BookViewerSettings;
 import org.booklore.model.dto.request.AttachBookFileRequest;
 import org.booklore.model.dto.request.CreatePhysicalBookRequest;
+import org.booklore.model.dto.request.DuplicateDetectionRequest;
 import org.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import org.booklore.model.dto.request.ReadProgressRequest;
 import org.booklore.model.dto.request.ReadStatusUpdateRequest;
 import org.booklore.model.dto.request.ShelvesAssignmentRequest;
+import org.booklore.model.dto.response.AttachBookFileResponse;
 import org.booklore.model.dto.response.BookDeletionResponse;
 import org.booklore.model.dto.response.BookStatusUpdateResponse;
-import org.booklore.model.dto.response.BookSyncResponse;
+import org.booklore.model.dto.response.DuplicateGroup;
 import org.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import org.booklore.model.enums.ResetProgressType;
 import org.booklore.service.book.BookFileAttachmentService;
 import org.booklore.service.book.BookService;
 import org.booklore.service.book.BookUpdateService;
+import org.booklore.service.book.DuplicateDetectionService;
 import org.booklore.service.book.PhysicalBookService;
 import org.booklore.service.metadata.BookMetadataService;
 import org.booklore.service.progress.ReadingProgressService;
@@ -33,20 +36,20 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
-import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
 @Tag(name = "Books", description = "Endpoints for managing books, their metadata, progress, and recommendations")
 @RequestMapping("/api/v1/books")
+@Validated
 @RestController
 @AllArgsConstructor
 public class BookController {
@@ -58,35 +61,15 @@ public class BookController {
     private final BookMetadataService bookMetadataService;
     private final ReadingProgressService readingProgressService;
     private final PhysicalBookService physicalBookService;
+    private final DuplicateDetectionService duplicateDetectionService;
 
-    @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions. Supports ETag-based conditional requests.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "List of books returned successfully"),
-            @ApiResponse(responseCode = "304", description = "Not modified — client cache is still valid")
-    })
+    @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
+    @ApiResponse(responseCode = "200", description = "List of books returned successfully")
     @GetMapping
     public ResponseEntity<List<Book>> getBooks(
             @Parameter(description = "Include book descriptions in the response")
-            @RequestParam(required = false, defaultValue = "false") boolean withDescription,
-            @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch) {
-        String etag = bookService.computeBooksETag(withDescription);
-        if (etag.equals(ifNoneMatch)) {
-            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
-        }
-        return ResponseEntity.ok()
-                .eTag(etag)
-                .cacheControl(CacheControl.noCache().cachePrivate())
-                .body(bookService.getBookDTOs(withDescription));
-    }
-
-    @Operation(summary = "Get book changes since timestamp", description = "Returns books added/modified since the given timestamp and IDs of deleted books. Used for delta synchronization.")
-    @ApiResponse(responseCode = "200", description = "Delta sync response returned successfully")
-    @GetMapping("/delta")
-    public ResponseEntity<BookSyncResponse> getBooksDelta(
-            @Parameter(description = "Timestamp to fetch changes since (ISO-8601 instant)") @RequestParam Instant since,
-            @Parameter(description = "Include book descriptions in the response")
             @RequestParam(required = false, defaultValue = "false") boolean withDescription) {
-        return ResponseEntity.ok(bookService.getBooksDelta(since, withDescription));
+        return ResponseEntity.ok(bookService.getBookDTOs(withDescription));
     }
 
     @Operation(summary = "Get a book by ID", description = "Retrieve details of a specific book by its ID.")
@@ -210,7 +193,7 @@ public class BookController {
     @PutMapping("/{bookId}/viewer-setting")
     @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<Void> updateBookViewerSettings(
-            @Parameter(description = "Viewer settings to update") @RequestBody BookViewerSettings bookViewerSettings,
+            @Parameter(description = "Viewer settings to update") @RequestBody @Valid BookViewerSettings bookViewerSettings,
             @Parameter(description = "ID of the book") @PathVariable long bookId) {
         bookService.updateBookViewerSetting(bookId, bookViewerSettings);
         return ResponseEntity.noContent().build();
@@ -257,7 +240,7 @@ public class BookController {
     })
     @PostMapping("/reset-progress")
     public ResponseEntity<List<BookStatusUpdateResponse>> resetProgress(
-            @Parameter(description = "List of book IDs to reset progress for") @RequestBody List<Long> bookIds,
+            @Parameter(description = "List of book IDs to reset progress for") @RequestBody @Size(max = 500) List<Long> bookIds,
             @Parameter(description = "Type of progress reset") @RequestParam ResetProgressType type) {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
@@ -280,12 +263,35 @@ public class BookController {
     })
     @PostMapping("/reset-personal-rating")
     public ResponseEntity<List<PersonalRatingUpdateResponse>> resetPersonalRating(
-            @Parameter(description = "List of book IDs to reset personal rating for") @RequestBody List<Long> bookIds) {
+            @Parameter(description = "List of book IDs to reset personal rating for") @RequestBody @Size(max = 500) List<Long> bookIds) {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
         List<PersonalRatingUpdateResponse> updatedBooks = bookUpdateService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Find duplicate books", description = "Detect potential duplicate books in a library using configurable matching strategies.")
+    @ApiResponse(responseCode = "200", description = "Duplicate groups returned successfully")
+    @PostMapping("/duplicates")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<DuplicateGroup>> findDuplicates(
+            @Parameter(description = "Duplicate detection configuration") @RequestBody @Valid DuplicateDetectionRequest request) {
+        return ResponseEntity.ok(duplicateDetectionService.findDuplicates(request));
+    }
+
+    @Operation(summary = "Toggle physical book flag", description = "Mark or unmark a book as a physical book.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Physical flag updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
+    })
+    @PatchMapping("/{bookId}/physical")
+    @CheckBookAccess(bookIdParam = "bookId")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Book> togglePhysicalFlag(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "Whether the book is physical") @RequestParam boolean physical) {
+        return ResponseEntity.ok(physicalBookService.togglePhysicalFlag(bookId, physical));
     }
 
     @Operation(summary = "Attach book files", description = "Attach book files from single-file source books to a target book as alternative formats.")
@@ -297,9 +303,9 @@ public class BookController {
     })
     @PostMapping("/{targetBookId}/attach-file")
     @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
-    public ResponseEntity<Book> attachBookFiles(
+    public ResponseEntity<AttachBookFileResponse> attachBookFiles(
             @Parameter(description = "ID of the target book to attach the files to") @PathVariable Long targetBookId,
             @Parameter(description = "Request containing source book IDs and delete option") @RequestBody @Valid AttachBookFileRequest request) {
-        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isDeleteSourceBooks()));
+        return ResponseEntity.ok(bookFileAttachmentService.attachBookFiles(targetBookId, request.getSourceBookIds(), request.isMoveFiles()));
     }
 }

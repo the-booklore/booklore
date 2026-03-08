@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -84,7 +85,7 @@ public class MetadataChangeDetectorTest {
                 .moodsLocked(false)
                 .tagsLocked(false)
                 .reviewsLocked(false)
-                .authors(Set.of(
+                .authors(List.of(
                         AuthorEntity.builder().id(1L).name("Author One").build(),
                         AuthorEntity.builder().id(2L).name("Author Two").build()
                 ))
@@ -157,7 +158,7 @@ public class MetadataChangeDetectorTest {
                 .moodsLocked(false)
                 .tagsLocked(false)
                 .reviewsLocked(false)
-                .authors(Set.of("Author One", "Author Two"))
+                .authors(List.of("Author One", "Author Two"))
                 .categories(Set.of("Fiction", "Mystery"))
                 .moods(Set.of("Dark", "Suspenseful"))
                 .tags(Set.of("Thriller", "Bestseller"))
@@ -205,7 +206,10 @@ public class MetadataChangeDetectorTest {
             Arguments.of("goodreadsRating", (Consumer<BookMetadata>) m -> m.setGoodreadsRating(4.3)),
             Arguments.of("goodreadsReviewCount", (Consumer<BookMetadata>) m -> m.setGoodreadsReviewCount(30000)),
             Arguments.of("hardcoverRating", (Consumer<BookMetadata>) m -> m.setHardcoverRating(4.2)),
-            Arguments.of("hardcoverReviewCount", (Consumer<BookMetadata>) m -> m.setHardcoverReviewCount(750))
+            Arguments.of("hardcoverReviewCount", (Consumer<BookMetadata>) m -> m.setHardcoverReviewCount(750)),
+            Arguments.of("audibleId", (Consumer<BookMetadata>) m -> m.setAudibleId("B098765432")),
+            Arguments.of("audibleRating", (Consumer<BookMetadata>) m -> m.setAudibleRating(4.6)),
+            Arguments.of("audibleReviewCount", (Consumer<BookMetadata>) m -> m.setAudibleReviewCount(3000))
         );
     }
 
@@ -329,7 +333,7 @@ public class MetadataChangeDetectorTest {
                 .title("Original Title")
                 .subtitle("Original Subtitle")
                 .publisher("Original Publisher")
-                .authors(Set.of()) // empty set, this is what we're testing
+                .authors(List.of()) // empty set, this is what we're testing
                 .authorsLocked(false)
                 .categories(Set.of("Fiction"))
                 .categoriesLocked(false)
@@ -359,7 +363,7 @@ public class MetadataChangeDetectorTest {
         BookMetadataEntity testExisting = BookMetadataEntity.builder()
                 .bookId(1L)
                 .title("Test Title")
-                .authors(Set.of()) // empty set, what we're testing
+                .authors(List.of()) // empty set, what we're testing
                 .authorsLocked(false)
                 .categories(Set.of(CategoryEntity.builder().id(1L).name("Fiction").build()))
                 .categoriesLocked(false)
@@ -503,13 +507,11 @@ public class MetadataChangeDetectorTest {
     }
 
     @Test
-    void testAuthorsSetComparison_isOrderInsensitive() {
-        // Change order of authors in newMeta
-        newMeta.setAuthors(Set.of("Author Two", "Author One"));
-        // existingMeta has Set.of("Author One", "Author Two") from setup
+    void testAuthorsComparison_isOrderSensitive() {
+        newMeta.setAuthors(List.of("Author Two", "Author One"));
 
         boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
-        assertFalse(result, "Authors set comparison should be order insensitive");
+        assertTrue(result, "Authors comparison should be order sensitive");
     }
 
     @Test
@@ -551,13 +553,15 @@ public class MetadataChangeDetectorTest {
         newMeta.setAmazonReviewCount(2000);
         newMeta.setGoodreadsReviewCount(35000);
         newMeta.setHardcoverReviewCount(800);
+        newMeta.setAudibleRating(4.6);
+        newMeta.setAudibleReviewCount(3000);
         boolean result = MetadataChangeDetector.hasValueChangesForFileWrite(newMeta, existingMeta, clearFlags);
         assertFalse(result, "Rating and review count fields should not trigger file write");
     }
 
     @Test
     void testHasValueChangesForFileWrite_includesAuthors() {
-        newMeta.setAuthors(Set.of("New Author"));
+        newMeta.setAuthors(List.of("New Author"));
         boolean result = MetadataChangeDetector.hasValueChangesForFileWrite(newMeta, existingMeta, clearFlags);
         assertTrue(result, "Authors change should trigger file write");
     }
@@ -598,15 +602,15 @@ public class MetadataChangeDetectorTest {
     }
 
     @Test
-    void testIsDifferent_whenAuthorsSetOrderChanges_returnsFalse() {
-        newMeta.setAuthors(Set.of("Author Two", "Author One"));
+    void testIsDifferent_whenAuthorsOrderChanges_returnsTrue() {
+        newMeta.setAuthors(List.of("Author Two", "Author One"));
         boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
-        assertFalse(result, "Should return false when only author order changes");
+        assertTrue(result, "Should return true when author order changes");
     }
 
     @Test
     void testIsDifferent_whenAuthorsSetContentChanges_returnsTrue() {
-        newMeta.setAuthors(Set.of("Author One", "Author Three")); // Different author
+        newMeta.setAuthors(List.of("Author One", "Author Three")); // Different author
         boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
         assertTrue(result, "Should return true when author set content changes");
     }
@@ -633,15 +637,15 @@ public class MetadataChangeDetectorTest {
     }
 
     @Test
-    void testHasValueChanges_whenAuthorsSetOrderChanges_returnsFalse() {
-        newMeta.setAuthors(Set.of("Author Two", "Author One"));
+    void testHasValueChanges_whenAuthorsOrderChanges_returnsTrue() {
+        newMeta.setAuthors(List.of("Author Two", "Author One"));
         boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
-        assertFalse(result, "Should return false when only author order changes");
+        assertTrue(result, "Should return true when author order changes");
     }
 
     @Test
     void testHasValueChanges_whenMultipleCollectionsChange_returnsTrue() {
-        newMeta.setAuthors(Set.of("New Author"));
+        newMeta.setAuthors(List.of("New Author"));
         newMeta.setCategories(Set.of("New Category"));
         boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
         assertTrue(result, "Should return true when multiple collections change");
@@ -668,7 +672,7 @@ public class MetadataChangeDetectorTest {
         BookMetadataEntity testExisting = BookMetadataEntity.builder()
                 .bookId(1L)
                 .title("Test")
-                .authors(Set.of())
+                .authors(List.of())
                 .authorsLocked(false)
                 .categories(Set.of())
                 .categoriesLocked(false)

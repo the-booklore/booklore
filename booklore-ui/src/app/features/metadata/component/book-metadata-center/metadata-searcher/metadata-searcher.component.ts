@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, Input, OnChanges, OnDestroy, OnInit, SimpleChanges} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
@@ -10,7 +10,7 @@ import {AppSettings} from '../../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 import {BehaviorSubject, combineLatest, Observable, Subject, Subscription, takeUntil} from 'rxjs';
-import {distinctUntilChanged, filter, switchMap} from 'rxjs/operators';
+import {filter, switchMap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {AsyncPipe} from '@angular/common';
 import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.component';
@@ -35,7 +35,7 @@ import {TranslocoDirective} from '@jsverse/transloco';
   ],
   standalone: true
 })
-export class MetadataSearcherComponent implements OnInit, OnDestroy {
+export class MetadataSearcherComponent implements OnInit, OnDestroy, OnChanges {
   form: FormGroup;
   providers: string[] = [];
   allFetchedMetadata: BookMetadata[] = [];
@@ -44,6 +44,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   searchTriggered = false;
 
   @Input() book$!: Observable<Book | null>;
+  @Input() isActiveTab: boolean = false;
 
   selectedFetchedMetadata$ = new BehaviorSubject<BookMetadata | null>(null);
   detailLoading = false;
@@ -66,6 +67,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
 
   private metadataByProvider: Map<string, BookMetadata[]> = new Map();
   private providerCompletionStatus: Map<string, boolean> = new Map();
+  private pendingAutoSearch = false;
+  private providerInitialized = false;
 
   constructor() {
     this.form = this.formBuilder.group({
@@ -74,6 +77,13 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       author: [''],
       isbn: ['']
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['isActiveTab']?.currentValue && this.pendingAutoSearch) {
+      this.pendingAutoSearch = false;
+      this.onSubmit();
+    }
   }
 
   ngOnInit() {
@@ -111,13 +121,20 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
             return combineLatest([this.book$, this.appSettings$]);
           }),
           filter(([book, settings]) => !!book && !!settings),
-          distinctUntilChanged(([prevBook], [currBook]) => prevBook?.id === currBook?.id)
         )
         .subscribe(([book, settings]) => {
-          this.resetFormFromBook(book!);
-
-          if (settings!.autoBookSearch) {
-            this.onSubmit();
+          const bookChanged = book!.id !== this.bookId;
+          if (bookChanged) {
+            this.resetFormFromBook(book!);
+            if (settings!.autoBookSearch) {
+              if (this.isActiveTab) {
+                this.onSubmit();
+              } else {
+                this.pendingAutoSearch = true;
+              }
+            }
+          } else {
+            this.updateFormFromBook(book!);
           }
         })
     );
@@ -132,8 +149,22 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     this.selectedProviderFilters = new Set(['all']);
     this.bookId = book.id;
 
+    const formUpdate: Record<string, any> = {
+      title: book.metadata?.title ?? '',
+      author: book.metadata?.authors?.[0] ?? '',
+      isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
+    };
+
+    if (!this.providerInitialized) {
+      formUpdate['provider'] = this.providers;
+      this.providerInitialized = true;
+    }
+
+    this.form.patchValue(formUpdate);
+  }
+
+  private updateFormFromBook(book: Book): void {
     this.form.patchValue({
-      provider: this.providers,
       title: book.metadata?.title ?? '',
       author: book.metadata?.authors?.[0] ?? '',
       isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''

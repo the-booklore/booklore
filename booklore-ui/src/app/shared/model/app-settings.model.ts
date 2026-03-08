@@ -25,22 +25,27 @@ export interface MetadataMatchWeights {
   doubanReviewCount: number;
   lubimyczytacRating: number;
   ranobedbRating: number;
+  audibleRating: number;
+  audibleReviewCount: number;
   coverImage: number;
 }
 
 export interface OidcProviderDetails {
   providerName: string;
   clientId: string;
+  clientSecret?: string;
   issuerUri: string;
   claimMapping: {
     username: string;
     email: string;
     name: string;
+    groups: string;
   };
 }
 
 export interface OidcAutoProvisionDetails {
   enableAutoProvisioning: boolean;
+  allowLocalAccountLinking: boolean;
   defaultPermissions: string[];
   defaultLibraryIds: number[];
 }
@@ -154,6 +159,17 @@ export interface CoverCroppingSettings {
   smartCroppingEnabled: boolean;
 }
 
+export interface OidcTestCheck {
+  name: string;
+  status: 'PASS' | 'FAIL' | 'WARN' | 'SKIP';
+  message: string;
+}
+
+export interface OidcTestResult {
+  success: boolean;
+  checks: OidcTestCheck[];
+}
+
 export interface AppSettings {
   autoBookSearch: boolean;
   similarBookRecommendation: boolean;
@@ -177,6 +193,9 @@ export interface AppSettings {
   metadataDownloadOnBookdrop: boolean;
   telemetryEnabled: boolean;
   metadataProviderSpecificFields: MetadataProviderSpecificFields;
+  oidcSessionDurationHours: number | null;
+  oidcGroupSyncMode: string | null;
+  oidcForceOnlyMode: boolean;
   diskType: string;
 }
 
@@ -224,4 +243,7 @@ export enum AppSettingKey {
   COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS',
   TELEMETRY_ENABLED = 'TELEMETRY_ENABLED',
   METADATA_PROVIDER_SPECIFIC_FIELDS = 'METADATA_PROVIDER_SPECIFIC_FIELDS',
+  OIDC_SESSION_DURATION_HOURS = 'OIDC_SESSION_DURATION_HOURS',
+  OIDC_GROUP_SYNC_MODE = 'OIDC_GROUP_SYNC_MODE',
+  OIDC_FORCE_ONLY_MODE = 'OIDC_FORCE_ONLY_MODE',
 }

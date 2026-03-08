@@ -1,4 +1,4 @@
-import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {CommonModule} from '@angular/common';
 import {forkJoin, Subject} from 'rxjs';
@@ -116,6 +116,12 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   // Shortcuts help dialog
   showShortcutsHelp = false;
+
+  // Magnifier
+  isMagnifierActive = false;
+  @ViewChild('magnifierLens', {static: true}) private magnifierLensRef!: ElementRef<HTMLDivElement>;
+  private static readonly MAGNIFIER_SIZE = 200;
+  private static readonly MAGNIFIER_ZOOM = 3;
 
   // Double page detection
   private pageDimensionsCache = new Map<number, {width: number, height: number}>();
@@ -300,6 +306,16 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.toggleSlideshow();
+      });
+
+    this.headerService.toggleMagnifier$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.isMagnifierActive = !this.isMagnifierActive;
+        if (!this.isMagnifierActive) {
+          this.hideMagnifier();
+        }
+        this.headerService.updateState({isMagnifierActive: this.isMagnifierActive});
       });
 
     this.headerService.showShortcutsHelp$
@@ -945,12 +961,25 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
         event.preventDefault();
         this.toggleSlideshow();
         break;
+      case 'm':
+      case 'M':
+        event.preventDefault();
+        this.isMagnifierActive = !this.isMagnifierActive;
+        if (!this.isMagnifierActive) {
+          this.hideMagnifier();
+        }
+        this.headerService.updateState({isMagnifierActive: this.isMagnifierActive});
+        break;
       case '?':
         event.preventDefault();
         this.showShortcutsHelp = true;
         break;
       case 'Escape':
-        if (this.showShortcutsHelp) {
+        if (this.isMagnifierActive) {
+          this.isMagnifierActive = false;
+          this.hideMagnifier();
+          this.headerService.updateState({isMagnifierActive: false});
+        } else if (this.showShortcutsHelp) {
           this.showShortcutsHelp = false;
         } else if (this.showNoteDialog) {
           this.showNoteDialog = false;
@@ -989,14 +1018,22 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
     this.visibilityManager.handleMouseMove(event.clientY);
+    if (this.isMagnifierActive) {
+      this.updateMagnifier(event);
+    }
   }
 
   @HostListener('document:mouseleave', ['$event'])
   onMouseLeave(event: MouseEvent): void {
     this.visibilityManager.handleMouseLeave();
+    if (this.isMagnifierActive) {
+      this.hideMagnifier();
+    }
   }
 
   private handleSwipeGesture() {
+    if (this.scrollMode === CbxScrollMode.INFINITE || this.scrollMode === CbxScrollMode.LONG_STRIP) return;
+
     const delta = this.touchEndX - this.touchStartX;
     if (Math.abs(delta) >= 50) {
       // In RTL mode, swipe directions are reversed
@@ -1026,14 +1063,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   navigateToPreviousBook(): void {
     if (this.previousBookInSeries) {
       this.endReadingSession();
-      this.router.navigate(['/cbx-reader/book', this.previousBookInSeries.id]);
+      this.router.navigate(['/cbx-reader/book', this.previousBookInSeries.id], {replaceUrl: true});
     }
   }
 
   navigateToNextBook(): void {
     if (this.nextBookInSeries) {
       this.endReadingSession();
-      this.router.navigate(['/cbx-reader/book', this.nextBookInSeries.id]);
+      this.router.navigate(['/cbx-reader/book', this.nextBookInSeries.id], {replaceUrl: true});
     }
   }
 
@@ -1220,6 +1257,60 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   shouldShowSinglePage(pageIndex: number): boolean {
     return this.isTwoPageView && this.isSpreadPage(pageIndex);
+  }
+
+  private updateMagnifier(event: MouseEvent): void {
+    const el = this.magnifierLensRef?.nativeElement;
+    if (!el) return;
+
+    const lensSize = CbxReaderComponent.MAGNIFIER_SIZE;
+    const zoom = CbxReaderComponent.MAGNIFIER_ZOOM;
+
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    if (!(target instanceof HTMLImageElement) || !target.classList.contains('page-image')) {
+      el.style.display = 'none';
+      return;
+    }
+
+    if (!target.naturalWidth || !target.naturalHeight) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const imgRect = target.getBoundingClientRect();
+    const scale = Math.min(imgRect.width / target.naturalWidth, imgRect.height / target.naturalHeight);
+    const renderedWidth = target.naturalWidth * scale;
+    const renderedHeight = target.naturalHeight * scale;
+    const imgOffsetX = (imgRect.width - renderedWidth) / 2;
+    const imgOffsetY = (imgRect.height - renderedHeight) / 2;
+
+    const relX = (event.clientX - imgRect.left - imgOffsetX) / renderedWidth;
+    const relY = (event.clientY - imgRect.top - imgOffsetY) / renderedHeight;
+
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const bgWidth = renderedWidth * zoom;
+    const bgHeight = renderedHeight * zoom;
+    const bgPosX = -(relX * bgWidth - lensSize / 2);
+    const bgPosY = -(relY * bgHeight - lensSize / 2);
+
+    el.style.display = 'block';
+    el.style.width = `${lensSize}px`;
+    el.style.height = `${lensSize}px`;
+    el.style.transform = `translate(${event.clientX - lensSize / 2}px, ${event.clientY - lensSize / 2}px)`;
+    el.style.backgroundImage = `url('${target.src}')`;
+    el.style.backgroundSize = `${bgWidth}px ${bgHeight}px`;
+    el.style.backgroundPosition = `${bgPosX}px ${bgPosY}px`;
+  }
+
+  private hideMagnifier(): void {
+    const el = this.magnifierLensRef?.nativeElement;
+    if (el) {
+      el.style.display = 'none';
+    }
   }
 
   // Shortcuts help dialog

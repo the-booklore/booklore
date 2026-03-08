@@ -6,6 +6,7 @@ import {CbxSidebarService} from '../sidebar/cbx-sidebar.service';
 export interface CbxHeaderState {
   isFullscreen: boolean;
   isSlideshowActive: boolean;
+  isMagnifierActive: boolean;
 }
 
 @Injectable()
@@ -22,7 +23,8 @@ export class CbxHeaderService {
 
   private _state = new BehaviorSubject<CbxHeaderState>({
     isFullscreen: false,
-    isSlideshowActive: false
+    isSlideshowActive: false,
+    isMagnifierActive: false
   });
   state$ = this._state.asObservable();
 
@@ -40,6 +42,9 @@ export class CbxHeaderService {
 
   private _toggleSlideshow = new Subject<void>();
   toggleSlideshow$ = this._toggleSlideshow.asObservable();
+
+  private _toggleMagnifier = new Subject<void>();
+  toggleMagnifier$ = this._toggleMagnifier.asObservable();
 
   private _showShortcutsHelp = new Subject<void>();
   showShortcutsHelp$ = this._showShortcutsHelp.asObservable();
@@ -94,6 +99,10 @@ export class CbxHeaderService {
     this._toggleSlideshow.next();
   }
 
+  toggleMagnifier(): void {
+    this._toggleMagnifier.next();
+  }
+
   showShortcutsHelp(): void {
     this._showShortcutsHelp.next();
   }
@@ -104,7 +113,7 @@ export class CbxHeaderService {
 
   reset(): void {
     this._forceVisible.next(true);
-    this._state.next({isFullscreen: false, isSlideshowActive: false});
+    this._state.next({isFullscreen: false, isSlideshowActive: false, isMagnifierActive: false});
     this.bookTitle = '';
   }
 }

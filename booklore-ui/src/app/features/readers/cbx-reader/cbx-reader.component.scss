@@ -50,6 +50,19 @@
     to { width: 100%; }
   }
 
+  .magnifier-lens {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: none;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    z-index: 1000;
+    background-repeat: no-repeat;
+  }
+
   .bookmark-indicator {
     position: absolute;
     top: 0;
@@ -93,6 +106,10 @@
         flex: 0 0 auto;
         margin-top: 1rem;
       }
+    }
+
+    &.magnifier-active {
+      cursor: none;
     }
 
     &.bg-black {

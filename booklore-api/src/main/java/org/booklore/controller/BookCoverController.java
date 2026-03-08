@@ -95,8 +95,8 @@ public class BookCoverController {
     @ApiResponse(responseCode = "204", description = "Covers regenerated successfully")
     @PostMapping("/regenerate-covers")
     @PreAuthorize("@securityUtil.canBulkRegenerateCover() or @securityUtil.isAdmin()")
-    public void regenerateCovers() {
-        bookCoverService.regenerateCovers();
+    public void regenerateCovers(@RequestParam(defaultValue = "false") boolean missingOnly) {
+        bookCoverService.regenerateCovers(missingOnly);
     }
 
     @Operation(summary = "Regenerate cover for a book", description = "Regenerate cover for a specific book. Requires metadata edit permission or admin.")

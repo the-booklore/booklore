@@ -16,9 +16,7 @@ export class BookMetadataService {
   private sseClient = inject(SseClient);
 
   fetchBookMetadata(bookId: number, request: FetchMetadataRequest): Observable<BookMetadata> {
-    const token =
-      this.authService.getOidcAccessToken() ||
-      this.authService.getInternalAccessToken();
+    const token = this.authService.getInternalAccessToken();
 
     if (!token) {
       throw new Error('No authentication token available');
@@ -56,5 +54,9 @@ export class BookMetadataService {
 
   fetchMetadataDetail(provider: string, providerItemId: string): Observable<BookMetadata> {
     return this.http.get<BookMetadata>(`${this.url}/metadata/detail/${provider}/${providerItemId}`);
+  }
+
+  lookupByIsbn(isbn: string): Observable<BookMetadata> {
+    return this.http.post<BookMetadata>(`${this.url}/metadata/isbn-lookup`, {isbn});
   }
 }

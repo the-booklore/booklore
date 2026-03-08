@@ -68,7 +68,7 @@ export class CustomFontService {
   }
 
   private getToken(): string | null {
-    return this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
+    return this.authService.getInternalAccessToken();
   }
 
   public appendToken(url: string): string {

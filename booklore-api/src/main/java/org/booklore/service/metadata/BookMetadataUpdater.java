@@ -3,6 +3,7 @@ package org.booklore.service.metadata;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.booklore.config.AppProperties;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
@@ -30,6 +31,8 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -51,6 +54,7 @@ public class BookMetadataUpdater {
     private final ComicTeamRepository comicTeamRepository;
     private final ComicLocationRepository comicLocationRepository;
     private final ComicCreatorRepository comicCreatorRepository;
+    private final AppProperties appProperties;
     private final FileService fileService;
     private final MetadataMatchService metadataMatchService;
     private final AppSettingService appSettingService;
@@ -121,7 +125,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if (primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
+        if (appProperties.isLocalStorage() && primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;
@@ -131,6 +135,7 @@ public class BookMetadataUpdater {
                     }
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.saveMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
+                    updateFileNameIfConverted(primaryFile, file.toPath());
                     String newHash = file.isDirectory()
                             ? FileFingerprint.generateFolderHash(bookEntity.getFullFilePath())
                             : FileFingerprint.generateHash(bookEntity.getFullFilePath());
@@ -201,6 +206,9 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getLubimyczytacRatingLocked(), clear.isLubimyczytacRating(), m.getLubimyczytacRating(), v -> e.setLubimyczytacRating(v), () -> e.getLubimyczytacRating(), replaceMode);
         handleFieldUpdate(e.getRanobedbIdLocked(), clear.isRanobedbId(), m.getRanobedbId(), v -> e.setRanobedbId(nullIfBlank(v)), e::getRanobedbId, replaceMode);
         handleFieldUpdate(e.getRanobedbRatingLocked(), clear.isRanobedbRating(), m.getRanobedbRating(), e::setRanobedbRating, e::getRanobedbRating, replaceMode);
+        handleFieldUpdate(e.getAudibleIdLocked(), clear.isAudibleId(), m.getAudibleId(), v -> e.setAudibleId(nullIfBlank(v)), e::getAudibleId, replaceMode);
+        handleFieldUpdate(e.getAudibleRatingLocked(), clear.isAudibleRating(), m.getAudibleRating(), e::setAudibleRating, e::getAudibleRating, replaceMode);
+        handleFieldUpdate(e.getAudibleReviewCountLocked(), clear.isAudibleReviewCount(), m.getAudibleReviewCount(), e::setAudibleReviewCount, e::getAudibleReviewCount, replaceMode);
         handleFieldUpdate(e.getAgeRatingLocked(), clear.isAgeRating(), m.getAgeRating(), e::setAgeRating, e::getAgeRating, replaceMode);
         handleFieldUpdate(e.getContentRatingLocked(), clear.isContentRating(), m.getContentRating(), v -> e.setContentRating(nullIfBlank(v)), e::getContentRating, replaceMode);
     }
@@ -235,37 +243,45 @@ public class BookMetadataUpdater {
     private void updateAuthorsIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataClearFlags clear, boolean merge, MetadataReplaceMode replaceMode) {
         if (Boolean.TRUE.equals(e.getAuthorsLocked())) return;
 
-        e.setAuthors(Optional.ofNullable(e.getAuthors()).orElseGet(HashSet::new));
+        e.setAuthors(Optional.ofNullable(e.getAuthors()).orElseGet(ArrayList::new));
 
         if (clear.isAuthors()) {
             e.getAuthors().clear();
             return;
         }
 
-        Set<String> authorNames = Optional.ofNullable(m.getAuthors()).orElse(Collections.emptySet());
+        List<String> authorNames = Optional.ofNullable(m.getAuthors()).orElse(Collections.emptyList());
         if (authorNames.isEmpty()) {
             if (replaceMode == MetadataReplaceMode.REPLACE_ALL) e.getAuthors().clear();
             return;
         }
 
-        Set<AuthorEntity> newAuthors = authorNames.stream()
+        List<AuthorEntity> newAuthors = authorNames.stream()
                 .filter(name -> name != null && !name.isBlank())
                 .map(name -> authorRepository.findByName(name)
                         .orElseGet(() -> authorRepository.save(AuthorEntity.builder().name(name).build())))
-                .collect(Collectors.toSet());
+                .toList();
 
         if (newAuthors.isEmpty()) return;
 
         if (replaceMode == MetadataReplaceMode.REPLACE_ALL || replaceMode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
             if (!merge) e.getAuthors().clear();
-            e.getAuthors().addAll(newAuthors);
+            for (AuthorEntity author : newAuthors) {
+                if (!e.getAuthors().contains(author)) {
+                    e.getAuthors().add(author);
+                }
+            }
             e.updateSearchText();
         } else if (replaceMode == MetadataReplaceMode.REPLACE_MISSING && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
             e.updateSearchText();
         } else if (replaceMode == null) {
             if (!merge) e.getAuthors().clear();
-            e.getAuthors().addAll(newAuthors);
+            for (AuthorEntity author : newAuthors) {
+                if (!e.getAuthors().contains(author)) {
+                    e.getAuthors().add(author);
+                }
+            }
             e.updateSearchText();
         }
     }
@@ -712,6 +728,20 @@ public class BookMetadataUpdater {
 
     private String nullIfBlank(String value) {
         return StringUtils.hasText(value) ? value : null;
+    }
+
+    void updateFileNameIfConverted(BookFileEntity bookFile, Path originalPath) {
+        if (Files.exists(originalPath)) {
+            return;
+        }
+        String fileName = bookFile.getFileName();
+        String baseName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+        String cbzFileName = baseName + ".cbz";
+        Path cbzPath = originalPath.resolveSibling(cbzFileName);
+        if (Files.exists(cbzPath)) {
+            log.info("File converted from {} to {}, updating book file record", fileName, cbzFileName);
+            bookFile.setFileName(cbzFileName);
+        }
     }
 
     private boolean isLocalOrPrivateUrl(String url) {

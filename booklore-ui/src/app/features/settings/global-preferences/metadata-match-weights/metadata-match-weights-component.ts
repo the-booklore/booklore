@@ -23,31 +23,14 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 })
 export class MetadataMatchWeightsComponent implements OnInit {
 
-  readonly labelMap: Record<string, string> = {
-    title: 'Title',
-    subtitle: 'Subtitle',
-    authors: 'Authors',
-    description: 'Description',
-    publisher: 'Publisher',
-    publishedDate: 'Published Date',
-    categories: 'Categories',
-    coverImage: 'Cover Image',
-    seriesName: 'Series Name',
-    seriesNumber: 'Series Number',
-    language: 'Language',
-    isbn13: 'ISBN-13',
-    isbn10: 'ISBN-10',
-    pageCount: 'Page Count',
-    amazonRating: 'Amazon Rating',
-    amazonReviewCount: 'Amazon Rating # ',
-    goodreadsRating: 'Goodreads Rating',
-    goodreadsReviewCount: 'Goodreads Rating #',
-    hardcoverRating: 'Hardcover Rating',
-    hardcoverReviewCount: 'Hardcover Rating #',
-    ranobedbRating: 'Ranobedb Rating',
-    audibleRating: 'Audible Rating',
-    audibleReviewCount: 'Audible Rating #',
-  };
+  readonly orderedFieldKeys: string[] = [
+    'title', 'subtitle', 'authors', 'description', 'publisher', 'publishedDate',
+    'categories', 'coverImage', 'seriesName', 'seriesNumber', 'seriesTotal',
+    'language', 'isbn13', 'isbn10', 'pageCount',
+    'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
+    'hardcoverRating', 'hardcoverReviewCount', 'audibleRating', 'audibleReviewCount',
+    'doubanRating', 'doubanReviewCount', 'ranobedbRating'
+  ];
 
   form!: FormGroup;
   isSaving = false;
@@ -72,6 +55,7 @@ export class MetadataMatchWeightsComponent implements OnInit {
       categories: [0, [Validators.required, Validators.min(0)]],
       seriesName: [0, [Validators.required, Validators.min(0)]],
       seriesNumber: [0, [Validators.required, Validators.min(0)]],
+      seriesTotal: [0, [Validators.required, Validators.min(0)]],
       isbn13: [0, [Validators.required, Validators.min(0)]],
       isbn10: [0, [Validators.required, Validators.min(0)]],
       pageCount: [0, [Validators.required, Validators.min(0)]],
@@ -82,6 +66,8 @@ export class MetadataMatchWeightsComponent implements OnInit {
       goodreadsReviewCount: [0, [Validators.required, Validators.min(0)]],
       hardcoverRating: [0, [Validators.required, Validators.min(0)]],
       hardcoverReviewCount: [0, [Validators.required, Validators.min(0)]],
+      doubanRating: [0, [Validators.required, Validators.min(0)]],
+      doubanReviewCount: [0, [Validators.required, Validators.min(0)]],
       ranobedbRating: [0, [Validators.required, Validators.min(0)]],
       audibleRating: [0, [Validators.required, Validators.min(0)]],
       audibleReviewCount: [0, [Validators.required, Validators.min(0)]],
@@ -97,7 +83,11 @@ export class MetadataMatchWeightsComponent implements OnInit {
   }
 
   get orderedKeys(): string[] {
-    return Object.keys(this.labelMap);
+    return this.orderedFieldKeys;
+  }
+
+  getFieldLabel(key: string): string {
+    return this.t.translate('settingsMeta.matchWeights.fields.' + key);
   }
 
   save(): void {

@@ -8,7 +8,7 @@ import org.booklore.util.PathPatternResolver;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -38,12 +38,12 @@ class PathPatternResolverTest {
             when(metadata.getAuthors()).thenReturn(null);
         } else {
             AtomicLong idCounter = new AtomicLong(1);
-            LinkedHashSet<AuthorEntity> authorEntities = authors.stream().map(name -> {
+            ArrayList<AuthorEntity> authorEntities = authors.stream().map(name -> {
                 AuthorEntity a = new AuthorEntity();
                 a.setId(idCounter.getAndIncrement());
                 a.setName(name);
                 return a;
-            }).collect(Collectors.toCollection(LinkedHashSet::new));
+            }).collect(Collectors.toCollection(ArrayList::new));
             when(metadata.getAuthors()).thenReturn(authorEntities);
         }
 

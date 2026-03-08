@@ -189,9 +189,380 @@ class FileUtilsTest {
     void testGetFileSizeInKb_validFile_returnsSize() throws IOException {
         Path file = tempDir.resolve("test.txt");
         Files.write(file, "test".getBytes());
-        
+
         Long size = FileUtils.getFileSizeInKb(file);
         assertNotNull(size, "File size should not be null for existing file");
         assertTrue(size >= 0, "File size should be non-negative");
+    }
+
+    // ========== isSeriesFolder Tests ==========
+
+    // ========== findCoverImageInFolder Tests ==========
+
+    @Test
+    void testFindCoverImageInFolder_coverJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPng_found() throws IOException {
+        Files.createFile(tempDir.resolve("cover.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.png", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_imageJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("image.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("image.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_folderJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("folder.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPrioritizedOverFolder() throws IOException {
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPrioritizedOverImage() throws IOException {
+        Files.createFile(tempDir.resolve("image.png"));
+        Files.createFile(tempDir.resolve("cover.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.png", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_folderPrioritizedOverImage() throws IOException {
+        Files.createFile(tempDir.resolve("image.jpg"));
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("folder.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_jpgPrioritizedOverPng() throws IOException {
+        Files.createFile(tempDir.resolve("cover.png"));
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_webpSupported() throws IOException {
+        Files.createFile(tempDir.resolve("cover.webp"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.webp", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_noCoverImage_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("book.epub"));
+        Files.createFile(tempDir.resolve("metadata.opf"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_emptyFolder_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_nonExistentPath_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(tempDir.resolve("nonexistent"));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_nullPath_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(null);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_unsupportedExtension_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("cover.tiff"));
+        Files.createFile(tempDir.resolve("cover.svg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_directoryNamedCover_ignored() throws IOException {
+        Files.createDirectories(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_unrelatedImageName_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("artwork.jpg"));
+        Files.createFile(tempDir.resolve("poster.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    // ========== isSeriesFolder Tests ==========
+
+    @Test
+    void testIsSeriesFolder_distinctTitles_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("1. The Lightning Thief.m4b"),
+                Path.of("2. The Sea of Monsters.m4b"),
+                Path.of("3. The Titans Curse.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_chapterFiles_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Chapter 01.mp3"),
+                Path.of("Chapter 02.mp3"),
+                Path.of("Chapter 03.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_bareNumberedTracks_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("01.mp3"),
+                Path.of("02.mp3"),
+                Path.of("03.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_trackFiles_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Track 01.mp3"),
+                Path.of("Track 02.mp3"),
+                Path.of("Track 03.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_mixedWithParts_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("1. The Lost Hero (part 1).m4b"),
+                Path.of("1. The Lost Hero (part 2).m4b"),
+                Path.of("2. The Son of Neptune.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_singleFile_returnsFalse() {
+        List<Path> files = List.of(Path.of("The Lightning Thief.m4b"));
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_dashSeparatedNumbers_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("01 - The Lightning Thief.m4b"),
+                Path.of("02 - The Sea of Monsters.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_emptyList_returnsFalse() {
+        assertFalse(FileUtils.isSeriesFolder(List.of()));
+    }
+
+    @Test
+    void testIsSeriesFolder_allSameTitle_returnsFalse() {
+        // Same book split across multiple files (no number prefix)
+        List<Path> files = List.of(
+                Path.of("The Lightning Thief.m4b"),
+                Path.of("The Lightning Thief.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_sameTitleWithParts_returnsFalse() {
+        // Same book split into parts: after stripping part indicators, all produce same title
+        List<Path> files = List.of(
+                Path.of("The Lightning Thief (part 1).m4b"),
+                Path.of("The Lightning Thief (part 2).m4b"),
+                Path.of("The Lightning Thief (part 3).m4b")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_genericPartTitles_returnsFalse() {
+        // "Part" is in the generic list, so "Part 1", "Part 2" → stripped to "part" → generic
+        List<Path> files = List.of(
+                Path.of("Part 1.mp3"),
+                Path.of("Part 2.mp3"),
+                Path.of("Part 3.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_genericDiscTitles_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Disc 1.mp3"),
+                Path.of("Disc 2.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_genericSideTitles_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Side 1.mp3"),
+                Path.of("Side 2.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_genericIntroEpilogue_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Intro.mp3"),
+                Path.of("Epilogue.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_genericOutro_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Intro.mp3"),
+                Path.of("Outro.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_mixedGenericAndRealTitles_returnsFalse() {
+        // Only one non-generic title → not > 1 distinct → not a series
+        List<Path> files = List.of(
+                Path.of("Intro.mp3"),
+                Path.of("Chapter 01.mp3"),
+                Path.of("The Lightning Thief.m4b")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_mixedCaseFileNames_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("1. THE LIGHTNING THIEF.M4B"),
+                Path.of("2. the Sea of Monsters.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_noExtension_returnsTrue() {
+        // Files without dots in the name (no extension confusion)
+        List<Path> files = List.of(
+                Path.of("The Lightning Thief"),
+                Path.of("The Sea of Monsters")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_zeroPaddedNumbers_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("001. A Game of Thrones.m4b"),
+                Path.of("002. A Clash of Kings.m4b"),
+                Path.of("003. A Storm of Swords.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_numberedPartsOfSameBook_returnsFalse() {
+        // Same book number but different parts → single distinct title after stripping
+        List<Path> files = List.of(
+                Path.of("1. The Lost Hero (part 1).m4b"),
+                Path.of("1. The Lost Hero (part 2).m4b"),
+                Path.of("1. The Lost Hero (part 3).m4b")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_twoDistinctAmongManyParts_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("1. The Lost Hero (part 1).m4b"),
+                Path.of("1. The Lost Hero (part 2).m4b"),
+                Path.of("1. The Lost Hero (part 3).m4b"),
+                Path.of("2. The Son of Neptune (part 1).m4b"),
+                Path.of("2. The Son of Neptune (part 2).m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_titlesWithSpecialCharacters_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("1. The Lion, the Witch & the Wardrobe.m4b"),
+                Path.of("2. Prince Caspian.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_prologueAndChapters_returnsFalse() {
+        // All generic: prologue, chapter, epilogue
+        List<Path> files = List.of(
+                Path.of("Prologue.mp3"),
+                Path.of("Chapter 01.mp3"),
+                Path.of("Chapter 02.mp3"),
+                Path.of("Chapter 03.mp3"),
+                Path.of("Epilogue.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_largeSeriesFolder_returnsTrue() {
+        List<Path> files = List.of(
+                Path.of("01. The Colour of Magic.m4b"),
+                Path.of("02. The Light Fantastic.m4b"),
+                Path.of("03. Equal Rites.m4b"),
+                Path.of("04. Mort.m4b"),
+                Path.of("05. Sourcery.m4b"),
+                Path.of("06. Wyrd Sisters.m4b"),
+                Path.of("07. Pyramids.m4b"),
+                Path.of("08. Guards Guards.m4b"),
+                Path.of("09. Eric.m4b"),
+                Path.of("10. Moving Pictures.m4b")
+        );
+        assertTrue(FileUtils.isSeriesFolder(files));
     }
 }

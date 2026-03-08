@@ -1,6 +1,7 @@
 package org.booklore.service.metadata.extractor;
 
 import org.booklore.model.dto.BookMetadata;
+import org.booklore.util.SecureXmlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -9,15 +10,16 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,9 +39,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
     @Override
     public byte[] extractCover(File file) {
         try (InputStream inputStream = getInputStream(file)) {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            DocumentBuilderFactory dbf = SecureXmlUtils.createSecureDocumentBuilderFactory(true);
             DocumentBuilder builder = dbf.newDocumentBuilder();
             Document doc = builder.parse(inputStream);
 
@@ -93,14 +93,12 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
     @Override
     public BookMetadata extractMetadata(File file) {
         try (InputStream inputStream = getInputStream(file)) {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            DocumentBuilderFactory dbf = SecureXmlUtils.createSecureDocumentBuilderFactory(true);
             DocumentBuilder builder = dbf.newDocumentBuilder();
             Document doc = builder.parse(inputStream);
 
             BookMetadata.BookMetadataBuilder metadataBuilder = BookMetadata.builder();
-            Set<String> authors = new HashSet<>();
+            List<String> authors = new ArrayList<>();
             Set<String> categories = new HashSet<>();
 
             // Extract title-info (main metadata section)
@@ -132,7 +130,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
     }
 
     private void extractTitleInfo(Element titleInfo, BookMetadata.BookMetadataBuilder builder,
-                                   Set<String> authors, Set<String> categories) {
+                                   List<String> authors, Set<String> categories) {
         // Extract genres (categories)
         NodeList genres = titleInfo.getElementsByTagNameNS(FB2_NAMESPACE, "genre");
         for (int i = 0; i < genres.getLength(); i++) {

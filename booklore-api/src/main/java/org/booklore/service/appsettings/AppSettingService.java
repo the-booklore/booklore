@@ -3,6 +3,7 @@ package org.booklore.service.appsettings;
 import jakarta.transaction.Transactional;
 import org.booklore.config.AppProperties;
 import org.booklore.config.security.service.AuthenticationService;
+import org.booklore.exception.ApiError;
 import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.request.MetadataRefreshOptions;
 import org.booklore.model.dto.settings.*;
@@ -65,6 +66,10 @@ public class AppSettingService {
 
         validatePermission(key, user);
 
+        if (key == AppSettingKey.OIDC_FORCE_ONLY_MODE) {
+            validateOidcForceOnlyMode(val);
+        }
+
         var setting = settingPersistenceHelper.appSettingsRepository.findByName(key.toString());
         if (setting == null) {
             setting = new AppSettingEntity();
@@ -73,8 +78,28 @@ public class AppSettingService {
         setting.setVal(settingPersistenceHelper.serializeSettingValue(key, val));
         settingPersistenceHelper.appSettingsRepository.save(setting);
         refreshCache();
-        AuditAction action = key.name().startsWith("OIDC_") ? AuditAction.OIDC_CONFIG_CHANGED : AuditAction.SETTINGS_UPDATED;
+
+        AuditAction action = switch (key) {
+            case AppSettingKey k when k == AppSettingKey.OIDC_FORCE_ONLY_MODE -> AuditAction.OIDC_FORCE_ONLY_MODE_CHANGED;
+            case AppSettingKey k when k.name().startsWith("OIDC_") -> AuditAction.OIDC_CONFIG_CHANGED;
+            default -> AuditAction.SETTINGS_UPDATED;
+        };
         auditService.log(action, "Updated setting: " + key);
+    }
+
+    private void validateOidcForceOnlyMode(Object val) {
+        boolean enabling = Boolean.parseBoolean(String.valueOf(val));
+        if (!enabling) return;
+
+        AppSettings current = getAppSettings();
+        if (!current.isOidcEnabled()) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("Cannot enable OIDC-only mode: OIDC must be enabled first");
+        }
+        OidcProviderDetails details = current.getOidcProviderDetails();
+        if (details == null || details.getIssuerUri() == null || details.getIssuerUri().isBlank()
+                || details.getClientId() == null || details.getClientId().isBlank()) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("Cannot enable OIDC-only mode: OIDC must be configured with issuer URI and client ID");
+        }
     }
 
     private void validatePermission(AppSettingKey key, BookLoreUser user) {
@@ -118,7 +143,12 @@ public class AppSettingService {
 
         builder.oidcEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_ENABLED, "false")));
         builder.remoteAuthEnabled(appProperties.getRemoteAuth().isEnabled());
-        builder.oidcProviderDetails(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_PROVIDER_DETAILS, OidcProviderDetails.class, null, false));
+        OidcProviderDetails details = settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_PROVIDER_DETAILS, OidcProviderDetails.class, null, false);
+        if (details != null) {
+            details.setClientSecret(null);
+        }
+        builder.oidcProviderDetails(details);
+        builder.oidcForceOnlyMode(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_FORCE_ONLY_MODE, "false")));
 
         return builder.build();
     }
@@ -133,7 +163,7 @@ public class AppSettingService {
         builder.libraryMetadataRefreshOptions(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.LIBRARY_METADATA_REFRESH_OPTIONS, new TypeReference<>() {
         }, List.of(), true));
         builder.oidcProviderDetails(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_PROVIDER_DETAILS, OidcProviderDetails.class, null, false));
-        builder.oidcAutoProvisionDetails(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_AUTO_PROVISION_DETAILS, OidcAutoProvisionDetails.class, null, false));
+        builder.oidcAutoProvisionDetails(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_AUTO_PROVISION_DETAILS, OidcAutoProvisionDetails.class, new OidcAutoProvisionDetails(), true));
         builder.metadataProviderSettings(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.METADATA_PROVIDER_SETTINGS, MetadataProviderSettings.class, settingPersistenceHelper.getDefaultMetadataProviderSettings(), true));
         builder.metadataMatchWeights(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.METADATA_MATCH_WEIGHTS, MetadataMatchWeights.class, settingPersistenceHelper.getDefaultMetadataMatchWeights(), true));
         builder.metadataPersistenceSettings(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.METADATA_PERSISTENCE_SETTINGS, MetadataPersistenceSettings.class, settingPersistenceHelper.getDefaultMetadataPersistenceSettings(), true));
@@ -149,7 +179,7 @@ public class AppSettingService {
                 true
             )
         );
-        builder.autoBookSearch(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.AUTO_BOOK_SEARCH, "true")));
+        builder.autoBookSearch(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.AUTO_BOOK_SEARCH, "false")));
         builder.uploadPattern(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.UPLOAD_FILE_PATTERN, "{authors}/<{series}/><{seriesIndex}. >/{title}/{title}< - {authors}>< ({year})>"));
         builder.similarBookRecommendation(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.SIMILAR_BOOK_RECOMMENDATION, "true")));
         builder.opdsServerEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OPDS_SERVER_ENABLED, "false")));
@@ -160,10 +190,23 @@ public class AppSettingService {
         builder.maxFileUploadSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.MAX_FILE_UPLOAD_SIZE_IN_MB, "100")));
         builder.metadataDownloadOnBookdrop(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.METADATA_DOWNLOAD_ON_BOOKDROP, "true")));
 
+        String sessionDurationStr = settingsMap.get(AppSettingKey.OIDC_SESSION_DURATION_HOURS.getDbKey());
+        if (sessionDurationStr != null && !sessionDurationStr.isBlank()) {
+            try {
+                builder.oidcSessionDurationHours(Integer.parseInt(sessionDurationStr));
+            } catch (NumberFormatException _) {
+            }
+        }
+
         boolean settingEnabled = Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_ENABLED, "false"));
         Boolean forceDisable = appProperties.getForceDisableOidc();
         boolean finalEnabled = settingEnabled && (forceDisable == null || !forceDisable);
         builder.oidcEnabled(finalEnabled);
+
+        builder.oidcGroupSyncMode(settingPersistenceHelper.getOrCreateSetting(
+                AppSettingKey.OIDC_GROUP_SYNC_MODE, "DISABLED"));
+
+        builder.oidcForceOnlyMode(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_FORCE_ONLY_MODE, "false")));
 
         builder.diskType(appProperties.getDiskType());
 

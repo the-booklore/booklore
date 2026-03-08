@@ -15,8 +15,10 @@ import {BookdropFileNotification, BookdropFileService} from './features/bookdrop
 import {Subscription} from 'rxjs';
 import {TaskProgressPayload, TaskService} from './features/settings/task-management/task.service';
 import {LibraryService} from './features/book/service/library.service';
+import {LibraryHealthService} from './features/book/service/library-health.service';
 import {LibraryLoadingService} from './features/library-creator/library-loading.service';
 import {scan, withLatestFrom} from 'rxjs/operators';
+import {AuthService} from './shared/service/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -41,7 +43,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private bookdropFileService = inject(BookdropFileService);
   private taskService = inject(TaskService);
   private libraryService = inject(LibraryService);
+  private libraryHealthService = inject(LibraryHealthService);
   private libraryLoadingService = inject(LibraryLoadingService);
+  private authService = inject(AuthService);
 
   ngOnInit(): void {
     window.addEventListener('online', this.onOnline);
@@ -51,6 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loading = !ready;
       if (ready && !this.subscriptionsInitialized) {
         this.setupWebSocketSubscriptions();
+        this.libraryHealthService.initialize();
         this.subscriptionsInitialized = true;
       }
     });
@@ -144,6 +149,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.rxStompService.watch('/user/queue/task-progress').subscribe(msg => {
         const progress = JSON.parse(msg.body) as TaskProgressPayload;
         this.taskService.handleTaskProgress(progress);
+      })
+    );
+    this.subscriptions.push(
+      this.rxStompService.watch('/user/queue/session-revoked').subscribe(() => {
+        this.authService.forceLogout('session_revoked');
       })
     );
   }

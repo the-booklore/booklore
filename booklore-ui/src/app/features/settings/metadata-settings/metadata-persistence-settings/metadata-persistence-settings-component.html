@@ -10,27 +10,39 @@
       </p>
     </div>
 
-    <div class="section-notice">
-      <div class="warning-notice">
-        <i class="pi pi-exclamation-triangle"></i>
-        <div>
-          <strong>{{ t('networkWarningTitle') }}</strong> {{ t('networkWarning') }}
+    @if (isNetworkStorage) {
+      <div class="section-notice">
+        <div class="info-notice">
+          <i class="pi pi-lock"></i>
+          <div>
+            <strong>{{ t('networkModeTitle') }}</strong> {{ t('networkModeDesc') }}
+          </div>
         </div>
       </div>
-      <div class="info-notice unsupported-formats-note">
-        <i class="pi pi-info-circle"></i>
-        <div>
-          <strong>Note:</strong> <span [innerHTML]="t('unsupportedNote')"></span>
+    } @else {
+      <div class="section-notice">
+        <div class="warning-notice">
+          <i class="pi pi-exclamation-triangle"></i>
+          <div>
+            <strong>{{ t('networkWarningTitle') }}</strong> {{ t('networkWarning') }}
+          </div>
+        </div>
+        <div class="info-notice unsupported-formats-note">
+          <i class="pi pi-info-circle"></i>
+          <div>
+            <strong>Note:</strong> <span [innerHTML]="t('unsupportedNote')"></span>
+          </div>
         </div>
       </div>
-    </div>
+    }
 
-    <div class="section-body">
+    <div class="section-body" [class.network-disabled]="isNetworkStorage">
       <div class="setting-item">
         <div class="setting-header">
           <p-toggleswitch
             [ngModel]="metadataPersistence.saveToOriginalFile.epub.enabled"
-            (onChange)="onSaveToOriginalFileToggle('epub')">
+            (onChange)="onSaveToOriginalFileToggle('epub')"
+            [disabled]="isNetworkStorage">
           </p-toggleswitch>
           <label class="setting-label">{{ t('writeEpub') }}</label>
         </div>
@@ -61,7 +73,8 @@
         <div class="setting-header">
           <p-toggleswitch
             [ngModel]="metadataPersistence.saveToOriginalFile.cbx.enabled"
-            (onChange)="onSaveToOriginalFileToggle('cbx')">
+            (onChange)="onSaveToOriginalFileToggle('cbx')"
+            [disabled]="isNetworkStorage">
           </p-toggleswitch>
           <label class="setting-label">{{ t('writeCbx') }}</label>
         </div>
@@ -92,7 +105,8 @@
         <div class="setting-header">
           <p-toggleswitch
             [ngModel]="metadataPersistence.saveToOriginalFile.pdf.enabled"
-            (onChange)="onSaveToOriginalFileToggle('pdf')">
+            (onChange)="onSaveToOriginalFileToggle('pdf')"
+            [disabled]="isNetworkStorage">
           </p-toggleswitch>
           <label class="setting-label">{{ t('writePdf') }}</label>
         </div>
@@ -126,7 +140,8 @@
         <div class="setting-header">
           <p-toggleswitch
             [ngModel]="metadataPersistence.saveToOriginalFile.audiobook.enabled"
-            (onChange)="onSaveToOriginalFileToggle('audiobook')">
+            (onChange)="onSaveToOriginalFileToggle('audiobook')"
+            [disabled]="isNetworkStorage">
           </p-toggleswitch>
           <label class="setting-label">{{ t('writeAudiobook') }}</label>
         </div>
@@ -156,7 +171,7 @@
         }
       </div>
 
-      @if ((appSettings$ | async)?.diskType === 'LOCAL') {
+      @if (!isNetworkStorage) {
         <div class="setting-item">
           <div class="setting-header">
             <p-toggleswitch
@@ -180,12 +195,13 @@
       </p>
     </div>
 
-    <div class="section-body">
+    <div class="section-body" [class.network-disabled]="isNetworkStorage">
       <div class="setting-item">
         <div class="setting-header">
           <p-toggleswitch
             [ngModel]="metadataPersistence.sidecarSettings?.enabled"
-            (onChange)="onSidecarToggle('enabled')">
+            (onChange)="onSidecarToggle('enabled')"
+            [disabled]="isNetworkStorage">
           </p-toggleswitch>
           <label class="setting-label">{{ t('enableSidecar') }}</label>
         </div>
@@ -197,7 +213,8 @@
           <div class="setting-header">
             <p-toggleswitch
               [ngModel]="metadataPersistence.sidecarSettings?.writeOnUpdate"
-              (onChange)="onSidecarToggle('writeOnUpdate')">
+              (onChange)="onSidecarToggle('writeOnUpdate')"
+              [disabled]="isNetworkStorage">
             </p-toggleswitch>
             <label class="setting-label">{{ t('writeOnUpdate') }}</label>
           </div>
@@ -208,7 +225,8 @@
           <div class="setting-header">
             <p-toggleswitch
               [ngModel]="metadataPersistence.sidecarSettings?.writeOnScan"
-              (onChange)="onSidecarToggle('writeOnScan')">
+              (onChange)="onSidecarToggle('writeOnScan')"
+              [disabled]="isNetworkStorage">
             </p-toggleswitch>
             <label class="setting-label">{{ t('writeOnScan') }}</label>
           </div>
@@ -219,7 +237,8 @@
           <div class="setting-header">
             <p-toggleswitch
               [ngModel]="metadataPersistence.sidecarSettings?.includeCoverFile"
-              (onChange)="onSidecarToggle('includeCoverFile')">
+              (onChange)="onSidecarToggle('includeCoverFile')"
+              [disabled]="isNetworkStorage">
             </p-toggleswitch>
             <label class="setting-label">{{ t('includeCover') }}</label>
           </div>
