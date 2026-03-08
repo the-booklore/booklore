@@ -640,6 +640,7 @@ public class BookRuleEvaluatorService {
 
     private Predicate buildComparisonPredicate(Rule rule, CriteriaBuilder cb, Root<BookEntity> root,
                                                Join<BookEntity, UserBookProgressEntity> progressJoin,
+                                               Join<BookEntity, BookFileEntity> bookFileJoin,
                                                BiFunction<Expression<?>, LocalDateTime, Predicate> dateTimeComparator,
                                                BiFunction<Expression<?>, LocalDate, Predicate> dateComparator,
                                                BiFunction<Expression<?>, Double, Predicate> numberComparator) {
