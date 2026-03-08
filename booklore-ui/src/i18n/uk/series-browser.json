@@ -1,25 +1,25 @@
 {
-  "pageTitle": "",
-  "browseAllSeries": "",
-  "searchPlaceholder": "",
-  "readNext": "",
-  "booksRead": "",
-  "noSeriesFound": "",
-  "noSeriesInCategory": "",
-  "cardSize": "",
-  "filters": {
-    "all": "",
-    "notStarted": "",
-    "inProgress": "",
-    "completed": "",
-    "abandoned": ""
-  },
-  "sort": {
-    "nameAsc": "",
-    "nameDesc": "",
-    "bookCount": "",
-    "progress": "",
-    "recentlyRead": "",
-    "recentlyAdded": ""
-  }
+    "pageTitle": "",
+    "browseAllSeries": "",
+    "searchPlaceholder": "",
+    "readNext": "",
+    "booksRead": "",
+    "noSeriesFound": "",
+    "noSeriesInCategory": "",
+    "cardSize": "Розмір картки",
+    "filters": {
+        "all": "Усі",
+        "notStarted": "",
+        "inProgress": "У процесі",
+        "completed": "",
+        "abandoned": ""
+    },
+    "sort": {
+        "nameAsc": "",
+        "nameDesc": "",
+        "bookCount": "Кількість книг",
+        "progress": "",
+        "recentlyRead": "Нещодавно прочитані",
+        "recentlyAdded": "Нещодавно додані"
+    }
 }

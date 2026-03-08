@@ -1,6 +1,6 @@
 {
     "title": "Upravitelj sistemskih zadataka",
-    "description": "Upravljajte automatiziranim sistemskim zadacima za održavanje knjižnice, osvježavanje metapodataka i čišćenje predmemorije. Zakažite ponavljajuće operacije koristeći <a href=\"https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"cron-link\">Spring cron izraze</a>.",
+    "description": "Upravljajte automatiziranim sistemskim zadacima za održavanje zbirke, osvježavanje metapodataka i čišćenje predmemorije. Zakažite ponavljajuće operacije koristeći <a href=\"https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"cron-link\">Spring cron izraze</a>.",
     "systemTasks": {
         "sectionTitle": "Sistemski zadaci",
         "sectionDesc": "Izvršavajte zadatke ručno, pratite napredak u stvarnom vremenu i konfigurirajte zakazanu automatizaciju."

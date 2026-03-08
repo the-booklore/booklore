@@ -23,8 +23,8 @@
             "unshelveFailedDetail": "Ažuriranje polica knjiga nije uspjelo",
             "noEligibleBooksSummary": "Nema prihvatljivih knjiga",
             "noEligibleBooksDetail": "Odabrane knjige moraju biti jednodatotečne knjige (bez alternativnih formata).",
-            "multipleLibrariesSummary": "Više knjižnica",
-            "multipleLibrariesDetail": "Sve odabrane knjige moraju biti iz iste knjižnice."
+            "multipleLibrariesSummary": "Više zbirki",
+            "multipleLibrariesDetail": "Sve odabrane knjige moraju biti iz iste zbirke."
         },
         "loading": {
             "deleting": "Brisanje {{ count }} knjige/a...",
@@ -46,7 +46,7 @@
             "gridItemSize": "Veličina stavke mreže",
             "bookTypeOverlay": "Oznaka vrste knjige",
             "noBooks": "Ova kolekcija nema knjiga!",
-            "failedLibrary": "Učitavanje knjiga knjižnice nije uspjelo!",
+            "failedLibrary": "Učitavanje knjiga zbirke nije uspjelo!",
             "failedShelf": "Učitavanje knjiga police nije uspjelo!",
             "activeFilters": "{{ count }} aktivnih filtera"
         },
@@ -279,7 +279,8 @@
         "magicShelf": {
             "optionsLabel": "Opcije",
             "editMagicShelf": "Uredi čarobnu policu",
-            "deleteMagicShelf": "Obriši čarobnu policu"
+            "deleteMagicShelf": "Obriši čarobnu policu",
+            "exportJson": "Kopiraj JSON"
         },
         "confirm": {
             "rescanLibraryMessage": "Jeste li sigurni da želite osvježiti knjižnicu: {{ name }}?",
@@ -290,18 +291,19 @@
             "rescanLabel": "Ponovo skeniraj"
         },
         "toast": {
-            "libraryRefreshSuccessDetail": "Osvježavanje knjižnice zakazano",
-            "libraryRefreshFailedDetail": "Osvježavanje knjižnice nije uspjelo",
-            "libraryDeletedDetail": "Knjižnica je obrisana",
-            "libraryDeleteFailedDetail": "Brisanje knjižnice nije uspjelo",
+            "libraryRefreshSuccessDetail": "Osvježavanje zbirke zakazano",
+            "libraryRefreshFailedDetail": "Osvježavanje zbirke nije uspjelo",
+            "libraryDeletedDetail": "Zbirka je obrisana",
+            "libraryDeleteFailedDetail": "Brisanje zbirke nije uspjelo",
             "shelfDeletedDetail": "Polica je obrisana",
             "shelfDeleteFailedDetail": "Brisanje police nije uspjelo",
             "magicShelfDeletedDetail": "Čarobna polica je obrisana",
             "magicShelfDeleteFailedDetail": "Brisanje police nije uspjelo",
-            "failedSummary": "Neuspjelo"
+            "failedSummary": "Neuspjelo",
+            "magicShelfJsonCopiedDetail": "JSON datoteke čarobne police kopiran je u međuspremnik"
         },
         "loading": {
-            "deletingLibrary": "Brisanje knjižnice '{{ name }}'..."
+            "deletingLibrary": "Brisanje zbirke '{{ name }}'..."
         }
     },
     "columnPref": {
@@ -409,7 +411,7 @@
         "title": "Dodaj fizičku knjigu",
         "description": "Katalogizirajte fizičku knjigu bez digitalne datoteke",
         "closeTooltip": "Zatvori",
-        "libraryLabel": "Knjižnica",
+        "libraryLabel": "Zbirka",
         "libraryPlaceholder": "Odaberite knjižnicu",
         "titleLabel": "Naslov",
         "titlePlaceholder": "npr., Veliki Gatsby",
@@ -429,7 +431,7 @@
         "pageCountPlaceholder": "Broj stranica",
         "categoriesLabel": "Kategorije/Žanrovi",
         "categoriesPlaceholder": "Upišite kategoriju i pritisnite Enter",
-        "validationLibraryRequired": "Knjižnica je obavezna",
+        "validationLibraryRequired": "Zbirka je obavezna",
         "validationTitleOrIsbn": "Naslov ili ISBN je obavezan",
         "validationReady": "Spremno za kreiranje",
         "cancelButton": "Odustani",
@@ -474,7 +476,7 @@
             "personalRating": "Osobna ocjena",
             "publisher": "Izdavač",
             "matchScore": "Rezultat usklađenosti metapodataka",
-            "library": "Knjižnica",
+            "library": "Zbirka",
             "shelf": "Polica",
             "shelfStatus": "Status police",
             "tag": "Oznaka",

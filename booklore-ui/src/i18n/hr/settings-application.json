@@ -23,7 +23,7 @@
         "autoBookSearch": "Automatsko pretraživanje knjiga",
         "autoBookSearchDesc": "Automatski pokušava pronaći metapodatke kada se otvori panel informacija o knjizi.",
         "similarBook": "Preporuka sličnih knjiga",
-        "similarBookDesc": "Omogućuje ili onemogućuje preporuke sličnih knjiga na temelju vaše knjižnice."
+        "similarBookDesc": "Omogućuje ili onemogućuje preporuke sličnih knjiga na temelju vaše zbirke."
     },
     "fileManagement": {
         "sectionTitle": "Upravljanje datotekama",

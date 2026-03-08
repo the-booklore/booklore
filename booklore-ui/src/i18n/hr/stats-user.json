@@ -180,7 +180,7 @@
     },
     "readingDna": {
         "title": "Profil čitalačkog DNK-a",
-        "tooltip": "Radarski grafikon koji profilira vašu čitalačku osobnost kroz 8 dimenzija. Rezultati se izračunavaju iz žanrova, ocjena, broja stranica, datuma izdavanja i napretka čitanja vaše knjižnice. Svaka osobina koristi nepreklapajuće kriterije za točne rezultate.",
+        "tooltip": "Radarski grafikon koji profilira vašu čitalačku osobnost kroz 8 dimenzija. Rezultati se izračunavaju iz žanrova, ocjena, broja stranica, datuma izdavanja i napretka čitanja vaše zbirke. Svaka osobina koristi nepreklapajuće kriterije za točne rezultate.",
         "description": "Vaša jedinstvena čitalačka osobnost kroz 8 dimenzija",
         "personalityTraits": "Vaše čitalačke osobine",
         "readingDnaProfile": "Profil čitalačkog DNK-a",
@@ -226,7 +226,7 @@
             "social": {
                 "low": "Preferirate nišne ili manje poznate naslove",
                 "mid": "Čitate mješavinu popularnih i nišnih naslova",
-                "high": "Vaša knjižnica je prepuna bestsellera i široko raspravljanih knjiga"
+                "high": "Vaša zbirka je prepuna bestsellera i široko raspravljanih knjiga"
             },
             "nostalgic": {
                 "low": "Uglavnom čitate suvremena izdanja",
@@ -281,7 +281,7 @@
                 "high": "Aktivno tražite nove autore, epohe i jezike"
             },
             "organization": {
-                "low": "Vaša knjižnica bi mogla imati više ocjena i praćenja statusa",
+                "low": "Vaša zbirka bi mogla imati više ocjena i praćenja statusa",
                 "mid": "Održavate svoju knjižnicu razumno dobro uređenom",
                 "high": "Marljivo ocjenjujete, kategorizirate i pratite svaku knjigu"
             },

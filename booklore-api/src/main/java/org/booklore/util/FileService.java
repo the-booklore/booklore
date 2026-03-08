@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -310,7 +311,29 @@ public class FileService {
                 if (location == null) {
                     throw new IOException("Redirection response without Location header");
                 }
-                currentUrl = uri.resolve(location).toString();
+                URI redirectUri = uri.resolve(location);
+
+                // When a CDN redirects to a raw IP (e.g. CloudFront -> 3.168.64.124),
+                // the Host header would become the bare IP, which the CDN rejects with
+                // 400. Rewrite the URL to keep the previous hostname so the JDK
+                // HttpClient sets the correct Host header automatically.
+                if (isRawIpAddress(redirectUri.getHost())) {
+                    try {
+                        redirectUri = new URI(
+                                redirectUri.getScheme(),
+                                redirectUri.getUserInfo(),
+                                host,
+                                redirectUri.getPort(),
+                                redirectUri.getPath(),
+                                redirectUri.getQuery(),
+                                redirectUri.getFragment()
+                        );
+                    } catch (URISyntaxException e) {
+                        throw new IOException("Invalid redirect URI: " + e.getMessage(), e);
+                    }
+                }
+
+                currentUrl = redirectUri.toString();
                 redirectCount++;
             } else {
                 throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
@@ -318,6 +341,27 @@ public class FileService {
         }
 
         throw new IOException("Too many redirects (max " + MAX_REDIRECTS + ")");
+    }
+
+    private boolean isRawIpAddress(String host) {
+        if (host == null) {
+            return false;
+        }
+        // IPv6 in URI brackets
+        if (host.startsWith("[")) {
+            return true;
+        }
+        // IPv4: all segments are digits
+        String[] parts = host.split("\\.");
+        if (parts.length == 4) {
+            for (String part : parts) {
+                if (!part.chars().allMatch(Character::isDigit)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     private boolean isInternalAddress(InetAddress address) {
