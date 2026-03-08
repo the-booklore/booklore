@@ -32,6 +32,12 @@ public class BookRuleEvaluatorService {
             RuleField.SERIES_STATUS, RuleField.SERIES_GAPS, RuleField.SERIES_POSITION
     );
 
+    private static final Set<RuleField> BOOK_FILE_FIELDS = Set.of(
+            RuleField.FILE_SIZE, RuleField.FILE_TYPE,
+            RuleField.AUDIOBOOK_DURATION, RuleField.AUDIOBOOK_CODEC,
+            RuleField.AUDIOBOOK_CHAPTER_COUNT, RuleField.AUDIOBOOK_BITRATE
+    );
+
     public Specification<BookEntity> toSpecification(GroupRule groupRule, Long userId) {
         return (root, query, cb) -> {
             // JOINs on multi-valued associations (authors, tags, shelves, etc.) can
@@ -40,9 +46,15 @@ public class BookRuleEvaluatorService {
             query.distinct(true);
 
             Join<BookEntity, UserBookProgressEntity> progressJoin = root.join("userBookProgress", JoinType.LEFT);
-            Join<BookEntity, BookFileEntity> bookFileJoin = root.join("bookFiles", JoinType.LEFT);
-            bookFileJoin.on(cb.isTrue(bookFileJoin.get("isBookFormat")));
-            query.distinct(true);
+
+            // Only join bookFiles when a rule actually references a file-based field
+            // (FILE_SIZE, FILE_TYPE, AUDIOBOOK_*) — avoids the extra fan-out and
+            // the associated DISTINCT overhead for queries that don't need it.
+            Join<BookEntity, BookFileEntity> bookFileJoin = null;
+            if (needsBookFileJoin(groupRule)) {
+                bookFileJoin = root.join("bookFiles", JoinType.LEFT);
+                bookFileJoin.on(cb.isTrue(bookFileJoin.get("isBookFormat")));
+            }
 
             Predicate userPredicate = cb.or(
                     cb.isNull(progressJoin.get("user").get("id")),
@@ -53,6 +65,23 @@ public class BookRuleEvaluatorService {
 
             return cb.and(userPredicate, rulePredicate);
         };
+    }
+
+    private boolean needsBookFileJoin(GroupRule group) {
+        if (group.getRules() == null) return false;
+        for (Object ruleObj : group.getRules()) {
+            if (ruleObj == null) continue;
+            try {
+                Map<String, Object> ruleMap = objectMapper.convertValue(ruleObj, new TypeReference<>() {});
+                if ("group".equals(ruleMap.get("type"))) {
+                    if (needsBookFileJoin(objectMapper.convertValue(ruleObj, GroupRule.class))) return true;
+                } else {
+                    Rule rule = objectMapper.convertValue(ruleObj, Rule.class);
+                    if (rule.getField() != null && BOOK_FILE_FIELDS.contains(rule.getField())) return true;
+                }
+            } catch (Exception ignored) {}
+        }
+        return false;
     }
 
     private Predicate buildPredicate(GroupRule group, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin, Long userId) {
@@ -233,13 +262,10 @@ public class BookRuleEvaluatorService {
 
     private Predicate buildFieldPresencePredicate(String metadataField, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return switch (metadataField) {
-            // Cover image — stored as hash on BookEntity
             case "thumbnailUrl" -> cb.isNotNull(root.get("bookCoverHash"));
 
-            // Personal rating — on progress join
             case "personalRating" -> cb.isNotNull(progressJoin.get("personalRating"));
 
-            // Audiobook duration — on BookFileEntity
             case "audiobookDuration" -> {
                 Subquery<Long> sub = query.subquery(Long.class);
                 Root<BookFileEntity> subRoot = sub.from(BookFileEntity.class);
@@ -250,18 +276,15 @@ public class BookRuleEvaluatorService {
                 yield cb.exists(sub);
             }
 
-            // Collection fields on BookMetadataEntity
             case "authors" -> collectionPresence(query, cb, root, "authors");
             case "categories" -> collectionPresence(query, cb, root, "categories");
             case "moods" -> collectionPresence(query, cb, root, "moods");
             case "tags" -> collectionPresence(query, cb, root, "tags");
 
-            // Comic collection fields
             case "comicCharacters" -> comicCollectionPresence(query, cb, root, "characters");
             case "comicTeams" -> comicCollectionPresence(query, cb, root, "teams");
             case "comicLocations" -> comicCollectionPresence(query, cb, root, "locations");
 
-            // Comic creator role fields
             case "comicPencillers" -> comicCreatorPresence(query, cb, root, ComicCreatorRole.PENCILLER);
             case "comicInkers" -> comicCreatorPresence(query, cb, root, ComicCreatorRole.INKER);
             case "comicColorists" -> comicCreatorPresence(query, cb, root, ComicCreatorRole.COLORIST);
@@ -269,14 +292,12 @@ public class BookRuleEvaluatorService {
             case "comicCoverArtists" -> comicCreatorPresence(query, cb, root, ComicCreatorRole.COVER_ARTIST);
             case "comicEditors" -> comicCreatorPresence(query, cb, root, ComicCreatorRole.EDITOR);
 
-            // String fields on BookMetadataEntity
             case "title", "subtitle", "description", "publisher", "language", "seriesName",
                  "isbn13", "isbn10", "asin", "contentRating", "narrator",
                  "goodreadsId", "hardcoverId", "googleId", "audibleId",
                  "lubimyczytacId", "ranobedbId", "comicvineId" ->
                     stringPresence(cb, root.get("metadata").get(metadataField));
 
-            // Numeric/date/boolean fields on BookMetadataEntity
             case "pageCount", "seriesNumber", "seriesTotal", "ageRating", "publishedDate", "abridged",
                  "amazonRating", "goodreadsRating", "hardcoverRating", "ranobedbRating",
                  "lubimyczytacRating", "audibleRating",
@@ -681,14 +702,7 @@ public class BookRuleEvaluatorService {
     }
 
     private Predicate buildIncludesAny(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
-        List<String> ruleList = toStringList(rule.getValue());
-        
-        // Map file type values for consistency with database enum values
-        if (rule.getField() == RuleField.FILE_TYPE) {
-            ruleList = ruleList.stream()
-                    .map(this::mapFileTypeValue)
-                    .collect(Collectors.toList());
-        }
+        List<String> ruleList = normalizeRuleList(rule);
 
         if (isArrayField(rule.getField())) {
             return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false);
@@ -698,14 +712,7 @@ public class BookRuleEvaluatorService {
     }
 
     private Predicate buildExcludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
-        List<String> ruleList = toStringList(rule.getValue());
-        
-        // Map file type values for consistency with database enum values
-        if (rule.getField() == RuleField.FILE_TYPE) {
-            ruleList = ruleList.stream()
-                    .map(this::mapFileTypeValue)
-                    .collect(Collectors.toList());
-        }
+        List<String> ruleList = normalizeRuleList(rule);
 
         if (isArrayField(rule.getField())) {
             return cb.not(buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, false));
@@ -719,14 +726,7 @@ public class BookRuleEvaluatorService {
     }
 
     private Predicate buildIncludesAll(Rule rule, CriteriaQuery<?> query, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin, Join<BookEntity, BookFileEntity> bookFileJoin) {
-        List<String> ruleList = toStringList(rule.getValue());
-        
-        // Map file type values for consistency with database enum values
-        if (rule.getField() == RuleField.FILE_TYPE) {
-            ruleList = ruleList.stream()
-                    .map(this::mapFileTypeValue)
-                    .collect(Collectors.toList());
-        }
+        List<String> ruleList = normalizeRuleList(rule);
 
         if (isArrayField(rule.getField())) {
             return buildArrayFieldPredicate(rule.getField(), ruleList, query, cb, root, true);
@@ -775,7 +775,7 @@ public class BookRuleEvaluatorService {
             case DATE_FINISHED -> progressJoin.get("dateFinished");
             case LAST_READ_TIME -> progressJoin.get("lastReadTime");
             case PERSONAL_RATING -> progressJoin.get("personalRating");
-            case FILE_SIZE -> bookFileJoin.get("fileSizeKb");
+            case FILE_SIZE -> bookFileJoin != null ? bookFileJoin.get("fileSizeKb") : null;
             case METADATA_SCORE -> root.get("metadataMatchScore");
             case TITLE -> root.get("metadata").get("title");
             case SUBTITLE -> root.get("metadata").get("subtitle");
@@ -804,14 +804,10 @@ public class BookRuleEvaluatorService {
             case AUDIBLE_RATING -> root.get("metadata").get("audibleRating");
             case AUDIBLE_REVIEW_COUNT -> root.get("metadata").get("audibleReviewCount");
             case ABRIDGED -> root.get("metadata").get("abridged");
-<<<<<<< HEAD
-            case AUDIOBOOK_DURATION -> root.join("bookFiles", JoinType.LEFT).get("durationSeconds");
-            case AUDIOBOOK_CODEC -> root.join("bookFiles", JoinType.LEFT).get("codec");
-            case AUDIOBOOK_CHAPTER_COUNT -> root.join("bookFiles", JoinType.LEFT).get("chapterCount");
-            case AUDIOBOOK_BITRATE -> root.join("bookFiles", JoinType.LEFT).get("bitrate");
-=======
-            case AUDIOBOOK_DURATION -> bookFileJoin.get("durationSeconds");
->>>>>>> 260700ab (fix(magic shelf): add AUDIOBOOK format to file type options, reorder ids)
+            case AUDIOBOOK_DURATION -> bookFileJoin != null ? bookFileJoin.get("durationSeconds") : null;
+            case AUDIOBOOK_CODEC -> bookFileJoin != null ? bookFileJoin.get("codec") : null;
+            case AUDIOBOOK_CHAPTER_COUNT -> bookFileJoin != null ? bookFileJoin.get("chapterCount") : null;
+            case AUDIOBOOK_BITRATE -> bookFileJoin != null ? bookFileJoin.get("bitrate") : null;
             case IS_PHYSICAL -> root.get("isPhysical");
             case READING_PROGRESS -> {
                 Expression<Float> koreader = cb.coalesce(progressJoin.get("koreaderProgressPercent"), 0f);
@@ -821,7 +817,7 @@ public class BookRuleEvaluatorService {
                 Expression<Float> cbx = cb.coalesce(progressJoin.get("cbxProgressPercent"), 0f);
                 yield cb.function("GREATEST", Float.class, koreader, kobo, pdf, epub, cbx);
             }
-            case FILE_TYPE -> bookFileJoin.get("bookType");
+            case FILE_TYPE -> bookFileJoin != null ? bookFileJoin.get("bookType") : null;
             default -> null;
         };
     }
@@ -931,8 +927,7 @@ public class BookRuleEvaluatorService {
         }
 
         String stringValue = value.toString().toLowerCase();
-        
-        // Map file type values to enum representations (cbr/cbz/cb7 -> cbx, azw -> azw3)
+
         if (field == RuleField.FILE_TYPE) {
             return mapFileTypeValue(stringValue);
         }
@@ -940,10 +935,14 @@ public class BookRuleEvaluatorService {
         return stringValue;
     }
 
-    /**
-     * Maps user-specified file type values to the BookFileType enum values stored in the database.
-     * This matches the frontend mapping logic to ensure consistent filtering behavior.
-     */
+    private List<String> normalizeRuleList(Rule rule) {
+        List<String> list = toStringList(rule.getValue());
+        if (rule.getField() == RuleField.FILE_TYPE) {
+            return list.stream().map(this::mapFileTypeValue).collect(Collectors.toList());
+        }
+        return list;
+    }
+
     private String mapFileTypeValue(String uiValue) {
         String lowerValue = uiValue.toLowerCase();
         return switch (lowerValue) {
