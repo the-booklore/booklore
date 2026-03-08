@@ -3,7 +3,7 @@
     "description": "Konfigurirajte automatsku organizaciju datoteka koristeći oznake metapodataka. Uzorci se primjenjuju prilikom učitavanja, premještanja datoteka ili nakon ažuriranja metapodataka.",
     "warning": {
         "title": "Napomena o kvaliteti metapodataka:",
-        "text": "Imenovanje datoteka u potpunosti se oslanja na metapodatke pohranjene u Booklore-u. Ova značajka se preporuča samo za visokokvalitetne, kuratirane knjižnice s potpunim metapodacima."
+        "text": "Imenovanje datoteka u potpunosti se oslanja na metapodatke pohranjene u Booklore-u. Ova značajka se preporuča samo za visokokvalitetne, kuratirane zbirke s potpunim metapodacima."
     },
     "defaultPattern": {
         "sectionTitle": "Zadani uzorak",
@@ -16,9 +16,9 @@
         "saveError": "Došlo je do pogreške prilikom spremanja postavki."
     },
     "libraryOverrides": {
-        "sectionTitle": "Zamjene knjižnice",
-        "sectionDesc": "Definirajte prilagođene uzorke za specifične knjižnice. Ostavite prazno za korištenje zadanog uzorka.",
-        "emptyTitle": "Knjižnice nisu pronađene",
+        "sectionTitle": "Nadjačavanje zbirke",
+        "sectionDesc": "Definirajte prilagođene uzorke za specifične zbirke. Ostavite prazno za korištenje zadanog uzorka.",
+        "emptyTitle": "Zbirke nisu pronađene",
         "emptySubtitle": "Kreirajte knjižnicu za konfiguraciju prilagođenih uzoraka imenovanja",
         "custom": "Prilagođeno",
         "usingDefault": "Koristi zadano",
@@ -27,7 +27,7 @@
         "preview": "Pregled:",
         "saveAll": "Spremi sve",
         "saveSuccess": "Uzorci specifični za knjižnicu su uspješno spremljeni!",
-        "saveError": "Spremanje {{count}} uzorka knjižnice nije uspjelo."
+        "saveError": "Spremanje {{count}} uzorka zbirke nije uspjelo."
     },
     "placeholders": {
         "sectionTitle": "Referenca oznaka",

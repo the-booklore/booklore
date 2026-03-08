@@ -1,17 +1,17 @@
 {
-    "title": "Nastavitve avtentikacije",
-    "description": "Konfiguriraj načine prijave za svojo instanco Booklore. Notranja avtentikacija je vedno omogočena, po želji pa lahko omogočiš OIDC za zunanje ponudnike prijave.",
+    "title": "OIDC nastavitve",
+    "description": "Konfiguriraj OpenID Connect (OIDC) za enotno prijavo z zunanjimi ponudniki identitet, kot so Authentik, Authelia ali Pocket ID.",
     "methods": {
-        "sectionTitle": "Načini avtentikacije",
-        "sectionDesc": "Izberi, kateri načini prijave so na voljo uporabnikom."
+        "sectionTitle": "Načini prijave",
+        "sectionDesc": "Izberi, kateri načini prijave so na voljo uporabnikom za prijavo."
     },
     "internal": {
-        "label": "Notranja avtentikacija",
+        "label": "Lokalna prijava",
         "status": "Vedno omogočeno",
-        "description": "Vgrajena prijava z uporabniškim imenom in geslom. To je privzet način in ga ni mogoče onemogočiti."
+        "description": "Vgrajeno preverjanje pristnosti z uporabniškim imenom in geslom. Vedno na voljo skrbnikom. Za druge uporabnike je mogoče skriti prek načina samo OIDC."
     },
     "oidc": {
-        "label": "OIDC avtentikacija",
+        "label": "OIDC prijava",
         "experimental": "Eksperimentalno",
         "description": "OpenID Connect za enotno prijavo (SSO) z zunanjimi ponudniki (Authentik, Keycloak, itd.).",
         "configHint": "Za omogočanje konfiguriraj spodnje nastavitve.",
@@ -20,14 +20,14 @@
     },
     "providerConfig": {
         "sectionTitle": "Konfiguracija ponudnika OIDC",
-        "sectionDesc": "Konfiguriraj nastavitve svojega ponudnika OIDC. Za delovanje so zahtevana vsa polja.",
+        "sectionDesc": "Konfiguriraj nastavitve svojega ponudnika OIDC. Za omogočanje OIDC so obvezna vsa polja.",
         "providerName": "Ime ponudnika",
         "providerPlaceholder": "npr. Authentik, Keycloak",
         "clientId": "ID klienta (Client ID)",
         "clientIdPlaceholder": "Tvoj OIDC Client ID",
-        "clientSecret": "",
-        "clientSecretPlaceholder": "",
-        "clientSecretHint": "",
+        "clientSecret": "Skrivnost odjemalca",
+        "clientSecretPlaceholder": "Tvoja skrivnost odjemalca OIDC",
+        "clientSecretHint": "Obvezno za zaupne odjemalce. Za javne odjemalce, ki uporabljajo samo PKCE, pusti prazno.",
         "issuerUri": "URI izdajatelja (Issuer URI)",
         "issuerPlaceholder": "npr. https://auth.primer.si/realms/booklore",
         "scope": "Obseg (Scope)",

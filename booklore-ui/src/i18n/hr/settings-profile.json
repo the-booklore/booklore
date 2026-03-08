@@ -19,7 +19,7 @@
     "validation": {
         "currentPasswordRequired": "Trenutna lozinka je obavezna.",
         "newPasswordRequired": "Nova lozinka je obavezna.",
-        "passwordMinLength": "Lozinka mora imati najmanje 6 znakova.",
+        "passwordMinLength": "Lozinka mora imati najmanje 8 znakova.",
         "confirmPasswordRequired": "Potvrdite novu lozinku.",
         "passwordMismatch": "Lozinke se ne podudaraju."
     },

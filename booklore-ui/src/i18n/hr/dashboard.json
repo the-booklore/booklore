@@ -3,12 +3,12 @@
         "pageTitle": "Nadzorna ploča",
         "welcomeTitle": "Dobrodošli u BookLore!",
         "welcomeSubtitle": "Kreirajmo vašu prvu knjižnicu",
-        "welcomeDescription": "Knjižnica je mjesto gdje žive sve vaše knjige. Počnite graditi svoju digitalnu kolekciju već danas!",
+        "welcomeDescription": "Knjižnica je mjesto gdje žive sve vaše knjige. Počnite graditi svoju digitalnu zbirku već danas!",
         "createLibrary": "Kreirajte svoju knjižnicu",
         "customizeDashboard": "Prilagodi nadzornu ploču"
     },
     "scroller": {
-        "noBooksFound": "Nema pronađenih knjiga za ovaj klizač.",
+        "noBooksFound": "Nema pronađenih knjiga za prikaz.",
         "loadError": "Učitavanje knjiga nije uspjelo! Pokušajte osvježiti stranicu.",
         "continueListening": "Nastavi slušanje",
         "continueReading": "Nastavi čitanje",

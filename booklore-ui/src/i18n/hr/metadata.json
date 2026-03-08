@@ -239,7 +239,7 @@
         "genresLabel": "Žanrovi:",
         "moodsLabel": "Raspoloženja:",
         "tagsLabel": "Oznake:",
-        "libraryLabel": "Knjižnica:",
+        "libraryLabel": "Zbirka:",
         "publisherLabel": "Izdavač:",
         "publishedLabel": "Objavljeno:",
         "languageLabel": "Jezik:",
@@ -385,7 +385,7 @@
             "deleteAltFormatMessage": "Jeste li sigurni da želite obrisati \"{{ fileName }}\"?\n\nOva datoteka će biti trajno uklonjena iz vašeg datotečnog sustava.",
             "deleteAltFormatHeader": "Brisanje formata knjige",
             "deleteFileBtn": "Obriši datoteku",
-            "deleteBookMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti zapis knjige iz vaše knjižnice.\n\nOva radnja se ne može poništiti.",
+            "deleteBookMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti zapis knjige iz vaše zbirke.\n\nOva radnja se ne može poništiti.",
             "deleteBookAllFilesMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti zapis knjige I sve povezane datoteke iz vašeg datotečnog sustava.\n\nOva radnja se ne može poništiti.",
             "deleteEverythingBtn": "Obriši sve",
             "detachFileHeader": "Odvoji datoteku",
@@ -396,7 +396,8 @@
             "largeFileHeader": "Upozorenje o velikoj datoteci",
             "sendAnyway": "Svejedno pošalji"
         },
-        "audiobookAbridged": "Skraćeno"
+        "audiobookAbridged": "Skraćeno",
+        "firstAuthorBadge": "GLAVNI"
     },
     "sidecar": {
         "title": "Prateći metapodaci",
@@ -461,7 +462,7 @@
     "manager": {
         "title": "Upravitelj metapodacima",
         "description": "Organizirajte, spajajte, razdvajajte, preimenujte i standardizirajte autore, žanrove, raspoloženja i oznake u cijeloj knjižnici.",
-        "writeToFileWarning": "Važno: Ako je 'Zapiši u datoteku' omogućeno u postavkama, operacije će modificirati sve relevantne datoteke. Za knjižnice s tisućama knjiga, onemogućite 'Zapiši u datoteku' prije korištenja ove značajke kako biste spriječili probleme s performansama i potencijalno oštećenje podataka.",
+        "writeToFileWarning": "Važno: Ako je 'Zapiši u datoteku' omogućeno u postavkama, operacije će modificirati sve relevantne datoteke. Za zbirke s tisućama knjiga, onemogućite 'Zapiši u datoteku' prije korištenja ove značajke kako biste spriječili probleme s performansama i potencijalno oštećenje podataka.",
         "clearSelection": "Očisti odabir",
         "deleteSelected": "Obriši odabrano",
         "mergeSplitSelected": "Spoji/Razdvoji odabrano",
