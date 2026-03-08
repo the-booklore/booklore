@@ -21,7 +21,7 @@
         "usernameRequired": "Uporabniško ime je obvezno.",
         "password": "Geslo KOReader",
         "passwordDesc": "Tvoje geslo za prijavo v storitev sinhronizacije KOReader.",
-        "passwordMinLength": "Geslo mora imeti vsaj 6 znakov.",
+        "passwordMinLength": "Geslo mora imeti vsaj 8 znakov.",
         "settingsManagement": "Upravljanje nastavitev",
         "settingsManagementDesc": "Shrani svoje podatke ali uredi obstoječe nastavitve.",
         "accessDenied": "Dostop do sinhronizacije KOReader je omejen.",
