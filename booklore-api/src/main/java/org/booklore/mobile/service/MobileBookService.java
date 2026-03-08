@@ -298,7 +298,7 @@ public class MobileBookService {
         Map<Long, UserBookProgressEntity> progressMap = getProgressMapForBooks(userId, bookEntities);
 
         List<MobileBookSummary> summaries = bookEntities.stream()
-                .filter(bookEntity -> bookEntity.getIsPhysical() == null || !bookEntity.getIsPhysical())
+                .filter(BookEntity::hasFiles)
                 .map(bookEntity -> mobileBookMapper.toSummary(bookEntity, progressMap.get(bookEntity.getId())))
                 .collect(Collectors.toList());
 
@@ -363,7 +363,7 @@ public class MobileBookService {
         String authorQuery = "SELECT a.name, COUNT(DISTINCT b.id) FROM BookEntity b"
                 + " JOIN b.metadata m JOIN m.authors a"
                 + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND b.bookFiles IS NOT EMPTY"
                 + scopeClause
                 + " GROUP BY a.name ORDER BY COUNT(DISTINCT b.id) DESC";
         var authorQ = entityManager.createQuery(authorQuery, Tuple.class);
@@ -381,7 +381,7 @@ public class MobileBookService {
         String langQuery = "SELECT m.language, COUNT(DISTINCT b.id) FROM BookEntity b"
                 + " JOIN b.metadata m"
                 + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND b.bookFiles IS NOT EMPTY"
                 + " AND m.language IS NOT NULL AND m.language <> ''"
                 + scopeClause
                 + " GROUP BY m.language ORDER BY COUNT(DISTINCT b.id) DESC";
@@ -400,7 +400,7 @@ public class MobileBookService {
         String fileTypeQuery = "SELECT DISTINCT bf.bookType FROM BookEntity b"
                 + " JOIN b.bookFiles bf"
                 + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND b.bookFiles IS NOT EMPTY"
                 + " AND bf.isBookFormat = true"
                 + scopeClause;
         var ftQ = entityManager.createQuery(fileTypeQuery, BookFileType.class);

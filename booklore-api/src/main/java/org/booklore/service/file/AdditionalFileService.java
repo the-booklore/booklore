@@ -83,13 +83,6 @@ public class AdditionalFileService {
 
         if (file.isBook() && book != null) {
             book.getBookFiles().remove(file);
-            boolean hasRemainingBookFiles = book.getBookFiles().stream()
-                    .anyMatch(BookFileEntity::isBook);
-            if (!hasRemainingBookFiles) {
-                book.setIsPhysical(true);
-                bookRepository.save(book);
-                log.info("Book {} reverted to physical (last book file removed)", book.getId());
-            }
         }
     }
 
