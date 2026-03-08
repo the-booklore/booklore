@@ -12,6 +12,7 @@ import org.booklore.repository.RefreshTokenRepository;
 import org.booklore.repository.UserRepository;
 import org.booklore.service.appsettings.AppSettingService;
 import org.booklore.service.audit.AuditService;
+import org.booklore.mapper.custom.BookLoreUserTransformer;
 import org.booklore.service.user.DefaultSettingInitializer;
 import org.booklore.service.user.UserProvisioningService;
 import org.junit.jupiter.api.AfterEach;
@@ -52,6 +53,7 @@ class AuthenticationServiceTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtUtils jwtUtils;
     @Mock private DefaultSettingInitializer defaultSettingInitializer;
+    @Mock private BookLoreUserTransformer bookLoreUserTransformer;
     @Mock private AuditService auditService;
     @Mock private AuthRateLimitService authRateLimitService;
     @Mock private AppSettingService appSettingService;
@@ -65,7 +67,7 @@ class AuthenticationServiceTest {
         authenticationService = new AuthenticationService(
                 appProperties, userRepository, refreshTokenRepository,
                 userProvisioningService, passwordEncoder, jwtUtils,
-                defaultSettingInitializer, auditService, authRateLimitService, appSettingService
+                defaultSettingInitializer, bookLoreUserTransformer, auditService, authRateLimitService, appSettingService
         );
         ReflectionTestUtils.setField(authenticationService, "dummyPasswordHash", "$2a$10$dummy");
 

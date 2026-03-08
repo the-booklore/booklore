@@ -60,6 +60,7 @@ public class AuthenticationService {
             PasswordEncoder passwordEncoder,
             JwtUtils jwtUtils,
             DefaultSettingInitializer defaultSettingInitializer,
+            BookLoreUserTransformer bookLoreUserTransformer,
             AuditService auditService,
             AuthRateLimitService authRateLimitService,
             @Lazy AppSettingService appSettingService
@@ -71,6 +72,7 @@ public class AuthenticationService {
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
         this.defaultSettingInitializer = defaultSettingInitializer;
+        this.bookLoreUserTransformer = bookLoreUserTransformer;
         this.auditService = auditService;
         this.authRateLimitService = authRateLimitService;
         this.appSettingService = appSettingService;
