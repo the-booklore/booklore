@@ -51,7 +51,7 @@ spring:
       pageable:
         max-page-size: 100
   datasource:
-    url: ${DATABASE_URL:jdbc:mariadb://${DATABASE_HOST:${DB_HOST:mariadb}}:${DATABASE_PORT:3306}/${DATABASE_NAME:booklore}?createDatabaseIfNotExist=true}
+    url: ${DATABASE_URL:jdbc:mariadb://${DATABASE_HOST:${DB_HOST:mariadb}}:${DATABASE_PORT:3306}/${DATABASE_NAME:booklore}?createDatabaseIfNotExist=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:${MYSQL_ROOT_PASSWORD}}
     hikari:
@@ -72,6 +72,7 @@ spring:
         query:
           timeout: 30              # 30s max for any HQL/JPQL query
         jdbc:
+          time_zone: UTC
           batch_size: 500
           order_inserts: true
           order_updates: true
