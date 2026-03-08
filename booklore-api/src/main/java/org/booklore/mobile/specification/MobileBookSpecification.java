@@ -113,10 +113,7 @@ public class MobileBookSpecification {
     }
 
     public static Specification<BookEntity> hasDigitalFile() {
-        return (root, query, cb) -> cb.or(
-                cb.isNull(root.get("isPhysical")),
-                cb.equal(root.get("isPhysical"), false)
-        );
+        return (root, query, cb) -> cb.isNotEmpty(root.get("bookFiles"));
     }
 
     public static Specification<BookEntity> hasAudiobookFile() {

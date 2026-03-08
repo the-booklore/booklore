@@ -80,7 +80,7 @@ public class MobileSeriesService {
                 + " FROM BookEntity b JOIN b.metadata m"
                 + " LEFT JOIN b.userBookProgress p ON p.user.id = :userId"
                 + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND b.bookFiles IS NOT EMPTY"
                 + " AND m.seriesName IS NOT NULL"
                 + libraryClause
                 + searchClause
@@ -103,7 +103,7 @@ public class MobileSeriesService {
         String countQuery = "SELECT COUNT(DISTINCT m.seriesName) FROM BookEntity b JOIN b.metadata m"
                 + (inProgressOnly ? " LEFT JOIN b.userBookProgress p ON p.user.id = :userId" : "")
                 + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND b.bookFiles IS NOT EMPTY"
                 + " AND m.seriesName IS NOT NULL"
                 + libraryClause
                 + searchClause;
@@ -114,7 +114,7 @@ public class MobileSeriesService {
                     + "SELECT m.seriesName FROM BookEntity b JOIN b.metadata m"
                     + " LEFT JOIN b.userBookProgress p ON p.user.id = :userId"
                     + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                    + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                    + " AND b.bookFiles IS NOT EMPTY"
                     + " AND m.seriesName IS NOT NULL"
                     + libraryClause
                     + searchClause
@@ -125,7 +125,7 @@ public class MobileSeriesService {
             String countAlt = "SELECT m.seriesName FROM BookEntity b JOIN b.metadata m"
                     + " LEFT JOIN b.userBookProgress p ON p.user.id = :userId"
                     + " WHERE (b.deleted IS NULL OR b.deleted = false)"
-                    + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                    + " AND b.bookFiles IS NOT EMPTY"
                     + " AND m.seriesName IS NOT NULL"
                     + libraryClause
                     + searchClause
@@ -179,7 +179,7 @@ public class MobileSeriesService {
                 + " LEFT JOIN FETCH b.bookFiles"
                 + " WHERE m.seriesName IN :seriesNames"
                 + " AND (b.deleted IS NULL OR b.deleted = false)"
-                + " AND (b.isPhysical IS NULL OR b.isPhysical = false)"
+                + " AND b.bookFiles IS NOT EMPTY"
                 + libraryClause;
 
         var booksQ = entityManager.createQuery(booksQuery, BookEntity.class);

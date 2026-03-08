@@ -327,6 +327,8 @@
         "menuSendBook": "Enviar libro",
         "menuQuickSend": "Envío rápido",
         "menuCustomSend": "Envío personalizado",
+        "menuMarkPhysical": "Marcar como físico",
+        "menuUnmarkPhysical": "Desmarcar como físico",
         "menuAttachToAnotherBook": "Adjuntar a otro libro",
         "menuDeleteFileFormats": "Eliminar formatos de archivo",
         "menuDeleteSupplementaryFiles": "Eliminar archivos complementarios",

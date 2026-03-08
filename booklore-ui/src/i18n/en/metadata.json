@@ -327,6 +327,8 @@
     "menuSendBook": "Send Book",
     "menuQuickSend": "Quick Send",
     "menuCustomSend": "Custom Send",
+    "menuMarkPhysical": "Mark as Physical",
+    "menuUnmarkPhysical": "Unmark as Physical",
     "menuAttachToAnotherBook": "Attach to Another Book",
     "menuDeleteFileFormats": "Delete File Formats",
     "menuDeleteSupplementaryFiles": "Delete Supplementary Files",
