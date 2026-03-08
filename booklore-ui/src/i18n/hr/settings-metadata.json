@@ -26,7 +26,7 @@
         "maxFileSize": "Maks. veličina datoteke:",
         "maxFileSizeTooltip": "Ažurirat će se samo datoteke do ove veličine. Veće datoteke se ignoriraju.",
         "autoMove": "Automatsko premještanje datoteka pri ažuriranju metapodataka",
-        "autoMoveDesc": "Automatski premjesti i preimenuj datoteke prema uzorku imenovanja njihove knjižnice kada se metapodaci ažuriraju.",
+        "autoMoveDesc": "Automatski premjesti i preimenuj datoteke prema uzorku imenovanja njihove zbirke kada se metapodaci ažuriraju.",
         "sidecarTitle": "Prateće JSON datoteke",
         "sidecarDesc": "Kreirajte eksterne .metadata.json datoteke uz vaše knjige za prijenosno pohranjivanje i sigurnosnu kopiju metapodataka.",
         "enableSidecar": "Omogući prateći JSON",

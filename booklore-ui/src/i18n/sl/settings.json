@@ -8,7 +8,7 @@
         "users": "Uporabniki",
         "email": "E-pošta",
         "patterns": "Vzorci",
-        "authentication": "Avtentikacija",
+        "authentication": "OIDC",
         "tasks": "Opravila",
         "auditLogs": "Dnevniki revizije",
         "opds": "OPDS",

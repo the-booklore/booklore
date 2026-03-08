@@ -34,7 +34,7 @@
         "value": "Vrijednost",
         "selectStatuses": "Odaberite statuse",
         "selectFileTypes": "Odaberite vrste datoteka",
-        "selectLibraries": "Odaberite knjižnice",
+        "selectLibraries": "Odaberite zbirke",
         "selectShelves": "Odaberite police",
         "selectGenres": "Odaberite žanrove",
         "enterValues": "Unesite vrijednosti (pritisnite Enter)",
@@ -59,7 +59,7 @@
         "or": "ILI"
     },
     "fields": {
-        "library": "Knjižnica",
+        "library": "Zbirka",
         "shelf": "Polica",
         "readStatus": "Status čitanja",
         "dateFinished": "Datum završetka",
@@ -272,5 +272,14 @@
         "successDetail": "Čarobna polica uspješno spremljena.",
         "errorSummary": "Pogreška",
         "errorDetailDefault": "Spremanje čarobne police nije uspjelo."
+    },
+    "importJson": {
+        "buttonLabel": "Uvoz",
+        "apply": "Primijeni",
+        "emptyError": "Prvo zalijepite JSON konfiguraciju.",
+        "parseError": "Nevažeći JSON. Provjerite sintaksu i pokušajte ponovno.",
+        "structureError": "Nevažeća struktura. JSON mora imati \"type\": \"group\" i niz \"rules\".",
+        "successDetail": "Pravila su uspješno uvezena. Pregledajte i spremite kada budete spremni.",
+        "placeholder": "{\n  \"type\": \"group\",\n  \"join\": \"and\",\n  \"rules\": [\n    { \"field\": \"readStatus\", \"operator\": \"equals\", \"value\": \"READING\" }\n  ]\n}"
     }
 }

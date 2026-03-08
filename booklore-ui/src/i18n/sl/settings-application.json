@@ -5,7 +5,7 @@
         "sectionTitle": "Naslovnica knjige",
         "regenerate": "Ponovno ustvari naslovnice",
         "regenerateBtn": "Ponovno ustvari",
-        "regenerateDesc": "Ponovno ustvari slike naslovnic za vse knjige iz vgrajenih slik v datotekah.",
+        "regenerateDesc": "Obnovi slike platnic za vse knjige iz vdelanih platnic v datoteki. Uporabi možnost \"Obnovi manjkajoče\", da ustvariš samo platnice za knjige, ki jih še nimajo.",
         "regenerateStarted": "Ustvarjanje naslovnic se je začelo",
         "regenerateStartedDetail": "Slike naslovnic se trenutno ponovno ustvarjajo.",
         "regenerateError": "Ponovnega ustvarjanja naslovnic ni bilo mogoče zagnati.",
@@ -16,7 +16,9 @@
         "aspectRatio": "Prag razmerja stranic: {{value}}",
         "aspectRatioDesc": "Slike, ki presegajo to razmerje stranic, bodo obrezane. Vrednost 2.5 pomeni, da bodo obrezane slike, ki so več kot 2,5-krat višje (ali širše) od običajnih.",
         "smartCropping": "Pametno obrezovanje",
-        "smartCroppingDesc": "Preskoči enobarvne regije pri določanju mesta obreza. Fokusira naslovnico na najbolj relevantno vsebino."
+        "smartCroppingDesc": "Preskoči enobarvne regije pri določanju mesta obreza. Fokusira naslovnico na najbolj relevantno vsebino.",
+        "regenerateAllBtn": "Obnovi vse",
+        "regenerateMissingBtn": "Obnovi manjkajoče"
     },
     "search": {
         "sectionTitle": "Iskanje in priporočila",

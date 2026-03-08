@@ -6,7 +6,7 @@
     "booksRead": "prebranih knjig",
     "noSeriesFound": "Nobena zbirka ne ustreza tvojemu iskanju ali filtrom.",
     "noSeriesInCategory": "V tej kategoriji ni najdenih zbirk.",
-    "cardSize": "Velikost kartic",
+    "cardSize": "Velikost kartice",
     "filters": {
         "all": "Vse",
         "notStarted": "Še nezačeto",
@@ -19,7 +19,7 @@
         "nameDesc": "Ime (Z–A)",
         "bookCount": "Število knjig",
         "progress": "Napredek",
-        "recentlyRead": "Zadnje brano",
-        "recentlyAdded": "Zadnje dodano"
+        "recentlyRead": "Nedavno prebrano",
+        "recentlyAdded": "Nedavno dodano"
     }
 }

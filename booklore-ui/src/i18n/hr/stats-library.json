@@ -1,6 +1,6 @@
 {
     "main": {
-        "title": "Statistika knjižnice",
+        "title": "Knjižnična statistika",
         "selectLibrary": "Odaberite knjižnicu",
         "totalBooks": "Ukupno knjiga",
         "books": "Knjige",
@@ -11,10 +11,10 @@
         "totalPublishers": "Ukupno izdavača",
         "publishers": "Izdavači",
         "totalSize": "Ukupna veličina",
-        "librarySize": "Veličina knjižnice",
+        "librarySize": "Veličina zbirke",
         "loading": "Učitavanje statistike...",
         "noData": "Nema dostupnih podataka.",
-        "noDataHint": "Provjerite sadrži li vaša knjižnica knjige s metapodacima.",
+        "noDataHint": "Provjerite sadrži li vaša zbirka knjige s metapodacima.",
         "dragToReorder": "Povucite za promjenu redoslijeda"
     },
     "config": {
@@ -182,7 +182,7 @@
         "insightMostCompleted": "Najviše završeno",
         "insightMostCompletedValue": "{{ name }} ({{ percent }}% pročitano)",
         "insightTop5Coverage": "Pokrivenost top 5",
-        "insightTop5CoverageValue": "{{ percent }}% knjižnice",
+        "insightTop5CoverageValue": "{{ percent }}% zbirke",
         "insightAvgPer": "Prosjek po {{ type }}",
         "insightAvgPerValue": "{{ avg }} knjiga",
         "tooltipBooks": "{{ status }}: {{ value }} knjiga",
@@ -220,7 +220,7 @@
         "insightOverallProgress": "Ukupni napredak: {{ percent }}% stranica pročitano kod svih autora"
     },
     "libraryFilter": {
-        "allLibraries": "Sve knjižnice",
-        "libraryFallback": "Knjižnica {{ id }}"
+        "allLibraries": "Sve zbirke",
+        "libraryFallback": "Zbirka {{ id }}"
     }
 }

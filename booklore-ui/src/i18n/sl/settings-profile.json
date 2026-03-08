@@ -19,7 +19,7 @@
     "validation": {
         "currentPasswordRequired": "Trenutno geslo je obvezno.",
         "newPasswordRequired": "Novo geslo je obvezno.",
-        "passwordMinLength": "Geslo mora biti dolgo vsaj 6 znakov.",
+        "passwordMinLength": "Geslo mora biti dolgo vsaj 8 znakov.",
         "confirmPasswordRequired": "Prosim, potrdi svoje novo geslo.",
         "passwordMismatch": "Gesli se ne ujemata."
     },
