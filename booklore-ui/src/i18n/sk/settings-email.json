@@ -1,6 +1,6 @@
 {
     "title": "Nastavenie e-mailu",
-    "description": "",
+    "description": "Nakonfigurujte nastavenia e-mailu na odosielanie kníh priamo na vaše zariadenia alebo príjemcov. Nastavte poskytovateľov e-mailu (napr. Gmail, Outlook alebo vlastné SMTP servery) a spravujte e-mailové adresy príjemcov.",
     "accessRestricted": "Obmedzený prístup",
     "accessDenied": "",
     "contactAdmin": "",
