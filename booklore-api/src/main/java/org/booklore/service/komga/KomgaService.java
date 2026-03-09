@@ -1,8 +1,9 @@
 package org.booklore.service.komga;
 
+import org.booklore.context.KomgaCleanContext;
 import org.booklore.mapper.komga.KomgaMapper;
 import org.booklore.model.dto.MagicShelf;
-import org.booklore.model.dto.helf;
+import org.booklore.model.dto.Shelf;
 import org.booklore.model.dto.komga.*;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookMetadataEntity;

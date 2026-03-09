@@ -49,7 +49,7 @@ public class KomgaCleanBeanPropertyWriter extends BeanPropertyWriter {
             if (propertyName.endsWith("Lock")) {
                 Object value = get(bean);
                 if (value == null) {
-                    gen.writeFieldName(propertyName);
+                    gen.writeName(propertyName);
                     gen.writeBoolean(false);
                     return;
                 }

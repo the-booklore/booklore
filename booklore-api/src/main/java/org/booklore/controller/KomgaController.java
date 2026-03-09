@@ -11,6 +11,7 @@ import org.booklore.config.JacksonConfig;
 import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.config.security.userdetails.OpdsUserDetails;
 import org.booklore.mapper.komga.KomgaMapper;
+import org.booklore.model.dto.komga.KomgaAuthorDto;
 import org.booklore.model.dto.komga.KomgaBookDto;
 import org.booklore.model.dto.komga.KomgaLibraryDto;
 import org.booklore.model.dto.komga.KomgaPageableDto;
