@@ -55,7 +55,7 @@
             "readStatus": "Status branja",
             "dateFinished": "Datum dokončanja",
             "readingProgress": "Napredek branja",
-            "bookType": "Vrsta knjige",
+            "bookType": "Oblika datoteke",
             "pageCount": "Strani"
         },
         "sortDirections": {
