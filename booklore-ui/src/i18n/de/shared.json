@@ -21,7 +21,7 @@
         "filesCount": "{{ uploaded }}/{{ total }} Dateien",
         "failedCount": "({{ count }} fehlgeschlagen)",
         "dragDropTitle": "Dateien per Drag-and-Drop ablegen",
-        "supportedFormats": "Unterstützte Formate: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+        "supportedFormats": "",
         "maxFileSize": "Maximale Dateigröße: {{ size }} pro Datei",
         "fileTooLargeTooltip": "Datei zu groß",
         "uploadFailedTooltip": "Hochladen fehlgeschlagen",
