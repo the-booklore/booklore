@@ -39,7 +39,14 @@
         "emailClaim": "Zahtevek za e-pošto",
         "emailPlaceholder": "npr. email",
         "nameClaim": "Zahtevek za prikazno ime",
-        "namePlaceholder": "npr. name"
+        "namePlaceholder": "npr. name",
+        "groupsClaim": "Zahtevek za skupine",
+        "groupsPlaceholder": "npr. skupine",
+        "sessionDuration": "Trajanje seje (ure)",
+        "sessionDurationPlaceholder": "Privzeto sistemsko",
+        "sessionDurationHint": "Kako dolgo ostanejo uporabniki OIDC prijavljeni. Pusti prazno, če želiš uporabiti privzeto vrednost sistema.",
+        "backchannelLogoutUri": "URI za odjavo iz povratnega kanala",
+        "backchannelLogoutHint": "Konfiguriraj ta URI v svojem ponudniku OIDC, da omogočiš preklic seje, ki ga sproži strežnik."
     },
     "provisioning": {
         "sectionTitle": "Ustvarjanje uporabnikov",
