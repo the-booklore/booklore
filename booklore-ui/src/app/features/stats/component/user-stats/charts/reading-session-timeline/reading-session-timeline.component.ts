@@ -18,6 +18,7 @@ import {
 import {BookType} from '../../../../../book/model/book.model';
 import {ReadingSessionTimelineResponse, UserStatsService} from '../../../../../settings/user-management/user-stats.service';
 import {UrlHelperService} from '../../../../../../shared/service/url-helper.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface ReadingSession {
   startTime: Date;
@@ -41,6 +42,7 @@ interface TimelineSession {
   bookType: BookType;
   level: number;
   totalLevels: number;
+  tooltipContent: string;
 }
 
 interface DayTimeline {
@@ -52,7 +54,7 @@ interface DayTimeline {
 @Component({
   selector: 'app-reading-session-timeline',
   standalone: true,
-  imports: [CommonModule, Select, FormsModule, Tooltip],
+  imports: [CommonModule, Select, FormsModule, Tooltip, TranslocoDirective],
   templateUrl: './reading-session-timeline.component.html',
   styleUrls: ['./reading-session-timeline.component.scss']
 })
@@ -62,6 +64,7 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
   private userStatsService = inject(UserStatsService);
   private urlHelperService = inject(UrlHelperService);
+  private translocoService = inject(TranslocoService);
 
   public daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   public hourLabels: string[] = [];
@@ -96,7 +99,7 @@ export class ReadingSessionTimelineComponent implements OnInit {
     const weeksInYear = getISOWeeksInYear(this.currentDate);
     this.weekOptions = [];
     for (let week = 1; week <= weeksInYear; week++) {
-      this.weekOptions.push({label: `Week ${week}`, value: week});
+      this.weekOptions.push({label: this.translocoService.translate('statsUser.sessionTimeline.week', {number: week}), value: week});
     }
   }
 
@@ -145,8 +148,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
     response.forEach((item) => {
       const startTime = new Date(item.startDate);
-      const endTime = item.endDate ? new Date(item.endDate) : new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
-      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+      const endTime = new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
+      const duration = item.totalDurationSeconds / 60;
 
       sessions.push({
         startTime,
@@ -254,6 +257,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
     }
   }
 
+  private static readonly MAX_TRACKS = 3;
+
   private layoutSessionsForDay(sessions: ReadingSession[]): TimelineSession[] {
     if (sessions.length === 0) {
       return [];
@@ -279,7 +284,11 @@ export class ReadingSessionTimelineComponent implements OnInit {
         }
       }
       if (!placed) {
-        tracks.push([session]);
+        if (tracks.length < ReadingSessionTimelineComponent.MAX_TRACKS) {
+          tracks.push([session]);
+        } else {
+          tracks[tracks.length - 1].push(session);
+        }
       }
     });
 
@@ -311,7 +320,7 @@ export class ReadingSessionTimelineComponent implements OnInit {
       width = 0.5;
     }
 
-    return {
+    const timelineSession: TimelineSession = {
       startHour,
       startMinute,
       endHour,
@@ -323,8 +332,11 @@ export class ReadingSessionTimelineComponent implements OnInit {
       bookId: session.bookId,
       bookType: session.bookType,
       level,
-      totalLevels
+      totalLevels,
+      tooltipContent: ''
     };
+    timelineSession.tooltipContent = this.buildTooltipContent(timelineSession);
+    return timelineSession;
   }
 
   public formatTime(hour: number, minute: number): string {
@@ -364,10 +376,10 @@ export class ReadingSessionTimelineComponent implements OnInit {
   }
 
   public getCoverUrl(bookId: number): string {
-    return this.urlHelperService.getThumbnailUrl1(bookId);
+    return this.urlHelperService.getDirectThumbnailUrl(bookId);
   }
 
-  public getTooltipContent(session: TimelineSession): string {
+  private buildTooltipContent(session: TimelineSession): string {
     return `
       <div class="session-tooltip-content">
         <div class="session-tooltip-cover">
@@ -376,26 +388,26 @@ export class ReadingSessionTimelineComponent implements OnInit {
         <div class="session-tooltip-details">
           <div class="session-tooltip-header">
             <i class="pi pi-book"></i>
-            <span class="session-tooltip-title">${session.bookTitle || 'Reading Session'}</span>
+            <span class="session-tooltip-title">${session.bookTitle || this.translocoService.translate('statsUser.sessionTimeline.readingSession')}</span>
           </div>
           <div class="session-tooltip-divider"></div>
           <div class="session-tooltip-body">
             <div class="session-tooltip-row">
               <i class="pi pi-clock"></i>
-              <span class="session-tooltip-label">Time:</span>
+              <span class="session-tooltip-label">${this.translocoService.translate('statsUser.sessionTimeline.tooltipTime')}</span>
               <span class="session-tooltip-value">
                 ${this.formatTime(session.startHour, session.startMinute)} - ${this.formatTime(session.endHour, session.endMinute)}
               </span>
             </div>
             <div class="session-tooltip-row">
               <i class="pi pi-hourglass"></i>
-              <span class="session-tooltip-label">Duration:</span>
+              <span class="session-tooltip-label">${this.translocoService.translate('statsUser.sessionTimeline.tooltipDuration')}</span>
               <span class="session-tooltip-value">${this.formatDuration(session.duration)}</span>
             </div>
             <div class="session-tooltip-row">
               <i class="pi pi-file"></i>
-              <span class="session-tooltip-label">Format:</span>
-              <span class="session-tooltip-value">${session.bookType || 'Unknown'}</span>
+              <span class="session-tooltip-label">${this.translocoService.translate('statsUser.sessionTimeline.tooltipFormat')}</span>
+              <span class="session-tooltip-value">${session.bookType || this.translocoService.translate('statsUser.sessionTimeline.unknown')}</span>
             </div>
           </div>
         </div>

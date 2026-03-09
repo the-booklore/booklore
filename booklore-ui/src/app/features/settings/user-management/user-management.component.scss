@@ -347,6 +347,34 @@
   gap: 1rem;
 }
 
+.content-restrictions-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-content-border-color);
+
+  .section-description {
+    font-size: settings.$settings-description-size;
+    color: var(--p-text-muted-color);
+    margin: 0 0 0.5rem 0;
+    padding-left: 1.5rem;
+
+    @media (max-width: 600px) {
+      padding-left: 0;
+    }
+  }
+
+  app-content-restrictions-editor {
+    padding-left: 1.5rem;
+
+    @media (max-width: 600px) {
+      padding-left: 0;
+    }
+  }
+}
+
 .details-title {
   display: flex;
   align-items: center;

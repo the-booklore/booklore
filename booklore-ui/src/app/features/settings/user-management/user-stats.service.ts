@@ -49,6 +49,33 @@ export interface PeakHoursResponse {
   totalDurationSeconds: number;
 }
 
+export interface PageTurnerScoreResponse {
+  bookId: number;
+  bookTitle: string;
+  categories: string[];
+  pageCount: number;
+  personalRating: number;
+  gripScore: number;
+  totalSessions: number;
+  avgSessionDurationSeconds: number;
+  sessionAcceleration: number;
+  gapReduction: number;
+  finishBurst: boolean;
+}
+
+export interface CompletionRaceResponse {
+  bookId: number;
+  bookTitle: string;
+  sessionDate: string;
+  endProgress: number;
+}
+
+export interface SessionScatterResponse {
+  hourOfDay: number;
+  durationMinutes: number;
+  dayOfWeek: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -110,6 +137,32 @@ export class UserStatsService {
     return this.http.get<PeakHoursResponse[]>(
       `${this.readingSessionsUrl}/peak-hours`,
       {params}
+    );
+  }
+
+  getPageTurnerScores(): Observable<PageTurnerScoreResponse[]> {
+    return this.http.get<PageTurnerScoreResponse[]>(
+      `${this.readingSessionsUrl}/page-turner-scores`
+    );
+  }
+
+  getCompletionRace(year: number): Observable<CompletionRaceResponse[]> {
+    return this.http.get<CompletionRaceResponse[]>(
+      `${this.readingSessionsUrl}/completion-race`,
+      {params: {year: year.toString()}}
+    );
+  }
+
+  getReadingDates(): Observable<ReadingSessionHeatmapResponse[]> {
+    return this.http.get<ReadingSessionHeatmapResponse[]>(
+      `${this.readingSessionsUrl}/reading-dates`
+    );
+  }
+
+  getSessionScatter(year: number): Observable<SessionScatterResponse[]> {
+    return this.http.get<SessionScatterResponse[]>(
+      `${this.readingSessionsUrl}/session-scatter`,
+      {params: {year: year.toString()}}
     );
   }
 }

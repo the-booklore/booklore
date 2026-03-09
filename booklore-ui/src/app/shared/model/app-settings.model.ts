@@ -25,22 +25,27 @@ export interface MetadataMatchWeights {
   doubanReviewCount: number;
   lubimyczytacRating: number;
   ranobedbRating: number;
+  audibleRating: number;
+  audibleReviewCount: number;
   coverImage: number;
 }
 
 export interface OidcProviderDetails {
   providerName: string;
   clientId: string;
+  clientSecret?: string;
   issuerUri: string;
   claimMapping: {
     username: string;
     email: string;
     name: string;
+    groups: string;
   };
 }
 
 export interface OidcAutoProvisionDetails {
   enableAutoProvisioning: boolean;
+  allowLocalAccountLinking: boolean;
   defaultPermissions: string[];
   defaultLibraryIds: number[];
 }
@@ -54,6 +59,7 @@ export interface MetadataProviderSettings {
   comicvine: Comicvine;
   douban: Douban;
   lubimyczytac: Lubimyczytac;
+  audible: Audible;
 }
 
 export interface Amazon {
@@ -65,6 +71,7 @@ export interface Amazon {
 export interface Google {
   enabled: boolean;
   language: string;
+  apiKey: string;
 }
 
 export interface Goodreads {
@@ -93,6 +100,11 @@ export interface Lubimyczytac {
   enabled: boolean;
 }
 
+export interface Audible {
+  enabled: boolean;
+  domain: string;
+}
+
 export interface FormatWriteSettings {
   enabled: boolean;
   maxFileSizeInMb: number;
@@ -102,12 +114,21 @@ export interface SaveToOriginalFileSettings {
   epub: FormatWriteSettings;
   pdf: FormatWriteSettings;
   cbx: FormatWriteSettings;
+  audiobook: FormatWriteSettings;
+}
+
+export interface SidecarSettings {
+  enabled: boolean;
+  writeOnUpdate: boolean;
+  writeOnScan: boolean;
+  includeCoverFile: boolean;
 }
 
 export interface MetadataPersistenceSettings {
   moveFilesToLibraryPattern: boolean;
   saveToOriginalFile: SaveToOriginalFileSettings;
   convertCbrCb7ToCbz: boolean;
+  sidecarSettings?: SidecarSettings;
 }
 
 export interface ReviewProviderConfig {
@@ -138,6 +159,17 @@ export interface CoverCroppingSettings {
   smartCroppingEnabled: boolean;
 }
 
+export interface OidcTestCheck {
+  name: string;
+  status: 'PASS' | 'FAIL' | 'WARN' | 'SKIP';
+  message: string;
+}
+
+export interface OidcTestResult {
+  success: boolean;
+  checks: OidcTestCheck[];
+}
+
 export interface AppSettings {
   autoBookSearch: boolean;
   similarBookRecommendation: boolean;
@@ -161,6 +193,9 @@ export interface AppSettings {
   metadataDownloadOnBookdrop: boolean;
   telemetryEnabled: boolean;
   metadataProviderSpecificFields: MetadataProviderSpecificFields;
+  oidcSessionDurationHours: number | null;
+  oidcGroupSyncMode: string | null;
+  oidcForceOnlyMode: boolean;
   diskType: string;
 }
 
@@ -181,6 +216,9 @@ export interface MetadataProviderSpecificFields {
   lubimyczytacRating: boolean;
   ranobedbId: boolean;
   ranobedbRating: boolean;
+  audibleId: boolean;
+  audibleRating: boolean;
+  audibleReviewCount: boolean;
 }
 
 export enum AppSettingKey {
@@ -205,4 +243,7 @@ export enum AppSettingKey {
   COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS',
   TELEMETRY_ENABLED = 'TELEMETRY_ENABLED',
   METADATA_PROVIDER_SPECIFIC_FIELDS = 'METADATA_PROVIDER_SPECIFIC_FIELDS',
+  OIDC_SESSION_DURATION_HOURS = 'OIDC_SESSION_DURATION_HOURS',
+  OIDC_GROUP_SYNC_MODE = 'OIDC_GROUP_SYNC_MODE',
+  OIDC_FORCE_ONLY_MODE = 'OIDC_FORCE_ONLY_MODE',
 }

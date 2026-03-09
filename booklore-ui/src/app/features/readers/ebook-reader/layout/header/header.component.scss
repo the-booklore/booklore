@@ -24,6 +24,13 @@
     transform: translateY(0);
   }
 
+  .header-left,
+  .header-right {
+    display: flex;
+    align-items: center;
+    z-index: 1;
+  }
+
   .icon-btn {
     background: none;
     border: none;
@@ -42,7 +49,7 @@
       opacity: 1;
     }
 
-    &:last-of-type {
+    &:last-child {
       margin-right: 0;
     }
 
@@ -58,6 +65,7 @@
 
   .chapter-title {
     flex: 1;
+    min-width: 0;
     text-align: center;
     font-size: 14px;
     font-weight: 500;
@@ -68,6 +76,53 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 1.2em;
+    padding: 0 8px;
+  }
+
+  .mobile-only {
+    display: none;
+  }
+
+  .overflow-menu {
+    position: relative;
+  }
+
+  .overflow-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+  }
+
+  .overflow-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+    min-width: 180px;
+    padding: 4px;
+  }
+
+  .overflow-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    white-space: nowrap;
+
+    &:hover {
+      background: rgba(128, 128, 128, 0.15);
+    }
   }
 }
 
@@ -78,6 +133,14 @@
     .icon-btn {
       padding: 10px;
       margin-right: 2px;
+    }
+
+    .desktop-only {
+      display: none;
+    }
+
+    .mobile-only {
+      display: block;
     }
   }
 }

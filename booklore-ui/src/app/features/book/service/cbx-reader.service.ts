@@ -17,7 +17,7 @@ export class CbxReaderService {
   private http = inject(HttpClient);
 
   private getToken(): string | null {
-    return this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
+    return this.authService.getInternalAccessToken();
   }
 
   private appendToken(url: string): string {

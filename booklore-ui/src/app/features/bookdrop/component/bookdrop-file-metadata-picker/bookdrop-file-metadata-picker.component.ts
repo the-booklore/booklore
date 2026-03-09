@@ -1,5 +1,7 @@
-import {Component, EventEmitter, inject, Input, Output} from '@angular/core';
+import {Component, DestroyRef, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {filter} from 'rxjs/operators';
 import {Button} from 'primeng/button';
 import {NgClass} from '@angular/common';
 import {Tooltip} from 'primeng/tooltip';
@@ -11,9 +13,14 @@ import {AutoComplete} from 'primeng/autocomplete';
 import {Image} from 'primeng/image';
 import {LazyLoadImageModule} from 'ng-lazyload-image';
 import {ConfirmationService} from 'primeng/api';
+import {CdkDragDrop, CdkDropList, CdkDrag, moveItemInArray} from '@angular/cdk/drag-drop';
+import {AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {DatePicker} from 'primeng/datepicker';
 import {ALL_METADATA_FIELDS, getArrayFields, getBottomFields, getTextareaFields, MetadataFieldConfig} from '../../../../shared/metadata';
 import {MetadataUtilsService} from '../../../../shared/metadata';
+import {MetadataProviderSpecificFields} from '../../../../shared/model/app-settings.model';
+import {AppSettingsService} from '../../../../shared/service/app-settings.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-bookdrop-file-metadata-picker-component',
@@ -29,15 +36,21 @@ import {MetadataUtilsService} from '../../../../shared/metadata';
     Image,
     LazyLoadImageModule,
     DatePicker,
+    TranslocoDirective,
+    CdkDropList,
+    CdkDrag,
   ],
   templateUrl: './bookdrop-file-metadata-picker.component.html',
   styleUrl: './bookdrop-file-metadata-picker.component.scss'
 })
-export class BookdropFileMetadataPickerComponent {
+export class BookdropFileMetadataPickerComponent implements OnInit {
 
   private readonly confirmationService = inject(ConfirmationService);
   private readonly metadataUtils = inject(MetadataUtilsService);
   protected readonly urlHelper = inject(UrlHelperService);
+  private readonly appSettingsService = inject(AppSettingsService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly t = inject(TranslocoService);
 
   @Input() fetchedMetadata!: BookMetadata;
   @Input() originalMetadata?: BookMetadata;
@@ -48,7 +61,10 @@ export class BookdropFileMetadataPickerComponent {
 
   @Output() metadataCopied = new EventEmitter<boolean>();
 
-  // Use shared field configuration - separate publishedDate for DatePicker
+  authorInputValue = '';
+
+  private enabledProviderFields: MetadataProviderSpecificFields | null = null;
+
   metadataFieldsTop: MetadataFieldConfig[] = ALL_METADATA_FIELDS.filter(f =>
     ['title', 'subtitle', 'publisher'].includes(f.controlName)
   );
@@ -62,6 +78,20 @@ export class BookdropFileMetadataPickerComponent {
   metadataDescription: MetadataFieldConfig[] = getTextareaFields();
 
   metadataFieldsBottom: MetadataFieldConfig[] = getBottomFields();
+
+  ngOnInit(): void {
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => !!settings?.metadataProviderSpecificFields),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(settings => {
+        if (settings?.metadataProviderSpecificFields) {
+          this.enabledProviderFields = settings.metadataProviderSpecificFields;
+          this.metadataFieldsBottom = getBottomFields(this.enabledProviderFields);
+        }
+      });
+  }
 
   copyMissing(): void {
     this.metadataUtils.copyMissingFields(
@@ -111,6 +141,44 @@ export class BookdropFileMetadataPickerComponent {
     }
   }
 
+  dropAuthor(event: CdkDragDrop<string[]>) {
+    const authors = [...(this.metadataForm.get('authors')?.value ?? [])];
+    moveItemInArray(authors, event.previousIndex, event.currentIndex);
+    this.metadataForm.get('authors')?.setValue(authors);
+    this.metadataForm.get('authors')?.markAsDirty();
+  }
+
+  removeAuthor(index: number) {
+    const authors = [...(this.metadataForm.get('authors')?.value ?? [])];
+    authors.splice(index, 1);
+    this.metadataForm.get('authors')?.setValue(authors);
+    this.metadataForm.get('authors')?.markAsDirty();
+  }
+
+  onAuthorInputKeyUp(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const value = this.authorInputValue?.trim();
+      if (value) {
+        const authors = this.metadataForm.get('authors')?.value || [];
+        if (!authors.includes(value)) {
+          this.metadataForm.get('authors')?.setValue([...authors, value]);
+          this.metadataForm.get('authors')?.markAsDirty();
+        }
+        this.authorInputValue = '';
+      }
+    }
+  }
+
+  onAuthorInputSelect(event: AutoCompleteSelectEvent) {
+    const authors = (this.metadataForm.get('authors')?.value as string[]) || [];
+    const value = event.value as string;
+    if (!authors.includes(value)) {
+      this.metadataForm.get('authors')?.setValue([...authors, value]);
+      this.metadataForm.get('authors')?.markAsDirty();
+    }
+    setTimeout(() => this.authorInputValue = '');
+  }
+
   onAutoCompleteBlur(fieldName: string, event: Event): void {
     const target = event.target as HTMLInputElement;
     const inputValue = target?.value?.trim();
@@ -130,8 +198,8 @@ export class BookdropFileMetadataPickerComponent {
 
   confirmReset(): void {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to reset all metadata changes made to this file?',
-      header: 'Reset Metadata Changes?',
+      message: this.t.translate('bookdrop.metadataPicker.confirmResetMessage'),
+      header: this.t.translate('bookdrop.metadataPicker.confirmResetHeader'),
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => this.resetAll()

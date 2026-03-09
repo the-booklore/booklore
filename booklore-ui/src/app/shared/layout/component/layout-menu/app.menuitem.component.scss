@@ -54,7 +54,7 @@
   }
 }
 
-:host(.active-menuitem) .menu-item-container {
+.menu-item-container.active-route-container {
   background-color: color-mix(in srgb, var(--p-primary-300), transparent 93%);
   border-radius: 8px;
 }
@@ -66,12 +66,14 @@
   width: 100%;
 }
 
+
 .menu-item-text {
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-left: 0.35rem;
+  font-size: 0.985rem;
 }
 
 .menu-item-end-content {
@@ -90,4 +92,25 @@
 
 .submenu-container {
   overflow: hidden;
+}
+
+.library-health-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    opacity: 0.85;
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+  }
 }

@@ -25,6 +25,10 @@ import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {UnifiedNotificationBoxComponent} from '../../../components/unified-notification-popover/unified-notification-popover-component';
 import {Severity, LogNotification} from '../../../websocket/model/log-notification.model';
 import {Menu} from 'primeng/menu';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {AVAILABLE_LANGS, LANG_LABELS} from '../../../../core/config/transloco-loader';
+import {LANG_STORAGE_KEY} from '../../../../core/config/language-initializer';
+import {SUPPORT_ANIMATION_KEY} from '../../../../features/settings/global-preferences/global-preferences.component';
 
 @Component({
   selector: 'app-topbar',
@@ -47,6 +51,7 @@ import {Menu} from 'primeng/menu';
     UnifiedNotificationBoxComponent,
     NgStyle,
     Menu,
+    TranslocoDirective,
   ],
 })
 export class AppTopBarComponent implements OnDestroy {
@@ -57,8 +62,7 @@ export class AppTopBarComponent implements OnDestroy {
   @ViewChild('menubutton') menuButton!: ElementRef;
   @ViewChild('topbarmenubutton') topbarMenuButton!: ElementRef;
   @ViewChild('topbarmenu') menu!: ElementRef;
-  @ViewChild('statsMenu') statsMenu: any;
-  @ViewChild('statsMenuMobile') statsMenuMobile: any;
+  @ViewChild('statsMenu') statsMenu: Menu | undefined;
 
   isMenuVisible = true;
   progressHighlight = false;
@@ -67,6 +71,7 @@ export class AppTopBarComponent implements OnDestroy {
   showPulse = false;
   hasAnyTasks = false;
   hasPendingBookdropFiles = false;
+  supportAnimationEnabled = localStorage.getItem(SUPPORT_ANIMATION_KEY) !== 'false';
 
   private eventTimer: number | undefined;
   private destroy$ = new Subject<void>();
@@ -74,6 +79,11 @@ export class AppTopBarComponent implements OnDestroy {
   private latestTasks: Record<string, MetadataBatchProgressNotification> = {};
   private latestHasPendingFiles = false;
   private latestNotificationSeverity?: Severity;
+
+  activeLang = '';
+  langMenuItems: MenuItem[] = [];
+
+  private translocoService: TranslocoService;
 
   constructor(
     public layoutService: LayoutService,
@@ -83,8 +93,19 @@ export class AppTopBarComponent implements OnDestroy {
     protected userService: UserService,
     private metadataProgressService: MetadataProgressService,
     private bookdropFileService: BookdropFileService,
-    private dialogLauncher: DialogLauncherService
+    private dialogLauncher: DialogLauncherService,
+    translocoService: TranslocoService
   ) {
+    this.translocoService = translocoService;
+    this.activeLang = translocoService.getActiveLang();
+    this.langMenuItems = AVAILABLE_LANGS.map(lang => ({
+      label: LANG_LABELS[lang] || lang,
+      icon: lang === this.activeLang ? 'pi pi-check' : undefined,
+      command: () => this.switchLanguage(lang),
+    }));
+    this.onStorageChange = this.onStorageChange.bind(this);
+    window.addEventListener('storage', this.onStorageChange);
+
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
 
@@ -111,13 +132,26 @@ export class AppTopBarComponent implements OnDestroy {
       .subscribe(() => {
         this.initializeStatsMenu();
       });
+
+    this.translocoService.langChanges$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.initializeStatsMenu();
+      });
   }
 
   ngOnDestroy(): void {
     if (this.ref) this.ref.close();
     clearTimeout(this.eventTimer);
+    window.removeEventListener('storage', this.onStorageChange);
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private onStorageChange(event: StorageEvent): void {
+    if (event.key === SUPPORT_ANIMATION_KEY) {
+      this.supportAnimationEnabled = event.newValue !== 'false';
+    }
   }
 
   toggleMenu() {
@@ -159,6 +193,20 @@ export class AppTopBarComponent implements OnDestroy {
 
   navigateToUserStats() {
     this.router.navigate(['/reading-stats']);
+  }
+
+  switchLanguage(lang: string) {
+    if (lang === this.activeLang) return;
+    this.translocoService.load(lang).subscribe(() => {
+      this.translocoService.setActiveLang(lang);
+      localStorage.setItem(LANG_STORAGE_KEY, lang);
+      this.activeLang = lang;
+      this.langMenuItems = AVAILABLE_LANGS.map(l => ({
+        label: LANG_LABELS[l] || l,
+        icon: l === lang ? 'pi pi-check' : undefined,
+        command: () => this.switchLanguage(l),
+      }));
+    });
   }
 
   logout() {
@@ -224,7 +272,7 @@ export class AppTopBarComponent implements OnDestroy {
 
     if (user?.permissions?.canAccessLibraryStats || user?.permissions?.admin) {
       this.statsMenuItems.push({
-        label: 'Library Stats',
+        label: this.translocoService.translate('layout.topbar.libraryStats'),
         icon: 'pi pi-chart-line',
         command: () => this.navigateToStats()
       });
@@ -232,7 +280,7 @@ export class AppTopBarComponent implements OnDestroy {
 
     if (user?.permissions?.canAccessUserStats || user?.permissions?.admin) {
       this.statsMenuItems.push({
-        label: 'Reading Stats',
+        label: this.translocoService.translate('layout.topbar.readingStats'),
         icon: 'pi pi-users',
         command: () => this.navigateToUserStats()
       });
@@ -249,12 +297,12 @@ export class AppTopBarComponent implements OnDestroy {
 
   get statsTooltip(): string {
     if (this.statsMenuItems.length === 0) {
-      return 'Stats';
+      return this.translocoService.translate('layout.topbar.stats');
     }
     if (this.statsMenuItems.length === 1) {
-      return this.statsMenuItems[0].label || 'Stats';
+      return this.statsMenuItems[0].label || this.translocoService.translate('layout.topbar.stats');
     }
-    return 'Stats';
+    return this.translocoService.translate('layout.topbar.stats');
   }
 
   get iconClass(): string {

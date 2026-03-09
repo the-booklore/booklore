@@ -10,6 +10,7 @@ import {filter, takeUntil} from 'rxjs/operators';
 import {ExternalDocLinkComponent} from '../../../../../shared/components/external-doc-link/external-doc-link.component';
 import {UserService} from '../../../user-management/user.service';
 import {HardcoverSyncSettingsService} from './hardcover-sync-settings.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   standalone: true,
@@ -20,7 +21,8 @@ import {HardcoverSyncSettingsService} from './hardcover-sync-settings.service';
     ToggleSwitch,
     Button,
     ToastModule,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    TranslocoDirective
   ],
   providers: [MessageService],
   templateUrl: './hardcover-settings-component.html',
@@ -30,6 +32,7 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
   private readonly messageService = inject(MessageService);
   private readonly hardcoverSyncSettingsService = inject(HardcoverSyncSettingsService);
   private readonly userService = inject(UserService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   hasPermission = false;
@@ -63,8 +66,8 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Load Error',
-          detail: 'Unable to retrieve Hardcover sync settings. Please try again.'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsDevice.hardcover.loadError')
         });
       }
     });
@@ -76,13 +79,13 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
 
   onHardcoverSyncToggle() {
     const message = this.hardcoverSyncEnabled
-      ? 'Hardcover sync enabled'
-      : 'Hardcover sync disabled';
+      ? this.t.translate('settingsDevice.hardcover.syncEnabledMsg')
+      : this.t.translate('settingsDevice.hardcover.syncDisabledMsg');
     this.updateHardcoverSettings(message);
   }
 
   onHardcoverApiKeyChange() {
-    this.updateHardcoverSettings('Hardcover API key updated');
+    this.updateHardcoverSettings(this.t.translate('settingsDevice.hardcover.apiKeyUpdated'));
   }
 
   private updateHardcoverSettings(successMessage: string) {
@@ -93,13 +96,13 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
       next: settings => {
         this.hardcoverSyncEnabled = settings.hardcoverSyncEnabled ?? false;
         this.hardcoverApiKey = settings.hardcoverApiKey ?? '';
-        this.messageService.add({severity: 'success', summary: 'Settings Updated', detail: successMessage});
+        this.messageService.add({severity: 'success', summary: this.t.translate('settingsDevice.hardcover.settingsUpdated'), detail: successMessage});
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Update Failed',
-          detail: 'Unable to update Hardcover sync settings. Please try again.'
+          summary: this.t.translate('settingsDevice.hardcover.updateFailed'),
+          detail: this.t.translate('settingsDevice.hardcover.updateError')
         });
       }
     });
@@ -112,15 +115,15 @@ export class HardcoverSettingsComponent implements OnInit, OnDestroy {
     navigator.clipboard.writeText(text).then(() => {
       this.messageService.add({
         severity: 'success',
-        summary: 'Copied',
-        detail: `${label} copied to clipboard`
+        summary: this.t.translate('settingsDevice.copied'),
+        detail: this.t.translate('settingsDevice.copiedDetail', {label})
       });
     }).catch(err => {
       console.error('Copy failed', err);
       this.messageService.add({
         severity: 'error',
-        summary: 'Copy Failed',
-        detail: `Unable to copy ${label.toLowerCase()} to clipboard`
+        summary: this.t.translate('settingsDevice.copyFailed'),
+        detail: this.t.translate('settingsDevice.copyFailedDetail', {label})
       });
     });
   }

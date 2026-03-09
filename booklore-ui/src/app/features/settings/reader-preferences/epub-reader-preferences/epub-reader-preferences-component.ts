@@ -1,6 +1,8 @@
+import {DecimalPipe} from '@angular/common';
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule} from '@angular/forms';
+import {TranslocoDirective} from '@jsverse/transloco';
 import {ReaderPreferencesService} from '../reader-preferences.service';
 import {UserSettings} from '../../user-management/user.service';
 import {Tooltip} from 'primeng/tooltip';
@@ -15,7 +17,9 @@ import {themes} from '../../../readers/ebook-reader/state/themes.constant';
   selector: 'app-epub-reader-preferences-component',
   imports: [
     Button,
+    DecimalPipe,
     FormsModule,
+    TranslocoDirective,
     Tooltip,
     Skeleton
   ],
@@ -247,25 +251,26 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
 
   increaseLineHeight() {
     if (this.lineHeight < 3) {
-      this.lineHeight += 0.1;
+      this.lineHeight = Math.round((this.lineHeight + 0.1) * 10) / 10;
     }
   }
 
   decreaseLineHeight() {
     if (this.lineHeight > 1) {
-      this.lineHeight -= 0.1;
+      this.lineHeight = Math.round((this.lineHeight - 0.1) * 10) / 10;
     }
   }
 
   increaseGap() {
-    if (this.gap < 100) {
-      this.gap += 5;
+
+    if (this.gap < 0.5) {
+      this.gap = Math.round((this.gap + 0.05) * 100) / 100;
     }
   }
 
   decreaseGap() {
     if (this.gap > 0) {
-      this.gap -= 5;
+      this.gap = Math.round((this.gap - 0.05) * 100) / 100;
     }
   }
 

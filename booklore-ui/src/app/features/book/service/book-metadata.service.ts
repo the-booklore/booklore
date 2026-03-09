@@ -5,19 +5,18 @@ import {FetchMetadataRequest} from '../../metadata/model/request/fetch-metadata-
 import {BookMetadata} from '../model/book.model';
 import {AuthService} from '../../../shared/service/auth.service';
 import {SseClient} from 'ngx-sse-client';
-import {HttpHeaders} from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {map} from 'rxjs/operators';
 
 @Injectable({providedIn: 'root'})
 export class BookMetadataService {
   private readonly url = `${API_CONFIG.BASE_URL}/api/v1/books`;
+  private http = inject(HttpClient);
   private authService = inject(AuthService);
   private sseClient = inject(SseClient);
 
   fetchBookMetadata(bookId: number, request: FetchMetadataRequest): Observable<BookMetadata> {
-    const token =
-      this.authService.getOidcAccessToken() ||
-      this.authService.getInternalAccessToken();
+    const token = this.authService.getInternalAccessToken();
 
     if (!token) {
       throw new Error('No authentication token available');
@@ -51,5 +50,13 @@ export class BookMetadataService {
         }
       })
     );
+  }
+
+  fetchMetadataDetail(provider: string, providerItemId: string): Observable<BookMetadata> {
+    return this.http.get<BookMetadata>(`${this.url}/metadata/detail/${provider}/${providerItemId}`);
+  }
+
+  lookupByIsbn(isbn: string): Observable<BookMetadata> {
+    return this.http.post<BookMetadata>(`${this.url}/metadata/isbn-lookup`, {isbn});
   }
 }

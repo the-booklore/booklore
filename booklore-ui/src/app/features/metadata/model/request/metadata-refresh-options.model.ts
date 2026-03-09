@@ -42,6 +42,7 @@ export interface FieldOptions {
   goodreadsId: FieldProvider;
   comicvineId: FieldProvider;
   hardcoverId: FieldProvider;
+  hardcoverBookId: FieldProvider;
   googleId: FieldProvider;
   lubimyczytacId: FieldProvider;
   amazonRating: FieldProvider;
@@ -53,6 +54,9 @@ export interface FieldOptions {
   lubimyczytacRating: FieldProvider;
   ranobedbId: FieldProvider;
   ranobedbRating: FieldProvider;
+  audibleId: FieldProvider;
+  audibleRating: FieldProvider;
+  audibleReviewCount: FieldProvider;
   moods: FieldProvider;
   tags: FieldProvider;
 }

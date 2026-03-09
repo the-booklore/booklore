@@ -1,9 +1,11 @@
+<ng-container *transloco="let t; prefix: 'metadata.fetchOptions'">
 <div class="metadata-fetch-options-container">
   <div class="dialog-content">
     <app-metadata-advanced-fetch-options
       (metadataOptionsSubmitted)="onMetadataSubmit($event)"
       [currentMetadataOptions]="currentMetadataOptions"
-      [submitButtonLabel]="'Start Refresh'">
+      [submitButtonLabel]="t('startRefresh')">
     </app-metadata-advanced-fetch-options>
   </div>
 </div>
+</ng-container>

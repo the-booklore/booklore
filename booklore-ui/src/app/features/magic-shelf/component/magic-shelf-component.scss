@@ -15,6 +15,28 @@
   border-bottom: none;
 }
 
+.import-panel {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  background: var(--overlay-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+
+  .import-textarea {
+    width: 100%;
+    font-family: monospace;
+    font-size: 0.85rem;
+    resize: vertical;
+  }
+
+  .import-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+}
+
 .magic-shelf-content {
   padding: 2rem;
   background: var(--card-background);
@@ -74,6 +96,12 @@
       font-size: 0.9rem;
     }
 
+    .selected-icon-display {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .icon-display-container {
       display: flex;
       align-items: center;
@@ -87,6 +115,11 @@
 
       &:hover {
         border-color: var(--primary-color);
+      }
+
+      &:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
       }
 
       .selected-icon {
@@ -179,6 +212,7 @@
 
 .dialog-footer {
   @include panel.dialog-footer-end;
+  justify-content: space-between;
 }
 
 .save-button-section {

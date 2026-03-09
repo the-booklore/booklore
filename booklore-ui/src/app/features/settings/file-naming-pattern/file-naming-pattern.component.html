@@ -1,20 +1,20 @@
+<ng-container *transloco="let t; prefix: 'settingsNaming'">
 <div class="file-naming-container">
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-file"></i>
-      File Naming Patterns
+      {{ t('title') }}
       <app-external-doc-link docType="fileNamePatterns"></app-external-doc-link>
     </h2>
     <p class="settings-description">
-      Configure automatic file organization using metadata placeholders. Patterns are applied when uploading, moving files, or after metadata updates.
+      {{ t('description') }}
     </p>
   </div>
 
   <div class="warning-notice">
     <i class="pi pi-exclamation-triangle"></i>
     <div>
-      <strong>Metadata Quality Notice:</strong> File naming relies entirely on metadata stored in Booklore.
-      This feature is recommended only for high-quality, curated libraries with complete metadata.
+      <strong>{{ t('warning.title') }}</strong> {{ t('warning.text') }}
     </div>
   </div>
 
@@ -22,9 +22,9 @@
     <div class="section-header">
       <h3 class="section-title">
         <i class="pi pi-bolt"></i>
-        Default Pattern
+        {{ t('defaultPattern.sectionTitle') }}
       </h3>
-      <p class="section-description">Fallback pattern when no library-specific override is configured.</p>
+      <p class="section-description">{{ t('defaultPattern.sectionDesc') }}</p>
     </div>
 
     <div class="section-body">
@@ -35,11 +35,11 @@
               pInputText
               id="defaultPattern"
               [(ngModel)]="defaultPattern"
-              placeholder="e.g., {title} - {authors}"
+              [placeholder]="t('defaultPattern.placeholder')"
               (input)="onDefaultPatternChange(defaultPattern)"
               class="pattern-input"/>
             <p-button
-              label="Save"
+              [label]="'common.save' | transloco"
               icon="pi pi-save"
               (onClick)="savePatterns()"
               severity="success"
@@ -53,7 +53,7 @@
           <div class="preview-row">
             <span class="preview-label">
               <i class="pi pi-eye"></i>
-              Preview:
+              {{ t('defaultPattern.preview') }}
             </span>
             <code class="preview-value">{{ generateDefaultPreview() }}</code>
           </div>
@@ -66,10 +66,10 @@
     <div class="section-header">
       <h3 class="section-title">
         <i class="pi pi-folder"></i>
-        Library Overrides
+        {{ t('libraryOverrides.sectionTitle') }}
       </h3>
       <p class="section-description">
-        Define custom patterns for specific libraries. Leave empty to use the default pattern.
+        {{ t('libraryOverrides.sectionDesc') }}
       </p>
     </div>
 
@@ -77,8 +77,8 @@
       @if (libraries.length === 0) {
         <div class="empty-state">
           <i class="pi pi-folder-open"></i>
-          <p class="empty-title">No libraries found</p>
-          <p class="empty-subtitle">Create a library to configure custom naming patterns</p>
+          <p class="empty-title">{{ t('libraryOverrides.emptyTitle') }}</p>
+          <p class="empty-subtitle">{{ t('libraryOverrides.emptySubtitle') }}</p>
         </div>
       } @else {
         <div class="libraries-list">
@@ -91,9 +91,9 @@
                   </div>
                   <span class="library-name">{{ library.name }}</span>
                   @if (library.fileNamingPattern) {
-                    <span class="custom-badge">Custom</span>
+                    <span class="custom-badge">{{ t('libraryOverrides.custom') }}</span>
                   } @else {
-                    <span class="default-badge">Using Default</span>
+                    <span class="default-badge">{{ t('libraryOverrides.usingDefault') }}</span>
                   }
                 </div>
                 <p-button
@@ -104,7 +104,7 @@
                   [rounded]="true"
                   (onClick)="clearLibraryPattern(library)"
                   [disabled]="!library.fileNamingPattern"
-                  pTooltip="Clear pattern">
+                  [pTooltip]="t('libraryOverrides.clearPattern')">
                 </p-button>
               </div>
               <div class="library-body">
@@ -112,13 +112,13 @@
                   <input
                     pInputText
                     [(ngModel)]="library.fileNamingPattern"
-                    placeholder="Leave empty to use default pattern"
+                    [placeholder]="t('libraryOverrides.placeholder')"
                     (input)="onLibraryPatternChange(library)"
                     class="pattern-input"/>
                   <div class="preview-row">
                     <span class="preview-label">
                       <i class="pi pi-eye"></i>
-                      Preview:
+                      {{ t('libraryOverrides.preview') }}
                     </span>
                     <code class="preview-value">{{ generateLibraryPreview(library) }}</code>
                   </div>
@@ -130,7 +130,7 @@
 
         <div class="actions-row">
           <p-button
-            label="Save All"
+            [label]="t('libraryOverrides.saveAll')"
             (onClick)="saveLibraryPatterns()"
             severity="success"
             icon="pi pi-save"
@@ -145,10 +145,10 @@
     <div class="section-header">
       <h3 class="section-title">
         <i class="pi pi-info-circle"></i>
-        Placeholders Reference
+        {{ t('placeholders.sectionTitle') }}
       </h3>
       <p class="section-description">
-        Use placeholders to dynamically insert metadata into file names and folder paths.
+        {{ t('placeholders.sectionDesc') }}
       </p>
     </div>
 
@@ -157,46 +157,85 @@
         <div class="placeholder-group">
           <h4 class="group-title">
             <i class="pi pi-hashtag"></i>
-            Available Placeholders
+            {{ t('placeholders.available') }}
           </h4>
           <div class="placeholder-list">
-            <div class="placeholder-item"><code>{{ '{title}' }}</code><span>Book title</span></div>
-            <div class="placeholder-item"><code>{{ '{subtitle}' }}</code><span>Book subtitle</span></div>
-            <div class="placeholder-item"><code>{{ '{authors}' }}</code><span>Author(s)</span></div>
-            <div class="placeholder-item"><code>{{ '{year}' }}</code><span>Publication year</span></div>
-            <div class="placeholder-item"><code>{{ '{series}' }}</code><span>Series name</span></div>
-            <div class="placeholder-item"><code>{{ '{seriesIndex}' }}</code><span>Series index</span></div>
-            <div class="placeholder-item"><code>{{ '{language}' }}</code><span>Language code</span></div>
-            <div class="placeholder-item"><code>{{ '{publisher}' }}</code><span>Publisher</span></div>
-            <div class="placeholder-item"><code>{{ '{isbn}' }}</code><span>ISBN number</span></div>
-            <div class="placeholder-item"><code>{{ '{currentFilename}' }}</code><span>Original filename</span></div>
+            <div class="placeholder-item"><code>{{ '{title}' }}</code><span>{{ t('placeholders.title') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{subtitle}' }}</code><span>{{ t('placeholders.subtitle') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{authors}' }}</code><span>{{ t('placeholders.authors') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{year}' }}</code><span>{{ t('placeholders.year') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{series}' }}</code><span>{{ t('placeholders.series') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{seriesIndex}' }}</code><span>{{ t('placeholders.seriesIndex') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{language}' }}</code><span>{{ t('placeholders.language') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{publisher}' }}</code><span>{{ t('placeholders.publisher') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{isbn}' }}</code><span>{{ t('placeholders.isbn') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{currentFilename}' }}</code><span>{{ t('placeholders.currentFilename') }}</span></div>
           </div>
         </div>
 
         <div class="placeholder-group">
           <h4 class="group-title">
             <i class="pi pi-code"></i>
-            Optional Blocks
+            {{ t('placeholders.optionalBlocks') }}
           </h4>
-          <p class="group-description">
-            Wrap parts in angle brackets <code>{{ '{<...>}' }}</code> to make them conditional.
-            If any placeholder in the block has no value, the entire block is omitted.
+          <p class="group-description" [innerHTML]="t('placeholders.optionalDesc', { syntax: '{<...>}' })">
           </p>
           <div class="example-block">
             <div class="example-pattern">
-              <span class="pattern-prefix">Pattern:</span>
+              <span class="pattern-prefix">{{ t('placeholders.pattern') }}</span>
               <code>{{ '{<{seriesIndex} - >{title}' }}</code>
             </div>
             <div class="example-results">
               <div class="result-item">
-                <span class="result-prefix">With index:</span>
+                <span class="result-prefix">{{ t('placeholders.withIndex') }}</span>
                 <code>01 - Dune</code>
               </div>
               <div class="result-item">
-                <span class="result-prefix">Without:</span>
+                <span class="result-prefix">{{ t('placeholders.without') }}</span>
                 <code>Dune</code>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="placeholder-group">
+          <h4 class="group-title">
+            <i class="pi pi-replay"></i>
+            {{ t('placeholders.elseClause') }}
+          </h4>
+          <p class="group-description" [innerHTML]="t('placeholders.elseDesc')">
+          </p>
+          <div class="example-block">
+            <div class="example-pattern">
+              <span class="pattern-prefix">{{ t('placeholders.pattern') }}</span>
+              <code>{{ '{<{series}|Standalone>/{title}' }}</code>
+            </div>
+            <div class="example-results">
+              <div class="result-item">
+                <span class="result-prefix">{{ t('placeholders.withSeries') }}</span>
+                <code>The Kingkiller Chronicle/The Name of the Wind</code>
+              </div>
+              <div class="result-item">
+                <span class="result-prefix">{{ t('placeholders.withoutSeries') }}</span>
+                <code>Standalone/The Name of the Wind</code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="placeholder-group">
+          <h4 class="group-title">
+            <i class="pi pi-wrench"></i>
+            {{ t('placeholders.modifiers') }}
+          </h4>
+          <p class="group-description" [innerHTML]="t('placeholders.modifiersDesc')">
+          </p>
+          <div class="placeholder-list">
+            <div class="placeholder-item"><code>{{ '{authors:first}' }}</code><span>{{ t('placeholders.modFirst') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{authors:sort}' }}</code><span>{{ t('placeholders.modSort') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{title:initial}' }}</code><span>{{ t('placeholders.modInitial') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{title:upper}' }}</code><span>{{ t('placeholders.modUpper') }}</span></div>
+            <div class="placeholder-item"><code>{{ '{title:lower}' }}</code><span>{{ t('placeholders.modLower') }}</span></div>
           </div>
         </div>
       </div>
@@ -207,63 +246,81 @@
     <div class="section-header">
       <h3 class="section-title">
         <i class="pi pi-eye"></i>
-        Pattern Examples
+        {{ t('examples.sectionTitle') }}
       </h3>
       <p class="section-description">
-        Sample patterns with example metadata to help you understand how patterns work.
+        {{ t('examples.sectionDesc') }}
       </p>
     </div>
 
     <div class="section-body">
       <div class="examples-container">
-        <div class="example-category">
-          <div class="category-header">
-            <h4 class="category-title">
-              <i class="pi pi-check-circle"></i>
-              With Full Metadata
-            </h4>
-            <div class="sample-metadata">
-              <div class="metadata-items">
-                <span><strong>title:</strong> <code>The Name of the Wind</code></span>
-                <span><strong>subtitle:</strong> <code>Special Edition</code></span>
-                <span><strong>authors:</strong> <code>Patrick Rothfuss</code></span>
-                <span><strong>series:</strong> <code>The Kingkiller Chronicle</code></span>
-                <span><strong>seriesIndex:</strong> <code>01</code></span>
-                <span><strong>year:</strong> <code>2007</code></span>
-              </div>
+        <div class="metadata-reference">
+          <div class="metadata-panel metadata-panel-full">
+            <div class="metadata-panel-header">
+              <i class="pi pi-check-circle metadata-icon-full"></i>
+              <span>{{ t('examples.fullMetadata') }}</span>
+            </div>
+            <div class="metadata-grid">
+              <span class="metadata-key">title</span><code class="metadata-val">The Name of the Wind</code>
+              <span class="metadata-key">subtitle</span><code class="metadata-val">Special Edition</code>
+              <span class="metadata-key">authors</span><code class="metadata-val">Patrick Rothfuss</code>
+              <span class="metadata-key">series</span><code class="metadata-val">The Kingkiller Chronicle</code>
+              <span class="metadata-key">seriesIndex</span><code class="metadata-val">01</code>
+              <span class="metadata-key">year</span><code class="metadata-val">2007</code>
             </div>
           </div>
+          <div class="metadata-panel metadata-panel-partial">
+            <div class="metadata-panel-header">
+              <i class="pi pi-question-circle metadata-icon-partial"></i>
+              <span>{{ t('examples.partialMetadata') }}</span>
+            </div>
+            <div class="metadata-grid">
+              <span class="metadata-key">title</span><code class="metadata-val">Project Hail Mary</code>
+              <span class="metadata-key">subtitle</span><em class="metadata-val not-set">{{ t('examples.notSet') }}</em>
+              <span class="metadata-key">authors</span><code class="metadata-val">Andy Weir</code>
+              <span class="metadata-key">year</span><code class="metadata-val">2021</code>
+              <span class="metadata-key">series</span><em class="metadata-val not-set">{{ t('examples.notSet') }}</em>
+              <span class="metadata-key">seriesIndex</span><em class="metadata-val not-set">{{ t('examples.notSet') }}</em>
+            </div>
+          </div>
+        </div>
 
+        <div class="example-category">
+          <h4 class="category-title">
+            <i class="pi pi-hashtag"></i>
+            {{ t('examples.basicGroup') }}
+          </h4>
           <div class="example-grid">
             <div class="example-row">
-              <span class="pattern-label">Basic pattern</span>
+              <span class="pattern-label">{{ t('examples.basicPattern') }}</span>
               <span class="pattern-col"><code>{{ '{authors} - {title}' }}</code></span>
               <span class="result-col"><code>Patrick Rothfuss - The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">With punctuation</span>
-              <span class="pattern-col"><code>{{ '{title}: {series}' }}</code></span>
-              <span class="result-col"><code>The Name of the Wind: The Kingkiller Chronicle.epub</code></span>
-            </div>
-            <div class="example-row">
-              <span class="pattern-label">Series in folder</span>
+              <span class="pattern-label">{{ t('examples.seriesInFolder') }}</span>
               <span class="pattern-col"><code>{{ '{authors}/{series}/{seriesIndex} - {title}' }}</code></span>
               <span class="result-col"><code>Patrick Rothfuss/The Kingkiller Chronicle/01 - The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Folder only</span>
-              <span class="pattern-col"><code>{{ '{title}/' }}</code></span>
-              <span class="result-col"><code>The Name of the Wind/name_of_the_wind_original.epub</code></span>
+              <span class="pattern-label">{{ t('examples.titleSubtitle') }}</span>
+              <span class="pattern-col"><code>{{ '{title}: {subtitle}' }}</code></span>
+              <span class="result-col"><code>The Name of the Wind: Special Edition.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Absolute path</span>
+              <span class="pattern-label">{{ t('examples.absolutePath') }}</span>
               <span class="pattern-col"><code>{{ '/{authors}/{title}' }}</code></span>
               <span class="result-col"><code>/Patrick Rothfuss/The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Title + Subtitle</span>
-              <span class="pattern-col"><code>{{ '{title}: {subtitle}' }}</code></span>
-              <span class="result-col"><code>The Name of the Wind: Special Edition.epub</code></span>
+              <span class="pattern-label">{{ t('examples.folderOnly') }}</span>
+              <span class="pattern-col"><code>{{ '{title}/' }}</code></span>
+              <span class="result-col"><code>The Name of the Wind/name_of_the_wind_original.epub</code></span>
+            </div>
+            <div class="example-row">
+              <span class="pattern-label">{{ t('examples.yearPrefix') }}</span>
+              <span class="pattern-col"><code>{{ '({year}) {title}' }}</code></span>
+              <span class="result-col"><code>(2007) The Name of the Wind.epub</code></span>
             </div>
           </div>
         </div>
@@ -271,53 +328,104 @@
         <div class="section-divider"><hr></div>
 
         <div class="example-category">
-          <div class="category-header">
-            <h4 class="category-title">
-              <i class="pi pi-question-circle"></i>
-              With Missing Optional Fields
-            </h4>
-            <div class="sample-metadata">
-              <div class="metadata-items">
-                <span><strong>title:</strong> <code>Project Hail Mary</code></span>
-                <span><strong>subtitle:</strong> <em class="not-set">not set</em></span>
-                <span><strong>authors:</strong> <code>Andy Weir</code></span>
-                <span><strong>year:</strong> <code>2021</code></span>
-                <span><strong>series:</strong> <em class="not-set">not set</em></span>
-                <span><strong>seriesIndex:</strong> <em class="not-set">not set</em></span>
+          <h4 class="category-title">
+            <i class="pi pi-code"></i>
+            {{ t('examples.conditionalGroup') }}
+          </h4>
+          <div class="example-grid">
+            <div class="example-row-conditional">
+              <span class="pattern-label">{{ t('examples.optionalBlock') }}</span>
+              <span class="pattern-col"><code>{{ '<{seriesIndex}. >{title}' }}</code></span>
+              <div class="result-col-dual">
+                <span class="result-with"><i class="pi pi-check-circle"></i> <code>01. The Name of the Wind.epub</code></span>
+                <span class="result-without"><i class="pi pi-question-circle"></i> <code>Project Hail Mary.epub</code></span>
+              </div>
+            </div>
+            <div class="example-row-conditional">
+              <span class="pattern-label">{{ t('examples.subtitleConditional') }}</span>
+              <span class="pattern-col"><code>{{ '{title}<: {subtitle}>' }}</code></span>
+              <div class="result-col-dual">
+                <span class="result-with"><i class="pi pi-check-circle"></i> <code>The Name of the Wind: Special Edition.epub</code></span>
+                <span class="result-without"><i class="pi pi-question-circle"></i> <code>Project Hail Mary.epub</code></span>
+              </div>
+            </div>
+            <div class="example-row-conditional">
+              <span class="pattern-label">{{ t('examples.multipleOptional') }}</span>
+              <span class="pattern-col"><code>{{ '{authors}/<{series}/><{seriesIndex}. >{title}< ({year})>' }}</code></span>
+              <div class="result-col-dual">
+                <span class="result-with"><i class="pi pi-check-circle"></i> <code>Patrick Rothfuss/The Kingkiller Chronicle/01. The Name of the Wind (2007).epub</code></span>
+                <span class="result-without"><i class="pi pi-question-circle"></i> <code>Andy Weir/Project Hail Mary (2021).epub</code></span>
+              </div>
+            </div>
+            <div class="example-row-conditional">
+              <span class="pattern-label">{{ t('examples.elseClause') }}</span>
+              <span class="pattern-col"><code>{{ '<{series}|Standalone>/{title}' }}</code></span>
+              <div class="result-col-dual">
+                <span class="result-with"><i class="pi pi-check-circle"></i> <code>The Kingkiller Chronicle/The Name of the Wind.epub</code></span>
+                <span class="result-without"><i class="pi pi-question-circle"></i> <code>Standalone/Project Hail Mary.epub</code></span>
+              </div>
+            </div>
+            <div class="example-row-conditional">
+              <span class="pattern-label">{{ t('examples.elseClauseFallback') }}</span>
+              <span class="pattern-col"><code>{{ '<{series}/{seriesIndex} - {title}|{title}>' }}</code></span>
+              <div class="result-col-dual">
+                <span class="result-with"><i class="pi pi-check-circle"></i> <code>The Kingkiller Chronicle/01 - The Name of the Wind.epub</code></span>
+                <span class="result-without"><i class="pi pi-question-circle"></i> <code>Project Hail Mary.epub</code></span>
+              </div>
+            </div>
+            <div class="example-row-conditional">
+              <span class="pattern-label">{{ t('examples.elseWithModifier') }}</span>
+              <span class="pattern-col"><code>{{ '<{series}|{authors:sort}>/{title}' }}</code></span>
+              <div class="result-col-dual">
+                <span class="result-with"><i class="pi pi-check-circle"></i> <code>The Kingkiller Chronicle/The Name of the Wind.epub</code></span>
+                <span class="result-without"><i class="pi pi-question-circle"></i> <code>Weir, Andy/Project Hail Mary.epub</code></span>
               </div>
             </div>
           </div>
+        </div>
 
+        <div class="section-divider"><hr></div>
+
+        <div class="example-category">
+          <h4 class="category-title">
+            <i class="pi pi-wrench"></i>
+            {{ t('examples.modifiersGroup') }}
+          </h4>
           <div class="example-grid">
             <div class="example-row">
-              <span class="pattern-label">Optional blocks</span>
-              <span class="pattern-col"><code>{{ '{authors}/<{series}/><{seriesIndex}. >{title}< ({year})>' }}</code></span>
-              <span class="result-col"><code>Andy Weir/Project Hail Mary (2021).epub</code></span>
+              <span class="pattern-label">{{ t('examples.modifierSort') }}</span>
+              <span class="pattern-col"><code>{{ '{authors:sort}/{title}' }}</code></span>
+              <span class="result-col"><code>Rothfuss, Patrick/The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">SeriesIndex fallback</span>
-              <span class="pattern-col"><code>{{ '<{seriesIndex}. >{title}< - {authors}>' }}</code></span>
-              <span class="result-col"><code>Project Hail Mary - Andy Weir.epub</code></span>
+              <span class="pattern-label">{{ t('examples.modifierInitial') }}</span>
+              <span class="pattern-col"><code>{{ '{authors:initial}/{authors:sort}/{title}' }}</code></span>
+              <span class="result-col"><code>R/Rothfuss, Patrick/The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Brackets fallback</span>
-              <span class="pattern-col"><code>{{ '<[{series}] >{title} - {authors}' }}</code></span>
-              <span class="result-col"><code>Project Hail Mary - Andy Weir.epub</code></span>
+              <span class="pattern-label">{{ t('examples.modFirst') }}</span>
+              <span class="pattern-col"><code>{{ '{authors:first}/{title}' }}</code></span>
+              <span class="result-col"><code>Patrick Rothfuss/The Name of the Wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Series punctuation</span>
-              <span class="pattern-col"><code>{{ '<{series}: >{title} by {authors}' }}</code></span>
-              <span class="result-col"><code>Project Hail Mary by Andy Weir.epub</code></span>
+              <span class="pattern-label">{{ t('examples.modUpper') }}</span>
+              <span class="pattern-col"><code>{{ '{title:upper}' }}</code></span>
+              <span class="result-col"><code>THE NAME OF THE WIND.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Year prefix</span>
-              <span class="pattern-col"><code>{{ '{authors}/{year}__{currentFilename}' }}</code></span>
-              <span class="result-col"><code>Andy Weir/2021__project_hail_mary_final.epub</code></span>
+              <span class="pattern-label">{{ t('examples.modLower') }}</span>
+              <span class="pattern-col"><code>{{ '{title:lower}' }}</code></span>
+              <span class="result-col"><code>the name of the wind.epub</code></span>
             </div>
             <div class="example-row">
-              <span class="pattern-label">Subtitle fallback</span>
-              <span class="pattern-col"><code>{{ '{title}<: {subtitle}>' }}</code></span>
-              <span class="result-col"><code>Project Hail Mary.epub</code></span>
+              <span class="pattern-label">{{ t('examples.letterFolder') }}</span>
+              <span class="pattern-col"><code>{{ '{title:initial}/{authors}/{title}' }}</code></span>
+              <span class="result-col"><code>T/Patrick Rothfuss/The Name of the Wind.epub</code></span>
+            </div>
+            <div class="example-row">
+              <span class="pattern-label">{{ t('examples.combinedMods') }}</span>
+              <span class="pattern-col"><code>{{ '{authors:sort} - {title:lower}' }}</code></span>
+              <span class="result-col"><code>Rothfuss, Patrick - the name of the wind.epub</code></span>
             </div>
           </div>
         </div>
@@ -325,3 +433,4 @@
     </div>
   </div>
 </div>
+</ng-container>

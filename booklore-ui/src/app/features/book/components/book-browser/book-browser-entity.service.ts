@@ -144,16 +144,7 @@ export class BookBrowserEntityService {
   }
 
   private fetchShelfBooks(shelfId: number, sortOption: SortOption): Observable<BookState> {
-    return this.shelfService.getBooksOnShelf(shelfId).pipe(
-      map(books => {
-        const sortedBooks = this.sortService.applySort(books, sortOption);
-        return {
-          books: sortedBooks,
-          loaded: true,
-          error: null
-        };
-      })
-    );
+    return this.fetchBooks(book => book.shelves?.some(s => s.id === shelfId) ?? false, sortOption);
   }
 
   private fetchMagicShelfBooks(magicShelfId: number, sortOption: SortOption): Observable<BookState> {
@@ -165,8 +156,9 @@ export class BookBrowserEntityService {
         if (!bookState.loaded || bookState.error || !magicShelf?.filterJson) {
           return bookState;
         }
-        const filteredBooks: Book[] | undefined = bookState.books?.filter(book =>
-          this.bookRuleEvaluatorService.evaluateGroup(book, JSON.parse(magicShelf.filterJson!) as GroupRule)
+        const allBooks = bookState.books ?? [];
+        const filteredBooks = allBooks.filter(book =>
+          this.bookRuleEvaluatorService.evaluateGroup(book, JSON.parse(magicShelf.filterJson!) as GroupRule, allBooks)
         );
         const sortedBooks = this.sortService.applySort(filteredBooks ?? [], sortOption);
         return {...bookState, books: sortedBooks};

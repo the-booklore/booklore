@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, Input, OnChanges, OnDestroy, OnInit, SimpleChanges} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
@@ -10,12 +10,13 @@ import {AppSettings} from '../../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 import {BehaviorSubject, combineLatest, Observable, Subject, Subscription, takeUntil} from 'rxjs';
-import {distinctUntilChanged, filter, switchMap} from 'rxjs/operators';
+import {filter, switchMap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {AsyncPipe} from '@angular/common';
 import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.component';
 import {BookMetadataService} from '../../../../book/service/book-metadata.service';
 import {Tooltip} from 'primeng/tooltip';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-searcher',
@@ -29,11 +30,12 @@ import {Tooltip} from 'primeng/tooltip';
     MetadataPickerComponent,
     MultiSelect,
     AsyncPipe,
-    Tooltip
+    Tooltip,
+    TranslocoDirective
   ],
   standalone: true
 })
-export class MetadataSearcherComponent implements OnInit, OnDestroy {
+export class MetadataSearcherComponent implements OnInit, OnDestroy, OnChanges {
   form: FormGroup;
   providers: string[] = [];
   allFetchedMetadata: BookMetadata[] = [];
@@ -42,8 +44,10 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   searchTriggered = false;
 
   @Input() book$!: Observable<Book | null>;
+  @Input() isActiveTab: boolean = false;
 
   selectedFetchedMetadata$ = new BehaviorSubject<BookMetadata | null>(null);
+  detailLoading = false;
 
   private formBuilder = inject(FormBuilder);
   private bookMetadataService = inject(BookMetadataService);
@@ -63,6 +67,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
 
   private metadataByProvider: Map<string, BookMetadata[]> = new Map();
   private providerCompletionStatus: Map<string, boolean> = new Map();
+  private pendingAutoSearch = false;
+  private providerInitialized = false;
 
   constructor() {
     this.form = this.formBuilder.group({
@@ -71,6 +77,13 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       author: [''],
       isbn: ['']
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['isActiveTab']?.currentValue && this.pendingAutoSearch) {
+      this.pendingAutoSearch = false;
+      this.onSubmit();
+    }
   }
 
   ngOnInit() {
@@ -108,13 +121,20 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
             return combineLatest([this.book$, this.appSettings$]);
           }),
           filter(([book, settings]) => !!book && !!settings),
-          distinctUntilChanged(([prevBook], [currBook]) => prevBook?.id === currBook?.id)
         )
         .subscribe(([book, settings]) => {
-          this.resetFormFromBook(book!);
-
-          if (settings!.autoBookSearch) {
-            this.onSubmit();
+          const bookChanged = book!.id !== this.bookId;
+          if (bookChanged) {
+            this.resetFormFromBook(book!);
+            if (settings!.autoBookSearch) {
+              if (this.isActiveTab) {
+                this.onSubmit();
+              } else {
+                this.pendingAutoSearch = true;
+              }
+            }
+          } else {
+            this.updateFormFromBook(book!);
           }
         })
     );
@@ -129,8 +149,22 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     this.selectedProviderFilters = new Set(['all']);
     this.bookId = book.id;
 
+    const formUpdate: Record<string, any> = {
+      title: book.metadata?.title ?? '',
+      author: book.metadata?.authors?.[0] ?? '',
+      isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
+    };
+
+    if (!this.providerInitialized) {
+      formUpdate['provider'] = this.providers;
+      this.providerInitialized = true;
+    }
+
+    this.form.patchValue(formUpdate);
+  }
+
+  private updateFormFromBook(book: Book): void {
     this.form.patchValue({
-      provider: this.providers,
       title: book.metadata?.title ?? '',
       author: book.metadata?.authors?.[0] ?? '',
       isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
@@ -266,7 +300,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     if (metadata['lubimyczytacId']) return 'lubimyczytac';
     if (metadata.comicvineId) return 'comicvine';
     if (metadata.ranobedbId) return 'ranobedb';
-    return null;
+    if (metadata.audibleId) return 'audible';
+    return metadata.provider?.toLowerCase() || null;
   }
 
   getProviderClass(metadata: BookMetadata): string {
@@ -340,9 +375,64 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
 
   onBookClick(fetchedMetadata: BookMetadata) {
     this.selectedFetchedMetadata$.next(fetchedMetadata);
+
+    const enrichment = this.getDetailEnrichmentInfo(fetchedMetadata);
+
+    if (enrichment) {
+      this.detailLoading = true;
+      this.bookMetadataService.fetchMetadataDetail(enrichment.provider, enrichment.id)
+        .pipe(takeUntil(this.cancelRequest$))
+        .subscribe({
+          next: (enriched) => {
+            const current = this.selectedFetchedMetadata$.value;
+            const currentId = current && this.getProviderItemId(current, enrichment.provider);
+            if (currentId === enrichment.id) {
+              this.selectedFetchedMetadata$.next(enriched);
+            }
+            this.detailLoading = false;
+          },
+          error: (err) => {
+            console.error('Error fetching detailed metadata:', err);
+            this.detailLoading = false;
+          }
+        });
+    }
+  }
+
+  private getDetailEnrichmentInfo(metadata: BookMetadata): { provider: string; id: string } | null {
+    if (metadata.comicvineId && (!metadata.comicMetadata
+      || (!metadata.comicMetadata.pencillers?.length
+        && !metadata.comicMetadata.inkers?.length
+        && !metadata.comicMetadata.colorists?.length
+        && !metadata.comicMetadata.letterers?.length
+        && !metadata.comicMetadata.editors?.length
+        && !metadata.comicMetadata.characters?.length))) {
+      return {provider: 'Comicvine', id: metadata.comicvineId};
+    }
+    if (metadata.goodreadsId && !metadata.description) {
+      return {provider: 'GoodReads', id: metadata.goodreadsId};
+    }
+    if (metadata.asin && !metadata.description) {
+      return {provider: 'Amazon', id: metadata.asin};
+    }
+    if (metadata.audibleId && !metadata.description) {
+      return {provider: 'Audible', id: metadata.audibleId};
+    }
+    return null;
+  }
+
+  private getProviderItemId(metadata: BookMetadata, provider: string): string | undefined {
+    switch (provider) {
+      case 'Comicvine': return metadata.comicvineId;
+      case 'GoodReads': return metadata.goodreadsId;
+      case 'Amazon': return metadata.asin;
+      case 'Audible': return metadata.audibleId;
+      default: return undefined;
+    }
   }
 
   onGoBack() {
+    this.detailLoading = false;
     this.selectedFetchedMetadata$.next(null);
   }
 
@@ -368,23 +458,26 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     } else if (metadata['doubanId']) {
       return `<a href="https://book.douban.com/subject/${metadata['doubanId']}" target="_blank">Douban</a>`;
     } else if (metadata['lubimyczytacId']) {
-      return `<a href="https://lubimyczytac.pl/ksiazka/${metadata['lubimyczytacId']}" target="_blank">Lubimyczytac</a>`;
+      return `<a href="https://lubimyczytac.pl/ksiazka/${metadata['lubimyczytacId']}/ksiazka" target="_blank">Lubimyczytac</a>`;
     } else if (metadata.comicvineId) {
-      if (metadata.comicvineId.startsWith('4000')) {
-        const name = metadata.seriesName ? metadata.seriesName.replace(/ /g, '-').toLowerCase() + "-" + metadata.seriesNumber : '';
-        return `<a href="https://comicvine.gamespot.com/${name}/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+      if (metadata.externalUrl) {
+        return `<a href="${metadata.externalUrl}" target="_blank">Comicvine</a>`;
       }
-      const name = metadata.seriesName;
-      return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+      return `<a href="https://comicvine.gamespot.com/4050-${metadata.comicvineId}/" target="_blank">Comicvine</a>`;
     } else if (metadata.ranobedbId) {
       return `<a href="https://ranobedb.org/book/${metadata.ranobedbId}" target="_blank">RanobeDB</a>`;
+    } else if (metadata.audibleId) {
+      return `<a href="https://www.audible.com/pd/${metadata.audibleId}" target="_blank">Audible</a>`;
+    } else if (metadata.externalUrl) {
+      const providerName = metadata.provider || 'Link';
+      return `<a href="${metadata.externalUrl}" target="_blank">${providerName}</a>`;
     }
     throw new Error("No provider ID found in metadata.");
   }
 
   trackByMetadata(index: number, metadata: BookMetadata): string {
     return metadata.googleId || metadata.goodreadsId || metadata.asin ||
-      metadata.hardcoverId || metadata.comicvineId || index.toString();
+      metadata.hardcoverId || metadata.comicvineId || metadata.audibleId || index.toString();
   }
 
   onProviderClick(event: MouseEvent) {

@@ -6,29 +6,31 @@ import {parseLogNotification} from './shared/websocket/model/log-notification.mo
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {Toast} from 'primeng/toast';
 import {RouterOutlet} from '@angular/router';
+import {TranslocoDirective, TranslocoPipe} from '@jsverse/transloco';
 import {AuthInitializationService} from './core/security/auth-initialization-service';
 import {AppConfigService} from './shared/service/app-config.service';
 import {MetadataBatchProgressNotification} from './shared/model/metadata-batch-progress.model';
 import {MetadataProgressService} from './shared/service/metadata-progress.service';
 import {BookdropFileNotification, BookdropFileService} from './features/bookdrop/service/bookdrop-file.service';
 import {Subscription} from 'rxjs';
-import {DownloadProgressDialogComponent} from './shared/components/download-progress-dialog/download-progress-dialog.component';
 import {TaskProgressPayload, TaskService} from './features/settings/task-management/task.service';
 import {LibraryService} from './features/book/service/library.service';
+import {LibraryHealthService} from './features/book/service/library-health.service';
 import {LibraryLoadingService} from './features/library-creator/library-loading.service';
 import {scan, withLatestFrom} from 'rxjs/operators';
+import {AuthService} from './shared/service/auth.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   standalone: true,
-  imports: [ConfirmDialog, Toast, RouterOutlet, DownloadProgressDialogComponent]
+  imports: [ConfirmDialog, Toast, RouterOutlet, TranslocoDirective, TranslocoPipe]
 })
 export class AppComponent implements OnInit, OnDestroy {
 
   loading = true;
-  offline = !navigator.onLine;
+  offline = false;
   private subscriptions: Subscription[] = [];
   private subscriptionsInitialized = false;
 
@@ -41,7 +43,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private bookdropFileService = inject(BookdropFileService);
   private taskService = inject(TaskService);
   private libraryService = inject(LibraryService);
+  private libraryHealthService = inject(LibraryHealthService);
   private libraryLoadingService = inject(LibraryLoadingService);
+  private authService = inject(AuthService);
 
   ngOnInit(): void {
     window.addEventListener('online', this.onOnline);
@@ -51,6 +55,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loading = !ready;
       if (ready && !this.subscriptionsInitialized) {
         this.setupWebSocketSubscriptions();
+        this.libraryHealthService.initialize();
         this.subscriptionsInitialized = true;
       }
     });
@@ -61,8 +66,16 @@ export class AppComponent implements OnInit, OnDestroy {
   };
 
   private onOffline = () => {
-    this.offline = true;
+    this.checkServerReachable().then(reachable => {
+      this.offline = !reachable;
+    });
   };
+
+  private checkServerReachable(): Promise<boolean> {
+    return fetch('/api/public/settings', {method: 'HEAD', cache: 'no-store'})
+      .then(() => true)
+      .catch(() => false);
+  }
 
   reload(): void {
     window.location.reload();
@@ -136,6 +149,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.rxStompService.watch('/user/queue/task-progress').subscribe(msg => {
         const progress = JSON.parse(msg.body) as TaskProgressPayload;
         this.taskService.handleTaskProgress(progress);
+      })
+    );
+    this.subscriptions.push(
+      this.rxStompService.watch('/user/queue/session-revoked').subscribe(() => {
+        this.authService.forceLogout('session_revoked');
       })
     );
   }

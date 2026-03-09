@@ -3,7 +3,8 @@
   "index": "/index.html",
   "navigationUrls": [
     "/**",
-    "!/api/**"
+    "!/api/**",
+    "!/komga/**"
   ],
   "assetGroups": [
     {

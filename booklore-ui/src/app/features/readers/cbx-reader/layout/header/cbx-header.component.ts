@@ -1,14 +1,15 @@
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-import {CbxHeaderService} from './cbx-header.service';
+import {TranslocoPipe} from '@jsverse/transloco';
+import {CbxHeaderService, CbxHeaderState} from './cbx-header.service';
 import {ReaderIconComponent} from '../../../ebook-reader';
 import {CommonModule} from '@angular/common';
 
 @Component({
   selector: 'app-cbx-header',
   standalone: true,
-  imports: [CommonModule, ReaderIconComponent],
+  imports: [CommonModule, TranslocoPipe, ReaderIconComponent],
   templateUrl: './cbx-header.component.html',
   styleUrls: ['./cbx-header.component.scss']
 })
@@ -20,6 +21,12 @@ export class CbxHeaderComponent implements OnInit, OnDestroy {
   @Input() currentPageHasNotes = false;
 
   isVisible = true;
+  overflowOpen = false;
+  state: CbxHeaderState = {
+    isFullscreen: false,
+    isSlideshowActive: false,
+    isMagnifierActive: false
+  };
 
   get bookTitle(): string {
     return this.headerService.title;
@@ -29,6 +36,10 @@ export class CbxHeaderComponent implements OnInit, OnDestroy {
     this.headerService.forceVisible$
       .pipe(takeUntil(this.destroy$))
       .subscribe(visible => this.isVisible = visible);
+
+    this.headerService.state$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(state => this.state = state);
   }
 
   ngOnDestroy(): void {
@@ -50,6 +61,22 @@ export class CbxHeaderComponent implements OnInit, OnDestroy {
 
   onOpenNoteDialog(): void {
     this.headerService.openNoteDialog();
+  }
+
+  onToggleFullscreen(): void {
+    this.headerService.toggleFullscreen();
+  }
+
+  onToggleSlideshow(): void {
+    this.headerService.toggleSlideshow();
+  }
+
+  onToggleMagnifier(): void {
+    this.headerService.toggleMagnifier();
+  }
+
+  onShowShortcutsHelp(): void {
+    this.headerService.showShortcutsHelp();
   }
 
   onClose(): void {

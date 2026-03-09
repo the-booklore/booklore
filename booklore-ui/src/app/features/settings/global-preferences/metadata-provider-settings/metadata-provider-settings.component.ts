@@ -11,6 +11,7 @@ import {AppSettingKey} from '../../../../shared/model/app-settings.model';
 import {Select} from 'primeng/select';
 import {ExternalDocLinkComponent} from '../../../../shared/components/external-doc-link/external-doc-link.component';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-provider-settings',
@@ -22,7 +23,8 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
     FormsModule,
     Select,
     ExternalDocLinkComponent,
-    ToggleSwitchModule
+    ToggleSwitchModule,
+    TranslocoDirective
   ],
   templateUrl: './metadata-provider-settings.component.html',
   styleUrl: './metadata-provider-settings.component.scss'
@@ -68,6 +70,22 @@ export class MetadataProviderSettingsComponent implements OnInit {
 
   selectedGoogleLanguage = '';
 
+  audibleDomains = [
+    {label: 'audible.com', value: 'com'},
+    {label: 'audible.co.uk', value: 'co.uk'},
+    {label: 'audible.de', value: 'de'},
+    {label: 'audible.fr', value: 'fr'},
+    {label: 'audible.it', value: 'it'},
+    {label: 'audible.es', value: 'es'},
+    {label: 'audible.ca', value: 'ca'},
+    {label: 'audible.com.au', value: 'com.au'},
+    {label: 'audible.co.jp', value: 'co.jp'},
+    {label: 'audible.in', value: 'in'}
+  ];
+
+  selectedAudibleDomain = 'com';
+  audibleEnabled: boolean = false;
+
   hardcoverToken: string = '';
   amazonCookie: string = '';
   hardcoverEnabled: boolean = false;
@@ -79,10 +97,12 @@ export class MetadataProviderSettingsComponent implements OnInit {
   doubanEnabled: boolean = false;
   lubimyCzytacEnabled: boolean = false;
   ranobedbEnabled: boolean = false;
+  googleApiKey: string = '';
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
   private destroyRef = inject(DestroyRef);
+  private t = inject(TranslocoService);
 
   private appSettings$ = this.appSettingsService.appSettings$;
 
@@ -100,6 +120,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.goodreadsEnabled = metadataProviderSettings?.goodReads?.enabled ?? false;
         this.googleEnabled = metadataProviderSettings?.google?.enabled ?? false;
         this.selectedGoogleLanguage = metadataProviderSettings?.google?.language ?? '';
+        this.googleApiKey = metadataProviderSettings?.google?.apiKey ?? '';
         this.hardcoverToken = metadataProviderSettings?.hardcover?.apiKey ?? '';
         this.hardcoverEnabled = metadataProviderSettings?.hardcover?.enabled ?? false;
         this.comicvineEnabled = metadataProviderSettings?.comicvine?.enabled ?? false;
@@ -107,6 +128,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.doubanEnabled = metadataProviderSettings?.douban?.enabled ?? false;
         this.lubimyCzytacEnabled = metadataProviderSettings?.lubimyczytac?.enabled ?? false;
         this.ranobedbEnabled = metadataProviderSettings?.ranobedb?.enabled ?? false;
+        this.audibleEnabled = metadataProviderSettings?.audible?.enabled ?? false;
+        this.selectedAudibleDomain = metadataProviderSettings?.audible?.domain ?? 'com';
       });
   }
 
@@ -139,6 +162,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
           google: {
             enabled: this.googleEnabled,
             language: this.selectedGoogleLanguage,
+            apiKey: this.googleApiKey.trim()
           },
           hardcover: {
             enabled: this.hardcoverEnabled,
@@ -146,7 +170,11 @@ export class MetadataProviderSettingsComponent implements OnInit {
           },
           douban: {enabled: this.doubanEnabled},
           lubimyczytac: {enabled: this.lubimyCzytacEnabled},
-          ranobedb: {enabled: this.ranobedbEnabled}
+          ranobedb: {enabled: this.ranobedbEnabled},
+          audible: {
+            enabled: this.audibleEnabled,
+            domain: this.selectedAudibleDomain
+          }
         }
       }
     ];
@@ -155,14 +183,14 @@ export class MetadataProviderSettingsComponent implements OnInit {
       next: () =>
         this.messageService.add({
           severity: 'success',
-          summary: 'Saved',
-          detail: 'Metadata provider settings saved.'
+          summary: this.t.translate('common.success'),
+          detail: this.t.translate('settingsMeta.providers.saveSuccess')
         }),
       error: () =>
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to save metadata provider settings.'
+          summary: this.t.translate('common.error'),
+          detail: this.t.translate('settingsMeta.providers.saveError')
         })
     });
   }

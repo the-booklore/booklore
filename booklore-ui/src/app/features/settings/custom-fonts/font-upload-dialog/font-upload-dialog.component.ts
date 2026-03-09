@@ -1,4 +1,4 @@
-import {Component, ViewChild, ElementRef, OnDestroy} from '@angular/core';
+import {Component, ViewChild, ElementRef, OnDestroy, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Button} from 'primeng/button';
 import {MessageService} from 'primeng/api';
@@ -7,16 +7,18 @@ import {formatFileSize} from '../../../../shared/model/custom-font.model';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-font-upload-dialog',
   standalone: true,
-  imports: [CommonModule, Button, InputText, FormsModule],
+  imports: [CommonModule, Button, InputText, FormsModule, TranslocoDirective, TranslocoPipe],
   templateUrl: './font-upload-dialog.component.html',
   styleUrls: ['./font-upload-dialog.component.scss']
 })
 export class FontUploadDialogComponent implements OnDestroy {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  private readonly t = inject(TranslocoService);
 
   isUploading = false;
   uploadedFontName = '';
@@ -96,8 +98,8 @@ export class FontUploadDialogComponent implements OnDestroy {
         this.previewFontFamily = null;
         this.messageService.add({
           severity: 'warn',
-          summary: 'Preview Failed',
-          detail: 'Unable to preview font, but you can still upload it'
+          summary: this.t.translate('settingsReader.fonts.upload.previewFailed'),
+          detail: this.t.translate('settingsReader.fonts.upload.previewFailedDetail')
         });
       }
     } finally {
@@ -111,8 +113,8 @@ export class FontUploadDialogComponent implements OnDestroy {
     if (!this.selectedFile) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'No File Selected',
-        detail: 'Please select a font file to upload'
+        summary: this.t.translate('settingsReader.fonts.upload.noFileSelected'),
+        detail: this.t.translate('settingsReader.fonts.upload.noFileSelectedDetail')
       });
       return;
     }
@@ -122,21 +124,20 @@ export class FontUploadDialogComponent implements OnDestroy {
       next: (font) => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Success',
-          detail: `Font "${font.fontName}" uploaded successfully`
+          summary: this.t.translate('settingsReader.fonts.upload.success'),
+          detail: this.t.translate('settingsReader.fonts.upload.successDetail', {name: font.fontName})
         });
         this.isUploading = false;
         this.dialogRef.close(font); // Return the uploaded font
       },
       error: (error) => {
         console.error('Failed to upload font:', error);
-        let errorMessage = 'Failed to upload font';
-        if (error.status === 400) {
-          errorMessage = 'Invalid file format or quota exceeded';
-        }
+        const errorMessage = error.status === 400
+          ? this.t.translate('settingsReader.fonts.upload.uploadFailedInvalid')
+          : this.t.translate('settingsReader.fonts.upload.uploadFailedDefault');
         this.messageService.add({
           severity: 'error',
-          summary: 'Upload Failed',
+          summary: this.t.translate('settingsReader.fonts.upload.uploadFailed'),
           detail: errorMessage
         });
 
@@ -193,8 +194,8 @@ export class FontUploadDialogComponent implements OnDestroy {
     if (!isValidFormat) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Invalid File Type',
-        detail: 'Please upload a TTF, OTF, WOFF, or WOFF2 font file'
+        summary: this.t.translate('settingsReader.fonts.upload.invalidFileType'),
+        detail: this.t.translate('settingsReader.fonts.upload.invalidFileTypeDetail')
       });
       return false;
     }
@@ -202,8 +203,8 @@ export class FontUploadDialogComponent implements OnDestroy {
     if (file.size > this.maxFileSize) {
       this.messageService.add({
         severity: 'error',
-        summary: 'File Too Large',
-        detail: `File size must not exceed ${this.formatFileSize(this.maxFileSize)}`
+        summary: this.t.translate('settingsReader.fonts.upload.fileTooLarge'),
+        detail: this.t.translate('settingsReader.fonts.upload.fileTooLargeDetail', {size: this.formatFileSize(this.maxFileSize)})
       });
       return false;
     }

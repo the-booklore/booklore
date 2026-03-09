@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'book.addPhysicalBook'">
 <div class="add-physical-book">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-book header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Add Physical Book</h2>
-      <p class="panel-description">Catalog a physical book without a digital file</p>
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
     </div>
     <p-button
       icon="pi pi-times"
@@ -14,7 +15,7 @@
       [text]="true"
       [rounded]="true"
       class="close-button"
-      pTooltip="Close"
+      [pTooltip]="t('closeTooltip')"
       tooltipPosition="left"/>
   </div>
 
@@ -22,7 +23,7 @@
     <div class="form-group highlight-group">
       <label for="library" class="form-label">
         <i class="pi pi-folder label-icon"></i>
-        Library
+        {{ t('libraryLabel') }}
         <span class="required-indicator">*</span>
       </label>
       <p-select
@@ -31,69 +32,87 @@
         [(ngModel)]="selectedLibraryId"
         optionLabel="name"
         optionValue="id"
-        placeholder="Select a library"
+        [placeholder]="t('libraryPlaceholder')"
         [style]="{'width': '100%'}"/>
     </div>
 
     <div class="gradient-divider"></div>
 
-    <div class="form-row">
-      <div class="form-group highlight-group flex-2">
-        <label for="title" class="form-label">
-          <i class="pi pi-tag label-icon"></i>
-          Title
-        </label>
-        <div class="input-wrapper">
-          <input
-            id="title"
-            type="text"
-            pInputText
-            [(ngModel)]="title"
-            class="input-full"
-            placeholder="e.g., The Great Gatsby"
-            [class.filled]="title.trim()"/>
+    <div class="top-section">
+      @if (coverUrl) {
+        <div class="cover-preview">
+          <img [src]="coverUrl" alt="Book cover"/>
         </div>
-      </div>
+      }
 
-      <div class="form-group highlight-group flex-1">
-        <label for="isbn" class="form-label">
-          <i class="pi pi-barcode label-icon"></i>
-          ISBN
-        </label>
-        <div class="input-wrapper">
-          <input
-            id="isbn"
-            type="text"
-            pInputText
-            [(ngModel)]="isbn"
-            class="input-full"
-            placeholder="e.g., 9780134685991"/>
+      <div class="top-fields">
+        <div class="form-row">
+          <div class="form-group highlight-group flex-2">
+            <label for="title" class="form-label">
+              <i class="pi pi-tag label-icon"></i>
+              {{ t('titleLabel') }}
+            </label>
+            <div class="input-wrapper">
+              <input
+                id="title"
+                type="text"
+                pInputText
+                [(ngModel)]="title"
+                class="input-full"
+                [placeholder]="t('titlePlaceholder')"
+                [class.filled]="title.trim()"/>
+            </div>
+          </div>
+
+          <div class="form-group highlight-group flex-1">
+            <label for="isbn" class="form-label">
+              <i class="pi pi-barcode label-icon"></i>
+              {{ t('isbnLabel') }}
+            </label>
+            <div class="isbn-input-row">
+              <input
+                id="isbn"
+                type="text"
+                pInputText
+                [(ngModel)]="isbn"
+                class="input-full"
+                [placeholder]="t('isbnPlaceholder')"/>
+              <p-button
+                icon="pi pi-search"
+                [rounded]="true"
+                [text]="true"
+                severity="info"
+                (onClick)="fetchMetadataByIsbn()"
+                [disabled]="!isbn.trim() || isFetchingMetadata"
+                [loading]="isFetchingMetadata"
+                [pTooltip]="t('fetchMetadataTooltip')"
+                tooltipPosition="top"/>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div class="gradient-divider"></div>
-
-    <div class="form-group highlight-group">
-      <label for="authors" class="form-label">
-        <i class="pi pi-user label-icon"></i>
-        Authors
-      </label>
-      <div class="autocomplete-wrapper">
-        <p-autoComplete
-          appendTo="body"
-          [(ngModel)]="authors"
-          [multiple]="true"
-          [fluid]="true"
-          [dropdown]="false"
-          [suggestions]="filteredAuthors"
-          [forceSelection]="false"
-          [showClear]="false"
-          placeholder="Type author name and press Enter"
-          (completeMethod)="filterAuthors($event)"
-          (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
-          (onSelect)="onAutoCompleteSelect('authors', $event)">
-        </p-autoComplete>
+        <div class="form-group highlight-group">
+          <label for="authors" class="form-label">
+            <i class="pi pi-user label-icon"></i>
+            {{ t('authorsLabel') }}
+          </label>
+          <div class="autocomplete-wrapper">
+            <p-autoComplete
+              appendTo="body"
+              [(ngModel)]="authors"
+              [multiple]="true"
+              [fluid]="true"
+              [dropdown]="false"
+              [suggestions]="filteredAuthors"
+              [forceSelection]="false"
+              [showClear]="false"
+              [placeholder]="t('authorsPlaceholder')"
+              (completeMethod)="filterAuthors($event)"
+              (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
+              (onSelect)="onAutoCompleteSelect('authors', $event)">
+            </p-autoComplete>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -102,14 +121,14 @@
     <div class="form-group highlight-group">
       <label for="description" class="form-label">
         <i class="pi pi-align-left label-icon"></i>
-        Description
+        {{ t('descriptionLabel') }}
       </label>
       <textarea
         id="description"
         pTextarea
         [(ngModel)]="description"
         rows="3"
-        placeholder="Brief description of the book..."
+        [placeholder]="t('descriptionPlaceholder')"
         class="input-full"></textarea>
     </div>
 
@@ -119,7 +138,7 @@
       <div class="form-group highlight-group flex-1">
         <label for="publisher" class="form-label">
           <i class="pi pi-building label-icon"></i>
-          Publisher
+          {{ t('publisherLabel') }}
         </label>
         <input
           id="publisher"
@@ -127,13 +146,13 @@
           pInputText
           [(ngModel)]="publisher"
           class="input-full"
-          placeholder="Publisher name"/>
+          [placeholder]="t('publisherPlaceholder')"/>
       </div>
 
       <div class="form-group highlight-group flex-1">
         <label for="publishedDate" class="form-label">
           <i class="pi pi-calendar label-icon"></i>
-          Published Date
+          {{ t('publishedDateLabel') }}
         </label>
         <input
           id="publishedDate"
@@ -141,7 +160,7 @@
           pInputText
           [(ngModel)]="publishedDate"
           class="input-full"
-          placeholder="e.g., 2020 or 2020-05-15"/>
+          [placeholder]="t('publishedDatePlaceholder')"/>
       </div>
     </div>
 
@@ -149,7 +168,7 @@
       <div class="form-group highlight-group flex-1">
         <label for="language" class="form-label">
           <i class="pi pi-globe label-icon"></i>
-          Language
+          {{ t('languageLabel') }}
         </label>
         <input
           id="language"
@@ -157,19 +176,19 @@
           pInputText
           [(ngModel)]="language"
           class="input-full"
-          placeholder="e.g., English"/>
+          [placeholder]="t('languagePlaceholder')"/>
       </div>
 
       <div class="form-group highlight-group flex-1">
         <label for="pageCount" class="form-label">
           <i class="pi pi-file label-icon"></i>
-          Page Count
+          {{ t('pageCountLabel') }}
         </label>
         <p-inputnumber
           id="pageCount"
           [(ngModel)]="pageCount"
           [useGrouping]="false"
-          placeholder="Number of pages"
+          [placeholder]="t('pageCountPlaceholder')"
           class="input-full">
         </p-inputnumber>
       </div>
@@ -180,7 +199,7 @@
     <div class="form-group highlight-group">
       <label for="categories" class="form-label">
         <i class="pi pi-tags label-icon"></i>
-        Categories/Genres
+        {{ t('categoriesLabel') }}
       </label>
       <div class="autocomplete-wrapper">
         <p-autoComplete
@@ -192,7 +211,7 @@
           [suggestions]="filteredCategories"
           [forceSelection]="false"
           [showClear]="true"
-          placeholder="Type category and press Enter"
+          [placeholder]="t('categoriesPlaceholder')"
           (completeMethod)="filterCategories($event)"
           (onKeyUp)="onAutoCompleteKeyUp('categories', $event)"
           (onSelect)="onAutoCompleteSelect('categories', $event)">
@@ -206,28 +225,28 @@
       @if (!selectedLibraryId) {
         <div class="validation-message error">
           <i class="pi pi-exclamation-circle"></i>
-          <span>Library is required</span>
+          <span>{{ t('validationLibraryRequired') }}</span>
         </div>
       } @else if (!title.trim() && !isbn.trim()) {
         <div class="validation-message error">
           <i class="pi pi-exclamation-circle"></i>
-          <span>Title or ISBN is required</span>
+          <span>{{ t('validationTitleOrIsbn') }}</span>
         </div>
       } @else {
         <div class="validation-message success">
           <i class="pi pi-check-circle"></i>
-          <span>Ready to create</span>
+          <span>{{ t('validationReady') }}</span>
         </div>
       }
     </div>
     <div class="footer-actions">
       <p-button
-        label="Cancel"
+        [label]="t('cancelButton')"
         severity="secondary"
         [outlined]="true"
         (onClick)="cancel()"/>
       <p-button
-        label="Add Physical Book"
+        [label]="t('addButton')"
         icon="pi pi-plus"
         severity="success"
         (onClick)="createBook()"
@@ -236,3 +255,4 @@
     </div>
   </div>
 </div>
+</ng-container>

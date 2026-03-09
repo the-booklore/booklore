@@ -4,11 +4,13 @@ import {UserService} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {filter, take, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-meta-center-view-mode-component',
   imports: [
-    FormsModule
+    FormsModule,
+    TranslocoDirective
   ],
   templateUrl: './meta-center-view-mode-component.html',
   styleUrl: './meta-center-view-mode-component.scss'
@@ -19,6 +21,7 @@ export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
 
   private userService = inject(UserService);
   private messageService = inject(MessageService);
+  private t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   ngOnInit(): void {
@@ -62,8 +65,8 @@ export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Updated',
-      detail: 'Your metadata center view preference has been saved.',
+      summary: this.t.translate('settingsView.metaCenter.prefsUpdated'),
+      detail: this.t.translate('settingsView.metaCenter.metaCenterSaved'),
       life: 1500,
     });
   }
@@ -77,8 +80,8 @@ export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Updated',
-      detail: 'Your series view mode preference has been saved.',
+      summary: this.t.translate('settingsView.metaCenter.prefsUpdated'),
+      detail: this.t.translate('settingsView.metaCenter.seriesViewSaved'),
       life: 1500,
     });
   }

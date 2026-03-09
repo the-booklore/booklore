@@ -68,4 +68,3 @@ export class BookSocketService {
     this.bookStateService.updateBookState({...currentState, books});
   }
 }
-

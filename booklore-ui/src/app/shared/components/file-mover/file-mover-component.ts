@@ -14,6 +14,7 @@ import {LibraryService} from "../../../features/book/service/library.service";
 import {AppSettingsService} from '../../service/app-settings.service';
 import {Select} from 'primeng/select';
 import {Library, LibraryPath} from '../../../features/book/model/library.model';
+import {replacePlaceholders} from '../../util/pattern-resolver';
 
 interface FilePreview {
   bookId: number;
@@ -253,6 +254,7 @@ export class FileMoverComponent implements OnDestroy {
     const values: Record<string, string> = {
       authors: this.sanitize(meta.authors?.join(', ') || 'Unknown Author'),
       title: this.sanitize(meta.title || 'Untitled'),
+      subtitle: this.sanitize(meta.subtitle || ''),
       year: this.formatYear(meta.publishedDate),
       series: this.sanitize(meta.seriesName || ''),
       seriesIndex: this.formatSeriesIndex(meta.seriesNumber ?? undefined),
@@ -267,15 +269,7 @@ export class FileMoverComponent implements OnDestroy {
     if (!pattern?.trim()) {
       newPath = fileName;
     } else {
-      newPath = pattern.replace(/<([^<>]+)>/g, (_, block) => {
-        const placeholders = [...block.matchAll(/{(.*?)}/g)].map(m => m[1]);
-        const allHaveValues = placeholders.every(key => values[key]?.trim());
-        return allHaveValues
-          ? block.replace(/{(.*?)}/g, (_: string, key: string) => values[key] ?? '')
-          : '';
-      });
-
-      newPath = newPath.replace(/{(.*?)}/g, (_, key) => values[key] ?? '');
+      newPath = replacePlaceholders(pattern, values);
 
       if (!newPath.endsWith(extension)) {
         newPath += extension;
@@ -346,7 +340,16 @@ export class FileMoverComponent implements OnDestroy {
 
   formatSeriesIndex(seriesNumber?: number): string {
     if (seriesNumber == null) return '';
-    return this.sanitize(seriesNumber.toString());
+    // Check if it's a whole number
+    if (Number.isInteger(seriesNumber)) {
+      // Format with leading zero for 1-9
+      return this.sanitize(seriesNumber.toString().padStart(2, '0'));
+    } else {
+      // For decimal numbers, format integer part with leading zero
+      const intPart = Math.floor(seriesNumber);
+      const decimalPart = (seriesNumber % 1).toFixed(10).substring(1).replace(/0+$/, '');
+      return this.sanitize(intPart.toString().padStart(2, '0') + decimalPart);
+    }
   }
 
   saveChanges(): void {

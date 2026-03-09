@@ -17,6 +17,52 @@
     outline: none;
   }
 
+  // RTL reading mode - reverse page order in two-page view
+  &.rtl-reading {
+    .two-page-view {
+      .pages-wrapper,
+      .previous-page-layer,
+      .current-page-layer {
+        flex-direction: row-reverse;
+      }
+    }
+  }
+
+  // Slideshow progress bar
+  .slideshow-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: #4a90e2;
+    z-index: 1001;
+    pointer-events: none;
+    animation: slideshow-fill linear infinite;
+    transition: bottom 0.3s ease;
+
+    &.above-footer {
+      bottom: 52px;
+    }
+  }
+
+  @keyframes slideshow-fill {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  .magnifier-lens {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: none;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    z-index: 1000;
+    background-repeat: no-repeat;
+  }
+
   .bookmark-indicator {
     position: absolute;
     top: 0;
@@ -60,6 +106,10 @@
         flex: 0 0 auto;
         margin-top: 1rem;
       }
+    }
+
+    &.magnifier-active {
+      cursor: none;
     }
 
     &.bg-black {
@@ -358,6 +408,74 @@
       }
     }
 
+    // Long Strip / Webtoon mode - no gaps between pages
+    &.long-strip {
+      overflow-y: auto;
+      overflow-x: hidden;
+      align-items: flex-start;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+
+      .long-strip-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        width: 100%;
+        padding: 0;
+      }
+
+      .page-image {
+        box-shadow: none;
+        border-radius: 0;
+        transition: none;
+        display: block;
+
+        &:hover {
+          transform: none;
+        }
+      }
+
+      &.fit-width .page-image {
+        width: 100%;
+        height: auto;
+      }
+
+      &.fit-height .page-image {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+      }
+
+      &.fit-actual-size {
+        overflow-x: auto;
+
+        .long-strip-wrapper {
+          width: max-content;
+          min-width: 100%;
+        }
+
+        .page-image {
+          width: auto;
+          height: auto;
+        }
+      }
+
+      &.fit-page .page-image,
+      &.fit-auto .page-image {
+        max-width: 100%;
+        width: auto;
+        height: auto;
+      }
+
+      .loading-more {
+        padding: 2rem;
+        display: flex;
+        justify-content: center;
+      }
+    }
+
     .no-pages {
       text-align: center;
       color: #999;
@@ -442,6 +560,10 @@
 
 @media (max-width: 768px) {
   .comic-reader-container {
+    .slideshow-progress.above-footer {
+      bottom: 48px;
+    }
+
     .image-container {
       top: 0;
       bottom: 0;

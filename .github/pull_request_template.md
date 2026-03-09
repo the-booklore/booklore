@@ -1,59 +1,102 @@
-## 🚀 Pull Request
+## 📝 Description
 
-### 📝 Description
+<!-- Why is this change needed? Explain in your own words. -->
 
-<!-- Provide a clear and concise summary of the changes introduced in this pull request -->
-<!-- Reference related issues using "Fixes #123", "Closes #456", or "Relates to #789" -->
+**Linked Issue:** Fixes #<!-- issue number -->
 
-### 🛠️ Changes Implemented
+> **Required.** Every PR must reference an approved issue. If no issue exists, [open one](https://github.com/booklore-app/booklore/issues/new) and wait for maintainer approval before submitting a PR. Unsolicited PRs without a linked issue will be closed.
 
-<!-- Detail the specific modifications, additions, or removals made in this pull request -->
-- 
+## 🏷️ Type of Change
 
-### 🧪 Testing Strategy
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Enhancement to existing feature
+- [ ] Refactor (no behavior change)
+- [ ] Breaking change (existing functionality affected)
+- [ ] Documentation update
 
-<!-- Describe the testing methodology used to verify the correctness of these changes -->
-<!-- Include testing approach, scenarios covered, and edge cases considered -->
+## 🔧 Changes
 
-### 📸 Visual Changes _(if applicable)_
+<!-- List the specific modifications made -->
+-
 
-<!-- Attach screenshots or videos demonstrating UI/UX modifications -->
+## 🧪 Testing (MANDATORY)
 
+> **PRs without this section filled out will be closed.** "Tests pass" or "Tested locally" is not sufficient. You must provide specifics.
+
+**Manual testing steps you performed:**
+<!-- Walk through the exact steps you took to verify your change works. Be specific. -->
+1.
+2.
+3.
+
+**Regression testing:**
+<!-- How did you verify that existing related features still work after your change? -->
+-
+
+**Edge cases covered:**
+<!-- What boundary conditions or unusual inputs did you test? -->
+-
+
+**Test output:**
+<!-- Paste the actual terminal output from running tests. Not "all pass", the real output. -->
+
+<details>
+<summary>Backend test output (<code>./gradlew test</code>)</summary>
+
+```
+PASTE OUTPUT HERE
+```
+
+</details>
+
+<details>
+<summary>Frontend test output (<code>ng test</code>)</summary>
+
+```
+PASTE OUTPUT HERE
+```
+
+</details>
+
+## 📸 Screen Recording / Screenshots (MANDATORY)
+
+> Every PR must include a **screen recording or screenshots** showing the change working end-to-end in a running local instance (both backend and frontend). This means you must have actually built, run, and tested the code yourself. PRs without visual proof will be closed without review.
+
+<!-- Attach screen recording or screenshots here -->
 
 ---
 
-## ⚠️ Required Pre-Submission Checklist
+## ✅ Pre-Submission Checklist
 
-### **Please Read - This Checklist is Mandatory**
+> **All boxes must be checked before requesting review.** Incomplete PRs will be closed without review. No exceptions.
 
-> **Important Notice:** We've experienced several production bugs recently due to incomplete pre-submission checks. To maintain code quality and prevent issues from reaching production, we're enforcing stricter adherence to this checklist.
->
-> **All checkboxes below must be completed before requesting review.** PRs that haven't completed these requirements will be sent back for completion.
+- [ ] This PR is linked to an approved issue
+- [ ] Code follows project [backend and frontend conventions](../CONTRIBUTING.md#backend-conventions)
+- [ ] Branch is up to date with `develop` (merge conflicts resolved)
+- [ ] I ran the full stack locally (backend + frontend + database) and verified the change works
+- [ ] Automated tests added or updated to cover changes (backend **and** frontend)
+- [ ] All tests pass locally and output is pasted above
+- [ ] Screen recording or screenshots are attached above proving the change works
+- [ ] PR is a single focused change (one bug fix OR one feature, not multiple unrelated changes)
+- [ ] PR is reasonably scoped (PRs over 1000+ changed lines will be closed, split into smaller PRs)
+- [ ] No unsolicited refactors, cleanups, or "improvements" are bundled in
+- [ ] Flyway migration versioning is correct _(if schema was modified)_
+- [ ] Documentation PR submitted to [booklore-docs](https://github.com/booklore-app/booklore-docs) _(if user-facing changes)_
 
-#### **Mandatory Requirements** _(please check ALL boxes)_:
+### 🤖 AI-Assisted Contributions
 
-- [ ] **Code adheres to project style guidelines and conventions**
-- [ ] **Branch synchronized with latest `develop` branch** _(please resolve any merge conflicts)_
-- [ ] **🚨 CRITICAL: Automated unit tests added/updated to cover changes** _(MANDATORY for ALL Spring Boot backend and Angular frontend changes - this is non-negotiable)_
-- [ ] **🚨 CRITICAL: All tests pass locally** _(run `./gradlew test` for Spring Boot backend, and `ng test` for Angular frontend - NO EXCEPTIONS)_
-- [ ] **🚨 CRITICAL: Manual testing completed in local development environment** _(verify your changes work AND no existing functionality is broken - test related features thoroughly)_
-- [ ] **Flyway migration versioning follows correct sequence** _(if database schema was modified)_
-- [ ] **Documentation PR submitted to [booklore-docs](https://github.com/booklore-app/booklore-docs)** _(required for features or enhancements that introduce user-facing or visual changes)_
+> **If any part of this PR was generated or assisted by AI tools (Copilot, Claude, ChatGPT, etc.), all items below are mandatory.** You are fully responsible for every line you submit. "The AI wrote it" is not an excuse, and AI-generated PRs that clearly haven't been reviewed are the #1 reason PRs get closed.
 
-#### **Why This Matters:**
-
-Recent production incidents have been traced back to:
-
-- **Incomplete testing coverage (especially backend)**
-- Merge conflicts not resolved before merge
-- Missing documentation for new features
-
-**Backend changes without tests will not be accepted.** By completing this checklist thoroughly, you're helping maintain the quality and stability of Booklore for all users.
-
-**Note to Reviewers:** Please verify the checklist is complete before beginning your review. If items are unchecked, kindly ask the contributor to complete them first.
+- [ ] I have read and understand every line of this PR and can explain any part of it during review
+- [ ] I personally ran the code and verified it works (not just trusted the AI's output)
+- [ ] PR is scoped to a single logical change, not a dump of everything the AI suggested
+- [ ] Tests validate actual behavior, not just coverage (AI-generated tests often assert nothing meaningful)
+- [ ] No dead code, placeholder comments, `TODO`s, or unused scaffolding left behind by AI
+- [ ] I did not submit refactors, style changes, or "improvements" the AI suggested beyond the scope of the issue
 
 ---
 
-### 💬 Additional Context _(optional)_
+## 💬 Additional Context _(optional)_
 
-<!-- Provide any supplementary information, implementation considerations, or discussion points for reviewers -->
+<!-- Any extra information or discussion points for reviewers -->

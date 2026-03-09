@@ -1,5 +1,5 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {AbstractControl, FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Button} from 'primeng/button';
 import {NgTemplateOutlet} from '@angular/common';
 import {InputText} from 'primeng/inputtext';
@@ -14,14 +14,17 @@ import {MessageService} from 'primeng/api';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
-import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
+import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, RELATIVE_DATE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
 import {IconPickerService, IconSelection} from '../../../shared/service/icon-picker.service';
 import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
 import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
+import {Tooltip} from 'primeng/tooltip';
 import {BookService} from '../../book/service/book.service';
 import {ShelfService} from '../../book/service/shelf.service';
 import {Shelf} from '../../book/model/shelf.model';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {TextareaModule} from 'primeng/textarea';
 
 export type RuleOperator =
   | 'equals'
@@ -40,6 +43,9 @@ export type RuleOperator =
   | 'includes_any'
   | 'excludes_all'
   | 'includes_all'
+  | 'within_last'
+  | 'older_than'
+  | 'this_period'
 
 export type RuleField =
   | 'library'
@@ -72,7 +78,26 @@ export type RuleField =
   | 'lastReadTime'
   | 'metadataScore'
   | 'moods'
-  | 'tags';
+  | 'tags'
+  | 'addedOn'
+  | 'lubimyczytacRating'
+  | 'description'
+  | 'narrator'
+  | 'ageRating'
+  | 'contentRating'
+  | 'audibleRating'
+  | 'audibleReviewCount'
+  | 'abridged'
+  | 'audiobookDuration'
+  | 'audiobookCodec'
+  | 'audiobookChapterCount'
+  | 'audiobookBitrate'
+  | 'isPhysical'
+  | 'seriesStatus'
+  | 'seriesGaps'
+  | 'seriesPosition'
+  | 'readingProgress'
+  | 'metadataPresence';
 
 
 interface FullFieldConfig {
@@ -81,7 +106,7 @@ interface FullFieldConfig {
   max?: number;
 }
 
-type FieldType = 'number' | 'decimal' | 'date' | undefined;
+type FieldType = 'number' | 'decimal' | 'date' | 'boolean' | undefined;
 
 export interface Rule {
   field: RuleField;
@@ -118,37 +143,85 @@ export type GroupFormGroup = FormGroup<{
 }>;
 
 const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
-  library: {label: 'Library'},
-  shelf: {label: 'Shelf'},
-  readStatus: {label: 'Read Status'},
-  dateFinished: {label: 'Date Finished', type: 'date'},
-  lastReadTime: {label: 'Last Read Time', type: 'date'},
-  metadataScore: {label: 'Metadata Score', type: 'decimal', max: 100},
-  title: {label: 'Title'},
-  authors: {label: 'Authors'},
-  categories: {label: 'Categories'},
-  moods: {label: 'Moods'},
-  tags: {label: 'Tags'},
-  publisher: {label: 'Publisher'},
-  publishedDate: {label: 'Published Date', type: 'date'},
-  personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
-  pageCount: {label: 'Page Count', type: 'number'},
-  language: {label: 'Language'},
-  isbn13: {label: 'ISBN-13'},
-  isbn10: {label: 'ISBN-10'},
-  seriesName: {label: 'Series Name'},
-  seriesNumber: {label: 'Series Number', type: 'number'},
-  seriesTotal: {label: 'Books in Series', type: 'number'},
-  fileSize: {label: 'File Size (Kb)', type: 'number'},
-  fileType: {label: 'File Type'},
-  subtitle: {label: 'Subtitle'},
-  amazonRating: {label: 'Amazon Rating', type: 'decimal', max: 5},
-  amazonReviewCount: {label: 'Amazon Review Count', type: 'number'},
-  goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
-  goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
-  hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
-  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
-  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
+  library: {label: 'library'},
+  shelf: {label: 'shelf'},
+  readStatus: {label: 'readStatus'},
+  dateFinished: {label: 'dateFinished', type: 'date'},
+  lastReadTime: {label: 'lastReadTime', type: 'date'},
+  metadataScore: {label: 'metadataScore', type: 'decimal', max: 100},
+  title: {label: 'title'},
+  authors: {label: 'authors'},
+  categories: {label: 'categories'},
+  moods: {label: 'moods'},
+  tags: {label: 'tags'},
+  publisher: {label: 'publisher'},
+  publishedDate: {label: 'publishedDate', type: 'date'},
+  personalRating: {label: 'personalRating', type: 'decimal', max: 10},
+  pageCount: {label: 'pageCount', type: 'number'},
+  language: {label: 'language'},
+  isbn13: {label: 'isbn13'},
+  isbn10: {label: 'isbn10'},
+  seriesName: {label: 'seriesName'},
+  seriesNumber: {label: 'seriesNumber', type: 'number'},
+  seriesTotal: {label: 'seriesTotal', type: 'number'},
+  fileSize: {label: 'fileSize', type: 'number'},
+  fileType: {label: 'fileType'},
+  subtitle: {label: 'subtitle'},
+  amazonRating: {label: 'amazonRating', type: 'decimal', max: 5},
+  amazonReviewCount: {label: 'amazonReviewCount', type: 'number'},
+  goodreadsRating: {label: 'goodreadsRating', type: 'decimal', max: 5},
+  goodreadsReviewCount: {label: 'goodreadsReviewCount', type: 'number'},
+  hardcoverRating: {label: 'hardcoverRating', type: 'decimal', max: 5},
+  hardcoverReviewCount: {label: 'hardcoverReviewCount', type: 'number'},
+  ranobedbRating: {label: 'ranobedbRating', type: 'decimal', max: 5},
+  addedOn: {label: 'addedOn', type: 'date'},
+  lubimyczytacRating: {label: 'lubimyczytacRating', type: 'decimal', max: 5},
+  description: {label: 'description'},
+  narrator: {label: 'narrator'},
+  ageRating: {label: 'ageRating', type: 'number'},
+  contentRating: {label: 'contentRating'},
+  audibleRating: {label: 'audibleRating', type: 'decimal', max: 5},
+  audibleReviewCount: {label: 'audibleReviewCount', type: 'number'},
+  abridged: {label: 'abridged', type: 'boolean'},
+  audiobookDuration: {label: 'audiobookDuration', type: 'number'},
+  audiobookCodec: {label: 'audiobookCodec'},
+  audiobookChapterCount: {label: 'audiobookChapterCount', type: 'number'},
+  audiobookBitrate: {label: 'audiobookBitrate', type: 'number'},
+  isPhysical: {label: 'isPhysical', type: 'boolean'},
+  seriesStatus: {label: 'seriesStatus'},
+  seriesGaps: {label: 'seriesGaps'},
+  seriesPosition: {label: 'seriesPosition'},
+  readingProgress: {label: 'readingProgress', type: 'decimal', max: 100},
+  metadataPresence: {label: 'metadataPresence'}
+};
+
+interface FieldGroup {
+  translationKey: string;
+  fields: RuleField[];
+}
+
+const FIELD_GROUPS: FieldGroup[] = [
+  { translationKey: 'organization', fields: ['library', 'shelf', 'readStatus', 'readingProgress'] },
+  { translationKey: 'bookInfo', fields: ['title', 'subtitle', 'description', 'authors', 'categories', 'publisher', 'language', 'pageCount', 'ageRating', 'contentRating'] },
+  { translationKey: 'series', fields: ['seriesName', 'seriesNumber', 'seriesTotal', 'seriesStatus', 'seriesGaps', 'seriesPosition'] },
+  { translationKey: 'dates', fields: ['publishedDate', 'dateFinished', 'lastReadTime', 'addedOn'] },
+  { translationKey: 'ratingsReviews', fields: ['personalRating', 'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount', 'hardcoverRating', 'hardcoverReviewCount', 'ranobedbRating', 'lubimyczytacRating', 'audibleRating', 'audibleReviewCount'] },
+  { translationKey: 'qualityMetadata', fields: ['metadataScore', 'metadataPresence'] },
+  { translationKey: 'tagsMoods', fields: ['moods', 'tags'] },
+  { translationKey: 'audiobook', fields: ['narrator', 'abridged', 'audiobookDuration', 'audiobookCodec', 'audiobookChapterCount', 'audiobookBitrate'] },
+  { translationKey: 'fileIdentifiers', fields: ['fileType', 'fileSize', 'isbn13', 'isbn10', 'isPhysical'] }
+];
+
+const READ_STATUS_KEYS: Record<string, string> = {
+  UNREAD: 'unread',
+  READING: 'reading',
+  RE_READING: 'reReading',
+  READ: 'read',
+  PARTIALLY_READ: 'partiallyRead',
+  PAUSED: 'paused',
+  WONT_READ: 'wontRead',
+  ABANDONED: 'abandoned',
+  UNSET: 'unset'
 };
 
 @Component({
@@ -158,6 +231,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     NgTemplateOutlet,
     InputText,
     Select,
@@ -167,10 +241,15 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
     MultiSelect,
     AutoComplete,
     CheckboxModule,
-    IconDisplayComponent
+    IconDisplayComponent,
+    Tooltip,
+    TranslocoDirective,
+    TextareaModule
   ]
 })
 export class MagicShelfComponent implements OnInit {
+
+  private readonly t = inject(TranslocoService);
 
   numericFieldConfigMap = new Map<RuleField, FieldConfig>(
     Object.entries(FIELD_CONFIGS)
@@ -178,19 +257,28 @@ export class MagicShelfComponent implements OnInit {
       .map(([key, config]) => [key as RuleField, {type: config.type!, max: config.max}])
   );
 
-  conditionOptions: { label: string; value: 'and' | 'or' }[] = [
-    {label: 'AND', value: 'and'},
-    {label: 'OR', value: 'or'},
-  ];
+  get conditionOptions(): { label: string; value: 'and' | 'or' }[] {
+    return [
+      {label: this.t.translate('magicShelf.conditions.and'), value: 'and'},
+      {label: this.t.translate('magicShelf.conditions.or'), value: 'or'},
+    ];
+  }
 
-  fieldOptions = Object.entries(FIELD_CONFIGS).map(([key, config]) => {
-    // Use "Genre" instead of "Categories" for user-facing label
-    const label = key === 'categories' ? 'Genre' : config.label;
-    return {
-      label: label,
-      value: key as RuleField
-    };
-  });
+  get fieldOptions() {
+    return FIELD_GROUPS
+      .map(group => ({
+        label: this.t.translate(`magicShelf.fieldGroups.${group.translationKey}`),
+        items: group.fields.map(field => {
+          const config = FIELD_CONFIGS[field];
+          const translationKey = field === 'categories' ? 'genre' : config.label;
+          return {
+            label: this.t.translate(`magicShelf.fields.${translationKey}`),
+            value: field
+          };
+        })
+      }))
+      .filter(group => group.items.length > 0);
+  }
 
   fileType: { label: string; value: string }[] = [
     {label: 'PDF', value: 'pdf'},
@@ -200,13 +288,154 @@ export class MagicShelfComponent implements OnInit {
     {label: 'CB7', value: 'cb7'},
     {label: 'FB2', value: 'fb2'},
     {label: 'MOBI', value: 'mobi'},
-    {label: 'AZW3', value: 'azw3'}
+    {label: 'AZW3', value: 'azw3'},
+    {label: 'M4B', value: 'm4b'},
+    {label: 'M4A', value: 'm4a'},
+    {label: 'MP3', value: 'mp3'}
   ];
 
-  readStatusOptions = Object.entries(ReadStatus).map(([key, value]) => ({
-    label: key.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
-    value
-  }));
+  get readStatusOptions() {
+    return Object.entries(ReadStatus).map(([key, value]) => ({
+      label: this.t.translate(`magicShelf.readStatuses.${READ_STATUS_KEYS[key]}`),
+      value
+    }));
+  }
+
+  get booleanOptions() {
+    return [
+      {label: this.t.translate('magicShelf.booleanValues.yes'), value: 'true'},
+      {label: this.t.translate('magicShelf.booleanValues.no'), value: 'false'},
+    ];
+  }
+
+  get contentRatingOptions() {
+    return [
+      {label: this.t.translate('magicShelf.contentRatings.everyone'), value: 'EVERYONE'},
+      {label: this.t.translate('magicShelf.contentRatings.teen'), value: 'TEEN'},
+      {label: this.t.translate('magicShelf.contentRatings.mature'), value: 'MATURE'},
+      {label: this.t.translate('magicShelf.contentRatings.adult'), value: 'ADULT'},
+      {label: this.t.translate('magicShelf.contentRatings.explicit'), value: 'EXPLICIT'},
+    ];
+  }
+
+  get seriesStatusOptions() {
+    return [
+      {label: this.t.translate('magicShelf.seriesStatuses.reading'), value: 'reading'},
+      {label: this.t.translate('magicShelf.seriesStatuses.completed'), value: 'completed'},
+      {label: this.t.translate('magicShelf.seriesStatuses.ongoing'), value: 'ongoing'},
+      {label: this.t.translate('magicShelf.seriesStatuses.notStarted'), value: 'not_started'},
+      {label: this.t.translate('magicShelf.seriesStatuses.fullyRead'), value: 'fully_read'},
+    ];
+  }
+
+  get seriesGapsOptions() {
+    return [
+      {label: this.t.translate('magicShelf.seriesGaps.anyGap'), value: 'any_gap'},
+      {label: this.t.translate('magicShelf.seriesGaps.missingFirst'), value: 'missing_first'},
+      {label: this.t.translate('magicShelf.seriesGaps.missingLatest'), value: 'missing_latest'},
+      {label: this.t.translate('magicShelf.seriesGaps.duplicateNumber'), value: 'duplicate_number'},
+    ];
+  }
+
+  get seriesPositionOptions() {
+    return [
+      {label: this.t.translate('magicShelf.seriesPositions.nextUnread'), value: 'next_unread'},
+      {label: this.t.translate('magicShelf.seriesPositions.firstInSeries'), value: 'first_in_series'},
+      {label: this.t.translate('magicShelf.seriesPositions.lastInSeries'), value: 'last_in_series'},
+    ];
+  }
+
+  get metadataPresenceOptions() {
+    return [
+      { label: this.t.translate('magicShelf.metadataFieldGroups.bookInfo'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.title'), value: 'title'},
+        {label: this.t.translate('magicShelf.metadataFields.subtitle'), value: 'subtitle'},
+        {label: this.t.translate('magicShelf.metadataFields.description'), value: 'description'},
+        {label: this.t.translate('magicShelf.metadataFields.thumbnailUrl'), value: 'thumbnailUrl'},
+        {label: this.t.translate('magicShelf.metadataFields.publisher'), value: 'publisher'},
+        {label: this.t.translate('magicShelf.metadataFields.publishedDate'), value: 'publishedDate'},
+        {label: this.t.translate('magicShelf.metadataFields.language'), value: 'language'},
+        {label: this.t.translate('magicShelf.metadataFields.pageCount'), value: 'pageCount'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.authorsCategories'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.authors'), value: 'authors'},
+        {label: this.t.translate('magicShelf.metadataFields.categories'), value: 'categories'},
+        {label: this.t.translate('magicShelf.metadataFields.moods'), value: 'moods'},
+        {label: this.t.translate('magicShelf.metadataFields.tags'), value: 'tags'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.series'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.seriesName'), value: 'seriesName'},
+        {label: this.t.translate('magicShelf.metadataFields.seriesNumber'), value: 'seriesNumber'},
+        {label: this.t.translate('magicShelf.metadataFields.seriesTotal'), value: 'seriesTotal'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.identifiers'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.isbn13'), value: 'isbn13'},
+        {label: this.t.translate('magicShelf.metadataFields.isbn10'), value: 'isbn10'},
+        {label: this.t.translate('magicShelf.metadataFields.asin'), value: 'asin'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.contentClassification'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.ageRating'), value: 'ageRating'},
+        {label: this.t.translate('magicShelf.metadataFields.contentRating'), value: 'contentRating'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.ratings'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.personalRating'), value: 'personalRating'},
+        {label: this.t.translate('magicShelf.metadataFields.amazonRating'), value: 'amazonRating'},
+        {label: this.t.translate('magicShelf.metadataFields.goodreadsRating'), value: 'goodreadsRating'},
+        {label: this.t.translate('magicShelf.metadataFields.hardcoverRating'), value: 'hardcoverRating'},
+        {label: this.t.translate('magicShelf.metadataFields.ranobedbRating'), value: 'ranobedbRating'},
+        {label: this.t.translate('magicShelf.metadataFields.lubimyczytacRating'), value: 'lubimyczytacRating'},
+        {label: this.t.translate('magicShelf.metadataFields.audibleRating'), value: 'audibleRating'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.reviewCounts'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.amazonReviewCount'), value: 'amazonReviewCount'},
+        {label: this.t.translate('magicShelf.metadataFields.goodreadsReviewCount'), value: 'goodreadsReviewCount'},
+        {label: this.t.translate('magicShelf.metadataFields.hardcoverReviewCount'), value: 'hardcoverReviewCount'},
+        {label: this.t.translate('magicShelf.metadataFields.audibleReviewCount'), value: 'audibleReviewCount'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.externalIds'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.goodreadsId'), value: 'goodreadsId'},
+        {label: this.t.translate('magicShelf.metadataFields.hardcoverId'), value: 'hardcoverId'},
+        {label: this.t.translate('magicShelf.metadataFields.googleId'), value: 'googleId'},
+        {label: this.t.translate('magicShelf.metadataFields.audibleId'), value: 'audibleId'},
+        {label: this.t.translate('magicShelf.metadataFields.lubimyczytacId'), value: 'lubimyczytacId'},
+        {label: this.t.translate('magicShelf.metadataFields.ranobedbId'), value: 'ranobedbId'},
+        {label: this.t.translate('magicShelf.metadataFields.comicvineId'), value: 'comicvineId'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.audiobook'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.narrator'), value: 'narrator'},
+        {label: this.t.translate('magicShelf.metadataFields.abridged'), value: 'abridged'},
+        {label: this.t.translate('magicShelf.metadataFields.audiobookDuration'), value: 'audiobookDuration'},
+      ]},
+      { label: this.t.translate('magicShelf.metadataFieldGroups.comic'), items: [
+        {label: this.t.translate('magicShelf.metadataFields.comicCharacters'), value: 'comicCharacters'},
+        {label: this.t.translate('magicShelf.metadataFields.comicTeams'), value: 'comicTeams'},
+        {label: this.t.translate('magicShelf.metadataFields.comicLocations'), value: 'comicLocations'},
+        {label: this.t.translate('magicShelf.metadataFields.comicPencillers'), value: 'comicPencillers'},
+        {label: this.t.translate('magicShelf.metadataFields.comicInkers'), value: 'comicInkers'},
+        {label: this.t.translate('magicShelf.metadataFields.comicColorists'), value: 'comicColorists'},
+        {label: this.t.translate('magicShelf.metadataFields.comicLetterers'), value: 'comicLetterers'},
+        {label: this.t.translate('magicShelf.metadataFields.comicCoverArtists'), value: 'comicCoverArtists'},
+        {label: this.t.translate('magicShelf.metadataFields.comicEditors'), value: 'comicEditors'},
+      ]},
+    ];
+  }
+
+  get dateUnitOptions() {
+    return [
+      {label: this.t.translate('magicShelf.dateUnits.days'), value: 'days'},
+      {label: this.t.translate('magicShelf.dateUnits.weeks'), value: 'weeks'},
+      {label: this.t.translate('magicShelf.dateUnits.months'), value: 'months'},
+      {label: this.t.translate('magicShelf.dateUnits.years'), value: 'years'},
+    ];
+  }
+
+  get datePeriodOptions() {
+    return [
+      {label: this.t.translate('magicShelf.datePeriods.week'), value: 'week'},
+      {label: this.t.translate('magicShelf.datePeriods.month'), value: 'month'},
+      {label: this.t.translate('magicShelf.datePeriods.year'), value: 'year'},
+    ];
+  }
 
   libraries: Library[] = [];
   libraryOptions: { label: string; value: number }[] = [];
@@ -224,6 +453,8 @@ export class MagicShelfComponent implements OnInit {
   shelfId: number | null = null;
   isAdmin: boolean = false;
   editMode!: boolean;
+  showImportPanel = false;
+  importJson = '';
 
   libraryService = inject(LibraryService);
   shelfService = inject(ShelfService);
@@ -271,7 +502,7 @@ export class MagicShelfComponent implements OnInit {
 
         this.form = new FormGroup({
           name: new FormControl<string | null>(data?.name ?? null, {nonNullable: true, validators: [Validators.required]}),
-          icon: new FormControl<string | null>(iconValue, {nonNullable: true, validators: [Validators.required]}),
+          icon: new FormControl<string | null>(iconValue),
           isPublic: new FormControl<boolean>(data?.isPublic ?? false),
           group: data?.filterJson ? this.buildGroupFromData(JSON.parse(data.filterJson)) : this.createGroup()
         });
@@ -285,7 +516,7 @@ export class MagicShelfComponent implements OnInit {
     } else {
       this.form = new FormGroup({
         name: new FormControl<string | null>(null, {nonNullable: true, validators: [Validators.required]}),
-        icon: new FormControl<string | null>(null, {nonNullable: true, validators: [Validators.required]}),
+        icon: new FormControl<string | null>(null),
         isPublic: new FormControl<boolean>(false),
         group: this.createGroup()
       });
@@ -325,13 +556,25 @@ export class MagicShelfComponent implements OnInit {
   buildRuleFromData(data: Rule): RuleFormGroup {
     const config = FIELD_CONFIGS[data.field];
     const type = config?.type;
+    const isRelativeDate = RELATIVE_DATE_OPERATORS.includes(data.operator);
+
+    let value, valueStart, valueEnd;
+    if (isRelativeDate) {
+      value = data.operator === 'this_period' ? data.value : parseValue(data.value, 'number');
+      valueStart = null;
+      valueEnd = data.operator !== 'this_period' ? data.valueEnd : null;
+    } else {
+      value = parseValue(data.value, type);
+      valueStart = parseValue(data.valueStart, type);
+      valueEnd = parseValue(data.valueEnd, type);
+    }
 
     return new FormGroup({
       field: new FormControl<RuleField>(data.field),
       operator: new FormControl<RuleOperator>(data.operator),
-      value: new FormControl(parseValue(data.value, type)),
-      valueStart: new FormControl(parseValue(data.valueStart, type)),
-      valueEnd: new FormControl(parseValue(data.valueEnd, type)),
+      value: new FormControl(value),
+      valueStart: new FormControl(valueStart),
+      valueEnd: new FormControl(valueEnd),
     }) as RuleFormGroup;
   }
 
@@ -341,46 +584,73 @@ export class MagicShelfComponent implements OnInit {
 
   getOperatorOptionsForField(field: RuleField | null | undefined) {
     const baseOperators = [
-      {label: 'Equals', value: 'equals'},
-      {label: '≠ Not Equal', value: 'not_equals'},
-      {label: 'Empty', value: 'is_empty'},
-      {label: 'Not Empty', value: 'is_not_empty'},
+      {label: this.t.translate('magicShelf.operators.equals'), value: 'equals'},
+      {label: this.t.translate('magicShelf.operators.notEqual'), value: 'not_equals'},
+      {label: this.t.translate('magicShelf.operators.empty'), value: 'is_empty'},
+      {label: this.t.translate('magicShelf.operators.notEmpty'), value: 'is_not_empty'},
     ];
 
     const multiValueOperators = [
-      {label: 'Includes Any', value: 'includes_any'},
-      {label: 'Excludes All', value: 'excludes_all'},
-      {label: 'Includes All', value: 'includes_all'},
+      {label: this.t.translate('magicShelf.operators.includesAny'), value: 'includes_any'},
+      {label: this.t.translate('magicShelf.operators.excludesAll'), value: 'excludes_all'},
+      {label: this.t.translate('magicShelf.operators.includesAll'), value: 'includes_all'},
     ];
 
     const textOperators = [
-      {label: 'Contains', value: 'contains'},
-      {label: 'Doesn\'t Contain', value: 'does_not_contain'},
-      {label: 'Starts With', value: 'starts_with'},
-      {label: 'Ends With', value: 'ends_with'},
+      {label: this.t.translate('magicShelf.operators.contains'), value: 'contains'},
+      {label: this.t.translate('magicShelf.operators.doesNotContain'), value: 'does_not_contain'},
+      {label: this.t.translate('magicShelf.operators.startsWith'), value: 'starts_with'},
+      {label: this.t.translate('magicShelf.operators.endsWith'), value: 'ends_with'},
     ];
 
     const comparisonOperators = [
-      {label: '> Greater Than', value: 'greater_than'},
-      {label: '≥ Greater or Equal', value: 'greater_than_equal_to'},
-      {label: '< Less Than', value: 'less_than'},
-      {label: '≤ Less or Equal', value: 'less_than_equal_to'},
-      {label: 'Between', value: 'in_between'},
+      {label: this.t.translate('magicShelf.operators.greaterThan'), value: 'greater_than'},
+      {label: this.t.translate('magicShelf.operators.greaterOrEqual'), value: 'greater_than_equal_to'},
+      {label: this.t.translate('magicShelf.operators.lessThan'), value: 'less_than'},
+      {label: this.t.translate('magicShelf.operators.lessOrEqual'), value: 'less_than_equal_to'},
+      {label: this.t.translate('magicShelf.operators.between'), value: 'in_between'},
+    ];
+
+    const relativeDateOperators = [
+      {label: this.t.translate('magicShelf.operators.withinLast'), value: 'within_last'},
+      {label: this.t.translate('magicShelf.operators.olderThan'), value: 'older_than'},
+      {label: this.t.translate('magicShelf.operators.thisPeriod'), value: 'this_period'},
     ];
 
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
+
+    if (config.type === 'boolean') {
+      return baseOperators;
+    }
+
+    // Composite fields: only is/isNot or has/hasNot
+    if (field === 'seriesStatus' || field === 'seriesPosition') {
+      return [
+        {label: this.t.translate('magicShelf.operators.is'), value: 'equals'},
+        {label: this.t.translate('magicShelf.operators.isNot'), value: 'not_equals'},
+      ];
+    }
+    if (field === 'seriesGaps' || field === 'metadataPresence') {
+      return [
+        {label: this.t.translate('magicShelf.operators.has'), value: 'equals'},
+        {label: this.t.translate('magicShelf.operators.hasNot'), value: 'not_equals'},
+      ];
+    }
+
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'contentRating', 'narrator', 'description'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'contentRating'].includes(field);
 
-    if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
+    if (config.type === 'date') {
+      operators.push(...comparisonOperators, ...relativeDateOperators);
+    } else if (config.type === 'number' || config.type === 'decimal') {
       operators.push(...comparisonOperators);
     } else if (isTextEligible) {
       operators.push(...textOperators);
@@ -443,7 +713,15 @@ export class MagicShelfComponent implements OnInit {
     const valueStartCtrl = ruleCtrl.get('valueStart');
     const valueEndCtrl = ruleCtrl.get('valueEnd');
 
-    if (MULTI_VALUE_OPERATORS.includes(operator)) {
+    if (operator === 'within_last' || operator === 'older_than') {
+      valueCtrl?.setValue(null);
+      valueStartCtrl?.setValue(null);
+      valueEndCtrl?.setValue('days');
+    } else if (operator === 'this_period') {
+      valueCtrl?.setValue(null);
+      valueStartCtrl?.setValue(null);
+      valueEndCtrl?.setValue(null);
+    } else if (MULTI_VALUE_OPERATORS.includes(operator)) {
       valueCtrl?.setValue([]);
       valueStartCtrl?.setValue(null);
       valueEndCtrl?.setValue(null);
@@ -475,6 +753,11 @@ export class MagicShelfComponent implements OnInit {
         this.form.get('icon')?.setValue(iconValue);
       }
     });
+  }
+
+  clearSelectedIcon(): void {
+    this.selectedIcon = null;
+    this.form.get('icon')?.setValue(null);
   }
 
   private hasAtLeastOneValidRule(group: GroupFormGroup): boolean {
@@ -516,9 +799,43 @@ export class MagicShelfComponent implements OnInit {
     this.form.get('isPublic')?.setValue(checked);
   }
 
+  toggleImportPanel() {
+    this.showImportPanel = !this.showImportPanel;
+    if (this.showImportPanel) {
+      this.importJson = '';
+    }
+  }
+
+  applyImportedJson() {
+    const trimmed = this.importJson.trim();
+    if (!trimmed) {
+      this.messageService.add({severity: 'warn', summary: this.t.translate('magicShelf.toast.validationErrorSummary'), detail: this.t.translate('magicShelf.importJson.emptyError')});
+      return;
+    }
+
+    let parsed: GroupRule;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      this.messageService.add({severity: 'error', summary: this.t.translate('magicShelf.toast.errorSummary'), detail: this.t.translate('magicShelf.importJson.parseError')});
+      return;
+    }
+
+    if (parsed.type !== 'group' || !Array.isArray(parsed.rules)) {
+      this.messageService.add({severity: 'error', summary: this.t.translate('magicShelf.toast.errorSummary'), detail: this.t.translate('magicShelf.importJson.structureError')});
+      return;
+    }
+
+    const builtGroup = this.buildGroupFromData(parsed);
+    this.form.setControl('group', builtGroup);
+    this.showImportPanel = false;
+    this.importJson = '';
+    this.messageService.add({severity: 'success', summary: this.t.translate('magicShelf.toast.successSummary'), detail: this.t.translate('magicShelf.importJson.successDetail')});
+  }
+
   submit() {
     if (!this.hasAtLeastOneValidRule(this.group)) {
-      this.messageService.add({severity: 'warn', summary: 'Validation Error', detail: 'You must add at least one valid rule before saving.'});
+      this.messageService.add({severity: 'warn', summary: this.t.translate('magicShelf.toast.validationErrorSummary'), detail: this.t.translate('magicShelf.toast.validationErrorDetail')});
       return;
     }
 
@@ -534,7 +851,7 @@ export class MagicShelfComponent implements OnInit {
       group: cleanedGroup
     }).subscribe({
       next: (savedShelf) => {
-        this.messageService.add({severity: 'success', summary: 'Success', detail: 'Magic shelf saved successfully.'});
+        this.messageService.add({severity: 'success', summary: this.t.translate('magicShelf.toast.successSummary'), detail: this.t.translate('magicShelf.toast.successDetail')});
         if (savedShelf?.id) {
           this.shelfId = savedShelf.id;
           this.form.patchValue({
@@ -547,8 +864,8 @@ export class MagicShelfComponent implements OnInit {
       error: (err) => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err?.error?.message || 'Failed to save magic shelf.'
+          summary: this.t.translate('magicShelf.toast.errorSummary'),
+          detail: err?.error?.message || this.t.translate('magicShelf.toast.errorDetailDefault')
         });
       }
     });

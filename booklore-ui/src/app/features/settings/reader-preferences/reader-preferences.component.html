@@ -1,104 +1,88 @@
-<div class="main-container">
-  <div class="settings-header">
-    <h2 class="settings-title">
-      <i class="pi pi-book"></i>
-      Reader Preferences
-    </h2>
-    <p class="settings-description">
-      Configure reading experience settings for your library. Set default preferences that serve as overrides for individual books, or allow each book to maintain its own custom settings for PDF, EPUB, FB2, MOBI, AZW3, and CBX formats.
-    </p>
-  </div>
-
-  <div class="settings-content">
-    <app-settings-application-mode [userSettings]="userSettings"></app-settings-application-mode>
-
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-book"></i>
-          eBook Reader: Default Settings
-        </h3>
-        <p class="section-description">
-          Set default preferences for eBook formats (EPUB, FB2, MOBI, AZW3). When "Default Override" mode is active, these settings will override individual book preferences. Configure typography, themes, text flow, and layout options.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <app-epub-reader-preferences-component
-          [userSettings]="userSettings">
-        </app-epub-reader-preferences-component>
-      </div>
+<ng-container *transloco="let t; prefix: 'settingsReader'">
+  <div class="main-container">
+    <div class="settings-header">
+      <h2 class="settings-title">
+        <i class="pi pi-book"></i>
+        {{ t('title') }}
+      </h2>
+      <p class="settings-description">
+        {{ t('description') }}
+      </p>
     </div>
 
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-file-pdf"></i>
-          PDF Reader: Default Settings
-        </h3>
-        <p class="section-description">
-          Set default preferences for PDF documents. When "Default Override" mode is active, these settings will override individual document preferences. Configure zoom levels, display modes, scroll behavior, and navigation.
-        </p>
-      </div>
+    <div class="settings-content">
+      <app-settings-application-mode [userSettings]="userSettings"></app-settings-application-mode>
 
-      <div class="settings-card">
-        <app-pdf-reader-preferences-component
-          [userSettings]="userSettings">
-        </app-pdf-reader-preferences-component>
-      </div>
-    </div>
-
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-images"></i>
-          Comic Book Reader: Default Settings
-        </h3>
-        <p class="section-description">
-          Set default preferences for comic book archives (CBZ, CBR, CB7). When "Default Override" mode is active, these settings will override individual file preferences. Configure page layout, reading direction, and image rendering.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <app-cbx-reader-preferences-component
-          [userSettings]="userSettings">
-        </app-cbx-reader-preferences-component>
-      </div>
-    </div>
-
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-file-pdf"></i>
-          Streaming PDF Reader: Default Settings
-        </h3>
-        <p class="section-description">
-          Configure default preferences for the streaming PDF reader. When "Default Override" mode is enabled, these settings will take precedence over per-file preferences. Adjust page layout, zoom behavior, scrolling mode, and rendering options for an optimal reading experience.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <app-new-pdf-reader-preferences-component
-          [userSettings]="userSettings">
-        </app-new-pdf-reader-preferences-component>
-      </div>
-    </div>
-
-    @if (hasFontManagementPermission) {
       <div class="preferences-section">
         <div class="section-header">
           <h3 class="section-title">
-            <i class="pi pi-palette"></i>
-            Custom Font Library
+            <i class="pi pi-book"></i>
+            {{ t('ebook.sectionTitle') }}
           </h3>
           <p class="section-description">
-            Personalize your reading experience by uploading custom fonts to use with eBook formats (EPUB, FB2, MOBI, AZW3). Upload up to 10 custom font files that will be available for selection in the eBook reader settings.
+            {{ t('ebook.sectionDesc') }}
           </p>
         </div>
+
         <div class="settings-card">
-          <app-custom-fonts></app-custom-fonts>
+          <app-epub-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-epub-reader-preferences-component>
         </div>
       </div>
-    }
+
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-file-pdf"></i>
+            {{ t('pdf.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('pdf.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="settings-card">
+          <app-pdf-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-pdf-reader-preferences-component>
+        </div>
+      </div>
+
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-images"></i>
+            {{ t('cbx.sectionTitle') }}
+          </h3>
+          <p class="section-description">
+            {{ t('cbx.sectionDesc') }}
+          </p>
+        </div>
+
+        <div class="settings-card">
+          <app-cbx-reader-preferences-component
+            [userSettings]="userSettings">
+          </app-cbx-reader-preferences-component>
+        </div>
+      </div>
+
+      @if (hasFontManagementPermission) {
+        <div class="preferences-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="pi pi-palette"></i>
+              {{ t('fonts.sectionTitle') }}
+            </h3>
+            <p class="section-description">
+              {{ t('fonts.sectionDesc') }}
+            </p>
+          </div>
+          <div class="settings-card">
+            <app-custom-fonts></app-custom-fonts>
+          </div>
+        </div>
+      }
+    </div>
   </div>
-</div>
+</ng-container>

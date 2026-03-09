@@ -9,11 +9,13 @@ import {Textarea} from 'primeng/textarea';
 import {InputNumber} from 'primeng/inputnumber';
 import {AutoComplete, AutoCompleteCompleteEvent} from 'primeng/autocomplete';
 import {BookService} from '../../service/book.service';
+import {BookMetadataService} from '../../service/book-metadata.service';
 import {LibraryService} from '../../service/library.service';
 import {Library} from '../../model/library.model';
 import {CreatePhysicalBookRequest} from '../../model/book.model';
 import {filter, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-add-physical-book-dialog',
@@ -27,7 +29,8 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
     Select,
     Textarea,
     InputNumber,
-    AutoComplete
+    AutoComplete,
+    TranslocoDirective
   ],
   styleUrl: './add-physical-book-dialog.component.scss',
 })
@@ -35,6 +38,7 @@ export class AddPhysicalBookDialogComponent implements OnInit {
   private dynamicDialogRef = inject(DynamicDialogRef);
   private dialogConfig = inject(DynamicDialogConfig);
   private bookService = inject(BookService);
+  private bookMetadataService = inject(BookMetadataService);
   private libraryService = inject(LibraryService);
   private destroyRef = inject(DestroyRef);
 
@@ -55,7 +59,9 @@ export class AddPhysicalBookDialogComponent implements OnInit {
   filteredAuthors: string[] = [];
   filteredCategories: string[] = [];
 
+  coverUrl: string | null = null;
   isLoading: boolean = false;
+  isFetchingMetadata: boolean = false;
 
   ngOnInit(): void {
     this.libraryService.libraryState$
@@ -129,6 +135,30 @@ export class AddPhysicalBookDialogComponent implements OnInit {
     (event.originalEvent.target as HTMLInputElement).value = '';
   }
 
+  fetchMetadataByIsbn(): void {
+    const isbnValue = this.isbn.trim();
+    if (!isbnValue || this.isFetchingMetadata) return;
+
+    this.isFetchingMetadata = true;
+    this.bookMetadataService.lookupByIsbn(isbnValue).subscribe({
+      next: (metadata) => {
+        if (metadata.title) this.title = metadata.title;
+        if (metadata.authors?.length) this.authors = [...metadata.authors];
+        if (metadata.description) this.description = metadata.description;
+        if (metadata.publisher) this.publisher = metadata.publisher;
+        if (metadata.publishedDate) this.publishedDate = metadata.publishedDate;
+        if (metadata.language) this.language = metadata.language;
+        if (metadata.pageCount) this.pageCount = metadata.pageCount;
+        if (metadata.categories?.length) this.categories = [...metadata.categories];
+        this.coverUrl = metadata.thumbnailUrl || null;
+        this.isFetchingMetadata = false;
+      },
+      error: () => {
+        this.isFetchingMetadata = false;
+      }
+    });
+  }
+
   cancel(): void {
     this.dynamicDialogRef.close();
   }
@@ -152,7 +182,8 @@ export class AddPhysicalBookDialogComponent implements OnInit {
       publishedDate: this.publishedDate.trim() || undefined,
       language: this.language.trim() || undefined,
       pageCount: this.pageCount ?? undefined,
-      categories: this.categories.length > 0 ? this.categories : undefined
+      categories: this.categories.length > 0 ? this.categories : undefined,
+      thumbnailUrl: this.coverUrl || undefined
     };
 
     this.bookService.createPhysicalBook(request).subscribe({

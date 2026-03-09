@@ -30,7 +30,7 @@ $transition-normal: 200ms ease;
   position: absolute;
   top: 52px;
   right: 60px;
-  width: 320px;
+  width: 340px;
   background: $panel-bg;
   border: 1px solid $border-color;
   border-radius: 12px;
@@ -175,6 +175,18 @@ $transition-normal: 200ms ease;
     color: white;
   }
 
+  &.text-btn {
+    width: auto;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 500;
+
+    &.small {
+      padding: 0 6px;
+      font-size: 10px;
+    }
+  }
+
   &.color-btn {
     padding: 4px;
 
@@ -190,6 +202,10 @@ $transition-normal: 200ms ease;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
+}
+
+.text-btns {
+  flex-wrap: wrap;
 }
 
 @media (max-width: 600px) {

@@ -3,7 +3,7 @@ import {Subject} from 'rxjs';
 import {ReaderAnnotationService} from '../features/annotations/annotation-renderer.service';
 
 export interface ViewEvent {
-  type: 'load' | 'relocate' | 'error' | 'middle-single-tap' | 'draw-annotation' | 'show-annotation' | 'text-selected';
+  type: 'load' | 'relocate' | 'error' | 'middle-single-tap' | 'draw-annotation' | 'show-annotation' | 'text-selected' | 'toggle-fullscreen' | 'toggle-shortcuts-help' | 'escape-pressed' | 'go-first-section' | 'go-last-section' | 'toggle-toc' | 'toggle-search' | 'toggle-notes';
   detail?: any;
   popupPosition?: { x: number; y: number; showBelow?: boolean };
 }
@@ -127,11 +127,41 @@ export class ReaderEventService {
         return;
       }
       const k = event.key;
-      if (k === 'ArrowLeft' || k === 'h' || k === 'PageUp') {
+      if (k === 'ArrowLeft' || k === 'PageUp') {
         this.viewCallbacks?.prev();
         event.preventDefault();
-      } else if (k === 'ArrowRight' || k === 'l' || k === 'PageDown') {
+      } else if (k === 'ArrowRight' || k === 'PageDown') {
         this.viewCallbacks?.next();
+        event.preventDefault();
+      } else if (k === ' ' && event.shiftKey) {
+        this.viewCallbacks?.prev();
+        event.preventDefault();
+      } else if (k === ' ') {
+        this.viewCallbacks?.next();
+        event.preventDefault();
+      } else if (k === 'Home') {
+        this.eventSubject.next({type: 'go-first-section'});
+        event.preventDefault();
+      } else if (k === 'End') {
+        this.eventSubject.next({type: 'go-last-section'});
+        event.preventDefault();
+      } else if (k === 'f' || k === 'F') {
+        this.eventSubject.next({type: 'toggle-fullscreen'});
+        event.preventDefault();
+      } else if (k === 't' || k === 'T') {
+        this.eventSubject.next({type: 'toggle-toc'});
+        event.preventDefault();
+      } else if (k === 's' || k === 'S') {
+        this.eventSubject.next({type: 'toggle-search'});
+        event.preventDefault();
+      } else if (k === 'n' || k === 'N') {
+        this.eventSubject.next({type: 'toggle-notes'});
+        event.preventDefault();
+      } else if (k === '?') {
+        this.eventSubject.next({type: 'toggle-shortcuts-help'});
+        event.preventDefault();
+      } else if (k === 'Escape') {
+        this.eventSubject.next({type: 'escape-pressed'});
         event.preventDefault();
       }
     };
@@ -197,13 +227,6 @@ export class ReaderEventService {
     doc.addEventListener('touchend', (event: TouchEvent) => {
       this.handleTouchEnd(event, doc);
     }, {passive: false});
-
-    doc.addEventListener('contextmenu', (event: MouseEvent) => {
-      const selection = doc.defaultView?.getSelection();
-      if (selection && !selection.isCollapsed) {
-        event.preventDefault();
-      }
-    });
 
     doc.addEventListener('selectionchange', () => {
       this.handleSelectionChange(doc);
@@ -451,11 +474,13 @@ export class ReaderEventService {
     const leftThreshold = width * this.LEFT_ZONE_PERCENT;
     const rightThreshold = width * this.RIGHT_ZONE_PERCENT;
 
-    if (x < leftThreshold) {
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (x < leftThreshold && !isMobile) {
       this.isNavigating = true;
       this.viewCallbacks?.prev();
       setTimeout(() => this.isNavigating = false, 300);
-    } else if (x > rightThreshold) {
+    } else if (x > rightThreshold && !isMobile) {
       this.isNavigating = true;
       this.viewCallbacks?.next();
       setTimeout(() => this.isNavigating = false, 300);

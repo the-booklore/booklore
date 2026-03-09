@@ -156,7 +156,7 @@
     background: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
     border: 1px solid color-mix(in srgb, var(--p-primary-color) 20%, transparent);
     border-radius: 6px;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--p-text-muted-color);
     max-width: 500px;
 
@@ -299,7 +299,7 @@
 
       .preview-paragraph-small {
         color: var(--p-text-color);
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
         line-height: 1.6;
         margin: 0;
         text-align: justify;
@@ -353,7 +353,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
         color: var(--p-text-muted-color);
         font-weight: 500;
 
@@ -364,7 +364,7 @@
       }
 
       .meta-value {
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
         color: var(--p-text-color);
         font-weight: 500;
         text-align: right;

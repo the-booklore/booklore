@@ -1,11 +1,12 @@
+<ng-container *transloco="let t; prefix: 'shared.directoryPicker'">
 <div class="directory-picker">
   <div class="panel-header">
     <div class="header-icon-wrapper">
       <i class="pi pi-folder-open header-icon"></i>
     </div>
     <div class="header-text">
-      <h2 class="panel-title">Select Directories</h2>
-      <p class="panel-description">Choose one or more directories from your file system</p>
+      <h2 class="panel-title">{{ t('title') }}</h2>
+      <p class="panel-description">{{ t('description') }}</p>
     </div>
   </div>
 
@@ -13,7 +14,7 @@
     <div class="current-path">
       <div class="path-label">
         <i class="pi pi-map-marker"></i>
-        <span>Current Path:</span>
+        <span>{{ t('currentPath') }}</span>
       </div>
       <div class="path-value">
         {{ selectedProductName || '/' }}
@@ -29,7 +30,7 @@
           pInputText
           [(ngModel)]="searchQuery"
           (input)="onSearch()"
-          placeholder="Search folders..."
+          [placeholder]="t('searchPlaceholder')"
         />
         @if (searchQuery) {
           <i class="pi pi-times clear-icon" (click)="searchQuery = ''; onSearch()"></i>
@@ -39,43 +40,43 @@
         icon="pi pi-arrow-up"
         (click)="goUp()"
         [disabled]="selectedProductName === '/' || selectedProductName === ''"
-        pTooltip="Go up one level"
+        [pTooltip]="t('goUpTooltip')"
         tooltipPosition="bottom"
       />
     </div>
 
     <div class="selection-actions">
       <p-button
-        label="Select All"
+        [label]="t('selectAllBtn')"
         icon="pi pi-check-square"
         severity="secondary"
         [outlined]="true"
         size="small"
         (click)="selectAll()"
         [disabled]="filteredPaths.length === 0"
-        pTooltip="Select all visible folders"
+        [pTooltip]="t('selectAllTooltip')"
         tooltipPosition="bottom"
       />
       <p-button
-        label="Deselect All"
+        [label]="t('deselectAllBtn')"
         icon="pi pi-times-circle"
         severity="secondary"
         [outlined]="true"
         size="small"
         (click)="deselectAll()"
         [disabled]="selectedFolders.length === 0"
-        pTooltip="Clear all selections"
+        [pTooltip]="t('deselectAllTooltip')"
         tooltipPosition="bottom"
       />
       <p-button
-        label="Select Current"
+        [label]="t('selectCurrentBtn')"
         icon="pi pi-folder"
         severity="info"
         [outlined]="true"
         size="small"
         (click)="selectCurrent()"
         [disabled]="!selectedProductName || selectedProductName === '/'"
-        pTooltip="Select the current directory"
+        [pTooltip]="t('selectCurrentTooltip')"
         tooltipPosition="bottom"
       />
     </div>
@@ -83,7 +84,7 @@
     @if (selectedFolders.length > 0) {
       <div class="selection-badge">
         <i class="pi pi-check-circle"></i>
-        <span>{{ selectedFolders.length }} {{ selectedFolders.length === 1 ? 'folder' : 'folders' }} selected</span>
+        <span>{{ selectedFolders.length === 1 ? t('foldersSelected', { count: selectedFolders.length }) : t('foldersSelectedPlural', { count: selectedFolders.length }) }}</span>
       </div>
     }
   </div>
@@ -96,7 +97,7 @@
           strokeWidth="4"
           animationDuration="1s"
         />
-        <p class="loading-text">Loading directories...</p>
+        <p class="loading-text">{{ t('loadingDirectories') }}</p>
       </div>
     } @else if (filteredPaths.length === 0) {
       <div class="empty-state">
@@ -105,16 +106,16 @@
         </div>
         <h3 class="empty-title">
           @if (searchQuery) {
-            No Matches Found
+            {{ t('noMatchesFound') }}
           } @else {
-            Directory is Empty
+            {{ t('directoryEmpty') }}
           }
         </h3>
         <p class="empty-description">
           @if (searchQuery) {
-            No folders match your search criteria.<br/>Try adjusting your search terms.
+            <span [innerHTML]="t('noMatchesDescription')"></span>
           } @else {
-            This directory doesn't contain any subfolders.
+            {{ t('emptyDescription') }}
           }
         </p>
       </div>
@@ -123,7 +124,7 @@
         <div class="list-header">
           <span class="folder-count">
             <i class="pi pi-folder"></i>
-            {{ filteredPaths.length }} {{ filteredPaths.length === 1 ? 'folder' : 'folders' }} available
+            {{ filteredPaths.length === 1 ? t('folderAvailable', { count: filteredPaths.length }) : t('foldersAvailable', { count: filteredPaths.length }) }}
           </span>
         </div>
 
@@ -164,19 +165,19 @@
       @if (selectedFolders.length > 0) {
         <span class="selection-info">
           <i class="pi pi-info-circle"></i>
-          {{ selectedFolders.length }} folder{{ selectedFolders.length !== 1 ? 's' : '' }} will be selected
+          {{ selectedFolders.length === 1 ? t('folderWillBeSelected', { count: selectedFolders.length }) : t('foldersWillBeSelected', { count: selectedFolders.length }) }}
         </span>
       }
     </div>
     <div class="footer-actions">
       <p-button
-        label="Cancel"
+        [label]="'common.cancel' | transloco"
         severity="secondary"
         [outlined]="true"
         (click)="onCancel()"
       />
       <p-button
-        label="Select Directories"
+        [label]="t('selectDirectoriesBtn')"
         icon="pi pi-check"
         severity="success"
         (click)="onSelect()"
@@ -185,3 +186,4 @@
     </div>
   </div>
 </div>
+</ng-container>

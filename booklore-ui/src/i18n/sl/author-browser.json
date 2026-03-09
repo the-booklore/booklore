@@ -1,0 +1,28 @@
+{
+    "pageTitle": "Avtorji",
+    "browseAllAuthors": "Brskaj po vseh avtorjih",
+    "searchPlaceholder": "Iskanje po imenu avtorja...",
+    "noAuthorsFound": "Noben avtor ne ustreza vašemu iskanju.",
+    "cardSize": "Velikost kartice",
+    "sort": {
+        "name": "Naziv",
+        "bookCount": "Število knjig",
+        "matched": "Ujema se",
+        "recentlyAdded": "Nedavno dodano",
+        "recentlyRead": "Nedavno prebrano",
+        "readingProgress": "Napredek pri branju",
+        "avgRating": "Povp. ocena",
+        "photo": "Slika",
+        "seriesCount": "Število serij"
+    },
+    "filters": {
+        "all": "Vse",
+        "matchStatus": "Status ujemanja",
+        "matched": "Ujemanje",
+        "unmatched": "Neujemanje",
+        "photoStatus": "Stanje slike",
+        "hasPhoto": "Ima sliko",
+        "noPhoto": "Ni slike",
+        "readStatus": "Status branja"
+    }
+}

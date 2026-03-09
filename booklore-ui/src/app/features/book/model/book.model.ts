@@ -97,6 +97,62 @@ export interface BookFileProgress {
   progressPercent: number;
 }
 
+export interface AudiobookChapterInfo {
+  index?: number;
+  title?: string;
+  startTimeMs?: number;
+  endTimeMs?: number;
+  durationMs?: number;
+}
+
+export interface AudiobookMetadata {
+  narrator?: string;
+  abridged?: boolean | null;
+  durationSeconds?: number;
+  bitrate?: number;
+  sampleRate?: number;
+  channels?: number;
+  codec?: string;
+  chapterCount?: number;
+  chapters?: AudiobookChapterInfo[];
+  narratorLocked?: boolean;
+  abridgedLocked?: boolean;
+}
+
+export interface ComicMetadata {
+  issueNumber?: string;
+  volumeName?: string;
+  volumeNumber?: number;
+  storyArc?: string;
+  storyArcNumber?: number;
+  alternateSeries?: string;
+  alternateIssue?: string;
+  pencillers?: string[];
+  inkers?: string[];
+  colorists?: string[];
+  letterers?: string[];
+  coverArtists?: string[];
+  editors?: string[];
+  imprint?: string;
+  format?: string;
+  blackAndWhite?: boolean;
+  manga?: boolean;
+  readingDirection?: string;
+  characters?: string[];
+  teams?: string[];
+  locations?: string[];
+  webLink?: string;
+  notes?: string;
+  issueNumberLocked?: boolean;
+  volumeNameLocked?: boolean;
+  volumeNumberLocked?: boolean;
+  storyArcLocked?: boolean;
+  creatorsLocked?: boolean;
+  charactersLocked?: boolean;
+  teamsLocked?: boolean;
+  locationsLocked?: boolean;
+}
+
 export interface BookMetadata {
   bookId: number;
   title?: string;
@@ -129,13 +185,24 @@ export interface BookMetadata {
   ranobedbId?: string;
   ranobedbRating?: number | null;
   hardcoverRating?: number | null;
+  audibleId?: string;
+  audibleRating?: number | null;
+  audibleReviewCount?: number | null;
+  narrator?: string;
+  abridged?: boolean | null;
+  narratorLocked?: boolean;
+  abridgedLocked?: boolean;
+  audiobookMetadata?: AudiobookMetadata;
+  comicMetadata?: ComicMetadata;
   coverUpdatedOn?: string;
+  audiobookCoverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
   moods?: string[];
   tags?: string[];
   provider?: string;
   providerBookId?: string;
+  externalUrl?: string;
   thumbnailUrl?: string | null;
   reviews?: BookReview[];
   titleLocked?: boolean;
@@ -166,13 +233,22 @@ export interface BookMetadata {
   lubimyczytacRatingLocked?: boolean;
   ranobedbIdLocked?: boolean;
   ranobedbRatingLocked?: boolean;
+  audibleIdLocked?: boolean;
+  audibleRatingLocked?: boolean;
+  audibleReviewCountLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
   moodsLocked?: boolean;
   tagsLocked?: boolean;
   coverLocked?: boolean;
+  audiobookCoverLocked?: boolean;
   reviewsLocked?: boolean;
+  ageRating?: number | null;
+  contentRating?: string | null;
+  ageRatingLocked?: boolean;
+  contentRatingLocked?: boolean;
+  allMetadataLocked?: boolean;
 
   [key: string]: unknown;
 }
@@ -206,11 +282,19 @@ export interface MetadataClearFlags {
   lubimyczytacRating?: boolean;
   ranobedbId?: boolean;
   ranobedbRating?: boolean;
+  audibleId?: boolean;
+  audibleRating?: boolean;
+  audibleReviewCount?: boolean;
+  narrator?: boolean;
+  abridged?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;
   tags?: boolean;
   cover?: boolean;
+  audiobookCover?: boolean;
+  ageRating?: boolean;
+  contentRating?: boolean;
 }
 
 export interface MetadataUpdateWrapper {
@@ -295,6 +379,10 @@ export interface BulkMetadataUpdateRequest {
   mergeCategories?: boolean;
   mergeMoods?: boolean;
   mergeTags?: boolean;
+  ageRating?: number | null;
+  clearAgeRating?: boolean;
+  contentRating?: string | null;
+  clearContentRating?: boolean;
 }
 
 export interface BookDeletionResponse {
@@ -325,4 +413,37 @@ export interface CreatePhysicalBookRequest {
   language?: string;
   pageCount?: number;
   categories?: string[];
+  thumbnailUrl?: string;
+}
+
+export interface BookStatusUpdateResponse {
+  bookId: number;
+  readStatus: ReadStatus;
+  readStatusModifiedTime: string;
+  dateFinished?: string;
+}
+
+export interface PersonalRatingUpdateResponse {
+  bookId: number;
+  personalRating?: number;
+}
+
+export interface DuplicateDetectionRequest {
+  libraryId: number;
+  matchByIsbn: boolean;
+  matchByExternalId: boolean;
+  matchByTitleAuthor: boolean;
+  matchByDirectory: boolean;
+  matchByFilename: boolean;
+}
+
+export interface DuplicateGroup {
+  suggestedTargetBookId: number;
+  matchReason: string;
+  books: Book[];
+}
+
+export interface DetachBookFileResponse {
+  sourceBook: Book;
+  newBook: Book;
 }

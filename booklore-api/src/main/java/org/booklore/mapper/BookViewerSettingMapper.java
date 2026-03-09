@@ -1,0 +1,13 @@
+package org.booklore.mapper;
+
+import org.booklore.model.dto.BookViewerSetting;
+import org.booklore.model.entity.PdfViewerPreferencesEntity;
+import org.mapstruct.Mapper;
+import org.mapstruct.ReportingPolicy;
+
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface BookViewerSettingMapper {
+
+    BookViewerSetting toBookViewerSetting(PdfViewerPreferencesEntity entity);
+
+}

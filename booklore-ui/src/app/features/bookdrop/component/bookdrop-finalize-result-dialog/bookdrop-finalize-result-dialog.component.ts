@@ -3,13 +3,15 @@ import {DatePipe, NgClass} from '@angular/common';
 import {BookdropFinalizeResult} from '../../service/bookdrop.service';
 import {DynamicDialogConfig, DynamicDialogRef} from "primeng/dynamicdialog";
 import {Button} from 'primeng/button';
+import {TranslocoDirective} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-bookdrop-finalize-result-dialog',
   imports: [
     NgClass,
     DatePipe,
-    Button
+    Button,
+    TranslocoDirective
   ],
   templateUrl: './bookdrop-finalize-result-dialog.component.html',
   styleUrl: './bookdrop-finalize-result-dialog.component.scss'

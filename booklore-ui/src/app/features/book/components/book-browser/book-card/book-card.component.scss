@@ -1,11 +1,30 @@
 .book-card {
   background-color: var(--card-background);
-  border-radius: 8px 8px 8px 8px;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+  }
 
   &.selected {
     border: 2px solid var(--primary-color);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }
 
@@ -21,24 +40,45 @@
   justify-content: center;
 }
 
+.cover-container:not(.loaded) {
+  background: linear-gradient(
+    90deg,
+    var(--surface-ground) 25%,
+    var(--surface-hover, rgba(255, 255, 255, 0.08)) 50%,
+    var(--surface-ground) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.cover-container.audiobook-cover {
+  aspect-ratio: 5/7;
+  background-color: var(--surface-ground);
+}
+
+.cover-container.square-library-cover {
+  aspect-ratio: 1/1;
+  background-color: var(--surface-ground);
+}
+
 .book-cover {
   width: 100%;
   height: 100%;
   border-radius: 8px 8px 0 0;
   opacity: 0;
-  transition: opacity 0.2s ease-in;
+  transition: opacity 0.2s ease-in, transform 0.35s ease;
 }
 
 .book-cover.loaded {
   opacity: 1;
 }
 
-.book-cover.square-cover {
-  object-fit: contain;
+.book-card:hover .book-cover.loaded {
+  transform: scale(1.04);
 }
 
-.cover-container.audiobook-cover {
-  background-color: var(--surface-ground);
+.book-cover.square-cover {
+  object-fit: contain;
 }
 
 .cover-container::after {
@@ -330,7 +370,7 @@
   color: #fff;
 }
 
-.book-type-physical {
+.book-type-phy {
   background: var(--book-type-physical-color);
   color: #fff;
 }
@@ -341,6 +381,13 @@
   justify-content: center;
   font-weight: bold;
   margin-left: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.7;
+  }
 }
 
 .status-read {
@@ -369,6 +416,10 @@
 
 .status-wont-read {
   color: #ec4899;
+}
+
+.status-unset {
+  color: var(--text-color-secondary);
 }
 
 ::ng-deep .progress-incomplete .p-progressbar-value {

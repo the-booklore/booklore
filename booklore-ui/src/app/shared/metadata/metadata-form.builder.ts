@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {FormControl, FormGroup} from '@angular/forms';
-import {ALL_METADATA_FIELDS, MetadataFieldConfig} from './metadata-field.config';
+import {ALL_COMIC_METADATA_FIELDS, ALL_METADATA_FIELDS, AUDIOBOOK_METADATA_FIELDS, MetadataFieldConfig} from './metadata-field.config';
 
 @Injectable({
   providedIn: 'root'
@@ -22,9 +22,29 @@ export class MetadataFormBuilder {
       }
     }
 
+    // Add audiobook-specific metadata fields
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      const defaultValue = this.getDefaultValue(field.type);
+      controls[field.controlName] = new FormControl(defaultValue);
+      if (includeLockedControls) {
+        controls[field.lockedKey] = new FormControl(false);
+      }
+    }
+
+    // Add comic book metadata fields
+    for (const field of ALL_COMIC_METADATA_FIELDS) {
+      const defaultValue = this.getDefaultValue(field.type);
+      controls[field.controlName] = new FormControl(defaultValue);
+      if (includeLockedControls) {
+        controls[field.lockedKey] = new FormControl(false);
+      }
+    }
+
     controls['thumbnailUrl'] = new FormControl('');
+    controls['audiobookThumbnailUrl'] = new FormControl('');
     if (includeLockedControls) {
       controls['coverLocked'] = new FormControl(false);
+      controls['audiobookCoverLocked'] = new FormControl(false);
     }
 
     return new FormGroup(controls);
@@ -35,6 +55,8 @@ export class MetadataFormBuilder {
       case 'array':
         return [];
       case 'number':
+        return null;
+      case 'boolean':
         return null;
       default:
         return '';
@@ -52,7 +74,22 @@ export class MetadataFormBuilder {
       }
     }
 
+    // Apply locks for standard fields
     for (const field of fields) {
+      if (lockedFields[field.lockedKey]) {
+        metadataForm.get(field.controlName)?.disable({emitEvent: false});
+      }
+    }
+
+    // Apply locks for audiobook metadata fields
+    for (const field of AUDIOBOOK_METADATA_FIELDS) {
+      if (lockedFields[field.lockedKey]) {
+        metadataForm.get(field.controlName)?.disable({emitEvent: false});
+      }
+    }
+
+    // Apply locks for comic book metadata fields
+    for (const field of ALL_COMIC_METADATA_FIELDS) {
       if (lockedFields[field.lockedKey]) {
         metadataForm.get(field.controlName)?.disable({emitEvent: false});
       }

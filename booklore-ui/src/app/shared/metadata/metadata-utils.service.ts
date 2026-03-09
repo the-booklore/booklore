@@ -117,6 +117,7 @@ export class MetadataUtilsService {
     copiedFields: Record<string, boolean>,
     hoveredFields?: Record<string, boolean>
   ): void {
+    // All fields including narrator/abridged are now at top level of BookMetadata
     metadataForm.get(field)?.setValue(originalMetadata?.[field as keyof BookMetadata]);
     copiedFields[field] = false;
     if (hoveredFields) {

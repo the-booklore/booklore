@@ -5,7 +5,7 @@ import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {Library} from '../book/model/library.model';
+import {Library, MetadataSource} from '../book/model/library.model';
 import {BookType} from '../book/model/book.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
@@ -16,12 +16,15 @@ import {DialogLauncherService} from '../../shared/services/dialog-launcher.servi
 import {switchMap} from 'rxjs/operators';
 import {map} from 'rxjs';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
+import {Checkbox} from 'primeng/checkbox';
+import {Select} from 'primeng/select';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule],
+  imports: [FormsModule, InputText, ToggleSwitch, Tooltip, Button, IconDisplayComponent, DragDropModule, Checkbox, Select, TranslocoDirective, TranslocoPipe],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -34,6 +37,12 @@ export class LibraryCreatorComponent implements OnInit {
   editModeLibraryName: string = '';
   watch: boolean = false;
   formatPriority: {type: BookType, label: string}[] = [];
+  allowAllFormats: boolean = true;
+  selectedAllowedFormats: Set<BookType> = new Set();
+  formatCounts: Record<string, number> = {};
+  metadataSource: MetadataSource = 'EMBEDDED';
+
+  metadataSourceOptions: {label: string, value: string}[] = [];
 
   readonly allBookFormats: {type: BookType, label: string}[] = [
     {type: 'EPUB', label: 'EPUB'},
@@ -52,24 +61,35 @@ export class LibraryCreatorComponent implements OnInit {
   private messageService = inject(MessageService);
   private router = inject(Router);
   private iconPicker = inject(IconPickerService);
+  private readonly t = inject(TranslocoService);
 
   ngOnInit(): void {
+    this.metadataSourceOptions = [
+      {label: this.t.translate('libraryCreator.creator.metadataSourceEmbedded'), value: 'EMBEDDED'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourceSidecar'), value: 'SIDECAR'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourcePreferSidecar'), value: 'PREFER_SIDECAR'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourcePreferEmbedded'), value: 'PREFER_EMBEDDED'},
+      {label: this.t.translate('libraryCreator.creator.metadataSourceNone'), value: 'NONE'}
+    ];
     this.initializeFormatPriority();
+    this.initializeAllowedFormats();
 
     const data = this.dynamicDialogConfig?.data;
     if (data?.mode === 'edit') {
       this.mode = data.mode;
       this.library = this.libraryService.findLibraryById(data.libraryId);
       if (this.library) {
-        const {name, icon, iconType, paths, watch, formatPriority} = this.library;
+        const {name, icon, iconType, paths, watch, formatPriority, allowedFormats} = this.library;
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
 
-        if (iconType === 'CUSTOM_SVG') {
-          this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
-        } else {
-          const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
-          this.selectedIcon = {type: 'PRIME_NG', value: value};
+        if (icon != null && iconType) {
+          if (iconType === 'CUSTOM_SVG') {
+            this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
+          } else {
+            const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
+            this.selectedIcon = {type: 'PRIME_NG', value: value};
+          }
         }
 
         this.watch = watch;
@@ -84,6 +104,23 @@ export class LibraryCreatorComponent implements OnInit {
             }
           });
         }
+
+        if (allowedFormats && allowedFormats.length > 0) {
+          this.allowAllFormats = false;
+          this.selectedAllowedFormats = new Set(allowedFormats);
+        } else {
+          this.allowAllFormats = true;
+          this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+        }
+
+        if (this.library.metadataSource) {
+          this.metadataSource = this.library.metadataSource;
+        }
+
+        this.libraryService.getBookCountsByFormat(this.library.id!).subscribe(counts => {
+          this.formatCounts = counts;
+        });
+
         this.folders = paths.map(path => path.path);
       }
     }
@@ -91,6 +128,43 @@ export class LibraryCreatorComponent implements OnInit {
 
   private initializeFormatPriority(): void {
     this.formatPriority = [...this.allBookFormats];
+  }
+
+  private initializeAllowedFormats(): void {
+    this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+  }
+
+  onAllowAllFormatsChange(): void {
+    if (this.allowAllFormats) {
+      this.selectedAllowedFormats = new Set(this.allBookFormats.map(f => f.type));
+    }
+  }
+
+  onFormatCheckboxChange(formatType: BookType, checked: boolean): void {
+    if (checked) {
+      this.selectedAllowedFormats.add(formatType);
+    } else {
+      this.selectedAllowedFormats.delete(formatType);
+    }
+    this.allowAllFormats = this.selectedAllowedFormats.size === this.allBookFormats.length;
+  }
+
+  isFormatSelected(formatType: BookType): boolean {
+    return this.selectedAllowedFormats.has(formatType);
+  }
+
+  getFormatWarning(formatType: BookType): string | null {
+    if (this.mode !== 'edit') return null;
+    const count = this.formatCounts[formatType];
+    if (count && count > 0 && !this.selectedAllowedFormats.has(formatType)) {
+      return this.t.translate('libraryCreator.creator.formatWarning', {count});
+    }
+    return null;
+  }
+
+  hasAnyFormatWarning(): boolean {
+    if (this.mode !== 'edit') return false;
+    return this.allBookFormats.some(f => this.getFormatWarning(f.type) !== null);
   }
 
   closeDialog(): void {
@@ -131,7 +205,7 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   isLibraryDetailsValid(): boolean {
-    return !!this.chosenLibraryName.trim() && !!this.selectedIcon;
+    return !!this.chosenLibraryName.trim();
   }
 
   isDirectorySelectionValid(): boolean {
@@ -145,15 +219,15 @@ export class LibraryCreatorComponent implements OnInit {
       if (exists) {
         this.messageService.add({
           severity: 'error',
-          summary: 'Library Name Exists',
-          detail: 'This library name is already taken.',
+          summary: this.t.translate('libraryCreator.creator.toast.nameExistsSummary'),
+          detail: this.t.translate('libraryCreator.creator.toast.nameExistsDetail'),
         });
         return;
       }
     }
 
-    const iconValue = this.selectedIcon?.value || 'heart';
-    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+    const iconValue = this.selectedIcon?.value ?? null;
+    const iconType = this.selectedIcon?.type ?? null;
 
     const library: Library = {
       name: this.chosenLibraryName,
@@ -161,17 +235,21 @@ export class LibraryCreatorComponent implements OnInit {
       iconType: iconType,
       paths: this.folders.map(folder => ({path: folder})),
       watch: this.watch,
-      formatPriority: this.formatPriority.map(f => f.type)
+      formatPriority: this.formatPriority.map(f => f.type),
+      allowedFormats: this.allowAllFormats ? [] : Array.from(this.selectedAllowedFormats),
+      metadataSource: this.metadataSource
     };
 
     if (this.mode === 'edit') {
-      this.libraryService.updateLibrary(library, this.library?.id).subscribe({
+      this.libraryService.updateLibrary(library, this.library?.id).pipe(
+        switchMap(() => this.libraryService.refreshLibrary(this.library!.id!))
+      ).subscribe({
         next: () => {
-          this.messageService.add({severity: 'success', summary: 'Library Updated', detail: 'The library was updated successfully.'});
+          this.messageService.add({severity: 'success', summary: this.t.translate('libraryCreator.creator.toast.updatedSummary'), detail: this.t.translate('libraryCreator.creator.toast.updatedDetail')});
           this.dynamicDialogRef.close();
         },
         error: (e) => {
-          this.messageService.add({severity: 'error', summary: 'Update Failed', detail: 'An error occurred while updating the library. Please try again.'});
+          this.messageService.add({severity: 'error', summary: this.t.translate('libraryCreator.creator.toast.updateFailedSummary'), detail: this.t.translate('libraryCreator.creator.toast.updateFailedDetail')});
           console.error(e);
         }
       });
@@ -196,17 +274,17 @@ export class LibraryCreatorComponent implements OnInit {
             this.router.navigate(['/library', createdLibrary.id, 'books']);
             this.messageService.add({
               severity: 'success',
-              summary: 'Library Created',
+              summary: this.t.translate('libraryCreator.creator.toast.createdSummary'),
               detail: count >= 500
-                ? `Library created with ${count} files. Loading in progress...`
-                : 'The library was created successfully.'
+                ? this.t.translate('libraryCreator.creator.toast.createdLargeDetail', {count})
+                : this.t.translate('libraryCreator.creator.toast.createdDetail')
             });
             this.dynamicDialogRef.close();
           }
         },
         error: (e) => {
           this.libraryService.setLargeLibraryLoading(false, 0);
-          this.messageService.add({severity: 'error', summary: 'Creation Failed', detail: 'An error occurred while creating the library. Please try again.'});
+          this.messageService.add({severity: 'error', summary: this.t.translate('libraryCreator.creator.toast.createFailedSummary'), detail: this.t.translate('libraryCreator.creator.toast.createFailedDetail')});
           console.error(e);
         }
       });

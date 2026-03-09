@@ -4,11 +4,12 @@ import {FormsModule} from '@angular/forms';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {AppSettingKey, MetadataProviderSpecificFields} from '../../../../shared/model/app-settings.model';
 import {filter, take} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-metadata-provider-field-selector',
   standalone: true,
-  imports: [ToggleSwitchModule, FormsModule],
+  imports: [ToggleSwitchModule, FormsModule, TranslocoDirective],
   templateUrl: './metadata-provider-field-selector.component.html',
   styleUrl: './metadata-provider-field-selector.component.scss'
 })
@@ -16,56 +17,26 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
   @Input() selectedFields: string[] = [];
 
   private appSettingsService = inject(AppSettingsService);
+  private t = inject(TranslocoService);
 
-  providerGroups: { label: string, fields: string[] }[] = [
-    {
-      label: 'Amazon',
-      fields: ['asin', 'amazonRating', 'amazonReviewCount']
-    },
-    {
-      label: 'Google Books',
-      fields: ['googleId']
-    },
-    {
-      label: 'Goodreads',
-      fields: ['goodreadsId', 'goodreadsRating', 'goodreadsReviewCount']
-    },
-    {
-      label: 'Hardcover',
-      fields: ['hardcoverId', 'hardcoverBookId', 'hardcoverRating', 'hardcoverReviewCount']
-    },
-    {
-      label: 'Comicvine',
-      fields: ['comicvineId']
-    },
-    {
-      label: 'Lubimyczytac',
-      fields: ['lubimyczytacId', 'lubimyczytacRating']
-    },
-    {
-      label: 'Ranobedb',
-      fields: ['ranobedbId', 'ranobedbRating']
-    }
+  providerGroups: { labelKey: string, fields: string[] }[] = [
+    {labelKey: 'amazon', fields: ['asin', 'amazonRating', 'amazonReviewCount']},
+    {labelKey: 'googleBooks', fields: ['googleId']},
+    {labelKey: 'goodreads', fields: ['goodreadsId', 'goodreadsRating', 'goodreadsReviewCount']},
+    {labelKey: 'hardcover', fields: ['hardcoverId', 'hardcoverBookId', 'hardcoverRating', 'hardcoverReviewCount']},
+    {labelKey: 'audible', fields: ['audibleId', 'audibleRating', 'audibleReviewCount']},
+    {labelKey: 'comicvine', fields: ['comicvineId']},
+    {labelKey: 'lubimyczytac', fields: ['lubimyczytacId', 'lubimyczytacRating']},
+    {labelKey: 'ranobedb', fields: ['ranobedbId', 'ranobedbRating']}
   ];
 
-  fieldLabels: Record<string, string> = {
-    'asin': 'Amazon ASIN',
-    'amazonRating': 'Amazon Rating',
-    'amazonReviewCount': 'Amazon Review Count',
-    'googleId': 'Google Books ID',
-    'goodreadsId': 'Goodreads ID',
-    'goodreadsRating': 'Goodreads Rating',
-    'goodreadsReviewCount': 'Goodreads Review Count',
-    'hardcoverId': 'Hardcover ID',
-    'hardcoverBookId': 'Hardcover Book ID',
-    'hardcoverRating': 'Hardcover Rating',
-    'hardcoverReviewCount': 'Hardcover Review Count',
-    'comicvineId': 'Comicvine ID',
-    'lubimyczytacId': 'Lubimyczytac ID',
-    'lubimyczytacRating': 'Lubimyczytac Rating',
-    'ranobedbId': 'Ranobedb ID',
-    'ranobedbRating': 'Ranobedb Rating',
-  };
+  getProviderLabel(key: string): string {
+    return this.t.translate('settingsMeta.fieldSelector.providers.' + key);
+  }
+
+  getFieldLabel(field: string): string {
+    return this.t.translate('settingsMeta.fieldSelector.fields.' + field);
+  }
 
   private readonly allFieldNames: (keyof MetadataProviderSpecificFields)[] = [
     'asin', 'amazonRating', 'amazonReviewCount',
@@ -74,7 +45,8 @@ export class MetadataProviderFieldSelectorComponent implements OnInit {
     'hardcoverId', 'hardcoverBookId', 'hardcoverRating', 'hardcoverReviewCount',
     'comicvineId',
     'lubimyczytacId', 'lubimyczytacRating',
-    'ranobedbId', 'ranobedbRating'
+    'ranobedbId', 'ranobedbRating',
+    'audibleId', 'audibleRating', 'audibleReviewCount'
   ];
 
   ngOnInit(): void {

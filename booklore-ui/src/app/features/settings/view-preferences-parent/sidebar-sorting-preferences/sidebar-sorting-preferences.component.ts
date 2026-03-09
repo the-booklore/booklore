@@ -5,24 +5,28 @@ import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 @Component({
   selector: 'app-sidebar-sorting-preferences',
   imports: [
     Select,
-    FormsModule
+    FormsModule,
+    TranslocoDirective
   ],
   templateUrl: './sidebar-sorting-preferences.component.html',
   styleUrl: './sidebar-sorting-preferences.component.scss'
 })
 export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
-  readonly sortingOptions = [
-    {label: 'Name | Ascending', value: {field: 'name', order: 'asc'}},
-    {label: 'Name | Descending', value: {field: 'name', order: 'desc'}},
-    {label: 'Creation Date | Ascending', value: {field: 'id', order: 'asc'}},
-    {label: 'Creation Date | Descending', value: {field: 'id', order: 'desc'}},
+  private readonly sortingOptionDefs = [
+    {value: {field: 'name', order: 'asc'}, translationKey: 'nameAsc'},
+    {value: {field: 'name', order: 'desc'}, translationKey: 'nameDesc'},
+    {value: {field: 'id', order: 'asc'}, translationKey: 'creationAsc'},
+    {value: {field: 'id', order: 'desc'}, translationKey: 'creationDesc'},
   ];
+
+  sortingOptions: {label: string; value: {field: string; order: string}; translationKey: string}[] = [];
 
   selectedLibrarySorting: SidebarLibrarySorting = {field: 'id', order: 'asc'};
   selectedShelfSorting: SidebarShelfSorting = {field: 'id', order: 'asc'};
@@ -30,12 +34,16 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   userData$: Observable<UserState> = this.userService.userState$;
   private currentUser: User | null = null;
 
   ngOnInit(): void {
+    this.buildSortingOptions();
+    this.t.langChanges$.pipe(takeUntil(this.destroy$)).subscribe(() => this.buildSortingOptions());
+
     this.userData$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
@@ -48,6 +56,13 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private buildSortingOptions(): void {
+    this.sortingOptions = this.sortingOptionDefs.map(opt => ({
+      ...opt,
+      label: this.t.translate('settingsView.sidebarSort.' + opt.translationKey)
+    }));
   }
 
   private loadPreferences(settings: UserSettings): void {
@@ -69,8 +84,8 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
     this.userService.updateUserSetting(this.currentUser.id, rootKey, updatedValue);
     this.messageService.add({
       severity: 'success',
-      summary: 'Preferences Updated',
-      detail: 'Your preferences have been saved successfully.',
+      summary: this.t.translate('settingsView.sidebarSort.prefsUpdated'),
+      detail: this.t.translate('settingsView.sidebarSort.prefsUpdatedDetail'),
       life: 1500
     });
   }

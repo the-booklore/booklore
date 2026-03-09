@@ -3,7 +3,8 @@ import {AppMenuitemComponent} from './app.menuitem.component';
 import {AsyncPipe} from '@angular/common';
 import {MenuModule} from 'primeng/menu';
 import {LibraryService} from '../../../../features/book/service/library.service';
-import {Observable, of} from 'rxjs';
+import {LibraryHealthService} from '../../../../features/book/service/library-health.service';
+import {combineLatest, Observable, of} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {ShelfService} from '../../../../features/book/service/shelf.service';
 import {BookService} from '../../../../features/book/service/book.service';
@@ -12,13 +13,20 @@ import {AppVersion, VersionService} from '../../../service/version.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
+import {SeriesDataService} from '../../../../features/series-browser/service/series-data.service';
+import {AuthorService} from '../../../../features/author-browser/service/author.service';
 import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import {Slider} from 'primeng/slider';
+import {FormsModule} from '@angular/forms';
+import {Popover} from 'primeng/popover';
+import {LocalStorageService} from '../../../service/local-storage.service';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [AppMenuitemComponent, MenuModule, AsyncPipe],
+  imports: [AppMenuitemComponent, MenuModule, AsyncPipe, TranslocoDirective, Slider, FormsModule, Popover],
   templateUrl: './app.menu.component.html',
   styleUrl: './app.menu.component.scss',
 })
@@ -32,6 +40,7 @@ export class AppMenuComponent implements OnInit {
   dynamicDialogRef: DynamicDialogRef | undefined | null;
 
   private libraryService = inject(LibraryService);
+  private libraryHealthService = inject(LibraryHealthService);
   private shelfService = inject(ShelfService);
   private bookService = inject(BookService);
   private versionService = inject(VersionService);
@@ -39,6 +48,10 @@ export class AppMenuComponent implements OnInit {
   private dialogLauncherService = inject(DialogLauncherService);
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
+  private seriesDataService = inject(SeriesDataService);
+  private authorService = inject(AuthorService);
+  private t = inject(TranslocoService);
+  private localStorageService = inject(LocalStorageService);
 
   librarySortField: 'name' | 'id' = 'name';
   librarySortOrder: 'asc' | 'desc' = 'desc';
@@ -46,12 +59,17 @@ export class AppMenuComponent implements OnInit {
   shelfSortOrder: 'asc' | 'desc' = 'asc';
   magicShelfSortField: 'name' | 'id' = 'name';
   magicShelfSortOrder: 'asc' | 'desc' = 'asc';
+  sidebarWidth = 225;
 
 
   ngOnInit(): void {
+    this.sidebarWidth = this.localStorageService.get<number>('sidebarWidth') ?? 225;
+
     this.versionService.getVersion().subscribe((data) => {
       this.versionInfo = data;
     });
+
+    this.authorService.getAllAuthors().subscribe();
 
     this.userService.userState$.pipe(
       filter(userState => !!userState?.user && userState.loaded))
@@ -71,22 +89,41 @@ export class AppMenuComponent implements OnInit {
         this.initMenus();
       });
 
-    this.homeMenu$ = this.bookService.bookState$.pipe(
-      map((bookState) => [
+    this.homeMenu$ = combineLatest([this.bookService.bookState$, this.t.langChanges$]).pipe(
+      map(([bookState]) => [
         {
-          label: 'Home',
+          label: this.t.translate('layout.menu.home'),
           items: [
             {
-              label: 'Dashboard',
+              label: this.t.translate('layout.menu.dashboard'),
               icon: 'pi pi-fw pi-home',
               routerLink: ['/dashboard'],
             },
             {
-              label: 'All Books',
+              label: this.t.translate('layout.menu.allBooks'),
               type: 'All Books',
               icon: 'pi pi-fw pi-book',
               routerLink: ['/all-books'],
               bookCount$: of(bookState.books ? bookState.books.length : 0),
+            },
+            {
+              label: this.t.translate('layout.menu.series'),
+              type: 'Series',
+              icon: 'pi pi-fw pi-objects-column',
+              routerLink: ['/series'],
+              bookCount$: this.seriesDataService.allSeries$.pipe(map(series => series.length)),
+            },
+            {
+              label: this.t.translate('layout.menu.authors'),
+              type: 'Authors',
+              icon: 'pi pi-fw pi-users',
+              routerLink: ['/authors'],
+              bookCount$: this.authorService.allAuthors$.pipe(map(authors => authors?.length ?? 0)),
+            },
+            {
+              label: this.t.translate('layout.menu.notebook'),
+              icon: 'pi pi-fw pi-pencil',
+              routerLink: ['/notebook'],
             }
           ],
         },
@@ -94,14 +131,22 @@ export class AppMenuComponent implements OnInit {
     );
   }
 
+  onSidebarWidthChange(): void {
+    document.documentElement.style.setProperty('--sidebar-width', this.sidebarWidth + 'px');
+  }
+
+  saveSidebarWidth(): void {
+    this.localStorageService.set('sidebarWidth', this.sidebarWidth);
+  }
+
   private initMenus(): void {
-    this.libraryMenu$ = this.libraryService.libraryState$.pipe(
-      map((state) => {
+    this.libraryMenu$ = combineLatest([this.libraryService.libraryState$, this.t.langChanges$]).pipe(
+      map(([state]) => {
         const libraries = state.libraries ?? [];
         const sortedLibraries = this.sortArray(libraries, this.librarySortField, this.librarySortOrder);
         return [
           {
-            label: 'Libraries',
+            label: this.t.translate('layout.menu.libraries'),
             type: 'library',
             hasDropDown: true,
             hasCreate: true,
@@ -109,31 +154,32 @@ export class AppMenuComponent implements OnInit {
               menu: this.libraryShelfMenuService.initializeLibraryMenuItems(library),
               label: library.name,
               type: 'Library',
-              icon: library.icon,
-              iconType: (library.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+              icon: library.icon || undefined,
+              iconType: (library.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
+              unhealthy$: this.libraryHealthService.isUnhealthy$(library.id ?? 0),
             })),
           },
         ];
       })
     );
 
-    this.magicShelfMenu$ = this.magicShelfService.shelvesState$.pipe(
-      map((state: MagicShelfState) => {
+    this.magicShelfMenu$ = combineLatest([this.magicShelfService.shelvesState$, this.t.langChanges$]).pipe(
+      map(([state]: [MagicShelfState, string]) => {
         const shelves = state.shelves ?? [];
         const sortedShelves = this.sortArray(shelves, this.magicShelfSortField, this.magicShelfSortOrder);
         return [
           {
-            label: 'Magic Shelves',
+            label: this.t.translate('layout.menu.magicShelves'),
             type: 'magicShelf',
             hasDropDown: true,
             hasCreate: true,
             items: sortedShelves.map((shelf) => ({
               label: shelf.name,
               type: 'magicShelfItem',
-              icon: shelf.icon || 'pi pi-book',
-              iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+              icon: shelf.icon || undefined,
+              iconType: (shelf.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
               menu: this.libraryShelfMenuService.initializeMagicShelfMenuItems(shelf),
               routerLink: [`/magic-shelf/${shelf.id}/books`],
               bookCount$: this.magicShelfService.getBookCount(shelf.id ?? 0),
@@ -143,8 +189,8 @@ export class AppMenuComponent implements OnInit {
       })
     );
 
-    this.shelfMenu$ = this.shelfService.shelfState$.pipe(
-      map((state) => {
+    this.shelfMenu$ = combineLatest([this.shelfService.shelfState$, this.t.langChanges$]).pipe(
+      map(([state]) => {
         const shelves = state.shelves ?? [];
         const sortedShelves = this.sortArray(shelves, this.shelfSortField, this.shelfSortOrder);
 
@@ -158,14 +204,14 @@ export class AppMenuComponent implements OnInit {
           menu: this.libraryShelfMenuService.initializeShelfMenuItems(shelf),
           label: shelf.name,
           type: 'Shelf',
-          icon: shelf.icon,
-          iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+          icon: shelf.icon || undefined,
+          iconType: (shelf.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
           routerLink: [`/shelf/${shelf.id}/books`],
           bookCount$: this.shelfService.getBookCount(shelf.id ?? 0),
         }));
 
         const unshelvedItem = {
-          label: 'Unshelved',
+          label: this.t.translate('layout.menu.unshelved'),
           type: 'Shelf',
           icon: 'pi pi-inbox',
           iconType: 'PRIME_NG' as 'PRIME_NG' | 'CUSTOM_SVG',
@@ -173,13 +219,13 @@ export class AppMenuComponent implements OnInit {
           bookCount$: this.shelfService.getUnshelvedBookCount?.() ?? of(0),
         };
 
-        const items = [unshelvedItem];
+        const items: MenuItem[] = [unshelvedItem];
         if (koboShelf) {
           items.push({
             label: koboShelf.name,
             type: 'Shelf',
-            icon: koboShelf.icon,
-            iconType: (koboShelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
+            icon: koboShelf.icon || undefined,
+            iconType: (koboShelf.iconType || undefined) as 'PRIME_NG' | 'CUSTOM_SVG' | undefined,
             routerLink: [`/shelf/${koboShelf.id}/books`],
             bookCount$: this.shelfService.getBookCount(koboShelf.id ?? 0),
           });
@@ -189,7 +235,7 @@ export class AppMenuComponent implements OnInit {
         return [
           {
             type: 'shelf',
-            label: 'Shelves',
+            label: this.t.translate('layout.menu.shelves'),
             hasDropDown: true,
             hasCreate: true,
             items,

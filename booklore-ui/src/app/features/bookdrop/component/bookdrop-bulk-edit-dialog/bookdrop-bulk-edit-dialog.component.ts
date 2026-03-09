@@ -8,6 +8,7 @@ import {AutoComplete} from 'primeng/autocomplete';
 import {Divider} from 'primeng/divider';
 import {SelectButton} from 'primeng/selectbutton';
 import {BookMetadata} from '../../../book/model/book.model';
+import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 export interface BulkEditResult {
   fields: Partial<BookMetadata>;
@@ -34,6 +35,8 @@ interface BulkEditField {
     AutoComplete,
     Divider,
     SelectButton,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
   templateUrl: './bookdrop-bulk-edit-dialog.component.html',
   styleUrl: './bookdrop-bulk-edit-dialog.component.scss'
@@ -43,6 +46,7 @@ export class BookdropBulkEditDialogComponent implements OnInit {
   private readonly dialogRef = inject(DynamicDialogRef);
   private readonly config = inject(DynamicDialogConfig);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly t = inject(TranslocoService);
 
   fileCount: number = 0;
   mergeArrays = true;
@@ -61,25 +65,25 @@ export class BookdropBulkEditDialogComponent implements OnInit {
   });
 
   textFields: BulkEditField[] = [
-    {name: 'seriesName', label: 'Series Name', type: 'text', controlName: 'seriesName'},
-    {name: 'publisher', label: 'Publisher', type: 'text', controlName: 'publisher'},
-    {name: 'language', label: 'Language', type: 'text', controlName: 'language'},
+    {name: 'seriesName', label: this.t.translate('bookdrop.bulkEdit.seriesName'), type: 'text', controlName: 'seriesName'},
+    {name: 'publisher', label: this.t.translate('bookdrop.bulkEdit.publisher'), type: 'text', controlName: 'publisher'},
+    {name: 'language', label: this.t.translate('bookdrop.bulkEdit.language'), type: 'text', controlName: 'language'},
   ];
 
   numberFields: BulkEditField[] = [
-    {name: 'seriesTotal', label: 'Series Total', type: 'number', controlName: 'seriesTotal'},
+    {name: 'seriesTotal', label: this.t.translate('bookdrop.bulkEdit.seriesTotal'), type: 'number', controlName: 'seriesTotal'},
   ];
 
   chipFields: BulkEditField[] = [
-    {name: 'authors', label: 'Authors', type: 'chips', controlName: 'authors'},
-    {name: 'categories', label: 'Genres', type: 'chips', controlName: 'categories'},
-    {name: 'moods', label: 'Moods', type: 'chips', controlName: 'moods'},
-    {name: 'tags', label: 'Tags', type: 'chips', controlName: 'tags'},
+    {name: 'authors', label: this.t.translate('bookdrop.bulkEdit.authors'), type: 'chips', controlName: 'authors'},
+    {name: 'categories', label: this.t.translate('bookdrop.bulkEdit.genres'), type: 'chips', controlName: 'categories'},
+    {name: 'moods', label: this.t.translate('bookdrop.bulkEdit.moods'), type: 'chips', controlName: 'moods'},
+    {name: 'tags', label: this.t.translate('bookdrop.bulkEdit.tags'), type: 'chips', controlName: 'tags'},
   ];
 
   mergeOptions = [
-    {label: 'Merge', value: true},
-    {label: 'Replace', value: false},
+    {label: this.t.translate('bookdrop.bulkEdit.mergeOption'), value: true},
+    {label: this.t.translate('bookdrop.bulkEdit.replaceOption'), value: false},
   ];
 
   ngOnInit(): void {
@@ -113,7 +117,7 @@ export class BookdropBulkEditDialogComponent implements OnInit {
         target.value = '';
       }
     }
-    
+
     if (!this.enabledFields.has(fieldName)) {
       const control = this.bulkEditForm.get(fieldName);
       const value = control?.value;

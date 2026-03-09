@@ -8,6 +8,7 @@ import {LibraryFilterService} from '../../service/library-filter.service';
 import {BookService} from '../../../../../book/service/book.service';
 import {BookState} from '../../../../../book/model/state/book-state.model';
 import {Book} from '../../../../../book/model/book.model';
+import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 
 interface DecadeStats {
   decade: string;
@@ -26,7 +27,9 @@ interface TimelineInsights {
   peakDecade: string;
   peakDecadeCount: number;
   centuryBreakdown: { c21: number; c20: number; older: number };
-  decadesCovered: number;
+  goldenEra: { start: number; end: number; count: number };
+  mostCommonYear: { year: number; count: number };
+  rarityScore: number;
 }
 
 type TimelineChartData = ChartData<'bar', number[], string>;
@@ -52,13 +55,14 @@ const DECADE_COLORS: Record<string, string> = {
 @Component({
   selector: 'app-publication-timeline-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, TranslocoDirective],
   templateUrl: './publication-timeline-chart.component.html',
   styleUrls: ['./publication-timeline-chart.component.scss']
 })
 export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
+  private readonly t = inject(TranslocoService);
   private readonly destroy$ = new Subject<void>();
 
   public readonly chartType = 'bar' as const;
@@ -128,7 +132,7 @@ export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
           border: {display: false},
           title: {
             display: true,
-            text: 'Number of Books',
+            text: this.t.translate('statsLibrary.publicationTimeline.axisNumberOfBooks'),
             color: '#ffffff',
             font: {
               family: "'Inter', sans-serif",
@@ -169,8 +173,9 @@ export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
           callbacks: {
             label: (context) => {
               const value = context.parsed.x;
-              const bookText = value === 1 ? 'book' : 'books';
-              return `${value} ${bookText}`;
+              return value === 1
+                ? this.t.translate('statsLibrary.publicationTimeline.tooltipBook', {value})
+                : this.t.translate('statsLibrary.publicationTimeline.tooltipBooks', {value});
             }
           }
         },
@@ -335,12 +340,44 @@ export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
     let peakDecadeCount = 0;
     for (const [decade, count] of decadeCounts) {
       if (count > peakDecadeCount) {
-        peakDecade = decade === 'pre1900' ? 'Pre-1900' : decade.toUpperCase();
+        peakDecade = decade === 'pre1900' ? 'Pre-1900' : decade;
         peakDecadeCount = count;
       }
     }
 
     const timeSpan = oldest && newest ? newest.year - oldest.year : 0;
+
+    // Golden Era: best 20-year window
+    let goldenEra = {start: 0, end: 0, count: 0};
+    if (years.length > 0) {
+      for (let i = 0; i < years.length; i++) {
+        const windowStart = years[i];
+        const windowEnd = windowStart + 19;
+        const windowCount = years.filter(y => y >= windowStart && y <= windowEnd).length;
+        if (windowCount > goldenEra.count) {
+          goldenEra = {start: windowStart, end: windowEnd, count: windowCount};
+        }
+      }
+    }
+
+    // Most Common Year
+    const yearCounts = new Map<number, number>();
+    for (const y of years) {
+      yearCounts.set(y, (yearCounts.get(y) || 0) + 1);
+    }
+    let mostCommonYear = {year: 0, count: 0};
+    for (const [y, c] of yearCounts) {
+      if (c > mostCommonYear.count) {
+        mostCommonYear = {year: y, count: c};
+      }
+    }
+
+    // Rarity Score: % of books in decades with fewer than 3 books
+    let rareBooks = 0;
+    for (const [_, count] of decadeCounts) {
+      if (count < 3) rareBooks += count;
+    }
+    const rarityScore = years.length > 0 ? Math.round((rareBooks / years.length) * 100) : 0;
 
     return {
       oldestBook: oldest,
@@ -352,7 +389,9 @@ export class PublicationTimelineChartComponent implements OnInit, OnDestroy {
       peakDecade,
       peakDecadeCount,
       centuryBreakdown: {c21, c20, older},
-      decadesCovered: decadeCounts.size
+      goldenEra,
+      mostCommonYear,
+      rarityScore
     };
   }
 

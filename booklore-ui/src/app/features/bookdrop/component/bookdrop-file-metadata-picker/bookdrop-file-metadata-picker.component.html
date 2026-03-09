@@ -1,41 +1,42 @@
+<ng-container *transloco="let t; prefix: 'bookdrop.metadataPicker'">
 @if (fetchedMetadata && fetchedMetadata.title) {
   <form [formGroup]="metadataForm" class="metapicker">
     <div class="form-scroll">
-      <div class="metaheader">
-        <label class="field-label"></label>
-        <div class="header-fields-row">
-          <p class="header-column">File Data</p>
-          <div class="midbuttons">
-            <p-button
-              size="small"
-              icon="pi pi-angle-left"
-              class="btn-margin"
-              [outlined]="true"
-              pTooltip="Copy missing fields from fetched metadata"
-              tooltipPosition="bottom"
-              (onClick)="copyMissing()"
-            ></p-button>
-            <p-button
-              size="small"
-              icon="pi pi-angle-double-left"
-              class="btn-margin"
-              [outlined]="true"
-              pTooltip="Overwrite all fields with fetched metadata"
-              tooltipPosition="bottom"
-              (onClick)="copyAll()"
-            ></p-button>
-            <p-button
-              size="small"
-              severity="warn"
-              icon="pi pi-refresh"
-              class="btn-margin"
-              [outlined]="true"
-              pTooltip="Reset all fields to original values"
-              tooltipPosition="bottom"
-              (onClick)="confirmReset()"
-            ></p-button>
-          </div>
-          <p class="header-column">Fetched Data</p>
+      <div class="column-headers">
+        <div class="column-label current">
+          <span>{{ t('fileData') }}</span>
+        </div>
+        <div class="column-actions">
+          <button
+            type="button"
+            class="p-button p-button-outlined p-button-sm p-button-icon-only"
+            [pTooltip]="t('copyMissingTooltip')"
+            tooltipPosition="bottom"
+            (click)="copyMissing()"
+          >
+            <span class="p-button-icon pi pi-angle-left"></span>
+          </button>
+          <button
+            type="button"
+            class="p-button p-button-outlined p-button-sm p-button-icon-only"
+            [pTooltip]="t('overwriteAllTooltip')"
+            tooltipPosition="bottom"
+            (click)="copyAll()"
+          >
+            <span class="p-button-icon pi pi-angle-double-left"></span>
+          </button>
+          <button
+            type="button"
+            class="p-button p-button-outlined p-button-sm p-button-icon-only p-button-warn"
+            [pTooltip]="t('resetAllTooltip')"
+            tooltipPosition="bottom"
+            (click)="confirmReset()"
+          >
+            <span class="p-button-icon pi pi-refresh"></span>
+          </button>
+        </div>
+        <div class="column-label fetched">
+          <span>{{ t('fetchedData') }}</span>
         </div>
       </div>
       <div class="metacontent">
@@ -57,7 +58,7 @@
                 ></p-image>
               }
               @else {
-                <div class="thumbnail no-cover-text">No cover image</div>
+                <div class="thumbnail no-cover-text">{{ t('noCoverImage') }}</div>
               }
               <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
             </div>
@@ -82,7 +83,7 @@
                 ></p-image>
               }
               @else {
-                <div class="thumbnail no-cover-text">Cover image not found</div>
+                <div class="thumbnail no-cover-text">{{ t('coverImageNotFound') }}</div>
               }
               <input type="hidden" [value]="fetchedMetadata.thumbnailUrl" readonly/>
             </div>
@@ -181,19 +182,45 @@
           <div class="meta-row field-{{field.controlName}}">
             <label for="{{field.controlName}}" class="field-label">{{ field.label }}</label>
             <div class="meta-fields">
-              <p-autoComplete
-                size="small"
-                formControlName="{{field.controlName}}"
-                [multiple]="true"
-                [typeahead]="false"
-                [dropdown]="false"
-                [forceSelection]="false"
-                class="dest full-width"
-                [ngClass]="{
-                  'changed': isValueChanged(field.controlName),
-                }"
-                (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
-              />
+              @if (field.controlName === 'authors') {
+                <div class="author-chips-container dest full-width"
+                     cdkDropList cdkDropListOrientation="mixed"
+                     (cdkDropListDropped)="dropAuthor($event)"
+                     [ngClass]="{ 'changed': isValueChanged('authors') }">
+                  @for (author of metadataForm.get('authors')!.value; track $index) {
+                    <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
+                      @if ($index === 0) { <span class="main-author-badge">m</span> }
+                      {{ author }}
+                      <i class="pi pi-times author-chip-remove" (click)="removeAuthor($index)"></i>
+                    </span>
+                  }
+                  <p-autoComplete
+                    class="author-add-input"
+                    [(ngModel)]="authorInputValue"
+                    [ngModelOptions]="{ standalone: true }"
+                    size="small"
+                    [forceSelection]="false"
+                    [dropdown]="false"
+                    (onKeyUp)="onAuthorInputKeyUp($event)"
+                    (onSelect)="onAuthorInputSelect($event)"
+                    placeholder="Add author..."
+                  />
+                </div>
+              } @else {
+                <p-autoComplete
+                  size="small"
+                  formControlName="{{field.controlName}}"
+                  [multiple]="true"
+                  [typeahead]="false"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  class="dest full-width"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }"
+                  (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                />
+              }
               <p-button
                 size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
@@ -317,14 +344,14 @@
     <div class="form-scroll">
       <div class="metaheader">
         <p class="missingmd">
-          Unable to fetch metadata for this file
+          {{ t('unableToFetchMetadata') }}
         </p>
         <p-button
           size="small"
           severity="warn"
           icon="pi pi-refresh"
           [outlined]="true"
-          pTooltip="Reset all fields to original values"
+          [pTooltip]="t('resetAllTooltip')"
           tooltipPosition="left"
           (onClick)="confirmReset()"
         ></p-button>
@@ -405,19 +432,45 @@
             <div class="meta-row field-{{field.controlName}}">
               <label for="{{field.controlName}}" class="field-label field-label--fixed">{{ field.label }}</label>
               <div class="field-input-row">
-                <p-autoComplete
-                  size="small"
-                  formControlName="{{field.controlName}}"
-                  [multiple]="true"
-                  [typeahead]="false"
-                  [dropdown]="false"
-                  [forceSelection]="false"
-                  class="full-width"
-                  [ngClass]="{
-                    'changed': isValueChanged(field.controlName),
-                  }"
-                  (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
-                />
+                @if (field.controlName === 'authors') {
+                  <div class="author-chips-container full-width"
+                       cdkDropList cdkDropListOrientation="mixed"
+                       (cdkDropListDropped)="dropAuthor($event)"
+                       [ngClass]="{ 'changed': isValueChanged('authors') }">
+                    @for (author of metadataForm.get('authors')!.value; track $index) {
+                      <span class="author-chip" [class.main-author]="$index === 0" cdkDrag>
+                        @if ($index === 0) { <span class="main-author-badge">m</span> }
+                        {{ author }}
+                        <i class="pi pi-times author-chip-remove" (click)="removeAuthor($index)"></i>
+                      </span>
+                    }
+                    <p-autoComplete
+                      class="author-add-input"
+                      [(ngModel)]="authorInputValue"
+                      [ngModelOptions]="{ standalone: true }"
+                      size="small"
+                      [forceSelection]="false"
+                      [dropdown]="false"
+                      (onKeyUp)="onAuthorInputKeyUp($event)"
+                      (onSelect)="onAuthorInputSelect($event)"
+                      placeholder="Add author..."
+                    />
+                  </div>
+                } @else {
+                  <p-autoComplete
+                    size="small"
+                    formControlName="{{field.controlName}}"
+                    [multiple]="true"
+                    [typeahead]="false"
+                    [dropdown]="false"
+                    [forceSelection]="false"
+                    class="full-width"
+                    [ngClass]="{
+                      'changed': isValueChanged(field.controlName),
+                    }"
+                    (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                  />
+                }
                 <p-button
                   size="small"
                   icon="pi pi-refresh"
@@ -490,3 +543,4 @@
     </div>
   </form>
 }
+</ng-container>
