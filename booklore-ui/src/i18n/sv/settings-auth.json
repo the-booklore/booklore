@@ -1,12 +1,12 @@
 {
-    "title": "Autentiseringsinställningar",
+    "title": "OIDC-inställningar",
     "description": "Konfigurera autentiseringsmetoder för din Booklore-instans. Intern autentisering är alltid aktiverad, och du kan valfritt aktivera OIDC för externa autentiseringsleverantörer.",
     "methods": {
-        "sectionTitle": "Autentiseringsmetoder",
-        "sectionDesc": "Välj vilka autentiseringsmetoder som är tillgängliga för användare att logga in med."
+        "sectionTitle": "Inloggningsmetoder",
+        "sectionDesc": "Välj vilka inloggningsmetoder som är tillgängliga för användare att logga in med."
     },
     "internal": {
-        "label": "Intern autentisering",
+        "label": "Lokal inloggning",
         "status": "Alltid aktiverad",
         "description": "Inbyggd autentisering med användarnamn och lösenord. Detta är standardmetoden och kan inte inaktiveras."
     },
