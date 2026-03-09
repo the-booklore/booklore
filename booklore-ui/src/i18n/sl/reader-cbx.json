@@ -78,7 +78,9 @@
         "fullscreenLabel": "Celozaslonski način",
         "keyboardShortcutsLabel": "Bližnjice na tipkovnici",
         "settings": "Nastavitve",
-        "closeReader": "Zapri bralnik"
+        "closeReader": "Zapri bralnik",
+        "enableMagnifier": "Povečevalno steklo (M)",
+        "disableMagnifier": "Onemogoči povečevalno steklo (M)"
     },
     "quickSettings": {
         "fitMode": "Način prilagajanja",
