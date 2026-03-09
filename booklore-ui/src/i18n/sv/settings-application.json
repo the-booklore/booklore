@@ -5,7 +5,7 @@
         "sectionTitle": "Bokomslag",
         "regenerate": "Återskapa omslag",
         "regenerateBtn": "Återskapa",
-        "regenerateDesc": "Återskapar omslagsbilder för alla böcker från de inbäddade omslagen i filen.",
+        "regenerateDesc": "Återskapar omslagsbilder för alla böcker från de inbäddade omslagen i filen. Använd \"Regenerera saknade\" för att bara generera omslag för böcker som ännu inte har ett.",
         "regenerateStarted": "Omslagsåterskapning startad",
         "regenerateStartedDetail": "Bokomslag håller på att återskapas.",
         "regenerateError": "Kunde inte starta omslagsåterskapning.",
