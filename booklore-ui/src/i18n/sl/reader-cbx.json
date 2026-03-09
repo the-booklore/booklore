@@ -41,7 +41,8 @@
         "toggleZoom": "Preklopi povečavo (prilagodi strani / dejanska velikost)",
         "doubleTap": "Dvojni pritisk",
         "toggleSlideshow": "Preklopi diaprojekcijo / samodejno predvajanje",
-        "showHelpDialog": "Prikaži to pomoč"
+        "showHelpDialog": "Prikaži to pomoč",
+        "toggleMagnifier": "Vklop/izklop povečevalnega stekla"
     },
     "footer": {
         "prevBook": "Prejš. knjiga",
