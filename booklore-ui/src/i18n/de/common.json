@@ -22,5 +22,5 @@
     "dismiss": "Verwerfen",
     "discard": "Verwerfen",
     "review": "Überprüfen",
-    "libraryPathInaccessible": ""
+    "libraryPathInaccessible": "Der Pfad zur Bibliothek ist nicht zugreifbar"
 }
