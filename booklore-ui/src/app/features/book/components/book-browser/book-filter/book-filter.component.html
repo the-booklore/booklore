@@ -64,7 +64,11 @@
     </p-accordion>
 
     <div class="footer-notice">
-      {{ t('footerNote') }}
+      @if (filterItemLimit) {
+   	 {{ t('footerNoteN', { count: filterItemLimit }) }}
+      } @else {
+    	 {{ t('footerNote') }}
+      }
     </div>
   </div>
 </div>

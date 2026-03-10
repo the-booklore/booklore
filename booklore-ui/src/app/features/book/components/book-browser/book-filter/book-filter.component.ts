@@ -15,6 +15,7 @@ import {Filter, FILTER_LABEL_KEYS, FilterType} from './book-filter.config';
 import {BookFilterService} from './book-filter.service';
 import {filter} from 'rxjs/operators';
 import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
+import { DEFAULT_FILTER_LIMIT } from './book-filter.constants';
 
 type FilterModeOption = { label: string; value: BookFilterMode };
 
@@ -31,6 +32,8 @@ type FilterModeOption = { label: string; value: BookFilterMode };
     TranslocoDirective
   ]
 })
+
+
 export class BookFilterComponent implements OnInit, OnDestroy {
   @Input() entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
   @Input() entityType$: Observable<EntityType> | undefined;
@@ -39,6 +42,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   @Output() filterSelected = new EventEmitter<Record<string, unknown> | null>();
   @Output() filterModeChanged = new EventEmitter<BookFilterMode>();
+
+  readonly filterItemLimit = DEFAULT_FILTER_LIMIT;
 
   private readonly filterService = inject(BookFilterService);
   private readonly userService = inject(UserService);

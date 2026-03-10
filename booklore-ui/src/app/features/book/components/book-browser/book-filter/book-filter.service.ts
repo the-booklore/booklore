@@ -12,8 +12,9 @@ import {EntityType} from '../book-browser.component';
 import {Filter, FILTER_CONFIGS, FILTER_EXTRACTORS, FilterType, FilterValue, NUMERIC_ID_FILTER_TYPES, SortMode} from './book-filter.config';
 import {filterBooksByFilters} from '../filters/sidebar-filter';
 import {BookFilterMode} from '../../../../settings/user-management/user.service';
+import { DEFAULT_FILTER_LIMIT } from './book-filter.constants';
 
-const MAX_FILTER_ITEMS = Number.MAX_SAFE_INTEGER;
+const MAX_FILTER_ITEMS = DEFAULT_FILTER_LIMIT;
 
 @Injectable({providedIn: 'root'})
 export class BookFilterService {
