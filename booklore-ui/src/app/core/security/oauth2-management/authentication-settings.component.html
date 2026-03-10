@@ -134,14 +134,13 @@
         </div>
 
         <div class="config-item">
-          <label for="scope">{{ t('providerConfig.scope') }}</label>
+          <label for="scopes">{{ t('providerConfig.scope') }}</label>
           <input
             pInputText
             pSize="small"
-            id="scope"
-            [readonly]="true"
-            disabled="disabled"
-            value="openid profile email groups offline_access"/>
+            id="scopes"
+            [(ngModel)]="oidcProvider.scopes"
+            [placeholder]="'openid profile email groups offline_access'"/>
           <span class="field-hint">{{ t('providerConfig.scopeHint') }}</span>
         </div>
       </div>
