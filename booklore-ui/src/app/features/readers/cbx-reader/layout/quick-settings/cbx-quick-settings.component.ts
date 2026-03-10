@@ -10,7 +10,9 @@ import {
   CbxPageSpread,
   CbxBackgroundColor,
   CbxReadingDirection,
-  CbxSlideshowInterval
+  CbxSlideshowInterval,
+  CbxMagnifierZoom,
+  CbxMagnifierLensSize
 } from '../../../../settings/user-management/user.service';
 import {ReaderIconComponent, ReaderIconName} from '../../../ebook-reader/shared/icon.component';
 import {CbxQuickSettingsService, CbxQuickSettingsState} from './cbx-quick-settings.service';
@@ -34,7 +36,9 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
     pageSpread: CbxPageSpread.ODD,
     backgroundColor: CbxBackgroundColor.GRAY,
     readingDirection: CbxReadingDirection.LTR,
-    slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS
+    slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS,
+    magnifierZoom: CbxMagnifierZoom.ZOOM_3X,
+    magnifierLensSize: CbxMagnifierLensSize.MEDIUM
   };
 
   protected readonly CbxFitMode = CbxFitMode;
@@ -44,6 +48,8 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
   protected readonly CbxBackgroundColor = CbxBackgroundColor;
   protected readonly CbxReadingDirection = CbxReadingDirection;
   protected readonly CbxSlideshowInterval = CbxSlideshowInterval;
+  protected readonly CbxMagnifierZoom = CbxMagnifierZoom;
+  protected readonly CbxMagnifierLensSize = CbxMagnifierLensSize;
 
   get fitModeOptions(): {value: CbxFitMode, label: string, icon: ReaderIconName}[] {
     return [
@@ -69,6 +75,21 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
     {value: CbxSlideshowInterval.TEN_SECONDS, label: '10s'},
     {value: CbxSlideshowInterval.FIFTEEN_SECONDS, label: '15s'},
     {value: CbxSlideshowInterval.THIRTY_SECONDS, label: '30s'}
+  ];
+
+  magnifierZoomOptions: {value: CbxMagnifierZoom, label: string}[] = [
+    {value: CbxMagnifierZoom.ZOOM_1_5X, label: '1.5×'},
+    {value: CbxMagnifierZoom.ZOOM_2X, label: '2×'},
+    {value: CbxMagnifierZoom.ZOOM_2_5X, label: '2.5×'},
+    {value: CbxMagnifierZoom.ZOOM_3X, label: '3×'},
+    {value: CbxMagnifierZoom.ZOOM_4X, label: '4×'}
+  ];
+
+  magnifierLensSizeOptions: {value: CbxMagnifierLensSize, label: string}[] = [
+    {value: CbxMagnifierLensSize.SMALL, label: 'S'},
+    {value: CbxMagnifierLensSize.MEDIUM, label: 'M'},
+    {value: CbxMagnifierLensSize.LARGE, label: 'L'},
+    {value: CbxMagnifierLensSize.EXTRA_LARGE, label: 'XL'}
   ];
 
   get backgroundOptions() {
@@ -149,6 +170,14 @@ export class CbxQuickSettingsComponent implements OnInit, OnDestroy {
 
   onSlideshowIntervalSelect(interval: CbxSlideshowInterval): void {
     this.quickSettingsService.emitSlideshowIntervalChange(interval);
+  }
+
+  onMagnifierZoomSelect(zoom: CbxMagnifierZoom): void {
+    this.quickSettingsService.emitMagnifierZoomChange(zoom);
+  }
+
+  onMagnifierLensSizeSelect(size: CbxMagnifierLensSize): void {
+    this.quickSettingsService.emitMagnifierLensSizeChange(size);
   }
 
   onOverlayClick(): void {
