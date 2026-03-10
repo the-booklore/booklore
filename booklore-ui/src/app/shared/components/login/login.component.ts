@@ -175,7 +175,9 @@ export class LoginComponent implements OnInit {
         details.clientId,
         pkce.codeChallenge,
         state,
-        nonce
+        nonce,
+        undefined,
+        details.scopes
       );
 
       window.location.href = authUrl;
