@@ -151,6 +151,25 @@
             />
           </div>
 
+          <div class="option-row">
+            <div class="option-label">
+              <span>{{ t('organizationMode') }}</span>
+              <i
+                class="pi pi-question-circle info-icon"
+                [pTooltip]="t('organizationModeTooltip')"
+                tooltipPosition="top"
+              ></i>
+            </div>
+            <p-select
+              [(ngModel)]="organizationMode"
+              [options]="organizationModeOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="metadata-source-select"
+              appendTo="body"
+            />
+          </div>
+
           <div class="option-divider"></div>
 
           <div class="option-row option-row-stacked">

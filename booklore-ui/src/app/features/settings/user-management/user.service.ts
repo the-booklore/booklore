@@ -102,6 +102,21 @@ export enum CbxSlideshowInterval {
   THIRTY_SECONDS = 30000
 }
 
+export enum CbxMagnifierZoom {
+  ZOOM_1_5X = 1.5,
+  ZOOM_2X = 2,
+  ZOOM_2_5X = 2.5,
+  ZOOM_3X = 3,
+  ZOOM_4X = 4
+}
+
+export enum CbxMagnifierLensSize {
+  SMALL = 150,
+  MEDIUM = 200,
+  LARGE = 250,
+  EXTRA_LARGE = 300
+}
+
 export interface PdfReaderSetting {
   pageSpread: PageSpread;
   pageZoom: string;

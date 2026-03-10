@@ -110,6 +110,42 @@
           </div>
         </div>
       </div>
+
+      <!-- Magnifier Lens Size -->
+      <div class="control">
+        <label>{{ 'readerCbx.quickSettings.magnifierLensSize' | transloco }}</label>
+        <div class="control-right">
+          <div class="button-group text-btns">
+            @for (option of magnifierLensSizeOptions; track option.value) {
+              <button
+                class="option-btn text-btn small"
+                [class.active]="state.magnifierLensSize === option.value"
+                (click)="onMagnifierLensSizeSelect(option.value)"
+                [title]="option.label">
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Magnifier Zoom -->
+      <div class="control">
+        <label>{{ 'readerCbx.quickSettings.magnifierZoom' | transloco }}</label>
+        <div class="control-right">
+          <div class="button-group text-btns">
+            @for (option of magnifierZoomOptions; track option.value) {
+              <button
+                class="option-btn text-btn small"
+                [class.active]="state.magnifierZoom === option.value"
+                (click)="onMagnifierZoomSelect(option.value)"
+                [title]="option.label">
+                {{ option.label }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

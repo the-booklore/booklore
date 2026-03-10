@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
-import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval} from '../../../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxMagnifierLensSize, CbxMagnifierZoom, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval} from '../../../../settings/user-management/user.service';
 
 export interface CbxQuickSettingsState {
   fitMode: CbxFitMode;
@@ -10,6 +10,8 @@ export interface CbxQuickSettingsState {
   backgroundColor: CbxBackgroundColor;
   readingDirection: CbxReadingDirection;
   slideshowInterval: CbxSlideshowInterval;
+  magnifierZoom: CbxMagnifierZoom;
+  magnifierLensSize: CbxMagnifierLensSize;
 }
 
 @Injectable()
@@ -21,7 +23,9 @@ export class CbxQuickSettingsService {
     pageSpread: CbxPageSpread.ODD,
     backgroundColor: CbxBackgroundColor.GRAY,
     readingDirection: CbxReadingDirection.LTR,
-    slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS
+    slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS,
+    magnifierZoom: CbxMagnifierZoom.ZOOM_3X,
+    magnifierLensSize: CbxMagnifierLensSize.MEDIUM
   });
   state$ = this._state.asObservable();
 
@@ -48,6 +52,12 @@ export class CbxQuickSettingsService {
 
   private _slideshowIntervalChange = new Subject<CbxSlideshowInterval>();
   slideshowIntervalChange$ = this._slideshowIntervalChange.asObservable();
+
+  private _magnifierZoomChange = new Subject<CbxMagnifierZoom>();
+  magnifierZoomChange$ = this._magnifierZoomChange.asObservable();
+
+  private _magnifierLensSizeChange = new Subject<CbxMagnifierLensSize>();
+  magnifierLensSizeChange$ = this._magnifierLensSizeChange.asObservable();
 
   get state(): CbxQuickSettingsState {
     return this._state.value;
@@ -97,6 +107,14 @@ export class CbxQuickSettingsService {
     this.updateState({slideshowInterval: interval});
   }
 
+  setMagnifierZoom(zoom: CbxMagnifierZoom): void {
+    this.updateState({magnifierZoom: zoom});
+  }
+
+  setMagnifierLensSize(size: CbxMagnifierLensSize): void {
+    this.updateState({magnifierLensSize: size});
+  }
+
   // Actions emitted from component
   emitFitModeChange(mode: CbxFitMode): void {
     this._fitModeChange.next(mode);
@@ -126,6 +144,14 @@ export class CbxQuickSettingsService {
     this._slideshowIntervalChange.next(interval);
   }
 
+  emitMagnifierZoomChange(zoom: CbxMagnifierZoom): void {
+    this._magnifierZoomChange.next(zoom);
+  }
+
+  emitMagnifierLensSizeChange(size: CbxMagnifierLensSize): void {
+    this._magnifierLensSizeChange.next(size);
+  }
+
   reset(): void {
     this._state.next({
       fitMode: CbxFitMode.FIT_PAGE,
@@ -134,7 +160,9 @@ export class CbxQuickSettingsService {
       pageSpread: CbxPageSpread.ODD,
       backgroundColor: CbxBackgroundColor.GRAY,
       readingDirection: CbxReadingDirection.LTR,
-      slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS
+      slideshowInterval: CbxSlideshowInterval.FIVE_SECONDS,
+      magnifierZoom: CbxMagnifierZoom.ZOOM_3X,
+      magnifierLensSize: CbxMagnifierLensSize.MEDIUM
     });
     this._visible.next(false);
   }
