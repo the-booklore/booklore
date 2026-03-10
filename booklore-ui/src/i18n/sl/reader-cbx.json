@@ -42,7 +42,9 @@
         "doubleTap": "Dvojni pritisk",
         "toggleSlideshow": "Preklopi diaprojekcijo / samodejno predvajanje",
         "showHelpDialog": "Prikaži to pomoč",
-        "toggleMagnifier": "Vklop/izklop povečevalnega stekla"
+        "toggleMagnifier": "Vklop/izklop povečevalnega stekla",
+        "magnifierZoom": "Povečava s povečevalnim steklom (ko je aktivna)",
+        "magnifierLensSize": "Velikost povečevalne leče (ko je aktivna)"
     },
     "footer": {
         "prevBook": "Prejš. knjiga",
@@ -106,7 +108,9 @@
         "background": "Ozadje",
         "black": "Črno",
         "gray": "Sivo",
-        "white": "Belo"
+        "white": "Belo",
+        "magnifierLensSize": "Velikost leče",
+        "magnifierZoom": "Povečava"
     },
     "sidebar": {
         "contentTab": "Vsebina",
