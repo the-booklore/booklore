@@ -102,6 +102,7 @@ export class AuthenticationSettingsComponent implements OnInit {
     clientId: '',
     clientSecret: '',
     issuerUri: '',
+    scopes: '',
     claimMapping: {
       username: '',
       email: '',
@@ -156,6 +157,7 @@ export class AuthenticationSettingsComponent implements OnInit {
       providerName: settings.oidcProviderDetails?.providerName || '',
       clientId: settings.oidcProviderDetails?.clientId || '',
       issuerUri: settings.oidcProviderDetails?.issuerUri || '',
+      scopes: settings.oidcProviderDetails?.scopes || '',
       claimMapping: settings.oidcProviderDetails?.claimMapping || defaultClaimMapping
     };
 
