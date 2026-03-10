@@ -265,7 +265,7 @@ public class KomgaMapper {
         BookFileEntity bookFile = book.getPrimaryBookFile();
         String bookSeriesName = metadata != null && metadata.getSeriesName() != null 
             ? metadata.getSeriesName() 
-                : (groupUnknown ? UNKNOWN_SERIES : (metadata.getTitle() != null ? metadata.getTitle() : bookFile.getFileName() ));
+                : (groupUnknown ? UNKNOWN_SERIES : (metadata != null && metadata.getTitle() != null ? metadata.getTitle() : bookFile.getFileName() ));
         return bookSeriesName;
     }
 
