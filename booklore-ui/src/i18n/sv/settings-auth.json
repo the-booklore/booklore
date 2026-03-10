@@ -60,7 +60,8 @@
         "defaultLibraryAccess": "Standard biblioteksåtkomst",
         "selectLibraries": "Välj bibliotek som nya användare kan komma åt",
         "linkLocalLabel": "Länka befintliga lokala konton",
-        "linkLocalDesc": "När det är aktiverat kommer befintliga lokalt skapade användare automatiskt att länkas till sin OIDC-identitet vid första OIDC-inloggningen om användarnamnen matchar. När det är inaktiverat kan endast användare som ursprungligen skapades via OIDC matchas med användarnamn."
+        "linkLocalDesc": "När det är aktiverat kommer befintliga lokalt skapade användare automatiskt att länkas till sin OIDC-identitet vid första OIDC-inloggningen om användarnamnen matchar. När det är inaktiverat kan endast användare som ursprungligen skapades via OIDC matchas med användarnamn.",
+        "linkLocalWarning": "Överväg att inaktivera detta efter att alla befintliga användare har loggat in via OIDC minst en gång. Om du lämnar det påslaget kan alla med ett matchande användarnamn hos din OIDC-leverantör ta över ett lokalt konto."
     },
     "perms": {
         "uploadBooks": "Ladda upp böcker",
@@ -81,5 +82,10 @@
         "providerError": "Kunde inte spara OIDC-leverantörsinställningar.",
         "provisionSaved": "OIDC-autoprovisioneringsinställningar sparade.",
         "provisionError": "Kunde inte spara OIDC-autoprovisioneringsinställningar."
+    },
+    "groupMapping": {
+        "sectionTitle": "Gruppmappning",
+        "sectionDesc": "Mappa OIDC-leverantörsgrupper till Booklore-behörigheter och biblioteksåtkomst. Användarnas behörigheter synkroniseras baserat på deras gruppmedlemskap.",
+        "syncModeLabel": "Gruppsynksläge"
     }
 }
