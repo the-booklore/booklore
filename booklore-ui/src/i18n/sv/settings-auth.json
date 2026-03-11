@@ -1,6 +1,6 @@
 {
     "title": "OIDC-inställningar",
-    "description": "Konfigurera autentiseringsmetoder för din Booklore-instans. Intern autentisering är alltid aktiverad, och du kan valfritt aktivera OIDC för externa autentiseringsleverantörer.",
+    "description": "Konfigurera OpenID Connect (OIDC) för enkel inloggning med externa identitetsleverantörer som Authentik, Authelia eller Pocket ID.",
     "methods": {
         "sectionTitle": "Inloggningsmetoder",
         "sectionDesc": "Välj vilka inloggningsmetoder som är tillgängliga för användare att logga in med."
@@ -8,10 +8,10 @@
     "internal": {
         "label": "Lokal inloggning",
         "status": "Alltid aktiverad",
-        "description": "Inbyggd autentisering med användarnamn och lösenord. Detta är standardmetoden och kan inte inaktiveras."
+        "description": "Inbyggd autentisering med användarnamn och lösenord. Alltid tillgänglig för administratörer. Kan döljas för andra användare via OIDC-only-läge."
     },
     "oidc": {
-        "label": "OIDC-autentisering",
+        "label": "OIDC-inloggning",
         "experimental": "Experimentell",
         "description": "OpenID Connect för enkel inloggning med externa leverantörer (Authentik, Keycloak osv.).",
         "configHint": "Konfigurera inställningarna nedan för att aktivera.",
@@ -20,7 +20,7 @@
     },
     "providerConfig": {
         "sectionTitle": "OIDC-leverantörskonfiguration",
-        "sectionDesc": "Konfigurera dina OIDC-leverantörsinställningar. Alla fält krävs för att aktivera OIDC-autentisering.",
+        "sectionDesc": "Konfigurera dina OIDC-leverantörsinställningar. Alla fält krävs för att aktivera OIDC.",
         "providerName": "Leverantörsnamn",
         "providerPlaceholder": "t.ex. Authentik, Keycloak",
         "clientId": "Klient-ID",
@@ -30,8 +30,8 @@
         "clientSecretHint": "Krävs för konfidentiella klienter. Lämna tomt för offentliga klienter som endast använder PKCE.",
         "issuerUri": "Utfärdar-URI",
         "issuerPlaceholder": "t.ex. https://auth.example.com/realms/booklore",
-        "scope": "Scope",
-        "scopeHint": "Obligatoriska scopes för OIDC-inloggning. Måste stödjas av din leverantör.",
+        "scope": "Scopes",
+        "scopeHint": "Scopes skickade i OIDC-auktoriseringsbegäran. Lämna tomt om du vill använda standardvärdet.",
         "claimMappings": "Claim-mappningar",
         "claimDesc": "Mappa OIDC-token-claims till Booklore-användarfält. Dessa måste matcha din leverantörs token-claims.",
         "usernameClaim": "Användarnamns-claim",
