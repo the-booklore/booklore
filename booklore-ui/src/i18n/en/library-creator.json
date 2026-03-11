@@ -26,6 +26,7 @@
     "metadataSourceNone": "None",
     "organizationMode": "Organization mode",
     "organizationModeTooltip": "How files are grouped into books during scanning",
+    "organizationModeLockedTooltip": "Organization mode cannot be changed after library creation. To use a different mode, create a new library.",
     "organizationModeBookPerFile": "One book per file",
     "organizationModeBookPerFolder": "One book per folder",
     "organizationModeAutoDetect": "Auto-detect (legacy)",

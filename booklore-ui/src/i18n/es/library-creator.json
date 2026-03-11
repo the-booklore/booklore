@@ -26,6 +26,7 @@
         "metadataSourceNone": "Ninguno",
         "organizationMode": "Modo de organizacion",
         "organizationModeTooltip": "Como se agrupan los archivos en libros durante el escaneo",
+        "organizationModeLockedTooltip": "El modo de organizacion no se puede cambiar despues de crear la biblioteca. Para usar un modo diferente, crea una nueva biblioteca.",
         "organizationModeBookPerFile": "Un libro por archivo",
         "organizationModeBookPerFolder": "Un libro por carpeta",
         "organizationModeAutoDetect": "Deteccion automatica (legado)",
