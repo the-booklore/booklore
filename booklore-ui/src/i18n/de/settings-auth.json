@@ -14,7 +14,7 @@
         "label": "OIDC-Login",
         "experimental": "Experimentell",
         "description": "OpenID Connect für Single Sign-On mit externen Anbietern (Authentik, Keycloak usw.).",
-        "configHint": "Konfigurieren Sie die Einstellungen unten, um OIDC zu aktivieren.",
+        "configHint": "Bitte konfigurieren Sie die folgenden Einstellungen, um die Funktion zu aktivieren.",
         "enabled": "Aktiviert",
         "disabled": "Deaktiviert"
     },
