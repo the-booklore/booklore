@@ -17,12 +17,13 @@ services:
     depends_on:
       - backend_db
     volumes:
-      - './booklore-api:/booklore-api'
+      - './booklore-api:/booklore-api:z'
       - /booklore-api/build
       - /booklore-api/.gradle
-      - ./shared/data:/app/data
-      - ./shared/books:/books
-      - ./shared/bookdrop:/bookdrop
+      - ./shared/data:/app/data:z
+      - ./shared/books:/books:z
+      - ./shared/bookdrop:/bookdrop:z
+      - ./shared/morelibraries:/morelibraries:z
 
   backend_db:
     image: mariadb:11.4
@@ -52,7 +53,7 @@ services:
     tty: true
     restart: unless-stopped
     volumes:
-      - './booklore-ui:/angular-app'
+      - './booklore-ui:/angular-app:z'
 
         # you can have node_modules in a volume. however, if you enable this, expect trouble in some IDEs, as the deps are not available anymore
         # - node_modules:/angular-app/node_modules

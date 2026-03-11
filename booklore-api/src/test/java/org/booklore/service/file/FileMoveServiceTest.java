@@ -1134,4 +1134,69 @@ class FileMoveServiceTest {
                     .hasMessageContaining("File move operations are only supported on local storage");
         }
     }
+
+    @Nested
+    @DisplayName("bulkMoveFiles - Duplicate BookFile Entries (Hibernate Cartesian Product)")
+    class BulkMoveFilesDuplicateBookFiles {
+
+        private LibraryEntity targetLibrary;
+        private LibraryPathEntity targetLibraryPath;
+
+        @BeforeEach
+        void setUpTarget() {
+            targetLibrary = new LibraryEntity();
+            targetLibrary.setId(2L);
+
+            targetLibraryPath = new LibraryPathEntity();
+            targetLibraryPath.setId(20L);
+            targetLibraryPath.setPath("/target");
+            targetLibraryPath.setLibrary(targetLibrary);
+            targetLibrary.setLibraryPaths(List.of(targetLibraryPath));
+        }
+
+        @Test
+        @DisplayName("succeeds when repository returns duplicate BookFileEntity entries caused by Hibernate Cartesian product (book in 2+ shelves)")
+        void succeedsWhenBookFilesDuplicated() throws IOException {
+            // Simulate the Hibernate Cartesian product: one physical file (id=1) appearing
+            // twice in the bookFiles list because the book belongs to 2 shelves.
+            // findByIdWithBookFiles joins book_file and book_shelf_mapping in one query;
+            // with 2 shelves the result set has 2 rows, each with the same book_file row,
+            // and since bookFiles is a List (bag semantics), Hibernate adds the entry twice.
+            BookFileEntity epub = createBookFile(1L, "Book.epub", "path", true, false);
+            BookEntity book = createBook(List.of(epub, epub));  // same instance twice
+
+            Path target = Paths.get("/target/new/NewName.epub");
+
+            when(bookRepository.findById(100L)).thenReturn(Optional.of(book));
+            when(bookRepository.findByIdWithBookFiles(100L)).thenReturn(Optional.of(book));
+            when(libraryRepository.findById(2L)).thenReturn(Optional.of(targetLibrary));
+            when(fileMoveHelper.getFileNamingPattern(targetLibrary)).thenReturn("{title}");
+            when(fileMoveHelper.generateNewFilePath(eq(book), eq(targetLibraryPath), anyString())).thenReturn(target);
+            when(fileMoveHelper.generateNewFilePath(eq(book), any(BookFileEntity.class), eq(targetLibraryPath), anyString())).thenReturn(target);
+            when(fileMoveHelper.extractSubPath(any(), eq(targetLibraryPath))).thenReturn("new");
+            when(fileMoveHelper.validateSourceExists(any(), anyBoolean())).thenReturn(true);
+            when(fileMoveHelper.moveFileWithBackup(any()))
+                    .thenReturn(target.resolveSibling("Book.epub.tmp_move"))
+                    .thenThrow(new java.nio.file.NoSuchFileException("Source file not accessible after retries"));
+            doNothing().when(fileMoveHelper).commitMove(any(), any());
+            doNothing().when(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(), anySet());
+            when(monitoringRegistrationService.getPathsForLibraries(anySet()))
+                    .thenReturn(Set.of(Paths.get("/library"), Paths.get("/target")));
+            when(bookMapper.toBookWithDescription(any(), anyBoolean())).thenReturn(null);
+
+            FileMoveRequest request = new FileMoveRequest();
+            FileMoveRequest.Move move = new FileMoveRequest.Move();
+            move.setBookId(100L);
+            move.setTargetLibraryId(2L);
+            move.setTargetLibraryPathId(20L);
+            request.setMoves(List.of(move));
+
+            service.bulkMoveFiles(request);
+
+            // The file should be staged and committed exactly once, not once per duplicate entry
+            verify(fileMoveHelper, times(1)).moveFileWithBackup(any());
+            verify(fileMoveHelper, times(1)).commitMove(any(), any());
+            verify(bookRepository).updateLibrary(100L, 2L, targetLibraryPath);
+        }
+    }
 }
