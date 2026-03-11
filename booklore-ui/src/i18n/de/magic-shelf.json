@@ -106,7 +106,9 @@
         "seriesGaps": "Serienlücken",
         "seriesPosition": "Serienposition",
         "readingProgress": "Lesefortschritt (%)",
-        "metadataPresence": "Metadaten-Vollständigkeit"
+        "metadataPresence": "Metadaten-Vollständigkeit",
+        "audiobookCodec": "Codec",
+        "audiobookChapterCount": "Anzahl Kapitel"
     },
     "fieldGroups": {
         "organization": "Organisation",
