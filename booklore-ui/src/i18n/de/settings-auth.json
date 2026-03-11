@@ -39,7 +39,11 @@
         "emailClaim": "E-Mail-Claim",
         "emailPlaceholder": "z.B. email",
         "nameClaim": "Anzeigename-Claim",
-        "namePlaceholder": "z.B. name"
+        "namePlaceholder": "z.B. name",
+        "sessionDuration": "Dauer der Sitzung (Stunden)",
+        "sessionDurationPlaceholder": "Standardeinstellung",
+        "sessionDurationHint": "Wie lange OIDC-Benutzer angemeldet bleiben. Bitte leer lassen, um die Standardwerte zu verwenden.",
+        "backchannelLogoutHint": "Bitte konfigurieren Sie diese URI in Ihrem OIDC-Anbieter, um die vom Server initiierte Sitzungsaufhebung zu aktivieren."
     },
     "provisioning": {
         "sectionTitle": "Benutzerbereitstellung",
@@ -51,7 +55,10 @@
         "defaultPerms": "Standardberechtigungen",
         "readBooks": "Bücher lesen",
         "defaultLibraryAccess": "Standard-Bibliothekszugriff",
-        "selectLibraries": "Bibliotheken auswählen, auf die neue Benutzer zugreifen können"
+        "selectLibraries": "Bibliotheken auswählen, auf die neue Benutzer zugreifen können",
+        "linkLocalLabel": "Bestehende lokale Konten verknüpfen",
+        "linkLocalDesc": "Wenn diese Option aktiviert ist, werden lokal erstellte Benutzer bei der ersten OIDC-Anmeldung automatisch mit ihrer OIDC-Identität verknüpft, sofern die Benutzernamen übereinstimmen. Wenn diese Option deaktiviert ist, können nur Benutzer, die ursprünglich über OIDC erstellt wurden, anhand ihres Benutzernamens abgeglichen werden.",
+        "linkLocalWarning": "Bitte erwägen Sie, diese Option zu deaktivieren, nachdem sich alle bestehenden Benutzer mindestens einmal über OIDC angemeldet haben. Wenn Sie diese Option aktiviert lassen, kann jeder mit einem übereinstimmenden Benutzernamen in Ihrem OIDC-Anbieter ein lokales Konto übernehmen."
     },
     "perms": {
         "uploadBooks": "Bücher hochladen",
@@ -71,6 +78,29 @@
         "providerSaved": "OIDC-Anbietereinstellungen gespeichert.",
         "providerError": "OIDC-Anbietereinstellungen konnten nicht gespeichert werden.",
         "provisionSaved": "OIDC-Auto-Provisioning-Einstellungen gespeichert.",
-        "provisionError": "OIDC-Auto-Provisioning-Einstellungen konnten nicht gespeichert werden."
+        "provisionError": "OIDC-Auto-Provisioning-Einstellungen konnten nicht gespeichert werden.",
+        "sessionDurationSaved": "Sitzungsdauer gespeichert.",
+        "sessionDurationError": "Die Speicherung der Sitzungsdauer ist fehlgeschlagen.",
+        "copiedToClipboard": "In die Zwischenablage kopiert."
+    },
+    "groupMapping": {
+        "sectionTitle": "Gruppenzuordnung",
+        "sectionDesc": "Ordnen Sie OIDC-Anbietergruppen den Booklore-Berechtigungen und dem Bibliothekszugriff zu. Die Berechtigungen der Benutzer werden auf Grundlage ihrer Gruppenmitgliedschaften synchronisiert.",
+        "colAdmin": "Admin",
+        "colPermissions": "Berechtigungen",
+        "colLibraries": "Bibliotheken",
+        "colDescription": "Beschreibung",
+        "descriptionLabel": "Beschreibung",
+        "descriptionPlaceholder": "Optionale Beschreibung",
+        "permissionsLabel": "Berechtigungen",
+        "librariesLabel": "Bibliothekszugang"
+    },
+    "testConnection": {
+        "button": "Verbindung testen"
+    },
+    "oidcOnly": {
+        "sectionDesc": "Wenn diese Option aktiviert ist, wird die lokale Anmeldung ausgeblendet und Benutzer werden automatisch zum OIDC-Anbieter weitergeleitet. Administratoren können weiterhin über /login?local=true auf die lokale Anmeldung zugreifen.",
+        "enabled": "Aktiviert",
+        "disabled": "Deaktiviert"
     }
 }
