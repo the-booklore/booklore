@@ -10,7 +10,7 @@
     },
     "chartNames": {
         "heatmap": "Lassessionsvarmekarta",
-        "favoriteDays": "Favoritlasdagar",
+        "favoriteDays": "Favoritläsdagar",
         "peakHours": "Topplastimmar",
         "timeline": "Lassessionstidslinje",
         "readingHeatmap": "Lasaktivitetsvarmekarta",
@@ -96,13 +96,13 @@
         "tooltipBooks": "{{ label }}: {{ value }} bocker"
     },
     "favoriteDays": {
-        "title": "Favoritlasdagar",
-        "tooltip": "Staplarna visar hur manga lassessioner och total lastid du loggat varje veckodag. Filtrera efter ar och manad for att hitta sasongsmonster. Hjalper dig hitta dina mest produktiva lasdagar.",
-        "description": "Lassessioner och varaktighet per veckodag",
-        "selectYear": "Valj ar",
-        "selectMonth": "Valj manad",
-        "allYears": "Alla ar",
-        "allMonths": "Alla manader",
+        "title": "Favoritläsdagar",
+        "tooltip": "Staplarna visar hur många lästillfällen och total lästid du loggat varje veckodag. Filtrera efter år och månad för att hitta säsongsmönster. Hjälper dig hitta dina mest produktiva läsdagar.",
+        "description": "Lästillfällen och varaktighet per veckodag",
+        "selectYear": "Välj år",
+        "selectMonth": "Välj månad",
+        "allYears": "Alla år",
+        "allMonths": "Alla månader",
         "january": "Januari",
         "february": "Februari",
         "march": "Mars",
@@ -116,12 +116,12 @@
         "november": "November",
         "december": "December",
         "axisDayOfWeek": "Veckodag",
-        "axisNumberOfSessions": "Antal sessioner",
+        "axisNumberOfSessions": "Antal lästillfällen",
         "axisDurationHours": "Varaktighet (timmar)",
-        "sessions": "Sessioner",
+        "sessions": "Lästillfällen",
         "durationHours": "Varaktighet (timmar)",
-        "tooltipSessions": "{{ label }}: {{ value }} session",
-        "tooltipSessionsPlural": "{{ label }}: {{ value }} sessioner"
+        "tooltipSessions": "{{ label }}: {{ value }} lästillfälle",
+        "tooltipSessionsPlural": "{{ label }}: {{ value }} lästillfällen"
     },
     "peakHours": {
         "title": "Topplastimmar",
@@ -148,7 +148,7 @@
         "axisAvgDuration": "Snittvaraktighet (min)",
         "sessions": "Sessioner",
         "avgDurationMin": "Snittvaraktighet (min)",
-        "tooltipSessions": "{{ label }}: {{ value }} session",
+        "tooltipSessions": "{{ label }}: {{ value }} lästillfälle",
         "tooltipSessionsPlural": "{{ label }}: {{ value }} sessioner",
         "tooltipMin": "{{ label }}: {{ value }} min"
     },
@@ -195,7 +195,7 @@
             "patient": "Talmodig",
             "social": "Social",
             "nostalgic": "Nostalgisk",
-            "ambitious": "Ambitious"
+            "ambitious": "Ambitiös"
         },
         "descriptions": {
             "adventurous": {
@@ -251,7 +251,7 @@
         "tooltipDefaultDescription": "Ditt lasvanemonster",
         "habits": {
             "consistency": "Konsekvens",
-            "multitasking": "Multitasking",
+            "multitasking": "Mångsysslare",
             "completionism": "Fullforandegrad",
             "exploration": "Utforskande",
             "organization": "Organisation",
@@ -276,7 +276,7 @@
                 "high": "Du overger nastan aldrig en bok nar du borjat lasa den"
             },
             "exploration": {
-                "low": "Du tenderar att aterbesoka favoritforfattare och bekant mark",
+                "low": "Du tenderar att återbesöka favoritförfattare och bekant mark",
                 "mid": "Du balanserar bekanta forfattare med nya upptackter ibland",
                 "high": "Du soker aktivt efter nya forfattare, epoker och sprak"
             },
@@ -336,11 +336,11 @@
         "tooltipDifference": "Skillnad: {{ diff }} (pa 5-poangsskalan)",
         "tooltipCategory": "Kategori: {{ category }}",
         "quadrantHiddenGems": "Dolda parlor",
-        "quadrantPopularFavorites": "Populara favoriter",
+        "quadrantPopularFavorites": "Populära favoriter",
         "quadrantAgreedMisses": "Eniga missar",
         "quadrantOverrated": "Overreklamerade",
         "quadrantDescHiddenGems": "Bocker du betygsatter hogre an allmanhetenv",
-        "quadrantDescPopularFavorites": "Bocker bade du och allmanhet alskar",
+        "quadrantDescPopularFavorites": "Böcker både du och folket älskar",
         "quadrantDescAgreedMisses": "Bocker varken du eller allmanhet gillade",
         "quadrantDescOverrated": "Populara bocker som besvikelse dig",
         "tasteProfile": "Din smakprofil",

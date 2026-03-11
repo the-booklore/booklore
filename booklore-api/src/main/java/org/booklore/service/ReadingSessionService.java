@@ -6,7 +6,9 @@ import org.booklore.model.dto.BookLoreUser;
 import org.booklore.model.dto.CompletionRaceSessionDto;
 import org.booklore.model.dto.request.ReadingSessionRequest;
 import org.booklore.model.dto.PageTurnerSessionDto;
+import org.booklore.model.dto.BookTimelineDto;
 import org.booklore.model.dto.ProgressPercentDto;
+import org.booklore.model.dto.ReadingSessionCountDto;
 import org.booklore.model.dto.response.*;
 import org.booklore.model.entity.BookEntity;
 import org.booklore.model.entity.BookLoreUserEntity;
@@ -150,13 +152,13 @@ public class ReadingSessionService {
     }
 
     @Transactional(readOnly = true)
-    public List<PeakReadingHoursResponse> getPeakReadingHours(Integer year, Integer month) {
+    public List<PeakHoursResponse> getPeakReadingHours(Integer year, Integer month) {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
         return readingSessionRepository.findPeakReadingHoursByUser(userId, year, month, getTimezoneOffset())
                 .stream()
-                .map(dto -> PeakReadingHoursResponse.builder()
+                .map(dto -> PeakHoursResponse.builder()
                         .hourOfDay(dto.getHourOfDay())
                         .sessionCount(dto.getSessionCount())
                         .totalDurationSeconds(dto.getTotalDurationSeconds())
@@ -508,6 +510,92 @@ public class ReadingSessionService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public ReadingStreakResponse getReadingStreak() {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        List<ReadingSessionCountDto> allDates = readingSessionRepository.findAllSessionCountsByUser(userId, getTimezoneOffset());
+        Set<LocalDate> readingDays = allDates.stream()
+                .map(ReadingSessionCountDto::getDate)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        LocalDate today = LocalDate.now();
+
+        // Current streak: consecutive days backwards from today (allow yesterday as last active day)
+        int currentStreak = 0;
+        LocalDate checkDate = today;
+        if (!readingDays.contains(today)) {
+            // If user hasn't read today, start checking from yesterday
+            checkDate = today.minusDays(1);
+        }
+        while (readingDays.contains(checkDate)) {
+            currentStreak++;
+            checkDate = checkDate.minusDays(1);
+        }
+
+        // Longest streak: find the longest consecutive run in the date set
+        int longestStreak = 0;
+        int streak = 0;
+        LocalDate prevDate = null;
+        for (LocalDate date : readingDays) {
+            if (prevDate != null && date.equals(prevDate.plusDays(1))) {
+                streak++;
+            } else {
+                streak = 1;
+            }
+            longestStreak = Math.max(longestStreak, streak);
+            prevDate = date;
+        }
+
+        int totalReadingDays = readingDays.size();
+
+        // Last 52 weeks: generate all dates from (today - 364 days) to today
+        LocalDate startDate = today.minusDays(364);
+        List<ReadingStreakResponse.ReadingStreakDay> last52Weeks = new ArrayList<>();
+        for (LocalDate date = startDate; !date.isAfter(today); date = date.plusDays(1)) {
+            last52Weeks.add(ReadingStreakResponse.ReadingStreakDay.builder()
+                    .date(date)
+                    .active(readingDays.contains(date))
+                    .build());
+        }
+
+        return ReadingStreakResponse.builder()
+                .currentStreak(currentStreak)
+                .longestStreak(longestStreak)
+                .totalReadingDays(totalReadingDays)
+                .last52Weeks(last52Weeks)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookTimelineResponse> getBookTimeline(int year) {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+        String tzOffset = getTimezoneOffset();
+
+        ZoneId zone = ZoneId.systemDefault();
+
+        return readingSessionRepository.findBookTimelineByUserAndYear(userId, year, tzOffset)
+                .stream()
+                .map(dto -> BookTimelineResponse.builder()
+                        .bookId(dto.getBookId())
+                        .title(dto.getTitle())
+                        .pageCount(dto.getPageCount())
+                        .firstSessionDate(dto.getFirstSessionDate() != null
+                                ? dto.getFirstSessionDate().toLocalDate()
+                                : null)
+                        .lastSessionDate(dto.getLastSessionDate() != null
+                                ? dto.getLastSessionDate().toLocalDate()
+                                : null)
+                        .totalSessions(dto.getTotalSessions())
+                        .totalDurationSeconds(dto.getTotalDurationSeconds())
+                        .maxProgress(dto.getMaxProgress())
+                        .readStatus(dto.getReadStatus())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     private double linearRegressionSlope(List<Double> values) {
         int n = values.size();
         if (n < 2) return 0.0;
@@ -524,5 +612,217 @@ public class ReadingSessionService {
         if (denominator == 0) return 0.0;
 
         return (n * sumXY - sumX * sumY) / denominator;
+    }
+
+    // ========================================================================
+    // Listening (audiobook) stats
+    // ========================================================================
+
+    @Transactional(readOnly = true)
+    public List<ListeningHeatmapResponse> getListeningHeatmapForMonth(int year, int month) {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findListeningSessionsByUserAndMonth(userId, year, month, getTimezoneOffset())
+                .stream()
+                .map(dto -> ListeningHeatmapResponse.builder()
+                        .date(dto.getDate())
+                        .sessions(dto.getSessions())
+                        .durationMinutes(dto.getDurationMinutes())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<WeeklyListeningTrendResponse> getWeeklyListeningTrend(int weeks) {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findWeeklyListeningTrend(userId, weeks, getTimezoneOffset())
+                .stream()
+                .map(dto -> WeeklyListeningTrendResponse.builder()
+                        .year(dto.getYear())
+                        .week(dto.getWeek())
+                        .totalDurationSeconds(dto.getTotalDurationSeconds())
+                        .sessions(dto.getSessions())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ListeningCompletionResponse getListeningCompletion() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        var progressList = readingSessionRepository.findAudiobookProgressByUser(userId);
+
+        int totalAudiobooks = progressList.size();
+        int completed = 0;
+        List<ListeningCompletionResponse.AudiobookCompletionEntry> inProgress = new ArrayList<>();
+
+        for (var dto : progressList) {
+            float maxProg = dto.getMaxProgress() != null ? dto.getMaxProgress() : 0f;
+            if (maxProg >= 0.98f) {
+                completed++;
+            } else if (maxProg > 0f) {
+                inProgress.add(ListeningCompletionResponse.AudiobookCompletionEntry.builder()
+                        .bookId(dto.getBookId())
+                        .title(dto.getTitle())
+                        .progressPercent(Math.round(maxProg * 1000.0) / 10.0)
+                        .totalDurationSeconds(dto.getTotalDurationSeconds() != null ? dto.getTotalDurationSeconds() : 0L)
+                        .listenedDurationSeconds(dto.getListenedDurationSeconds() != null ? dto.getListenedDurationSeconds() : 0L)
+                        .build());
+            }
+        }
+
+        // Sort in-progress by most recently listened (highest listened duration as proxy)
+        inProgress.sort((a, b) -> Long.compare(b.getListenedDurationSeconds(), a.getListenedDurationSeconds()));
+
+        int inProgressCount = inProgress.size();
+
+        return ListeningCompletionResponse.builder()
+                .totalAudiobooks(totalAudiobooks)
+                .completed(completed)
+                .inProgressCount(inProgressCount)
+                .inProgress(inProgress.stream().limit(10).collect(Collectors.toList()))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MonthlyPaceResponse> getMonthlyListeningPace(int months) {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+
+        // Get completed audiobooks by month
+        var completedByMonth = readingSessionRepository.findMonthlyCompletedAudiobooks(userId);
+
+        // Get listening durations by month
+        var durationsByMonth = readingSessionRepository.findMonthlyListeningDurations(userId, getTimezoneOffset());
+        Map<String, Long> durationMap = new HashMap<>();
+        for (var durDto : durationsByMonth) {
+            durationMap.put(durDto.getYear() + "-" + durDto.getMonth(), durDto.getTotalDurationSeconds());
+        }
+
+        // Merge and limit to N months
+        return completedByMonth.stream()
+                .limit(months)
+                .map(dto -> {
+                    String key = dto.getYear() + "-" + dto.getMonth();
+                    Long listeningSeconds = durationMap.getOrDefault(key, 0L);
+                    return MonthlyPaceResponse.builder()
+                            .year(dto.getYear())
+                            .month(dto.getMonth())
+                            .booksCompleted(dto.getBooksCompleted())
+                            .totalListeningSeconds(listeningSeconds)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ListeningFinishFunnelResponse getListeningFinishFunnel() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        var progressList = readingSessionRepository.findAudiobookProgressByUser(userId);
+
+        long totalStarted = 0;
+        long reached25 = 0;
+        long reached50 = 0;
+        long reached75 = 0;
+        long completed = 0;
+
+        for (var dto : progressList) {
+            float maxProg = dto.getMaxProgress() != null ? dto.getMaxProgress() : 0f;
+            if (maxProg > 0f) {
+                totalStarted++;
+                if (maxProg >= 0.25f) reached25++;
+                if (maxProg >= 0.50f) reached50++;
+                if (maxProg >= 0.75f) reached75++;
+                if (maxProg >= 0.98f) completed++;
+            }
+        }
+
+        return ListeningFinishFunnelResponse.builder()
+                .totalStarted(totalStarted)
+                .reached25(reached25)
+                .reached50(reached50)
+                .reached75(reached75)
+                .completed(completed)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PeakHoursResponse> getListeningPeakHours(Integer year, Integer month) {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findListeningPeakHoursByUser(userId, year, month, getTimezoneOffset())
+                .stream()
+                .map(dto -> PeakHoursResponse.builder()
+                        .hourOfDay(dto.getHourOfDay())
+                        .sessionCount(dto.getSessionCount())
+                        .totalDurationSeconds(dto.getTotalDurationSeconds())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<GenreStatisticsResponse> getListeningGenreStatistics() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findListeningGenreStatisticsByUser(userId)
+                .stream()
+                .map(dto -> {
+                    double avgSessionsPerBook = dto.getBookCount() > 0
+                            ? (double) dto.getTotalSessions() / dto.getBookCount()
+                            : 0.0;
+
+                    return GenreStatisticsResponse.builder()
+                            .genre(dto.getGenre())
+                            .bookCount(dto.getBookCount())
+                            .totalSessions(dto.getTotalSessions())
+                            .totalDurationSeconds(dto.getTotalDurationSeconds())
+                            .averageSessionsPerBook(Math.round(avgSessionsPerBook * 100.0) / 100.0)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ListeningAuthorResponse> getListeningAuthorStats() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findListeningAuthorStatsByUser(userId)
+                .stream()
+                .map(dto -> ListeningAuthorResponse.builder()
+                        .author(dto.getAuthorName())
+                        .bookCount(dto.getBookCount())
+                        .totalSessions(dto.getTotalSessions())
+                        .totalDurationSeconds(dto.getTotalDurationSeconds())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessionScatterResponse> getListeningSessionScatter() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findListeningSessionScatterByUser(userId, getTimezoneOffset())
+                .stream()
+                .map(dto -> SessionScatterResponse.builder()
+                        .hourOfDay(dto.getHourOfDay())
+                        .durationMinutes(dto.getDurationMinutes())
+                        .dayOfWeek(dto.getDayOfWeek())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<LongestAudiobookResponse> getListeningLongestBooks() {
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        return readingSessionRepository.findAudiobookProgressByUser(userId)
+                .stream()
+                .sorted((a, b) -> Long.compare(
+                        b.getTotalDurationSeconds() != null ? b.getTotalDurationSeconds() : 0L,
+                        a.getTotalDurationSeconds() != null ? a.getTotalDurationSeconds() : 0L))
+                .limit(10)
+                .map(dto -> {
+                    float maxProg = dto.getMaxProgress() != null ? dto.getMaxProgress() : 0f;
+                    return LongestAudiobookResponse.builder()
+                            .bookId(dto.getBookId())
+                            .title(dto.getTitle())
+                            .totalDurationSeconds(dto.getTotalDurationSeconds() != null ? dto.getTotalDurationSeconds() : 0L)
+                            .listenedDurationSeconds(dto.getListenedDurationSeconds() != null ? dto.getListenedDurationSeconds() : 0L)
+                            .progressPercent(Math.round(maxProg * 1000.0) / 10.0)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

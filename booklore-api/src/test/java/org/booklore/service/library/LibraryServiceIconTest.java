@@ -24,7 +24,7 @@ import org.booklore.repository.LibraryPathRepository;
 import org.booklore.repository.UserRepository;
 import org.booklore.model.entity.BookLoreUserEntity;
 import org.booklore.service.NotificationService;
-import org.booklore.service.monitoring.MonitoringService;
+import org.booklore.service.monitoring.LibraryWatchService;
 import org.booklore.util.FileService;
 
 import java.util.Collections;
@@ -56,7 +56,7 @@ class LibraryServiceIconTest {
     @Mock
     private FileService fileService;
     @Mock
-    private MonitoringService monitoringService;
+    private LibraryWatchService libraryWatchService;
     @Mock
     private AuthenticationService authenticationService;
     @Mock

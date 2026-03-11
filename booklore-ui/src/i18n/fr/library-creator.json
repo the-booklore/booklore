@@ -51,7 +51,8 @@
             "createdLargeDetail": "Bibliothèque créée avec {{count}} fichiers. Chargement en cours...",
             "createFailedSummary": "Échec de la création",
             "createFailedDetail": "Une erreur s'est produite lors de la création de la bibliothèque. Veuillez réessayer."
-        }
+        },
+        "folderStructureHint": "Assurez-vous que vos dossiers suivent la <a href='https://booklore.org/docs/library/folder-structure#-recommended-structures' target='_blank' rel='noopener'>structure de répertoire</a> prévue pour les livres et les livres audio."
     },
     "loading": {
         "title": "Chargement de la bibliothèque",

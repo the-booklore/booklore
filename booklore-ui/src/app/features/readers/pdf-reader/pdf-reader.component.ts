@@ -107,7 +107,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
           this.bookData = this.altBookType
             ? `${API_CONFIG.BASE_URL}/api/v1/books/${this.bookId}/content?bookType=${this.altBookType}`
             : `${API_CONFIG.BASE_URL}/api/v1/books/${this.bookId}/content`;
-          const token = this.authService.getOidcAccessToken() || this.authService.getInternalAccessToken();
+          const token = this.authService.getInternalAccessToken();
           this.authorization = token ? `Bearer ${token}` : '';
           this.isLoading = false;
         },

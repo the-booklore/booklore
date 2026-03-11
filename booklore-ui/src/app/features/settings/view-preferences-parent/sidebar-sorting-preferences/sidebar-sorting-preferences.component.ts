@@ -19,12 +19,14 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 })
 export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
-  readonly sortingOptions = [
-    {label: 'Name | Ascending', value: {field: 'name', order: 'asc'}, translationKey: 'nameAsc'},
-    {label: 'Name | Descending', value: {field: 'name', order: 'desc'}, translationKey: 'nameDesc'},
-    {label: 'Creation Date | Ascending', value: {field: 'id', order: 'asc'}, translationKey: 'creationAsc'},
-    {label: 'Creation Date | Descending', value: {field: 'id', order: 'desc'}, translationKey: 'creationDesc'},
+  private readonly sortingOptionDefs = [
+    {value: {field: 'name', order: 'asc'}, translationKey: 'nameAsc'},
+    {value: {field: 'name', order: 'desc'}, translationKey: 'nameDesc'},
+    {value: {field: 'id', order: 'asc'}, translationKey: 'creationAsc'},
+    {value: {field: 'id', order: 'desc'}, translationKey: 'creationDesc'},
   ];
+
+  sortingOptions: {label: string; value: {field: string; order: string}; translationKey: string}[] = [];
 
   selectedLibrarySorting: SidebarLibrarySorting = {field: 'id', order: 'asc'};
   selectedShelfSorting: SidebarShelfSorting = {field: 'id', order: 'asc'};
@@ -39,6 +41,9 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
   private currentUser: User | null = null;
 
   ngOnInit(): void {
+    this.buildSortingOptions();
+    this.t.langChanges$.pipe(takeUntil(this.destroy$)).subscribe(() => this.buildSortingOptions());
+
     this.userData$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
@@ -51,6 +56,13 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private buildSortingOptions(): void {
+    this.sortingOptions = this.sortingOptionDefs.map(opt => ({
+      ...opt,
+      label: this.t.translate('settingsView.sidebarSort.' + opt.translationKey)
+    }));
   }
 
   private loadPreferences(settings: UserSettings): void {

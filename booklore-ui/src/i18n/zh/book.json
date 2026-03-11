@@ -134,7 +134,8 @@
             "readBook": "阅读图书",
             "playAudiobook": "播放有声书",
             "bookMenu": "图书操作菜单",
-            "continueReading": "继续阅读"
+            "continueReading": "继续阅读",
+            "readStatusMenu": "改变阅读状态"
         }
     },
     "notes": {

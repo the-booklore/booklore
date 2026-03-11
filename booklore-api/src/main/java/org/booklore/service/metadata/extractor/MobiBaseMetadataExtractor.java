@@ -89,7 +89,7 @@ public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor
             }
 
             BookMetadata.BookMetadataBuilder builder = BookMetadata.builder();
-            Set<String> authors = new HashSet<>();
+            List<String> authors = new ArrayList<>();
             Set<String> categories = new HashSet<>();
 
             // Extract title

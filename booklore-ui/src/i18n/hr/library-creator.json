@@ -1,11 +1,11 @@
 {
     "creator": {
-        "titleNew": "Nova knjižnica",
+        "titleNew": "Nova zbirka",
         "titleEdit": "Uredi knjižnicu",
         "subtitle": "Konfigurirajte svoju kolekciju knjiga",
-        "libraryDetails": "Detalji knjižnice",
+        "libraryDetails": "Detalji zbirke",
         "nameLabel": "Naziv",
-        "namePlaceholder": "Moja knjižnica",
+        "namePlaceholder": "Moja zbirka",
         "iconLabel": "Ikona (neobavezno)",
         "chooseIcon": "Odaberite ikonu",
         "customSvg": "Prilagođeni SVG",
@@ -31,7 +31,7 @@
         "formatWarning": "{{count}} postojećih knjiga neće se pojaviti u budućim skeniranjima",
         "deselectedFormatsWarning": "Neoznačeni formati neće se pojaviti u budućim skeniranjima",
         "validation": {
-            "enterName": "Unesite naziv knjižnice",
+            "enterName": "Unesite naziv zbirke",
             "selectIcon": "Odaberite ikonu",
             "addFolder": "Dodajte barem jednu mapu",
             "readyCreate": "Spremno za kreiranje",
@@ -40,23 +40,29 @@
         "buttonCreate": "Kreiraj",
         "buttonUpdate": "Ažuriraj",
         "toast": {
-            "nameExistsSummary": "Naziv knjižnice već postoji",
-            "nameExistsDetail": "Ovaj naziv knjižnice je već zauzet.",
-            "updatedSummary": "Knjižnica ažurirana",
-            "updatedDetail": "Knjižnica je uspješno ažurirana.",
+            "nameExistsSummary": "Naziv zbirke već postoji",
+            "nameExistsDetail": "Ovaj naziv zbirke već se koristi.",
+            "updatedSummary": "Zbirka ažurirana",
+            "updatedDetail": "Zbrka je uspješno ažurirana.",
             "updateFailedSummary": "Ažuriranje nije uspjelo",
-            "updateFailedDetail": "Došlo je do pogreške prilikom ažuriranja knjižnice. Pokušajte ponovo.",
-            "createdSummary": "Knjižnica kreirana",
-            "createdDetail": "Knjižnica je uspješno kreirana.",
-            "createdLargeDetail": "Knjižnica kreirana s {{count}} datoteka. Učitavanje u tijeku...",
+            "updateFailedDetail": "Došlo je do pogreške prilikom ažuriranja zbirke. Pokušajte ponovo.",
+            "createdSummary": "Zbirka kreirana",
+            "createdDetail": "Zbirka je uspješno kreirana.",
+            "createdLargeDetail": "Zbirka kreirana s {{count}} datoteka. Učitavanje u tijeku...",
             "createFailedSummary": "Kreiranje nije uspjelo",
-            "createFailedDetail": "Došlo je do pogreške prilikom kreiranja knjižnice. Pokušajte ponovo."
-        }
+            "createFailedDetail": "Došlo je do pogreške prilikom kreiranja zbirke. Pokušajte ponovo."
+        },
+        "folderStructureHint": "Provjerite slijede li vaše mape očekivanu <a href='https://booklore.org/docs/library/folder-structure#-recommended-structures' target='_blank' rel='noopener'>strukturu direktorija</a> za knjige i audioknjige.",
+        "organizationMode": "Organizacijski način",
+        "organizationModeTooltip": "Kako se datoteke grupiraju u knjige tijekom skeniranja",
+        "organizationModeBookPerFile": "Jedna knjiga po datoteci",
+        "organizationModeBookPerFolder": "Jedna knjiga po mapi",
+        "organizationModeAutoDetect": "Automatsko otkrivanje (zastarjelo)"
     },
     "loading": {
-        "title": "Učitavanje knjižnice",
+        "title": "Učitavanje zbirke",
         "processing": "Obrada:",
-        "complete": "Učitavanje knjižnice završeno!",
+        "complete": "Učitavanje zbirke završeno!",
         "openLibrary": "Otvori knjižnicu"
     }
 }

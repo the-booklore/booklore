@@ -106,7 +106,10 @@
         "seriesGaps": "Serieluckor",
         "seriesPosition": "Serieposition",
         "readingProgress": "Lasframsteg (%)",
-        "metadataPresence": "Metadatanarvar"
+        "metadataPresence": "Metadatanarvar",
+        "audiobookCodec": "Kodek",
+        "audiobookChapterCount": "Antal kapitel",
+        "audiobookBitrate": "Överföringskapacitet (kbps)"
     },
     "fieldGroups": {
         "organization": "Organisation",
@@ -257,7 +260,10 @@
         "comicColorists": "Koloristar",
         "comicLetterers": "Bokstavstecknare",
         "comicCoverArtists": "Omslagskonstnarer",
-        "comicEditors": "Redaktorer"
+        "comicEditors": "Redaktorer",
+        "audiobookCodec": "Kodek",
+        "audiobookChapterCount": "Kapitel",
+        "audiobookBitrate": "Överföringskapacitet"
     },
     "toast": {
         "validationErrorSummary": "Valideringsfel",

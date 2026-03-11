@@ -3,8 +3,8 @@
         "title": "Učitaj knjige",
         "description": "Učitajte knjige u knjižnicu ili bookdrop mapu",
         "uploadDestination": "Odredište učitavanja",
-        "librarySelection": "Odabir knjižnice",
-        "libraryLabel": "Knjižnica",
+        "librarySelection": "Odabir zbirke",
+        "libraryLabel": "Zbirka",
         "selectLibrary": "Odaberite knjižnicu",
         "subpathLabel": "Podputanja",
         "selectSubpath": "Odaberite podputanju",
@@ -30,7 +30,7 @@
         "statusUploading": "Učitavanje",
         "statusUploaded": "Učitano",
         "statusFailed": "Neuspjelo",
-        "destinationLibrary": "Knjižnica",
+        "destinationLibrary": "Zbirka",
         "destinationBookdrop": "Bookdrop",
         "toast": {
             "noDestinationSummary": "Odredište nije odabrano",
@@ -143,12 +143,24 @@
             "usernameRequired": "Korisničko ime je obavezno",
             "nameRequired": "Ime je obavezno",
             "emailRequired": "Potrebna je valjana e-mail adresa",
-            "passwordMinLength": "Potrebno je najmanje 6 znakova",
+            "passwordMinLength": "Potrebno je najmanje 8 znakova",
             "confirmPasswordRequired": "Potvrda lozinke je obavezna",
             "passwordsMismatch": "Lozinke se ne podudaraju"
         },
         "toast": {
             "createFailedDefault": "Kreiranje administratorskog korisnika nije uspjelo. Pokušajte ponovo."
         }
+    },
+    "supportDialog": {
+        "title": "Podržite BookLore",
+        "subtitle": "Od solo programera koji voli knjige",
+        "intro": "BookLore je izgradio i održava jedan programer koji istinski voli knjige. Ako vam je organizacija vaše knjižnice postala malo ugodnija, evo nekoliko načina kako podržati projekt i nastaviti ga.",
+        "starTitle": "Zvijezda na GitHubu",
+        "starDesc": "Zvjezdica puno znači. Pomaže novim ljudima da pronađu BookLore i mene motivira.",
+        "collectiveTitle": "Otvoreni kolektiv",
+        "collectiveDesc": "Redovita podrška koja pokriva troškove hostinga i omogućuje održivost razvoja.",
+        "kofiTitle": "Kupi mi kavu",
+        "kofiDesc": "Jednokratni savjet za poticanje kasnonoćnih sesija kodiranja. Svaki savjet je dobrodošao!",
+        "closing": "Hvala vam što ste dio BookLore zajednice."
     }
 }

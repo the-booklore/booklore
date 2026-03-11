@@ -87,7 +87,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                 }
 
                 if (StringUtils.isNotBlank(info.getAuthor())) {
-                    Set<String> authors = parseAuthors(info.getAuthor());
+                    List<String> authors = parseAuthors(info.getAuthor());
                     if (!authors.isEmpty()) {
                         metadataBuilder.authors(authors);
                     }
@@ -271,12 +271,12 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
             builder.language(language);
         }
 
-        Set<String> creators = xpathEvaluateMultiple(xpath, doc, "//dc:creator/rdf:Seq/rdf:li/text()");
+        List<String> creators = xpathEvaluateMultiple(xpath, doc, "//dc:creator/rdf:Seq/rdf:li/text()");
         if (!creators.isEmpty()) {
             builder.authors(creators);
         }
 
-        Set<String> subjects = xpathEvaluateMultiple(xpath, doc, "//dc:subject/rdf:Bag/rdf:li/text()");
+        Set<String> subjects = new HashSet<>(xpathEvaluateMultiple(xpath, doc, "//dc:subject/rdf:Bag/rdf:li/text()"));
         if (!subjects.isEmpty()) {
             Set<String> knownNonCategories = new HashSet<>();
             
@@ -543,12 +543,12 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
         return ids;
     }
 
-    private Set<String> parseAuthors(String authorString) {
-        if (authorString == null) return Collections.emptySet();
+    private List<String> parseAuthors(String authorString) {
+        if (authorString == null) return Collections.emptyList();
         return Arrays.stream(COMMA_AMPERSAND_PATTERN.split(authorString))
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
+                .toList();
     }
 
     private LocalDate convertCalendarToLocalDate(Calendar calendar) {
@@ -566,9 +566,9 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
         return result == null ? "" : result.trim();
     }
 
-    private Set<String> xpathEvaluateMultiple(XPath xpath, Document doc, String expression) throws XPathExpressionException {
+    private List<String> xpathEvaluateMultiple(XPath xpath, Document doc, String expression) throws XPathExpressionException {
         NodeList nodes = (NodeList) xpath.evaluate(expression, doc, XPathConstants.NODESET);
-        Set<String> results = new HashSet<>();
+        List<String> results = new ArrayList<>();
         if (nodes != null) {
             for (int i = 0; i < nodes.getLength(); i++) {
                 String text = nodes.item(i).getNodeValue();

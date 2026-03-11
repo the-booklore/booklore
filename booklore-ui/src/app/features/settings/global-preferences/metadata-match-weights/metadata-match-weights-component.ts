@@ -23,34 +23,14 @@ import {TranslocoDirective, TranslocoService} from '@jsverse/transloco';
 })
 export class MetadataMatchWeightsComponent implements OnInit {
 
-  readonly labelMap: Record<string, string> = {
-    title: 'Title',
-    subtitle: 'Subtitle',
-    authors: 'Authors',
-    description: 'Description',
-    publisher: 'Publisher',
-    publishedDate: 'Published Date',
-    categories: 'Categories',
-    coverImage: 'Cover Image',
-    seriesName: 'Series Name',
-    seriesNumber: 'Series Number',
-    seriesTotal: 'Series Total',
-    language: 'Language',
-    isbn13: 'ISBN-13',
-    isbn10: 'ISBN-10',
-    pageCount: 'Page Count',
-    amazonRating: 'Amazon Rating',
-    amazonReviewCount: 'Amazon Rating #',
-    goodreadsRating: 'Goodreads Rating',
-    goodreadsReviewCount: 'Goodreads Rating #',
-    hardcoverRating: 'Hardcover Rating',
-    hardcoverReviewCount: 'Hardcover Rating #',
-    audibleRating: 'Audible Rating',
-    audibleReviewCount: 'Audible Rating #',
-    doubanRating: 'Douban Rating',
-    doubanReviewCount: 'Douban Rating #',
-    ranobedbRating: 'Ranobedb Rating',
-  };
+  readonly orderedFieldKeys: string[] = [
+    'title', 'subtitle', 'authors', 'description', 'publisher', 'publishedDate',
+    'categories', 'coverImage', 'seriesName', 'seriesNumber', 'seriesTotal',
+    'language', 'isbn13', 'isbn10', 'pageCount',
+    'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
+    'hardcoverRating', 'hardcoverReviewCount', 'audibleRating', 'audibleReviewCount',
+    'doubanRating', 'doubanReviewCount', 'ranobedbRating'
+  ];
 
   form!: FormGroup;
   isSaving = false;
@@ -103,7 +83,11 @@ export class MetadataMatchWeightsComponent implements OnInit {
   }
 
   get orderedKeys(): string[] {
-    return Object.keys(this.labelMap);
+    return this.orderedFieldKeys;
+  }
+
+  getFieldLabel(key: string): string {
+    return this.t.translate('settingsMeta.matchWeights.fields.' + key);
   }
 
   save(): void {

@@ -28,10 +28,10 @@
         "seriesProgress": "Praćenje napretka serijala",
         "readingDna": "Profil čitalačkog DNK-a",
         "readingHabits": "Analiza čitalačkih navika",
-        "bookFlow": "",
-        "publicationEra": "",
-        "readingDebt": "",
-        "sessionArchetypes": ""
+        "bookFlow": "Tijek knjige",
+        "publicationEra": "Doba objave u odnosu na ocjenu",
+        "readingDebt": "Popis nepročitanih knjiga",
+        "sessionArchetypes": "Arhetipovi sesije"
     },
     "sessionHeatmap": {
         "title": "Aktivnost sesija čitanja",
@@ -180,7 +180,7 @@
     },
     "readingDna": {
         "title": "Profil čitalačkog DNK-a",
-        "tooltip": "Radarski grafikon koji profilira vašu čitalačku osobnost kroz 8 dimenzija. Rezultati se izračunavaju iz žanrova, ocjena, broja stranica, datuma izdavanja i napretka čitanja vaše knjižnice. Svaka osobina koristi nepreklapajuće kriterije za točne rezultate.",
+        "tooltip": "Radarski grafikon koji profilira vašu čitalačku osobnost kroz 8 dimenzija. Rezultati se izračunavaju iz žanrova, ocjena, broja stranica, datuma izdavanja i napretka čitanja vaše zbirke. Svaka osobina koristi nepreklapajuće kriterije za točne rezultate.",
         "description": "Vaša jedinstvena čitalačka osobnost kroz 8 dimenzija",
         "personalityTraits": "Vaše čitalačke osobine",
         "readingDnaProfile": "Profil čitalačkog DNK-a",
@@ -226,7 +226,7 @@
             "social": {
                 "low": "Preferirate nišne ili manje poznate naslove",
                 "mid": "Čitate mješavinu popularnih i nišnih naslova",
-                "high": "Vaša knjižnica je prepuna bestsellera i široko raspravljanih knjiga"
+                "high": "Vaša zbirka je prepuna bestsellera i široko raspravljanih knjiga"
             },
             "nostalgic": {
                 "low": "Uglavnom čitate suvremena izdanja",
@@ -251,7 +251,7 @@
         "tooltipDefaultDescription": "Vaš obrazac čitalačke navike",
         "habits": {
             "consistency": "Dosljednost",
-            "multitasking": "Multitasking",
+            "multitasking": "Višezadaćnost",
             "completionism": "Kompletizam",
             "exploration": "Istraživanje",
             "organization": "Organizacija",
@@ -281,7 +281,7 @@
                 "high": "Aktivno tražite nove autore, epohe i jezike"
             },
             "organization": {
-                "low": "Vaša knjižnica bi mogla imati više ocjena i praćenja statusa",
+                "low": "Vaša zbirka bi mogla imati više ocjena i praćenja statusa",
                 "mid": "Održavate svoju knjižnicu razumno dobro uređenom",
                 "high": "Marljivo ocjenjujete, kategorizirate i pratite svaku knjigu"
             },
@@ -476,55 +476,55 @@
         "trend": "Trend"
     },
     "bookFlow": {
-        "noData": "",
-        "totalBooks": "",
-        "noDataHint": "",
-        "description": "",
-        "avgRating": "",
-        "completionRate": "",
-        "busiestQuarter": "",
-        "colRating": "",
-        "colAdded": "",
-        "colStatus": "",
-        "topStatus": "",
-        "title": "",
-        "tooltip": ""
+        "noData": "U vašoj knjižnici nisu pronađene knjige.",
+        "totalBooks": "Ukupno knjiga",
+        "noDataHint": "Dodajte nekoliko knjiga da biste vidjeli dijagram toka.",
+        "description": "Kako knjige teku od akvizicije do statusa i ocjene",
+        "avgRating": "Prosječna ocjena",
+        "completionRate": "Završetak",
+        "busiestQuarter": "Najprometniji kvartal",
+        "colRating": "Ocjena",
+        "colAdded": "Dodano",
+        "colStatus": "Status",
+        "topStatus": "Vrhunski status",
+        "title": "Tijek knjige",
+        "tooltip": "Aluvijalni dijagram koji prikazuje kako knjige teku od trenutka kada su dodane (lijevo) preko statusa čitanja (sredina) do njihovog stupnja ocjenjivanja (desno). Pratite tokove kako biste vidjeli obrasce u tome kako se vaše akvizicije pretvaraju u čitanja i ocjene."
     },
     "publicationEra": {
-        "noDataHint": "",
-        "title": "",
-        "tooltip": "",
-        "noData": "",
-        "description": "",
-        "bestDecade": "",
-        "avgRating": "",
-        "booksRated": ""
+        "noDataHint": "Ocijenite knjige koje imaju metapodatke o datumu objavljivanja kako biste vidjeli usporedbe razdoblja.",
+        "title": "Doba objave u odnosu na ocjenu",
+        "tooltip": "Svaki redak predstavlja desetljeće objavljivanja, pokazujući koliko ste knjiga iz tog razdoblja dali svakom rasponu ocjena. Usporedite retke kako biste vidjeli koja desetljeća ocjenjujete najviše. Pomaže u otkrivanju preferirate li klasična ili suvremena djela.",
+        "noData": "Nema dovoljno ocijenjenih knjiga s datumima objavljivanja.",
+        "description": "Koje desetljeće publikacija najviše cijenite",
+        "bestDecade": "Najbolje desetljeće",
+        "avgRating": "Prosječna ocjena",
+        "booksRated": "Ocijenjene knjige"
     },
     "readingDebt": {
-        "booksFinished": "",
-        "description": "",
-        "shrinking": "",
-        "backlog": "",
-        "booksAdded": "",
-        "growing": "",
-        "noData": "",
-        "trendLabel": "",
-        "noDataHint": "",
-        "title": "",
-        "currentBacklog": "",
-        "tooltip": ""
+        "booksFinished": "Završene knjige",
+        "description": "Mjesečno dodane knjige u odnosu na završene s velikim zaostatkom",
+        "shrinking": "Skupljanje",
+        "backlog": "Zaostatak",
+        "booksAdded": "Dodane knjige",
+        "growing": "Rast",
+        "noData": "Nisu pronađeni podaci o aktivnosti knjige.",
+        "trendLabel": "Trend",
+        "noDataHint": "Dodajte i završite knjige kako biste vidjeli trend svoga popisa nepročitanih knjiga.",
+        "title": "Popis nepročitanih knjiga",
+        "currentBacklog": "Trenutni zaostatak",
+        "tooltip": "Svaki mjesec prikazuje dodane knjige (crvena) i završene knjige (zelena) u posljednjih 12 mjeseci. Žuta linija prati vaš tekući zaostatak, što je kumulativna razlika između dodanih i završenih knjiga. Rastuća linija znači da vaša popis knjiga za čitanje raste."
     },
     "sessionArchetypes": {
-        "archetype_afternoon": "",
-        "noData": "",
-        "title": "",
-        "tooltip": "",
-        "dominantType": "",
-        "archetype_morning": "",
-        "archetype_evening": "",
-        "description": "",
-        "noDataHint": "",
-        "archetype_night": "",
-        "sessions": ""
+        "archetype_afternoon": "Popodnevni čitatelj",
+        "noData": "Nisu pronađene sesije čitanja za ovu godinu.",
+        "title": "Arhetipovi sesije",
+        "tooltip": "Svaka točka predstavlja sesiju čitanja prikazanu prema dobu dana (X) i trajanju u minutama (Y), obojenu prema danu u tjednu. Prirodni klasteri otkrivaju vaše obrasce čitanja, poput brzog jutarnjeg čitanja ili večernjeg dubokog zarona.",
+        "dominantType": "Dominantni tip",
+        "archetype_morning": "Jutarnji čitatelj",
+        "archetype_evening": "Večernji čitatelj",
+        "description": "Vaši obrasci čitanja po vremenu i trajanju",
+        "noDataHint": "Pratite sesije čitanja kako biste otkrili svoje arhetipove sesija.",
+        "archetype_night": "Noćna sova",
+        "sessions": "Sesije"
     }
 }

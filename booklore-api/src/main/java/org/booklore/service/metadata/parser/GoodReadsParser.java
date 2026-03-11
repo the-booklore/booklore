@@ -194,7 +194,7 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
         String contributorKey = findKeyByPrefix(keySet, "Contributor:kca");
         String contributorName = getJsonStringField(apolloStateJson, contributorKey, "name");
         if (contributorName != null) {
-            builder.authors(Set.of(contributorName));
+            builder.authors(List.of(contributorName));
         }
     }
 
@@ -479,7 +479,7 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
             String queryAuthor = request.getAuthor();
 
             for (Element previewBook : previewBooks) {
-                Set<String> authors = extractAuthorsPreview(previewBook);
+                List<String> authors = extractAuthorsPreview(previewBook);
 
                 if (queryAuthor != null && !queryAuthor.isBlank()) {
                     List<String> queryAuthorTokens = List.of(WHITESPACE_PATTERN.split(queryAuthor.toLowerCase()));
@@ -549,8 +549,8 @@ public class GoodReadsParser implements BookParser, DetailedMetadataProvider {
         return null;
     }
 
-    private Set<String> extractAuthorsPreview(Element book) {
-        Set<String> authors = new HashSet<>();
+    private List<String> extractAuthorsPreview(Element book) {
+        List<String> authors = new ArrayList<>();
         try {
             Elements authorsElement = book.select("a.authorName");
             for (Element authorElement : authorsElement) {

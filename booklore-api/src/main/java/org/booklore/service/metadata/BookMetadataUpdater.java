@@ -3,6 +3,7 @@ package org.booklore.service.metadata;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.booklore.config.AppProperties;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.MetadataUpdateContext;
 import org.booklore.model.MetadataUpdateWrapper;
@@ -53,6 +54,7 @@ public class BookMetadataUpdater {
     private final ComicTeamRepository comicTeamRepository;
     private final ComicLocationRepository comicLocationRepository;
     private final ComicCreatorRepository comicCreatorRepository;
+    private final AppProperties appProperties;
     private final FileService fileService;
     private final MetadataMatchService metadataMatchService;
     private final AppSettingService appSettingService;
@@ -123,7 +125,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if (primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
+        if (appProperties.isLocalStorage() && primaryFile != null && bookType != null && ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate)) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;
@@ -241,37 +243,45 @@ public class BookMetadataUpdater {
     private void updateAuthorsIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataClearFlags clear, boolean merge, MetadataReplaceMode replaceMode) {
         if (Boolean.TRUE.equals(e.getAuthorsLocked())) return;
 
-        e.setAuthors(Optional.ofNullable(e.getAuthors()).orElseGet(HashSet::new));
+        e.setAuthors(Optional.ofNullable(e.getAuthors()).orElseGet(ArrayList::new));
 
         if (clear.isAuthors()) {
             e.getAuthors().clear();
             return;
         }
 
-        Set<String> authorNames = Optional.ofNullable(m.getAuthors()).orElse(Collections.emptySet());
+        List<String> authorNames = Optional.ofNullable(m.getAuthors()).orElse(Collections.emptyList());
         if (authorNames.isEmpty()) {
             if (replaceMode == MetadataReplaceMode.REPLACE_ALL) e.getAuthors().clear();
             return;
         }
 
-        Set<AuthorEntity> newAuthors = authorNames.stream()
+        List<AuthorEntity> newAuthors = authorNames.stream()
                 .filter(name -> name != null && !name.isBlank())
                 .map(name -> authorRepository.findByName(name)
                         .orElseGet(() -> authorRepository.save(AuthorEntity.builder().name(name).build())))
-                .collect(Collectors.toSet());
+                .toList();
 
         if (newAuthors.isEmpty()) return;
 
         if (replaceMode == MetadataReplaceMode.REPLACE_ALL || replaceMode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
             if (!merge) e.getAuthors().clear();
-            e.getAuthors().addAll(newAuthors);
+            for (AuthorEntity author : newAuthors) {
+                if (!e.getAuthors().contains(author)) {
+                    e.getAuthors().add(author);
+                }
+            }
             e.updateSearchText();
         } else if (replaceMode == MetadataReplaceMode.REPLACE_MISSING && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
             e.updateSearchText();
         } else if (replaceMode == null) {
             if (!merge) e.getAuthors().clear();
-            e.getAuthors().addAll(newAuthors);
+            for (AuthorEntity author : newAuthors) {
+                if (!e.getAuthors().contains(author)) {
+                    e.getAuthors().add(author);
+                }
+            }
             e.updateSearchText();
         }
     }

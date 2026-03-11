@@ -50,7 +50,14 @@ public class MobiProcessor extends AbstractFileProcessor implements BookFileProc
         BookFileType fileType = determineFileType(libraryFile.getFileName());
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, fileType);
         setBookMetadata(bookEntity);
-        if (generateCover(bookEntity)) {
+        boolean coverGenerated = generateCover(bookEntity);
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }

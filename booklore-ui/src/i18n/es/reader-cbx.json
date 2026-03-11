@@ -41,6 +41,9 @@
         "toggleZoom": "Alternar zoom (ajustar página / tamaño real)",
         "doubleTap": "Doble toque",
         "toggleSlideshow": "Alternar presentación / reproducción automática",
+        "toggleMagnifier": "Alternar lupa",
+        "magnifierZoom": "Zoom de lupa (cuando está activa)",
+        "magnifierLensSize": "Tamaño de lente de lupa (cuando está activa)",
         "showHelpDialog": "Mostrar este diálogo de ayuda"
     },
     "footer": {
@@ -76,6 +79,8 @@
         "exitFullscreenLabel": "Salir de pantalla completa",
         "fullscreenLabel": "Pantalla completa",
         "keyboardShortcutsLabel": "Atajos de teclado",
+        "enableMagnifier": "Lupa (M)",
+        "disableMagnifier": "Desactivar lupa (M)",
         "settings": "Ajustes",
         "closeReader": "Cerrar lector"
     },
@@ -103,7 +108,9 @@
         "background": "Fondo",
         "black": "Negro",
         "gray": "Gris",
-        "white": "Blanco"
+        "white": "Blanco",
+        "magnifierLensSize": "Tamaño de lente",
+        "magnifierZoom": "Aumento"
     },
     "sidebar": {
         "contentTab": "Contenido",

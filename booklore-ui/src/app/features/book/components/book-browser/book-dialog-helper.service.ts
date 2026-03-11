@@ -17,6 +17,7 @@ import {Book} from '../../model/book.model';
 import {AdditionalFileUploaderComponent} from '../additional-file-uploader/additional-file-uploader.component';
 import {BookFileAttacherComponent} from '../book-file-attacher/book-file-attacher.component';
 import {AddPhysicalBookDialogComponent} from '../add-physical-book-dialog/add-physical-book-dialog.component';
+import {BulkIsbnImportDialogComponent} from '../bulk-isbn-import-dialog/bulk-isbn-import-dialog.component';
 import {DuplicateMergerComponent} from '../duplicate-merger/duplicate-merger.component';
 
 @Injectable({providedIn: 'root'})
@@ -178,6 +179,16 @@ export class BookDialogHelperService {
 
   openAddPhysicalBookDialog(libraryId?: number): DynamicDialogRef | null {
     return this.openDialog(AddPhysicalBookDialogComponent, {
+      showHeader: false,
+      styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
+      data: {
+        libraryId: libraryId,
+      },
+    });
+  }
+
+  openBulkIsbnImportDialog(libraryId?: number): DynamicDialogRef | null {
+    return this.openDialog(BulkIsbnImportDialogComponent, {
       showHeader: false,
       styleClass: `${DialogSize.LG} ${DialogStyle.MINIMAL}`,
       data: {

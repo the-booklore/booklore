@@ -17,21 +17,21 @@ import java.util.Set;
 @AllArgsConstructor
 public class MonitoringRegistrationService {
 
-    private final MonitoringService monitoringService;
+    private final LibraryWatchService libraryWatchService;
 
     public boolean isPathMonitored(Path path) {
-        return monitoringService.isPathMonitored(path);
+        return libraryWatchService.isPathMonitored(path);
     }
 
     public boolean isLibraryMonitored(Long libraryId) {
-        return monitoringService.isLibraryMonitored(libraryId);
+        return libraryWatchService.isLibraryMonitored(libraryId);
     }
 
     public void unregisterSpecificPath(Path path) {
         if (!Files.exists(path)) {
             log.debug("Path does not exist, attempting to unregister anyway: {}", path);
         }
-        monitoringService.unregisterPath(path);
+        libraryWatchService.unregisterPath(path);
     }
 
     public void registerSpecificPath(Path path, Long libraryId) {
@@ -43,32 +43,19 @@ public class MonitoringRegistrationService {
             log.warn("Cannot register path that is not a directory: {}", path);
             return;
         }
-        monitoringService.registerPath(path, libraryId);
+        libraryWatchService.registerPath(path, libraryId);
     }
 
     public void registerLibrary(Library library) {
-        monitoringService.registerLibrary(library);
+        libraryWatchService.registerLibrary(library);
     }
 
     public void unregisterLibrary(Long libraryId) {
-        monitoringService.unregisterLibrary(libraryId);
+        libraryWatchService.unregisterLibrary(libraryId);
     }
 
     public void registerLibraryPaths(Long libraryId, Path libraryRoot) {
-        if (!Files.exists(libraryRoot) || !Files.isDirectory(libraryRoot)) {
-            return;
-        }
-        try {
-            log.debug("Registering library paths for libraryId {} at {}", libraryId, libraryRoot);
-            monitoringService.registerPath(libraryRoot, libraryId);
-            try (var stream = Files.walk(libraryRoot)) {
-                stream.filter(Files::isDirectory)
-                        .filter(path -> !path.equals(libraryRoot))
-                        .forEach(path -> monitoringService.registerPath(path, libraryId));
-            }
-        } catch (Exception e) {
-            log.error("Failed to register library paths for libraryId {} at {}", libraryId, libraryRoot, e);
-        }
+        libraryWatchService.registerLibraryPaths(libraryId, libraryRoot);
     }
 
     public void registerLibraries(Map<Long, Path> libraries) {
@@ -89,17 +76,17 @@ public class MonitoringRegistrationService {
         if (libraryIds == null || libraryIds.isEmpty()) {
             return Set.of();
         }
-        return monitoringService.getPathsForLibraries(new HashSet<>(libraryIds));
+        return libraryWatchService.getPathsForLibraries(new HashSet<>(libraryIds));
     }
 
     public boolean waitForEventsDrainedByPaths(Set<Path> paths, long timeoutMs) {
-        return monitoringService.waitForEventsDrainedByPaths(paths, timeoutMs);
+        return libraryWatchService.waitForEventsDrainedByPaths(paths, timeoutMs);
     }
 
     public boolean waitForEventsDrained(Collection<Long> libraryIds, long timeoutMs) {
         if (libraryIds == null || libraryIds.isEmpty()) {
             return true;
         }
-        return monitoringService.waitForEventsDrained(new HashSet<>(libraryIds), timeoutMs);
+        return libraryWatchService.waitForEventsDrained(new HashSet<>(libraryIds), timeoutMs);
     }
 }

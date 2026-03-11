@@ -46,7 +46,10 @@ export class CbxShortcutsHelpComponent {
           {keys: ['F'], description: this.t.translate('readerCbx.shortcutsHelp.toggleFullscreen')},
           {keys: ['D'], description: this.t.translate('readerCbx.shortcutsHelp.toggleReadingDirection')},
           {keys: ['Escape'], description: this.t.translate('readerCbx.shortcutsHelp.exitFullscreenCloseDialogs')},
-          {keys: ['Double-click'], description: this.t.translate('readerCbx.shortcutsHelp.toggleZoom'), mobileGesture: this.t.translate('readerCbx.shortcutsHelp.doubleTap')}
+          {keys: ['Double-click'], description: this.t.translate('readerCbx.shortcutsHelp.toggleZoom'), mobileGesture: this.t.translate('readerCbx.shortcutsHelp.doubleTap')},
+          {keys: ['M'], description: this.t.translate('readerCbx.shortcutsHelp.toggleMagnifier')},
+          {keys: ['+', '−'], description: this.t.translate('readerCbx.shortcutsHelp.magnifierZoom')},
+          {keys: ['[', ']'], description: this.t.translate('readerCbx.shortcutsHelp.magnifierLensSize')}
         ]
       },
       {

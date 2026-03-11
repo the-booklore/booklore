@@ -4,7 +4,6 @@ import {BehaviorSubject, Observable, tap} from 'rxjs';
 import {RxStompService} from '../websocket/rx-stomp.service';
 import {API_CONFIG} from '../../core/config/api-config';
 import {createRxStompConfig} from '../websocket/rx-stomp.config';
-import {OAuthService, OAuthStorage} from 'angular-oauth2-oidc';
 import {Router} from '@angular/router';
 import {PostLoginInitializerService} from '../../core/services/post-login-initializer.service';
 
@@ -19,12 +18,10 @@ export class AuthService {
 
   private http = inject(HttpClient);
   private injector = inject(Injector);
-  private oAuthService = inject(OAuthService);
-  private oAuthStorage = inject(OAuthStorage);
   private router = inject(Router);
   private postLoginInitializer = inject(PostLoginInitializerService);
 
-  public tokenSubject = new BehaviorSubject<string | null>(this.getOidcAccessToken() || this.getInternalAccessToken());
+  public tokenSubject = new BehaviorSubject<string | null>(this.getInternalAccessToken());
   public token$ = this.tokenSubject.asObservable();
 
   internalLogin(credentials: { username: string; password: string }): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
@@ -72,36 +69,43 @@ export class AuthService {
     return localStorage.getItem('accessToken_Internal');
   }
 
-  getOidcAccessToken(): string | null {
-    return this.oAuthService.getIdToken();
-  }
-
   getInternalRefreshToken(): string | null {
     return localStorage.getItem('refreshToken_Internal');
   }
 
-  clearOIDCTokens(): void {
-    const hasInternalTokens = this.getInternalAccessToken() || this.getInternalRefreshToken();
-    if (!hasInternalTokens) {
-      this.oAuthStorage.removeItem("access_token");
-      this.oAuthStorage.removeItem("refresh_token");
-      this.oAuthStorage.removeItem("id_token");
-      this.router.navigate(['/login']);
-    }
+  logout(): void {
+    const refreshToken = this.getInternalRefreshToken();
+    this.http.post<{ logoutUrl: string | null }>(`${this.apiUrl}/logout`, {refreshToken}).subscribe({
+      next: (response) => {
+        if (response.logoutUrl) {
+          window.location.href = response.logoutUrl;
+        } else {
+          this.clearSession();
+          this.router.navigate(['/login']).then(() => window.location.reload());
+        }
+      },
+      error: () => {
+        this.clearSession();
+        this.router.navigate(['/login']).then(() => window.location.reload());
+      }
+    });
   }
 
-  logout(): void {
+  forceLogout(reason: string): void {
+    this.clearSession();
+    this.router.navigate(['/login'], {queryParams: {reason}});
+  }
+
+  clearSessionOnLoginPage(): void {
+    this.clearSession();
+  }
+
+  private clearSession(): void {
     localStorage.removeItem('accessToken_Internal');
     localStorage.removeItem('refreshToken_Internal');
-    this.oAuthStorage.removeItem("access_token");
-    this.oAuthStorage.removeItem("refresh_token");
-    this.oAuthStorage.removeItem("id_token");
     this.tokenSubject.next(null);
     this.postLoginInitialized = false;
     this.getRxStompService().deactivate();
-    this.router.navigate(['/login']).then(() => {
-      window.location.reload();
-    });
   }
 
   getRxStompService(): RxStompService {
@@ -112,7 +116,7 @@ export class AuthService {
   }
 
   initializeWebSocketConnection(): void {
-    const token = this.getOidcAccessToken() || this.getInternalAccessToken();
+    const token = this.getInternalAccessToken();
     if (!token) return;
 
     const stompService = this.getRxStompService();

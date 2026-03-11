@@ -1,5 +1,6 @@
 package org.booklore.controller;
 
+import org.booklore.exception.ApiError;
 import org.booklore.model.dto.AuthorDetails;
 import org.booklore.model.dto.AuthorSearchResult;
 import org.booklore.model.dto.AuthorSummary;
@@ -91,8 +92,15 @@ public class AuthorController {
     @GetMapping("/{authorId}/search-metadata")
     public ResponseEntity<List<AuthorSearchResult>> searchAuthorMetadata(
             @Parameter(description = "ID of the author") @PathVariable long authorId,
-            @Parameter(description = "Author name to search") @RequestParam("q") String query,
+            @Parameter(description = "Author name to search") @RequestParam(value = "q", required = false) String query,
+            @Parameter(description = "Author ASIN to look up") @RequestParam(required = false) String asin,
             @Parameter(description = "Region for provider lookup") @RequestParam(defaultValue = "us") String region) {
+        if (asin != null && !asin.isBlank()) {
+            return ResponseEntity.ok(authorMetadataService.lookupAuthorByAsin(asin.trim(), region));
+        }
+        if (query == null || query.isBlank()) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("Either 'q' or 'asin' parameter is required");
+        }
         return ResponseEntity.ok(authorMetadataService.searchAuthorMetadata(query, region));
     }
 

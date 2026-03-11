@@ -1,5 +1,5 @@
 {
-    "title": "Configurações de Autenticação",
+    "title": "Configurações de Autenticação OIDC",
     "description": "Configure os métodos de autenticação da sua instância do Booklore. A autenticação interna está sempre ativada, e você pode opcionalmente habilitar o OIDC para provedores de autenticação externos.",
     "methods": {
         "sectionTitle": "Métodos de Autenticação",
@@ -25,6 +25,9 @@
         "providerPlaceholder": "ex. Authentik, Keycloak",
         "clientId": "Client ID",
         "clientIdPlaceholder": "Seu client ID do OIDC",
+        "clientSecret": "",
+        "clientSecretPlaceholder": "",
+        "clientSecretHint": "",
         "issuerUri": "URI do Emissor",
         "issuerPlaceholder": "ex. https://auth.example.com/realms/booklore",
         "scope": "Escopo",

@@ -37,7 +37,9 @@
         "writeOnScanDesc": "Skapa sidecar JSON-filer när böcker först läggs till i biblioteket under skanning.",
         "includeCover": "Inkludera omslagsbildsfil",
         "includeCoverDesc": "Spara även omslagsbilden som <code>Boknamn.cover.jpg</code> bredvid sidecar JSON-filen.",
-        "loadError": "Kunde inte ladda inställningar."
+        "loadError": "Kunde inte ladda inställningar.",
+        "networkModeTitle": "Nätverkslagringsläge:",
+        "networkModeDesc": "Den här instansen är konfigurerad för nätverkslagring (DISK_TYPE=NETWORK). Alla funktioner för filskrivning och omorganisering är inaktiverade. Metadata lagras endast i databasen och dina bokfiler ändras aldrig."
     },
     "providers": {
         "sectionTitle": "Metadataleverantörer",

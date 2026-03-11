@@ -49,7 +49,14 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.FB2);
         setBookMetadata(bookEntity);
-        if (generateCover(bookEntity)) {
+        boolean coverGenerated = generateCover(bookEntity);
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }

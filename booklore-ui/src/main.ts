@@ -13,7 +13,6 @@ import Aura from '@primeuix/themes/aura';
 import { routes } from './app/app.routes';
 import { AuthInterceptorService } from './app/core/security/auth-interceptor.service';
 import { AuthService, websocketInitializer } from './app/shared/service/auth.service';
-import { OAuthStorage, provideOAuthClient } from 'angular-oauth2-oidc';
 import { inject, isDevMode, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
 import { initializeAuthFactory } from './app/core/security/auth-initializer';
 import { StartupService } from './app/shared/service/startup.service';
@@ -23,10 +22,6 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { provideTransloco } from '@jsverse/transloco';
 import { AVAILABLE_LANGS, TranslocoInlineLoader } from './app/core/config/transloco-loader';
 import { initializeLanguage } from './app/core/config/language-initializer';
-
-export function storageFactory(): OAuthStorage {
-  return localStorage;
-}
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -41,11 +36,6 @@ bootstrapApplication(AppComponent, {
       return startup.load();
     }),
     provideHttpClient(withInterceptors([AuthInterceptorService])),
-    provideOAuthClient(),
-    {
-      provide: OAuthStorage,
-      useFactory: storageFactory
-    },
     provideAppInitializer(initializeAuthFactory()),
     provideRouter(routes),
     DialogService,

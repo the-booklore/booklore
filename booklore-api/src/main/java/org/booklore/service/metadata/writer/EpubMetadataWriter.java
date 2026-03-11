@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.model.enums.CompressionMethod;
 import org.apache.commons.lang3.StringUtils;
 import org.booklore.model.MetadataClearFlags;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
@@ -108,7 +109,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                         String first = parts.length > 1 ? parts[0] : "";
                         String last = parts.length > 1 ? parts[1] : parts[0];
                         String fileAs = last + ", " + first;
-                        metadataElement.appendChild(createCreatorElement(opfDoc, name, fileAs, "aut"));
+                        metadataElement.appendChild(createCreatorElement(opfDoc, metadataElement, name, fileAs, "aut"));
                     }
                 }
                 hasChanges[0] = true;
@@ -523,13 +524,31 @@ public class EpubMetadataWriter implements MetadataWriter {
     }
 
     private void addFolderContentsToZip(ZipFile zipFile, File baseDir, File currentDir) throws IOException {
+        // EPUB spec requires mimetype to be the first entry in the ZIP, uncompressed (STORED)
+        if (baseDir.equals(currentDir)) {
+            File mimetypeFile = new File(baseDir, "mimetype");
+            if (mimetypeFile.exists()) {
+                ZipParameters mimetypeParams = new ZipParameters();
+                mimetypeParams.setFileNameInZip("mimetype");
+                mimetypeParams.setCompressionMethod(CompressionMethod.STORE);
+                zipFile.addFile(mimetypeFile, mimetypeParams);
+            } else {
+                log.warn("EPUB mimetype file not found in extracted directory — output may be spec-invalid");
+            }
+        }
+
         File[] files = Objects.requireNonNull(currentDir.listFiles());
         for (File file : files) {
             if (file.isDirectory()) {
                 addFolderContentsToZip(zipFile, baseDir, file);
             } else {
+                // Skip mimetype — already added as the first entry
+                String relativePath = baseDir.toPath().relativize(file.toPath()).toString().replace(File.separatorChar, '/');
+                if ("mimetype".equals(relativePath)) {
+                    continue;
+                }
                 ZipParameters params = new ZipParameters();
-                params.setFileNameInZip(baseDir.toPath().relativize(file.toPath()).toString().replace(File.separatorChar, '/'));
+                params.setFileNameInZip(relativePath);
                 zipFile.addFile(file, params);
             }
         }
@@ -620,15 +639,43 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
     }
 
-    private Element createCreatorElement(Document doc, String fullName, String fileAs, String role) {
+    private Element createCreatorElement(Document doc, Element metadataElement, String fullName, String fileAs, String role) {
         Element creator = doc.createElementNS("http://purl.org/dc/elements/1.1/", "creator");
         creator.setPrefix("dc");
         creator.setTextContent(fullName);
-        if (fileAs != null) {
-            creator.setAttributeNS(OPF_NS, "opf:file-as", fileAs);
-        }
-        if (role != null) {
-            creator.setAttributeNS(OPF_NS, "opf:role", role);
+
+        boolean isEpub3 = isEpub3(doc);
+
+        if (isEpub3) {
+            // EPUB3: use <meta refines="#id"> elements instead of opf: attributes
+            String creatorId = "creator-" + UUID.randomUUID().toString().substring(0, 8);
+            creator.setAttribute("id", creatorId);
+
+            if (fileAs != null) {
+                Element fileAsMeta = doc.createElementNS(OPF_NS, "meta");
+                fileAsMeta.setPrefix("opf");
+                fileAsMeta.setAttribute("refines", "#" + creatorId);
+                fileAsMeta.setAttribute("property", "file-as");
+                fileAsMeta.setTextContent(fileAs);
+                metadataElement.appendChild(fileAsMeta);
+            }
+            if (role != null) {
+                Element roleMeta = doc.createElementNS(OPF_NS, "meta");
+                roleMeta.setPrefix("opf");
+                roleMeta.setAttribute("refines", "#" + creatorId);
+                roleMeta.setAttribute("property", "role");
+                roleMeta.setAttribute("scheme", "marc:relators");
+                roleMeta.setTextContent(role);
+                metadataElement.appendChild(roleMeta);
+            }
+        } else {
+            // EPUB2: use opf: attributes directly on dc:creator
+            if (fileAs != null) {
+                creator.setAttributeNS(OPF_NS, "opf:file-as", fileAs);
+            }
+            if (role != null) {
+                creator.setAttributeNS(OPF_NS, "opf:role", role);
+            }
         }
         return creator;
     }
@@ -707,22 +754,32 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
     }
 
+    private boolean isEpub3(Document doc) {
+        String version = doc.getDocumentElement().getAttribute("version");
+        return version != null && version.trim().startsWith("3");
+    }
+
     private void removeAllBookloreMetadata(Element metadataElement) {
         NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
         for (int i = metas.getLength() - 1; i >= 0; i--) {
             Element meta = (Element) metas.item(i);
             String property = meta.getAttribute("property");
-            if (property.startsWith("booklore:")) {
+            String name = meta.getAttribute("name");
+            if (property.startsWith("booklore:") || name.startsWith("booklore:")) {
                 metadataElement.removeChild(meta);
             }
         }
     }
 
     private void replaceBelongsToCollection(Element metadataElement, Document doc, String seriesName, Float seriesNumber, boolean[] hasChanges) {
+        boolean epub3 = isEpub3(doc);
+
+        // Remove existing EPUB3 collection metas
         NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
         for (int i = metas.getLength() - 1; i >= 0; i--) {
             Element meta = (Element) metas.item(i);
             String property = meta.getAttribute("property");
+            String name = meta.getAttribute("name");
             if ("belongs-to-collection".equals(property) || "collection-type".equals(property) || "group-position".equals(property)) {
                 String id = meta.getAttribute("id");
                 metadataElement.removeChild(meta);
@@ -730,36 +787,60 @@ public class EpubMetadataWriter implements MetadataWriter {
                     removeMetaByRefines(metadataElement, "#" + id);
                 }
             }
+            // Also remove EPUB2-style series metas
+            if ("calibre:series".equals(name) || "calibre:series_index".equals(name)) {
+                metadataElement.removeChild(meta);
+            }
         }
         
         if (StringUtils.isNotBlank(seriesName)) {
-            String collectionId = "collection-" + UUID.randomUUID().toString().substring(0, 8);
-            
-            Element collectionMeta = doc.createElementNS(OPF_NS, "meta");
-            collectionMeta.setPrefix("opf");
-            collectionMeta.setAttribute("id", collectionId);
-            collectionMeta.setAttribute("property", "belongs-to-collection");
-            collectionMeta.setTextContent(seriesName);
-            metadataElement.appendChild(collectionMeta);
-            
-            Element typeMeta = doc.createElementNS(OPF_NS, "meta");
-            typeMeta.setPrefix("opf");
-            typeMeta.setAttribute("property", "collection-type");
-            typeMeta.setAttribute("refines", "#" + collectionId);
-            typeMeta.setTextContent("series");
-            metadataElement.appendChild(typeMeta);
-            
-            if (seriesNumber != null && seriesNumber > 0) {
-                Element positionMeta = doc.createElementNS(OPF_NS, "meta");
-                positionMeta.setPrefix("opf");
-                positionMeta.setAttribute("property", "group-position");
-                positionMeta.setAttribute("refines", "#" + collectionId);
-                if (seriesNumber % 1.0f == 0) {
-                    positionMeta.setTextContent(String.format("%.0f", seriesNumber));
-                } else {
-                    positionMeta.setTextContent(String.valueOf(seriesNumber));
+            if (epub3) {
+                // EPUB3: use belongs-to-collection with refines
+                String collectionId = "collection-" + UUID.randomUUID().toString().substring(0, 8);
+
+                Element collectionMeta = doc.createElementNS(OPF_NS, "meta");
+                collectionMeta.setPrefix("opf");
+                collectionMeta.setAttribute("id", collectionId);
+                collectionMeta.setAttribute("property", "belongs-to-collection");
+                collectionMeta.setTextContent(seriesName);
+                metadataElement.appendChild(collectionMeta);
+
+                Element typeMeta = doc.createElementNS(OPF_NS, "meta");
+                typeMeta.setPrefix("opf");
+                typeMeta.setAttribute("property", "collection-type");
+                typeMeta.setAttribute("refines", "#" + collectionId);
+                typeMeta.setTextContent("series");
+                metadataElement.appendChild(typeMeta);
+
+                if (seriesNumber != null && seriesNumber > 0) {
+                    Element positionMeta = doc.createElementNS(OPF_NS, "meta");
+                    positionMeta.setPrefix("opf");
+                    positionMeta.setAttribute("property", "group-position");
+                    positionMeta.setAttribute("refines", "#" + collectionId);
+                    if (seriesNumber % 1.0f == 0) {
+                        positionMeta.setTextContent(String.format("%.0f", seriesNumber));
+                    } else {
+                        positionMeta.setTextContent(String.valueOf(seriesNumber));
+                    }
+                    metadataElement.appendChild(positionMeta);
                 }
-                metadataElement.appendChild(positionMeta);
+            } else {
+                // EPUB2: use calibre:series convention (widely supported by e-readers)
+                Element seriesMeta = doc.createElementNS(doc.getDocumentElement().getNamespaceURI(), "meta");
+                seriesMeta.setAttribute("name", "calibre:series");
+                seriesMeta.setAttribute("content", seriesName);
+                metadataElement.appendChild(seriesMeta);
+
+                if (seriesNumber != null && seriesNumber > 0) {
+                    Element indexMeta = doc.createElementNS(doc.getDocumentElement().getNamespaceURI(), "meta");
+                    indexMeta.setAttribute("name", "calibre:series_index");
+                    if (seriesNumber % 1.0f == 0) {
+                        indexMeta.setAttribute("content", String.format("%.0f", seriesNumber));
+                    } else {
+                        indexMeta.setAttribute("content", String.valueOf(seriesNumber));
+                    }
+                    metadataElement.appendChild(indexMeta);
+                }
             }
             
             hasChanges[0] = true;
@@ -768,6 +849,9 @@ public class EpubMetadataWriter implements MetadataWriter {
 
     private void addSubtitleToTitle(Element metadataElement, Document doc, String subtitle) {
         final String DC_NS = "http://purl.org/dc/elements/1.1/";
+        boolean epub3 = isEpub3(doc);
+
+        // Remove existing subtitle elements (both EPUB2 and EPUB3 forms)
         NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
         for (int i = metas.getLength() - 1; i >= 0; i--) {
             Element meta = (Element) metas.item(i);
@@ -787,106 +871,127 @@ public class EpubMetadataWriter implements MetadataWriter {
                 metadataElement.removeChild(meta);
             }
         }
-        
-        String subtitleId = "subtitle-" + UUID.randomUUID().toString().substring(0, 8);
-        Element subtitleElement = doc.createElementNS(DC_NS, "title");
-        subtitleElement.setPrefix("dc");
-        subtitleElement.setAttribute("id", subtitleId);
-        subtitleElement.setTextContent(subtitle);
-        metadataElement.appendChild(subtitleElement);
-        
-        Element typeMeta = doc.createElementNS(OPF_NS, "meta");
-        typeMeta.setPrefix("opf");
-        typeMeta.setAttribute("refines", "#" + subtitleId);
-        typeMeta.setAttribute("property", "title-type");
-        typeMeta.setTextContent("subtitle");
-        metadataElement.appendChild(typeMeta);
+
+        if (epub3) {
+            // EPUB3: add subtitle as separate dc:title with title-type refinement
+            String subtitleId = "subtitle-" + UUID.randomUUID().toString().substring(0, 8);
+            Element subtitleElement = doc.createElementNS(DC_NS, "title");
+            subtitleElement.setPrefix("dc");
+            subtitleElement.setAttribute("id", subtitleId);
+            subtitleElement.setTextContent(subtitle);
+            metadataElement.appendChild(subtitleElement);
+
+            Element typeMeta = doc.createElementNS(OPF_NS, "meta");
+            typeMeta.setPrefix("opf");
+            typeMeta.setAttribute("refines", "#" + subtitleId);
+            typeMeta.setAttribute("property", "title-type");
+            typeMeta.setTextContent("subtitle");
+            metadataElement.appendChild(typeMeta);
+        }
+        // EPUB2: subtitle is stored only via booklore:subtitle metadata (written in addBookloreMetadata).
+        // No modification to dc:title is needed — this preserves round-trip fidelity.
     }
 
     private void addBookloreMetadata(Element metadataElement, Document doc, BookMetadataEntity metadata) {
-        Element packageElement = doc.getDocumentElement();
-        String existingPrefix = packageElement.getAttribute("prefix");
-        String bookloreNamespace = "booklore: http://booklore.org/metadata/1.0/";
-        
-        if (!existingPrefix.contains("booklore:")) {
-            if (existingPrefix.isEmpty()) {
-                packageElement.setAttribute("prefix", bookloreNamespace);
-            } else {
-                packageElement.setAttribute("prefix", existingPrefix.trim() + " " + bookloreNamespace);
+        boolean epub3 = isEpub3(doc);
+
+        if (epub3) {
+            Element packageElement = doc.getDocumentElement();
+            String existingPrefix = packageElement.getAttribute("prefix");
+            String bookloreNamespace = "booklore: http://booklore.org/metadata/1.0/";
+
+            if (!existingPrefix.contains("booklore:")) {
+                if (existingPrefix.isEmpty()) {
+                    packageElement.setAttribute("prefix", bookloreNamespace);
+                } else {
+                    packageElement.setAttribute("prefix", existingPrefix.trim() + " " + bookloreNamespace);
+                }
             }
         }
         
         removeAllBookloreMetadata(metadataElement);
         
+        if (StringUtils.isNotBlank(metadata.getSubtitle())) {
+            metadataElement.appendChild(createBookloreMetaElement(doc, "subtitle", metadata.getSubtitle(), epub3));
+        }
+        
         if (metadata.getPageCount() != null && metadata.getPageCount() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "page_count", String.valueOf(metadata.getPageCount())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "page_count", String.valueOf(metadata.getPageCount()), epub3));
         }
         
         if (metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "series_total", String.valueOf(metadata.getSeriesTotal())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "series_total", String.valueOf(metadata.getSeriesTotal()), epub3));
         }
         
         if (metadata.getAmazonRating() != null && metadata.getAmazonRating() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "amazon_rating", String.valueOf(metadata.getAmazonRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "amazon_rating", String.valueOf(metadata.getAmazonRating()), epub3));
         }
         
         if (metadata.getAmazonReviewCount() != null && metadata.getAmazonReviewCount() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "amazon_review_count", String.valueOf(metadata.getAmazonReviewCount())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "amazon_review_count", String.valueOf(metadata.getAmazonReviewCount()), epub3));
         }
         
         if (metadata.getGoodreadsRating() != null && metadata.getGoodreadsRating() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "goodreads_rating", String.valueOf(metadata.getGoodreadsRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "goodreads_rating", String.valueOf(metadata.getGoodreadsRating()), epub3));
         }
         
         if (metadata.getGoodreadsReviewCount() != null && metadata.getGoodreadsReviewCount() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "goodreads_review_count", String.valueOf(metadata.getGoodreadsReviewCount())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "goodreads_review_count", String.valueOf(metadata.getGoodreadsReviewCount()), epub3));
         }
         
         if (metadata.getHardcoverRating() != null && metadata.getHardcoverRating() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_rating", String.valueOf(metadata.getHardcoverRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_rating", String.valueOf(metadata.getHardcoverRating()), epub3));
         }
         
         if (metadata.getHardcoverReviewCount() != null && metadata.getHardcoverReviewCount() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_review_count", String.valueOf(metadata.getHardcoverReviewCount())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "hardcover_review_count", String.valueOf(metadata.getHardcoverReviewCount()), epub3));
         }
         
         if (metadata.getLubimyczytacRating() != null && metadata.getLubimyczytacRating() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "lubimyczytac_rating", String.valueOf(metadata.getLubimyczytacRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "lubimyczytac_rating", String.valueOf(metadata.getLubimyczytacRating()), epub3));
         }
         
         if (metadata.getRanobedbRating() != null && metadata.getRanobedbRating() > 0) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "ranobedb_rating", String.valueOf(metadata.getRanobedbRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "ranobedb_rating", String.valueOf(metadata.getRanobedbRating()), epub3));
         }
         
         if (metadata.getMoods() != null && !metadata.getMoods().isEmpty()) {
             String moodsJson = "[" + String.join(", ", metadata.getMoods().stream()
                 .map(mood -> "\"" + mood.getName().replace("\"", "\\\"") + "\"")
                 .toList()) + "]";
-            metadataElement.appendChild(createBookloreMetaElement(doc, "moods", moodsJson));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "moods", moodsJson, epub3));
         }
         
         if (metadata.getTags() != null && !metadata.getTags().isEmpty()) {
             String tagsJson = "[" + String.join(", ", metadata.getTags().stream()
                 .map(tag -> "\"" + tag.getName().replace("\"", "\\\"") + "\"")
                 .toList()) + "]";
-            metadataElement.appendChild(createBookloreMetaElement(doc, "tags", tagsJson));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "tags", tagsJson, epub3));
         }
 
         if (metadata.getAgeRating() != null) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "age_rating", String.valueOf(metadata.getAgeRating())));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "age_rating", String.valueOf(metadata.getAgeRating()), epub3));
         }
 
         if (StringUtils.isNotBlank(metadata.getContentRating())) {
-            metadataElement.appendChild(createBookloreMetaElement(doc, "content_rating", metadata.getContentRating()));
+            metadataElement.appendChild(createBookloreMetaElement(doc, "content_rating", metadata.getContentRating(), epub3));
         }
     }
 
-    private Element createBookloreMetaElement(Document doc, String property, String value) {
-        Element meta = doc.createElementNS(OPF_NS, "meta");
-        meta.setPrefix("opf");
-        meta.setAttribute("property", "booklore:" + property);
-        meta.setTextContent(value);
-        return meta;
+    private Element createBookloreMetaElement(Document doc, String property, String value, boolean epub3) {
+        if (epub3) {
+            Element meta = doc.createElementNS(OPF_NS, "meta");
+            meta.setPrefix("opf");
+            meta.setAttribute("property", "booklore:" + property);
+            meta.setTextContent(value);
+            return meta;
+        } else {
+            // EPUB2: use name/content attribute form
+            Element meta = doc.createElementNS(doc.getDocumentElement().getNamespaceURI(), "meta");
+            meta.setAttribute("name", "booklore:" + property);
+            meta.setAttribute("content", value);
+            return meta;
+        }
     }
 
     private void cleanupCalibreArtifacts(Element metadataElement, Document doc) {
@@ -936,7 +1041,8 @@ public class EpubMetadataWriter implements MetadataWriter {
             String property = meta.getAttribute("property");
             String name = meta.getAttribute("name");
             
-            if (property.startsWith("calibre:") || name.startsWith("calibre:")) {
+            boolean isCalibreSeries = !isEpub3(doc) && ("calibre:series".equals(name) || "calibre:series_index".equals(name));
+            if (!isCalibreSeries && (property.startsWith("calibre:") || name.startsWith("calibre:"))) {
                 metadataElement.removeChild(meta);
             }
         }
@@ -980,11 +1086,13 @@ public class EpubMetadataWriter implements MetadataWriter {
                 }
             } else if ("meta".equals(localName)) {
                 String property = elem.getAttribute("property");
-                if (property.startsWith("booklore:")) {
+                String name = elem.getAttribute("name");
+                if (property.startsWith("booklore:") || name.startsWith("booklore:")) {
                     bookloreMetas.add(elem);
                 } else if (property.equals("dcterms:modified") || property.equals("calibre:timestamp")) {
                     modifiedMetas.add(elem);
-                } else if (property.equals("belongs-to-collection") || property.equals("collection-type") || property.equals("group-position")) {
+                } else if (property.equals("belongs-to-collection") || property.equals("collection-type") || property.equals("group-position")
+                        || "calibre:series".equals(name) || "calibre:series_index".equals(name)) {
                     seriesMetas.add(elem);
                 } else {
                     otherMetas.add(elem);

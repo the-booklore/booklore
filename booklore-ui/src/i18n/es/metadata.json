@@ -245,6 +245,7 @@
         "languageLabel": "Idioma:",
         "formatsLabel": "Formatos:",
         "primaryBadge": "PRINCIPAL",
+        "firstAuthorBadge": "PRINCIPAL",
         "physicalBadge": "FÍSICO",
         "bookloreProgressLabel": "Progreso BookLore:",
         "metadataMatchLabel": "Coincidencia de metadatos:",
@@ -326,6 +327,8 @@
         "menuSendBook": "Enviar libro",
         "menuQuickSend": "Envío rápido",
         "menuCustomSend": "Envío personalizado",
+        "menuMarkPhysical": "Marcar como físico",
+        "menuUnmarkPhysical": "Desmarcar como físico",
         "menuAttachToAnotherBook": "Adjuntar a otro libro",
         "menuDeleteFileFormats": "Eliminar formatos de archivo",
         "menuDeleteSupplementaryFiles": "Eliminar archivos complementarios",
@@ -497,12 +500,19 @@
         "deleting": "Eliminando...",
         "tabs": {
             "author": "Autor",
+            "authors": "Autores",
             "genre": "Género",
+            "genres": "Géneros",
             "mood": "Estado de ánimo",
+            "moods": "Estados de ánimo",
             "tag": "Etiqueta",
+            "tags": "Etiquetas",
             "series": "Serie",
+            "seriesPlural": "Series",
             "publisher": "Editorial",
-            "language": "Idioma"
+            "publishers": "Editoriales",
+            "language": "Idioma",
+            "languages": "Idiomas"
         },
         "placeholders": {
             "searchAuthors": "Buscar autores...",

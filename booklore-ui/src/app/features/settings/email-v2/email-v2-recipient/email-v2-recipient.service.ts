@@ -8,7 +8,7 @@ import {EmailRecipient} from '../email-recipient.model';
   providedIn: 'root'
 })
 export class EmailV2RecipientService {
-  private readonly url = `${API_CONFIG.BASE_URL}/api/v2/email/recipients`;
+  private readonly url = `${API_CONFIG.BASE_URL}/api/v1/email/recipients`;
 
   private http = inject(HttpClient);
 

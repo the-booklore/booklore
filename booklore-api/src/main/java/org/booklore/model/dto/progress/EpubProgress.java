@@ -16,4 +16,5 @@ public class EpubProgress {
     String href;
     @NotNull
     Float percentage;
+    String ttsPositionCfi;
 }

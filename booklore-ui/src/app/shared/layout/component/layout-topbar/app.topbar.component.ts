@@ -132,6 +132,12 @@ export class AppTopBarComponent implements OnDestroy {
       .subscribe(() => {
         this.initializeStatsMenu();
       });
+
+    this.translocoService.langChanges$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.initializeStatsMenu();
+      });
   }
 
   ngOnDestroy(): void {

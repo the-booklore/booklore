@@ -34,15 +34,15 @@
     @if (_isSeriesViewActive) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()" [ariaLabel]="'book.card.alt.viewSeriesInfo' | transloco"></p-button>
     } @else {
-      <a [routerLink]="urlHelper.getBookUrl(book)" (click)="prepareNavigation(book)"><p-button [rounded]="true" icon="pi pi-info" class="info-btn" [ariaLabel]="'book.card.alt.viewDetails' | transloco">
-      </p-button></a>
+      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)" [ariaLabel]="'book.card.alt.viewDetails' | transloco">
+      </p-button>
     }
 
     @if (!_isSeriesViewActive && hasDigitalFile()) {
-      <p-button [rounded]="true" [icon]="readButtonIcon" class="read-btn" (click)="readBook(book)"
+      <a [routerLink]="urlHelper.getBookPrimaryReadingUrl(book)" (click)="readBook(book)"><p-button [rounded]="true" [icon]="readButtonIcon" class="read-btn" (click)="readBook(book)"
         [pTooltip]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : ''"
         tooltipPosition="bottom"
-        [ariaLabel]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : (_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco))"></p-button>
+        [ariaLabel]="_isContinueReading ? ('book.card.alt.continueReading' | transloco) : (_isAudiobook ? ('book.card.alt.playAudiobook' | transloco) : ('book.card.alt.readBook' | transloco))"></p-button></a>
     }
 
     @if (isCheckboxEnabled) {
@@ -87,14 +87,15 @@
 
   @if (!bottomBarHidden) {
     <div class="book-title-container">
-      @if (_shouldShowStatusIcon) {
-        <div class="read-status-indicator"
-             [ngClass]="_readStatusClass"
-             [pTooltip]="readStatusTooltip"
-             tooltipPosition="bottom">
-          <i [class]="_readStatusIcon" style="font-size: 0.9rem"></i>
-        </div>
-      }
+      <div class="read-status-indicator"
+           [ngClass]="_readStatusClass"
+           [pTooltip]="readStatusTooltip"
+           tooltipPosition="bottom"
+           (click)="toggleReadStatusMenu($event, readStatusMenu)"
+           [attr.aria-label]="'book.card.alt.readStatusMenu' | transloco">
+        <i [class]="_readStatusIcon" style="font-size: 0.9rem"></i>
+      </div>
+      <p-tieredmenu #readStatusMenu [model]="readStatusMenuItems" [popup]="true" appendTo="body"></p-tieredmenu>
       <h4 class="book-title"
           tooltipPosition="bottom"
           [pTooltip]="titleTooltip">

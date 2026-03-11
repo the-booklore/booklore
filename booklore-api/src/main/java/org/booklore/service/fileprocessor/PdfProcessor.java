@@ -52,7 +52,14 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
     @Override
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.PDF);
-        if (generateCover(bookEntity)) {
+        boolean coverGenerated = generateCover(bookEntity);
+        if (!coverGenerated) {
+            var folder = getBookFolderForCoverFallback(libraryFile);
+            if (folder != null) {
+                coverGenerated = generateCoverFromFolderImage(bookEntity, folder);
+            }
+        }
+        if (coverGenerated) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }

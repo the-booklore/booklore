@@ -51,7 +51,13 @@
             "createdLargeDetail": "Knjižnica ustvarjena s {{count}} datotekami. Nalaganje poteka...",
             "createFailedSummary": "Ustvarjanje ni uspelo",
             "createFailedDetail": "Prišlo je do napake pri ustvarjanju knjižnice. Prosim, poskusi znova."
-        }
+        },
+        "folderStructureHint": "Prepričaj se, da mape sledijo pričakovani <a href='https://booklore.org/docs/library/folder-structure#-recommended-structures' target='_blank' rel='noopener'>strukturi imenikov</a> za knjige in zvočne knjige.",
+        "organizationMode": "Organizacijski način",
+        "organizationModeTooltip": "Kako so datoteke med skeniranjem združene v knjige",
+        "organizationModeBookPerFile": "Ena knjiga na datoteko",
+        "organizationModeBookPerFolder": "Ena knjiga na mapo",
+        "organizationModeAutoDetect": "Samodejno zaznavanje (zastarelo)"
     },
     "loading": {
         "title": "Nalaganje knjižnice",

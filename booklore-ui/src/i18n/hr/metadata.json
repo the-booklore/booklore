@@ -131,7 +131,8 @@
             "audiobookUploadFailed": "Došlo je do pogreške prilikom učitavanja naslovnice audioknjige",
             "fileMetadataLoaded": "Metapodaci učitani iz datoteke knjige. Pregledajte i spremite.",
             "fileMetadataFailed": "Izdvajanje metapodataka iz datoteke knjige nije uspjelo"
-        }
+        },
+        "writtenToFileTooltip": "Ovo polje se zapisuje u fizičku datoteku"
     },
     "picker": {
         "loadingMetadata": "Učitavanje potpunih metapodataka...",
@@ -221,7 +222,16 @@
         "downloadTooltip": "Preuzmi",
         "deleteTooltip": "Obriši",
         "downloadAllTooltip": "Preuzmi sve datoteke kao ZIP arhivu",
-        "physicalBookHint": "Možete učitati digitalnu kopiju ili ručno dodati metapodatke."
+        "physicalBookHint": "Možete učitati digitalnu kopiju ili ručno dodati metapodatke.",
+        "chapters": "Poglavlja",
+        "chapterTitle": "Naslov",
+        "startTime": "Početak",
+        "endTime": "Kraj",
+        "duration": "Trajanje",
+        "totalDuration": "Ukupno trajanje",
+        "noChapters": "Nema dostupnih informacija o poglavlju.",
+        "fileName": "Datoteka",
+        "detachTooltip": "Odvoji"
     },
     "viewer": {
         "metadataLocked": "Metapodaci ove knjige su zaključani.",
@@ -229,7 +239,7 @@
         "genresLabel": "Žanrovi:",
         "moodsLabel": "Raspoloženja:",
         "tagsLabel": "Oznake:",
-        "libraryLabel": "Knjižnica:",
+        "libraryLabel": "Zbirka:",
         "publisherLabel": "Izdavač:",
         "publishedLabel": "Objavljeno:",
         "languageLabel": "Jezik:",
@@ -256,7 +266,7 @@
         "showLess": "Prikaži manje",
         "showMore": "Prikaži više",
         "comicDetailsTitle": "Detalji stripa",
-        "creatorsTitle": "Autori",
+        "creatorsTitle": "Stvaratelji",
         "universeTitle": "Svemir",
         "comicIssue": "Izdanje",
         "comicVolume": "Svezak",
@@ -357,7 +367,11 @@
             "dateUpdatedSummary": "Datum ažuriran",
             "dateUpdatedDetail": "Datum završetka knjige je ažuriran.",
             "dateUpdateFailedSummary": "Ažuriranje nije uspjelo",
-            "dateUpdateFailedDetail": "Ažuriranje datuma završetka knjige nije uspjelo."
+            "dateUpdateFailedDetail": "Ažuriranje datuma završetka knjige nije uspjelo.",
+            "detachFileSuccessDetail": "Datoteka je odvojena i kreirana je nova knjiga.",
+            "detachFileErrorSummary": "Odvajanje nije uspjelo",
+            "detachFileSuccessSummary": "Datoteka odvojena",
+            "detachFileErrorDetail": "Nije uspjelo odvajanje datoteke."
         },
         "confirm": {
             "resetProgressMessage": "Vratiti napredak čitanja za \"{{ title }}\"?",
@@ -371,10 +385,19 @@
             "deleteAltFormatMessage": "Jeste li sigurni da želite obrisati \"{{ fileName }}\"?\n\nOva datoteka će biti trajno uklonjena iz vašeg datotečnog sustava.",
             "deleteAltFormatHeader": "Brisanje formata knjige",
             "deleteFileBtn": "Obriši datoteku",
-            "deleteBookMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti zapis knjige iz vaše knjižnice.\n\nOva radnja se ne može poništiti.",
+            "deleteBookMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti zapis knjige iz vaše zbirke.\n\nOva radnja se ne može poništiti.",
             "deleteBookAllFilesMessage": "Jeste li sigurni da želite obrisati \"{{ title }}\"?\n\nOvo će trajno ukloniti zapis knjige I sve povezane datoteke iz vašeg datotečnog sustava.\n\nOva radnja se ne može poništiti.",
-            "deleteEverythingBtn": "Obriši sve"
-        }
+            "deleteEverythingBtn": "Obriši sve",
+            "detachFileHeader": "Odvoji datoteku",
+            "detachFileMessage": "Ovim će se \"{{ fileName }}\" odvojiti od ove knjige i stvoriti nova samostalna knjiga za nju. Datoteka neće biti izbrisana.",
+            "detachFileCopyMetadata": "Kopiraj metapodatke u novu knjigu",
+            "detachFileBtn": "Odvoji",
+            "largeFileMessage": "Ova datoteka prelazi 25 MB. Neki pružatelji usluga e-pošte mogu odbiti velike priloge.\n\nŽelite li je ipak poslati?",
+            "largeFileHeader": "Upozorenje o velikoj datoteci",
+            "sendAnyway": "Svejedno pošalji"
+        },
+        "audiobookAbridged": "Skraćeno",
+        "firstAuthorBadge": "GLAVNI"
     },
     "sidecar": {
         "title": "Prateći metapodaci",
@@ -439,7 +462,7 @@
     "manager": {
         "title": "Upravitelj metapodacima",
         "description": "Organizirajte, spajajte, razdvajajte, preimenujte i standardizirajte autore, žanrove, raspoloženja i oznake u cijeloj knjižnici.",
-        "writeToFileWarning": "Važno: Ako je 'Zapiši u datoteku' omogućeno u postavkama, operacije će modificirati sve relevantne datoteke. Za knjižnice s tisućama knjiga, onemogućite 'Zapiši u datoteku' prije korištenja ove značajke kako biste spriječili probleme s performansama i potencijalno oštećenje podataka.",
+        "writeToFileWarning": "Važno: Ako je 'Zapiši u datoteku' omogućeno u postavkama, operacije će modificirati sve relevantne datoteke. Za zbirke s tisućama knjiga, onemogućite 'Zapiši u datoteku' prije korištenja ove značajke kako biste spriječili probleme s performansama i potencijalno oštećenje podataka.",
         "clearSelection": "Očisti odabir",
         "deleteSelected": "Obriši odabrano",
         "mergeSplitSelected": "Spoji/Razdvoji odabrano",

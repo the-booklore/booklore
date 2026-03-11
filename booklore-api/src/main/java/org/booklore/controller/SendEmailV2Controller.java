@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/v2/email")
+@RequestMapping("/api/v1/email")
 @Tag(name = "Send Email", description = "Endpoints for sending books via email")
 public class SendEmailV2Controller {
 

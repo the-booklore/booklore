@@ -288,7 +288,7 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
                 .provider(MetadataProvider.Amazon)
                 .title(titleInfo.title())
                 .subtitle(titleInfo.subtitle())
-                .authors(new HashSet<>(getAuthors(doc)))
+                .authors(new ArrayList<>(getAuthors(doc)))
                 .categories(new HashSet<>(getBestSellerCategories(doc)))
                 .description(cleanDescriptionHtml(getDescription(doc)))
                 .seriesName(seriesInfo.name())
@@ -380,23 +380,23 @@ public class AmazonBookParser implements BookParser, DetailedMetadataProvider {
         return new TitleInfo(title, subtitle);
     }
 
-    private Set<String> getAuthors(Document doc) {
-        Set<String> authors = new HashSet<>();
+    private List<String> getAuthors(Document doc) {
+        List<String> authors = new ArrayList<>();
         try {
             Element bylineDiv = doc.selectFirst("#bylineInfo_feature_div");
             if (bylineDiv != null) {
-                authors.addAll(bylineDiv.select(".author a").stream().map(Element::text).collect(Collectors.toSet()));
+                authors.addAll(bylineDiv.select(".author a").stream().map(Element::text).toList());
             }
 
             if (authors.isEmpty()) {
                 Element bylineInfo = doc.selectFirst("#bylineInfo");
                 if (bylineInfo != null) {
-                    authors.addAll(bylineInfo.select(".author a").stream().map(Element::text).collect(Collectors.toSet()));
+                    authors.addAll(bylineInfo.select(".author a").stream().map(Element::text).toList());
                 }
             }
 
             if (authors.isEmpty()) {
-                authors.addAll(doc.select(".author a").stream().map(Element::text).collect(Collectors.toSet()));
+                authors.addAll(doc.select(".author a").stream().map(Element::text).toList());
             }
 
             if (authors.isEmpty()) {

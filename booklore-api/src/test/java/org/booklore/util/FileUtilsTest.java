@@ -186,6 +186,37 @@ class FileUtilsTest {
     }
 
     @Test
+    void testShouldIgnore_tempFileExtensions_returnsTrue() {
+        List<String> tempFiles = List.of(
+                "book.epub.part", "book.epub.tmp", "book.epub.crdownload",
+                "book.epub.download", "book.epub.bak", "book.epub.old",
+                "book.epub.temp", "book.epub.tempfile"
+        );
+        for (String name : tempFiles) {
+            assertTrue(FileUtils.shouldIgnore(tempDir.resolve(name)), "Should ignore: " + name);
+        }
+    }
+
+    @Test
+    void testShouldIgnore_standaloneTempFile_returnsTrue() {
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("something.tmp")));
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("download.part")));
+    }
+
+    @Test
+    void testShouldIgnore_tempExtensionCaseInsensitive_returnsTrue() {
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("book.epub.PART")));
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("book.epub.TMP")));
+    }
+
+    @Test
+    void testShouldIgnore_normalBookFile_returnsFalse() {
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("book.epub")));
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("book.pdf")));
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("audiobook.m4b")));
+    }
+
+    @Test
     void testGetFileSizeInKb_validFile_returnsSize() throws IOException {
         Path file = tempDir.resolve("test.txt");
         Files.write(file, "test".getBytes());
@@ -193,6 +224,135 @@ class FileUtilsTest {
         Long size = FileUtils.getFileSizeInKb(file);
         assertNotNull(size, "File size should not be null for existing file");
         assertTrue(size >= 0, "File size should be non-negative");
+    }
+
+    // ========== isSeriesFolder Tests ==========
+
+    // ========== findCoverImageInFolder Tests ==========
+
+    @Test
+    void testFindCoverImageInFolder_coverJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPng_found() throws IOException {
+        Files.createFile(tempDir.resolve("cover.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.png", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_imageJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("image.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("image.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_folderJpg_found() throws IOException {
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("folder.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPrioritizedOverFolder() throws IOException {
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_coverPrioritizedOverImage() throws IOException {
+        Files.createFile(tempDir.resolve("image.png"));
+        Files.createFile(tempDir.resolve("cover.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.png", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_folderPrioritizedOverImage() throws IOException {
+        Files.createFile(tempDir.resolve("image.jpg"));
+        Files.createFile(tempDir.resolve("folder.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("folder.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_jpgPrioritizedOverPng() throws IOException {
+        Files.createFile(tempDir.resolve("cover.png"));
+        Files.createFile(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.jpg", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_webpSupported() throws IOException {
+        Files.createFile(tempDir.resolve("cover.webp"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isPresent());
+        assertEquals("cover.webp", result.get().getFileName().toString());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_noCoverImage_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("book.epub"));
+        Files.createFile(tempDir.resolve("metadata.opf"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_emptyFolder_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_nonExistentPath_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(tempDir.resolve("nonexistent"));
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_nullPath_returnsEmpty() {
+        var result = FileUtils.findCoverImageInFolder(null);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_unsupportedExtension_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("cover.tiff"));
+        Files.createFile(tempDir.resolve("cover.svg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_directoryNamedCover_ignored() throws IOException {
+        Files.createDirectories(tempDir.resolve("cover.jpg"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testFindCoverImageInFolder_unrelatedImageName_returnsEmpty() throws IOException {
+        Files.createFile(tempDir.resolve("artwork.jpg"));
+        Files.createFile(tempDir.resolve("poster.png"));
+        var result = FileUtils.findCoverImageInFolder(tempDir);
+        assertTrue(result.isEmpty());
     }
 
     // ========== isSeriesFolder Tests ==========
@@ -356,13 +516,12 @@ class FileUtilsTest {
     }
 
     @Test
-    void testIsSeriesFolder_noExtension_returnsTrue() {
-        // Files without dots in the name (no extension confusion)
+    void testIsSeriesFolder_noExtension_returnsFalse() {
         List<Path> files = List.of(
                 Path.of("The Lightning Thief"),
                 Path.of("The Sea of Monsters")
         );
-        assertTrue(FileUtils.isSeriesFolder(files));
+        assertFalse(FileUtils.isSeriesFolder(files));
     }
 
     @Test
@@ -405,6 +564,27 @@ class FileUtilsTest {
                 Path.of("2. Prince Caspian.m4b")
         );
         assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_descriptiveChapterNames_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("CH01 THE BOY WHO LIVED.mp3"),
+                Path.of("CH02 THE VANISHING GLASS.mp3"),
+                Path.of("CH03 THE LETTERS FROM NO ONE.mp3"),
+                Path.of("CH04 THE KEEPER OF THE KEYS.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_numberedChaptersWithTitles_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Suzanne Collins - Catching Fire 001.mp3"),
+                Path.of("Suzanne Collins - Catching Fire 002.mp3"),
+                Path.of("Suzanne Collins - Catching Fire 003.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
     }
 
     @Test

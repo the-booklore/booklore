@@ -72,6 +72,16 @@
         }
       </div>
 
+      @if (showImportPanel) {
+        <div class="import-panel">
+          <textarea pTextarea [(ngModel)]="importJson" [ngModelOptions]="{standalone: true}" rows="10" [placeholder]="t('importJson.placeholder')" class="import-textarea"></textarea>
+          <div class="import-actions">
+            <p-button [label]="t('actions.cancel')" severity="secondary" [outlined]="true" (onClick)="toggleImportPanel()" size="small"/>
+            <p-button [label]="t('importJson.apply')" icon="pi pi-check" severity="success" (onClick)="applyImportedJson()" size="small"/>
+          </div>
+        </div>
+      }
+
       <div class="rules-container">
         <ng-container *ngTemplateOutlet="groupTemplate; context: { group: form.get('group') }"></ng-container>
       </div>
@@ -79,6 +89,16 @@
   </div>
 
   <div class="dialog-footer">
+    @if (!editMode) {
+      <p-button
+        icon="pi pi-file-import"
+        [label]="t('importJson.buttonLabel')"
+        [outlined]="true"
+        severity="info"
+        size="small"
+        (onClick)="toggleImportPanel()"
+      />
+    }
     <div class="footer-actions">
       <p-button
         [label]="t('actions.cancel')"

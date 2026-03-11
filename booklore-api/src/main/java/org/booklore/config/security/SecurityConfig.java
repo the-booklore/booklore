@@ -44,7 +44,7 @@ public class SecurityConfig {
 
     private static final Pattern ALLOWED = Pattern.compile("\\s*,\\s*");
     private final OpdsUserDetailsService opdsUserDetailsService;
-    private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
+    private final JwtAuthenticationFilter dualJwtAuthenticationFilter;
     private final Environment env;
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {
@@ -189,7 +189,7 @@ public class SecurityConfig {
     @Order(7)
     public SecurityFilterChain audiobookStreamingSecurityChain(HttpSecurity http, AudiobookStreamingJwtFilter audiobookStreamingJwtFilter) throws Exception {
         http
-                .securityMatcher("/api/v1/audiobook/*/stream/**", "/api/v1/audiobook/*/track/*/stream/**", "/api/v1/audiobook/*/cover")
+                .securityMatcher("/api/v1/audiobooks/*/stream/**", "/api/v1/audiobooks/*/track/*/stream/**", "/api/v1/audiobooks/*/cover")
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -44,7 +44,7 @@
             "collapseSeries": "Strni zbirke",
             "gridColumns": "Stolpci mreže",
             "gridItemSize": "Velikost elementov",
-            "bookTypeOverlay": "Oznaka vrste knjige",
+            "bookTypeOverlay": "Oznaka formata knjige",
             "noBooks": "Ta zbirka nima knjig!",
             "failedLibrary": "Napaka pri nalaganju knjig iz knjižnice!",
             "failedShelf": "Napaka pri nalaganju knjig s police!",
@@ -137,7 +137,8 @@
             "readBook": "Beri knjigo",
             "playAudiobook": "Predvajaj zvočno knjigo",
             "bookMenu": "Meni z dejanji za knjigo",
-            "continueReading": "Nadaljuj z branjem"
+            "continueReading": "Nadaljuj z branjem",
+            "readStatusMenu": "Spremeni status branja"
         }
     },
     "notes": {
@@ -266,7 +267,8 @@
             "customFetchMetadata": "Pridobi metapodatke po meri",
             "autoFetchMetadata": "Samodejno pridobi metapodatke",
             "deleteLibrary": "Izbriši knjižnico",
-            "findDuplicates": "Najdi dvojnike"
+            "findDuplicates": "Najdi dvojnike",
+            "bulkIsbnImport": "Uvozi ISBN-e iz datoteke"
         },
         "shelf": {
             "publicShelfPrefix": "Javna polica - ",
@@ -278,7 +280,8 @@
         "magicShelf": {
             "optionsLabel": "Možnosti",
             "editMagicShelf": "Uredi magično polico",
-            "deleteMagicShelf": "Izbriši magično polico"
+            "deleteMagicShelf": "Izbriši magično polico",
+            "exportJson": "Kopiraj JSON"
         },
         "confirm": {
             "rescanLibraryMessage": "Ali si prepričan, da želiš osvežiti knjižnico: {{ name }}?",
@@ -297,7 +300,8 @@
             "shelfDeleteFailedDetail": "Napaka pri brisanju police",
             "magicShelfDeletedDetail": "Magična polica je bila izbrisana",
             "magicShelfDeleteFailedDetail": "Napaka pri brisanju police",
-            "failedSummary": "Napaka"
+            "failedSummary": "Napaka",
+            "magicShelfJsonCopiedDetail": "JSON za čarobno polico kopiran v odložišče"
         },
         "loading": {
             "deletingLibrary": "Brisanje knjižnice '{{ name }}'..."
@@ -468,7 +472,7 @@
             "author": "Avtor",
             "category": "Žanr",
             "series": "Zbirka",
-            "bookType": "Vrsta knjige",
+            "bookType": "Oblika datoteke",
             "readStatus": "Status branja",
             "personalRating": "Osebna ocena",
             "publisher": "Založba",
@@ -673,7 +677,7 @@
             "readStatus": "Status branja",
             "dateFinished": "Datum dokončanja",
             "readingProgress": "Napredek branja",
-            "bookType": "Vrsta knjige",
+            "bookType": "Oblika datoteke",
             "amazonRating": "Amazon ocena",
             "amazonReviewCount": "Amazon #",
             "goodreadsRating": "Goodreads ocena",
@@ -848,5 +852,48 @@
             "mergeFailedDetail": "Te skupine ni bilo mogoče združiti.",
             "mergePartialDetail": "{{ success }} združenih, {{ failed }} neuspešnih."
         }
+    },
+    "bulkIsbnImport": {
+        "title": "Uvozi ISBN-e",
+        "description": "Uvoz več fizičnih knjig s seznama oznak ISBN",
+        "closeTooltip": "Zapri",
+        "libraryLabel": "Knjižnica",
+        "libraryPlaceholder": "Izberi knjižnico",
+        "tabFile": "Naloži datoteko",
+        "tabPaste": "Prilepi ISBN-e",
+        "chooseFile": "Izberi datoteko",
+        "fileFormatsHint": "Podprte oblike: .txt, .csv, .tsv (največ 1 MB)",
+        "pastePlaceholder": "Prilepi številke ISBN tukaj, eno na vrstico ali ločene z vejicami...",
+        "parseButton": "Razčleni",
+        "errorFileTooLarge": "Datoteka presega omejitev velikosti 1 MB.",
+        "errorNoIsbns": "V vnosu ni bilo najdenih oznak ISBN.",
+        "errorTooMany": "Uvoženih bo samo prvih {{ max }} oznak ISBN. Za ostale razdeli datoteko.",
+        "validCount": "{{ count }} veljavnih ISBN-ov",
+        "skippedCount": "{{ count }} preskočeno",
+        "duplicatesRemoved": "{{ count }} dvojnikov odstranjenih",
+        "reason": {
+            "invalid": "Neveljavna oblika ISBN",
+            "alreadyExists": "Že v tej knjižnici"
+        },
+        "previewLabel": "ISBN-ji za uvoz",
+        "clearButton": "Počisti",
+        "validationLibraryRequired": "Izberite knjižnico",
+        "validationNoIsbns": "Za začetek naloži datoteko ali prilepi ISBN-e",
+        "validationReady": "Pripravljeno za uvoz {{ count }} ISBN(-ov)",
+        "cancelButton": "Prekliči",
+        "startImportButton": "Začni uvoz",
+        "processingLabel": "Obdelujem {{ current }} od {{ total }}",
+        "lookingUp": "Iskanje metapodatkov...",
+        "createdNoMetadata": "Ustvarjeno (metapodatki niso bili najdeni)",
+        "unknownError": "Neznana napaka",
+        "processingHint": "Če prekličeš, bodo že ustvarjene knjige ohranjene.",
+        "cancelImportButton": "Ustavi uvoz",
+        "summaryTitle": "Uvoz končan",
+        "summaryCreated": "Ustvarjeno z metapodatki",
+        "summaryNoMetadata": "Ustvarjeno (samo ISBN)",
+        "summaryFailed": "Ni uspelo",
+        "summaryCancelled": "Preskočeno (preklicano)",
+        "failedIsbnsLabel": "Neuspešne ISBN-e",
+        "doneButton": "Končano"
     }
 }

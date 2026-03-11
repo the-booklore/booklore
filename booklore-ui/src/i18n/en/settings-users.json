@@ -140,7 +140,7 @@
     "nameRequired": "Name is required and must be at least 3 characters.",
     "usernameRequired": "Username is required.",
     "emailInvalid": "Enter a valid email address.",
-    "passwordMinLength": "Password must be at least 6 characters long.",
+    "passwordMinLength": "Password must be at least 8 characters long.",
     "confirmRequired": "Password confirmation is required",
     "passwordMismatch": "Passwords do not match.",
     "libraryAccess": "Library Access",

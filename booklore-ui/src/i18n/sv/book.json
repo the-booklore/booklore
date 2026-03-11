@@ -32,8 +32,8 @@
         },
         "labels": {
             "allBooks": "Alla böcker",
-            "unshelvedBooks": "Ohyllade böcker",
-            "unshelvedBooksFiltered": "Ohyllade böcker (filtrerade)",
+            "unshelvedBooks": "Osorterade böcker",
+            "unshelvedBooksFiltered": "Osorterade böcker (filtrerade)",
             "filteredSuffix": "(Filtrerade)",
             "seriesCollapsedInfo": "Visar {{ count }} {{ itemWord }} (serier kollapsade)",
             "item": "objekt",
@@ -44,7 +44,7 @@
             "collapseSeries": "Kollapsa serier",
             "gridColumns": "Rutnätskolumner",
             "gridItemSize": "Rutnätsstorlek",
-            "bookTypeOverlay": "Boktypöverlagring",
+            "bookTypeOverlay": "Filformats-overlay",
             "noBooks": "Denna samling har inga böcker!",
             "failedLibrary": "Kunde inte ladda bibliotekets böcker!",
             "failedShelf": "Kunde inte ladda hyllans böcker!",
@@ -101,7 +101,10 @@
             "deleteBookMessage": "Är du säker på att du vill radera \"{{ title }}\"?\n\nDetta tar permanent bort bokfilen från ditt filsystem.\n\nDenna åtgärd kan inte ångras.",
             "deleteBookHeader": "Bekräfta radering",
             "deleteFileMessage": "Är du säker på att du vill radera den extra filen \"{{ fileName }}\"?",
-            "deleteFileHeader": "Bekräfta filradering"
+            "deleteFileHeader": "Bekräfta filradering",
+            "largeFileMessage": "Den här filen överstiger 25 MB. Vissa e-postleverantörer kan avvisa stora bilagor.\n\nVill du skicka den ändå?",
+            "largeFileHeader": "Varning för stor fil",
+            "sendAnyway": "Skicka ändå"
         },
         "toast": {
             "quickSendSuccessDetail": "Bokskickandet har schemalagts.",
@@ -134,7 +137,8 @@
             "readBook": "Läs bok",
             "playAudiobook": "Spela ljudbok",
             "bookMenu": "Bokåtgärdsmeny",
-            "continueReading": "Fortsätt läsa"
+            "continueReading": "Fortsätt läsa",
+            "readStatusMenu": "Ändra lässtatus"
         }
     },
     "notes": {
@@ -429,7 +433,8 @@
         "validationTitleOrIsbn": "Titel eller ISBN krävs",
         "validationReady": "Redo att skapa",
         "cancelButton": "Avbryt",
-        "addButton": "Lägg till fysisk bok"
+        "addButton": "Lägg till fysisk bok",
+        "fetchMetadataTooltip": "Hämta metadata via ISBN"
     },
     "fileUploader": {
         "title": "Ladda upp extra fil",
@@ -454,7 +459,7 @@
             "fileTooLargeError": "Filen överskrider maximal storlek på {{ maxSize }}",
             "uploadFailedUnknown": "Uppladdning misslyckades på grund av okänt fel."
         },
-        "supplementaryAllFormats": ""
+        "supplementaryAllFormats": "Alla filformat stöds för kompletterande filer."
     },
     "filter": {
         "title": "Filter",
@@ -540,7 +545,7 @@
         },
         "shelfStatus": {
             "shelved": "Hyllad",
-            "unshelved": "Ohyllad"
+            "unshelved": "Osorterad"
         },
         "comicRoles": {
             "penciller": "Tecknare",

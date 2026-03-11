@@ -16,9 +16,7 @@ export class BookMetadataService {
   private sseClient = inject(SseClient);
 
   fetchBookMetadata(bookId: number, request: FetchMetadataRequest): Observable<BookMetadata> {
-    const token =
-      this.authService.getOidcAccessToken() ||
-      this.authService.getInternalAccessToken();
+    const token = this.authService.getInternalAccessToken();
 
     if (!token) {
       throw new Error('No authentication token available');

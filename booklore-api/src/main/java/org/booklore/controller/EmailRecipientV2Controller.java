@@ -17,7 +17,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/v2/email/recipients")
+@RequestMapping("/api/v1/email/recipients")
 @Tag(name = "Email Recipients", description = "Endpoints for managing email recipients for book delivery")
 public class EmailRecipientV2Controller {
 

@@ -20,7 +20,7 @@
     "settings": {
         "title": "",
         "description": "",
-        "type": "",
+        "type": "Tipe",
         "selectType": "",
         "magicShelf": "",
         "selectMagicShelf": "",
@@ -40,27 +40,27 @@
             "default": ""
         },
         "sortFields": {
-            "title": "",
+            "title": "Judul",
             "fileName": "",
             "filePath": "",
             "addedOn": "",
-            "author": "",
+            "author": "Penulis",
             "authorSurnameVorname": "",
             "seriesName": "",
             "seriesNumber": "",
             "personalRating": "",
-            "publisher": "",
+            "publisher": "Penerbit",
             "publishedDate": "",
             "lastReadTime": "",
             "readStatus": "",
             "dateFinished": "",
             "readingProgress": "",
             "bookType": "",
-            "pageCount": ""
+            "pageCount": "Halaman"
         },
         "sortDirections": {
-            "asc": "",
-            "desc": ""
+            "asc": "Naik",
+            "desc": "Turun"
         }
     }
 }

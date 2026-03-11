@@ -18,5 +18,7 @@ public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long> 
     Optional<BookLoreUserEntity> findById(@NonNull Long id);
 
     long countByProvisioningMethod(ProvisioningMethod provisioningMethod);
+
+    Optional<BookLoreUserEntity> findByOidcIssuerAndOidcSubject(String oidcIssuer, String oidcSubject);
 }
 

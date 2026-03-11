@@ -119,13 +119,15 @@
   "match": {
     "authorNameLabel": "Author Name",
     "authorNamePlaceholder": "Enter author name to search",
+    "asinLabel": "ASIN",
+    "asinPlaceholder": "Enter ASIN to look up directly",
     "regionLabel": "Region",
     "searchBtn": "Search",
     "searching": "Searching...",
     "noResults": "No Results Found",
-    "noResultsHint": "Try adjusting your search term or selecting a different region",
+    "noResultsHint": "Try adjusting your search term, entering an ASIN, or selecting a different region",
     "readyToSearch": "Ready to Search",
-    "readyToSearchHint": "Enter the author name and click Search to find metadata",
+    "readyToSearchHint": "Search by author name or enter an ASIN to look up directly",
     "resultsFound": "{{ count }} results found",
     "matchBtn": "Match",
     "toast": {

@@ -120,7 +120,23 @@ public class BookdropBulkEditService {
         metadataHelper.updateFetchedMetadata(file, currentMetadata);
     }
 
-    private void updateArrayField(String fieldName, Set<String> enabledFields, 
+    private void updateArrayField(String fieldName, Set<String> enabledFields,
+                                  List<String> currentValue, List<String> newValue,
+                                  java.util.function.Consumer<List<String>> setter, boolean mergeArrays) {
+        if (enabledFields.contains(fieldName) && newValue != null) {
+            if (mergeArrays && currentValue != null) {
+                List<String> merged = new ArrayList<>(currentValue);
+                for (String v : newValue) {
+                    if (!merged.contains(v)) merged.add(v);
+                }
+                setter.accept(merged);
+            } else {
+                setter.accept(newValue);
+            }
+        }
+    }
+
+    private void updateArrayField(String fieldName, Set<String> enabledFields,
                                   Set<String> currentValue, Set<String> newValue,
                                   java.util.function.Consumer<Set<String>> setter, boolean mergeArrays) {
         if (enabledFields.contains(fieldName) && newValue != null) {

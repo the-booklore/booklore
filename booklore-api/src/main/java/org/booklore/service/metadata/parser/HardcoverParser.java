@@ -42,9 +42,9 @@ public class HardcoverParser implements BookParser {
         boolean searchByIsbn = isbnCleaned != null && !isbnCleaned.isBlank();
 
         if (searchByIsbn) {
-            log.info("Hardcover: Fetching metadata using ISBN {}", fetchMetadataRequest.getIsbn());
-            List<GraphQLResponse.Hit> hits = hardcoverBookSearchService.searchBooks(fetchMetadataRequest.getIsbn());
-            return processHits(hits, fetchMetadataRequest, true);
+            log.info("Hardcover: Fetching metadata using ISBN {}", isbnCleaned);
+            List<GraphQLResponse.BookWithEditions> hits = hardcoverBookSearchService.searchBookByIsbn(isbnCleaned);
+            return processBooksWithEditions(hits);
         }
 
         String title = fetchMetadataRequest.getTitle();
@@ -79,6 +79,27 @@ public class HardcoverParser implements BookParser {
         return results;
     }
 
+    private List<BookMetadata> processBooksWithEditions(List<GraphQLResponse.BookWithEditions> books) {
+        if (books == null || books.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<BookMetadata> results = new ArrayList<>();
+        for (GraphQLResponse.BookWithEditions book : books) {
+            if (book.getEditions() == null || book.getEditions().isEmpty()) {
+                continue;
+            }
+            for (GraphQLResponse.Edition edition : book.getEditions()) {
+                log.debug("Processing edition '{}' with id '{}' of book '{}'", edition.getTitle(), edition.getId(), book.getTitle());
+                BookMetadata metadata = mapEditionToMetadata(edition, book);
+                if (metadata != null) {
+                    results.add(metadata);
+                }
+            }
+        }
+        return results;
+    }
+
     private List<BookMetadata> processHits(List<GraphQLResponse.Hit> hits, FetchMetadataRequest request, boolean searchByIsbn) {
         if (hits == null || hits.isEmpty()) {
             return Collections.emptyList();
@@ -110,7 +131,7 @@ public class HardcoverParser implements BookParser {
         return results;
     }
 
-    private boolean filterByAuthor(GraphQLResponse.Document doc, String searchAuthor, 
+    private boolean filterByAuthor(GraphQLResponse.Document doc, String searchAuthor,
                                    boolean searchByIsbn, FuzzyScore fuzzyScore) {
         // Skip author filtering for ISBN searches or when no author provided
         if (searchByIsbn || searchAuthor.isBlank()) {
@@ -131,7 +152,7 @@ public class HardcoverParser implements BookParser {
             for (String query : searchAuthorTokens) {
                 int score = fuzzyScore.fuzzyScore(actual, query);
                 int maxScore = Math.max(
-                        fuzzyScore.fuzzyScore(query, query), 
+                        fuzzyScore.fuzzyScore(query, query),
                         fuzzyScore.fuzzyScore(actual, actual)
                 );
                 double similarity = maxScore > 0 ? (double) score / maxScore : 0;
@@ -157,7 +178,7 @@ public class HardcoverParser implements BookParser {
         metadata.setDescription(doc.getDescription());
 
         if (doc.getAuthorNames() != null) {
-            metadata.setAuthors(Set.copyOf(doc.getAuthorNames()));
+            metadata.setAuthors(List.copyOf(doc.getAuthorNames()));
         }
 
         mapSeriesInfo(doc, metadata);
@@ -182,6 +203,104 @@ public class HardcoverParser implements BookParser {
         mapIsbns(doc, request, metadata);
 
         metadata.setThumbnailUrl(doc.getImage() != null ? doc.getImage().getUrl() : null);
+        metadata.setProvider(MetadataProvider.Hardcover);
+        return metadata;
+    }
+
+    private BookMetadata mapEditionToMetadata(GraphQLResponse.Edition edition, GraphQLResponse.BookWithEditions book) {
+        BookMetadata metadata = new BookMetadata();
+        metadata.setHardcoverId(book.getSlug());
+
+        Integer bookId = book.getId();
+        if (bookId != null) {
+            metadata.setHardcoverBookId(bookId.toString());
+        }
+
+        metadata.setTitle(edition.getTitle());
+        metadata.setSubtitle(edition.getSubtitle());
+        metadata.setDescription(book.getDescription());
+
+        if (edition.getCachedContributors() != null) {
+            metadata.setAuthors(edition.getCachedContributors().stream()
+                    .map(GraphQLResponse.Contributor::getAuthor)
+                    .filter(Objects::nonNull)
+                    .map(GraphQLResponse.Author::getName)
+                    .filter(Objects::nonNull)
+                    .toList());
+        }
+
+        if (book.getFeaturedBookSeries() != null && book.getFeaturedBookSeries().getSeries() != null) {
+            metadata.setSeriesName(book.getFeaturedBookSeries().getSeries().getName());
+            metadata.setSeriesTotal(book.getFeaturedBookSeries().getSeries().getBooksCount());
+
+            if (book.getFeaturedBookSeries().getPosition() != null) {
+                try {
+                    metadata.setSeriesNumber(Float.parseFloat(String.valueOf(book.getFeaturedBookSeries().getPosition())));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        if (book.getRating() != null) {
+            metadata.setHardcoverRating(
+                    BigDecimal.valueOf(book.getRating()).setScale(2, RoundingMode.HALF_UP).doubleValue()
+            );
+        }
+        metadata.setHardcoverReviewCount(book.getRatingsCount());
+        metadata.setPageCount(edition.getPages());
+
+        if (edition.getReleaseDate() != null) {
+            try {
+                metadata.setPublishedDate(LocalDate.parse(edition.getReleaseDate()));
+            } catch (Exception e) {
+                log.debug("Could not parse release date: {}", edition.getReleaseDate());
+            }
+        }
+
+        // Set the language from the edition
+        if (edition.getLanguage() != null && edition.getLanguage().getCode2() != null) {
+            metadata.setLanguage(edition.getLanguage().getCode2());
+        }
+
+        // Set the Publisher from the edition
+        if (edition.getPublisher() != null && edition.getPublisher().getName() != null) {
+            metadata.setPublisher(edition.getPublisher().getName());
+        }
+
+        GraphQLResponse.CachedTags cachedTags = book.getCachedTags();
+
+        if (cachedTags != null && cachedTags.getMood() != null && !cachedTags.getMood().isEmpty()) {
+            Set<String> basicFilteredMoods = HardcoverMoodFilter.filterMoodsWithCounts(cachedTags.getMood());
+            metadata.setMoods(basicFilteredMoods.stream()
+                    .map(WordUtils::capitalizeFully)
+                    .collect(Collectors.toCollection(LinkedHashSet::new)));
+        }
+
+        if (cachedTags != null && cachedTags.getGenre() != null && !cachedTags.getGenre().isEmpty()) {
+            Set<String> filteredGenres = HardcoverMoodFilter.filterGenresWithCounts(cachedTags.getGenre());
+            metadata.setCategories(filteredGenres.stream()
+                    .map(WordUtils::capitalizeFully)
+                    .collect(Collectors.toSet()));
+        }
+
+        if (cachedTags != null && cachedTags.getTag() != null && !cachedTags.getTag().isEmpty()) {
+            Set<String> filteredTags = HardcoverMoodFilter.filterTagsWithCounts(cachedTags.getTag());
+            metadata.setTags(filteredTags.stream()
+                    .map(WordUtils::capitalizeFully)
+                    .collect(Collectors.toSet()));
+        }
+
+        metadata.setIsbn10(edition.getIsbn10());
+        metadata.setIsbn13(edition.getIsbn13());
+
+        // If only one ISBN is provided, calculate the other
+        if (metadata.getIsbn10() != null && metadata.getIsbn13() == null) {
+            metadata.setIsbn13(BookUtils.isbn10To13(edition.getIsbn10()));
+        } else if (metadata.getIsbn13() != null && metadata.getIsbn10() == null) {
+            metadata.setIsbn10(BookUtils.isbn13to10(edition.getIsbn13()));
+        }
+
+        metadata.setThumbnailUrl(edition.getImage() != null ? edition.getImage().getUrl() : null);
         metadata.setProvider(MetadataProvider.Hardcover);
 
         return metadata;
@@ -282,9 +401,9 @@ public class HardcoverParser implements BookParser {
         if (StringUtils.isBlank(inputIsbn)) {
             // If we didn't search by ISBN, use first ISBN from results
             matchingIsbn = doc.getIsbns().stream()
-                .filter(isbn -> isbn.length() == 10 || isbn.length() == 13)
-                .findFirst()
-                .orElse(null);
+                    .filter(isbn -> isbn.length() == 10 || isbn.length() == 13)
+                    .findFirst()
+                    .orElse(null);
         } else if (doc.getIsbns().contains(inputIsbn)) {
             // If we searched by ISBN and it matches a result perfectly, use that
             matchingIsbn = inputIsbn;

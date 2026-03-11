@@ -41,7 +41,8 @@
         "toggleZoom": "Uključi/isključi uvećanje (prilagodi stranicu / stvarna veličina)",
         "doubleTap": "Dvostruki dodir",
         "toggleSlideshow": "Uključi/isključi prezentaciju / automatsku reprodukciju",
-        "showHelpDialog": "Prikaži ovaj dijalog pomoći"
+        "showHelpDialog": "Prikaži ovaj dijalog pomoći",
+        "toggleMagnifier": "Uključi/isključi povećalo"
     },
     "footer": {
         "prevBook": "Preth. knjiga",
@@ -77,7 +78,9 @@
         "fullscreenLabel": "Puni zaslon",
         "keyboardShortcutsLabel": "Tipkovnički prečaci",
         "settings": "Postavke",
-        "closeReader": "Zatvori čitač"
+        "closeReader": "Zatvori čitač",
+        "enableMagnifier": "Povećalo (M)",
+        "disableMagnifier": "Onemogući povećalo (M)"
     },
     "quickSettings": {
         "fitMode": "Način prilagodbe",

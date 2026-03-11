@@ -24,7 +24,7 @@ public class GoogleBooksApiResponse {
         public static class VolumeInfo {
             private String title;
             private String subtitle;
-            private Set<String> authors;
+            private List<String> authors;
             private String publisher;
             private String publishedDate;
             private String description;

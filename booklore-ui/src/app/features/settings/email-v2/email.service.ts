@@ -8,7 +8,7 @@ import {Observable} from 'rxjs';
 })
 export class EmailService {
 
-  private readonly apiUrl = `${API_CONFIG.BASE_URL}/api/v2/email`;
+  private readonly apiUrl = `${API_CONFIG.BASE_URL}/api/v1/email`;
 
   private http = inject(HttpClient);
 

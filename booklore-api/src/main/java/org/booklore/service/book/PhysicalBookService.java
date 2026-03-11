@@ -1,5 +1,6 @@
 package org.booklore.service.book;
 
+import org.booklore.exception.ApiError;
 import org.booklore.exception.APIException;
 import org.booklore.mapper.BookMapper;
 import org.booklore.model.dto.Book;
@@ -27,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -51,6 +53,7 @@ public class PhysicalBookService {
                 .libraryPath(null)
                 .isPhysical(true)
                 .addedOn(Instant.now())
+                .scannedOn(Instant.now())
                 .bookFiles(new ArrayList<>())
                 .build();
 
@@ -69,7 +72,7 @@ public class PhysicalBookService {
         bookEntity.setMetadata(metadata);
 
         if (request.getAuthors() != null && !request.getAuthors().isEmpty()) {
-            addAuthorsToBook(new HashSet<>(request.getAuthors()), bookEntity);
+            addAuthorsToBook(new ArrayList<>(request.getAuthors()), bookEntity);
         }
 
         if (request.getCategories() != null && !request.getCategories().isEmpty()) {
@@ -122,9 +125,9 @@ public class PhysicalBookService {
         return cleaned.length() == 10 ? cleaned : null;
     }
 
-    private void addAuthorsToBook(Set<String> authors, BookEntity bookEntity) {
+    private void addAuthorsToBook(List<String> authors, BookEntity bookEntity) {
         if (bookEntity.getMetadata().getAuthors() == null) {
-            bookEntity.getMetadata().setAuthors(new HashSet<>());
+            bookEntity.getMetadata().setAuthors(new ArrayList<>());
         }
         authors.stream()
                 .map(authorName -> truncate(authorName, 255))
@@ -143,6 +146,16 @@ public class PhysicalBookService {
                 .map(truncated -> categoryRepository.findByName(truncated)
                         .orElseGet(() -> categoryRepository.save(CategoryEntity.builder().name(truncated).build())))
                 .forEach(catEntity -> bookEntity.getMetadata().getCategories().add(catEntity));
+    }
+
+    @Transactional
+    public Book togglePhysicalFlag(long bookId, boolean physical) {
+        BookEntity book = bookRepository.findById(bookId)
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        book.setIsPhysical(physical);
+        bookRepository.save(book);
+        log.info("Book {} physical flag set to {}", bookId, physical);
+        return bookMapper.toBook(book);
     }
 
     private String truncate(String input, int maxLength) {

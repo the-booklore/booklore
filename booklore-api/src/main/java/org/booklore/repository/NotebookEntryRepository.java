@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +56,13 @@ public interface NotebookEntryRepository extends Repository<AnnotationEntity, Lo
         String getBookTitle();
     }
 
+    interface BookWithCountProjection {
+        Long getBookId();
+        String getBookTitle();
+        int getNoteCount();
+        Instant getCoverUpdatedOn();
+    }
+
     @Query(value = "SELECT t.id, t.type, t.book_id AS bookId, t.book_title AS bookTitle, " +
                    "t.text, t.note, t.color, t.style, t.chapter_title AS chapterTitle, " +
                    "(SELECT bf.book_type FROM book_file bf WHERE bf.book_id = t.book_id ORDER BY bf.id LIMIT 1) AS primaryBookType, " +
@@ -83,4 +91,37 @@ public interface NotebookEntryRepository extends Repository<AnnotationEntity, Lo
     List<BookProjection> findBooksWithAnnotations(@Param("userId") Long userId,
                                                   @Param("search") String search,
                                                   Pageable pageable);
+
+    @Query(value = "SELECT t.book_id AS bookId, t.book_title AS bookTitle, " +
+                   "COUNT(*) AS noteCount, t.cover_updated_on AS coverUpdatedOn " +
+                   "FROM (" +
+                   "SELECT a.book_id, a.user_id, bm.title AS book_title, bm.cover_updated_on " +
+                   "FROM annotations a JOIN book_metadata bm ON bm.book_id = a.book_id " +
+                   "UNION ALL " +
+                   "SELECT n.book_id, n.user_id, bm.title AS book_title, bm.cover_updated_on " +
+                   "FROM book_notes_v2 n JOIN book_metadata bm ON bm.book_id = n.book_id " +
+                   "UNION ALL " +
+                   "SELECT b.book_id, b.user_id, bm.title AS book_title, bm.cover_updated_on " +
+                   "FROM book_marks b JOIN book_metadata bm ON bm.book_id = b.book_id" +
+                   ") t WHERE t.user_id = :userId" +
+                   " AND (:search IS NULL OR t.book_title LIKE :search ESCAPE '\\\\')" +
+                   " GROUP BY t.book_id, t.book_title, t.cover_updated_on" +
+                   " ORDER BY t.book_title",
+           countQuery = "SELECT COUNT(*) FROM (" +
+                        "SELECT DISTINCT t.book_id FROM (" +
+                        "SELECT a.book_id, a.user_id, bm.title AS book_title " +
+                        "FROM annotations a JOIN book_metadata bm ON bm.book_id = a.book_id " +
+                        "UNION ALL " +
+                        "SELECT n.book_id, n.user_id, bm.title AS book_title " +
+                        "FROM book_notes_v2 n JOIN book_metadata bm ON bm.book_id = n.book_id " +
+                        "UNION ALL " +
+                        "SELECT b.book_id, b.user_id, bm.title AS book_title " +
+                        "FROM book_marks b JOIN book_metadata bm ON bm.book_id = b.book_id" +
+                        ") t WHERE t.user_id = :userId" +
+                        " AND (:search IS NULL OR t.book_title LIKE :search ESCAPE '\\\\')" +
+                        ") cnt",
+           nativeQuery = true)
+    Page<BookWithCountProjection> findBooksWithAnnotationsPaginated(@Param("userId") Long userId,
+                                                                    @Param("search") String search,
+                                                                    Pageable pageable);
 }

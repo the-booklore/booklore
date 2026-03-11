@@ -65,6 +65,27 @@ public class MagicShelfBookService {
         }
     }
 
+    public List<Long> getBookIdsByMagicShelfId(Long userId, Long magicShelfId) {
+        return getBookIdsByMagicShelfId(userId, magicShelfId, Integer.MAX_VALUE);
+    }
+
+    public List<Long> getBookIdsByMagicShelfId(Long userId, Long magicShelfId, int limit) {
+        MagicShelfEntity shelf = validateMagicShelfAccess(userId, magicShelfId);
+        try {
+            GroupRule groupRule = objectMapper.readValue(shelf.getFilterJson(), GroupRule.class);
+            Specification<BookEntity> specification = ruleEvaluatorService.toSpecification(groupRule, userId);
+            specification = specification.and(createLibraryFilterSpecification(userId));
+
+            Pageable pageable = PageRequest.of(0, limit);
+            Page<BookEntity> booksPage = bookRepository.findAll(specification, pageable);
+            List<BookEntity> filtered = contentRestrictionService.applyRestrictions(booksPage.getContent(), userId);
+            return filtered.stream().map(BookEntity::getId).toList();
+        } catch (Exception e) {
+            log.error("Failed to parse or execute magic shelf rules", e);
+            throw new RuntimeException("Failed to parse or execute magic shelf rules: " + e.getMessage(), e);
+        }
+    }
+
     public String getMagicShelfName(Long magicShelfId) {
         return magicShelfRepository.findById(magicShelfId)
                 .map(s -> s.getName() + " - Magic Shelf")

@@ -1,6 +1,6 @@
 {
     "title": "Predvoľby čítačky",
-    "description": "",
+    "description": "Nakonfigurujte nastavenia čítania vo vašej knižnici. Nastavte predvolené preferencie, ktoré môžu prepisovať nastavenia jednotlivých kníh, alebo umožnite každej knihe zachovať vlastné prispôsobené nastavenia pre formáty PDF, EPUB, FB2, MOBI, AZW3 a CBX.",
     "appMode": {
         "title": "",
         "description": "",

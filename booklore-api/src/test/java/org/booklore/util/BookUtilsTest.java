@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +21,7 @@ class BookUtilsTest {
         metadata.setTitle("Harry Potter");
         metadata.setSubtitle("Philosopher's Stone");
         metadata.setSeriesName("Harry Potter Series");
-        metadata.setAuthors(Set.of(AuthorEntity.builder().name("J.K. Rowling").build()));
+        metadata.setAuthors(List.of(AuthorEntity.builder().name("J.K. Rowling").build()));
 
         String searchText = BookUtils.buildSearchText(metadata);
         
@@ -228,7 +228,7 @@ class BookUtilsTest {
         metadata.setTitle("The Snowman");
         metadata.setSubtitle("A Harry Hole Novel");
         metadata.setSeriesName("Harry Hole");
-        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
+        metadata.setAuthors(List.of(AuthorEntity.builder().name("Jo Nesbø").build()));
 
         String searchText = BookUtils.buildSearchText(metadata);
         
@@ -245,7 +245,7 @@ class BookUtilsTest {
     void testSearchMatchingWithAndWithoutDiacritics() {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Misère");
-        metadata.setAuthors(Set.of(AuthorEntity.builder().name("François Müller").build()));
+        metadata.setAuthors(List.of(AuthorEntity.builder().name("François Müller").build()));
         
         String storedSearchText = BookUtils.buildSearchText(metadata);
         
@@ -311,7 +311,7 @@ class BookUtilsTest {
     void testBuildSearchText_withAuthorHavingNullName() {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Test Book");
-        Set<AuthorEntity> authors = new HashSet<>();
+        List<AuthorEntity> authors = new ArrayList<>();
         authors.add(AuthorEntity.builder().name("Valid Author").build());
         authors.add(AuthorEntity.builder().name(null).build()); // Author with null name
         metadata.setAuthors(authors);
@@ -327,7 +327,7 @@ class BookUtilsTest {
     void testBuildSearchText_withEmptyAuthorsSet() {
         BookMetadataEntity metadata = new BookMetadataEntity();
         metadata.setTitle("Test Book");
-        metadata.setAuthors(new HashSet<>()); // Empty set
+        metadata.setAuthors(new ArrayList<>()); // Empty list
         
         String searchText = BookUtils.buildSearchText(metadata);
         

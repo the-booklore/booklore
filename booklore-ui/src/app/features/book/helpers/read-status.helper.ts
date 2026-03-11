@@ -7,7 +7,7 @@ import {ReadStatus} from '../model/book.model';
 export class ReadStatusHelper {
 
   getReadStatusIcon(readStatus: ReadStatus | undefined): string {
-    if (!readStatus) return '';
+    if (!readStatus) return 'pi pi-book';
     switch (readStatus) {
       case ReadStatus.READ:
         return 'pi pi-check';
@@ -23,13 +23,15 @@ export class ReadStatusHelper {
         return 'pi pi-times';
       case ReadStatus.WONT_READ:
         return 'pi pi-ban';
+      case ReadStatus.UNREAD:
+      case ReadStatus.UNSET:
       default:
-        return '';
+        return 'pi pi-book';
     }
   }
 
   getReadStatusClass(readStatus: ReadStatus | undefined): string {
-    if (!readStatus) return '';
+    if (!readStatus) return 'status-unset';
     switch (readStatus) {
       case ReadStatus.READ:
         return 'status-read';
@@ -45,13 +47,15 @@ export class ReadStatusHelper {
         return 'status-abandoned';
       case ReadStatus.WONT_READ:
         return 'status-wont-read';
+      case ReadStatus.UNREAD:
+      case ReadStatus.UNSET:
       default:
-        return '';
+        return 'status-unset';
     }
   }
 
   getReadStatusTooltip(readStatus: ReadStatus | undefined): string {
-    if (!readStatus) return '';
+    if (!readStatus) return 'Unset';
     switch (readStatus) {
       case ReadStatus.READ:
         return 'Read';
@@ -67,13 +71,16 @@ export class ReadStatusHelper {
         return 'Abandoned';
       case ReadStatus.WONT_READ:
         return 'Won\'t Read';
+      case ReadStatus.UNREAD:
+        return 'Unread';
+      case ReadStatus.UNSET:
       default:
-        return '';
+        return 'Unset';
     }
   }
 
-  shouldShowStatusIcon(readStatus: ReadStatus | undefined): boolean {
-    return !!(readStatus && readStatus !== ReadStatus.UNREAD && readStatus !== ReadStatus.UNSET);
+  shouldShowStatusIcon(_readStatus: ReadStatus | undefined): boolean {
+    return true;
   }
 }
 

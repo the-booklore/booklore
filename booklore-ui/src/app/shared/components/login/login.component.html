@@ -17,121 +17,94 @@
             <p class="login-subtitle">{{ t('subtitle') }}</p>
           </div>
 
-          @if (showOidcBypassInfo) {
-            <div class="oidc-warning">
-              <div class="warning-content">
-                <div class="warning-header">
-                  <i class="pi pi-exclamation-triangle"></i>
-                  <span>{{ t('oidcWarningTitle') }}</span>
-                </div>
-                <p class="warning-message">{{ oidcBypassMessage }}</p>
-                <div class="warning-actions">
-                  <p-button
-                    size="small"
-                    severity="warn"
-                    [label]="t('retryOidc')"
-                    icon="pi pi-refresh"
-                    (click)="retryOidc()"
-                  />
-                  <p-button
-                    size="small"
-                    severity="success"
-                    [label]="t('useLocalLogin')"
-                    icon="pi pi-times"
-                    (click)="dismissOidcWarning()"
-                  />
-                </div>
-              </div>
+          @if (infoMessage) {
+            <div class="info-message" style="margin-bottom: 1rem;">
+              <p-message severity="info">{{ infoMessage }}</p-message>
             </div>
           }
 
-          <form class="login-form" #loginForm="ngForm" (ngSubmit)="login()">
-            <div class="form-field">
-              <label for="username" class="form-label">
-                <i class="pi pi-user"></i>
-                <span>{{ t('usernameLabel') }}</span>
-              </label>
-              <input
-                fluid
-                pInputText
-                id="username"
-                name="username"
-                required
-                [(ngModel)]="username"
-                [placeholder]="t('usernamePlaceholder')"
-                class="form-input"
-                autocomplete="username"
-              />
+          @if (errorMessage) {
+            <div class="error-message" style="margin-bottom: 1rem;">
+              <p-message severity="error">{{ errorMessage }}</p-message>
             </div>
+          }
 
-            <div class="form-field">
-              <label for="password" class="form-label">
-                <i class="pi pi-lock"></i>
-                <span>{{ t('passwordLabel') }}</span>
-              </label>
-              <p-password
-                id="password"
-                name="password"
-                required
-                [(ngModel)]="password"
-                [feedback]="false"
-                [placeholder]="t('passwordPlaceholder')"
-                [toggleMask]="true"
-                [fluid]="true"
-                autocomplete="current-password"
-              ></p-password>
-            </div>
-
-            <p-button
-              fluid
-              type="submit"
-              [label]="t('signIn')"
-              icon="pi pi-sign-in"
-              [disabled]="!loginForm.valid || !username || !password"
-              class="login-button">
-            </p-button>
-
-            @if (errorMessage) {
-              <div class="error-message">
-                <p-message severity="error">{{ errorMessage }}</p-message>
+          @if (showLocalLogin) {
+            <form class="login-form" #loginForm="ngForm" (ngSubmit)="login()">
+              <div class="form-field">
+                <label for="username" class="form-label">
+                  <i class="pi pi-user"></i>
+                  <span>{{ t('usernameLabel') }}</span>
+                </label>
+                <input
+                  fluid
+                  pInputText
+                  id="username"
+                  name="username"
+                  required
+                  [(ngModel)]="username"
+                  [placeholder]="t('usernamePlaceholder')"
+                  class="form-input"
+                  autocomplete="username"
+                />
               </div>
-            }
 
-            @if (oidcEnabled && !isOidcBypassed) {
-              <div class="divider">
-                <span>{{ t('orContinueWith') }}</span>
+              <div class="form-field">
+                <label for="password" class="form-label">
+                  <i class="pi pi-lock"></i>
+                  <span>{{ t('passwordLabel') }}</span>
+                </label>
+                <p-password
+                  id="password"
+                  name="password"
+                  required
+                  [(ngModel)]="password"
+                  [feedback]="false"
+                  [placeholder]="t('passwordPlaceholder')"
+                  [toggleMask]="true"
+                  [fluid]="true"
+                  autocomplete="current-password"
+                ></p-password>
               </div>
 
               <p-button
                 fluid
-                severity="secondary"
-                [label]="isOidcLoginInProgress ? t('redirectingTo', {provider: oidcName}) : oidcName"
-                [icon]="isOidcLoginInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-id-card'"
-                [disabled]="isOidcLoginInProgress"
-                (click)="loginWithOidc()"
-                class="oidc-button"/>
+                type="submit"
+                [label]="t('signIn')"
+                icon="pi pi-sign-in"
+                [disabled]="!loginForm.valid || !username || !password"
+                class="login-button">
+              </p-button>
 
-              <div class="help-text">
-                <button
-                  type="button"
-                  class="text-link"
-                  (click)="bypassOidc()">
-                  {{ t('oidcTrouble', {provider: oidcName}) }}
-                </button>
+              @if (oidcEnabled) {
+                <div class="divider">
+                  <span>{{ t('orContinueWith') }}</span>
+                </div>
+
+                <p-button
+                  fluid
+                  severity="secondary"
+                  [label]="isOidcLoginInProgress ? t('redirectingTo', {provider: oidcName}) : oidcName"
+                  [icon]="isOidcLoginInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-id-card'"
+                  [disabled]="isOidcLoginInProgress"
+                  (click)="loginWithOidc()"
+                  class="oidc-button"/>
+              }
+            </form>
+          } @else {
+            @if (oidcEnabled) {
+              <div class="login-form">
+                <p-button
+                  fluid
+                  severity="secondary"
+                  [label]="isOidcLoginInProgress ? t('redirectingTo', {provider: oidcName}) : oidcName"
+                  [icon]="isOidcLoginInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-id-card'"
+                  [disabled]="isOidcLoginInProgress"
+                  (click)="loginWithOidc()"
+                  class="oidc-button"/>
               </div>
             }
-
-            @if (oidcEnabled && isOidcBypassed) {
-              <div class="help-text">
-                <button
-                  type="button"
-                  class="text-link primary"
-                  (click)="enableOidc()">
-                  {{ t('reEnableOidc', {provider: oidcName}) }}
-                </button>
-              </div>
-            }
-          </form>
+          }
         </div>
       </div>
     </div>

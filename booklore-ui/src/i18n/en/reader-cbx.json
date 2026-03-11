@@ -41,6 +41,9 @@
     "toggleZoom": "Toggle zoom (fit page / actual size)",
     "doubleTap": "Double-tap",
     "toggleSlideshow": "Toggle slideshow / auto-play",
+    "toggleMagnifier": "Toggle magnifying glass",
+    "magnifierZoom": "Magnifier zoom (when active)",
+    "magnifierLensSize": "Magnifier lens size (when active)",
     "showHelpDialog": "Show this help dialog"
   },
   "footer": {
@@ -76,6 +79,8 @@
     "exitFullscreenLabel": "Exit Fullscreen",
     "fullscreenLabel": "Fullscreen",
     "keyboardShortcutsLabel": "Keyboard Shortcuts",
+    "enableMagnifier": "Magnifying Glass (M)",
+    "disableMagnifier": "Disable Magnifying Glass (M)",
     "settings": "Settings",
     "closeReader": "Close Reader"
   },
@@ -103,7 +108,9 @@
     "background": "Background",
     "black": "Black",
     "gray": "Gray",
-    "white": "White"
+    "white": "White",
+    "magnifierLensSize": "Lens Size",
+    "magnifierZoom": "Magnification"
   },
   "sidebar": {
     "contentTab": "Content",

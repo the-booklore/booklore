@@ -1,6 +1,6 @@
 {
-    "title": "Authentifizierungseinstellungen",
-    "description": "Konfigurieren Sie Authentifizierungsmethoden für Ihre Booklore-Instanz. Die interne Authentifizierung ist immer aktiviert. Zusätzlich können Sie OIDC für externe Authentifizierungsanbieter aktivieren.",
+    "title": "OIDC Einstellungen",
+    "description": "Konfigurieren Sie OpenID Connect (OIDC) für die Anmeldung über einen externen Anbieter wie z.B. Authentik, Authelia oder Pocket ID.",
     "methods": {
         "sectionTitle": "Authentifizierungsmethoden",
         "sectionDesc": "Wählen Sie, welche Authentifizierungsmethoden den Benutzern zur Anmeldung zur Verfügung stehen."
@@ -8,7 +8,7 @@
     "internal": {
         "label": "Interne Authentifizierung",
         "status": "Immer aktiviert",
-        "description": "Integrierte Authentifizierung mit Benutzername und Passwort. Dies ist die Standardmethode und kann nicht deaktiviert werden."
+        "description": "Integrierte Authentifizierung mit Benutzername und Passwort. Für Administratorkonten immer verfügbar. Kann für andere Benutzer ausgeblendet werden, wenn der OIDC-Only Modus aktiviert ist."
     },
     "oidc": {
         "label": "OIDC-Authentifizierung",
@@ -25,6 +25,9 @@
         "providerPlaceholder": "z.B. Authentik, Keycloak",
         "clientId": "Client-ID",
         "clientIdPlaceholder": "Ihre OIDC-Client-ID",
+        "clientSecret": "Client Secret",
+        "clientSecretPlaceholder": "Ihr OIDC-Client Secret",
+        "clientSecretHint": "Für geschützte Clients erforderlich. Für öffentliche Clients, die nur PKCE nutzen, leer lassen.",
         "issuerUri": "Issuer-URI",
         "issuerPlaceholder": "z.B. https://auth.example.com/realms/booklore",
         "scope": "Scope",

@@ -14,21 +14,21 @@
         "notificationAriaLabel": "Ikona obavijesti",
         "createLibrary": "Kreiraj knjižnicu",
         "stats": "Statistika",
-        "libraryStats": "Statistika knjižnice",
+        "libraryStats": "Knjižnična statistika",
         "readingStats": "Statistika čitanja"
     },
     "menu": {
         "home": "Početna",
         "dashboard": "Nadzorna ploča",
         "allBooks": "Sve knjige",
-        "libraries": "Knjižnice",
+        "libraries": "Zbirke",
         "shelves": "Police",
         "magicShelves": "Čarobne police",
         "unshelved": "Bez police",
         "series": "Serijali",
         "notebook": "Bilježnica",
         "update": "(Ažuriraj)",
-        "authors": ""
+        "authors": "Autori"
     },
     "changelog": {
         "title": "Što je novo",

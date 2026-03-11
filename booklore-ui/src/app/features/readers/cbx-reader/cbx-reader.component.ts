@@ -1,4 +1,4 @@
-import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {CommonModule} from '@angular/common';
 import {forkJoin, Subject} from 'rxjs';
@@ -6,7 +6,7 @@ import {debounceTime, filter, first, map, switchMap, takeUntil, timeout} from 'r
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
-import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, UserService} from '../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxMagnifierLensSize, CbxMagnifierZoom, CbxPageSpread, CbxPageViewMode, CbxScrollMode, CbxReadingDirection, CbxSlideshowInterval, UserService} from '../../settings/user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {TranslocoService, TranslocoPipe} from '@jsverse/transloco';
 import {Book, BookSetting, BookType} from '../../book/model/book.model';
@@ -116,6 +116,13 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   // Shortcuts help dialog
   showShortcutsHelp = false;
+
+  // Magnifier
+  isMagnifierActive = false;
+  @ViewChild('magnifierLens', {static: true}) private magnifierLensRef!: ElementRef<HTMLDivElement>;
+  magnifierZoom: CbxMagnifierZoom = CbxMagnifierZoom.ZOOM_3X;
+  magnifierLensSize: CbxMagnifierLensSize = CbxMagnifierLensSize.MEDIUM;
+  private lastMouseEvent: MouseEvent | null = null;
 
   // Double page detection
   private pageDimensionsCache = new Map<number, {width: number, height: number}>();
@@ -302,6 +309,16 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
         this.toggleSlideshow();
       });
 
+    this.headerService.toggleMagnifier$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.isMagnifierActive = !this.isMagnifierActive;
+        if (!this.isMagnifierActive) {
+          this.hideMagnifier();
+        }
+        this.headerService.updateState({isMagnifierActive: this.isMagnifierActive});
+      });
+
     this.headerService.showShortcutsHelp$
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -403,6 +420,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     this.quickSettingsService.slideshowIntervalChange$
       .pipe(takeUntil(this.destroy$))
       .subscribe(interval => this.onSlideshowIntervalChange(interval));
+
+    this.quickSettingsService.magnifierZoomChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(zoom => this.onMagnifierZoomChange(zoom));
+
+    this.quickSettingsService.magnifierLensSizeChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(size => this.onMagnifierLensSizeChange(size));
   }
 
   private updateServiceStates(): void {
@@ -422,7 +447,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       pageSpread: this.pageSpread,
       backgroundColor: this.backgroundColor,
       readingDirection: this.readingDirection,
-      slideshowInterval: this.slideshowInterval
+      slideshowInterval: this.slideshowInterval,
+      magnifierZoom: this.magnifierZoom,
+      magnifierLensSize: this.magnifierLensSize
     });
 
     this.headerService.updateState({
@@ -945,12 +972,50 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
         event.preventDefault();
         this.toggleSlideshow();
         break;
+      case 'm':
+      case 'M':
+        event.preventDefault();
+        this.isMagnifierActive = !this.isMagnifierActive;
+        if (!this.isMagnifierActive) {
+          this.hideMagnifier();
+        }
+        this.headerService.updateState({isMagnifierActive: this.isMagnifierActive});
+        break;
+      case '+':
+      case '=':
+        if (this.isMagnifierActive) {
+          event.preventDefault();
+          this.cycleMagnifierZoom(1);
+        }
+        break;
+      case '-':
+        if (this.isMagnifierActive) {
+          event.preventDefault();
+          this.cycleMagnifierZoom(-1);
+        }
+        break;
+      case ']':
+        if (this.isMagnifierActive) {
+          event.preventDefault();
+          this.cycleMagnifierLensSize(1);
+        }
+        break;
+      case '[':
+        if (this.isMagnifierActive) {
+          event.preventDefault();
+          this.cycleMagnifierLensSize(-1);
+        }
+        break;
       case '?':
         event.preventDefault();
         this.showShortcutsHelp = true;
         break;
       case 'Escape':
-        if (this.showShortcutsHelp) {
+        if (this.isMagnifierActive) {
+          this.isMagnifierActive = false;
+          this.hideMagnifier();
+          this.headerService.updateState({isMagnifierActive: false});
+        } else if (this.showShortcutsHelp) {
           this.showShortcutsHelp = false;
         } else if (this.showNoteDialog) {
           this.showNoteDialog = false;
@@ -988,12 +1053,19 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
+    this.lastMouseEvent = event;
     this.visibilityManager.handleMouseMove(event.clientY);
+    if (this.isMagnifierActive) {
+      this.updateMagnifier(event);
+    }
   }
 
   @HostListener('document:mouseleave', ['$event'])
   onMouseLeave(event: MouseEvent): void {
     this.visibilityManager.handleMouseLeave();
+    if (this.isMagnifierActive) {
+      this.hideMagnifier();
+    }
   }
 
   private handleSwipeGesture() {
@@ -1189,6 +1261,44 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     }
   }
 
+  onMagnifierZoomChange(zoom: CbxMagnifierZoom): void {
+    this.magnifierZoom = zoom;
+    this.quickSettingsService.setMagnifierZoom(zoom);
+    this.refreshMagnifier();
+  }
+
+  onMagnifierLensSizeChange(size: CbxMagnifierLensSize): void {
+    this.magnifierLensSize = size;
+    this.quickSettingsService.setMagnifierLensSize(size);
+    this.refreshMagnifier();
+  }
+
+  private refreshMagnifier(): void {
+    if (this.isMagnifierActive && this.lastMouseEvent) {
+      this.updateMagnifier(this.lastMouseEvent);
+    }
+  }
+
+  private cycleMagnifierZoom(direction: 1 | -1): void {
+    const values = Object.values(CbxMagnifierZoom).filter(v => typeof v === 'number') as number[];
+    values.sort((a, b) => a - b);
+    const currentIndex = values.indexOf(this.magnifierZoom as number);
+    const newIndex = currentIndex + direction;
+    if (newIndex >= 0 && newIndex < values.length) {
+      this.onMagnifierZoomChange(values[newIndex] as CbxMagnifierZoom);
+    }
+  }
+
+  private cycleMagnifierLensSize(direction: 1 | -1): void {
+    const values = Object.values(CbxMagnifierLensSize).filter(v => typeof v === 'number') as number[];
+    values.sort((a, b) => a - b);
+    const currentIndex = values.indexOf(this.magnifierLensSize as number);
+    const newIndex = currentIndex + direction;
+    if (newIndex >= 0 && newIndex < values.length) {
+      this.onMagnifierLensSizeChange(values[newIndex] as CbxMagnifierLensSize);
+    }
+  }
+
   // Double-tap zoom
   onImageDoubleClick(): void {
     if (this.originalFitMode === null) {
@@ -1222,6 +1332,60 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   shouldShowSinglePage(pageIndex: number): boolean {
     return this.isTwoPageView && this.isSpreadPage(pageIndex);
+  }
+
+  private updateMagnifier(event: MouseEvent): void {
+    const el = this.magnifierLensRef?.nativeElement;
+    if (!el) return;
+
+    const lensSize = this.magnifierLensSize as number;
+    const zoom = this.magnifierZoom as number;
+
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    if (!(target instanceof HTMLImageElement) || !target.classList.contains('page-image')) {
+      el.style.display = 'none';
+      return;
+    }
+
+    if (!target.naturalWidth || !target.naturalHeight) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const imgRect = target.getBoundingClientRect();
+    const scale = Math.min(imgRect.width / target.naturalWidth, imgRect.height / target.naturalHeight);
+    const renderedWidth = target.naturalWidth * scale;
+    const renderedHeight = target.naturalHeight * scale;
+    const imgOffsetX = (imgRect.width - renderedWidth) / 2;
+    const imgOffsetY = (imgRect.height - renderedHeight) / 2;
+
+    const relX = (event.clientX - imgRect.left - imgOffsetX) / renderedWidth;
+    const relY = (event.clientY - imgRect.top - imgOffsetY) / renderedHeight;
+
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const bgWidth = renderedWidth * zoom;
+    const bgHeight = renderedHeight * zoom;
+    const bgPosX = -(relX * bgWidth - lensSize / 2);
+    const bgPosY = -(relY * bgHeight - lensSize / 2);
+
+    el.style.display = 'block';
+    el.style.width = `${lensSize}px`;
+    el.style.height = `${lensSize}px`;
+    el.style.transform = `translate(${event.clientX - lensSize / 2}px, ${event.clientY - lensSize / 2}px)`;
+    el.style.backgroundImage = `url('${target.src}')`;
+    el.style.backgroundSize = `${bgWidth}px ${bgHeight}px`;
+    el.style.backgroundPosition = `${bgPosX}px ${bgPosY}px`;
+  }
+
+  private hideMagnifier(): void {
+    const el = this.magnifierLensRef?.nativeElement;
+    if (el) {
+      el.style.display = 'none';
+    }
   }
 
   // Shortcuts help dialog

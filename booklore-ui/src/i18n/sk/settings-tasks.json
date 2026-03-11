@@ -1,6 +1,6 @@
 {
     "title": "Správca úloh systému",
-    "description": "",
+    "description": "Spravujte automatizované systémové úlohy pre údržbu knižnice, obnovovanie metadát a čistenie vyrovnávacej pamäte. Naplánujte opakujúce sa operácie pomocou <a href=\"https://spring.io/blog/2020/11/10/new-in-spring-5-3-improved-cron-expressions\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"cron-link\">Spring cron výrazov</a>.",
     "systemTasks": {
         "sectionTitle": "",
         "sectionDesc": ""

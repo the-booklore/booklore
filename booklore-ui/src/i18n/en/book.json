@@ -44,7 +44,7 @@
       "collapseSeries": "Collapse series",
       "gridColumns": "Grid columns",
       "gridItemSize": "Grid item size",
-      "bookTypeOverlay": "Book type overlay",
+      "bookTypeOverlay": "File format overlay",
       "noBooks": "This collection has no books!",
       "failedLibrary": "Failed to load library's books!",
       "failedShelf": "Failed to load shelf's books!",
@@ -137,7 +137,8 @@
       "readBook": "Read book",
       "playAudiobook": "Play audiobook",
       "bookMenu": "Book actions menu",
-      "continueReading": "Continue reading"
+      "continueReading": "Continue reading",
+      "readStatusMenu": "Change read status"
     }
   },
   "notes": {
@@ -261,6 +262,7 @@
     "library": {
       "optionsLabel": "Options",
       "addPhysicalBook": "Add Physical Book",
+      "bulkIsbnImport": "Import ISBNs from File",
       "editLibrary": "Edit Library",
       "rescanLibrary": "Re-scan Library",
       "customFetchMetadata": "Custom Fetch Metadata",
@@ -278,6 +280,7 @@
     "magicShelf": {
       "optionsLabel": "Options",
       "editMagicShelf": "Edit Magic Shelf",
+      "exportJson": "Copy JSON",
       "deleteMagicShelf": "Delete Magic Shelf"
     },
     "confirm": {
@@ -297,6 +300,7 @@
       "shelfDeleteFailedDetail": "Failed to delete shelf",
       "magicShelfDeletedDetail": "Magic shelf was deleted",
       "magicShelfDeleteFailedDetail": "Failed to delete shelf",
+      "magicShelfJsonCopiedDetail": "Magic shelf JSON copied to clipboard",
       "failedSummary": "Failed"
     },
     "loading": {
@@ -435,6 +439,49 @@
     "addButton": "Add Physical Book",
     "fetchMetadataTooltip": "Fetch metadata by ISBN"
   },
+  "bulkIsbnImport": {
+    "title": "Import ISBNs",
+    "description": "Import multiple physical books from a list of ISBNs",
+    "closeTooltip": "Close",
+    "libraryLabel": "Library",
+    "libraryPlaceholder": "Select a library",
+    "tabFile": "Upload File",
+    "tabPaste": "Paste ISBNs",
+    "chooseFile": "Choose File",
+    "fileFormatsHint": "Supported formats: .txt, .csv, .tsv (max 1 MB)",
+    "pastePlaceholder": "Paste ISBNs here, one per line or comma-separated...",
+    "parseButton": "Parse",
+    "errorFileTooLarge": "File exceeds the 1 MB size limit.",
+    "errorNoIsbns": "No ISBNs found in the input.",
+    "errorTooMany": "Only the first {{ max }} ISBNs will be imported. Split your file for the rest.",
+    "validCount": "{{ count }} valid ISBN(s)",
+    "skippedCount": "{{ count }} skipped",
+    "duplicatesRemoved": "{{ count }} duplicate(s) removed",
+    "reason": {
+      "invalid": "Invalid ISBN format",
+      "alreadyExists": "Already in this library"
+    },
+    "previewLabel": "ISBNs to import",
+    "clearButton": "Clear",
+    "validationLibraryRequired": "Select a library",
+    "validationNoIsbns": "Upload a file or paste ISBNs to begin",
+    "validationReady": "Ready to import {{ count }} ISBN(s)",
+    "cancelButton": "Cancel",
+    "startImportButton": "Start Import",
+    "processingLabel": "Processing {{ current }} of {{ total }}",
+    "lookingUp": "Looking up metadata...",
+    "createdNoMetadata": "Created (no metadata found)",
+    "unknownError": "Unknown error",
+    "processingHint": "Books already created will be kept if you cancel.",
+    "cancelImportButton": "Stop Import",
+    "summaryTitle": "Import Complete",
+    "summaryCreated": "Created with metadata",
+    "summaryNoMetadata": "Created (ISBN only)",
+    "summaryFailed": "Failed",
+    "summaryCancelled": "Skipped (cancelled)",
+    "failedIsbnsLabel": "Failed ISBNs",
+    "doneButton": "Done"
+  },
   "fileUploader": {
     "title": "Upload Additional File",
     "unknownTitle": "Unknown Title",
@@ -468,7 +515,7 @@
       "author": "Author",
       "category": "Genre",
       "series": "Series",
-      "bookType": "Book Type",
+      "bookType": "File Format",
       "readStatus": "Read Status",
       "personalRating": "Personal Rating",
       "publisher": "Publisher",
@@ -673,7 +720,7 @@
       "readStatus": "Read Status",
       "dateFinished": "Date Finished",
       "readingProgress": "Reading Progress",
-      "bookType": "Book Type",
+      "bookType": "File Format",
       "amazonRating": "Amazon Rating",
       "amazonReviewCount": "Amazon #",
       "goodreadsRating": "Goodreads Rating",

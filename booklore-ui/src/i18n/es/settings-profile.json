@@ -19,7 +19,7 @@
     "validation": {
         "currentPasswordRequired": "La contraseña actual es obligatoria.",
         "newPasswordRequired": "La nueva contraseña es obligatoria.",
-        "passwordMinLength": "La contraseña debe tener al menos 6 caracteres.",
+        "passwordMinLength": "La contraseña debe tener al menos 8 caracteres.",
         "confirmPasswordRequired": "Por favor, confirma tu nueva contraseña.",
         "passwordMismatch": "Las contraseñas no coinciden."
     },

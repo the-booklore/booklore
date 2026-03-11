@@ -1,5 +1,6 @@
 package org.booklore.service.metadata;
 
+import org.booklore.config.AppProperties;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.settings.MetadataPersistenceSettings;
 import org.booklore.model.entity.AuthorEntity;
@@ -42,6 +43,7 @@ public class BookCoverService {
 
     private static final int BATCH_SIZE = 100;
 
+    private final AppProperties appProperties;
     private final BookRepository bookRepository;
     private final NotificationService notificationService;
     private final AppSettingService appSettingService;
@@ -293,18 +295,20 @@ public class BookCoverService {
     }
 
     /**
-     * Regenerate covers for all books.
+     * Regenerate covers for all books, optionally only for books with missing covers.
      */
-    public void regenerateCovers() {
+    public void regenerateCovers(boolean missingOnly) {
         SecurityContextVirtualThread.runWithSecurityContext(() -> {
             try {
                 List<BookRegenerationInfo> books = bookQueryService.getAllFullBookEntities().stream()
                         .filter(book -> !isCoverLocked(book))
                         .filter(book -> book.getPrimaryBookFile() != null)
+                        .filter(book -> !missingOnly || book.getBookCoverHash() == null)
                         .map(book -> new BookRegenerationInfo(book.getId(), book.getMetadata().getTitle(), book.getPrimaryBookFile().getBookType(), false))
                         .toList();
                 int total = books.size();
-                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books"));
+                String label = missingOnly ? "missing" : "all";
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books (" + label + ")"));
 
                 int current = 1;
                 List<Long> refreshedIds = new ArrayList<>();
@@ -538,9 +542,11 @@ public class BookCoverService {
     }
 
     private void writeCoverToBookFile(BookEntity bookEntity, BiConsumer<MetadataWriter, BookEntity> writerAction) {
+        if (!appProperties.isLocalStorage()) {
+            return;
+        }
         var primaryFile = bookEntity.getPrimaryBookFile();
         if (primaryFile == null) {
-            // Physical book with no files - skip writing cover to file
             return;
         }
 
@@ -558,6 +564,9 @@ public class BookCoverService {
     }
 
     private void writeAudiobookCoverToFile(BookEntity bookEntity, BiConsumer<MetadataWriter, BookEntity> writerAction) {
+        if (!appProperties.isLocalStorage()) {
+            return;
+        }
         var audiobookFile = bookEntity.getBookFiles().stream()
                 .filter(f -> f.getBookType() == BookFileType.AUDIOBOOK)
                 .findFirst()

@@ -163,13 +163,6 @@ public class FileUploadService {
             final BookFileEntity entity = createAdditionalFileEntityWithSubPath(book, finalFileName, fileSubPath, isBook, effectiveBookType, file.getSize(), fileHash, description);
             final BookFileEntity savedEntity = additionalFileRepository.save(entity);
 
-            // Promote physical book to digital if this is a book file
-            if (wasPhysicalBook && isBook) {
-                book.setIsPhysical(false);
-                bookRepository.save(book);
-                log.info("Physical book {} promoted to digital book after file upload", bookId);
-            }
-
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
         } catch (IOException e) {

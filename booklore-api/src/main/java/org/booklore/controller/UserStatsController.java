@@ -24,7 +24,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Heatmap data retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/heatmap")
+    @GetMapping("/reading/heatmap")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionHeatmapResponse>> getHeatmapForYear(@RequestParam int year) {
         List<ReadingSessionHeatmapResponse> heatmapData = readingSessionService.getSessionHeatmapForYear(year);
@@ -36,7 +36,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Heatmap data retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/heatmap/monthly")
+    @GetMapping("/reading/heatmap/monthly")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionHeatmapResponse>> getHeatmapForMonth(
             @RequestParam int year,
@@ -51,7 +51,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "400", description = "Invalid week or year"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/timeline")
+    @GetMapping("/reading/timeline")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionTimelineResponse>> getTimelineForWeek(
             @RequestParam int year,
@@ -65,7 +65,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Reading speed data retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/speed")
+    @GetMapping("/reading/speed")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSpeedResponse>> getReadingSpeedForYear(@RequestParam int year) {
         List<ReadingSpeedResponse> speedData = readingSessionService.getReadingSpeedForYear(year);
@@ -77,12 +77,12 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Peak reading hours retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/peak-hours")
+    @GetMapping("/reading/peak-hours")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
-    public ResponseEntity<List<PeakReadingHoursResponse>> getPeakReadingHours(
+    public ResponseEntity<List<PeakHoursResponse>> getPeakReadingHours(
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month) {
-        List<PeakReadingHoursResponse> peakHours = readingSessionService.getPeakReadingHours(year, month);
+        List<PeakHoursResponse> peakHours = readingSessionService.getPeakReadingHours(year, month);
         return ResponseEntity.ok(peakHours);
     }
 
@@ -91,7 +91,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Favorite reading days retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/favorite-days")
+    @GetMapping("/reading/favorite-days")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<FavoriteReadingDaysResponse>> getFavoriteReadingDays(
             @RequestParam(required = false) Integer year,
@@ -105,7 +105,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Genre statistics retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/genres")
+    @GetMapping("/reading/genres")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<GenreStatisticsResponse>> getGenreStatistics() {
         List<GenreStatisticsResponse> genreStats = readingSessionService.getGenreStatistics();
@@ -117,7 +117,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Completion timeline retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/completion-timeline")
+    @GetMapping("/reading/completion-timeline")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<CompletionTimelineResponse>> getCompletionTimeline(@RequestParam int year) {
         List<CompletionTimelineResponse> timeline = readingSessionService.getCompletionTimeline(year);
@@ -129,7 +129,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Book completion heatmap data retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/book-completion-heatmap")
+    @GetMapping("/reading/book-completion-heatmap")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<BookCompletionHeatmapResponse>> getBookCompletionHeatmap() {
         List<BookCompletionHeatmapResponse> heatmapData = readingSessionService.getBookCompletionHeatmap();
@@ -141,7 +141,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Page turner scores retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/page-turner-scores")
+    @GetMapping("/reading/page-turner-scores")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<PageTurnerScoreResponse>> getPageTurnerScores() {
         List<PageTurnerScoreResponse> scores = readingSessionService.getPageTurnerScores();
@@ -153,7 +153,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Completion race data retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/completion-race")
+    @GetMapping("/reading/completion-race")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<CompletionRaceResponse>> getCompletionRace(@RequestParam int year) {
         List<CompletionRaceResponse> data = readingSessionService.getCompletionRace(year);
@@ -165,7 +165,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Book distributions retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/book-distributions")
+    @GetMapping("/reading/book-distributions")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<BookDistributionsResponse> getBookDistributions() {
         BookDistributionsResponse data = readingSessionService.getBookDistributions();
@@ -177,7 +177,7 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Reading dates retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/reading-dates")
+    @GetMapping("/reading/dates")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionHeatmapResponse>> getReadingDates() {
         List<ReadingSessionHeatmapResponse> data = readingSessionService.getReadingDates();
@@ -189,10 +189,127 @@ public class UserStatsController {
             @ApiResponse(responseCode = "200", description = "Session scatter data retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    @GetMapping("/session-scatter")
+    @GetMapping("/reading/session-scatter")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<SessionScatterResponse>> getSessionScatter(@RequestParam int year) {
         List<SessionScatterResponse> data = readingSessionService.getSessionScatter(year);
         return ResponseEntity.ok(data);
+    }
+
+    @Operation(summary = "Get reading streak", description = "Returns current streak, longest streak, total reading days, and last 52 weeks of daily reading activity")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Reading streak data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/reading/streak")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<ReadingStreakResponse> getReadingStreak() {
+        return ResponseEntity.ok(readingSessionService.getReadingStreak());
+    }
+
+    @Operation(summary = "Get book timeline for a year", description = "Returns the reading lifespan of each book the user read in a given year")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Book timeline data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/reading/book-timeline")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<BookTimelineResponse>> getBookTimeline(@RequestParam int year) {
+        return ResponseEntity.ok(readingSessionService.getBookTimeline(year));
+    }
+
+    // ========================================================================
+    // Listening (audiobook) stats
+    // ========================================================================
+
+    @Operation(summary = "Get listening heatmap for a month", description = "Returns daily listening session counts and duration for the authenticated user for a specific month")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listening heatmap data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/listening/heatmap/monthly")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ListeningHeatmapResponse>> getListeningHeatmapForMonth(
+            @RequestParam int year,
+            @RequestParam int month) {
+        return ResponseEntity.ok(readingSessionService.getListeningHeatmapForMonth(year, month));
+    }
+
+    @Operation(summary = "Get weekly listening trend", description = "Returns weekly listening hours over a number of past weeks")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Weekly listening trend retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/listening/weekly-trend")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<WeeklyListeningTrendResponse>> getWeeklyListeningTrend(
+            @RequestParam(defaultValue = "26") int weeks) {
+        return ResponseEntity.ok(readingSessionService.getWeeklyListeningTrend(weeks));
+    }
+
+    @Operation(summary = "Get audiobook completion progress", description = "Returns in-progress audiobooks with completion percentages and overall library stats")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listening completion data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/listening/completion")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<ListeningCompletionResponse> getListeningCompletion() {
+        return ResponseEntity.ok(readingSessionService.getListeningCompletion());
+    }
+
+    @Operation(summary = "Get monthly audiobook pace", description = "Returns audiobooks completed per month with listening duration")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Monthly pace data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/listening/monthly-pace")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<MonthlyPaceResponse>> getMonthlyListeningPace(
+            @RequestParam(defaultValue = "12") int months) {
+        return ResponseEntity.ok(readingSessionService.getMonthlyListeningPace(months));
+    }
+
+    @Operation(summary = "Get audiobook finish rate funnel", description = "Returns how many audiobooks reached each progress milestone (25%, 50%, 75%, finished)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Finish funnel data retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/listening/finish-funnel")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<ListeningFinishFunnelResponse> getListeningFinishFunnel() {
+        return ResponseEntity.ok(readingSessionService.getListeningFinishFunnel());
+    }
+
+    @GetMapping("/listening/peak-hours")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<PeakHoursResponse>> getListeningPeakHours(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        return ResponseEntity.ok(readingSessionService.getListeningPeakHours(year, month));
+    }
+
+    @GetMapping("/listening/genres")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<GenreStatisticsResponse>> getListeningGenreStatistics() {
+        return ResponseEntity.ok(readingSessionService.getListeningGenreStatistics());
+    }
+
+    @GetMapping("/listening/authors")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<ListeningAuthorResponse>> getListeningAuthorStats() {
+        return ResponseEntity.ok(readingSessionService.getListeningAuthorStats());
+    }
+
+    @GetMapping("/listening/session-scatter")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<SessionScatterResponse>> getListeningSessionScatter() {
+        return ResponseEntity.ok(readingSessionService.getListeningSessionScatter());
+    }
+
+    @GetMapping("/listening/longest-books")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
+    public ResponseEntity<List<LongestAudiobookResponse>> getListeningLongestBooks() {
+        return ResponseEntity.ok(readingSessionService.getListeningLongestBooks());
     }
 }

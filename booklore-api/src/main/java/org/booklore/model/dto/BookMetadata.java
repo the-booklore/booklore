@@ -60,7 +60,7 @@ public class BookMetadata {
     private String externalUrl;
     private Instant coverUpdatedOn;
     private Instant audiobookCoverUpdatedOn;
-    private Set<String> authors;
+    private List<String> authors;
     private Set<String> categories;
     private Set<String> moods;
     private Set<String> tags;

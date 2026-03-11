@@ -130,8 +130,8 @@ export class BookMetadataManageService {
     return this.http.post<BookMetadata>(`${this.url}/${bookId}/metadata/cover/from-url`, {url});
   }
 
-  regenerateCovers(): Observable<void> {
-    return this.http.post<void>(`${this.url}/regenerate-covers`, {});
+  regenerateCovers(missingOnly = false): Observable<void> {
+    return this.http.post<void>(`${this.url}/regenerate-covers?missingOnly=${missingOnly}`, {});
   }
 
   regenerateCover(bookId: number): Observable<void> {

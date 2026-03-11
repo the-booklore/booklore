@@ -44,7 +44,7 @@
             "collapseSeries": "Contraer series",
             "gridColumns": "Columnas de cuadrícula",
             "gridItemSize": "Tamaño de elemento",
-            "bookTypeOverlay": "Indicador de tipo de libro",
+            "bookTypeOverlay": "Indicador de formato de archivo",
             "noBooks": "¡Esta colección no tiene libros!",
             "failedLibrary": "¡Error al cargar los libros de la biblioteca!",
             "failedShelf": "¡Error al cargar los libros del estante!",
@@ -137,7 +137,8 @@
             "readBook": "Leer libro",
             "playAudiobook": "Reproducir audiolibro",
             "bookMenu": "Menú de acciones del libro",
-            "continueReading": "Continuar leyendo"
+            "continueReading": "Continuar leyendo",
+            "readStatusMenu": "Cambiar estado de lectura"
         }
     },
     "notes": {
@@ -261,6 +262,7 @@
         "library": {
             "optionsLabel": "Opciones",
             "addPhysicalBook": "Añadir libro físico",
+            "bulkIsbnImport": "Importar ISBNs desde archivo",
             "editLibrary": "Editar biblioteca",
             "rescanLibrary": "Re-escanear biblioteca",
             "customFetchMetadata": "Obtención personalizada de metadatos",
@@ -278,6 +280,7 @@
         "magicShelf": {
             "optionsLabel": "Opciones",
             "editMagicShelf": "Editar estante mágico",
+            "exportJson": "Copiar JSON",
             "deleteMagicShelf": "Eliminar estante mágico"
         },
         "confirm": {
@@ -297,6 +300,7 @@
             "shelfDeleteFailedDetail": "Error al eliminar el estante",
             "magicShelfDeletedDetail": "Estante mágico eliminado",
             "magicShelfDeleteFailedDetail": "Error al eliminar el estante",
+            "magicShelfJsonCopiedDetail": "JSON del estante mágico copiado al portapapeles",
             "failedSummary": "Error"
         },
         "loading": {
@@ -435,6 +439,49 @@
         "addButton": "Agregar libro físico",
         "fetchMetadataTooltip": "Obtener metadatos por ISBN"
     },
+    "bulkIsbnImport": {
+        "title": "Importar ISBNs",
+        "description": "Importar varios libros físicos desde una lista de ISBNs",
+        "closeTooltip": "Cerrar",
+        "libraryLabel": "Biblioteca",
+        "libraryPlaceholder": "Seleccionar una biblioteca",
+        "tabFile": "Subir archivo",
+        "tabPaste": "Pegar ISBNs",
+        "chooseFile": "Elegir archivo",
+        "fileFormatsHint": "Formatos compatibles: .txt, .csv, .tsv (máx. 1 MB)",
+        "pastePlaceholder": "Pegue los ISBNs aquí, uno por línea o separados por comas...",
+        "parseButton": "Analizar",
+        "errorFileTooLarge": "El archivo supera el límite de 1 MB.",
+        "errorNoIsbns": "No se encontraron ISBNs en la entrada.",
+        "errorTooMany": "Solo se importarán los primeros {{ max }} ISBNs. Divida el archivo para el resto.",
+        "validCount": "{{ count }} ISBN(s) válido(s)",
+        "skippedCount": "{{ count }} omitido(s)",
+        "duplicatesRemoved": "{{ count }} duplicado(s) eliminado(s)",
+        "reason": {
+            "invalid": "Formato de ISBN no válido",
+            "alreadyExists": "Ya existe en esta biblioteca"
+        },
+        "previewLabel": "ISBNs a importar",
+        "clearButton": "Limpiar",
+        "validationLibraryRequired": "Seleccione una biblioteca",
+        "validationNoIsbns": "Suba un archivo o pegue ISBNs para comenzar",
+        "validationReady": "Listo para importar {{ count }} ISBN(s)",
+        "cancelButton": "Cancelar",
+        "startImportButton": "Iniciar importación",
+        "processingLabel": "Procesando {{ current }} de {{ total }}",
+        "lookingUp": "Buscando metadatos...",
+        "createdNoMetadata": "Creado (sin metadatos encontrados)",
+        "unknownError": "Error desconocido",
+        "processingHint": "Los libros ya creados se conservarán si cancela.",
+        "cancelImportButton": "Detener importación",
+        "summaryTitle": "Importación completada",
+        "summaryCreated": "Creados con metadatos",
+        "summaryNoMetadata": "Creados (solo ISBN)",
+        "summaryFailed": "Fallidos",
+        "summaryCancelled": "Omitidos (cancelados)",
+        "failedIsbnsLabel": "ISBNs fallidos",
+        "doneButton": "Listo"
+    },
     "fileUploader": {
         "title": "Subir archivo adicional",
         "unknownTitle": "Título desconocido",
@@ -468,7 +515,7 @@
             "author": "Autor",
             "category": "Género",
             "series": "Serie",
-            "bookType": "Tipo de libro",
+            "bookType": "Formato de archivo",
             "readStatus": "Estado de lectura",
             "personalRating": "Calificación personal",
             "publisher": "Editorial",
@@ -673,7 +720,7 @@
             "readStatus": "Estado de lectura",
             "dateFinished": "Fecha de finalización",
             "readingProgress": "Progreso de lectura",
-            "bookType": "Tipo de libro",
+            "bookType": "Formato de archivo",
             "amazonRating": "Calificación Amazon",
             "amazonReviewCount": "Amazon #",
             "goodreadsRating": "Calificación Goodreads",

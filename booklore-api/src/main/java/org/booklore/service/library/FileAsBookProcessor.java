@@ -2,6 +2,7 @@ package org.booklore.service.library;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.booklore.exception.ApiError;
 import org.booklore.model.FileProcessResult;
 import org.booklore.model.dto.settings.LibraryFile;
 import org.booklore.model.entity.BookEntity;
@@ -10,6 +11,7 @@ import org.booklore.model.entity.LibraryEntity;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
+import org.booklore.repository.LibraryRepository;
 import org.booklore.service.event.BookEventBroadcaster;
 import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.fileprocessor.BookFileProcessor;
@@ -44,6 +46,7 @@ public class FileAsBookProcessor {
     private final KoboAutoShelfService koboAutoShelfService;
     private final BookRepository bookRepository;
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
+    private final LibraryRepository libraryRepository;
     private final FileService fileService;
     private final MetadataExtractorFactory metadataExtractorFactory;
     private final AudiobookMetadataExtractor audiobookMetadataExtractor;
@@ -56,10 +59,18 @@ public class FileAsBookProcessor {
 
     @Transactional
     public void processLibraryFilesGrouped(Map<String, List<LibraryFile>> groups, LibraryEntity libraryEntity) {
+        LibraryEntity managedLibrary = ensureManaged(libraryEntity);
         for (Map.Entry<String, List<LibraryFile>> entry : groups.entrySet()) {
-            processGroupWithErrorHandling(entry.getValue(), libraryEntity);
+            entry.getValue().forEach(lf -> lf.setLibraryEntity(managedLibrary));
+            processGroupWithErrorHandling(entry.getValue(), managedLibrary);
         }
-        log.info("Finished processing library '{}'", libraryEntity.getName());
+        log.info("Finished processing library '{}'", managedLibrary.getName());
+    }
+
+    private LibraryEntity ensureManaged(LibraryEntity entity) {
+        if (entity.getId() == null) return entity;
+        return libraryRepository.findById(entity.getId())
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(entity.getId()));
     }
 
     private void processGroupWithErrorHandling(List<LibraryFile> group, LibraryEntity libraryEntity) {
@@ -114,14 +125,14 @@ public class FileAsBookProcessor {
         List<BookFileType> formatPriority = libraryEntity.getFormatPriority();
         return group.stream()
                 .filter(f -> f.getBookFileType() != null)
-                .min(Comparator.comparingInt(f -> {
+                .min(Comparator.<LibraryFile, Integer>comparing(f -> {
                     BookFileType bookFileType = f.getBookFileType();
                     if (formatPriority != null && !formatPriority.isEmpty()) {
                         int index = formatPriority.indexOf(bookFileType);
                         return index >= 0 ? index : Integer.MAX_VALUE;
                     }
                     return bookFileType.ordinal();
-                }));
+                }).thenComparing(LibraryFile::getFileName));
     }
 
     private void createAdditionalBookFile(BookEntity bookEntity, LibraryFile file) {

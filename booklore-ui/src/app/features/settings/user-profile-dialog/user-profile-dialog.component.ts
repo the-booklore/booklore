@@ -54,7 +54,7 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
     this.changePasswordForm = this.fb.group(
       {
         currentPassword: ['', Validators.required],
-        newPassword: ['', [Validators.required, Validators.minLength(6)]],
+        newPassword: ['', [Validators.required, Validators.minLength(8)]],
         confirmNewPassword: ['', Validators.required]
       },
       {validators: passwordMatchValidator}

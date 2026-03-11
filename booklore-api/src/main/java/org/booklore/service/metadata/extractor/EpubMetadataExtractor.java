@@ -243,8 +243,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                     Map<String, String> creatorsById = new HashMap<>();
                     Map<String, String> creatorRoleById = new HashMap<>();
-                    Map<String, Set<String>> creatorsByRole = new HashMap<>();
-                    creatorsByRole.put("aut", new HashSet<>());
+                    Map<String, List<String>> creatorsByRole = new HashMap<>();
+                    creatorsByRole.put("aut", new ArrayList<>());
 
                     Map<String, String> titlesById = new HashMap<>();
                     Map<String, String> titleTypeById = new HashMap<>();
@@ -346,7 +346,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             case "creator" -> {
                                 String role = el.getAttributeNS(OPF_NS, "role");
                                 if (StringUtils.isNotBlank(role)) {
-                                    creatorsByRole.computeIfAbsent(role, k -> new HashSet<>()).add(text);
+                                    creatorsByRole.computeIfAbsent(role, k -> new ArrayList<>()).add(text);
                                 } else {
                                     String id = el.getAttribute("id");
                                     if (StringUtils.isNotBlank(id)) {
@@ -449,7 +449,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         String id = entry.getKey();
                         String value = entry.getValue();
                         String role = creatorRoleById.getOrDefault(id, "aut");
-                        creatorsByRole.computeIfAbsent(role, k -> new HashSet<>()).add(value);
+                        creatorsByRole.computeIfAbsent(role, k -> new ArrayList<>()).add(value);
                     }
 
                     builderMeta.authors(creatorsByRole.get("aut"));
