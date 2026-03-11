@@ -1,5 +1,6 @@
 package org.booklore.service.koreader;
 
+import org.booklore.config.security.service.AuthenticationService;
 import org.booklore.config.security.userdetails.KoreaderUserDetails;
 import org.booklore.exception.ApiError;
 import org.booklore.model.dto.Book;
@@ -39,6 +40,7 @@ public class KoreaderService {
     private final HardcoverSyncService hardcoverSyncService;
     private final EpubCfiService epubCfiService;
     private final BookService bookService;
+    private final AuthenticationService authenticationService;
 
     public ResponseEntity<Map<String, String>> authorizeUser() {
         KoreaderUserDetails authDetails = getAuthDetails();
@@ -50,24 +52,9 @@ public class KoreaderService {
     }
 
     public ResponseEntity<Book> getBookByHash(String bookHash) {
-        // Handle both KoreaderUserDetails and BookLoreUser principals
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String username = null;
-        
-        if (principal instanceof KoreaderUserDetails details) {
-            username = details.getUsername();
-        } else if (principal instanceof BookLoreUser user) {
-            username = user.getUsername();
-        } else {
-            log.warn("getBookByHash: invalid principal type");
-            throw ApiError.GENERIC_UNAUTHORIZED.createException("User not authenticated");
-        }
-        
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
         Book book = bookService.getBookByHash(bookHash, true);
-        
-        log.info("getBookByHash: fetched book id={} for hash={} by user={}", 
-                book.getId(), bookHash, username);
-        
+        log.info("getBookByHash: fetched book id={} for hash={} by user={}", book.getId(), bookHash, user.getUsername());
         return ResponseEntity.ok(book);
     }
 

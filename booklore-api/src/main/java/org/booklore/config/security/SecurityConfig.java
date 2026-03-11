@@ -116,7 +116,12 @@ public class SecurityConfig {
     @Order(3)
     public SecurityFilterChain readingSessionsSecurityChain(HttpSecurity http, KoreaderAuthFilter koreaderAuthFilter) throws Exception {
         http
-                .securityMatcher("/api/v1/reading-sessions/**")
+                .securityMatcher(request -> {
+                        String method = request.getMethod();
+                        String path = request.getRequestURI();
+                        return "POST".equals(method) &&
+                                (path.equals("/api/v1/reading-sessions") || path.equals("/api/v1/reading-sessions/batch"));
+                })
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())

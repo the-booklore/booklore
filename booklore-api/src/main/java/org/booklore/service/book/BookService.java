@@ -170,7 +170,8 @@ public class BookService {
                 .orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("Book with hash " + md5Hash + " not found"));
 
         // Check if user has access to this book (via library access)
-        boolean hasAccess = bookEntity.getLibraryPath().getLibrary().getUsers().stream()
+        boolean isAdmin = user.getPermissions().isAdmin();
+        boolean hasAccess = isAdmin || bookEntity.getLibrary().getUsers().stream()
                 .anyMatch(u -> u.getId().equals(user.getId()));
 
         if (!hasAccess) {
@@ -537,95 +538,73 @@ public class BookService {
 
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         boolean isAdmin = user.getPermissions().isAdmin();
+        List<Long> userLibraryIds = user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(Collectors.toList());
 
-        List<BookEntity> allBooks = isAdmin
-                ? bookRepository.findAllWithMetadata()
-                : bookRepository.findAllWithMetadataByLibraryIds(
-                user.getAssignedLibraries().stream()
-                        .map(Library::getId)
-                        .collect(Collectors.toList())
-        );
+        // ISBN: exact DB query — avoids loading all books into memory
+        if (searchIsbn != null) {
+            String cleanSearchIsbn = searchIsbn.replaceAll("[^0-9X]", "");
+            List<BookEntity> isbnMatches = isAdmin
+                    ? bookRepository.findAllWithMetadataByIsbn(cleanSearchIsbn)
+                    : bookRepository.findAllWithMetadataByIsbnAndLibraryIds(cleanSearchIsbn, userLibraryIds);
+            if (!isbnMatches.isEmpty()) {
+                return isbnMatches.stream()
+                        .map(book -> {
+                            String bookTitle = book.getMetadata() != null && book.getMetadata().getTitle() != null
+                                    ? book.getMetadata().getTitle()
+                                    : (book.getPrimaryBookFile() != null ? book.getPrimaryBookFile().getFileName() : "");
+                            String hash = book.getPrimaryBookFile() != null
+                                    ? book.getPrimaryBookFile().getCurrentHash() : null;
+                            return org.booklore.model.dto.response.BookSearchResult.builder()
+                                    .id(book.getId())
+                                    .title(bookTitle)
+                                    .hash(hash)
+                                    .coverHash(book.getBookCoverHash())
+                                    .matchScore(1.0)
+                                    .build();
+                        })
+                        .collect(Collectors.toList());
+            }
+        }
 
-        org.apache.commons.text.similarity.FuzzyScore fuzzyScore = 
-                new org.apache.commons.text.similarity.FuzzyScore(java.util.Locale.ENGLISH);
+        // Title: in-memory fuzzy search
+        if (searchTitle != null) {
+            List<BookEntity> allBooks = isAdmin
+                    ? bookRepository.findAllWithMetadata()
+                    : bookRepository.findAllWithMetadataByLibraryIds(userLibraryIds);
 
-        return allBooks.stream()
-                .map(book -> {
-                    String bookTitle = book.getMetadata() != null && book.getMetadata().getTitle() != null
-                            ? book.getMetadata().getTitle()
-                            : (book.getPrimaryBookFile() != null ? book.getPrimaryBookFile().getFileName() : "");
-                    
-                    double normalizedScore = 0.0;
-                    
-                    // Search by ISBN if provided
-                    if (searchIsbn != null && book.getMetadata() != null) {
-                        String cleanSearchIsbn = searchIsbn.replaceAll("[^0-9X]", "");
-                        String bookIsbn13 = book.getMetadata().getIsbn13() != null 
-                                ? book.getMetadata().getIsbn13().replaceAll("[^0-9X]", "") 
-                                : "";
-                        String bookIsbn10 = book.getMetadata().getIsbn10() != null 
-                                ? book.getMetadata().getIsbn10().replaceAll("[^0-9X]", "") 
-                                : "";
-                        
-                        // Exact match gets perfect score
-                        if (cleanSearchIsbn.equalsIgnoreCase(bookIsbn13) || cleanSearchIsbn.equalsIgnoreCase(bookIsbn10)) {
-                            normalizedScore = 1.0;
-                        } else if (!bookIsbn13.isEmpty() || !bookIsbn10.isEmpty()) {
-                            // Fuzzy match for partial ISBN matches
-                            int isbnScore13 = !bookIsbn13.isEmpty() 
-                                    ? fuzzyScore.fuzzyScore(bookIsbn13.toLowerCase(), cleanSearchIsbn.toLowerCase()) 
-                                    : 0;
-                            int isbnScore10 = !bookIsbn10.isEmpty() 
-                                    ? fuzzyScore.fuzzyScore(bookIsbn10.toLowerCase(), cleanSearchIsbn.toLowerCase()) 
-                                    : 0;
-                            int bestIsbnScore = Math.max(isbnScore13, isbnScore10);
-                            int maxScore = Math.max(
-                                    fuzzyScore.fuzzyScore(cleanSearchIsbn, cleanSearchIsbn),
-                                    Math.max(
-                                            !bookIsbn13.isEmpty() ? fuzzyScore.fuzzyScore(bookIsbn13, bookIsbn13) : 0,
-                                            !bookIsbn10.isEmpty() ? fuzzyScore.fuzzyScore(bookIsbn10, bookIsbn10) : 0
-                                    )
-                            );
-                            normalizedScore = maxScore > 0 ? (double) bestIsbnScore / maxScore : 0.0;
-                        }
-                    }
-                    
-                    // Search by title if provided and no ISBN match found
-                    if (searchTitle != null && normalizedScore < 1.0) {
+            org.apache.commons.text.similarity.FuzzyScore fuzzyScore =
+                    new org.apache.commons.text.similarity.FuzzyScore(java.util.Locale.ENGLISH);
+
+            return allBooks.stream()
+                    .map(book -> {
+                        String bookTitle = book.getMetadata() != null && book.getMetadata().getTitle() != null
+                                ? book.getMetadata().getTitle()
+                                : (book.getPrimaryBookFile() != null ? book.getPrimaryBookFile().getFileName() : "");
                         int titleScore = fuzzyScore.fuzzyScore(bookTitle.toLowerCase(), searchTitle.toLowerCase());
                         int maxScore = Math.max(
                                 fuzzyScore.fuzzyScore(bookTitle, bookTitle),
                                 fuzzyScore.fuzzyScore(searchTitle, searchTitle)
                         );
-                        double titleNormalizedScore = maxScore > 0 ? (double) titleScore / maxScore : 0.0;
-                        
-                        // Use the better score between ISBN and title
-                        normalizedScore = Math.max(normalizedScore, titleNormalizedScore);
-                    }
-                    
-                    String hash = book.getPrimaryBookFile() != null 
-                            ? book.getPrimaryBookFile().getCurrentHash() 
-                            : null;
-                    
-                    String coverHash = book.getBookCoverHash();
-                    
-                    return org.booklore.model.dto.response.BookSearchResult.builder()
-                            .id(book.getId())
-                            .title(bookTitle)
-                            .hash(hash)
-                            .coverHash(coverHash)
-                            .matchScore(normalizedScore)
-                            .build();
-                })
-                .filter(result -> result.getMatchScore() > 0.0)
-                .sorted((a, b) -> Double.compare(b.getMatchScore(), a.getMatchScore()))
-                .limit(50)
-                .collect(Collectors.toList());
-    }
+                        double normalizedScore = maxScore > 0 ? (double) titleScore / maxScore : 0.0;
+                        String hash = book.getPrimaryBookFile() != null
+                                ? book.getPrimaryBookFile().getCurrentHash() : null;
+                        return org.booklore.model.dto.response.BookSearchResult.builder()
+                                .id(book.getId())
+                                .title(bookTitle)
+                                .hash(hash)
+                                .coverHash(book.getBookCoverHash())
+                                .matchScore(normalizedScore)
+                                .build();
+                    })
+                    .filter(result -> result.getMatchScore() > 0.0)
+                    .sorted((a, b) -> Double.compare(b.getMatchScore(), a.getMatchScore()))
+                    .limit(50)
+                    .collect(Collectors.toList());
+        }
 
-    @Deprecated
-    public List<org.booklore.model.dto.response.BookSearchResult> fuzzySearchByTitle(String searchTitle) {
-        return fuzzySearch(searchTitle, null);
+        return Collections.emptyList();
     }
 
 }

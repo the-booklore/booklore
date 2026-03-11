@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +52,15 @@ public class ReadingSessionService {
     private final UserRepository userRepository;
     private final UserBookProgressRepository userBookProgressRepository;
 
+    private void validateBookAccess(BookEntity book, BookLoreUser user) {
+        if (user.getPermissions().isAdmin()) return;
+        boolean hasAccess = book.getLibrary().getUsers().stream()
+                .anyMatch(u -> u.getId().equals(user.getId()));
+        if (!hasAccess) {
+            throw ApiError.BOOK_NOT_FOUND.createException(book.getId());
+        }
+    }
+
     private String getTimezoneOffset() {
         ZoneOffset offset = ZoneId.systemDefault().getRules().getOffset(Instant.now());
         return offset.getId().equals("Z") ? "+00:00" : offset.getId();
@@ -63,7 +71,7 @@ public class ReadingSessionService {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        BookLoreUserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
+        BookLoreUserEntity userEntity = userRepository.findById(userId).orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("User not found with ID: " + userId));
         BookEntity book = bookRepository.findById(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
 
         // Validate book access
@@ -96,7 +104,7 @@ public class ReadingSessionService {
 
         // Get user entity
         BookLoreUserEntity userEntity = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
+                .orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("User not found with ID: " + userId));
         
         // Validate book exists and user has access
         BookEntity book = bookRepository.findById(request.getBookId())
@@ -108,7 +116,7 @@ public class ReadingSessionService {
         // Validate all session times
         for (ReadingSessionItemRequest sessionItem : request.getSessions()) {
             if (sessionItem.getEndTime().isBefore(sessionItem.getStartTime())) {
-                throw new IllegalArgumentException("End time must be after start time");
+                throw ApiError.GENERIC_BAD_REQUEST.createException("End time must be after start time");
             }
         }
 

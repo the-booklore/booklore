@@ -39,11 +39,8 @@ public class KoreaderAuthFilter extends OncePerRequestFilter {
         
         // Only log and process if KOReader headers are present
         if (username != null && key != null) {
-            log.info("KoreaderAuthFilter: Processing KOReader auth for user: {}", username);
-            
             koreaderUserRepository.findByUsername(username).ifPresentOrElse(user -> {
                 if (user.getPasswordMD5().equalsIgnoreCase(key)) {
-                    log.info("KoreaderAuthFilter: Authentication successful for user: {}", username);
                     
                     Long bookLoreUserId = user.getBookLoreUser() != null ? user.getBookLoreUser().getId() : null;
                     

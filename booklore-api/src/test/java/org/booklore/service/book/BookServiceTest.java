@@ -226,9 +226,17 @@ class BookServiceTest {
         library.setUsers(List.of(differentUser));
         entity.setLibrary(library);
         entity.setLibraryPath(libPath);
+
+        BookLoreUser.UserPermissions nonAdminPerms = new BookLoreUser.UserPermissions();
+        nonAdminPerms.setAdmin(false);
+        BookLoreUser nonAdminUser = BookLoreUser.builder()
+                .id(1L)
+                .permissions(nonAdminPerms)
+                .assignedLibraries(List.of())
+                .isDefaultPassword(false).build();
         
         when(bookRepository.findByCurrentHash(hash)).thenReturn(Optional.of(entity));
-        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        when(authenticationService.getAuthenticatedUser()).thenReturn(nonAdminUser);
         
         assertThrows(APIException.class, () -> bookService.getBookByHash(hash, true));
         verify(bookRepository).findByCurrentHash(hash);

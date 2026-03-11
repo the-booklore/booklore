@@ -102,6 +102,14 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             """)
     List<BookEntity> findAllFullBooks();
 
+    @EntityGraph(attributePaths = {"metadata", "bookFiles"})
+    @Query("SELECT b FROM BookEntity b JOIN b.metadata m WHERE (REPLACE(REPLACE(m.isbn13, '-', ''), ' ', '') = :isbn OR REPLACE(REPLACE(m.isbn10, '-', ''), ' ', '') = :isbn) AND (b.deleted IS NULL OR b.deleted = false)")
+    List<BookEntity> findAllWithMetadataByIsbn(@Param("isbn") String normalizedIsbn);
+
+    @EntityGraph(attributePaths = {"metadata", "bookFiles"})
+    @Query("SELECT b FROM BookEntity b JOIN b.metadata m WHERE b.library.id IN :libraryIds AND (REPLACE(REPLACE(m.isbn13, '-', ''), ' ', '') = :isbn OR REPLACE(REPLACE(m.isbn10, '-', ''), ' ', '') = :isbn) AND (b.deleted IS NULL OR b.deleted = false)")
+    List<BookEntity> findAllWithMetadataByIsbnAndLibraryIds(@Param("isbn") String normalizedIsbn, @Param("libraryIds") Collection<Long> libraryIds);
+
     @Query(value = """
                 SELECT DISTINCT b.* FROM book b
                 LEFT JOIN book_metadata m ON b.id = m.book_id
