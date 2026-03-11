@@ -44,7 +44,7 @@
             "collapseSeries": "Serien zusammenklappen",
             "gridColumns": "Rasterspalten",
             "gridItemSize": "Rasterelementgröße",
-            "bookTypeOverlay": "Buchtyp-Overlay",
+            "bookTypeOverlay": "Dateiformat-Overlay",
             "noBooks": "Diese Sammlung enthält keine Bücher!",
             "failedLibrary": "Bücher der Bibliothek konnten nicht geladen werden!",
             "failedShelf": "Bücher des Regals konnten nicht geladen werden!",
@@ -137,7 +137,8 @@
             "readBook": "Buch lesen",
             "playAudiobook": "Hörbuch abspielen",
             "bookMenu": "Buchaktionen-Menü",
-            "continueReading": "Weiterlesen"
+            "continueReading": "Weiterlesen",
+            "readStatusMenu": "Lesestatus ändern"
         }
     },
     "notes": {
@@ -266,7 +267,8 @@
             "customFetchMetadata": "Metadaten benutzerdefiniert abrufen",
             "autoFetchMetadata": "Metadaten automatisch abrufen",
             "findDuplicates": "Duplikate finden",
-            "deleteLibrary": "Bibliothek löschen"
+            "deleteLibrary": "Bibliothek löschen",
+            "bulkIsbnImport": "ISBNs aus Datei importieren"
         },
         "shelf": {
             "publicShelfPrefix": "Öffentliches Regal - ",
@@ -278,7 +280,8 @@
         "magicShelf": {
             "optionsLabel": "Optionen",
             "editMagicShelf": "Magisches Regal bearbeiten",
-            "deleteMagicShelf": "Magisches Regal löschen"
+            "deleteMagicShelf": "Magisches Regal löschen",
+            "exportJson": "Kopiere JSON"
         },
         "confirm": {
             "rescanLibraryMessage": "Sind Sie sicher, dass Sie die Bibliothek aktualisieren möchten: {{ name }}?",
@@ -297,7 +300,8 @@
             "shelfDeleteFailedDetail": "Regal konnte nicht gelöscht werden",
             "magicShelfDeletedDetail": "Magisches Regal wurde gelöscht",
             "magicShelfDeleteFailedDetail": "Regal konnte nicht gelöscht werden",
-            "failedSummary": "Fehlgeschlagen"
+            "failedSummary": "Fehlgeschlagen",
+            "magicShelfJsonCopiedDetail": "Magisches Regal JSON in die Zwischenablage kopiert"
         },
         "loading": {
             "deletingLibrary": "Bibliothek '{{ name }}' wird gelöscht..."
@@ -432,7 +436,8 @@
         "validationTitleOrIsbn": "Titel oder ISBN ist erforderlich",
         "validationReady": "Bereit zum Erstellen",
         "cancelButton": "Abbrechen",
-        "addButton": "Physisches Buch hinzufügen"
+        "addButton": "Physisches Buch hinzufügen",
+        "fetchMetadataTooltip": "Metadaten anhand der ISBN abrufen"
     },
     "fileUploader": {
         "title": "Zusätzliche Datei hochladen",
@@ -847,5 +852,14 @@
             "mergeFailedDetail": "Diese Gruppe konnte nicht zusammengeführt werden.",
             "mergePartialDetail": "{{ success }} zusammengeführt, {{ failed }} fehlgeschlagen."
         }
+    },
+    "bulkIsbnImport": {
+        "title": "ISBNs importieren",
+        "description": "Importieren Sie mehrere physische Bücher aus einer Liste von ISBN-Nummern",
+        "libraryLabel": "Bibliothek",
+        "libraryPlaceholder": "Wählen Sie eine Bibliothek aus",
+        "tabFile": "Datei hochladen",
+        "tabPaste": "ISBNs einfügen",
+        "chooseFile": "Datei auswählen"
     }
 }
