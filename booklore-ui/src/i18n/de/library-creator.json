@@ -57,7 +57,8 @@
         "organizationModeTooltip": "Wie Dateien beim Scannen in Bücher gruppiert werden",
         "organizationModeBookPerFile": "Ein Buch pro Datei",
         "organizationModeBookPerFolder": "Ein Buch pro Ordner",
-        "organizationModeAutoDetect": "Automatische Erkennung (veraltet)"
+        "organizationModeAutoDetect": "Automatische Erkennung (veraltet)",
+        "organizationModeLockedTooltip": "Der Organisationsmodus kann nach der Erstellung der Bibliothek nicht mehr geändert werden. Um einen anderen Modus zu verwenden, erstellen Sie bitte eine neue Bibliothek."
     },
     "loading": {
         "title": "Bibliothek wird geladen",
