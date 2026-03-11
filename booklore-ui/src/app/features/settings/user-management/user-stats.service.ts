@@ -85,27 +85,27 @@ export class UserStatsService {
 
   getHeatmapForYear(year: number): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
-      `${this.readingSessionsUrl}/heatmap`,
+      `${this.readingSessionsUrl}/reading/heatmap`,
       {params: {year: year.toString()}}
     );
   }
 
   getTimelineForWeek(year: number, week: number): Observable<ReadingSessionTimelineResponse[]> {
     return this.http.get<ReadingSessionTimelineResponse[]>(
-      `${this.readingSessionsUrl}/timeline`,
+      `${this.readingSessionsUrl}/reading/timeline`,
       {params: {year: year.toString(), week: week.toString()}}
     );
   }
 
   getGenreStats(): Observable<GenreStatsResponse[]> {
     return this.http.get<GenreStatsResponse[]>(
-      `${this.readingSessionsUrl}/genres`
+      `${this.readingSessionsUrl}/reading/genres`
     );
   }
 
   getCompletionTimelineForYear(year: number): Observable<CompletionTimelineResponse[]> {
     return this.http.get<CompletionTimelineResponse[]>(
-      `${this.readingSessionsUrl}/completion-timeline`,
+      `${this.readingSessionsUrl}/reading/completion-timeline`,
       {params: {year: year.toString()}}
     );
   }
@@ -120,7 +120,7 @@ export class UserStatsService {
     }
 
     return this.http.get<FavoriteDaysResponse[]>(
-      `${this.readingSessionsUrl}/favorite-days`,
+      `${this.readingSessionsUrl}/reading/favorite-days`,
       {params}
     );
   }
@@ -135,33 +135,33 @@ export class UserStatsService {
     }
 
     return this.http.get<PeakHoursResponse[]>(
-      `${this.readingSessionsUrl}/peak-hours`,
+      `${this.readingSessionsUrl}/reading/peak-hours`,
       {params}
     );
   }
 
   getPageTurnerScores(): Observable<PageTurnerScoreResponse[]> {
     return this.http.get<PageTurnerScoreResponse[]>(
-      `${this.readingSessionsUrl}/page-turner-scores`
+      `${this.readingSessionsUrl}/reading/page-turner-scores`
     );
   }
 
   getCompletionRace(year: number): Observable<CompletionRaceResponse[]> {
     return this.http.get<CompletionRaceResponse[]>(
-      `${this.readingSessionsUrl}/completion-race`,
+      `${this.readingSessionsUrl}/reading/completion-race`,
       {params: {year: year.toString()}}
     );
   }
 
   getReadingDates(): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
-      `${this.readingSessionsUrl}/reading-dates`
+      `${this.readingSessionsUrl}/reading/dates`
     );
   }
 
   getSessionScatter(year: number): Observable<SessionScatterResponse[]> {
     return this.http.get<SessionScatterResponse[]>(
-      `${this.readingSessionsUrl}/session-scatter`,
+      `${this.readingSessionsUrl}/reading/session-scatter`,
       {params: {year: year.toString()}}
     );
   }

@@ -8,7 +8,7 @@ import {EmailProvider} from '../email-provider.model';
   providedIn: 'root'
 })
 export class EmailV2ProviderService {
-  private readonly url = `${API_CONFIG.BASE_URL}/api/v2/email/providers`;
+  private readonly url = `${API_CONFIG.BASE_URL}/api/v1/email/providers`;
 
   private http = inject(HttpClient);
 

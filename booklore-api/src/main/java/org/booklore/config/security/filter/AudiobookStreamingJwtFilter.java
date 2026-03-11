@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 public class AudiobookStreamingJwtFilter extends OncePerRequestFilter {
 
     private static final Pattern AUDIOBOOK_STREAMING_ENDPOINT_PATTERN =
-            Pattern.compile("/api/v1/audiobook/\\d+/(stream|track/\\d+/stream|cover).*");
+            Pattern.compile("/api/v1/audiobooks/\\d+/(stream|track/\\d+/stream|cover).*");
 
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
