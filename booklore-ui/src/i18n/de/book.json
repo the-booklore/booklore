@@ -101,7 +101,10 @@
             "deleteBookMessage": "Sind Sie sicher, dass Sie \"{{ title }}\" löschen möchten?\n\nDies entfernt die Buchdatei dauerhaft aus Ihrem Dateisystem.\n\nDiese Aktion kann nicht rückgängig gemacht werden.",
             "deleteBookHeader": "Löschen bestätigen",
             "deleteFileMessage": "Sind Sie sicher, dass Sie die zusätzliche Datei \"{{ fileName }}\" löschen möchten?",
-            "deleteFileHeader": "Dateilöschung bestätigen"
+            "deleteFileHeader": "Dateilöschung bestätigen",
+            "largeFileMessage": "Diese Datei überschreitet 25 MB. Einige E-Mail-Anbieter lehnen möglicherweise große Anhänge ab..\n\nMöchten Sie es dennoch versenden?",
+            "largeFileHeader": "Warnung vor großen Dateien",
+            "sendAnyway": "Trotzdem senden"
         },
         "toast": {
             "quickSendSuccessDetail": "Der Buchversand wurde geplant.",
