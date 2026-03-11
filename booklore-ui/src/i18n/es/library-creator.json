@@ -24,7 +24,7 @@
         "metadataSourcePreferSidecar": "Preferir sidecar",
         "metadataSourcePreferEmbedded": "Preferir incrustado",
         "metadataSourceNone": "Ninguno",
-        "organizationMode": "Modo de organizacion",
+        "organizationMode": "Modo de organización",
         "organizationModeTooltip": "Como se agrupan los archivos en libros durante el escaneo",
         "organizationModeBookPerFile": "Un libro por archivo",
         "organizationModeBookPerFolder": "Un libro por carpeta",
