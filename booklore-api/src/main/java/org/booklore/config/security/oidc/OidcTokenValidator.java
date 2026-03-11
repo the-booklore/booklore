@@ -1,11 +1,13 @@
 package org.booklore.config.security.oidc;
 
+import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.source.DefaultJWKSetCache;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -92,6 +94,8 @@ public class OidcTokenValidator {
         JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(jwsAlgs, jwkSource);
         ConfigurableJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
         processor.setJWSKeySelector(keySelector);
+        processor.setJWSTypeVerifier(new DefaultJOSEObjectTypeVerifier<>(
+                JOSEObjectType.JWT, new JOSEObjectType("logout+jwt"), null));
 
         return processor;
     }
