@@ -5,7 +5,7 @@
         "sectionTitle": "Naslovna slika knjige",
         "regenerate": "Regeneriraj naslovnice",
         "regenerateBtn": "Regeneriraj",
-        "regenerateDesc": "Regenerira naslovne slike za sve knjige iz ugrađenih naslovnica u datoteci.",
+        "regenerateDesc": "Obnavlja slike naslovnica za sve knjige iz ugrađenih naslovnica u datoteci. Koristite \"Obnovi nedostajuće\" za generiranje naslovnica samo za knjige koje još nemaju naslovnicu.",
         "regenerateStarted": "Regeneracija naslovnica pokrenuta",
         "regenerateStartedDetail": "Naslovnice knjiga se regeneriraju.",
         "regenerateError": "Pokretanje regeneracije naslovnica nije uspjelo.",
@@ -16,7 +16,9 @@
         "aspectRatio": "Prag omjera slike: {{value}}",
         "aspectRatioDesc": "Slike s omjerima koji premašuju ovaj prag bit će izrezane. Vrijednost 2,5 znači da će slike koje su više od 2,5x više (ili šire) od normalnog biti izrezane.",
         "smartCropping": "Pametno izrezivanje",
-        "smartCroppingDesc": "Preskoči jednobojne regije pri određivanju mjesta izrezivanja. Fokusira naslovnicu na najrelevantniji sadržaj."
+        "smartCroppingDesc": "Preskoči jednobojne regije pri određivanju mjesta izrezivanja. Fokusira naslovnicu na najrelevantniji sadržaj.",
+        "regenerateAllBtn": "Obnovi sve",
+        "regenerateMissingBtn": "Obnovi nedostajuće"
     },
     "search": {
         "sectionTitle": "Pretraživanje i preporuke",

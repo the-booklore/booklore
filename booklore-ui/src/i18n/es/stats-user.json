@@ -27,7 +27,7 @@
         "ratingTaste": "Comparación de gusto en calificaciones",
         "seriesProgress": "Seguimiento de progreso de series",
         "readingDna": "Perfil de ADN lector",
-        "readingHabits": "Analisis de habitos de lectura",
+        "readingHabits": "Análisis de hábitos de lectura",
         "bookFlow": "Flujo de libros",
         "readingDebt": "Deuda de lectura",
         "publicationEra": "Era de publicación vs calificación",
@@ -235,44 +235,44 @@
             },
             "ambitious": {
                 "low": "Lees a un ritmo casual con libros más cortos",
-                "mid": "Mantienes un volumen solido de lectura con algunas elecciones desafiantes",
-                "high": "Te exiges con grandes volumenes de libros desafiantes y extensos"
+                "mid": "Mantienes un volumen sólido de lectura con algunas elecciones desafiantes",
+                "high": "Te exiges con grandes volúmenes de libros desafiantes y extensos"
             }
         }
     },
     "readingHabits": {
-        "title": "Analisis de habitos de lectura",
+        "title": "Análisis de hábitos de lectura",
         "tooltip": "Un gráfico de radar que analiza tu comportamiento de lectura en 8 dimensiones. Consistencia mide la regularidad de finalizaciones a lo largo del tiempo. Completismo rastrea la tasa de finalización vs. abandono. Metodología verifica si lees series en orden. Las puntuaciones se derivan de tu actividad de lectura, fechas y datos de progreso.",
         "description": "Tus patrones de comportamiento de lectura en 8 dimensiones",
-        "habitPatterns": "Tus patrones de habitos de lectura",
-        "readingHabitsProfile": "Perfil de habitos de lectura",
-        "tooltipHabit": "Habito {{ label }}",
+        "habitPatterns": "Tus patrones de hábitos de lectura",
+        "readingHabitsProfile": "Perfil de hábitos de lectura",
+        "tooltipHabit": "Hábito {{ label }}",
         "tooltipScore": "Puntuación: {{ score }}/100",
-        "tooltipDefaultDescription": "Tu patron de habito de lectura",
+        "tooltipDefaultDescription": "Tu patrón de hábito de lectura",
         "habits": {
             "consistency": "Consistencia",
             "multitasking": "Multitarea",
             "completionism": "Completismo",
-            "exploration": "Exploracion",
-            "organization": "Organizacion",
+            "exploration": "Exploración",
+            "organization": "Organización",
             "intensity": "Intensidad",
-            "methodology": "Metodologia",
+            "methodology": "Metodología",
             "momentum": "Impulso"
         },
         "descriptions": {
             "consistency": {
-                "low": "Tu lectura es esporadica con largos intervalos entre libros",
+                "low": "Tu lectura es esporádica con largos intervalos entre libros",
                 "mid": "Lees a un ritmo bastante regular durante todo el año",
                 "high": "Mantienes un ritmo de lectura muy constante y disciplinado"
             },
             "multitasking": {
                 "low": "Prefieres enfocarte en un libro a la vez",
                 "mid": "Ocasionalmente malabareas un par de libros a la vez",
-                "high": "Regularmente lees multiples libros simultaneamente"
+                "high": "Regularmente lees múltiples libros simultáneamente"
             },
             "completionism": {
                 "low": "A menudo dejas libros de lado antes de terminarlos",
-                "mid": "Terminas la mayoria de los libros que empiezas, con algunas excepciones",
+                "mid": "Terminas la mayoría de los libros que empiezas, con algunas excepciones",
                 "high": "Casi nunca abandonas un libro una vez que lo empiezas"
             },
             "exploration": {
@@ -291,14 +291,14 @@
                 "high": "Constantemente abordas libros extensos e inmersivos"
             },
             "methodology": {
-                "low": "Eliges libros espontaneamente sin un sistema",
-                "mid": "Muestras algunos patrones metodicos en tus elecciones de lectura",
+                "low": "Eliges libros espontáneamente sin un sistema",
+                "mid": "Muestras algunos patrones metódicos en tus elecciones de lectura",
                 "high": "Trabajas sistemáticamente a través de series, autores y géneros"
             },
             "momentum": {
                 "low": "Tu actividad de lectura ha estado tranquila recientemente",
                 "mid": "Tienes un ritmo de lectura constante",
-                "high": "Estas en una fuerte racha de lectura activa ahora mismo"
+                "high": "Estás en una fuerte racha de lectura activa ahora mismo"
             }
         }
     },
@@ -306,17 +306,17 @@
         "title": "Mapa de calor de actividad de lectura",
         "tooltip": "Una cuadrícula de 10 años que muestra cuantos libros se añadieron a tu biblioteca cada mes. Las celdas más oscuras significan más libros. Te ayuda a visualizar tendencias de adquisición a largo plazo y ráfagas estacionales de lectura.",
         "description": "Actividad de lectura mensual de los últimos 10 años",
-        "booksRead": "Libros leidos",
-        "tooltipBook": "{{ value }} libro leido",
-        "tooltipBooks": "{{ value }} libros leidos"
+        "booksRead": "Libros leídos",
+        "tooltipBook": "{{ value }} libro leído",
+        "tooltipBooks": "{{ value }} libros leídos"
     },
     "readingProgress": {
         "title": "Distribución de progreso de lectura",
-        "tooltip": "Muestra cuantos libros caen en cada rango de progreso: no iniciados (0%), recién iniciados (1-25%), a mitad (26-50%), casi terminados (51-75%), por terminar (76-99%) y completados (100%). El progreso se basa en el punto más avanzado alcanzado en todas las sesiones de lectura.",
+        "tooltip": "Muestra cuántos libros caen en cada rango de progreso: no iniciados (0%), recién iniciados (1-25%), a mitad (26-50%), casi terminados (51-75%), por terminar (76-99%) y completados (100%). El progreso se basa en el punto más avanzado alcanzado en todas las sesiones de lectura.",
         "description": "Libros por estado de completado de lectura",
         "booksByProgress": "Libros por progreso",
         "notStarted": "No iniciado",
-        "justStarted": "Recien iniciado",
+        "justStarted": "Recién iniciado",
         "gettingIntoIt": "Avanzando",
         "halfwayThrough": "A mitad de camino",
         "almostFinished": "Casi terminado",
@@ -428,7 +428,7 @@
     },
     "readingSurvival": {
         "title": "Curva de supervivencia de lectura",
-        "tooltip": "Inspirada en analisis de supervivencia: partiendo de todos los libros que has comenzado a leer, esta curva muestra que fraccion llego a cada hito de progreso. Una caida pronunciada en un umbral revela donde tiendes a abandonar libros. La 'zona de peligro' destaca el punto de mayor caida.",
+        "tooltip": "Inspirada en análisis de supervivencia: partiendo de todos los libros que has comenzado a leer, esta curva muestra que fracción llego a cada hito de progreso. Una caída pronunciada en un umbral revela donde tiendes a abandonar libros. La 'zona de peligro' destaca el punto de mayor caída.",
         "description": "De los libros iniciados, que porcentaje alcanzo cada umbral de progreso",
         "started": "Iniciados",
         "completionRate": "Tasa de completado",

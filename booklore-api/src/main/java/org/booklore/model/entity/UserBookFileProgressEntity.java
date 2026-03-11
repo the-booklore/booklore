@@ -36,6 +36,9 @@ public class UserBookFileProgressEntity {
     @Column(name = "progress_percent")
     private Float progressPercent;
 
+    @Column(name = "tts_position_cfi", length = 1000)
+    private String ttsPositionCfi;
+
     @Column(name = "last_read_time")
     private Instant lastReadTime;
 }

@@ -19,7 +19,7 @@
     "validation": {
         "currentPasswordRequired": "Nuvarande lösenord krävs.",
         "newPasswordRequired": "Nytt lösenord krävs.",
-        "passwordMinLength": "Lösenordet måste vara minst 6 tecken.",
+        "passwordMinLength": "Lösenordet måste vara minst 8 tecken.",
         "confirmPasswordRequired": "Bekräfta ditt nya lösenord.",
         "passwordMismatch": "Lösenorden matchar inte."
     },

@@ -1,6 +1,6 @@
 {
-    "title": "Nastavenia overovania",
-    "description": "Konfigurujte spôsob prihlasovania vo vašej inštancii Booklore. Interné prihlásenie je vždy aktívne a voliteľne môžete povoliť OIDC pre externých poskytovateľov.",
+    "title": "Nastavenia OIDC",
+    "description": "Konfigurujte OpenID Connect (OIDC) pre jednotné prihlásenie (SSO) s externými poskytovateľmi identity, ako sú Authentik, Authelia alebo Pocket ID.",
     "methods": {
         "sectionTitle": "",
         "sectionDesc": ""

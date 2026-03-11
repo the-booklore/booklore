@@ -21,7 +21,7 @@
         "usernameRequired": "Användarnamn krävs.",
         "password": "KOReader-lösenord",
         "passwordDesc": "Ditt lösenord för autentisering med KOReader-synktjänsten.",
-        "passwordMinLength": "Lösenordet måste vara minst 6 tecken.",
+        "passwordMinLength": "Lösenordet måste vara minst 8 tecken.",
         "settingsManagement": "Inställningshantering",
         "settingsManagementDesc": "Spara dina uppgifter eller redigera befintliga inställningar.",
         "accessDenied": "Åtkomst till KOReader-synk är begränsad.",

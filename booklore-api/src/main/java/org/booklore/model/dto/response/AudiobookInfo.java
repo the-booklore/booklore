@@ -22,6 +22,7 @@ public class AudiobookInfo {
     private String codec;
     private Integer sampleRate;
     private Integer channels;
+    private Long totalSizeBytes;
     private boolean folderBased;
     private List<AudiobookChapter> chapters;
     private List<AudiobookTrack> tracks;

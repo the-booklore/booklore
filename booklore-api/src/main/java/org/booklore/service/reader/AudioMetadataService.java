@@ -46,7 +46,8 @@ public class AudioMetadataService {
         AudiobookInfo.AudiobookInfoBuilder builder = AudiobookInfo.builder()
                 .bookId(bookFile.getBook().getId())
                 .bookFileId(bookFile.getId())
-                .folderBased(false);
+                .folderBased(false)
+                .totalSizeBytes(bookFile.getFileSizeKb() != null ? bookFile.getFileSizeKb() * 1024 : Files.size(audioPath));
 
         if (bookFile.getDurationSeconds() != null) {
             BookMetadataEntity metadata = bookFile.getBook().getMetadata();
@@ -203,10 +204,15 @@ public class AudioMetadataService {
             }
         }
 
+        long totalSizeBytes = tracks.stream()
+                .mapToLong(t -> t.getFileSizeBytes() != null ? t.getFileSizeBytes() : 0)
+                .sum();
+
         return builder
                 .title(title)
                 .author(author)
                 .durationMs(totalDurationMs)
+                .totalSizeBytes(totalSizeBytes > 0 ? totalSizeBytes : null)
                 .tracks(tracks)
                 .build();
     }

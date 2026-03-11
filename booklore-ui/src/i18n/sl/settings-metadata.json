@@ -65,7 +65,38 @@
     },
     "fieldSelector": {
         "sectionTitle": "Omogočena polja v urejevalniku in izbirniku",
-        "sectionDesc": "Izberi, katera polja metapodatkov naj se prikazujejo pri urejanju informacij o knjigi ali izbiranju metapodatkov od ponudnikov. Onemogočena polja bodo v vmesniku skrita."
+        "sectionDesc": "Izberi, katera polja metapodatkov naj se prikazujejo pri urejanju informacij o knjigi ali izbiranju metapodatkov od ponudnikov. Onemogočena polja bodo v vmesniku skrita.",
+        "providers": {
+            "amazon": "Amazon",
+            "googleBooks": "Google knjige",
+            "goodreads": "Goodreads",
+            "hardcover": "Hardcover",
+            "audible": "Audible",
+            "comicvine": "Comicvine",
+            "lubimyczytac": "Lubimyczytac",
+            "ranobedb": "Ranobedb"
+        },
+        "fields": {
+            "asin": "Amazon ASIN",
+            "amazonRating": "Amazon ocena",
+            "amazonReviewCount": "Amazon število ocen",
+            "googleId": "Google knjige ID",
+            "goodreadsId": "Goodreads ID",
+            "goodreadsRating": "Goodreads ocena",
+            "goodreadsReviewCount": "Goodreads število ocen",
+            "hardcoverId": "Hardcover ID",
+            "hardcoverBookId": "Hardcover ID knjige",
+            "hardcoverRating": "Hardcover ocena",
+            "hardcoverReviewCount": "Hardcover število ocen",
+            "comicvineId": "Comicvine ID",
+            "lubimyczytacId": "Lubimyczytac ID",
+            "lubimyczytacRating": "Lubimyczytac ocena",
+            "ranobedbId": "Ranobedb ID",
+            "ranobedbRating": "Ranobedb ocena",
+            "audibleId": "Audible ID",
+            "audibleRating": "Audible ocena",
+            "audibleReviewCount": "Audible število ocen"
+        }
     },
     "publicReviews": {
         "sectionTitle": "Javna mnenja",
@@ -91,6 +122,34 @@
         "saveSuccess": "Uteži so bile uspešno shranjene",
         "saveError": "Shranjevanje uteži ni uspelo",
         "recalcSuccess": "Vsi rezultati ujemanja knjig so bili uspešno ponovno izračunani.",
-        "recalcError": "Ponovni izračun rezultatov ujemanja ni uspel."
+        "recalcError": "Ponovni izračun rezultatov ujemanja ni uspel.",
+        "fields": {
+            "title": "Naslov",
+            "subtitle": "Podnaslov",
+            "authors": "Avtorji",
+            "description": "Opis",
+            "publisher": "Založnik",
+            "publishedDate": "Datum objave",
+            "categories": "Kategorije",
+            "coverImage": "Naslovna slika",
+            "seriesName": "Ime serije",
+            "seriesNumber": "Številka serije",
+            "seriesTotal": "Skupaj v seriji",
+            "language": "Jezik",
+            "isbn13": "ISBN-13",
+            "isbn10": "ISBN-10",
+            "pageCount": "Število strani",
+            "amazonRating": "Amazon ocena",
+            "amazonReviewCount": "Amazon ocena #",
+            "goodreadsRating": "Goodreads ocena",
+            "goodreadsReviewCount": "Goodreads ocena #",
+            "hardcoverRating": "Hardcover ocena",
+            "hardcoverReviewCount": "Hardcover ocena #",
+            "audibleRating": "Audible ocena",
+            "audibleReviewCount": "Audible ocena #",
+            "doubanRating": "Douban ocena",
+            "doubanReviewCount": "Douban ocena #",
+            "ranobedbRating": "Ranobedb ocena"
+        }
     }
 }
