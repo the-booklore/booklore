@@ -187,14 +187,37 @@ public class FileUtils {
             "chapter", "track", "part", "disc", "disk", "cd", "side", "intro", "epilogue", "prologue", "outro"
     );
 
+    private static final Set<String> SINGLE_FILE_AUDIOBOOK_EXTENSIONS = Set.of("m4b", "m4a");
+
     /**
      * Determines if a list of audio files represents a series folder (each file is a separate book)
      * rather than a multi-file audiobook (chapter files for one book).
      *
-     * Extracts a "base title" from each file by stripping numbering, part indicators, and extensions,
-     * then counts distinct non-generic titles. If more than one distinct title exists, it's a series folder.
+     * Uses two signals:
+     * 1. File format: .m4b/.m4a files are typically complete audiobooks, so a folder of them
+     *    is likely a series. .mp3 files are typically chapters/tracks of one audiobook.
+     * 2. Title analysis (for .m4b/.m4a only): extracts base titles by stripping numbering and
+     *    part indicators. If multiple distinct non-generic titles exist, it's a series.
+     *
+     * For .mp3 files (the vast majority of chapter-based audiobooks), this always returns false
+     * regardless of naming convention, avoiding the impossible task of distinguishing descriptive
+     * chapter names from book titles via pattern matching.
      */
     public boolean isSeriesFolder(List<Path> audioFiles) {
+        if (audioFiles.size() < 2) {
+            return false;
+        }
+
+        boolean allSingleFileFormats = audioFiles.stream().allMatch(f -> {
+            String name = f.getFileName().toString().toLowerCase();
+            int dot = name.lastIndexOf('.');
+            return dot > 0 && SINGLE_FILE_AUDIOBOOK_EXTENSIONS.contains(name.substring(dot + 1));
+        });
+
+        if (!allSingleFileFormats) {
+            return false;
+        }
+
         Set<String> distinctTitles = new HashSet<>();
         for (Path file : audioFiles) {
             String title = extractBaseTitle(file.getFileName().toString());
@@ -243,12 +266,24 @@ public class FileUtils {
       ".caltrash"
     );
 
+    private final Set<String> tempExtensions = Set.of(
+            ".part", ".tmp", ".crdownload", ".download",
+            ".bak", ".old", ".temp", ".tempfile"
+    );
+
     public boolean shouldIgnore(Path path) {
-        if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
+        String fileName = path.getFileName().toString();
+        if (!fileName.isEmpty() && fileName.charAt(0) == '.') {
             return true;
         }
         for (Path part : path) {
             if (systemDirs.contains(part.toString())) {
+                return true;
+            }
+        }
+        String lowerName = fileName.toLowerCase();
+        for (String ext : tempExtensions) {
+            if (lowerName.endsWith(ext)) {
                 return true;
             }
         }

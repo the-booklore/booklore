@@ -10,6 +10,7 @@ import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.FileProcessStatus;
 import org.booklore.repository.BookAdditionalFileRepository;
 import org.booklore.repository.BookRepository;
+import org.booklore.repository.LibraryRepository;
 import org.booklore.service.event.BookEventBroadcaster;
 import org.booklore.service.file.FileFingerprint;
 import org.booklore.service.fileprocessor.BookFileProcessor;
@@ -51,6 +52,9 @@ class FileAsBookProcessorTest {
     private BookAdditionalFileRepository bookAdditionalFileRepository;
 
     @Mock
+    private LibraryRepository libraryRepository;
+
+    @Mock
     private FileService fileService;
 
     @Mock
@@ -77,6 +81,7 @@ class FileAsBookProcessorTest {
                 koboAutoShelfService,
                 bookRepository,
                 bookAdditionalFileRepository,
+                libraryRepository,
                 fileService,
                 metadataExtractorFactory,
                 audiobookMetadataExtractor
@@ -85,6 +90,7 @@ class FileAsBookProcessorTest {
         fileFingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("testhash");
         fileUtilsMock = mockStatic(FileUtils.class);
         fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
+
     }
 
     @AfterEach

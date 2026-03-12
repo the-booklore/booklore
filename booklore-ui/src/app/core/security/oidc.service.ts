@@ -47,10 +47,11 @@ export class OidcService {
     codeChallenge: string,
     state: string,
     nonce: string,
-    authorizationEndpoint?: string
+    authorizationEndpoint?: string,
+    scopes?: string
   ): Promise<string> {
     const redirectUri = `${window.location.origin}/oauth2-callback`;
-    const scope = 'openid profile email groups offline_access';
+    const scope = scopes?.trim() || 'openid profile email groups offline_access';
 
     if (authorizationEndpoint) {
       return Promise.resolve(this.buildUrl(authorizationEndpoint, clientId, redirectUri, scope, codeChallenge, state, nonce));

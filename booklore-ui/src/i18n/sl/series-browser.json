@@ -10,7 +10,7 @@
     "filters": {
         "all": "Vse",
         "notStarted": "Še nezačeto",
-        "inProgress": "V branju",
+        "inProgress": "V teku",
         "completed": "Prebrano",
         "abandoned": "Opuščeno"
     },

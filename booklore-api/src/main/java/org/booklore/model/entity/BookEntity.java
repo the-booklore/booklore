@@ -53,6 +53,9 @@ public class BookEntity {
     @Column(name = "added_on")
     private Instant addedOn;
 
+    @Column(name = "scanned_on")
+    private Instant scannedOn;
+
     @Column(name = "book_cover_hash", length = 20)
     private String bookCoverHash;
 

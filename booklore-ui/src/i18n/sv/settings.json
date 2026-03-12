@@ -8,7 +8,7 @@
         "users": "Användare",
         "email": "E-post",
         "patterns": "Mönster",
-        "authentication": "Autentisering",
+        "authentication": "OIDC",
         "tasks": "Uppgifter",
         "auditLogs": "Granskningsloggar",
         "opds": "OPDS",

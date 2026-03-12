@@ -1,17 +1,17 @@
 {
-    "title": "Autentiseringsinställningar",
-    "description": "Konfigurera autentiseringsmetoder för din Booklore-instans. Intern autentisering är alltid aktiverad, och du kan valfritt aktivera OIDC för externa autentiseringsleverantörer.",
+    "title": "OIDC-inställningar",
+    "description": "Konfigurera OpenID Connect (OIDC) för enkel inloggning med externa identitetsleverantörer som Authentik, Authelia eller Pocket ID.",
     "methods": {
-        "sectionTitle": "Autentiseringsmetoder",
-        "sectionDesc": "Välj vilka autentiseringsmetoder som är tillgängliga för användare att logga in med."
+        "sectionTitle": "Inloggningsmetoder",
+        "sectionDesc": "Välj vilka inloggningsmetoder som är tillgängliga för användare att logga in med."
     },
     "internal": {
-        "label": "Intern autentisering",
+        "label": "Lokal inloggning",
         "status": "Alltid aktiverad",
-        "description": "Inbyggd autentisering med användarnamn och lösenord. Detta är standardmetoden och kan inte inaktiveras."
+        "description": "Inbyggd autentisering med användarnamn och lösenord. Alltid tillgänglig för administratörer. Kan döljas för andra användare via OIDC-only-läge."
     },
     "oidc": {
-        "label": "OIDC-autentisering",
+        "label": "OIDC-inloggning",
         "experimental": "Experimentell",
         "description": "OpenID Connect för enkel inloggning med externa leverantörer (Authentik, Keycloak osv.).",
         "configHint": "Konfigurera inställningarna nedan för att aktivera.",
@@ -20,18 +20,18 @@
     },
     "providerConfig": {
         "sectionTitle": "OIDC-leverantörskonfiguration",
-        "sectionDesc": "Konfigurera dina OIDC-leverantörsinställningar. Alla fält krävs för att aktivera OIDC-autentisering.",
+        "sectionDesc": "Konfigurera dina OIDC-leverantörsinställningar. Alla fält krävs för att aktivera OIDC.",
         "providerName": "Leverantörsnamn",
         "providerPlaceholder": "t.ex. Authentik, Keycloak",
         "clientId": "Klient-ID",
         "clientIdPlaceholder": "Ditt OIDC-klient-ID",
-        "clientSecret": "",
-        "clientSecretPlaceholder": "",
-        "clientSecretHint": "",
+        "clientSecret": "Klientnyckel",
+        "clientSecretPlaceholder": "Din OIDC klientnyckel",
+        "clientSecretHint": "Krävs för konfidentiella klienter. Lämna tomt för offentliga klienter som endast använder PKCE.",
         "issuerUri": "Utfärdar-URI",
         "issuerPlaceholder": "t.ex. https://auth.example.com/realms/booklore",
-        "scope": "Scope",
-        "scopeHint": "Obligatoriska scopes för OIDC-inloggning. Måste stödjas av din leverantör.",
+        "scope": "Scopes",
+        "scopeHint": "Scopes skickade i OIDC-auktoriseringsbegäran. Lämna tomt om du vill använda standardvärdet.",
         "claimMappings": "Claim-mappningar",
         "claimDesc": "Mappa OIDC-token-claims till Booklore-användarfält. Dessa måste matcha din leverantörs token-claims.",
         "usernameClaim": "Användarnamns-claim",
@@ -39,7 +39,14 @@
         "emailClaim": "E-post-claim",
         "emailPlaceholder": "t.ex. email",
         "nameClaim": "Visningsnamn-claim",
-        "namePlaceholder": "t.ex. name"
+        "namePlaceholder": "t.ex. name",
+        "groupsClaim": "Gruppanspråk",
+        "groupsPlaceholder": "t.ex. grupper",
+        "sessionDuration": "Sessionens längd (timmar)",
+        "sessionDurationPlaceholder": "Systemstandard",
+        "sessionDurationHint": "Hur länge OIDC-användare är inloggade. Lämna tomt för att använda systemets standardvärde.",
+        "backchannelLogoutUri": "URI för utloggning från bakkanalen",
+        "backchannelLogoutHint": "Konfigurera denna URI i din OIDC-leverantör för att aktivera serverinitierad sessionsåterkallning."
     },
     "provisioning": {
         "sectionTitle": "Användarprovisionering",
@@ -51,7 +58,10 @@
         "defaultPerms": "Standardbehörigheter",
         "readBooks": "Läsa böcker",
         "defaultLibraryAccess": "Standard biblioteksåtkomst",
-        "selectLibraries": "Välj bibliotek som nya användare kan komma åt"
+        "selectLibraries": "Välj bibliotek som nya användare kan komma åt",
+        "linkLocalLabel": "Länka befintliga lokala konton",
+        "linkLocalDesc": "När det är aktiverat kommer befintliga lokalt skapade användare automatiskt att länkas till sin OIDC-identitet vid första OIDC-inloggningen om användarnamnen matchar. När det är inaktiverat kan endast användare som ursprungligen skapades via OIDC matchas med användarnamn.",
+        "linkLocalWarning": "Överväg att inaktivera detta efter att alla befintliga användare har loggat in via OIDC minst en gång. Om du lämnar det påslaget kan alla med ett matchande användarnamn hos din OIDC-leverantör ta över ett lokalt konto."
     },
     "perms": {
         "uploadBooks": "Ladda upp böcker",
@@ -72,5 +82,10 @@
         "providerError": "Kunde inte spara OIDC-leverantörsinställningar.",
         "provisionSaved": "OIDC-autoprovisioneringsinställningar sparade.",
         "provisionError": "Kunde inte spara OIDC-autoprovisioneringsinställningar."
+    },
+    "groupMapping": {
+        "sectionTitle": "Gruppmappning",
+        "sectionDesc": "Mappa OIDC-leverantörsgrupper till Booklore-behörigheter och biblioteksåtkomst. Användarnas behörigheter synkroniseras baserat på deras gruppmedlemskap.",
+        "syncModeLabel": "Gruppsynksläge"
     }
 }

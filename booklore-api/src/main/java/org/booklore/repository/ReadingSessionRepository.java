@@ -213,4 +213,182 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             @Param("userId") Long userId,
             @Param("year") int year,
             @Param("tzOffset") String tzOffset);
+
+    // ========================================================================
+    // Listening (audiobook) stats
+    // ========================================================================
+
+    @Query(value = """
+            SELECT DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as date,
+                   COUNT(*) as sessions,
+                   COALESCE(ROUND(SUM(duration_seconds) / 60.0), 0) as durationMinutes
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND book_type = 'AUDIOBOOK'
+            AND YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :year
+            AND MONTH(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :month
+            GROUP BY DATE(CONVERT_TZ(start_time, '+00:00', :tzOffset))
+            ORDER BY date
+            """, nativeQuery = true)
+    List<ListeningHeatmapDto> findListeningSessionsByUserAndMonth(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("month") int month,
+            @Param("tzOffset") String tzOffset);
+
+    @Query(value = """
+            SELECT YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as year,
+                   WEEK(CONVERT_TZ(start_time, '+00:00', :tzOffset), 3) as week,
+                   COALESCE(SUM(duration_seconds), 0) as totalDurationSeconds,
+                   COUNT(*) as sessions
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND book_type = 'AUDIOBOOK'
+            AND CONVERT_TZ(start_time, '+00:00', :tzOffset) >= DATE_SUB(NOW(), INTERVAL :weeks WEEK)
+            GROUP BY year, week
+            ORDER BY year, week
+            """, nativeQuery = true)
+    List<WeeklyListeningTrendDto> findWeeklyListeningTrend(
+            @Param("userId") Long userId,
+            @Param("weeks") int weeks,
+            @Param("tzOffset") String tzOffset);
+
+    @Query(value = """
+            SELECT rs.book_id as bookId,
+                   COALESCE(bm.title, 'Unknown') as title,
+                   COALESCE(MAX(rs.end_progress), 0) as maxProgress,
+                   COALESCE(MAX(bf.duration_seconds), 0) as totalDurationSeconds,
+                   SUM(rs.duration_seconds) as listenedDurationSeconds
+            FROM reading_sessions rs
+            JOIN book b ON rs.book_id = b.id
+            LEFT JOIN book_metadata bm ON bm.book_id = b.id
+            LEFT JOIN book_file bf ON bf.book_id = b.id AND bf.book_type = 'AUDIOBOOK'
+            WHERE rs.user_id = :userId
+            AND rs.book_type = 'AUDIOBOOK'
+            GROUP BY rs.book_id, bm.title
+            """, nativeQuery = true)
+    List<AudiobookProgressDto> findAudiobookProgressByUser(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT YEAR(COALESCE(ubp.date_finished, ubp.read_status_modified_time)) as year,
+                   MONTH(COALESCE(ubp.date_finished, ubp.read_status_modified_time)) as month,
+                   COUNT(*) as booksCompleted
+            FROM user_book_progress ubp
+            WHERE ubp.user_id = :userId
+            AND ubp.read_status = 'READ'
+            AND COALESCE(ubp.date_finished, ubp.read_status_modified_time) IS NOT NULL
+            AND EXISTS (
+                SELECT 1 FROM reading_sessions rs
+                WHERE rs.book_id = ubp.book_id
+                AND rs.user_id = ubp.user_id
+                AND rs.book_type = 'AUDIOBOOK'
+            )
+            GROUP BY year, month
+            ORDER BY year DESC, month DESC
+            """, nativeQuery = true)
+    List<MonthlyCompletedAudiobookDto> findMonthlyCompletedAudiobooks(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as year,
+                   MONTH(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as month,
+                   COALESCE(SUM(duration_seconds), 0) as totalDurationSeconds
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND book_type = 'AUDIOBOOK'
+            GROUP BY year, month
+            ORDER BY year DESC, month DESC
+            """, nativeQuery = true)
+    List<MonthlyListeningDurationDto> findMonthlyListeningDurations(
+            @Param("userId") Long userId,
+            @Param("tzOffset") String tzOffset);
+
+    @Query(value = """
+            SELECT
+                HOUR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) as hourOfDay,
+                COUNT(*) as sessionCount,
+                SUM(duration_seconds) as totalDurationSeconds
+            FROM reading_sessions
+            WHERE user_id = :userId
+            AND book_type = 'AUDIOBOOK'
+            AND (:year IS NULL OR YEAR(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :year)
+            AND (:month IS NULL OR MONTH(CONVERT_TZ(start_time, '+00:00', :tzOffset)) = :month)
+            GROUP BY HOUR(CONVERT_TZ(start_time, '+00:00', :tzOffset))
+            ORDER BY hourOfDay
+            """, nativeQuery = true)
+    List<PeakReadingHourDto> findListeningPeakHoursByUser(
+            @Param("userId") Long userId,
+            @Param("year") Integer year,
+            @Param("month") Integer month,
+            @Param("tzOffset") String tzOffset);
+
+    @Query("""
+            SELECT
+                c.name as genre,
+                COUNT(DISTINCT b.id) as bookCount,
+                COUNT(rs) as totalSessions,
+                SUM(rs.durationSeconds) as totalDurationSeconds
+            FROM ReadingSessionEntity rs
+            JOIN rs.book b
+            JOIN b.metadata.categories c
+            WHERE rs.user.id = :userId
+            AND rs.bookType = org.booklore.model.enums.BookFileType.AUDIOBOOK
+            GROUP BY c.name
+            ORDER BY totalDurationSeconds DESC
+            """)
+    List<GenreStatisticsDto> findListeningGenreStatisticsByUser(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT a.name as authorName,
+                   COUNT(DISTINCT rs.book_id) as bookCount,
+                   COUNT(*) as totalSessions,
+                   COALESCE(SUM(rs.duration_seconds), 0) as totalDurationSeconds
+            FROM reading_sessions rs
+            JOIN book_metadata_author_mapping bam ON bam.book_id = rs.book_id
+            JOIN author a ON a.id = bam.author_id
+            WHERE rs.user_id = :userId
+            AND rs.book_type = 'AUDIOBOOK'
+            GROUP BY a.name
+            ORDER BY totalDurationSeconds DESC
+            """, nativeQuery = true)
+    List<ListeningAuthorDto> findListeningAuthorStatsByUser(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT
+                HOUR(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset))
+                    + MINUTE(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) / 60.0 as hourOfDay,
+                rs.duration_seconds / 60.0 as durationMinutes,
+                DAYOFWEEK(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) as dayOfWeek
+            FROM reading_sessions rs
+            WHERE rs.user_id = :userId
+            AND rs.book_type = 'AUDIOBOOK'
+            ORDER BY rs.start_time DESC
+            LIMIT 500
+            """, nativeQuery = true)
+    List<SessionScatterDto> findListeningSessionScatterByUser(
+            @Param("userId") Long userId,
+            @Param("tzOffset") String tzOffset);
+
+    @Query(value = """
+            SELECT rs.book_id as bookId,
+                   COALESCE(bm.title, 'Unknown') as title,
+                   bm.page_count as pageCount,
+                   MIN(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) as firstSessionDate,
+                   MAX(CONVERT_TZ(rs.end_time, '+00:00', :tzOffset)) as lastSessionDate,
+                   COUNT(*) as totalSessions,
+                   COALESCE(SUM(rs.duration_seconds), 0) as totalDurationSeconds,
+                   COALESCE(MAX(rs.end_progress), 0) / 100.0 as maxProgress,
+                   ubp.read_status as readStatus
+            FROM reading_sessions rs
+            JOIN book b ON rs.book_id = b.id
+            LEFT JOIN book_metadata bm ON bm.book_id = b.id
+            LEFT JOIN user_book_progress ubp ON ubp.book_id = rs.book_id AND ubp.user_id = rs.user_id
+            WHERE rs.user_id = :userId
+            AND YEAR(CONVERT_TZ(rs.start_time, '+00:00', :tzOffset)) = :year
+            GROUP BY rs.book_id, bm.title, bm.page_count, ubp.read_status
+            ORDER BY firstSessionDate
+            """, nativeQuery = true)
+    List<BookTimelineDto> findBookTimelineByUserAndYear(
+            @Param("userId") Long userId,
+            @Param("year") int year,
+            @Param("tzOffset") String tzOffset);
 }

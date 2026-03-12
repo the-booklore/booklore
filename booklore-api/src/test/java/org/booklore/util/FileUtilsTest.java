@@ -186,6 +186,37 @@ class FileUtilsTest {
     }
 
     @Test
+    void testShouldIgnore_tempFileExtensions_returnsTrue() {
+        List<String> tempFiles = List.of(
+                "book.epub.part", "book.epub.tmp", "book.epub.crdownload",
+                "book.epub.download", "book.epub.bak", "book.epub.old",
+                "book.epub.temp", "book.epub.tempfile"
+        );
+        for (String name : tempFiles) {
+            assertTrue(FileUtils.shouldIgnore(tempDir.resolve(name)), "Should ignore: " + name);
+        }
+    }
+
+    @Test
+    void testShouldIgnore_standaloneTempFile_returnsTrue() {
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("something.tmp")));
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("download.part")));
+    }
+
+    @Test
+    void testShouldIgnore_tempExtensionCaseInsensitive_returnsTrue() {
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("book.epub.PART")));
+        assertTrue(FileUtils.shouldIgnore(tempDir.resolve("book.epub.TMP")));
+    }
+
+    @Test
+    void testShouldIgnore_normalBookFile_returnsFalse() {
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("book.epub")));
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("book.pdf")));
+        assertFalse(FileUtils.shouldIgnore(tempDir.resolve("audiobook.m4b")));
+    }
+
+    @Test
     void testGetFileSizeInKb_validFile_returnsSize() throws IOException {
         Path file = tempDir.resolve("test.txt");
         Files.write(file, "test".getBytes());
@@ -485,13 +516,12 @@ class FileUtilsTest {
     }
 
     @Test
-    void testIsSeriesFolder_noExtension_returnsTrue() {
-        // Files without dots in the name (no extension confusion)
+    void testIsSeriesFolder_noExtension_returnsFalse() {
         List<Path> files = List.of(
                 Path.of("The Lightning Thief"),
                 Path.of("The Sea of Monsters")
         );
-        assertTrue(FileUtils.isSeriesFolder(files));
+        assertFalse(FileUtils.isSeriesFolder(files));
     }
 
     @Test
@@ -534,6 +564,27 @@ class FileUtilsTest {
                 Path.of("2. Prince Caspian.m4b")
         );
         assertTrue(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_descriptiveChapterNames_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("CH01 THE BOY WHO LIVED.mp3"),
+                Path.of("CH02 THE VANISHING GLASS.mp3"),
+                Path.of("CH03 THE LETTERS FROM NO ONE.mp3"),
+                Path.of("CH04 THE KEEPER OF THE KEYS.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
+    }
+
+    @Test
+    void testIsSeriesFolder_numberedChaptersWithTitles_returnsFalse() {
+        List<Path> files = List.of(
+                Path.of("Suzanne Collins - Catching Fire 001.mp3"),
+                Path.of("Suzanne Collins - Catching Fire 002.mp3"),
+                Path.of("Suzanne Collins - Catching Fire 003.mp3")
+        );
+        assertFalse(FileUtils.isSeriesFolder(files));
     }
 
     @Test

@@ -3,6 +3,7 @@ package org.booklore.model.dto.request;
 import org.booklore.model.dto.LibraryPath;
 import org.booklore.model.enums.BookFileType;
 import org.booklore.model.enums.IconType;
+import org.booklore.model.enums.LibraryOrganizationMode;
 import org.booklore.model.enums.MetadataSource;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
@@ -33,4 +34,5 @@ public class CreateLibraryRequest {
     private List<BookFileType> formatPriority;
     private List<BookFileType> allowedFormats;
     private MetadataSource metadataSource;
+    private LibraryOrganizationMode organizationMode;
 }

@@ -1,7 +1,7 @@
 {
     "toolbar": {
         "switchToLightMode": "Prepnúť do svetlého režimu",
-        "switchToDarkMode": "",
+        "switchToDarkMode": "Prepni do tmavého režimu",
         "closePdfReader": ""
     },
     "toast": {

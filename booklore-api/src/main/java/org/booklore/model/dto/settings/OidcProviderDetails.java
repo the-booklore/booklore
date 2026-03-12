@@ -8,6 +8,7 @@ public class OidcProviderDetails {
     private String clientId;
     private String clientSecret;
     private String issuerUri;
+    private String scopes;
     private ClaimMapping claimMapping;
 
     @Data
