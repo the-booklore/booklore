@@ -607,6 +607,7 @@
     "descriptionMulti": "Select shelves for {{ count }} book(s)",
     "descriptionSingle": "Organize \"{{ title }}\" into your shelves",
     "shelvesAvailable": "{{ count }} shelf(ves) available",
+    "searchPlaceholder": "Search shelves...",
     "emptyTitle": "No Shelves Available",
     "emptyDescription": "Create your first shelf to start organizing your books.<br/>Click the button below to get started.",
     "createShelf": "Create Shelf",
