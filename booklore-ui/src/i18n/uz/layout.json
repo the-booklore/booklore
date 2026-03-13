@@ -1,55 +1,55 @@
 {
   "topbar": {
     "bookdrop": "Bookdrop",
-    "createNewLibrary": "Create New Library",
-    "uploadBook": "Upload Book",
-    "charts": "Charts",
-    "metadataManager": "Metadata Manager",
-    "settings": "Settings",
-    "documentation": "Documentation",
-    "profile": "Profile",
-    "logout": "Logout",
-    "language": "Language",
-    "supportBookLore": "Support BookLore",
-    "notificationAriaLabel": "Unified Notification Icon",
-    "createLibrary": "Create Library",
-    "stats": "Stats",
-    "libraryStats": "Library Stats",
-    "readingStats": "Reading Stats"
+    "createNewLibrary": "Yangi kutubxona yaratish",
+    "uploadBook": "Kitob yuklash",
+    "charts": "Diagrammalar",
+    "metadataManager": "Metadata boshqaruvi",
+    "settings": "Sozlamalar",
+    "documentation": "Hujjatlar",
+    "profile": "Profil",
+    "logout": "Chiqish",
+    "language": "Til",
+    "supportBookLore": "BookLore'ni qo‘llab-quvvatlash",
+    "notificationAriaLabel": "Yagona bildirishnoma belgisi",
+    "createLibrary": "Kutubxona yaratish",
+    "stats": "Statistika",
+    "libraryStats": "Kutubxona statistikasi",
+    "readingStats": "O‘qish statistikasi"
   },
   "menu": {
-    "home": "Home",
-    "dashboard": "Dashboard",
-    "allBooks": "All Books",
-    "libraries": "Libraries",
-    "shelves": "Shelves",
-    "magicShelves": "Magic Shelves",
-    "unshelved": "Unshelved",
-    "series": "Series",
-    "authors": "Authors",
-    "notebook": "Notebook",
-    "update": "(Update)"
+    "home": "Bosh sahifa",
+    "dashboard": "Boshqaruv paneli",
+    "allBooks": "Barcha kitoblar",
+    "libraries": "Kutubxonalar",
+    "shelves": "Javonlar",
+    "magicShelves": "Sehrli javonlar",
+    "unshelved": "Javonga joylanmagan",
+    "series": "Seriyalar",
+    "authors": "Mualliflar",
+    "notebook": "Daftar",
+    "update": "(Yangilanish)"
   },
   "changelog": {
-    "title": "What's New",
-    "description": "Latest updates and improvements",
-    "loading": "Loading changelog...",
-    "empty": "No updates available."
+    "title": "Yangiliklar",
+    "description": "So‘nggi yangilanishlar va yaxshilanishlar",
+    "loading": "Yangilanishlar yuklanmoqda...",
+    "empty": "Hozircha yangilanishlar mavjud emas."
   },
   "theme": {
-    "primary": "Primary",
-    "surface": "Surface"
+    "primary": "Asosiy",
+    "surface": "Yuza"
   },
   "uploadDialog": {
-    "chooseFile": "Choose File:",
-    "selectImage": "Select Image",
-    "fileNote": "Supported formats: JPEG, PNG \u2022 Maximum file size: 5 MB",
-    "or": "OR",
-    "imageUrl": "Image URL:",
-    "urlPlaceholder": "Paste image URL here",
-    "urlNote": "Supported formats: JPEG, PNG \u2022 Maximum file size: 5 MB",
-    "errorNoInput": "Please select a file or paste a URL.",
-    "errorUploadFailed": "Failed to upload image.",
-    "errorUploadRetry": "Upload failed. Please try again."
+    "chooseFile": "Faylni tanlang:",
+    "selectImage": "Rasm tanlash",
+    "fileNote": "Qo‘llab-quvvatlanadigan formatlar: JPEG, PNG • Maksimal fayl hajmi: 5 MB",
+    "or": "YOKI",
+    "imageUrl": "Rasm URL manzili:",
+    "urlPlaceholder": "Rasm URL manzilini shu yerga joylashtiring",
+    "urlNote": "Qo‘llab-quvvatlanadigan formatlar: JPEG, PNG • Maksimal fayl hajmi: 5 MB",
+    "errorNoInput": "Iltimos faylni tanlang yoki URL joylashtiring.",
+    "errorUploadFailed": "Rasmni yuklash muvaffaqiyatsiz tugadi.",
+    "errorUploadRetry": "Yuklash muvaffaqiyatsiz tugadi. Iltimos yana urinib ko‘ring."
   }
 }

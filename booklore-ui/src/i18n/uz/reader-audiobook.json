@@ -1,64 +1,64 @@
 {
-  "loading": "Loading audiobook...",
-  "untitled": "Untitled",
-  "unknownAuthor": "Unknown Author",
-  "coverAlt": "Cover",
+  "loading": "Audiokitob yuklanmoqda...",
+  "untitled": "Sarlavhasiz",
+  "unknownAuthor": "Noma'lum muallif",
+  "coverAlt": "Muqova",
   "header": {
-    "backTooltip": "Back",
-    "bookmarksTooltip": "Bookmarks",
-    "chaptersTracksTooltip": "Chapters/Tracks"
+    "backTooltip": "Orqaga",
+    "bookmarksTooltip": "Xatcho'plar",
+    "chaptersTracksTooltip": "Boblar/Treklar"
   },
   "trackInfo": {
-    "trackOf": "Track {{ current }} of {{ total }}",
-    "chapterOf": "Chapter {{ current }} of {{ total }}"
+    "trackOf": "Trek {{ current }} / {{ total }}",
+    "chapterOf": "Bob {{ current }} / {{ total }}"
   },
   "controls": {
-    "previousTrackTooltip": "Previous Track",
-    "previousChapterTooltip": "Previous Chapter",
+    "previousTrackTooltip": "Oldingi trek",
+    "previousChapterTooltip": "Oldingi bob",
     "rewindTooltip": "-30s",
     "forwardTooltip": "+30s",
-    "nextTrackTooltip": "Next Track",
-    "nextChapterTooltip": "Next Chapter"
+    "nextTrackTooltip": "Keyingi trek",
+    "nextChapterTooltip": "Keyingi bob"
   },
   "extra": {
-    "addBookmark": "Add Bookmark",
-    "sleepTimer": "Sleep Timer",
-    "endOfChapter": "End of chapter"
+    "addBookmark": "Xatcho'p qo'shish",
+    "sleepTimer": "Uyqu taymeri",
+    "endOfChapter": "Bob oxiri"
   },
   "details": {
-    "narratedBy": "Narrated by {{ narrator }}",
+    "narratedBy": "{{ narrator }} tomonidan o'qilgan",
     "kbps": "{{ bitrate }} kbps",
-    "totalDuration": "{{ duration }} total"
+    "totalDuration": "{{ duration }} jami"
   },
   "sidebar": {
-    "tracks": "Tracks",
-    "chapters": "Chapters"
+    "tracks": "Treklar",
+    "chapters": "Boblar"
   },
   "bookmarks": {
-    "title": "Bookmarks",
-    "empty": "No bookmarks yet",
-    "emptyHint": "Add a bookmark to save your place",
-    "deleteTooltip": "Delete",
-    "bookmarkAt": "Bookmark at {{ time }}"
+    "title": "Xatcho'plar",
+    "empty": "Hali xatcho'plar yo'q",
+    "emptyHint": "Joyingizni saqlash uchun xatcho'p qo'shing",
+    "deleteTooltip": "O'chirish",
+    "bookmarkAt": "{{ time }} da xatcho'p"
   },
   "sleepTimerMenu": {
-    "minutes15": "15 minutes",
-    "minutes30": "30 minutes",
-    "minutes45": "45 minutes",
-    "minutes60": "60 minutes",
-    "endOfChapter": "End of chapter",
-    "cancelTimer": "Cancel timer"
+    "minutes15": "15 daqiqa",
+    "minutes30": "30 daqiqa",
+    "minutes45": "45 daqiqa",
+    "minutes60": "60 daqiqa",
+    "endOfChapter": "Bob oxiri",
+    "cancelTimer": "Taymerni bekor qilish"
   },
   "toast": {
-    "loadFailed": "Failed to load audiobook",
-    "audioLoadFailed": "Failed to load audio",
-    "sleepTimerSet": "Playback will stop in {{ minutes }} minutes",
-    "sleepTimerEndOfChapter": "Playback will stop at end of chapter",
-    "sleepTimerStopped": "Playback stopped by sleep timer",
-    "bookmarkAdded": "Bookmark Added",
-    "bookmarkExists": "Bookmark Exists",
-    "bookmarkExistsDetail": "A bookmark already exists at this position",
-    "bookmarkFailed": "Failed to add bookmark",
-    "bookmarkDeleted": "Bookmark Deleted"
+    "loadFailed": "Audiokitobni yuklash muvaffaqiyatsiz",
+    "audioLoadFailed": "Audioni yuklash muvaffaqiyatsiz",
+    "sleepTimerSet": "Ijro {{ minutes }} daqiqadan keyin to'xtaydi",
+    "sleepTimerEndOfChapter": "Ijro bob oxirida to'xtaydi",
+    "sleepTimerStopped": "Ijro uyqu taymeri tomonidan to'xtatildi",
+    "bookmarkAdded": "Xatcho'p qo'shildi",
+    "bookmarkExists": "Xatcho'p mavjud",
+    "bookmarkExistsDetail": "Bu joyda allaqachon xatcho'p mavjud",
+    "bookmarkFailed": "Xatcho'p qo'shish muvaffaqiyatsiz",
+    "bookmarkDeleted": "Xatcho'p o'chirildi"
   }
 }

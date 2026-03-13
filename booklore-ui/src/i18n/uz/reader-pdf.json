@@ -1,10 +1,10 @@
 {
   "toolbar": {
-    "switchToLightMode": "Switch to Light Mode",
-    "switchToDarkMode": "Switch to Dark Mode",
-    "closePdfReader": "Close PDF Reader"
+    "switchToLightMode": "Yorug' rejimga o'tish",
+    "switchToDarkMode": "Qora rejimga o'tish",
+    "closePdfReader": "PDF o'quvchini yopish"
   },
   "toast": {
-    "failedToLoadBook": "Failed to load the book"
+    "failedToLoadBook": "Kitobni yuklash muvaffaqiyatsiz"
   }
 }

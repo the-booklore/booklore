@@ -1,17 +1,17 @@
 {
   "tabs": {
-    "reader": "Reader",
-    "view": "View",
-    "metadata1": "Metadata 1",
-    "metadata2": "Metadata 2",
-    "application": "Application",
-    "users": "Users",
+    "reader": "O'quvchi",
+    "view": "Ko'rish",
+    "metadata1": "Metama'lumotlar 1",
+    "metadata2": "Metama'lumotlar 2",
+    "application": "Ilova",
+    "users": "Foydalanuvchilar",
     "email": "Email",
-    "patterns": "Patterns",
+    "patterns": "Naqshlar",
     "authentication": "OIDC",
-    "tasks": "Tasks",
-    "auditLogs": "Audit Logs",
+    "tasks": "Vazifalar",
+    "auditLogs": "Audit jurnallari",
     "opds": "OPDS",
-    "devices": "Devices"
+    "devices": "Qurilmalar"
   }
 }

@@ -1,25 +1,25 @@
 {
-  "pageTitle": "Series",
-  "browseAllSeries": "Browse All Series",
-  "searchPlaceholder": "Search by series name or author...",
-  "readNext": "Read Next",
-  "booksRead": "books read",
-  "noSeriesFound": "No series match your search or filters.",
-  "noSeriesInCategory": "No series found in this category.",
-  "cardSize": "Card Size",
+  "pageTitle": "Seriyalar",
+  "browseAllSeries": "Barcha seriyalarni ko'rish",
+  "searchPlaceholder": "Seriya nomi yoki muallif bo'yicha qidirish...",
+  "readNext": "Keyingisini o'qish",
+  "booksRead": "kitob o'qildi",
+  "noSeriesFound": "Qidiruvingiz yoki filtrlaringizga mos seriya yo'q.",
+  "noSeriesInCategory": "Bu kategoriyada seriya topilmadi.",
+  "cardSize": "Karta o'lchami",
   "filters": {
-    "all": "All",
-    "notStarted": "Not Started",
-    "inProgress": "In Progress",
-    "completed": "Completed",
-    "abandoned": "Abandoned"
+    "all": "Hammasi",
+    "notStarted": "Boshlanmagan",
+    "inProgress": "Davom etmoqda",
+    "completed": "Tugagan",
+    "abandoned": "Tashlangan"
   },
   "sort": {
-    "nameAsc": "Name (A-Z)",
-    "nameDesc": "Name (Z-A)",
-    "bookCount": "Book Count",
+    "nameAsc": "Nomi (A-Z)",
+    "nameDesc": "Nomi (Z-A)",
+    "bookCount": "Kitob soni",
     "progress": "Progress",
-    "recentlyRead": "Recently Read",
-    "recentlyAdded": "Recently Added"
+    "recentlyRead": "Yaqinda o'qilgan",
+    "recentlyAdded": "Yaqinda qo'shilgan"
   }
 }
