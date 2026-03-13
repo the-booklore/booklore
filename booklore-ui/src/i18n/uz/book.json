@@ -59,7 +59,7 @@
       "search": "Qidiruv",
       "toggleSidebar": "Yon panel filtrlarini o'zgartirish",
       "metadataActions": "Metama'lumot harakatlari",
-      "assignToShelf": "Javonga tayinlash",
+      "assignToShelf": "Javonga joylash",
       "removeFromShelf": "Bu javondan olib tashlash",
       "lockUnlockMetadata": "Metama'lumotni qulflash/ochish",
       "organizeFiles": "Fayllarni tartibga solish",
@@ -76,11 +76,11 @@
   },
   "card": {
     "menu": {
-      "assignShelf": "Javon tayinlash",
+      "assignShelf": "Javonga joylash",
       "viewDetails": "Tafsilotlarni ko'rish",
       "download": "Yuklab olish",
       "delete": "O'chirish",
-      "emailBook": "Kitobni email qilish",
+      "emailBook": "Kitobni emaildan yuborish",
       "quickSend": "Tez yuborish",
       "customSend": "Maxsus yuborish",
       "metadata": "Metama'lumot",
@@ -840,7 +840,7 @@
     },
     "tooltip": {
       "metadataActions": "Metama'lumot harakatlari",
-      "assignToShelf": "Javonga tayinlash",
+      "assignToShelf": "Javonga joylash",
       "lockUnlockMetadata": "Metama'lumotni qulflash/ochish",
       "organizeFiles": "Fayllarni tartibga solish",
       "moreActions": "Ko'proq harakatlar",
