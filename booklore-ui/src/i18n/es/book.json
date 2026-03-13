@@ -607,6 +607,7 @@
         "descriptionMulti": "Seleccionar estantes para {{ count }} libro(s)",
         "descriptionSingle": "Organizar \"{{ title }}\" en tus estantes",
         "shelvesAvailable": "{{ count }} estante(s) disponible(s)",
+        "searchPlaceholder": "Buscar estantes...",
         "emptyTitle": "No hay estantes disponibles",
         "emptyDescription": "Crea tu primer estante para empezar a organizar tus libros.<br/>Haz clic en el botón de abajo para comenzar.",
         "createShelf": "Crear estante",
