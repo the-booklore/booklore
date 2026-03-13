@@ -89,25 +89,25 @@ public interface BookMapperV2 {
     @Named("mapAuthors")
     default List<String> mapAuthors(List<AuthorEntity> authors) {
         return authors == null ? List.of() :
-                authors.stream().map(AuthorEntity::getName).toList();
+                authors.stream().filter(java.util.Objects::nonNull).map(AuthorEntity::getName).toList();
     }
 
     @Named("mapCategories")
     default Set<String> mapCategories(Set<CategoryEntity> categories) {
         return categories == null ? Set.of() :
-                categories.stream().map(CategoryEntity::getName).collect(Collectors.toSet());
+                categories.stream().filter(java.util.Objects::nonNull).map(CategoryEntity::getName).collect(Collectors.toSet());
     }
 
     @Named("mapMoods")
     default Set<String> mapMoods(Set<MoodEntity> moods) {
         return moods == null ? Set.of() :
-                moods.stream().map(MoodEntity::getName).collect(Collectors.toSet());
+                moods.stream().filter(java.util.Objects::nonNull).map(MoodEntity::getName).collect(Collectors.toSet());
     }
 
     @Named("mapTags")
     default Set<String> mapTags(Set<TagEntity> tags) {
         return tags == null ? Set.of() :
-                tags.stream().map(TagEntity::getName).collect(Collectors.toSet());
+                tags.stream().filter(java.util.Objects::nonNull).map(TagEntity::getName).collect(Collectors.toSet());
     }
 
     @Named("mapPrimaryFile")
