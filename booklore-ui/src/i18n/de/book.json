@@ -462,7 +462,7 @@
             "fileTooLargeError": "Datei überschreitet die maximale Größe von {{ maxSize }}",
             "uploadFailedUnknown": "Hochladen aufgrund eines unbekannten Fehlers fehlgeschlagen."
         },
-        "supplementaryAllFormats": ""
+        "supplementaryAllFormats": "Für Zusatzdateien werden alle Dateiformate unterstützt."
     },
     "filter": {
         "title": "Filter",
@@ -860,6 +860,31 @@
         "libraryPlaceholder": "Wählen Sie eine Bibliothek aus",
         "tabFile": "Datei hochladen",
         "tabPaste": "ISBNs einfügen",
-        "chooseFile": "Datei auswählen"
+        "chooseFile": "Datei auswählen",
+        "closeTooltip": "Schließen",
+        "pastePlaceholder": "Füge hier die ISBNs ein, jeweils eine pro Zeile oder durch Kommas getrennt...",
+        "errorFileTooLarge": "Die Datei überschreitet die maximale Größe von 1 MB.",
+        "errorNoIsbns": "In der Eingabe wurden keine ISBNs gefunden.",
+        "errorTooMany": "Es werden nur die ersten {{max }} ISBNs importiert. Teile deine Datei für den Rest auf.",
+        "validCount": "{{count }} gültige ISBN(s)",
+        "skippedCount": "{{ count }} übersprungen",
+        "duplicatesRemoved": "{{count }} doppelte Einträge wurden entfernt",
+        "reason": {
+            "invalid": "Ungültiges ISBN-Format",
+            "alreadyExists": "Ist bereits in dieser Bibliothek vorhanden"
+        },
+        "previewLabel": "Zu importierende ISBNs",
+        "validationLibraryRequired": "Wähle eine Bibliothek aus",
+        "validationNoIsbns": "Lade eine Datei hoch oder füge ISBNs ein, um loszulegen",
+        "validationReady": "Bereit zum Importieren von {{count }} ISBN(s)",
+        "cancelButton": "Abbrechen",
+        "startImportButton": "Import starten",
+        "processingLabel": "Verarbeitung von {{current}} von {{total}}",
+        "lookingUp": "Metadaten werden abgerufen...",
+        "unknownError": "Unbekannter Fehler",
+        "processingHint": "Bereits erstellte Bücher bleiben erhalten, wenn Sie abbrechen.",
+        "cancelImportButton": "Import stoppen",
+        "summaryTitle": "Import beendet",
+        "summaryFailed": "Fehlgeschlagen"
     }
 }
