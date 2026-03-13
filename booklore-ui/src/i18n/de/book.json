@@ -452,7 +452,7 @@
         "statusReady": "Bereit",
         "statusFailed": "Fehlgeschlagen",
         "dragDropText": "Ziehen Sie eine Datei hierher, um sie hochzuladen.",
-        "supportedFormats": "Unterstützte Formate: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.mobi</strong>, <strong>.azw3</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+        "supportedFormats": "",
         "maxFileSize": "Maximale Dateigröße: {{ size }} pro Datei",
         "uploadForBook": "Eine zusätzliche Datei für <strong>{{ title }}</strong> hochladen.",
         "thisBook": "dieses Buch",
