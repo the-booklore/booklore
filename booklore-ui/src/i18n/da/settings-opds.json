@@ -1,6 +1,6 @@
 {
-    "title": "",
-    "description": "",
+    "title": "Konfiguration af OPDS",
+    "description": "Administrer dine OPDS-oplysninger og kontrollere, hvordan din bogsamling deles med læsnings apps. Som standard er alle biblioteker, du har adgang til, inkluderet i OPDS-feedet.",
     "server": {
         "sectionTitle": "",
         "sectionDesc": "",
@@ -57,9 +57,9 @@
     },
     "deleteConfirm": "",
     "deleteHeader": "",
-    "accessRestricted": "",
+    "accessRestricted": "Adgang begrænset",
     "accessDenied": "",
-    "contactAdmin": "",
+    "contactAdmin": "Kontakt din administrator for at anmode om tilladelse.",
     "loadError": "",
     "createSuccess": "",
     "createError": "",
