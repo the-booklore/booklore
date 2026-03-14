@@ -2,7 +2,7 @@
     "title": "Weergavevoorkeuren",
     "description": "Pas aan hoe boeken in uw bibliotheek worden weergegeven, inclusief rasterindeling, sorteeropties en zijbalkgedrag.",
     "librarySort": {
-        "sectionTitle": "",
+        "sectionTitle": "Voorkeuren voor bibliotheek- en plankweergave en sortering",
         "sectionDesc": "",
         "defaultPreferences": "",
         "defaultPreferencesDesc": "",
