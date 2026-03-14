@@ -376,7 +376,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
                    MAX(CONVERT_TZ(rs.end_time, '+00:00', :tzOffset)) as lastSessionDate,
                    COUNT(*) as totalSessions,
                    COALESCE(SUM(rs.duration_seconds), 0) as totalDurationSeconds,
-                   COALESCE(MAX(rs.end_progress), 0) as maxProgress,
+                   COALESCE(MAX(rs.end_progress), 0) / 100.0 as maxProgress,
                    ubp.read_status as readStatus
             FROM reading_sessions rs
             JOIN book b ON rs.book_id = b.id

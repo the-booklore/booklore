@@ -662,7 +662,7 @@ public class ReadingSessionService {
                 inProgress.add(ListeningCompletionResponse.AudiobookCompletionEntry.builder()
                         .bookId(dto.getBookId())
                         .title(dto.getTitle())
-                        .progressPercent(Math.round(maxProg * 1000.0) / 10.0)
+                        .progressPercent(Math.round(maxProg * 10.0) / 10.0)
                         .totalDurationSeconds(dto.getTotalDurationSeconds() != null ? dto.getTotalDurationSeconds() : 0L)
                         .listenedDurationSeconds(dto.getListenedDurationSeconds() != null ? dto.getListenedDurationSeconds() : 0L)
                         .build());
@@ -820,7 +820,7 @@ public class ReadingSessionService {
                             .title(dto.getTitle())
                             .totalDurationSeconds(dto.getTotalDurationSeconds() != null ? dto.getTotalDurationSeconds() : 0L)
                             .listenedDurationSeconds(dto.getListenedDurationSeconds() != null ? dto.getListenedDurationSeconds() : 0L)
-                            .progressPercent(Math.round(maxProg * 1000.0) / 10.0)
+                            .progressPercent(Math.round(maxProg * 10.0) / 10.0)
                             .build();
                 })
                 .collect(Collectors.toList());
