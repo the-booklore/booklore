@@ -1,6 +1,6 @@
 {
-    "accessRestricted": "",
-    "contactAdmin": "",
+    "accessRestricted": "Adgang begrænset",
+    "contactAdmin": "Kontakt din administrator for at anmode om tilladelse.",
     "copied": "",
     "copyFailed": "",
     "copiedDetail": "",
