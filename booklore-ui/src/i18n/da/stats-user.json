@@ -1,7 +1,7 @@
 {
     "main": {
-        "title": "",
-        "customizeLayout": "",
+        "title": "{{ navn }}'s Læsestatistik",
+        "customizeLayout": "Tilpas layout",
         "chartConfig": "",
         "resetLayout": "",
         "hideAll": "",
