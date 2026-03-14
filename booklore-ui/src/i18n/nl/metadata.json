@@ -2,7 +2,7 @@
     "center": {
         "title": "Boekdetails",
         "description": "Boekmetadata bekijken en bewerken",
-        "tabView": "",
+        "tabView": "Boekgegevens",
         "tabEdit": "",
         "tabSearch": "",
         "tabSidecar": ""
