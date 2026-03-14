@@ -1,6 +1,6 @@
 {
-    "title": "",
-    "description": "",
+    "title": "OIDC Indstillinger",
+    "description": "Konfigurer OpenID Connect (OIDC) for enkelt sign-on med eksterne identitetsudbydere som Authentik, Authelia eller Pocket ID.",
     "methods": {
         "sectionTitle": "",
         "sectionDesc": ""
