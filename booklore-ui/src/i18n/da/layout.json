@@ -1,7 +1,7 @@
 {
     "topbar": {
-        "bookdrop": "",
-        "createNewLibrary": "",
+        "bookdrop": "Bookdrop",
+        "createNewLibrary": "Opret nyt bibliotek",
         "uploadBook": "",
         "charts": "",
         "metadataManager": "",
