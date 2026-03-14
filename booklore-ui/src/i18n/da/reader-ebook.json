@@ -1,9 +1,9 @@
 {
     "reader": {
-        "loadingBook": ""
+        "loadingBook": "Indlæser bog..."
     },
     "metadataDialog": {
-        "title": "",
+        "title": "Bog information",
         "basicInformation": "",
         "titleLabel": "",
         "subtitle": "",
