@@ -2,7 +2,7 @@
     "header": {
         "titleEdit": "Magic Shelf bewerken",
         "titleCreate": "Magic Shelf Bouwer",
-        "description": ""
+        "description": "Maak slimme planken met aangepaste regels om uw boeken automatisch te organiseren"
     },
     "form": {
         "shelfName": "",
