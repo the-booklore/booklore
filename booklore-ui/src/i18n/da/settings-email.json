@@ -1,9 +1,9 @@
 {
-    "title": "",
-    "description": "",
-    "accessRestricted": "",
+    "title": "Email konfiguration",
+    "description": "Konfigurer e-mailindstillinger for at sende bøger direkte til dine enheder eller modtagere. Angiv e-mailudbydere (f.eks. Gmail, Outlook eller brugerdefinerede SMTP-servere) og administrer modtager-mailadresser.",
+    "accessRestricted": "Adgang begrænset",
     "accessDenied": "",
-    "contactAdmin": "",
+    "contactAdmin": "Kontakt din administrator for at anmode om tilladelse.",
     "provider": {
         "title": "",
         "description": "",
