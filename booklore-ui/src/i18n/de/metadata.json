@@ -386,7 +386,12 @@
             "deleteFileBtn": "Datei löschen",
             "deleteBookMessage": "Möchten Sie \"{{ title }}\" wirklich löschen?\n\nDer Bucheintrag wird dauerhaft aus Ihrer Bibliothek entfernt.\n\nDiese Aktion kann nicht rückgängig gemacht werden.",
             "deleteBookAllFilesMessage": "Möchten Sie \"{{ title }}\" wirklich löschen?\n\nDer Bucheintrag UND alle zugehörigen Dateien werden dauerhaft von Ihrem Dateisystem entfernt.\n\nDiese Aktion kann nicht rückgängig gemacht werden.",
-            "deleteEverythingBtn": "Alles löschen"
+            "deleteEverythingBtn": "Alles löschen",
+            "detachFileMessage": "Dadurch wird „{{ fileName }}“ aus diesem Buch entfernt und ein neues, eigenständiges Buch dafür erstellt. Die Datei wird nicht gelöscht.",
+            "detachFileCopyMetadata": "Metadaten in neues Buch kopieren",
+            "largeFileMessage": "Diese Datei ist größer als 25 MB. Manche E-Mail-Anbieter lehnen große Anhänge möglicherweise ab.\n\nMöchtest du sie trotzdem senden?",
+            "largeFileHeader": "Warnung: Große Datei",
+            "sendAnyway": "Trotzdem senden"
         },
         "audiobookAbridged": "Gekürzt",
         "menuMarkPhysical": "Als physisch markieren",
@@ -497,7 +502,11 @@
             "tag": "Schlagwort",
             "series": "Serie",
             "publisher": "Verlag",
-            "language": "Sprache"
+            "language": "Sprache",
+            "authors": "Autoren",
+            "genres": "Genres",
+            "seriesPlural": "Serien",
+            "languages": "Sprachen"
         },
         "placeholders": {
             "searchAuthors": "Autoren suchen...",
