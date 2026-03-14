@@ -1,7 +1,7 @@
 {
     "browser": {
         "confirm": {
-            "deleteMessage": "",
+            "deleteMessage": "Er du sikker på, at du vil slette {{ tælle }} bøg(er)?\n\nDette vil permanent fjerne bogfiler fra dit filsystem.\n\nDenne handling kan ikke fortrydes.",
             "deleteHeader": "",
             "regenCoverMessage": "",
             "regenCoverHeader": "",
