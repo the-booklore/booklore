@@ -1,6 +1,6 @@
 {
-    "title": "",
-    "description": "",
+    "title": "Læser indstillinger",
+    "description": "Konfigurer læseoplevelsesindstillinger for dit bibliotek. Indstil standardpræferencer, der tjener som tilsidesætter for individuelle bøger, eller lad hver bog vedligeholde sine egne brugerdefinerede indstillinger for PDF, EPUB, FB2, MOBI, AZW3 og CBX formater.",
     "appMode": {
         "title": "",
         "description": "",
