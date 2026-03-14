@@ -77,7 +77,7 @@ public class CronService {
         }
     }
 
-    private void isTelemetryEnabled() {
+    private boolean isTelemetryEnabled() {
         AppSettings settings = appSettingService.getAppSettings();
         return settings != null && settings.isTelemetryEnabled();
     }
