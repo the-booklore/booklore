@@ -46,7 +46,8 @@ public class AudioMetadataService {
         AudiobookInfo.AudiobookInfoBuilder builder = AudiobookInfo.builder()
                 .bookId(bookFile.getBook().getId())
                 .bookFileId(bookFile.getId())
-                .folderBased(false);
+                .folderBased(false)
+                .totalSizeBytes(bookFile.getFileSizeKb() != null ? bookFile.getFileSizeKb() * 1024 : Files.size(audioPath));
 
         if (bookFile.getDurationSeconds() != null) {
             BookMetadataEntity metadata = bookFile.getBook().getMetadata();
@@ -139,11 +140,10 @@ public class AudioMetadataService {
                 totalDurationMs += trackDurationMs;
 
                 if (i == 0) {
-                    long bitrateValue = header.getBitRateAsNumber();
-                    bitrate = bitrateValue > 0 ? (int) bitrateValue : null;
-                    codec = header.getEncodingType();
-                    sampleRate = header.getSampleRateAsNumber();
-                    channels = parseChannels(header.getChannels());
+                    bitrate = safeBitrate(header, trackPath);
+                    codec = safeEncodingType(header, trackPath);
+                    sampleRate = safeSampleRate(header, trackPath);
+                    channels = parseChannels(safeChannels(header, trackPath));
                     if (tag != null) {
                         title = getTagValue(tag, FieldKey.ALBUM, FieldKey.TITLE);
                         author = getTagValue(tag, FieldKey.ALBUM_ARTIST, FieldKey.ARTIST);
@@ -203,10 +203,15 @@ public class AudioMetadataService {
             }
         }
 
+        long totalSizeBytes = tracks.stream()
+                .mapToLong(t -> t.getFileSizeBytes() != null ? t.getFileSizeBytes() : 0)
+                .sum();
+
         return builder
                 .title(title)
                 .author(author)
                 .durationMs(totalDurationMs)
+                .totalSizeBytes(totalSizeBytes > 0 ? totalSizeBytes : null)
                 .tracks(tracks)
                 .build();
     }
@@ -216,13 +221,12 @@ public class AudioMetadataService {
         AudioHeader header = audioFile.getAudioHeader();
         Tag tag = audioFile.getTag();
 
-        long durationMs = (long) (header.getPreciseTrackLength() * 1000);
-        long bitrateValue = header.getBitRateAsNumber();
+        long durationMs = safeDurationMs(header, audioPath);
         builder.durationMs(durationMs)
-                .bitrate(bitrateValue > 0 ? (int) bitrateValue : null)
-                .codec(header.getEncodingType())
-                .sampleRate(header.getSampleRateAsNumber())
-                .channels(parseChannels(header.getChannels()));
+                .bitrate(safeBitrate(header, audioPath))
+                .codec(safeEncodingType(header, audioPath))
+                .sampleRate(safeSampleRate(header, audioPath))
+                .channels(parseChannels(safeChannels(header, audioPath)));
 
         if (tag != null) {
             builder.title(getTagValue(tag, FieldKey.TITLE, FieldKey.ALBUM))
@@ -351,6 +355,54 @@ public class AudioMetadataService {
         try {
             return Integer.parseInt(channels.replaceAll("[^0-9]", ""));
         } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private long safeDurationMs(AudioHeader header, Path audioPath) {
+        try {
+            return (long) (header.getPreciseTrackLength() * 1000);
+        } catch (RuntimeException e) {
+            log.warn("Failed to read track duration from {}", audioPath, e);
+            return 0L;
+        }
+    }
+
+    private Integer safeBitrate(AudioHeader header, Path audioPath) {
+        try {
+            long bitrateValue = header.getBitRateAsNumber();
+            return bitrateValue > 0 ? (int) bitrateValue : null;
+        } catch (RuntimeException e) {
+            log.debug("Audio header has no bitrate for {}", audioPath, e);
+            return null;
+        }
+    }
+
+    private Integer safeSampleRate(AudioHeader header, Path audioPath) {
+        try {
+            int sampleRate = header.getSampleRateAsNumber();
+            return sampleRate > 0 ? sampleRate : null;
+        } catch (RuntimeException e) {
+            log.debug("Audio header has no sample rate for {}", audioPath, e);
+            return null;
+        }
+    }
+
+    private String safeEncodingType(AudioHeader header, Path audioPath) {
+        try {
+            String encodingType = header.getEncodingType();
+            return encodingType != null && !encodingType.isBlank() ? encodingType : null;
+        } catch (RuntimeException e) {
+            log.debug("Audio header has no encoding type for {}", audioPath, e);
+            return null;
+        }
+    }
+
+    private String safeChannels(AudioHeader header, Path audioPath) {
+        try {
+            return header.getChannels();
+        } catch (RuntimeException e) {
+            log.debug("Audio header has no channel info for {}", audioPath, e);
             return null;
         }
     }

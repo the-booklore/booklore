@@ -1,5 +1,5 @@
 {
-    "title": "认证设置",
+    "title": "OIDC设置",
     "description": "配置 BookLore 实例的认证方式。内部认证始终启用，您可以选择启用 OIDC 进行外部认证。",
     "methods": {
         "sectionTitle": "认证方式",

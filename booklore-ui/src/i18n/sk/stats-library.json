@@ -1,7 +1,7 @@
 {
     "main": {
         "title": "Štatistiky knižnice",
-        "selectLibrary": "",
+        "selectLibrary": "Vyber knižnicu",
         "totalBooks": "",
         "books": "",
         "totalAuthors": "",

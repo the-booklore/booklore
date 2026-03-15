@@ -10,7 +10,7 @@ import { BookFileProgress } from '../../book/model/book.model';
   providedIn: 'root'
 })
 export class AudiobookService {
-  private readonly baseUrl = `${API_CONFIG.BASE_URL}/api/v1/audiobook`;
+  private readonly baseUrl = `${API_CONFIG.BASE_URL}/api/v1/audiobooks`;
   private readonly booksUrl = `${API_CONFIG.BASE_URL}/api/v1/books`;
 
   private http = inject(HttpClient);

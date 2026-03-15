@@ -6,5 +6,6 @@ public record BookFileProgress(
         @NotNull Long bookFileId,
         String positionData,
         String positionHref,
-        @NotNull Float progressPercent) {
+        @NotNull Float progressPercent,
+        String ttsPositionCfi) {
 }

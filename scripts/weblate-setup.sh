@@ -31,7 +31,7 @@ FILE_BASE="booklore-ui/src/i18n"
 SOURCE_LANG="en"
 
 # All languages the project supports
-LANGUAGES="en es de fr hr it ja nl pl pt ru sv zh"
+LANGUAGES="en es de fr hr it ja nl pl pt ru sv zh hu sl sk uk id da"
 
 # All translation domain files (without .json extension)
 COMPONENTS=(
@@ -70,13 +70,14 @@ COMPONENTS=(
   series-browser
   stats-library
   stats-user
+  author-browser
 )
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 auth_header="Authorization: Token ${TOKEN}"
 content_type="Content-Type: application/json"
 
-LANG_REGEX="^(en|es|de|fr|hr|it|ja|nl|pl|pt|ru|sv|zh)$"
+LANG_REGEX="^(en|es|de|fr|hr|it|ja|nl|pl|pt|ru|sv|zh|hu|sl|sk|uk|id|da)$"
 
 api_post() {
   local endpoint="$1"

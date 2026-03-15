@@ -189,7 +189,7 @@ public class SecurityConfig {
     @Order(7)
     public SecurityFilterChain audiobookStreamingSecurityChain(HttpSecurity http, AudiobookStreamingJwtFilter audiobookStreamingJwtFilter) throws Exception {
         http
-                .securityMatcher("/api/v1/audiobook/*/stream/**", "/api/v1/audiobook/*/track/*/stream/**", "/api/v1/audiobook/*/cover")
+                .securityMatcher("/api/v1/audiobooks/*/stream/**", "/api/v1/audiobooks/*/track/*/stream/**", "/api/v1/audiobooks/*/cover")
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -53,6 +53,7 @@ public class PhysicalBookService {
                 .libraryPath(null)
                 .isPhysical(true)
                 .addedOn(Instant.now())
+                .scannedOn(Instant.now())
                 .bookFiles(new ArrayList<>())
                 .build();
 

@@ -42,6 +42,8 @@
         "doubleTap": "Doble toque",
         "toggleSlideshow": "Alternar presentación / reproducción automática",
         "toggleMagnifier": "Alternar lupa",
+        "magnifierZoom": "Zoom de lupa (cuando está activa)",
+        "magnifierLensSize": "Tamaño de lente de lupa (cuando está activa)",
         "showHelpDialog": "Mostrar este diálogo de ayuda"
     },
     "footer": {
@@ -106,7 +108,9 @@
         "background": "Fondo",
         "black": "Negro",
         "gray": "Gris",
-        "white": "Blanco"
+        "white": "Blanco",
+        "magnifierLensSize": "Tamaño de lente",
+        "magnifierZoom": "Aumento"
     },
     "sidebar": {
         "contentTab": "Contenido",
@@ -114,12 +118,12 @@
         "notesTab": "Notas",
         "noPagesFound": "No se encontraron páginas",
         "noBookmarksYet": "Aún no hay marcadores",
-        "bookmarkHint": "Toca el icono de marcador para guardar tu posición",
+        "bookmarkHint": "Toca el ícono de marcador para guardar tu posición",
         "searchNotesPlaceholder": "Buscar notas...",
         "noMatchingNotes": "No hay notas coincidentes",
         "tryDifferentSearch": "Prueba con otros términos de búsqueda",
         "noNotesYet": "Aún no hay notas",
-        "notesHint": "Toca el icono de notas para añadir una nota a la página actual",
+        "notesHint": "Toca el ícono de notas para añadir una nota a la página actual",
         "deleteBookmark": "Eliminar marcador",
         "editNote": "Editar nota",
         "deleteNote": "Eliminar nota",

@@ -397,7 +397,10 @@
             "sendAnyway": "Vseeno pošlji"
         },
         "audiobookChapterList": "Seznam poglavij",
-        "audiobookAbridged": "Skrajšano"
+        "audiobookAbridged": "Skrajšano",
+        "firstAuthorBadge": "GLAVNA",
+        "menuMarkPhysical": "Označi kot fizično",
+        "menuUnmarkPhysical": "Odznači kot fizično"
     },
     "sidecar": {
         "title": "Sidecar metapodatki",
@@ -455,7 +458,7 @@
             "coverUpdatedSummary": "Naslovnica posodobljena",
             "ebookCoverUpdatedDetail": "Naslovnica e-knjige je bila uspešno posodobljena.",
             "audiobookCoverUpdatedDetail": "Naslovnica zvočne knjige je bila uspešno posodobljena.",
-            "coverUpdateFailedSummary": "Posodobitev ni uspela",
+            "coverUpdateFailedSummary": "Posodobitev naslovnice ni uspela",
             "coverUpdateFailedDetail": "Slike naslovnice ni bilo mogoče posodobiti."
         }
     },
@@ -504,7 +507,14 @@
             "tag": "Oznaka",
             "series": "Zbirka",
             "publisher": "Založba",
-            "language": "Jezik"
+            "language": "Jezik",
+            "authors": "Avtorji",
+            "genres": "Žanri",
+            "moods": "Razpoloženja",
+            "tags": "Oznake",
+            "seriesPlural": "Serije",
+            "publishers": "Založniki",
+            "languages": "Jeziki"
         },
         "placeholders": {
             "searchAuthors": "Išči avtorje...",
