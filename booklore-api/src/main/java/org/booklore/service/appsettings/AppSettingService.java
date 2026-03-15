@@ -70,6 +70,10 @@ public class AppSettingService {
             validateOidcForceOnlyMode(val);
         }
 
+        if (key == AppSettingKey.OIDC_PROVIDER_DETAILS) {
+            val = preserveOidcClientSecret(val);
+        }
+
         var setting = settingPersistenceHelper.appSettingsRepository.findByName(key.toString());
         if (setting == null) {
             setting = new AppSettingEntity();
@@ -85,6 +89,24 @@ public class AppSettingService {
             default -> AuditAction.SETTINGS_UPDATED;
         };
         auditService.log(action, "Updated setting: " + key);
+    }
+
+    private Object preserveOidcClientSecret(Object val) {
+        if (val instanceof Map<?, ?> incomingMap) {
+            Object secret = incomingMap.get("clientSecret");
+            if (secret == null || (secret instanceof String s && s.isBlank())) {
+                Map<String, String> settingsMap = getSettingsMap();
+                OidcProviderDetails existing = settingPersistenceHelper.getJsonSetting(
+                        settingsMap, AppSettingKey.OIDC_PROVIDER_DETAILS, OidcProviderDetails.class, null, false);
+                if (existing != null && existing.getClientSecret() != null && !existing.getClientSecret().isBlank()) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> mutableMap = new java.util.LinkedHashMap<>((Map<String, Object>) incomingMap);
+                    mutableMap.put("clientSecret", existing.getClientSecret());
+                    return mutableMap;
+                }
+            }
+        }
+        return val;
     }
 
     private void validateOidcForceOnlyMode(Object val) {
