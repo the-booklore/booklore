@@ -21,7 +21,7 @@
         "filesCount": "{{ uploaded }}/{{ total }} datotek",
         "failedCount": "({{ count }} spodletelo)",
         "dragDropTitle": "Povleci in spusti datoteke",
-        "supportedFormats": "Podprti formati: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>, <strong>.m4b</strong>, <strong>.mp3</strong>",
+        "supportedFormats": "",
         "maxFileSize": "Največja velikost datoteke: {{ size }} na datoteko",
         "fileTooLargeTooltip": "Datoteka je prevelika",
         "uploadFailedTooltip": "Nalaganje ni uspelo",
@@ -143,12 +143,24 @@
             "usernameRequired": "Uporabniško ime je obvezno",
             "nameRequired": "Ime je obvezno",
             "emailRequired": "Zahtevana je veljavna e-pošta",
-            "passwordMinLength": "Zahtevanih je vsaj 6 znakov",
+            "passwordMinLength": "Zahtevanih je vsaj 8 znakov",
             "confirmPasswordRequired": "Potrditev gesla je obvezna",
             "passwordsMismatch": "Gesli se ne ujemata"
         },
         "toast": {
             "createFailedDefault": "Ustvarjanje skrbnika ni uspelo. Poskusi znova."
         }
+    },
+    "supportDialog": {
+        "title": "Podpri BookLore",
+        "subtitle": "Od samostojnega razvijalca, ki obožuje knjige",
+        "intro": "BookLore je zgradil in vzdržuje en sam razvijalec, ki resnično obožuje knjige. Če ti je organizacija knjižnice zaradi tega nekoliko bolj prijetna, je tukaj nekaj načinov, kako podpreti projekt in ga ohraniti.",
+        "starTitle": "Dodaj zvezdo na GitHubu",
+        "starDesc": "Zvezda veliko pomeni. Pomaga novim ljudem najti BookLore in me motivira.",
+        "collectiveTitle": "Odprti kolektiv",
+        "collectiveDesc": "Redna podpora, ki pomaga kriti stroške gostovanja in ohranja trajnost razvoja.",
+        "kofiTitle": "Kupi mi kavo",
+        "kofiDesc": "Enkraten nasvet za poživitev poznih nočnih sej programiranja. Vsak del je dobrodošel!",
+        "closing": "Hvala, ker si del skupnosti BookLore."
     }
 }

@@ -272,5 +272,14 @@
         "successDetail": "Čarobna polica je bila uspešno shranjena.",
         "errorSummary": "Napaka",
         "errorDetailDefault": "Shranjevanje čarobne police ni uspelo."
+    },
+    "importJson": {
+        "buttonLabel": "Uvoz",
+        "placeholder": "{\n  \"type\": \"group\",\n  \"join\": \"and\",\n  \"rules\": [\n    { \"field\": \"readStatus\", \"operator\": \"equals\", \"value\": \"READING\" }\n  ]\n}",
+        "apply": "Uporabi",
+        "emptyError": "Najprej prilepi JSON nastavitve.",
+        "parseError": "Neveljaven JSON. Preveri sintakso in poskusi znova.",
+        "structureError": "Neveljavna struktura. JSON mora imeti \"type\": \"group\" in polje \"rules\".",
+        "successDetail": "Pravila so bila uspešno uvožena. Preglej in shrani, ko boš pripravljen."
     }
 }

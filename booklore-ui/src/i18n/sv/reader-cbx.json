@@ -41,7 +41,10 @@
         "toggleZoom": "Växla zoom (anpassa sida / verklig storlek)",
         "doubleTap": "Dubbeltryck",
         "toggleSlideshow": "Växla bildspel / automatisk uppspelning",
-        "showHelpDialog": "Visa denna hjälpdialog"
+        "showHelpDialog": "Visa denna hjälpdialog",
+        "toggleMagnifier": "Växla förstoringsglas",
+        "magnifierZoom": "Förstoringszoom (när aktiv)",
+        "magnifierLensSize": "Förstoringsstorlek (när aktiv)"
     },
     "footer": {
         "prevBook": "Föreg. bok",
@@ -77,7 +80,9 @@
         "fullscreenLabel": "Helskärm",
         "keyboardShortcutsLabel": "Tangentbordsgenvägar",
         "settings": "Inställningar",
-        "closeReader": "Stäng läsaren"
+        "closeReader": "Stäng läsaren",
+        "enableMagnifier": "Förstoringsglas (M)",
+        "disableMagnifier": "Avaktivera förstoringsglas (M)"
     },
     "quickSettings": {
         "fitMode": "Anpassningsläge",
@@ -103,7 +108,9 @@
         "background": "Bakgrund",
         "black": "Svart",
         "gray": "Grå",
-        "white": "Vit"
+        "white": "Vit",
+        "magnifierLensSize": "Linsstorlek",
+        "magnifierZoom": "Förstoring"
     },
     "sidebar": {
         "contentTab": "Innehåll",

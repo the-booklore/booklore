@@ -37,7 +37,9 @@
         "writeOnScanDesc": "Kreiraj prateće JSON datoteke kada se knjige prvi put dodaju u knjižnicu tijekom skeniranja.",
         "includeCover": "Uključi datoteku naslovnice",
         "includeCoverDesc": "Također spremi naslovnicu kao <code>NazivKnjige.cover.jpg</code> uz prateću JSON datoteku.",
-        "loadError": "Učitavanje postavki nije uspjelo."
+        "loadError": "Učitavanje postavki nije uspjelo.",
+        "networkModeTitle": "Aktivan način mrežne pohrane:",
+        "networkModeDesc": "Ova je instanca konfigurirana za mrežnu pohranu (DISK_TYPE=NETWORK). Sve značajke pisanja i reorganizacije datoteka su onemogućene. Metapodaci se pohranjuju samo u bazi podataka i vaše se datoteke knjiga nikada ne mijenjaju."
     },
     "providers": {
         "sectionTitle": "Pružatelji metapodataka",
@@ -89,6 +91,18 @@
         "saveSuccess": "Težine uspješno spremljene",
         "saveError": "Spremanje težina nije uspjelo",
         "recalcSuccess": "Svi rezultati usklađivanja knjiga su uspješno preračunati.",
-        "recalcError": "Preračunavanje rezultata usklađivanja nije uspjelo."
+        "recalcError": "Preračunavanje rezultata usklađivanja nije uspjelo.",
+        "fields": {
+            "title": "Naslov",
+            "subtitle": "Titl",
+            "authors": "Autori",
+            "description": "Opis",
+            "publisher": "Izdavač",
+            "publishedDate": "Datum objave",
+            "categories": "Kategorije",
+            "coverImage": "Slika naslovnice",
+            "seriesName": "Naziv serije",
+            "seriesNumber": "Broj serije"
+        }
     }
 }

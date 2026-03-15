@@ -42,6 +42,8 @@
     "doubleTap": "Double-tap",
     "toggleSlideshow": "Toggle slideshow / auto-play",
     "toggleMagnifier": "Toggle magnifying glass",
+    "magnifierZoom": "Magnifier zoom (when active)",
+    "magnifierLensSize": "Magnifier lens size (when active)",
     "showHelpDialog": "Show this help dialog"
   },
   "footer": {
@@ -106,7 +108,9 @@
     "background": "Background",
     "black": "Black",
     "gray": "Gray",
-    "white": "White"
+    "white": "White",
+    "magnifierLensSize": "Lens Size",
+    "magnifierZoom": "Magnification"
   },
   "sidebar": {
     "contentTab": "Content",

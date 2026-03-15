@@ -152,6 +152,7 @@ public class ReadingProgressService {
                     .cfi(fileProgress.getPositionData())
                     .href(fileProgress.getPositionHref())
                     .percentage(roundToOneDecimal(fileProgress.getProgressPercent()))
+                    .ttsPositionCfi(fileProgress.getTtsPositionCfi())
                     .build());
             case PDF -> book.setPdfProgress(PdfProgress.builder()
                     .page(parseIntOrNull(fileProgress.getPositionData()))
@@ -287,6 +288,7 @@ public class ReadingProgressService {
         entity.setPositionData(fileProgress.positionData());
         entity.setPositionHref(fileProgress.positionHref());
         entity.setProgressPercent(fileProgress.progressPercent());
+        entity.setTtsPositionCfi(fileProgress.ttsPositionCfi());
         entity.setLastReadTime(now);
 
         userBookFileProgressRepository.save(entity);

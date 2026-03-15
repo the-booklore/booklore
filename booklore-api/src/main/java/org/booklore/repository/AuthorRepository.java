@@ -30,4 +30,16 @@ public interface AuthorRepository extends JpaRepository<AuthorEntity, Long> {
 
     @Query("SELECT COUNT(b) > 0 FROM AuthorEntity a JOIN a.bookMetadataEntityList bm JOIN bm.book b WHERE a.id = :authorId AND b.library.id IN :libraryIds")
     boolean existsByIdAndLibraryIds(@Param("authorId") Long authorId, @Param("libraryIds") Set<Long> libraryIds);
+
+    @Query(value = "SELECT m.book_id AS bookId, a.name AS authorName " +
+                   "FROM book_metadata_author_mapping m " +
+                   "JOIN author a ON a.id = m.author_id " +
+                   "WHERE m.book_id IN :bookIds ORDER BY a.name",
+           nativeQuery = true)
+    List<AuthorBookProjection> findAuthorNamesByBookIds(@Param("bookIds") Set<Long> bookIds);
+
+    interface AuthorBookProjection {
+        Long getBookId();
+        String getAuthorName();
+    }
 }

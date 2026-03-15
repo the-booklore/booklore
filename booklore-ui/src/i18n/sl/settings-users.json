@@ -45,7 +45,7 @@
         "nameRequired": "Ime je obvezno in mora imeti vsaj 3 znake.",
         "usernameRequired": "Uporabniško ime je obvezno.",
         "emailInvalid": "Vnesi veljaven e-poštni naslov.",
-        "passwordMinLength": "Geslo mora biti dolgo vsaj 6 znakov.",
+        "passwordMinLength": "Geslo mora biti dolgo vsaj 8 znakov.",
         "confirmRequired": "Potrditev gesla je obvezna",
         "passwordMismatch": "Gesli se ne ujemata.",
         "libraryAccess": "Dostop do knjižnic",
