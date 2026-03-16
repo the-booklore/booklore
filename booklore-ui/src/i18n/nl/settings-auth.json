@@ -1,8 +1,8 @@
 {
-    "title": "Authenticatie-instellingen",
-    "description": "Configureer authenticatiemethoden voor uw Booklore-instantie. Interne authenticatie is altijd ingeschakeld en u kunt optioneel OIDC inschakelen voor externe authenticatieproviders.",
+    "title": "OIDC Instellingen",
+    "description": "Configureer OpenID Connect (OIDC) voor single sign-on met externe identiteits aanbieders zoals Authentik, Authelia, of Pocket ID.",
     "methods": {
-        "sectionTitle": "Authenticatiemethoden",
+        "sectionTitle": "Aanmeld methoden",
         "sectionDesc": "Kies welke authenticatiemethoden beschikbaar zijn voor gebruikers om in te loggen."
     },
     "internal": {

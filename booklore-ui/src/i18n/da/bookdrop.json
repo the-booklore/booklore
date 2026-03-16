@@ -1,7 +1,7 @@
 {
     "bulkEdit": {
-        "infoBanner": "",
-        "textFieldsTitle": "",
+        "infoBanner": "Vælg hvilke felter der skal gælde for <strong>{{ fileCount }}</strong> valgte fil(er). Kun makerede felter vil blive opdateret.",
+        "textFieldsTitle": "Tekstfelter",
         "numberFieldsTitle": "",
         "arrayFieldsTitle": "",
         "modeLabel": "",

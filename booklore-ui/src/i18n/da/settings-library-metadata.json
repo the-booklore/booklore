@@ -1,6 +1,6 @@
 {
-    "title": "",
-    "description": "",
+    "title": "Konfiguration af metadata for bibliotek",
+    "description": "Konfigurer metadata hentnings adfærd af dine biblioteker. Indstil globale standarder og opret biblioteksspecifikke tilsidesættelser, for at kontrollere hvordan bog metadata hentes fra forskellige udbydere.",
     "defaultSettings": {
         "sectionTitle": "",
         "sectionDesc": "",

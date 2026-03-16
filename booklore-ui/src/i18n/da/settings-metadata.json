@@ -1,6 +1,6 @@
 {
-    "title": "",
-    "description": "",
+    "title": "Metadata Indstillinger",
+    "description": "Konfigurer, hvordan metadata hentes, gemmes og matches til dine bøger, herunder udbyderindstillinger og feltpræferencer.",
     "autoDownload": {
         "sectionTitle": "",
         "warning": "",

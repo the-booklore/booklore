@@ -2,7 +2,7 @@
     "main": {
         "title": "{{ name }}'s Lees Statistieken",
         "customizeLayout": "Lay-out aanpassen",
-        "chartConfig": "",
+        "chartConfig": "Grafiekconfiguratie",
         "resetLayout": "Lay-out opnieuw instellen",
         "hideAll": "Alles verbergen",
         "showAll": "Alles weergeven",

@@ -1,8 +1,8 @@
 {
     "reader": {
-        "continueToNextBook": "",
-        "noPagesAvailable": "",
-        "loadingBook": "",
+        "continueToNextBook": "Fortsæt til næste bog",
+        "noPagesAvailable": "Ingen sider til rådighed.",
+        "loadingBook": "Indlæser bog...",
         "slideshow": ""
     },
     "noteDialog": {

@@ -1,7 +1,7 @@
 {
     "toolbar": {
-        "switchToLightMode": "",
-        "switchToDarkMode": "",
+        "switchToLightMode": "Skift til lystilstand",
+        "switchToDarkMode": "Skift til mørk tilstand",
         "closePdfReader": ""
     },
     "toast": {
