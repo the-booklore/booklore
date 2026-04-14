@@ -1,9 +1,6 @@
 services:
   booklore:
-    # Official Docker Hub image:
-    image: booklore/booklore:latest
-    # Or the GHCR image:
-    # image: ghcr.io/booklore-app/booklore:latest
+    image: ghcr.io/the-booklore/booklore:latest
     container_name: booklore
     environment:
       - USER_ID=1000  # Modify this if the volume's ownership is not root
