@@ -10,7 +10,7 @@ This directory contains an example of how to use a rootless Podman pod defined t
    ```bash
    echo -n "YOUR PASSWORD" | podman secret create booklore_db_pass -
    ```
-4. (Optional) `podman pull ghcr.io/booklore-app/booklore:latest` to pre-pull the image
+4. (Optional) `podman pull ghcr.io/the-booklore/booklore:latest` to pre-pull the image
   * If you have a slow connection, this is recommended because systemd will time out if the image pull takes too long.
 5. Run `systemctl --user daemon-reload` to pick up the new Quadlet unit.
 6. Start the pod with `systemctl --user start booklore-pod.service`
