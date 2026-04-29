@@ -862,6 +862,21 @@ class MOBI6 {
         }`))
 
         await this.replaceResources(doc)
+        // sanitize: remove scripts and event handlers
+        for (const el of doc.querySelectorAll('script')) el.remove()
+        const dangerousUrlPattern = /^\s*javascript\s*:/i
+        const dangerousDataUrlPattern = /^\s*data\s*:\s*(text\/html|text\/javascript|application\/javascript|application\/x-javascript|text\/ecmascript|application\/ecmascript)/i
+        for (const el of doc.querySelectorAll('*')) {
+            for (const attr of [...el.attributes]) {
+                if (attr.name.toLowerCase().startsWith('on'))
+                    el.removeAttribute(attr.name)
+            }
+            for (const urlAttr of ['href', 'src', 'action', 'formaction']) {
+                const val = el.getAttribute(urlAttr)
+                if (val && (dangerousUrlPattern.test(val) || dangerousDataUrlPattern.test(val)))
+                    el.removeAttribute(urlAttr)
+            }
+        }
         const result = this.serializer.serializeToString(doc)
         const url = URL.createObjectURL(new Blob([result], { type: this.#type }))
         this.#cache.set(section, url)
