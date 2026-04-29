@@ -4,7 +4,7 @@ import {LibraryHealthService} from './library-health.service';
 import {HttpClient} from '@angular/common/http';
 import {RxStompService} from '../../../shared/websocket/rx-stomp.service';
 import {of, Subject} from 'rxjs';
-import {IMessage} from '@stomp/rx-stomp';
+import {IMessage} from '@stomp/stompjs';
 
 describe('LibraryHealthService', () => {
   let service: LibraryHealthService;

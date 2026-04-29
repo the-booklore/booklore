@@ -718,9 +718,9 @@ class Loader {
         //.filter(({ mediaType }) => ![MIME.XHTML, MIME.HTML].includes(mediaType))
     }
 
-    // Check if a media type is an image
+    // Check if a media type is a raster image (excludes SVG which can contain scripts)
     #isImage(mediaType) {
-        return mediaType?.startsWith('image/') ?? false
+        return (mediaType?.startsWith('image/') && mediaType !== 'image/svg+xml') ?? false
     }
 
     // Check if a media type is a font
@@ -784,6 +784,7 @@ class Loader {
         const { href, mediaType } = item
 
         const isScript = MIME.JS.test(item.mediaType)
+        if (isScript) return null
         const detail = { type: mediaType, isScript, allow: true}
         const event = new CustomEvent('load', { detail })
         this.eventTarget.dispatchEvent(event)
@@ -923,7 +924,40 @@ class Loader {
             for (const el of doc.querySelectorAll('[style]'))
                 el.setAttribute('style',
                     await this.replaceCSS(el.getAttribute('style'), href, parents))
-            // TODO: replace inline scripts? probably not worth the trouble
+            // sanitize: remove all script elements (covers both HTML and SVG namespaces)
+            for (const el of doc.querySelectorAll('script'))
+                el.remove()
+            // sanitize: remove event handler attributes, dangerous URLs, and dangerous elements
+            const dangerousUrlPattern = /^\s*javascript\s*:/i
+            const dangerousDataUrlPattern = /^\s*data\s*:\s*(text\/html|text\/javascript|application\/javascript|application\/x-javascript|text\/ecmascript|application\/ecmascript)/i
+            for (const el of doc.querySelectorAll('*')) {
+                for (const attr of [...el.attributes]) {
+                    const name = attr.name.toLowerCase()
+                    if (name.startsWith('on'))
+                        el.removeAttribute(attr.name)
+                }
+                // remove dangerous URLs from standard attributes
+                for (const urlAttr of ['href', 'src', 'action', 'formaction']) {
+                    const val = el.getAttribute(urlAttr)
+                    if (val && (dangerousUrlPattern.test(val) || dangerousDataUrlPattern.test(val)))
+                        el.removeAttribute(urlAttr)
+                }
+                // remove dangerous URLs from xlink:href (used in SVGs)
+                const xlinkHref = el.getAttributeNS(NS.XLINK, 'href')
+                if (xlinkHref && (dangerousUrlPattern.test(xlinkHref) || dangerousDataUrlPattern.test(xlinkHref)))
+                    el.removeAttributeNS(NS.XLINK, 'href')
+            }
+            // inject CSP meta tag to block script execution as defense-in-depth
+            const head = doc.querySelector('head')
+            if (head) {
+                const nsURI = doc.documentElement?.namespaceURI
+                const csp = nsURI
+                    ? doc.createElementNS(nsURI, 'meta')
+                    : doc.createElement('meta')
+                csp.setAttribute('http-equiv', 'Content-Security-Policy')
+                csp.setAttribute('content', "script-src 'none'")
+                head.prepend(csp)
+            }
             const result = new XMLSerializer().serializeToString(doc)
             return this.createURL(href, result, item.mediaType, parent)
         }

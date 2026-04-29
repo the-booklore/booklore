@@ -38,7 +38,7 @@ All you need is [Docker](https://docs.docker.com/get-docker/) and [Docker Compos
 
 | Registry | Image                              |
 |----------|------------------------------------|
-| GitHub Container Registry | `ghcr.io/the-booklore/booklore` |
+| GitHub Container Registry | `ghcr.io/booklore-app/booklore` |
 
 </details>
 
@@ -74,7 +74,7 @@ Create a `docker-compose.yml`:
 ```yaml
 services:
   booklore:
-    image: ghcr.io/the-booklore/booklore:latest
+    image: ghcr.io/booklore-app/booklore:latest
     container_name: booklore
     environment:
       - USER_ID=${APP_USER_ID}

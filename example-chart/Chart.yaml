@@ -1,6 +1,6 @@
 apiVersion: v2
 name: booklore
-description: A Helm chart for [Booklore](https://github.com/the-booklore/booklore)
+description: A Helm chart for [Booklore](https://github.com/booklore-app/booklore)
 
 # A chart can be either an 'application' or a 'library' chart.
 #

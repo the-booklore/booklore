@@ -40,15 +40,15 @@
         @if (canPrint) {
           <pdf-print></pdf-print>
         }
-        <pdf-no-spread></pdf-no-spread>
-        <pdf-even-spread></pdf-even-spread>
-        <pdf-odd-spread></pdf-odd-spread>
-        <pdf-infinite-scroll></pdf-infinite-scroll>
-        <pdf-horizontal-scroll></pdf-horizontal-scroll>
-        <pdf-vertical-scroll-mode></pdf-vertical-scroll-mode>
-        <pdf-wrapped-scroll-mode></pdf-wrapped-scroll-mode>
-        <pdf-single-page-mode></pdf-single-page-mode>
-        <pdf-book-mode></pdf-book-mode>
+        <pdf-no-spread [scrollMode]="scrollMode"></pdf-no-spread>
+        <pdf-even-spread [scrollMode]="scrollMode"></pdf-even-spread>
+        <pdf-odd-spread [scrollMode]="scrollMode"></pdf-odd-spread>
+        <pdf-infinite-scroll [scrollMode]="scrollMode" [pageViewMode]="pageViewMode"></pdf-infinite-scroll>
+        <pdf-horizontal-scroll [scrollMode]="scrollMode" [pageViewMode]="pageViewMode"></pdf-horizontal-scroll>
+        <pdf-vertical-scroll-mode [scrollMode]="scrollMode" [pageViewMode]="pageViewMode"></pdf-vertical-scroll-mode>
+        <pdf-wrapped-scroll-mode [scrollMode]="scrollMode" [pageViewMode]="pageViewMode"></pdf-wrapped-scroll-mode>
+        <pdf-single-page-mode [scrollMode]="scrollMode" [pageViewMode]="pageViewMode"></pdf-single-page-mode>
+        <pdf-book-mode [scrollMode]="scrollMode" [pageViewMode]="pageViewMode"></pdf-book-mode>
         <div class="verticalToolbarSeparator hiddenSmallView"></div>
         <pdf-toggle-secondary-toolbar></pdf-toggle-secondary-toolbar>
         <div class="verticalToolbarSeparator"></div>
@@ -76,4 +76,3 @@
     </div>
   </ng-template>
 }
-

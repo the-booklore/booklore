@@ -69,6 +69,7 @@ public class EpubReaderController {
             response.setHeader("Access-Control-Allow-Origin", "*");
         }
 
+        response.setHeader("Content-Security-Policy", "script-src 'none'");
         response.setHeader("Cache-Control", "public, max-age=3600");
 
         try {

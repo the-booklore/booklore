@@ -37,7 +37,7 @@ REMOTE_AUTH_GROUPS_DELIMITER=\\s+          # Regex pattern for splitting groups.
 ```yaml
 services:
   booklore:
-    image: ghcr.io/the-booklore/booklore:latest
+    image: ghcr.io/booklore-app/booklore:latest
     environment:
       # Forward Auth Configuration
       - REMOTE_AUTH_ENABLED=true

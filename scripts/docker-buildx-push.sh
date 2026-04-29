@@ -14,7 +14,7 @@ fi
 
 VERSION="$1"
 
-IMAGE_REF="ghcr.io/the-booklore/booklore:$VERSION"
+IMAGE_REF="ghcr.io/booklore-app/booklore:$VERSION"
 
 echo "Building Booklore App with multi-arch version: $VERSION"
 echo "Target registry image: $IMAGE_REF"

@@ -54,7 +54,7 @@ jobs:
           check_name: Backend Test Results
 
       - name: Upload Backend Test Reports
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: backend-test-reports
@@ -85,7 +85,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set Up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '24'
           cache: 'npm'
@@ -120,7 +120,7 @@ jobs:
           check_name: Frontend Test Results
 
       - name: Upload Frontend Test Reports
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: frontend-test-reports
@@ -170,7 +170,7 @@ jobs:
       # Native Angular build
       # ----------------------------------------
       - name: Set Up Node.js
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '24'
           cache: 'npm'
@@ -232,7 +232,7 @@ jobs:
       # ----------------------------------------
       - name: Authenticate to GitHub Container Registry
         if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -250,13 +250,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/the-booklore/booklore:${{ env.image_tag }}
+            ghcr.io/booklore-app/booklore:${{ env.image_tag }}
           build-args: |
             APP_VERSION=${{ env.image_tag }}
             APP_REVISION=${{ github.sha }}
           cache-from: |
             type=gha
-            type=registry,ref=ghcr.io/the-booklore/booklore:buildcache
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache
           cache-to: |
             type=gha,mode=max
-            type=registry,ref=ghcr.io/the-booklore/booklore:buildcache,mode=max
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
