@@ -29,8 +29,7 @@ release_name=$(jq -r '.name' <<< "$release_json")
 release_body=$(jq -r '.body' <<< "$release_json")
 release_url=$(jq -r '.url'  <<< "$release_json")
 
-dockerhub_image="https://hub.docker.com/r/booklore/booklore/tags/$NEW_TAG"
-ghcr_image="https://github.com/booklore-app/booklore/pkgs/container/booklore/$NEW_TAG"
+ghcr_image="https://github.com/the-booklore/booklore/pkgs/container/booklore/$NEW_TAG"
 
 # Clean up body for Discord
 clean_body=$(echo "$release_body" | tr -d '\r')
@@ -44,7 +43,6 @@ payload=$(jq -n \
   --arg title "New Release: $release_name" \
   --arg url   "$release_url" \
   --arg desc  "$clean_body" \
-  --arg hub   "[View image]($dockerhub_image)" \
   --arg gh    "[View image]($ghcr_image)" \
   '{
     content: null,
@@ -54,8 +52,7 @@ payload=$(jq -n \
       description: $desc,
       color: 3066993,
       fields: [
-        { name: "Docker Hub", value: $hub, inline: true },
-        { name: "GHCR",       value: $gh,  inline: true }
+        { name: "GHCR", value: $gh, inline: true }
       ]
     }]
   }')

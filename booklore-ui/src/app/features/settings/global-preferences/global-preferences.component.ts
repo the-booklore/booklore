@@ -12,7 +12,6 @@ import {AppSettingKey, AppSettings, CoverCroppingSettings} from '../../../shared
 import {filter, take} from 'rxjs/operators';
 import {InputText} from 'primeng/inputtext';
 import {Slider} from 'primeng/slider';
-import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 import {TranslocoDirective, TranslocoPipe, TranslocoService} from '@jsverse/transloco';
 
 export const SUPPORT_ANIMATION_KEY = 'booklore-support-animation';
@@ -27,7 +26,6 @@ export const SUPPORT_ANIMATION_KEY = 'booklore-support-animation';
     InputText,
     Slider,
     SplitButton,
-    ExternalDocLinkComponent,
     TranslocoDirective,
     TranslocoPipe
   ],
@@ -38,8 +36,7 @@ export class GlobalPreferencesComponent implements OnInit {
 
   toggles = {
     autoBookSearch: false,
-    similarBookRecommendation: false,
-    enableTelemetry: true,
+    similarBookRecommendation: false
   };
 
   supportButtonAnimation = localStorage.getItem(SUPPORT_ANIMATION_KEY) !== 'false';
@@ -81,7 +78,6 @@ export class GlobalPreferencesComponent implements OnInit {
       }
       this.toggles.autoBookSearch = settings.autoBookSearch ?? false;
       this.toggles.similarBookRecommendation = settings.similarBookRecommendation ?? false;
-      this.toggles.enableTelemetry = settings?.telemetryEnabled ?? true;
     });
   }
 
@@ -89,8 +85,7 @@ export class GlobalPreferencesComponent implements OnInit {
     this.toggles[settingKey] = checked;
     const toggleKeyMap: Record<string, AppSettingKey> = {
       autoBookSearch: AppSettingKey.AUTO_BOOK_SEARCH,
-      similarBookRecommendation: AppSettingKey.SIMILAR_BOOK_RECOMMENDATION,
-      enableTelemetry: AppSettingKey.TELEMETRY_ENABLED,
+      similarBookRecommendation: AppSettingKey.SIMILAR_BOOK_RECOMMENDATION
     };
     const keyToSend = toggleKeyMap[settingKey];
     if (keyToSend) {
