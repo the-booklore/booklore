@@ -23,7 +23,7 @@ public class ReadingSessionController {
 
     private final ReadingSessionService readingSessionService;
 
-    @Operation(summary = "Record a reading session", description = "Receive telemetry from the reader client and persist or log the session.")
+    @Operation(summary = "Record a reading session", description = "Receive reading session data from the reader client and persist or log the session.")
     @ApiResponses({
             @ApiResponse(responseCode = "202", description = "Reading session accepted"),
             @ApiResponse(responseCode = "400", description = "Invalid payload")
