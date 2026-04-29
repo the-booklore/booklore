@@ -7,7 +7,7 @@
 #
 # Prerequisites:
 #   1. Get your API token from https://hosted.weblate.org/accounts/profile/#api
-#   2. Ensure your GitHub repo (the-booklore/booklore) is public (required for Libre plan)
+#   2. Ensure your GitHub repo (booklore-app/booklore) is public (required for Libre plan)
 #
 # Usage:
 #   WEBLATE_TOKEN=your-api-token ./scripts/weblate-setup.sh
@@ -22,9 +22,9 @@ TOKEN="${WEBLATE_TOKEN:?Set WEBLATE_TOKEN to your Weblate API token}"
 
 PROJECT_NAME="BookLore"
 PROJECT_SLUG="booklore"
-PROJECT_WEB="https://github.com/the-booklore/booklore"
+PROJECT_WEB="https://github.com/booklore-app/booklore"
 
-REPO_URL="https://github.com/the-booklore/booklore.git"
+REPO_URL="https://github.com/booklore-app/booklore.git"
 REPO_BRANCH="develop"
 FILE_BASE="booklore-ui/src/i18n"
 

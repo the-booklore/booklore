@@ -19,7 +19,7 @@ public class KepubConversionService {
     @Autowired
     private FileService fileService;
 
-    private static final String KEPUBIFY_GITHUB_BASE_URL = "https://github.com/the-booklore/booklore-tools/raw/main/kepubify/";
+    private static final String KEPUBIFY_GITHUB_BASE_URL = "https://github.com/booklore-app/booklore-tools/raw/main/kepubify/";
 
     private static final String BIN_DARWIN_ARM64 = "kepubify-darwin-arm64";
     private static final String BIN_DARWIN_X64 = "kepubify-darwin-64bit";

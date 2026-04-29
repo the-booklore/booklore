@@ -16,7 +16,7 @@ import java.nio.file.StandardCopyOption;
 @AllArgsConstructor
 public class FfprobeService {
 
-    private static final String FFPROBE_GITHUB_BASE_URL = "https://github.com/the-booklore/booklore-tools/raw/main/ffprobe/";
+    private static final String FFPROBE_GITHUB_BASE_URL = "https://github.com/booklore-app/booklore-tools/raw/main/ffprobe/";
 
     private static final String BIN_DARWIN_ARM64 = "ffprobe-darwin-arm64";
     private static final String BIN_DARWIN_X64 = "ffprobe-darwin-64";

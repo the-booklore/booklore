@@ -252,8 +252,8 @@ export class AppMenuComponent implements OnInit {
   getVersionUrl(version: string | undefined): string {
     if (!version) return '#';
     return version.startsWith('v')
-      ? `https://github.com/the-booklore/booklore/releases/tag/${version}`
-      : `https://github.com/the-booklore/booklore/commit/${version}`;
+      ? `https://github.com/booklore-app/booklore/releases/tag/${version}`
+      : `https://github.com/booklore-app/booklore/commit/${version}`;
   }
 
   isSemanticVersion(version: string | undefined): boolean {
