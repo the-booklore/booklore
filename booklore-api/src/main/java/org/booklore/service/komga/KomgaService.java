@@ -388,11 +388,11 @@ public class KomgaService {
 
         // Make sure pages are cached
         if (isPDF) {
-            cbxReaderService.getAvailablePages(bookId);
-            cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
-        } else {
             pdfReaderService.getAvailablePages(bookId);
             pdfReaderService.streamPageImage(bookId, pageNumber, outputStream);
+        } else {
+            cbxReaderService.getAvailablePages(bookId);
+            cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
         }
         
         byte[] imageData = outputStream.toByteArray();
