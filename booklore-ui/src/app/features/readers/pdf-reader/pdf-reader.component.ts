@@ -37,6 +37,8 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
 
   rotation: 0 | 90 | 180 | 270 = 0;
   authorization = '';
+  scrollMode: 0 | 1 | 2 | 3 = 0;
+  pageViewMode: 'single' | 'book' | 'multiple' | 'infinite-scroll' = 'single';
 
   page!: number;
   spread!: 'off' | 'even' | 'odd';
@@ -119,7 +121,10 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
     });
   }
 
-  onPageChange(page: number): void {
+  onPageChange(page: number | undefined): void {
+    if (page === undefined) {
+      return;
+    }
     if (page !== this.page) {
       this.page = page;
       this.updateProgress();
