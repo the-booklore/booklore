@@ -132,7 +132,7 @@ public class RanobeDbParser implements BookParser {
 
           HttpRequest request = HttpRequest.newBuilder()
                   .uri(uri)
-                  .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)")
+                  .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/the-booklore/booklore)")
                   .GET()
                   .build();
 
@@ -189,7 +189,7 @@ public class RanobeDbParser implements BookParser {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
-                    .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)")
+                    .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/the-booklore/booklore)")
                     .GET()
                     .build();
 
