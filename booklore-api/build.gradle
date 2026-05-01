@@ -74,7 +74,7 @@ dependencies {
     implementation 'io.documentnode:epub4j-core:4.2.3'
 
     // --- Audio Metadata (Audiobook Support) ---
-    implementation 'com.github.RouHim:jaudiotagger:2.0.16'
+    implementation 'com.github.RouHim:jaudiotagger:2.0.19'
 
     // --- UNRAR Support ---
     implementation 'com.github.junrar:junrar:7.5.10'
