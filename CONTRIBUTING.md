@@ -34,24 +34,14 @@ Thanks for your interest in contributing to Booklore! Whether you're fixing bugs
 
 ## Before You Start
 
-> **Issue first, PR second.** Every pull request must be linked to an approved issue. If you want to work on something, [open an issue](https://github.com/booklore-app/booklore/issues/new) (or find an existing one) and wait for a maintainer to approve it before writing code. PRs submitted without a linked, approved issue will be closed.
-
 This protects both your time and ours. It ensures that the work is actually wanted and that you're heading in the right direction before you invest effort.
 
 **What will get your PR closed immediately:**
-- No linked issue
 - No screenshots or screen recording proving the change works
 - No test output pasted in the PR
 - Bulk AI-generated changes that clearly haven't been reviewed or tested
 - Unsolicited refactors, cleanups, or "improvements" nobody asked for
 - PRs with 1000+ changed lines (split them up)
-
-## Where to Start
-
-Not sure where to begin? Look for issues labeled:
-
-- [`good first issue`](https://github.com/booklore-app/booklore/labels/good%20first%20issue) - small, well-scoped tasks ideal for newcomers
-- [`help wanted`](https://github.com/booklore-app/booklore/labels/help%20wanted) - tasks where maintainers would appreciate a hand
 
 ---
 
@@ -262,7 +252,6 @@ BREAKING CHANGE: OAuth 2.0 is no longer supported
 
 Before opening your PR:
 
-- [ ] PR is linked to an **approved** issue (PRs without a linked issue will be closed)
 - [ ] All tests pass (`./gradlew test` and `ng test`)
 - [ ] Actual test output is pasted in the PR description
 - [ ] Code follows project conventions (see [Backend Conventions](#backend-conventions), [Frontend Conventions](#frontend-conventions))
@@ -321,42 +310,6 @@ We've seen a sharp increase in AI-generated PRs where the contributor clearly ne
 - PrimeNG for UI components. SCSS for styling. Transloco for i18n.
 - Testing with Vitest (not Karma/Jasmine).
 - All UI features must be responsive (desktop + mobile).
-
----
-
-## Reporting Bugs
-
-1. **Search [existing issues](https://github.com/booklore-app/booklore/issues)** to avoid duplicates.
-2. **Open a new issue** with the `bug` label including:
-   - Clear, descriptive title (e.g., "Book import fails with PDF files over 100MB")
-   - Steps to reproduce
-   - Expected vs. actual behavior
-   - Screenshots or error logs (if applicable)
-   - Environment details (OS, browser, Booklore version)
-
-**Example:**
-
-```
-Title: Book metadata not updating after manual edit
-
-Steps to Reproduce:
-1. Navigate to any book detail page
-2. Click "Edit Metadata"
-3. Change the title and click "Save"
-4. Refresh the page
-
-Expected: Title should persist after refresh
-Actual: Title reverts to original value
-
-Environment: Chrome 120, macOS 14.2, Booklore 1.2.0
-```
-
----
-
-## Community & Support
-
-- **Discord:** [Join the server](https://discord.gg/Ee5hd458Uz) for questions and discussion
-- **GitHub Issues:** [Report bugs or request features](https://github.com/booklore-app/booklore/issues)
 
 ---
 
