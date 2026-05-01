@@ -313,7 +313,7 @@ jobs:
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
       - name: Update GitHub Release Draft
-        uses: release-drafter/release-drafter@5de93583980a40bd78603b6dfdcda5b4df377b32 # v6
+        uses: release-drafter/release-drafter@563bf132657a13ded0b01fcb723c5a58cdd824e2 # v6
         with:
           tag: ${{ env.new_tag }}
           name: "Release ${{ env.new_tag }}"
