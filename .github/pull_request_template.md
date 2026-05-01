@@ -2,10 +2,6 @@
 
 <!-- Why is this change needed? Explain in your own words. -->
 
-**Linked Issue:** Fixes #<!-- issue number -->
-
-> **Required.** Every PR must reference an approved issue. If no issue exists, [open one](https://github.com/booklore-app/booklore/issues/new) and wait for maintainer approval before submitting a PR. Unsolicited PRs without a linked issue will be closed.
-
 ## 🏷️ Type of Change
 
 - [ ] Bug fix
@@ -71,7 +67,6 @@ PASTE OUTPUT HERE
 
 > **All boxes must be checked before requesting review.** Incomplete PRs will be closed without review. No exceptions.
 
-- [ ] This PR is linked to an approved issue
 - [ ] Code follows project [backend and frontend conventions](../CONTRIBUTING.md#backend-conventions)
 - [ ] Branch is up to date with `develop` (merge conflicts resolved)
 - [ ] I ran the full stack locally (backend + frontend + database) and verified the change works
